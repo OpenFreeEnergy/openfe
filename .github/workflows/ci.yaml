@@ -43,7 +43,7 @@ jobs:
         run: conda list
 
       - name: "Install"
-        run: python setup.py install --no-deps
+        run: python setup.py develop --no-deps
 
       - name: "Environment Information"
         run: |
