@@ -1,0 +1,12 @@
+name: openfe
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - networkx
+  - rdkit
+  - pip
+  - pytest
+  - pytest-xdist
+  - pytest-cov
+  - coverage
