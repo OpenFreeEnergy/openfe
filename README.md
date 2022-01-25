@@ -26,7 +26,7 @@ conda env create -f environment.yml
 The openfe library can be installed via:
 
 ```
-python -m pip install --no-deps .
+pip install --no-deps .
 ```
 
 # Authors
