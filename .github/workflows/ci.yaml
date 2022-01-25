@@ -45,6 +45,14 @@ jobs:
       - name: "Install"
         run: python setup.py develop --no-deps
 
+      - name: "Test imports"
+        run: |
+          # if we add more to this, consider changing to for + env vars
+          python -c "import openfe.setup"
+          python -c "import openfe.orchestration"
+          python -c "import openfe.simulation"
+          python -c "import openfe.analysis"
+
       - name: "Environment Information"
         run: |
           mamba info -a
