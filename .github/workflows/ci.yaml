@@ -7,7 +7,7 @@ on:
     branches:
       - main
   schedule:
-    # At 00:00 on Monday and Thursday.
+    # At 07:00 UTC on Monday and Thursday.
     - cron: "0 7 * * 1,4"
 
 concurrency:
