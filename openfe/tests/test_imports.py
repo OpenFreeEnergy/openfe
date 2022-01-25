@@ -1,4 +1,5 @@
 import sys
+import pytest
 
 from openfe import setup, orchestration, simulation, analysis
 
@@ -7,4 +8,4 @@ from openfe import setup, orchestration, simulation, analysis
         ['setup', 'orchestration', 'simulation', 'analysis'])
 def test_imported(module):
     """Sample test, will always pass so long as import statement worked"""
-    assert module in sys.modules
+    assert f"openfe.{module}" in sys.modules
