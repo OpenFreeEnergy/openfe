@@ -40,9 +40,6 @@ jobs:
             environment-file: environment.yml
             activate-environment: openfe
 
-      - name: "Versions"
-        run: conda list
-
       - name: "Install"
         run: python setup.py develop --no-deps
 
