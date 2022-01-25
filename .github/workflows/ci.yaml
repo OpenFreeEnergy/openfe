@@ -31,11 +31,12 @@ jobs:
       - uses: actions/checkout@v2
 
       - uses: conda-incubator/setup-miniconda@v2
-        auto-update-conda: true
-        python-version: ${{ matrix.PYTHON }}
-        miniforge-variant: Mambaforge
-        environment-file: environment.yml
-        activate-environment: openfe
+        with:
+            auto-update-conda: true
+            python-version: ${{ matrix.python-version }}
+            miniforge-variant: Mambaforge
+            environment-file: environment.yml
+            activate-environment: openfe
 
       - name: "Versions"
         run: conda list
