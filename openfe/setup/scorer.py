@@ -49,7 +49,10 @@ class Scorer:
         Union[float, None] :
             The score, or ``None`` if no score is calculated
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "'Scorer' is an abstract class and should not be used directly. "
+            "Please use a specific subclass of 'Scorer'."
+        )
 
     def annotation(self, atommapping) -> Dict[str, Any]:
         """Create annotation dict for an AtomMapping.

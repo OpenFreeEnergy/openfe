@@ -1,3 +1,4 @@
+import pytest
 from openfe.setup.scorer import Scorer
 
 
@@ -17,6 +18,11 @@ class ConcreteAnnotator(Scorer):
 
 
 class TestScorer:
+    def test_abstract_error(self, mock_atommapping):
+        scorer = Scorer()
+        with pytest.raises(NotImplementedError, match="'Scorer'.*abstract"):
+            scorer(mock_atommapping)
+
     def test_concrete_scorer(self, mock_atommapping):
         # The ConcreteScorer class should give the implemented value for the
         # score and the default empty dict for the annotation.
