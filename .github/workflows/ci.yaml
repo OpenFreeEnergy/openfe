@@ -68,3 +68,5 @@ jobs:
           file: coverage.xml
           fail_ci_if_error: True
           verbose: True
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'
+                && github.event != 'schedule' }}
