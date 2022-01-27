@@ -15,13 +15,9 @@ def simple_mapping():
     molA = Chem.MolFromSmiles('CCO')
     molB = Chem.MolFromSmiles('CC')
 
-    m = AtomMapping(molA, molB)
-    m.AtoB[0] = 0
-    m.AtoB[1] = 1
-    m.AtoB[2] = None
-
-    m.BtoA[0] = 0
-    m.BtoA[1] = 1
+    m = AtomMapping(molA, molB,
+                    mol1_to_mol2={0: 0, 1: 1, 2: None},
+                    mol2_to_mol1={0: 0, 1: 1})
 
     return m
 
@@ -37,29 +33,25 @@ def other_mapping():
     molA = Chem.MolFromSmiles('CCO')
     molB = Chem.MolFromSmiles('CC')
 
-    m = AtomMapping(molA, molB)
-    m.AtoB[0] = 0
-    m.AtoB[1] = None
-    m.AtoB[2] = 1
-
-    m.BtoA[0] = 0
-    m.BtoA[1] = 2
+    m = AtomMapping(molA, molB,
+                    mol1_to_mol2={0: 0, 1: None, 2: 1},
+                    mol2_to_mol1={0: 0, 1: 2})
 
     return m
 
 
 def test_atommapping_usage(simple_mapping):
-    assert len(simple_mapping.AtoB) == 3
-    assert len(simple_mapping.BtoA) == 2
+    assert len(simple_mapping.mol1_to_mol2) == 3
+    assert len(simple_mapping.mol2_to_mol1) == 2
 
-    assert simple_mapping.AtoB[1] == 1
-    assert simple_mapping.AtoB[2] is None
+    assert simple_mapping.mol1_to_mol2[1] == 1
+    assert simple_mapping.mol1_to_mol2[2] is None
 
-    assert simple_mapping.BtoA[1] == 1
+    assert simple_mapping.mol2_to_mol1[1] == 1
     with pytest.raises(KeyError):
-        simple_mapping.AtoB[3]
+        simple_mapping.mol1_to_mol2[3]
     with pytest.raises(KeyError):
-        simple_mapping.BtoA[2]
+        simple_mapping.mol2_to_mol1[2]
 
 
 def test_atommapping_hash(simple_mapping, other_mapping):
