@@ -22,7 +22,7 @@ class AtomMapping:
     """
     mol1: RDKitMol
     mol2: RDKitMol
-    mol1_to_mol2: Dict[int, Union[int, None]]
+    mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):
         # hash of SMILES of each molecule, and a hash of both mappings
