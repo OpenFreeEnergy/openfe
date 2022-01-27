@@ -55,7 +55,7 @@ def test_atommapping_usage(simple_mapping):
     assert simple_mapping.AtoB[1] == 1
     assert simple_mapping.AtoB[2] is None
 
-    assert simple_mapping.BtoA[2] == 2
+    assert simple_mapping.BtoA[1] == 1
     with pytest.raises(KeyError):
         simple_mapping.AtoB[3]
     with pytest.raises(KeyError):
