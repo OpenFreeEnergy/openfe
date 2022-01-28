@@ -20,7 +20,8 @@ class ConcreteAnnotator(Scorer):
 class TestScorer:
     def test_abstract_error(self, simple_mapping):
         scorer = Scorer()
-        with pytest.raises(NotImplementedError, match="'Scorer'.*abstract"):
+        match_re = "'Scorer'.*abstract.*_score"
+        with pytest.raises(NotImplementedError, match=match_re):
             scorer(simple_mapping)
 
     def test_concrete_scorer(self, simple_mapping):
