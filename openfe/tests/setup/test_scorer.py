@@ -18,23 +18,23 @@ class ConcreteAnnotator(Scorer):
 
 
 class TestScorer:
-    def test_abstract_error(self, mock_atommapping):
+    def test_abstract_error(self, simple_mapping):
         scorer = Scorer()
         with pytest.raises(NotImplementedError, match="'Scorer'.*abstract"):
-            scorer(mock_atommapping)
+            scorer(simple_mapping)
 
-    def test_concrete_scorer(self, mock_atommapping):
+    def test_concrete_scorer(self, simple_mapping):
         # The ConcreteScorer class should give the implemented value for the
         # score and the default empty dict for the annotation.
         scorer = ConcreteScorer()
-        result = scorer(mock_atommapping)
+        result = scorer(simple_mapping)
         assert result.score == 3.14
         assert result.annotation == {}
 
-    def test_concrete_annotator(self, mock_atommapping):
+    def test_concrete_annotator(self, simple_mapping):
         # The ConcreteAnnotator class should give the implemented (None)
         # value for the score and the implemented value of the annotation.
         scorer = ConcreteAnnotator()
-        result = scorer(mock_atommapping)
+        result = scorer(simple_mapping)
         assert result.score is None
         assert result.annotation == {'annotation': 'data'}
