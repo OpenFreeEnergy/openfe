@@ -5,6 +5,7 @@ from openfe.setup.atommapper import AtomMapper, ScoredAtomMapper
 # These mix-in classes are used to create partially-concrete subclasses of
 # ScoredAtomMapper.
 
+
 class _MappingsInit:
     """Mix-in class to provide the __init__ for test subclasses"""
     def __init__(self, mappings):

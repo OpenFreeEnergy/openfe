@@ -1,14 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from collections.abc import Iterable
-from typing import TypeVar
+from typing import TypeVar, Iterable
 from openfe.setup import AtomMapping
 from openfe.setup.errors import ABSTRACT_ERROR_STRING
 
-RDKitMol = TypeVar("RDKitMol")
-
 from openfe.setup.scorer import ScoreAnnotation
+
+RDKitMol = TypeVar("RDKitMol")
 
 
 class AtomMapper:
