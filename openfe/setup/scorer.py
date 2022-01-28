@@ -36,7 +36,7 @@ class Scorer:
 
     Use a ``Scorer`` by calling it as a function.
     """
-    def score(self, atommapping) -> Union[float, None]:
+    def _score(self, atommapping) -> Union[float, None]:
         """Calculate the score for an AtomMapping.
 
         Parameters
@@ -54,7 +54,7 @@ class Scorer:
             "Please use a specific subclass of 'Scorer'."
         )
 
-    def annotation(self, atommapping) -> Dict[str, Any]:
+    def _annotation(self, atommapping) -> Dict[str, Any]:
         """Create annotation dict for an AtomMapping.
 
         Parameters
@@ -70,5 +70,5 @@ class Scorer:
         return {}
 
     def __call__(self, atommapping) -> ScoreAnnotation:
-        return ScoreAnnotation(score=self.score(atommapping),
-                               annotation=self.annotation(atommapping))
+        return ScoreAnnotation(score=self._score(atommapping),
+                               annotation=self._annotation(atommapping))

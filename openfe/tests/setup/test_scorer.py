@@ -4,16 +4,16 @@ from openfe.setup.scorer import Scorer
 
 class ConcreteScorer(Scorer):
     """Test implementation of Scorer with a score"""
-    def score(self, atommapping):
+    def _score(self, atommapping):
         return 3.14
 
 
 class ConcreteAnnotator(Scorer):
     """Test implementation of Scorer with a custom annotation"""
-    def score(self, atommapping):
+    def _score(self, atommapping):
         return None
 
-    def annotation(self, atommapping):
+    def _annotation(self, atommapping):
         return {'annotation': 'data'}
 
 
