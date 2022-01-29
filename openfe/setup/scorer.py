@@ -11,6 +11,8 @@ given AtomMapping.
 
 from typing import NamedTuple, Dict, Any, Union
 
+from openfe.setup.errors import ABSTRACT_ERROR_STRING
+
 
 class ScoreAnnotation(NamedTuple):
     """Container for a score from a mapping and any associated annotations.
@@ -36,7 +38,7 @@ class Scorer:
 
     Use a ``Scorer`` by calling it as a function.
     """
-    def score(self, atommapping) -> Union[float, None]:
+    def _score(self, atommapping) -> Union[float, None]:
         """Calculate the score for an AtomMapping.
 
         Parameters
@@ -49,12 +51,12 @@ class Scorer:
         Union[float, None] :
             The score, or ``None`` if no score is calculated
         """
-        raise NotImplementedError(
-            "'Scorer' is an abstract class and should not be used directly. "
-            "Please use a specific subclass of 'Scorer'."
-        )
+        raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
+            cls=self.__class__.__name__,
+            func='_score'
+        ))
 
-    def annotation(self, atommapping) -> Dict[str, Any]:
+    def _annotation(self, atommapping) -> Dict[str, Any]:
         """Create annotation dict for an AtomMapping.
 
         Parameters
@@ -70,5 +72,5 @@ class Scorer:
         return {}
 
     def __call__(self, atommapping) -> ScoreAnnotation:
-        return ScoreAnnotation(score=self.score(atommapping),
-                               annotation=self.annotation(atommapping))
+        return ScoreAnnotation(score=self._score(atommapping),
+                               annotation=self._annotation(atommapping))
