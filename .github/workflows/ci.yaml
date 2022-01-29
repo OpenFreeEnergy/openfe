@@ -63,6 +63,8 @@ jobs:
           pytest -n 2 -v --cov=openfe --cov-report=xml openfe/tests/
 
       - name: codecov
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'
+                && github.event != 'schedule' }}
         uses: codecov/codecov-action@v2
         with:
           file: coverage.xml
