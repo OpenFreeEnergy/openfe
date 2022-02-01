@@ -2,10 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import TypeVar, Iterable
-from openfe.setup import AtomMapping
-from openfe.setup.errors import ABSTRACT_ERROR_STRING
 
-from openfe.setup.scorer import ScoreAnnotation
+
+from . import AtomMapping
+from ..utils.errors import ABSTRACT_ERROR_STRING
 
 RDKitMol = TypeVar("RDKitMol")
 
@@ -58,5 +58,4 @@ class AtomMapper:
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
-        for mapping in self._mappings_generator(mol1, mol2):
-            yield mapping
+        yield from self._mappings_generator(mol1, mol2)
