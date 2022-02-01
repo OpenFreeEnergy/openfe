@@ -5,9 +5,10 @@
 The MCS class from Lomap shamelessly wrapped and used here to match our API.
 
 """
-from . import AtomMapper, AtomMapping
-
 import lomap
+
+
+from . import AtomMapper, AtomMapping
 
 
 class LomapAtomMapper(AtomMapper):
