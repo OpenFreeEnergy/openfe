@@ -15,7 +15,7 @@ class AtomMapping:
     ----------
     mol1, mol2 : rdkit.Mol
       the two Molecules in the mapping
-    mol1_to_mol2, mol2_to_mol1 : dict
+    mol1_to_mol2 : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
       If this atom has no corresponding atom, None is returned.
 
