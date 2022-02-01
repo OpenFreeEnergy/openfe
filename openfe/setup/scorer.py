@@ -11,7 +11,7 @@ given AtomMapping.
 
 from typing import NamedTuple, Dict, Any, Union
 
-from openfe.setup.errors import ABSTRACT_ERROR_STRING
+from openfe.utils.errors import ABSTRACT_ERROR_STRING
 
 
 class ScoreAnnotation(NamedTuple):
