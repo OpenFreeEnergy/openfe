@@ -1,27 +1,22 @@
 import math
+
 import networkx as nx
-from rdkit import Chem
 from typing import TypeVar
 
+from ..utils.molhashing import hashmol
 
 NetworkXGraph = TypeVar("NetworkXGraph")
 
 
-def _hashmol(mol):
-    # canonical by default
-    # TODO: coordinates
-    return Chem.MolToSmiles(mol)
-
-
-class Network:
-    """A set of ligands and mappings between them"""
+class NetworkPlanner:
+    """The preparation of a ligand Network"""
     _graph: NetworkXGraph
 
     def __init__(self):
         self._graph = nx.Graph()
 
     def __getitem__(self, key):
-        key = (_hashmol(key[0]), _hashmol(key[1]))
+        key = (hashmol(key[0]), hashmol(key[1]))
 
         return self._graph[key]
 
@@ -38,7 +33,7 @@ class Network:
         ValueError
           if an edge between two ligands already exists
         """
-        key = (_hashmol(atommapping.mol1), _hashmol(atommapping.mol2))
+        key = (hashmol(atommapping.mol1), hashmol(atommapping.mol2))
 
         if key in self._graph:
             raise ValueError("This edge already exists in Network")
@@ -49,13 +44,14 @@ class Network:
         """Iterable of edges in this Network"""
         yield from self._graph.edges()
 
-    @classmethod
-    def from_lomap(cls, lomap_file):
-        raise NotImplementedError  # issue #16
+    def get_network(self):
+        raise NotImplementedError("Blame David")
 
-    def to_json(self):
-        """Return json string representation of this Network"""
-        raise NotImplementedError  # issue #15
+
+class RadialNetworkPlanner(NetworkPlanner):
+    def __init__(self, central_ligand):
+        super().__init__()
+        self.central_ligand = central_ligand
 
 
 def generate_radial_graph(ligands, central_ligand, mappers, scorers=None):
@@ -74,7 +70,7 @@ def generate_radial_graph(ligands, central_ligand, mappers, scorers=None):
 
     Returns
     -------
-    network : Network
+    network : NetworkPlanner
       will have an edge between each ligand and the central ligand, with the
       mapping being the best possible mapping found using the supplied atom
       mappers.
@@ -82,7 +78,7 @@ def generate_radial_graph(ligands, central_ligand, mappers, scorers=None):
       If scorers are not given, then the first AtomMapper to provide a valid
       mapping will be used.
     """
-    n = Network()
+    n = RadialNetworkPlanner(central_ligand)
 
     for ligand in ligands:
         best_score = math.inf
@@ -105,6 +101,10 @@ def generate_radial_graph(ligands, central_ligand, mappers, scorers=None):
         n.add_edge(best_mapping)
 
     return n
+
+
+class MinimalSpanningTreeNetworkPlanner(NetworkPlanner):
+    pass
 
 
 def minimal_spanning_graph(ligands, mappers, scorers, weights=None):
