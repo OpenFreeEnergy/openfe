@@ -19,11 +19,9 @@ def named_ethane():
 class TestMolecule:
     def test_rdkit_behavior(self, ethane, alt_ethane):
         # Check that fixture setup is correct (we aren't accidentally
-        # testing tautologies) and that rdkit continues to behave in a way
-        # that require our custom equality.
+        # testing tautologies)
         assert ethane is not alt_ethane
         assert ethane.rdkit is not alt_ethane.rdkit
-        assert ethane.rdkit != alt_ethane.rdkit  # rdkit might change this
 
     def test_equality_and_hash(self, ethane, alt_ethane):
         assert hash(ethane) == hash(alt_ethane)

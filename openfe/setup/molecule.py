@@ -1,6 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+from typing import TypeVal
+RDKitMol = TypeVar('RDKitMol')
+
 from openfe.utils.molhashing import hashmol
 
 
@@ -12,18 +15,17 @@ class Molecule:
     rdkit : rdkit.Mol
         rdkit representation of the molecule
     """
-    def __init__(self, rdkit):
+    def __init__(self, rdkit: RDKitMol):
         self._rdkit = rdkit
-        self._hash = None
+        self._hash = hashmol(self._rdkit)
 
     # property for immutability; also may allow in-class type conversion
     @property
-    def rdkit(self):
+    def rdkit(self) -> RDKitMol:
+        """RDKit representation of this molecule"""
         return self._rdkit
 
     def __hash__(self):
-        if self._hash is None:
-            self._hash = hashmol(self.rdkit)
         return hash(self._hash)
 
     def __eq__(self, other):
