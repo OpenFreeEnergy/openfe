@@ -4,6 +4,7 @@ from rdkit import Chem
 from openfe.setup import AtomMapping
 from openfe.setup import Molecule
 
+
 @pytest.fixture(scope='session')
 def ethane():
     return Molecule(Chem.MolFromSmiles('CC'))

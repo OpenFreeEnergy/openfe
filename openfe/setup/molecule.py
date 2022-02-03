@@ -3,6 +3,7 @@
 
 from openfe.utils.molhashing import hashmol
 
+
 class Molecule:
     """Molecule wrapper to provide proper hashing and equality.
 
