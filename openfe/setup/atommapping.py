@@ -25,8 +25,7 @@ class AtomMapping:
     mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):
-        # hash of SMILES of each molecule, and a hash of both mappings
-        return hash((Chem.MolToSmiles(self.mol1), Chem.MolToSmiles(self.mol2),
+        return hash((hash(self.mol1), hash(self.mol2),
                      tuple(self.mol1_to_mol2.items())))
 
     @classmethod
