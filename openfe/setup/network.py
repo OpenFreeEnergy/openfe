@@ -21,9 +21,9 @@ class Network:
         if nodes is None:
             nodes = []
 
-        self._edges = list(set(edges))
-        edge_nodes  = set.union(*[{edge.mol1, edge.mol2} for edge in edges])
-        self._nodes = list(edge_nodes | set(nodes))
+        self._edges = frozenset(edges)
+        edge_nodes = set.union(*[{edge.mol1, edge.mol2} for edge in edges])
+        self._nodes = frozenset(edge_nodes) | frozenset(nodes)
         self._graph = None
 
     @property
@@ -31,6 +31,8 @@ class Network:
         """NetworkX graph for this network"""
         if self._graph is None:
             graph = nx.MultiDiGraph()
+            for node in self._nodes:
+                graph.add_node(node)
             for edge in self._edges:
                 graph.add_edge(edge.mol1, edge.mol2, object=edge)
 
@@ -50,25 +52,27 @@ class Network:
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> NetworkType:
         """
-        Create a new network with the edge added
+        Create a new network with the given edges and nodes added
 
         Parameters
         ----------
-        edge : :class:`.AtomMapping`
-            the edge to append to this network
+        edges : Iterable[:class:`.AtomMapping`]
+            edges to append to this network
+        nodes : Iterable[:class:`.Molecule`]
+            nodes to append to this network
 
         Returns
         -------
         :class:`.Network :
-            a new network adding the given edge to this network
+            a new network adding the given edges and nodes to this network
         """
         if edges is None:
-            edges = []
+            edges = set([])
 
         if nodes is None:
-            nodes = []
+            nodes = set([])
 
-        return Network(self.edges + edges, self.nodes + nodes)
+        return Network(self.edges | set(edges), self.nodes | set(nodes))
 
     def annotate_node(self, node, annotation) -> NetworkType:
         """Return a new network with the additional node annotation"""
