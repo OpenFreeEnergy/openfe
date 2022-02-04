@@ -47,7 +47,7 @@ def generate_radial_graph(ligands, central_ligand, mappers, scorer=None):
                 if not scorer:
                     best_mapping = mapping
                     break
-                score = mapper.score_mapping(mapping)
+                score = scorer(mapping)
 
                 if score < best_score:
                     best_mapping = mapping
