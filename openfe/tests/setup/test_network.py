@@ -11,9 +11,9 @@ from networkx import NetworkXError
 @dataclass
 class _NetworkTestContainer:
     """Container to facilitate network testing"""
-    network : Network
-    nodes : Iterable[Molecule]
-    edges : Iterable[AtomMapping]
+    network: Network
+    nodes: Iterable[Molecule]
+    edges: Iterable[AtomMapping]
 
     @property
     def n_nodes(self) -> int:
@@ -77,7 +77,8 @@ def singleton_node_network(mols, std_edges):
     )
 
 
-_NETWORK_NAMES = ['simple', 'doubled_edge', 'singleton_node',]
+_NETWORK_NAMES = ['simple', 'doubled_edge', 'singleton_node']
+
 
 @pytest.fixture
 def all_networks(
