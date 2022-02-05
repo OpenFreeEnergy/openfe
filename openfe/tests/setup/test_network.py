@@ -5,6 +5,9 @@ import pytest
 from openfe.setup import Molecule, AtomMapping, Network
 from rdkit import Chem
 
+from networkx import NetworkXError
+
+
 @dataclass
 class _NetworkTestContainer:
     """Container to facilitate network testing"""
@@ -102,16 +105,33 @@ class TestNetwork:
         # The NetworkX graph that comes from the ``.graph`` property should
         # have nodes and edges that match the Network container object.
         container = all_networks[network_name]
-        network = container.network
-        pytest.skip("TODO")
+        graph = container.network.graph
+        assert len(graph.nodes) == container.n_nodes
+        assert set(graph.nodes) == set(container.nodes)
+        assert len(graph.edges) == container.n_edges
+        # extract the AtomMappings from the nx edges
+        mappings = [
+            atommapping for _, _, atommapping in graph.edges.data('object')
+        ]
+        assert set(mappings) == set(container.edges)
+        # ensure AtomMapping stored in nx edge is consistent with nx edge
+        for mol1, mol2, atommapping in graph.edges.data('object'):
+            assert atommapping.mol1 == mol1
+            assert atommapping.mol2 == mol2
 
     @pytest.mark.parametrize('network_name', _NETWORK_NAMES)
-    def test_graph_immutability(self, all_networks, network_name):
+    def test_graph_immutability(self, mols, all_networks, network_name):
         # The NetworkX graph that comes from that ``.graph`` property should
         # be immutable.
         container = all_networks[network_name]
-        network = container.network
-        pytest.skip("TODO")
+        graph = container.network.graph
+        mol = Molecule(Chem.MolFromSmiles("CCCC"))
+        mol_CC = mols[1]
+        edge = AtomMapping(mol, mol_CC, {1: 0, 2: 1})
+        with pytest.raises(NetworkXError, match="Frozen graph"):
+            graph.add_node(mol)
+        with pytest.raises(NetworkXError, match="Frozen graph"):
+            graph.add_edge(edge)
 
     @pytest.mark.parametrize('network_name', _NETWORK_NAMES)
     def test_nodes(self, all_networks, network_name):
