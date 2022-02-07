@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, NamedTuple
 import pytest
 
 from openfe.setup import Molecule, AtomMapping, Network
@@ -8,20 +7,13 @@ from rdkit import Chem
 from networkx import NetworkXError
 
 
-@dataclass
-class _NetworkTestContainer:
+class _NetworkTestContainer(NamedTuple):
     """Container to facilitate network testing"""
     network: Network
     nodes: Iterable[Molecule]
     edges: Iterable[AtomMapping]
-
-    @property
-    def n_nodes(self) -> int:
-        return len(self.nodes)
-
-    @property
-    def n_edges(self) -> int:
-        return len(self.edges)
+    n_nodes: int
+    n_edges: int
 
 
 @pytest.fixture
@@ -49,6 +41,8 @@ def simple_network(mols, std_edges):
         network=network,
         nodes=mols,
         edges=std_edges,
+        n_nodes=3,
+        n_edges=3,
     )
 
 
@@ -62,6 +56,8 @@ def doubled_edge_network(mols, std_edges):
         network=Network(edges),
         nodes=mols,
         edges=edges,
+        n_nodes=3,
+        n_edges=4,
     )
 
 
@@ -74,6 +70,8 @@ def singleton_node_network(mols, std_edges):
         network=Network(edges=std_edges, nodes=all_mols),
         nodes=all_mols,
         edges=std_edges,
+        n_nodes=4,
+        n_edges=3,
     )
 
 
@@ -164,7 +162,7 @@ class TestNetwork:
 
     def test_enlarge_graph_add_edges_new_nodes(self, mols, simple_network):
         # New nodes included implicitly by edges added in ``enlarge_graph``
-        # should exsit in the newly created network
+        # should exist in the newly created network
         new_mol = Molecule(Chem.MolFromSmiles("CCCC"))
         mol_CC = mols[1]
         extra_edge = AtomMapping(new_mol, mol_CC, {1: 0, 2: 1})
@@ -188,7 +186,7 @@ class TestNetwork:
         assert duplicate in existing  # matches by ==
         for mol in existing:
             # the duplicate is, in fact, not the same object in memory
-            assert mol is not existing
+            assert mol is not duplicate
 
         new_network = network.enlarge_graph(nodes=[duplicate])
         assert len(new_network.nodes) == len(network.nodes)
@@ -211,7 +209,7 @@ class TestNetwork:
         assert duplicate in existing  # matches by ==
         for edge in existing:
             # duplicate is not the same object in memory
-            assert duplicate is not existing
+            assert duplicate is not edge
 
         new_network = network.enlarge_graph(edges=[duplicate])
         assert len(new_network.nodes) == len(network.nodes)
