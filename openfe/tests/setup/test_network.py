@@ -77,11 +77,9 @@ def singleton_node_network(mols, std_edges):
     )
 
 
-_NETWORK_NAMES = ['simple', 'doubled_edge', 'singleton_node']
-
-
-@pytest.fixture
-def all_networks(
+@pytest.fixture(params=['simple', 'doubled_edge', 'singleton_node'])
+def network_container(
+    request,
     simple_network,
     doubled_edge_network,
     singleton_node_network,
@@ -92,40 +90,31 @@ def all_networks(
         'doubled_edge': doubled_edge_network,
         'singleton_node': singleton_node_network,
     }
-
-    # assertion fails if there is a mismatch between _NETWORK_NAMES and the
-    # keys in the dict by this fixture (error in test suite implementation)
-    assert set(network_dct) == set(_NETWORK_NAMES)
-
-    return network_dct
+    return network_dct[request.param]
 
 
 class TestNetwork:
-    @pytest.mark.parametrize('network_name', _NETWORK_NAMES)
-    def test_graph(self, all_networks, network_name):
+    def test_graph(self, network_container):
         # The NetworkX graph that comes from the ``.graph`` property should
         # have nodes and edges that match the Network container object.
-        container = all_networks[network_name]
-        graph = container.network.graph
-        assert len(graph.nodes) == container.n_nodes
-        assert set(graph.nodes) == set(container.nodes)
-        assert len(graph.edges) == container.n_edges
+        graph = network_container.network.graph
+        assert len(graph.nodes) == network_container.n_nodes
+        assert set(graph.nodes) == set(network_container.nodes)
+        assert len(graph.edges) == network_container.n_edges
         # extract the AtomMappings from the nx edges
         mappings = [
             atommapping for _, _, atommapping in graph.edges.data('object')
         ]
-        assert set(mappings) == set(container.edges)
+        assert set(mappings) == set(network_container.edges)
         # ensure AtomMapping stored in nx edge is consistent with nx edge
         for mol1, mol2, atommapping in graph.edges.data('object'):
             assert atommapping.mol1 == mol1
             assert atommapping.mol2 == mol2
 
-    @pytest.mark.parametrize('network_name', _NETWORK_NAMES)
-    def test_graph_immutability(self, mols, all_networks, network_name):
+    def test_graph_immutability(self, mols, network_container):
         # The NetworkX graph that comes from that ``.graph`` property should
         # be immutable.
-        container = all_networks[network_name]
-        graph = container.network.graph
+        graph = network_container.network.graph
         mol = Molecule(Chem.MolFromSmiles("CCCC"))
         mol_CC = mols[1]
         edge = AtomMapping(mol, mol_CC, {1: 0, 2: 1})
@@ -134,23 +123,19 @@ class TestNetwork:
         with pytest.raises(NetworkXError, match="Frozen graph"):
             graph.add_edge(edge)
 
-    @pytest.mark.parametrize('network_name', _NETWORK_NAMES)
-    def test_nodes(self, all_networks, network_name):
+    def test_nodes(self, network_container):
         # The nodes reported by a ``Network`` should match expectations for
         # that network.
-        container = all_networks[network_name]
-        network = container.network
-        assert len(network.nodes) == container.n_nodes
-        assert set(network.nodes) == set(container.nodes)
+        network = network_container.network
+        assert len(network.nodes) == network_container.n_nodes
+        assert set(network.nodes) == set(network_container.nodes)
 
-    @pytest.mark.parametrize('network_name', _NETWORK_NAMES)
-    def test_edges(self, all_networks, network_name):
+    def test_edges(self, network_container):
         # The edges reported by a ``Network`` should match expectations for
         # that network.
-        container = all_networks[network_name]
-        network = container.network
-        assert len(network.edges) == container.n_edges
-        assert set(network.edges) == set(container.edges)
+        network = network_container.network
+        assert len(network.edges) == network_container.n_edges
+        assert set(network.edges) == set(network_container.edges)
 
     def test_enlarge_graph_add_nodes(self, simple_network):
         # New nodes added via ``enlarge_graph`` should exist in the newly
