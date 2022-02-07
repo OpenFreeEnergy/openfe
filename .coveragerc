@@ -1,4 +1,6 @@
 [report]
 omit =
     */openfe/tests/*
-
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
