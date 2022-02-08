@@ -1,7 +1,6 @@
 import pytest
 from rdkit import Chem
-import os
-import pkg_resources
+from importlib import resources
 
 from openfe.setup import AtomMapping
 from openfe.setup import Molecule
@@ -56,9 +55,8 @@ def lomap_basic_test_files():
         '2-naftanol',
         'methylcyclohexane',
         'toluene']:
-        fn = pkg_resources.resource_filename('openfe.tests.data.lomap_basic',
-                                             f + '.mol2')
-        print(fn)
-        files[f] = Chem.MolFromMol2File(fn)
+        with resources.path('openfe.tests.data.lomap_basic',
+                            f + '.mol2') as fn:
+            files[f] = Chem.MolFromMol2File(str(fn))
 
     return files
