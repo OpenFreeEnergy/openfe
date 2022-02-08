@@ -1,5 +1,7 @@
 import pytest
 from rdkit import Chem
+import os
+import pkg_resources
 
 from openfe.setup import AtomMapping
 from openfe.setup import Molecule
@@ -40,3 +42,23 @@ def other_mapping():
     m = AtomMapping(molA, molB, mol1_to_mol2={0: 0, 2: 1})
 
     return m
+
+
+@pytest.fixture(scope='session')
+def lomap_basic_test_files():
+    files = {}
+    for f in [
+        '1,3,7-trimethylnaphthalene',
+        '1-butyl-4-methylbenzene',
+        '2,6-dimethylnaphthalene',
+        '2-methyl-6-propylnaphthalene',
+        '2-methylnaphthalene',
+        '2-naftanol',
+        'methylcyclohexane',
+        'toluene']:
+        fn = pkg_resources.resource_filename('openfe.tests.data.lomap_basic',
+                                             f + '.mol2')
+        print(fn)
+        files[f] = Chem.MolFromMol2File(fn)
+
+    return files

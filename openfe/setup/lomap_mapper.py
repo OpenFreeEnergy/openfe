@@ -49,4 +49,4 @@ class LomapAtomMapper(AtomMapper):
                              for v in mapping_string.split(',')))
 
         yield AtomMapping(mol1=mol1, mol2=mol2, mol1_to_mol2=mapping_dict)
-        raise StopIteration
+        return
