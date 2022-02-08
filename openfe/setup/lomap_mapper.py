@@ -5,7 +5,7 @@
 The MCS class from Lomap shamelessly wrapped and used here to match our API.
 
 """
-import lomap
+from lomap import mcs as lomap_mcs
 
 
 from . import AtomMapper, AtomMapping
@@ -36,7 +36,7 @@ class LomapAtomMapper(AtomMapper):
         self.max3d = max3d
 
     def _mappings_generator(self, mol1, mol2):
-        mcs = lomap.mcs.MCS(mol1, mol2, time=self.time, threed=self.threed,
+        mcs = lomap_mcs.MCS(mol1, mol2, time=self.time, threed=self.threed,
                             max3d=self.max3d)
         # TODO: Once Lomap scorers exist, we'll want to keep a cache of
         #       these mcs objects ({mapping: mcs}), so we can later query the
