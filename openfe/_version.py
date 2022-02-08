@@ -42,7 +42,7 @@ def get_config():
     cfg = VersioneerConfig()
     cfg.VCS = "git"
     cfg.style = "pep440-post"
-    cfg.tag_prefix = """ # see https://github.com/python-versioneer/python-versioneer/blob/master/INSTALL.md"
+    cfg.tag_prefix = ""
     cfg.parentdir_prefix = "None"
     cfg.versionfile_source = "openfe/_version.py"
     cfg.verbose = False
