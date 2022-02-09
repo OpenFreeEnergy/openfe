@@ -1,4 +1,5 @@
 import pytest
+from rdkit import Chem
 
 
 import openfe
@@ -32,5 +33,16 @@ def test_generator_length(lomap_basic_test_files):
     mapping_gen = mapper.suggest_mappings(mol1, mol2)
 
     _ = next(mapping_gen)
+    with pytest.raises(StopIteration):
+        next(mapping_gen)
+
+
+def test_bad_mapping(lomap_basic_test_files):
+    toluene = lomap_basic_test_files['toluene']
+    NigelTheNitrogen = Chem.MolFromSmiles('N')
+
+    mapper = LomapAtomMapper()
+
+    mapping_gen = mapper.suggest_mappings(toluene, NigelTheNitrogen)
     with pytest.raises(StopIteration):
         next(mapping_gen)

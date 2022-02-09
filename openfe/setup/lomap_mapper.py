@@ -36,8 +36,13 @@ class LomapAtomMapper(AtomMapper):
         self.max3d = max3d
 
     def _mappings_generator(self, mol1, mol2):
-        mcs = lomap_mcs.MCS(mol1, mol2, time=self.time, threed=self.threed,
-                            max3d=self.max3d)
+        try:
+            mcs = lomap_mcs.MCS(mol1, mol2, time=self.time, threed=self.threed,
+                                max3d=self.max3d)
+        except ValueError:
+            # if no match found, Lomap throws ValueError, so we just yield
+            # generator with no contents
+            return
         # TODO: Once Lomap scorers exist, we'll want to keep a cache of
         #       these mcs objects ({mapping: mcs}), so we can later query the
         #       mcs that made a particular mapping to retrieve scores.
