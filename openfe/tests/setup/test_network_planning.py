@@ -14,3 +14,6 @@ def test_radial_graph(lomap_basic_test_files):
 
     assert len(network.nodes) == len(others) + 1
     assert len(network.edges) == len(others)
+
+    ligands_in_network = {mol.name for mol in network.nodes}
+    assert ligands_in_network == set(lomap_basic_test_files.keys())
