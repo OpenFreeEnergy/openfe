@@ -2,18 +2,22 @@ import openfe.setup
 
 
 def test_radial_graph(lomap_basic_test_files):
+    central_ligand_name = 'toluene'
     others = [v for (k, v) in lomap_basic_test_files.items()
-              if k != 'toluene']
-    toluene = lomap_basic_test_files['toluene']
+              if k != central_ligand_name]
+    toluene = lomap_basic_test_files[central_ligand_name]
     mapper = openfe.setup.LomapAtomMapper()
 
     network = openfe.setup.network_planning.generate_radial_graph(
         ligands=others, central_ligand=toluene,
         mappers=[mapper], scorer=None,
     )
-
-    assert len(network.nodes) == len(others) + 1
+    # couple sanity checks
+    assert len(network.nodes) == len(lomap_basic_test_files)
     assert len(network.edges) == len(others)
-
+    # check that all ligands are present, i.e. we included everyone
     ligands_in_network = {mol.name for mol in network.nodes}
     assert ligands_in_network == set(lomap_basic_test_files.keys())
+    # check that every edge has the central ligand within
+    assert all((central_ligand_name in {mapping.mol1.name, mapping.mol2.name})
+               for mapping in network.edges)
