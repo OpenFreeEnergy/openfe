@@ -1,10 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from collections import namedtuple
 from rdkit import Chem
+from typing import NamedTuple
 
 
-class MoleculeHash(namedtuple):
+class MoleculeHash(NamedTuple):
     smiles: str
     name: str
 
