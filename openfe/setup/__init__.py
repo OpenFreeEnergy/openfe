@@ -5,3 +5,6 @@ from .atommapper import AtomMapper
 from .network import Network
 
 from .lomap_mapper import LomapAtomMapper
+
+from . import network_planning
+
