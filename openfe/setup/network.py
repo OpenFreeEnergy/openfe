@@ -1,4 +1,4 @@
-from typing import List, TypeVar, Iterable
+from typing import FrozenSet, TypeVar, Iterable
 from openfe.setup import AtomMapping, Molecule
 
 import networkx as nx
@@ -41,13 +41,13 @@ class Network:
         return self._graph
 
     @property
-    def edges(self) -> List[AtomMapping]:
-        """List of edges"""
+    def edges(self) -> FrozenSet[AtomMapping]:
+        """A read-only view of the edges of the Network"""
         return self._edges
 
     @property
-    def nodes(self) -> List[Molecule]:
-        """List of nodes"""
+    def nodes(self) -> FrozenSet[Molecule]:
+        """A read-only view of the nodes of the Network"""
         return self._nodes
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> NetworkType:

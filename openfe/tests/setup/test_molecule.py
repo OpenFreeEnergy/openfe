@@ -31,3 +31,12 @@ class TestMolecule:
         # names would be used to distinguish different binding modes
         assert hash(ethane) != hash(named_ethane)
         assert ethane != named_ethane
+
+    def test_smiles(self, named_ethane):
+        assert named_ethane.smiles == 'CC'
+
+    def test_name(self, named_ethane):
+        assert named_ethane.name == 'ethane'
+
+    def test_empty_name(self, alt_ethane):
+        assert alt_ethane.name == ''
