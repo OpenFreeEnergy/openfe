@@ -25,6 +25,14 @@ class Molecule:
         """RDKit representation of this molecule"""
         return self._rdkit
 
+    @property
+    def smiles(self):
+        return self._hash.smiles
+
+    @property
+    def name(self):
+        return self._hash.name
+
     def __hash__(self):
         return hash(self._hash)
 
