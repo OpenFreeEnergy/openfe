@@ -1,5 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from rdkit import Chem
+import pytest
+
 import openfe.setup
 
 
@@ -23,3 +26,13 @@ def test_radial_graph(lomap_basic_test_files):
     # check that every edge has the central ligand within
     assert all((central_ligand_name in {mapping.mol1.name, mapping.mol2.name})
                for mapping in network.edges)
+
+
+def test_radial_network_failure(lomap_basic_test_files):
+    nigel = openfe.setup.Molecule(Chem.MolFromSmiles('N'))
+
+    with pytest.raises(ValueError, match='No mapping found for'):
+        network = openfe.setup.network_planning.generate_radial_graph(
+            ligands=[nigel], central_ligand=lomap_basic_test_files['toluene'],
+            mappers=[openfe.setup.LomapAtomMapper()], scorer=None
+        )
