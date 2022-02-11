@@ -5,8 +5,6 @@ from typing import Dict, TypeVar
 
 from openfe.setup import Molecule
 
-RDKitMol = TypeVar('RDKitMol')
-
 
 @dataclass
 class AtomMapping:

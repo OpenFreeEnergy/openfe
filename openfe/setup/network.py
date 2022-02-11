@@ -1,8 +1,11 @@
-from typing import FrozenSet, TypeVar, Iterable
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+from __future__ import annotations
+
+from typing import FrozenSet, Iterable
 from openfe.setup import AtomMapping, Molecule
 
 import networkx as nx
-NetworkType = TypeVar('Network')
 
 
 class Network:
@@ -50,7 +53,7 @@ class Network:
         """A read-only view of the nodes of the Network"""
         return self._nodes
 
-    def enlarge_graph(self, *, edges=None, nodes=None) -> NetworkType:
+    def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
         """
         Create a new network with the given edges and nodes added
 
@@ -74,10 +77,10 @@ class Network:
 
         return Network(self.edges | set(edges), self.nodes | set(nodes))
 
-    def annotate_node(self, node, annotation) -> NetworkType:
+    def annotate_node(self, node, annotation) -> Network:
         """Return a new network with the additional node annotation"""
         raise NotImplementedError("Waiting on annotations")
 
-    def annotate_edge(self, edge, annotation) -> NetworkType:
+    def annotate_edge(self, edge, annotation) -> Network:
         """Return a new network with the additional edge annotation"""
         raise NotImplementedError("Waiting on annotations")
