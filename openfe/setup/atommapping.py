@@ -2,13 +2,13 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
 from rdkit import Chem
-from typing import Dict, Union, TypeVar
+from typing import Dict, Union, TypeVar, Generic
 
 RDKitMol = TypeVar('RDKitMol')
 
 
 @dataclass
-class AtomMapping:
+class AtomMapping(Generic[RDKitMol]):
     """Simple container with the mapping between two Molecules
 
     Attributes
