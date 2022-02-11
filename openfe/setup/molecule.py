@@ -19,7 +19,7 @@ class Molecule:
         are used, a name must be given to differentiate these.  This name
         will be used in the hash.
     """
-    def __init__(self, rdkit: RDKitMol, name: str = None):
+    def __init__(self, rdkit: RDKitMol, name: str = ""):
         self._rdkit = rdkit
         self._hash = hashmol(self._rdkit, name=name)
 
