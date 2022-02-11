@@ -1,9 +1,12 @@
 import math
+from typing import Iterable
 
-from . import Network
+from openfe.setup import Network, Molecule, AtomMapper
 
 
-def generate_radial_graph(ligands, central_ligand, mappers, scorer=None):
+def generate_radial_graph(ligands: Iterable[Molecule],
+                          central_ligand: Molecule,
+                          mappers: Iterable[AtomMapper], scorer=None):
     """Radial Network generator
 
     Also known as hub and spoke or star-map, this plans a Network where
@@ -60,13 +63,14 @@ def generate_radial_graph(ligands, central_ligand, mappers, scorer=None):
     return Network(edges)
 
 
-def minimal_spanning_graph(ligands, mappers, scorer=None):
+def minimal_spanning_graph(ligands: Iterable[Molecule],
+                           mappers: Iterable[AtomMapper], scorer=None):
     """Plan a Network which connects all ligands with minimal cost
     Parameters
     ----------
-    ligands : list of rdkit Molecules
+    ligands : Iterable of rdkit Molecules
       the ligands to include in the Network
-    mappers : list of AtomMappers
+    mappers : Iterable of AtomMappers
       the AtomMappers to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the
       lowest score edges
