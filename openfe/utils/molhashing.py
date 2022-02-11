@@ -9,10 +9,8 @@ class MoleculeHash(NamedTuple):
     name: str
 
 
-def hashmol(mol):
-    # canonical by default
-    try:
-        name = mol.GetProp("_Name")
-    except KeyError:
-        name = ""
+def hashmol(mol, name=None):
+    if name is None:
+        name = ''
+    # MolToSMILES are canonical by default
     return MoleculeHash(Chem.MolToSmiles(mol), name)

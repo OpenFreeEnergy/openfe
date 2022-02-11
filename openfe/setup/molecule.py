@@ -14,10 +14,14 @@ class Molecule:
     ----------
     rdkit : rdkit.Mol
         rdkit representation of the molecule
+    name : str, optional
+        if multiple Molecules with identical SMILES but differing positions
+        are used, a name must be given to differentiate these.  This name
+        will be used in the hash.
     """
-    def __init__(self, rdkit: RDKitMol):
+    def __init__(self, rdkit: RDKitMol, name: str = None):
         self._rdkit = rdkit
-        self._hash = hashmol(self._rdkit)
+        self._hash = hashmol(self._rdkit, name=name)
 
     # property for immutability; also may allow in-class type conversion
     @property
