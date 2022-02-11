@@ -6,9 +6,9 @@ from typing import Iterable
 from openfe.setup import Network, Molecule, AtomMapper
 
 
-def generate_radial_graph(ligands: Iterable[Molecule],
-                          central_ligand: Molecule,
-                          mappers: Iterable[AtomMapper], scorer=None):
+def generate_radial_network(ligands: Iterable[Molecule],
+                            central_ligand: Molecule,
+                            mappers: Iterable[AtomMapper], scorer=None):
     """Radial Network generator
 
     Also known as hub and spoke or star-map, this plans a Network where
