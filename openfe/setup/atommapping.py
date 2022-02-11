@@ -5,11 +5,9 @@ from typing import Dict, TypeVar, Generic
 
 from openfe.setup import Molecule
 
-RDKitMol = TypeVar('RDKitMol')
-
 
 @dataclass
-class AtomMapping(Generic[RDKitMol]):
+class AtomMapping:
     """Simple container with the mapping between two Molecules
 
     Attributes
