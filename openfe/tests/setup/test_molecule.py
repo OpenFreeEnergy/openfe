@@ -12,8 +12,8 @@ def alt_ethane():
 @pytest.fixture
 def named_ethane():
     mol = Chem.MolFromSmiles("CC")
-    mol.SetProp("_Name", "ethane")
-    return Molecule(mol)
+
+    return Molecule(mol, name='ethane')
 
 
 class TestMolecule:
