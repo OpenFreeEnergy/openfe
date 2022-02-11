@@ -92,6 +92,11 @@ def network_container(
 
 
 class TestNetwork:
+    def test_node_type(self, network_container):
+        n = network_container.network
+
+        assert all((isinstance(node, Molecule) for node in n.nodes))
+
     def test_graph(self, network_container):
         # The NetworkX graph that comes from the ``.graph`` property should
         # have nodes and edges that match the Network container object.
