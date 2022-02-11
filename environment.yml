@@ -10,3 +10,5 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - coverage
+  - pip:
+    - git+https://github.com/OpenFreeEnergy/Lomap@main

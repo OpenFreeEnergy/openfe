@@ -1,10 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
-from rdkit import Chem
-from typing import Dict, Union, TypeVar
+from typing import Dict, TypeVar
 
-RDKitMol = TypeVar('RDKitMol')
+from openfe.setup import Molecule
 
 
 @dataclass
@@ -13,15 +12,15 @@ class AtomMapping:
 
     Attributes
     ----------
-    mol1, mol2 : rdkit.Mol
+    mol1, mol2 : Molecule
       the two Molecules in the mapping
     mol1_to_mol2 : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
       If this atom has no corresponding atom, None is returned.
 
     """
-    mol1: RDKitMol
-    mol2: RDKitMol
+    mol1: Molecule
+    mol2: Molecule
     mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):

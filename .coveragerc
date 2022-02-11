@@ -1,0 +1,10 @@
+[run]
+omit =
+    */_version.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    pragma: no-cover
+    -no-cov
+    raise NotImplementedError
