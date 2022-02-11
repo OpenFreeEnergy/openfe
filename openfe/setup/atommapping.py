@@ -1,8 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
-from rdkit import Chem
-from typing import Dict, Union, TypeVar
+from typing import Dict, TypeVar
 
 from openfe.setup import Molecule
 
@@ -25,16 +24,6 @@ class AtomMapping:
     mol1: Molecule
     mol2: Molecule
     mol1_to_mol2: Dict[int, int]
-
-    def __init__(self, mol1: Union[Molecule, RDKitMol],
-                 mol2: Union[Molecule, RDKitMol], mol1_to_mol2):
-        if isinstance(mol1, Chem.Mol):
-            mol1 = Molecule(mol1)
-        self.mol1 = mol1
-        if isinstance(mol2, Chem.Mol):
-            mol2 = Molecule(mol2)
-        self.mol2 = mol2
-        self.mol1_to_mol2 = mol1_to_mol2
 
     def __hash__(self):
         return hash((hash(self.mol1), hash(self.mol2),
