@@ -1,4 +1,4 @@
-from paths_cli.infrastructure.plugin_management import CommandPlugin
+from plugcli.plugin_management import CommandPlugin
 
 
 class OFECommandPlugin(CommandPlugin):

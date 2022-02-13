@@ -2,8 +2,8 @@ import pathlib
 
 import click
 
-from paths_cli.infrastructure.cli import CLI, CONTEXT_SETTINGS
-from paths_cli.infrastructure.plugin_management import FilePluginLoader
+from plugcli.cli import CLI, CONTEXT_SETTINGS
+from plugcli.plugin_management import FilePluginLoader
 from .plugins import OFECommandPlugin
 
 
