@@ -4,6 +4,7 @@
 import click
 from openfecli import OFECommandPlugin
 
+
 @click.command(
     "echo",
     short_help="This shows up in ``openfe --help``"
@@ -17,6 +18,7 @@ def echo():
     # run by library code. In general, this should be done with a ``get``
     # method attached to the input decorators
     echo_main()
+
 
 def echo_main():
     # the code here does the actual workflow in the library. This will tend

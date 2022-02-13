@@ -10,5 +10,3 @@ class OFECommandPlugin(CommandPlugin):
                          section=section,
                          requires_lib=requires_ofe,
                          requires_cli=requires_ofe)
-
-

@@ -34,5 +34,5 @@ def main():
     pass
 
 
-if __name__ == "__main__": # -no-cov- (useful in debugging)
+if __name__ == "__main__":  # -no-cov- (useful in debugging)
     main()
