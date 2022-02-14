@@ -5,6 +5,7 @@
 The MCS class from Lomap shamelessly wrapped and used here to match our API.
 
 """
+from typing import Dict, TypeVar
 from lomap import mcs as lomap_mcs
 
 
