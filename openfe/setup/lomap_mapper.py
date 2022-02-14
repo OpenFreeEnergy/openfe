@@ -34,6 +34,7 @@ class LomapAtomMapper(LigandAtomMapper):
         self.time = time
         self.threed = threed
         self.max3d = max3d
+        self._mcs_cache = {}
 
     def _mappings_generator(self, molA, molB):
         try:
@@ -55,3 +56,52 @@ class LomapAtomMapper(LigandAtomMapper):
 
         yield mapping_dict
         return
+
+    def _get_mcs(self, mapping):
+        # get mcs from cache, else create and place into cache
+        try:
+            mcs = self._mcs_cache[mapping]
+        except KeyError:
+            mcs = lomap_mcs.MCS(mapping.mol1.rdkit, mapping.mol2.rdkit,
+                                self.time, threed=self.threed,
+                                max3d=self.max3d)
+            self._mcs_cache[mapping] = mcs
+        return mcs
+
+    def mcsr_score(self, mapping: AtomMapping):
+        """Maximum command substructure rule"""
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.mcsr()
+
+    def mcnar_score(self, mapping: AtomMapping):
+        """Minimum number of common atoms rule"""
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.mcnar()
+
+    def tmcsr_score(self, mapping: AtomMapping):
+        raise NotImplementedError
+
+    def atomic_number_score(self, mapping: AtomMapping):
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.atomic_number_rule()
+
+    def hybridization_score(self, mapping: AtomMapping, penalty=1.5):
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.hybridization_score(penalty_score=penalty)
+
+    def sulfonamides_score(self, mapping: AtomMapping, penalty=4):
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.sulfonamides_rule(penalty)
+
+    def heterocycles_score(self, mapping: AtomMapping, penalty=4):
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.heterocycles_rule(penalty)
+
+    def transmuting_methyl_into_ring_score(self, mapping: AtomMapping,
+                                           penalty=6):
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.transmuting_methyl_into_ring_rule(penalty)
+
+    def transmuting_ring_sizes_score(self, mapping: AtomMapping):
+        mcs = self._get_mcs(mapping)
+        return 1 - mcs.transmuting_ring_sizes_rule()
