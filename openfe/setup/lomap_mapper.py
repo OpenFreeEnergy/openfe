@@ -7,6 +7,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 """
 from typing import Dict, TypeVar
 from lomap import mcs as lomap_mcs
+import math
 
 
 from . import LigandAtomMapper
@@ -69,10 +70,28 @@ class LomapAtomMapper(LigandAtomMapper):
             self._mcs_cache[mapping] = mcs
         return mcs
 
-    def mcsr_score(self, mapping: AtomMapping):
-        """Maximum command substructure rule"""
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.mcsr()
+    @staticmethod
+    def mcsr_score(mapping: AtomMapping, beta: float = 0.1):
+        """Maximum command substructure rule
+
+        This rule was originally defined as::
+
+        mcsr = exp( - beta * (n1 + n2 - 2 * n_common))
+
+        Where n1 and n2 are the number of atoms in each molecule, and n_common
+        the number of atoms in the MCS.
+
+        Giving a value in the range [0, 1.0], with 1.0 being complete agreement
+
+        This is turned into a score by simply returning (1-mcsr)
+        """
+        n1 = mapping.mol1.rdkit.GetNumAtoms()
+        n2 = mapping.mol2.rdkit.GetNumAtoms()
+        n_common = len(mapping.mol1_to_mol2)
+
+        mcsr = math.exp(-beta * (n1 + n2 - 2 * n_common))
+
+        return 1 - mcsr
 
     def mcnar_score(self, mapping: AtomMapping):
         """Minimum number of common atoms rule"""
