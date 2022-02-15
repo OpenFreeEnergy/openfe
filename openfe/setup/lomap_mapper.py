@@ -93,10 +93,19 @@ class LomapAtomMapper(LigandAtomMapper):
 
         return 1 - mcsr
 
-    def mcnar_score(self, mapping: AtomMapping):
-        """Minimum number of common atoms rule"""
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.mcnar()
+    @staticmethod
+    def mcnar_score(mapping: AtomMapping, ths: int = 4):
+        """Minimum number of common atoms rule
+
+
+        """
+        n1 = mapping.mol1.rdkit.GetNumHeavyAtoms()
+        n2 = mapping.mol2.rdkit.GetNumHeavyAtoms()
+        n_common = len(mapping.mol1_to_mol2)
+
+        ok = (n_common > ths) or (n1 < ths + 3) or (n2 < ths + 3)
+
+        return 0.0 if ok else math.inf
 
     def tmcsr_score(self, mapping: AtomMapping):
         raise NotImplementedError
