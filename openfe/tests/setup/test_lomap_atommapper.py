@@ -3,13 +3,14 @@ from rdkit import Chem
 
 
 import openfe
+from openfe.setup import Molecule
 from openfe.setup.lomap_mapper import LomapAtomMapper
 
 
 def test_simple(lomap_basic_test_files):
     # basic sanity check on the AtomMapper
-    mol1 = lomap_basic_test_files['methylcyclohexane']
-    mol2 = lomap_basic_test_files['toluene']
+    mol1 = Molecule(lomap_basic_test_files['methylcyclohexane'])
+    mol2 = Molecule(lomap_basic_test_files['toluene'])
 
     mapper = LomapAtomMapper()
 
@@ -25,8 +26,8 @@ def test_simple(lomap_basic_test_files):
 def test_generator_length(lomap_basic_test_files):
     # check that we get one mapping back from Lomap AtomMapper then the
     # generator stops correctly
-    mol1 = lomap_basic_test_files['methylcyclohexane']
-    mol2 = lomap_basic_test_files['toluene']
+    mol1 = Molecule(lomap_basic_test_files['methylcyclohexane'])
+    mol2 = Molecule(lomap_basic_test_files['toluene'])
 
     mapper = LomapAtomMapper()
 
@@ -38,8 +39,8 @@ def test_generator_length(lomap_basic_test_files):
 
 
 def test_bad_mapping(lomap_basic_test_files):
-    toluene = lomap_basic_test_files['toluene']
-    NigelTheNitrogen = Chem.MolFromSmiles('N')
+    toluene = Molecule(lomap_basic_test_files['toluene'])
+    NigelTheNitrogen = Molecule(Chem.MolFromSmiles('N'))
 
     mapper = LomapAtomMapper()
 
