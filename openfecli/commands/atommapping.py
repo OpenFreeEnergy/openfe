@@ -6,6 +6,7 @@ from openfecli.parameters import MOL, MAPPER
 def allow_two_molecules(ctx, param, value):
     if len(value) != 2:
         raise click.BadParameter("Must specify --mol exactly twice.")
+    return value
 
 
 @click.command(
@@ -19,17 +20,26 @@ def atommapping(mol, mapper):
     """
     This provides tools for looking at a specific atommapping.
     """
-    mol1, mol2 = molecule
-    # TODO: output style might depend on other parameters
-    pass
+    mol1_str, mol2_str = mol
+    mol1 = MOL.get(mol1_str)
+    mol2 = MOL.get(mol2_str)
+    mapper_cls = MAPPER.get(mapper)
+    mapper_obj = mapper_cls()
+    atom_mapping_print_dict_main(mapper_obj, mol1, mol2)
 
 
-def _get_output_format(output):
-    pass
+def generate_mapping(mapper, mol1, mol2):
+    mappings = list(mapper.suggest_mappings(mol1.rdkit, mol2.rdkit))
+    if len(mappings) != 1:
+        raise click.UsageError(
+            f"Found {len(mappings)} mappings; this command requires a mapper "
+            "to provide exactly 1 mapping"
+        )
+    return mappings[0]
 
 
-def atom_mapping_print_dict_main(mol1, mol2, mapper):
-    mapping = mapper(mol1, mol2)
+def atom_mapping_print_dict_main(mapper, mol1, mol2):
+    mapping = generate_mapping(mapper, mol1, mol2)
     print(mapping.mol1_to_mol2)
 
 
