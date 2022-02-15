@@ -1,4 +1,7 @@
-from plugcli.params import MultiStrategyGetter, Option
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+
+from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
 def _load_molecule_from_smiles(user_input, context):
     from openfe.setup import Molecule
@@ -8,7 +11,7 @@ def _load_molecule_from_smiles(user_input, context):
     # after either redirect_stdout or redirect_stderr.
     mol = Chem.MolFromSmiles(user_input)
     if mol is None:
-        return NOT_FOUND
+        return NOT_PARSED
     return Molecule(rdkit=mol)
 
 

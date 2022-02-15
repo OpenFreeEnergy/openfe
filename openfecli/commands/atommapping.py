@@ -12,7 +12,7 @@ def allow_two_molecules(ctx, param, value):
     "atommapping",
     short_help="Explore the alchemical mutations of a given mapping"
 )
-@MOL.parameter(multiple=True, callback=allow_two_molecules,
+@MOL.parameter(multiple=True, callback=allow_two_molecules, required=True,
                help=MOL.kwargs['help'] + " Must be specified twice.")
 @MAPPER.parameter(required=True)
 def atommapping(mol, mapper):

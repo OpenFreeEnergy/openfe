@@ -1,3 +1,6 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+
 from plugcli.params import MultiStrategyGetter, Option
 from openfecli.parameters.utils import import_parameter
 
