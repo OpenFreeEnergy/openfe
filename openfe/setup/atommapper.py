@@ -38,7 +38,7 @@ class AtomMapper:
         ))
 
     def suggest_mappings(
-        self, mol1: RDKitMol, mol2: RDKitMol
+        self, mol1: Molecule, mol2: Molecule
     ) -> Iterable[AtomMapping]:
         """
         Suggest :class:`.AtomMapping` options for the input molecules.
