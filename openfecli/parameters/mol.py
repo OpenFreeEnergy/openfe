@@ -10,11 +10,12 @@ def _load_molecule_from_smiles(user_input, context):
     # TODO: find some way to redirect the error messages? Messages stayed
     # after either redirect_stdout or redirect_stderr.
     mol = Chem.MolFromSmiles(user_input)
+    if mol is None:
+        return NOT_PARSED
+
     # TODO: next is (temporary?) hack: see
     # https://github.com/OpenFreeEnergy/Lomap/issues/4
     Chem.rdDepictor.Compute2DCoords(mol)
-    if mol is None:
-        return NOT_PARSED
     return Molecule(rdkit=mol)
 
 
