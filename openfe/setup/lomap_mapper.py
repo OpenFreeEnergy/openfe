@@ -8,7 +8,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 from lomap import mcs as lomap_mcs
 
 
-from . import AtomMapper, AtomMapping
+from . import as_rdkit, AtomMapper, AtomMapping
 
 
 class LomapAtomMapper(AtomMapper):
@@ -35,6 +35,7 @@ class LomapAtomMapper(AtomMapper):
         self.threed = threed
         self.max3d = max3d
 
+    @as_rdkit
     def _mappings_generator(self, mol1, mol2):
         try:
             mcs = lomap_mcs.MCS(mol1, mol2, time=self.time,

@@ -16,21 +16,26 @@ class AtomMapper:
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.AtomMapping` suggestions.
     """
-    def _mappings_generator(
-        self, mol1: RDKitMol, mol2: RDKitMol
-    ) -> Iterable[Dict[int, int]]:
+    def _mappings_generator(self, mol1, mol2) -> Iterable[Dict[int, int]]:
         """
-        Suggest :class:`.AtomMapping` options for the input molecules.
+        Suggest mapping options for the input molecules.
 
         Parameters
         ----------
-        mol1, mol2 : rdkit.Mol
+        mol1, mol2 : Molecule
             the two molecules to create a mapping for
 
         Returns
         -------
         Iterable[Dict[int, int]] :
             an iterable over proposed mappings from mol1 to mol2
+
+
+        Notes
+        -----
+        To convert the openfe hashable Molecule object to something more
+        useful, use the ``as_rdkit`` decorator to convert Molecule arguments
+        to rdkit (or oechem, offtk etc).
         """
         raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
             cls=self.__class__.__name__,
