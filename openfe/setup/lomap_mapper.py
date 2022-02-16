@@ -37,7 +37,7 @@ class LomapAtomMapper(AtomMapper):
 
     def _mappings_generator(self, mol1, mol2):
         try:
-            mcs = lomap_mcs.MCS(mol1.rdkit, mol2.rdkit, time=self.time,
+            mcs = lomap_mcs.MCS(mol1, mol2, time=self.time,
                                 threed=self.threed, max3d=self.max3d)
         except ValueError:
             # if no match found, Lomap throws ValueError, so we just yield
