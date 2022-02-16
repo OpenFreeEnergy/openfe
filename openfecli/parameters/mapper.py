@@ -9,13 +9,13 @@ def _atommapper_from_openfe_setup(user_input, context):
     return import_parameter("openfe.setup." + user_input)
 
 
-def _atommapper_from_fully_qualified(user_input, context):
+def _atommapper_from_qualname(user_input, context):
     return import_parameter(user_input)
 
 
 get_atommapper = MultiStrategyGetter(
     strategies=[
-        _atommapper_from_fully_qualified,
+        _atommapper_from_qualname,
         _atommapper_from_openfe_setup,
     ],
     error_message=("Unable to create atom mapper from user input "

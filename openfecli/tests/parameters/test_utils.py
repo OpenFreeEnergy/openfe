@@ -4,6 +4,7 @@ import pytest
 from plugcli.params import NOT_PARSED
 from openfecli.parameters.utils import import_parameter
 
+
 @pytest.mark.parametrize('import_str,expected', [
     ('os.path.exists', os.path.exists),
     ('os.getcwd', os.getcwd),

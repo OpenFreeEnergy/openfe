@@ -4,6 +4,7 @@ import click
 from openfecli.parameters.mol import get_molecule
 from openfe.setup import Molecule
 
+
 def test_get_molecule():
     mol = get_molecule("CC")
     assert isinstance(mol, Molecule)

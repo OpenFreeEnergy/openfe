@@ -5,6 +5,7 @@ from openfecli.parameters.mapper import get_atommapper
 
 from openfe.setup import LomapAtomMapper
 
+
 @pytest.mark.parametrize("user_input,expected", [
     ('LomapAtomMapper', LomapAtomMapper),
     ('openfe.setup.LomapAtomMapper', LomapAtomMapper),

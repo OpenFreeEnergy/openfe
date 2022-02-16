@@ -3,6 +3,7 @@ import pytest
 
 from openfecli.utils import import_thing
 
+
 @pytest.mark.parametrize('import_string,expected', [
     ('os.path.exists', os.path.exists),
     ('os.getcwd', os.getcwd),

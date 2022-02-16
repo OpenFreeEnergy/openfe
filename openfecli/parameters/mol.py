@@ -3,6 +3,7 @@
 
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
+
 def _load_molecule_from_smiles(user_input, context):
     from openfe.setup import Molecule
     from rdkit import Chem
