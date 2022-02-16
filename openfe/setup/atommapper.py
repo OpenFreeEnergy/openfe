@@ -1,10 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from typing import TypeVar, Iterable
+from typing import TypeVar, Iterable, Dict
 
 
-from . import AtomMapping
+from . import AtomMapping, Molecule
 from ..utils.errors import ABSTRACT_ERROR_STRING
 
 RDKitMol = TypeVar("RDKitMol")
@@ -18,7 +18,7 @@ class AtomMapper:
     """
     def _mappings_generator(
         self, mol1: RDKitMol, mol2: RDKitMol
-    ) -> Iterable[AtomMapping]:
+    ) -> Iterable[Dict[int, int]]:
         """
         Suggest :class:`.AtomMapping` options for the input molecules.
 
@@ -29,8 +29,8 @@ class AtomMapper:
 
         Returns
         -------
-        Iterable[AtomMapping] :
-            an iterable over proposed mappings
+        Iterable[Dict[int, int]] :
+            an iterable over proposed mappings from mol1 to mol2
         """
         raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
             cls=self.__class__.__name__,
@@ -38,14 +38,14 @@ class AtomMapper:
         ))
 
     def suggest_mappings(
-        self, mol1: RDKitMol, mol2: RDKitMol
+        self, mol1: Molecule, mol2: Molecule
     ) -> Iterable[AtomMapping]:
         """
         Suggest :class:`.AtomMapping` options for the input molecules.
 
         Parameters
-        ----------
-        mol1, mol2 : rdkit.Mol
+        ---------
+        mol1, mol2 : :class:`.Molecule`
             the two molecules to create a mapping for
 
         Returns
@@ -58,4 +58,5 @@ class AtomMapper:
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
-        yield from self._mappings_generator(mol1, mol2)
+        for map_dct in self._mappings_generator(mol1.rdkit, mol2.rdkit):
+            yield AtomMapping(mol1, mol2, map_dct)

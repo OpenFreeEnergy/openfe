@@ -57,6 +57,7 @@ def lomap_basic_test_files():
         'toluene']:
         with resources.path('openfe.tests.data.lomap_basic',
                             f + '.mol2') as fn:
-            files[f] = Chem.MolFromMol2File(str(fn))
+            mol = Chem.MolFromMol2File(str(fn))
+            files[f] = Molecule(mol, name=f)
 
     return files
