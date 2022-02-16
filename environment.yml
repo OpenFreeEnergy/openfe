@@ -10,5 +10,7 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - coverage
+  - click
   - pip:
     - git+https://github.com/OpenFreeEnergy/Lomap@main
+    - plugcli

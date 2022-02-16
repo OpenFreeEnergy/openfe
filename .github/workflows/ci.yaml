@@ -60,7 +60,7 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest -n 2 -v --cov=openfe --cov-report=xml openfe/tests/
+          pytest -n 2 -v --cov=openfe --cov=openfecli --cov-report=xml
 
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
