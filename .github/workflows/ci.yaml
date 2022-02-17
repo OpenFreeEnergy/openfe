@@ -30,6 +30,9 @@ jobs:
           - 3.8
           - 3.9
 
+    env:
+      OE_LICENSE: ${{ github.workspace }}/oe_license.txt
+
     steps:
       - uses: actions/checkout@v2
 
@@ -57,6 +60,13 @@ jobs:
         run: |
           mamba info -a
           mamba list
+
+      - name: Decrypt OpenEye license
+        env:
+          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
+        run: |
+          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
+          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
 
       - name: "Run tests"
         run: |
