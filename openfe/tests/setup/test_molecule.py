@@ -1,3 +1,4 @@
+import openff.toolkit.topology
 import pytest
 
 from openfe.setup import Molecule
@@ -40,3 +41,15 @@ class TestMolecule:
 
     def test_empty_name(self, alt_ethane):
         assert alt_ethane.name == ''
+
+
+class TestMoleculeConversion:
+    def test_to_off(self, ethane):
+        off_ethane = ethane.openff
+
+        assert isinstance(off_ethane, openff.toolkit.topology.Molecule)
+
+    def test_to_off_name(self, named_ethane):
+        off_ethane = ethane.openff
+
+        assert off_ethane.name == 'ethane'

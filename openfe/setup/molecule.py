@@ -40,7 +40,10 @@ class Molecule:
     @property
     def openff(self) -> OFFMolecule:
         """OpenFF Toolkit representation of this molecule"""
-        return OFFMolecule(self.rdkit, allow_undefined_stereo=True)
+        m = OFFMolecule(self.rdkit, allow_undefined_stereo=True)
+        m.name = self.name
+
+        return m
 
     @property
     def smiles(self):
