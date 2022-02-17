@@ -10,6 +10,7 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - coverage
+  - openff-toolkit
   - click
   - pip:
     - git+https://github.com/OpenFreeEnergy/Lomap@main

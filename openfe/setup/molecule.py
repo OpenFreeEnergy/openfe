@@ -1,13 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from functools import wraps
+from openff.toolkit.topology import Molecule as OFFMolecule
 from typing import TypeVar
-RDKitMol = TypeVar('RDKitMol')
-OEChemMol = TypeVar('OEChemMol')
-OFFTkMol = TypeVar('OFFTkMol')
 
 from openfe.utils.molhashing import hashmol
+
+RDKitMol = TypeVar('RDKitMol')
+OEMol = TypeVar('OEMol')
 
 
 class Molecule:
@@ -33,14 +33,14 @@ class Molecule:
         return self._rdkit
 
     @property
-    def oechem(self) -> OEChemMol:
+    def oechem(self) -> OEMol:
         """OEChem representation of this molecule"""
-        raise NotImplementedError  # issue #24
+        return self.openff.to_openeye()
 
     @property
-    def openff(self) -> OFFTkMol:
+    def openff(self) -> OFFMolecule:
         """OpenFF Toolkit representation of this molecule"""
-        raise NotImplementedError
+        return OFFMolecule(self.rdkit, allow_undefined_stereo=True)
 
     @property
     def smiles(self):
