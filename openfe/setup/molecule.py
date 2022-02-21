@@ -6,9 +6,7 @@ with warnings.catch_warnings():
 from typing import TypeVar
 
 from openfe.utils.molhashing import hashmol
-
-RDKitMol = TypeVar('RDKitMol')
-OEMol = TypeVar('OEMol')
+from openfe.utils.typing import RDKitMol, OEMol
 
 
 class Molecule:

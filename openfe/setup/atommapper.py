@@ -1,13 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from typing import TypeVar, Iterable, Dict
-
+from typing import Iterable, Dict
 
 from . import AtomMapping, Molecule
 from ..utils.errors import ABSTRACT_ERROR_STRING
-
-RDKitMol = TypeVar("RDKitMol")
 
 
 class AtomMapper:
@@ -22,20 +19,13 @@ class AtomMapper:
 
         Parameters
         ----------
-        mol1, mol2 : Molecule
+        mol1, mol2 : rdkit.Mol
             the two molecules to create a mapping for
 
         Returns
         -------
         Iterable[Dict[int, int]] :
             an iterable over proposed mappings from mol1 to mol2
-
-
-        Notes
-        -----
-        To convert the openfe hashable Molecule object to something more
-        useful, use the ``as_rdkit`` decorator to convert Molecule arguments
-        to rdkit (or oechem, offtk etc).
         """
         raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
             cls=self.__class__.__name__,
