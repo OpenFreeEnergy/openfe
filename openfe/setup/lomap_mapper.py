@@ -112,6 +112,7 @@ class LomapAtomMapper(LigandAtomMapper):
         raise NotImplementedError
 
     def atomic_number_score(self, mapping: AtomMapping):
+        # TODO: Allow passing of custom weights on species transform
         mcs = self._get_mcs(mapping)
         return 1 - mcs.atomic_number_rule()
 
