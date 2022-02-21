@@ -12,6 +12,7 @@ import math
 
 from . import LigandAtomMapper
 
+Lomap_MCS = TypeVar('Lomap_MCS')
 
 class LomapAtomMapper(LigandAtomMapper):
     def __init__(self, time: int = 20, threed: bool = False,
