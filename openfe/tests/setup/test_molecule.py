@@ -1,6 +1,12 @@
 import openff.toolkit.topology
 import pytest
 
+try:
+    from openeye import oechem
+except ImportError:
+    HAS_OECHEM = False
+else:
+    HAS_OECHEM = oechem.OEChemIsLicensed()
 from openfe.setup import Molecule
 from rdkit import Chem
 
@@ -53,3 +59,11 @@ class TestMoleculeConversion:
         off_ethane = named_ethane.openff
 
         assert off_ethane.name == 'ethane'
+
+    @pytest.mark.skipif(not HAS_OECHEM, reason="No OEChem available")
+    def test_to_oechem(self, ethane):
+        if not HAS_OECHEM:
+            pytest.skip()
+        oec_ethane = ethane.oechem
+
+        assert isinstance(oec_ethane, oechem.OEMol)
