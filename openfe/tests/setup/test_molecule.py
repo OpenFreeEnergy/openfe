@@ -50,6 +50,6 @@ class TestMoleculeConversion:
         assert isinstance(off_ethane, openff.toolkit.topology.Molecule)
 
     def test_to_off_name(self, named_ethane):
-        off_ethane = ethane.openff
+        off_ethane = named_ethane.openff
 
         assert off_ethane.name == 'ethane'

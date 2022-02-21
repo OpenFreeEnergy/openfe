@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
-from openff.toolkit.topology import Molecule as OFFMolecule
+import warnings
+with warnings.catch_warnings():
+    from openff.toolkit.topology import Molecule as OFFMolecule
 from typing import TypeVar
 
 from openfe.utils.molhashing import hashmol
