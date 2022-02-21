@@ -1,6 +1,7 @@
 name: openfe
 channels:
   - conda-forge
+  - openeye
 dependencies:
   - numpy
   - networkx
@@ -12,6 +13,7 @@ dependencies:
   - coverage
   - openff-toolkit
   - click
+  - openeye-toolkits
   - pip:
     - git+https://github.com/OpenFreeEnergy/Lomap@main
     - plugcli
