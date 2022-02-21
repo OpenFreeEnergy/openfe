@@ -61,13 +61,6 @@ jobs:
           mamba info -a
           mamba list
 
-      - name: Decrypt OpenEye license
-        env:
-          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
-        run: |
-          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
-          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
-
       - name: "Run tests"
         run: |
           pytest -n 2 -v --cov=openfe --cov=openfecli --cov-report=xml
