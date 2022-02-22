@@ -62,8 +62,6 @@ class TestMoleculeConversion:
 
     @pytest.mark.skipif(not HAS_OECHEM, reason="No OEChem available")
     def test_to_oechem(self, ethane):
-        if not HAS_OECHEM:
-            pytest.skip()
         oec_ethane = ethane.oechem
 
         assert isinstance(oec_ethane, oechem.OEMol)
