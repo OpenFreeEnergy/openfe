@@ -1,9 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from __future__ import annotations
+import json
 
 from typing import FrozenSet, Iterable
+
 from openfe.setup import AtomMapping, Molecule
+import openfe
 
 import networkx as nx
 
@@ -52,6 +55,54 @@ class Network:
     def nodes(self) -> FrozenSet[Molecule]:
         """A read-only view of the nodes of the Network"""
         return self._nodes
+
+    def __eq__(self, other):
+        return self.nodes == other.nodes and self.edges == other.edges
+
+    def _serializable_graph(self):
+        """
+        Create NetworkX graph with serializable attribute representations.
+
+        This enables us to use easily use different serialization
+        approaches.
+
+        """
+        # sorting ensures that we always preserve order in files, so two
+        # identical networks will show no changes if you diff their
+        # serialized versions
+        sorted_nodes = sorted(self.nodes, key=lambda m: (m.smiles, m.name))
+        mol_to_label = {mol: f"mol{num}"
+                        for num, mol in enumerate(sorted_nodes)}
+
+        edge_data = sorted([
+            (
+                mol_to_label[edge.mol1],
+                mol_to_label[edge.mol2],
+                json.dumps(edge.mol1_to_mol2)
+            )
+            for edge in self.edges
+        ])
+
+        # from here, we just build the graph
+        serializable_graph = nx.MultiDiGraph(ofe_version=openfe.__version__)
+        for mol, label in mol_to_label.items():
+            serializable_graph.add_node(label, sdf=mol.to_sdf())
+
+        for mol1, mol2, mapping in edge_data:
+            serializable_graph.add_edge(mol1, mol2, mapping=mapping)
+
+        return serializable_graph
+
+    @classmethod
+    def _from_serializable_graph(cls, graph):
+        raise NotImplementedError()
+
+    def to_graphml(self):
+        return "\n".join(nx.generate_graphml(self._serializable_graph()))
+
+    @classmethod
+    def from_graphml(cls):
+        raise NotImplementedError()
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
         """

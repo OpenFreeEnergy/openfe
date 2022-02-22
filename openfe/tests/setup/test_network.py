@@ -225,3 +225,12 @@ class TestNetwork:
         for edge in new_network.edges:
             # not sure is this needs to be formally required
             assert edge is not duplicate
+
+    def test_serialization_cycle(self, simple_network):
+        network = simple_network.network
+        serialized = network.to_graphml()
+        pytest.skip("TODO: not fully implemented")
+        # deserialized = Network.from_graphml(serialized)
+        # reserialized = deserialized.to_graphml()
+        # assert serialized == reserialized
+        # assert network == deserialized
