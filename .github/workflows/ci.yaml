@@ -45,6 +45,13 @@ jobs:
             environment-file: environment.yml
             activate-environment: openfe
 
+      - name: Decrypt OpenEye license
+        env:
+          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
+        run: |
+          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
+          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
+
       - name: "Install"
         run: python setup.py develop --no-deps
 
