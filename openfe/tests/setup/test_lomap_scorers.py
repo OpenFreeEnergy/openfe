@@ -4,6 +4,7 @@
 import math
 import openfe
 import pytest
+from rdkit import Chem
 
 
 @pytest.fixture()
@@ -24,6 +25,18 @@ def toluene_to_methylnaphthalene(lomap_basic_test_files):
     return openfe.setup.AtomMapping(tolu, naph, mol1_to_mol2=dict(mapping))
 
 
+@pytest.fixture()
+def toluene_to_heptane(lomap_basic_test_files):
+    tolu = lomap_basic_test_files['toluene']
+    hept = Chem.MolFromSmiles('CCCCCCC')
+    Chem.rdDepictor.Compute2DCoords(hept)
+    hept = openfe.setup.Molecule(hept)
+
+    mapping = [(6, 0)]
+
+    return openfe.setup.AtomMapping(tolu, hept, mol1_to_mol2=dict(mapping))
+
+
 class TestScorer:
     def test_mcsr_zero(self, toluene_to_cyclohexane):
         score = openfe.setup.LomapAtomMapper.mcsr_score(toluene_to_cyclohexane)
@@ -42,3 +55,13 @@ class TestScorer:
             toluene_to_methylnaphthalene, beta=0.2)
 
         assert score == pytest.approx(1 - math.exp(-0.2 * 4))
+
+    def test_mcnar_score_pass(self, toluene_to_cyclohexane):
+        score = openfe.setup.LomapAtomMapper.mcnar_score(toluene_to_cyclohexane)
+
+        assert score == 0
+
+    def test_mcnar_score_fail(self, toluene_to_heptane):
+        score = openfe.setup.LomapAtomMapper.mcnar_score(toluene_to_heptane)
+
+        assert score == float('inf')
