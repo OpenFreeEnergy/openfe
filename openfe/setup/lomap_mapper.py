@@ -106,7 +106,7 @@ class LomapAtomMapper(LigandAtomMapper):
 
         ok = (n_common > ths) or (n1 < ths + 3) or (n2 < ths + 3)
 
-        return 0.0 if ok else math.inf
+        return 0.0 if ok else float('inf')
 
     def tmcsr_score(self, mapping: AtomMapping):
         raise NotImplementedError
