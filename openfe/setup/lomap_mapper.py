@@ -165,8 +165,8 @@ class LomapAtomMapper(LigandAtomMapper):
 
         nmismatch = 0
         for i, j in mapping.mol1_to_mol2.items():
-            atom_i = mol1.rdkit.GetAtomWithIdx(i)
-            atom_j = mol2.rdkit.GetAtomWithIdx(j)
+            atom_i = mol1.GetAtomWithIdx(i)
+            atom_j = mol2.GetAtomWithIdx(j)
 
             n_i = atom_i.GetAtomicNum()
             n_j = atom_j.GetAtomicNum()
