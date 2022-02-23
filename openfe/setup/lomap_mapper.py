@@ -192,9 +192,49 @@ class LomapAtomMapper(LigandAtomMapper):
 
         return 1 - atomic_number_rule
 
-    def hybridization_score(self, mapping: AtomMapping, penalty=1.5):
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.hybridization_score(penalty_score=penalty)
+    @staticmethod
+    def hybridization_score(mapping: AtomMapping, beta=0.1, penalty=1.5):
+        """
+
+        Score calculated as:
+
+        1 - math.exp(-beta * nmismatch * penalty)
+
+        Parameters
+        ----------
+        mapping : AtomMapping
+        beta : float, optional
+          default 0.1
+        penalty : float, optional
+          default 1.5
+
+        Returns
+        -------
+        score : float
+        """
+        nmismatch = 0
+        mol1 = mapping.mol1.rdkit
+        mol2 = mapping.mol2.rdkit
+
+        for i, j in mapping.mol1_to_mol2.items():
+            atom_i = mol1.GetAtomWithIdx(i)
+            atom_j = mol2.GetAtomWithIdx(j)
+
+            hyb_i = lomap_mcs.atom_hybridization(atom_i)
+            hyb_j = lomap_mcs.atom_hybridization(atom_j)
+
+            mismatch = hyb_i != hyb_j
+            # Allow Nsp3 to match Nsp2, otherwise guanidines etc become painful
+            if (atom_i.GetAtomicNum() == 7 and atom_j.GetAtomicNum() == 7 and
+                hyb_i in [2, 3] and hyb_j in [2, 3]):
+                mismatch = False
+
+            if mismatch:
+                nmismatch += 1
+
+        hybridization_rule = math.exp(- beta * nmismatch * penalty)
+
+        return 1 - hybridization_rule
 
     def sulfonamides_score(self, mapping: AtomMapping, penalty=4):
         mcs = self._get_mcs(mapping)
