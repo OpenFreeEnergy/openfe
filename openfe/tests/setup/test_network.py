@@ -229,8 +229,7 @@ class TestNetwork:
     def test_serialization_cycle(self, simple_network):
         network = simple_network.network
         serialized = network.to_graphml()
-        pytest.skip("TODO: not fully implemented")
-        # deserialized = Network.from_graphml(serialized)
-        # reserialized = deserialized.to_graphml()
-        # assert serialized == reserialized
-        # assert network == deserialized
+        deserialized = Network.from_graphml(serialized)
+        reserialized = deserialized.to_graphml()
+        assert serialized == reserialized
+        assert network == deserialized

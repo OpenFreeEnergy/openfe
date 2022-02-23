@@ -65,7 +65,6 @@ class Network:
 
         This enables us to use easily use different serialization
         approaches.
-
         """
         # sorting ensures that we always preserve order in files, so two
         # identical networks will show no changes if you diff their
@@ -78,7 +77,7 @@ class Network:
             (
                 mol_to_label[edge.mol1],
                 mol_to_label[edge.mol2],
-                json.dumps(edge.mol1_to_mol2)
+                json.dumps(list(edge.mol1_to_mol2.items()))
             )
             for edge in self.edges
         ])
@@ -95,14 +94,24 @@ class Network:
 
     @classmethod
     def _from_serializable_graph(cls, graph):
-        raise NotImplementedError()
+        label_to_mol = {node: Molecule.from_sdf_string(sdf)
+                        for node, sdf in graph.nodes(data='sdf')}
+
+        edges = [
+            AtomMapping(mol1=label_to_mol[node1],
+                        mol2=label_to_mol[node2],
+                        mol1_to_mol2=dict(json.loads(mapping)))
+            for node1, node2, mapping in graph.edges(data='mapping')
+        ]
+
+        return cls(edges=edges, nodes=label_to_mol.values())
 
     def to_graphml(self):
         return "\n".join(nx.generate_graphml(self._serializable_graph()))
 
     @classmethod
-    def from_graphml(cls):
-        raise NotImplementedError()
+    def from_graphml(cls, graphml_str):
+        return cls._from_serializable_graph(nx.parse_graphml(graphml_str))
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
         """
