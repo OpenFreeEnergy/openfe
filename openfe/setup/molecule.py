@@ -16,14 +16,15 @@ RDKitMol = TypeVar('RDKitMol')
 
 def _ensure_ofe_name(mol, name):
     """
-    Ensure that rdkit mol carries the ofe-name and ofe-version tags.
+    Determine the correct name from the rdkit.Chem.Mol and the user-provided
+    name; ensure that is set in the rdkit representation.
     """
-    rdkit_name = name  # override this if the property is defined
-    if name == "":
-        with contextlib.suppress(KeyError):
-            rdkit_name = mol.GetProp("ofe-name")
+    try:
+        rdkit_name = mol.GetProp("ofe-name")
+    except KeyError:
+        rdkit_name = ""
 
-    if name != "" and rdkit_name != name:
+    if name and rdkit_name and rdkit_name != name:
         warnings.warn(f"Molecule being renamed from {rdkit_name} to {name}.")
     elif name == "":
         name = rdkit_name
@@ -33,6 +34,7 @@ def _ensure_ofe_name(mol, name):
 
 
 def _ensure_ofe_version(mol):
+    """Ensure the rdkit representation has the current version associated"""
     mol.SetProp("ofe-version", openfe.__version__)
 
 
@@ -80,11 +82,7 @@ class Molecule:
         mol = self.rdkit
         sdf = [Chem.MolToMolBlock(mol)]
         for prop in mol.GetPropNames():
-            # always output as this version of OpenFE
-            if prop == "ofe-version":
-                val = openfe.__version__
-            else:
-                val = mol.GetProp(prop)
+            val = mol.GetProp(prop)
             sdf.append('>  <%s>\n%s\n' % (prop, val))
         sdf.append('$$$$\n')
         return "\n".join(sdf)

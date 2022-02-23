@@ -1,6 +1,8 @@
 import pytest
 
 from openfe.setup import Molecule
+from openfe.setup.molecule import _ensure_ofe_name, _ensure_ofe_version
+import openfe
 from rdkit import Chem
 
 
@@ -16,12 +18,32 @@ def named_ethane():
     return Molecule(mol, name='ethane')
 
 
-def test_ensure_ofe_name():
-    pytest.skip()
+@pytest.mark.parametrize('rdkit_name,name,expected', [
+    ('foo', '', 'foo'),
+    ('', 'foo', 'foo'),
+    ('bar', 'foo', 'foo'),
+])
+def test_ensure_ofe_name(rdkit_name, name, expected, recwarn):
+    rdkit = Chem.MolFromSmiles("CC")
+    if rdkit_name:
+        rdkit.SetProp('ofe-name', rdkit_name)
+
+    out_name = _ensure_ofe_name(rdkit, name)
+
+    if rdkit_name == "bar":
+        assert len(recwarn) == 1
+        assert "Molecule being renamed" in recwarn[0].message.args[0]
+    else:
+        assert len(recwarn) == 0
+
+    assert out_name == expected
+    assert rdkit.GetProp("ofe-name") == out_name
 
 
 def test_ensure_ofe_version():
-    pytest.skip()
+    rdkit = Chem.MolFromSmiles("CC")
+    _ensure_ofe_version(rdkit)
+    assert rdkit.GetProp("ofe-version") == openfe.__version__
 
 
 class TestMolecule:
