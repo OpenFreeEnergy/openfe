@@ -16,6 +16,14 @@ def named_ethane():
     return Molecule(mol, name='ethane')
 
 
+def test_ensure_ofe_name():
+    pytest.skip()
+
+
+def test_ensure_ofe_version():
+    pytest.skip()
+
+
 class TestMolecule:
     def test_rdkit_behavior(self, ethane, alt_ethane):
         # Check that fixture setup is correct (we aren't accidentally
@@ -40,3 +48,17 @@ class TestMolecule:
 
     def test_empty_name(self, alt_ethane):
         assert alt_ethane.name == ''
+
+    def test_serialization_cycle(self, named_ethane):
+        serialized = named_ethane.to_sdf()
+        deserialized = Molecule.from_sdf_string(serialized)
+        reserialized = deserialized.to_sdf()
+
+        assert named_ethane == deserialized
+        assert serialized == reserialized
+
+    def test_to_sdf_string(self, named_ethane):
+        pytest.skip()
+
+    def test_from_sdf_string(self):
+        pytest.skip()

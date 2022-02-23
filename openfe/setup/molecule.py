@@ -1,14 +1,17 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import contextlib
 import io
+import warnings
 from typing import TypeVar
-RDKitMol = TypeVar('RDKitMol')
 
 from rdkit import Chem
 
-from openfe.utils.molhashing import hashmol
 import openfe
+from openfe.utils.molhashing import hashmol
+
+RDKitMol = TypeVar('RDKitMol')
 
 
 def _ensure_ofe_name(mol, name):
@@ -17,15 +20,11 @@ def _ensure_ofe_name(mol, name):
     """
     rdkit_name = name  # override this if the property is defined
     if name == "":
-        try:
+        with contextlib.suppress(KeyError):
             rdkit_name = mol.GetProp("ofe-name")
-        except KeyError:
-            pass
 
     if name != "" and rdkit_name != name:
-        raise RuntimeError(f"Internal inconsistency: 'name' has "
-                           f"value '{rdkit_name}' in the internal RDKit "
-                           f"representation; expected '{name}'")
+        warnings.warn(f"Molecule being renamed from {rdkit_name} to {name}.")
     elif name == "":
         name = rdkit_name
 
@@ -34,11 +33,7 @@ def _ensure_ofe_name(mol, name):
 
 
 def _ensure_ofe_version(mol):
-    try:
-        version = mol.GetProp("ofe-version")
-    except KeyError:
-        version = openfe.__version__
-        mol.SetProp("ofe-version", version)
+    mol.SetProp("ofe-version", openfe.__version__)
 
 
 class Molecule:
@@ -99,6 +94,15 @@ class Molecule:
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
         supp = Chem.SDMolSupplier()
         supp.SetData(sdf_str)
-        mols = list(supp)
-        assert len(mols) == 1, f"Expected 1 molecule, found {len(mols)}"
-        return cls(rdkit=mols[0])  # name is obtained automatically
+        mol = next(supp)
+
+        # ensure that there's only one molecule in the file
+        try:
+            _ = next(supp)
+        except StopIteration:
+            pass
+        else:
+            # TODO: less generic exception type here
+            raise RuntimeError(f"SDF contains more than 1 molecule")
+
+        return cls(rdkit=mol)  # name is obtained automatically
