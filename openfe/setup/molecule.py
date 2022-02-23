@@ -78,6 +78,14 @@ class Molecule:
         return hash(self) == hash(other)
 
     def to_sdf(self) -> str:
+        """Create a string based on SDF.
+
+        This is the primary serialization mechanism for this class.
+
+        See Also
+        --------
+        :meth:`.from_sdf_string` : create an object from the output of this
+        """
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
         mol = self.rdkit
         sdf = [Chem.MolToMolBlock(mol)]
@@ -89,6 +97,20 @@ class Molecule:
 
     @classmethod
     def from_sdf_string(cls, sdf_str: str):
+        """Create ``Molecule`` from SDF-formatted string.
+
+        This is the primary deserialization mechanism for this class.
+
+        Parameters
+        ----------
+        sdf_str : str
+            input string in SDF format
+
+        Returns
+        -------
+        :class:`.Molecule` :
+            the deserialized molecule
+        """
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
         supp = Chem.SDMolSupplier()
         supp.SetData(sdf_str)
