@@ -84,3 +84,6 @@ class TestMolecule:
 
     def test_from_sdf_string(self):
         pytest.skip()
+
+    def test_from_sdf_string_multiple_molecules(self):
+        pytest.skip()

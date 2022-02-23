@@ -14,7 +14,7 @@ from openfe.utils.molhashing import hashmol
 RDKitMol = TypeVar('RDKitMol')
 
 
-def _ensure_ofe_name(mol, name):
+def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
     """
     Determine the correct name from the rdkit.Chem.Mol and the user-provided
     name; ensure that is set in the rdkit representation.
@@ -33,7 +33,7 @@ def _ensure_ofe_name(mol, name):
     return name
 
 
-def _ensure_ofe_version(mol):
+def _ensure_ofe_version(mol: RDKitMol):
     """Ensure the rdkit representation has the current version associated"""
     mol.SetProp("ofe-version", openfe.__version__)
 
@@ -64,11 +64,11 @@ class Molecule:
 
 
     @property
-    def smiles(self):
+    def smiles(self) -> str:
         return self._hash.smiles
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._hash.name
 
     def __hash__(self):
