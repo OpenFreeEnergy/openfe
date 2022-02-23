@@ -48,6 +48,12 @@ class TestMolecule:
     def test_empty_name(self, alt_ethane):
         assert alt_ethane.name == ''
 
+    def test_from_rdkit(self, named_ethane):
+        rdkit = Chem.MolFromSmiles("CC")
+        mol = Molecule.from_rdkit(rdkit, "ethane")
+        assert mol == named_ethane
+        assert mol.rdkit is not rdkit
+
 
 class TestMoleculeConversion:
     def test_to_off(self, ethane):

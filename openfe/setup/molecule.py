@@ -5,6 +5,8 @@ with warnings.catch_warnings():
     from openff.toolkit.topology import Molecule as OFFMolecule
 from typing import TypeVar
 
+from rdkit import Chem
+
 from openfe.utils.molhashing import hashmol
 from openfe.utils.typing import RDKitMol, OEMol
 
@@ -30,6 +32,10 @@ class Molecule:
     def rdkit(self) -> RDKitMol:
         """RDKit representation of this molecule"""
         return self._rdkit
+
+    @classmethod
+    def from_rdkit(cls, rdkit: RDKitMol, name: str = ""):
+        return cls(rdkit=Chem.Mol(rdkit), name=name)
 
     @property
     def oechem(self) -> OEMol:
