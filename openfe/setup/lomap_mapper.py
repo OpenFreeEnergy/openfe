@@ -15,6 +15,25 @@ from . import LigandAtomMapper
 Lomap_MCS = TypeVar('Lomap_MCS')
 
 class LomapAtomMapper(LigandAtomMapper):
+DEFAULT_ANS_DIFFICULTY = {
+    # H to element - not sure this has any effect currently
+    1: {9: 0.5, 17: 0.25, 35: 0, 53: -0.5},
+    # O to element - methoxy to Cl/Br is easier than expected
+    8: {17: 0.85, 35: 0.85},
+    # F to element
+    9: {17: 0.5, 35: 0.25, 53: 0},
+    # Cl to element
+    17: {35: 0.85, 53: 0.65},
+    # Br to element
+    35: {53: 0.85},
+}
+
+
+class LomapAtomMapper(LigandAtomMapper):
+    time: int
+    threed: bool
+    max3d: float
+
     def __init__(self, time: int = 20, threed: bool = False,
                  max3d: float = 1000.0):
         """Wraps the MCS atom mapper from Lomap.
@@ -111,10 +130,67 @@ class LomapAtomMapper(LigandAtomMapper):
     def tmcsr_score(self, mapping: AtomMapping):
         raise NotImplementedError
 
-    def atomic_number_score(self, mapping: AtomMapping):
-        # TODO: Allow passing of custom weights on species transform
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.atomic_number_rule()
+    @staticmethod
+    def atomic_number_score(mapping: AtomMapping, beta=0.1, difficulty=None):
+        """A score on the elemental changes happening in the mapping
+
+        For each transmuted atom, a mismatch score is summed, according to the
+        difficulty scores (see difficult parameter).  The final score is then
+        given as:
+
+        score = 1 - exp(-beta * mismatch)
+
+        Parameters
+        ----------
+        mapping : AtomMapping
+        beta : float, optional
+          scaling factor for this rule, default 0.1
+        difficulty : dict, optional
+          a dict of dicts, mapping atomic number of one species, to another,
+          to a mismatch in the identity of these elements.  1.0 indicates two
+          elements are considered interchangeable, 0.0 indicates two elements
+          are incompatible, a default of 0.5 is used.
+          The scores in openfe.setup.lomap_mapper.DEFAULT_ANS_DIFFICULT are
+          used by default
+
+        Returns
+        -------
+        score : float
+        """
+        if difficulty is None:
+            difficulty = DEFAULT_ANS_DIFFICULTY
+
+        mol1 = mapping.mol1.rdkit
+        mol2 = mapping.mol2.rdkit
+
+        nmismatch = 0
+        for i, j in mapping.mol1_to_mol2.items():
+            atom_i = mol1.rdkit.GetAtomWithIdx(i)
+            atom_j = mol2.rdkit.GetAtomWithIdx(j)
+
+            n_i = atom_i.GetAtomicNum()
+            n_j = atom_j.GetAtomicNum()
+
+            if n_i == n_j:
+                continue
+
+            try:
+                ij = difficulty[n_i][n_j]
+            except KeyError:
+                ij = -1
+            try:
+                ji = difficulty[n_j][n_i]
+            except KeyError:
+                ji = -1
+            diff = max(ij, ji)
+            if diff == -1:
+                diff = 0.5
+
+            nmismatch += 1 - diff
+
+        atomic_number_rule = math.exp(-beta * nmismatch)
+
+        return 1 - atomic_number_rule
 
     def hybridization_score(self, mapping: AtomMapping, penalty=1.5):
         mcs = self._get_mcs(mapping)
