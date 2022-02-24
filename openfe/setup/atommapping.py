@@ -45,26 +45,24 @@ class AtomMapping:
     def _get_unique_bonds_and_atoms(self, mapping: Dict[int, int]):
 
         uniques = {
-            "atoms": [],  # atoms which fully don't exist in mol2
-            "elements": [],  # atoms which exist but change elements in mol2
-            "bonds": [],  # bonds involving either unique atoms or elements
+            "atoms": set(),  # atoms which fully don't exist in mol2
+            "elements": set(),  # atoms which exist but change elements in mol2
+            "bonds": set(),  # bonds involving either unique atoms or elements
         }
 
         for at in self.mol1.GetAtoms():
             idx = at.GetIdx()
-            if idx not in self.mol1_to_mol2.keys():
-                uniques["atoms"].append(idx)
+            if idx not in self.mol1_to_mol2:
+                uniques["atoms"].add(idx)
             elif not self._match_elements(idx):
-                uniques["elements"].append(idx)
+                uniques["elements"].add(idx)
 
         for bond in self.mol1.GetBonds():
             bond_at_idxs = [bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()]
             for at in chain(uniques["atoms"], uniques["elements"]):
                 if at in bond_at_idxs:
                     bond_idx = bond.GetIdx()
-                    # avoid double inclusion
-                    if bond_idx not in uniques["bonds"]:
-                        uniques["bonds"].append(bond_idx)
+                    uniques["bonds"].add(bond_idx)
 
         return uniques
 
@@ -77,8 +75,8 @@ class AtomMapping:
         mol2_uniques = self._get_unique_bonds_and_atoms(mol2_to_mol1_map)
 
         atoms_list = [
-            mol1_uniques["atoms"] + mol1_uniques["elements"],
-            mol2_uniques["atoms"] + mol2_uniques["elements"],
+            mol1_uniques["atoms"] | mol1_uniques["elements"],
+            mol2_uniques["atoms"] | mol2_uniques["elements"],
         ]
 
         # highlight core element changes differently from unique atoms
