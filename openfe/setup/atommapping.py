@@ -72,7 +72,7 @@ class AtomMapping:
 
         return uniques
 
-    def _draw_mapping(self):
+    def _draw_mapping(self, d2d):
         mol1_uniques = self._get_unique_bonds_and_atoms(self.mol1_to_mol2)
 
         # invert map
@@ -86,8 +86,9 @@ class AtomMapping:
         ]
 
         # highlight core element changes differently from unique atoms
-        red = (220, 50, 32, 0.5)
-        blue = (0, 90, 181, 1)
+        # RGBA color value needs to be between 0 and 1, so divide by 255
+        red = (220/255, 50/255, 32/255, 1)
+        blue = (0, 90/255, 181/255, 1)
 
         at1_colours = {}
         for at in mol1_uniques["elements"]:
@@ -101,7 +102,11 @@ class AtomMapping:
 
         bonds_list = [mol1_uniques["bonds"], mol2_uniques["bonds"]]
 
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300)
+        # If d2d is None, create an object
+        if not d2d:
+            d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300)
+
+        # Use the d2d object we instantiated or the one passed in by the user
         d2d.drawOptions().useBWAtomPalette()
         d2d.drawOptions().continousHighlight = False
         d2d.drawOptions().setHighlightColour(red)
@@ -115,8 +120,8 @@ class AtomMapping:
         d2d.FinishDrawing()
         return d2d.GetDrawingText()
 
-    def visualize(self):
+    def visualize(self, d2d=None):
         """Visualize atom mapping in a Jupyter Notebook"""
         from IPython.display import Image
 
-        return Image(self._draw_mapping())
+        return Image(self._draw_mapping(d2d))
