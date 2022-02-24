@@ -15,7 +15,7 @@ class AtomMapping:
 
     Attributes
     ----------
-    mol1, mol2 : Molecule
+    mol1, mol2 : rdkit.Chem.rdchem.Mol
       the two Molecules in the mapping
     mol1_to_mol2 : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
@@ -23,8 +23,8 @@ class AtomMapping:
 
     """
 
-    mol1: Molecule
-    mol2: Molecule
+    mol1: Chem.rdchem.Mol
+    mol2: Chem.rdchem.Mol
     mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):
@@ -44,7 +44,7 @@ class AtomMapping:
 
     def _get_unique_bonds_and_atoms(self, mapping: Dict[int, int]):
 
-        uniques = {
+        uniques: Dict[str, set] = {
             "atoms": set(),  # atoms which fully don't exist in mol2
             "elements": set(),  # atoms which exist but change elements in mol2
             "bonds": set(),  # bonds involving either unique atoms or elements
