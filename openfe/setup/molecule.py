@@ -3,15 +3,22 @@
 
 import contextlib
 import io
+import sys
 import warnings
 from typing import TypeVar
+
+# "from typing_extensions" in Python 3.9 and earlier
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+     from typing_extensions import TypeAlias
 
 from rdkit import Chem
 
 import openfe
 from openfe.utils.molhashing import hashmol
 
-RDKitMol = TypeVar('RDKitMol')
+RDKitMol: TypeAlias = Chem.rdchem.Mol
 
 
 def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
