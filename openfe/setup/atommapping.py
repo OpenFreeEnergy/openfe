@@ -86,16 +86,16 @@ class AtomMapping:
         ]
 
         # highlight core element changes differently from unique atoms
-        red = (1, 0, 0, 0.5)
-        green = (0, 1, 0, 1)
+        red = (220, 50, 32, 0.5)
+        blue = (0, 90, 181, 1)
 
         at1_colours = {}
         for at in mol1_uniques["elements"]:
-            at1_colours[at] = green
+            at1_colours[at] = blue
 
         at2_colours = {}
         for at in mol2_uniques["elements"]:
-            at2_colours[at] = green
+            at2_colours[at] = blue
 
         atom_colours = [at1_colours, at2_colours]
 
