@@ -39,10 +39,8 @@ class AtomMapping:
     def _match_elements(self, idx: int):
         elem_mol1 = self.mol1.GetAtomWithIdx(idx).GetAtomicNum()
         elem_mol2 = self.mol2.GetAtomWithIdx(self.mol1_to_mol2[idx]).GetAtomicNum()
-        if elem_mol1 == elem_mol2:
-            return True
-        else:
-            return False
+
+        return elem_mol1 == elem_mol2
 
     def _get_unique_bonds_and_atoms(self, mapping: Dict[int, int]):
 
