@@ -117,13 +117,31 @@ class AtomMapping:
         return d2d.GetDrawingText()
 
     def visualize(self, d2d=None):
-        """Visualize atom mapping in a Jupyter Notebook"""
+        """
+        Visualize atom mapping in a Jupyter Notebook.
+        Parameters
+        ---------
+        d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
+            If desired specify an instance of a MolDraw2D object, default None
+        Returns
+        -------
+        IPython.core.display.Image :
+            Image of atom map
+        """
         from IPython.display import Image
 
         return Image(self._draw_mapping(d2d))
 
     def save_to_file(self, fname, d2d=None):
-        """Save atom map visualization to disk"""
+        """
+        Save atom map visualization to disk
+        Parameters
+        ---------
+        d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
+            If desired specify an instance of a MolDraw2D object, default None
 
+        fname : str
+            Name of file to save atom map
+        """
         with open(fname, "wb") as f:
             f.write(self._draw_mapping(d2d))
