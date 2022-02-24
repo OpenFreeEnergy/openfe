@@ -1,5 +1,7 @@
 import pytest
 
+import importlib
+
 from openfe.setup import Molecule
 from openfe.setup.molecule import _ensure_ofe_name, _ensure_ofe_version
 import openfe
@@ -16,6 +18,22 @@ def named_ethane():
     mol = Chem.MolFromSmiles("CC")
 
     return Molecule(mol, name='ethane')
+
+
+@pytest.fixture
+def serialization_template():
+    def inner(filename):
+        import importlib
+        import string
+        import openfe
+        loc = "openfe.tests.data.serialization"
+        ref = importlib.resources.files(loc).joinpath(filename)
+        with open(ref, "r") as fn:
+            tmpl = fn.read()
+            return tmpl.format(OFE_VERSION=openfe.__version__)
+        return contents
+
+    return inner
 
 
 @pytest.mark.parametrize('rdkit_name,name,expected', [
@@ -79,11 +97,19 @@ class TestMolecule:
         assert named_ethane == deserialized
         assert serialized == reserialized
 
-    def test_to_sdf_string(self, named_ethane):
-        pytest.skip()
+    def test_to_sdf_string(self, named_ethane, serialization_template):
+        expected = serialization_template("ethane_template.sdf")
+        assert named_ethane.to_sdf() == expected
 
-    def test_from_sdf_string(self):
-        pytest.skip()
+    def test_from_sdf_string(self, named_ethane, serialization_template):
+        sdf_str = serialization_template("ethane_template.sdf")
+        assert Molecule.from_sdf_string(sdf_str) == named_ethane
 
     def test_from_sdf_string_multiple_molecules(self):
-        pytest.skip()
+        rsrc_dir = importlib.resources.files("openfe.tests.data")
+        ref = rsrc_dir.joinpath("multi_molecule.sdf")
+        with open(ref, "r") as fn:
+            contents = fn.read()
+
+        with pytest.raises(RuntimeError, match="contains more than 1"):
+            Molecule.from_sdf_string(contents)
