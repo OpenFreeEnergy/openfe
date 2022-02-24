@@ -8,11 +8,15 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 from typing import Dict, TypeVar
 from lomap import mcs as lomap_mcs
 import math
-
+import sys
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+     from typing_extensions import TypeAlias
 
 from . import LigandAtomMapper
 
-Lomap_MCS = TypeVar('Lomap_MCS')
+Lomap_MCS: TypeAlias = lomap_mcs.MCS
 
 class LomapAtomMapper(LigandAtomMapper):
 DEFAULT_ANS_DIFFICULTY = {
