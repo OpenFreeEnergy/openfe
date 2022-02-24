@@ -34,11 +34,8 @@ def serialization_template():
         import string
         import openfe
         loc = "openfe.tests.data.serialization"
-        ref = importlib.resources.files(loc).joinpath(filename)
-        with open(ref, "r") as fn:
-            tmpl = fn.read()
-            return tmpl.format(OFE_VERSION=openfe.__version__)
-        return contents
+        tmpl = importlib.resources.read_text(loc, filename)
+        return tmpl.format(OFE_VERSION=openfe.__version__)
 
     return inner
 

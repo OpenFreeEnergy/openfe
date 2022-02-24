@@ -5,7 +5,7 @@ from typing import TypeVar
 from rdkit import Chem
 
 try:
-    from typing import TypeAlias
+    from typing import TypeAlias  # type: ignore
 except ImportError:
     from typing_extensions import TypeAlias
 
