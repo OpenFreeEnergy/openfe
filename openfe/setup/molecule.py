@@ -125,7 +125,7 @@ class Molecule:
         :meth:`.from_sdf_string` : create an object from the output of this
         """
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
-        mol = self.rdkit
+        mol = self.to_rdkit()
         sdf = [Chem.MolToMolBlock(mol)]
         for prop in mol.GetPropNames():
             val = mol.GetProp(prop)
