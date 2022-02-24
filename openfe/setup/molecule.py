@@ -1,8 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import warnings
+with warnings.catch_warnings():
+    # openff complains about oechem being missing, shhh
+    from openff.toolkit.topology import Molecule as OFFMolecule
 
 import contextlib
 import io
+import sys
 import warnings
 from typing import TypeVar
 
@@ -10,20 +15,20 @@ from rdkit import Chem
 
 import openfe
 from openfe.utils.molhashing import hashmol
+from openfe.utils.typing import RDKitMol, OEMol
 
-RDKitMol = TypeVar('RDKitMol')
 
-
-def _ensure_ofe_name(mol, name):
+def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
     """
-    Ensure that rdkit mol carries the ofe-name and ofe-version tags.
+    Determine the correct name from the rdkit.Chem.Mol and the user-provided
+    name; ensure that is set in the rdkit representation.
     """
-    rdkit_name = name  # override this if the property is defined
-    if name == "":
-        with contextlib.suppress(KeyError):
-            rdkit_name = mol.GetProp("ofe-name")
+    try:
+        rdkit_name = mol.GetProp("ofe-name")
+    except KeyError:
+        rdkit_name = ""
 
-    if name != "" and rdkit_name != name:
+    if name and rdkit_name and rdkit_name != name:
         warnings.warn(f"Molecule being renamed from {rdkit_name} to {name}.")
     elif name == "":
         name = rdkit_name
@@ -32,12 +37,17 @@ def _ensure_ofe_name(mol, name):
     return name
 
 
-def _ensure_ofe_version(mol):
+def _ensure_ofe_version(mol: RDKitMol):
+    """Ensure the rdkit representation has the current version associated"""
     mol.SetProp("ofe-version", openfe.__version__)
 
 
 class Molecule:
     """Molecule wrapper to provide proper hashing and equality.
+
+    This class is a read-only representation of a molecule, if you want
+    to edit the molecule do this in an appropriate toolkit **before** creating
+    this class.
 
     Parameters
     ----------
@@ -54,19 +64,41 @@ class Molecule:
         self._rdkit = rdkit
         self._hash = hashmol(self._rdkit, name=name)
 
-    # property for immutability; also may allow in-class type conversion
-    @property
-    def rdkit(self) -> RDKitMol:
-        """RDKit representation of this molecule"""
-        return self._rdkit
+    def to_rdkit(self) -> RDKitMol:
+        """Return an RDKit copied representation of this molecule"""
+        return Chem.Mol(self._rdkit)
+
+    @classmethod
+    def from_rdkit(cls, rdkit: RDKitMol, name: str = ""):
+        """Create a Molecule copying the input from an rdkit Mol"""
+        return cls(rdkit=Chem.Mol(rdkit), name=name)
+
+    def to_openeye(self) -> OEMol:
+        """OEChem representation of this molecule"""
+        return self.to_openff().to_openeye()
+
+    @classmethod
+    def from_openeye(cls, oemol: OEMol, name: str = ""):
+        raise NotImplementedError
+
+    def to_openff(self) -> OFFMolecule:
+        """OpenFF Toolkit representation of this molecule"""
+        m = OFFMolecule(self._rdkit, allow_undefined_stereo=True)
+        m.name = self.name
+
+        return m
+
+    @classmethod
+    def from_openff(cls, openff: OFFMolecule, name: str = ""):
+        raise NotImplementedError
 
 
     @property
-    def smiles(self):
+    def smiles(self) -> str:
         return self._hash.smiles
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._hash.name
 
     def __hash__(self):
@@ -76,21 +108,39 @@ class Molecule:
         return hash(self) == hash(other)
 
     def to_sdf(self) -> str:
+        """Create a string based on SDF.
+
+        This is the primary serialization mechanism for this class.
+
+        See Also
+        --------
+        :meth:`.from_sdf_string` : create an object from the output of this
+        """
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
-        mol = self.rdkit
+        mol = self.to_rdkit()
         sdf = [Chem.MolToMolBlock(mol)]
         for prop in mol.GetPropNames():
-            # always output as this version of OpenFE
-            if prop == "ofe-version":
-                val = openfe.__version__
-            else:
-                val = mol.GetProp(prop)
+            val = mol.GetProp(prop)
             sdf.append('>  <%s>\n%s\n' % (prop, val))
         sdf.append('$$$$\n')
         return "\n".join(sdf)
 
     @classmethod
     def from_sdf_string(cls, sdf_str: str):
+        """Create ``Molecule`` from SDF-formatted string.
+
+        This is the primary deserialization mechanism for this class.
+
+        Parameters
+        ----------
+        sdf_str : str
+            input string in SDF format
+
+        Returns
+        -------
+        :class:`.Molecule` :
+            the deserialized molecule
+        """
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
         supp = Chem.SDMolSupplier()
         supp.SetData(sdf_str)

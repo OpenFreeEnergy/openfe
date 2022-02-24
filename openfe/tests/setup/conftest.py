@@ -64,3 +64,16 @@ def lomap_basic_test_files():
             files[f] = Molecule(mol, name=f)
 
     return files
+
+
+@pytest.fixture
+def serialization_template():
+    def inner(filename):
+        import importlib
+        import string
+        import openfe
+        loc = "openfe.tests.data.serialization"
+        tmpl = importlib.resources.read_text(loc, filename)
+        return tmpl.format(OFE_VERSION=openfe.__version__)
+
+    return inner
