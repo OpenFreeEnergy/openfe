@@ -53,5 +53,6 @@ class AtomMapper:
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
-        for map_dct in self._mappings_generator(mol1.rdkit, mol2.rdkit):
+        for map_dct in self._mappings_generator(mol1.to_rdkit(),
+                                                mol2.to_rdkit()):
             yield AtomMapping(mol1, mol2, map_dct)

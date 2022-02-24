@@ -2,8 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import warnings
 with warnings.catch_warnings():
+    # openff complains about oechem being missing, shhh
     from openff.toolkit.topology import Molecule as OFFMolecule
-from typing import TypeVar
 
 from rdkit import Chem
 
@@ -13,6 +13,10 @@ from openfe.utils.typing import RDKitMol, OEMol
 
 class Molecule:
     """Molecule wrapper to provide proper hashing and equality.
+
+    This class is a read-only representation of a molecule, if you want
+    to edit the molecule do this in an appropriate toolkit **before** creating
+    this class.
 
     Parameters
     ----------
@@ -24,31 +28,37 @@ class Molecule:
         will be used in the hash.
     """
     def __init__(self, rdkit: RDKitMol, name: str = ""):
-        self._rdkit = rdkit
+        # internally we store as RDKit, for now...
+        self._rdkit = Chem.Mol(rdkit)
         self._hash = hashmol(self._rdkit, name=name)
 
-    # property for immutability; also may allow in-class type conversion
-    @property
-    def rdkit(self) -> RDKitMol:
-        """RDKit representation of this molecule"""
-        return self._rdkit
+    def to_rdkit(self) -> RDKitMol:
+        """Return an RDKit copied representation of this molecule"""
+        return Chem.Mol(self._rdkit)
 
     @classmethod
     def from_rdkit(cls, rdkit: RDKitMol, name: str = ""):
+        """Create a Molecule copying the input from an rdkit Mol"""
         return cls(rdkit=Chem.Mol(rdkit), name=name)
 
-    @property
-    def oechem(self) -> OEMol:
+    def to_openeye(self) -> OEMol:
         """OEChem representation of this molecule"""
-        return self.openff.to_openeye()
+        return self.to_openff().to_openeye()
 
-    @property
-    def openff(self) -> OFFMolecule:
+    @classmethod
+    def from_openeye(cls, oemol: OEMol, name: str = ""):
+        raise NotImplementedError
+
+    def to_openff(self) -> OFFMolecule:
         """OpenFF Toolkit representation of this molecule"""
-        m = OFFMolecule(self.rdkit, allow_undefined_stereo=True)
+        m = OFFMolecule(self._rdkit, allow_undefined_stereo=True)
         m.name = self.name
 
         return m
+
+    @classmethod
+    def from_openff(cls, openff: OFFMolecule, name: str = ""):
+        raise NotImplementedError
 
     @property
     def smiles(self):
