@@ -37,12 +37,14 @@ class AtomMapping:
         raise NotImplementedError()
 
     def _match_elements(self, idx: int):
+        """Check to see if the element changes in map from mol1 to mol2"""
         elem_mol1 = self.mol1.GetAtomWithIdx(idx).GetAtomicNum()
         elem_mol2 = self.mol2.GetAtomWithIdx(self.mol1_to_mol2[idx]).GetAtomicNum()
 
         return elem_mol1 == elem_mol2
 
     def _get_unique_bonds_and_atoms(self, mapping: Dict[int, int]):
+        """Get new atoms, element changes, and involved bonds"""
 
         uniques: Dict[str, set] = {
             "atoms": set(),  # atoms which fully don't exist in mol2
