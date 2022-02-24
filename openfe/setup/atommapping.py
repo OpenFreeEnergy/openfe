@@ -119,3 +119,9 @@ class AtomMapping:
         from IPython.display import Image
 
         return Image(self._draw_mapping(d2d))
+
+    def save_to_file(self, fname, d2d=None):
+        """Save atom map visualization to disk"""
+
+        with open(fname, "wb") as f:
+            f.write(self._draw_mapping(d2d))
