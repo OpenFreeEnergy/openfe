@@ -84,15 +84,15 @@ class AtomMapping:
         red = (220/255, 50/255, 32/255, 1)
         blue = (0, 90/255, 181/255, 1)
 
-        at1_colours = {}
+        at1_colors = {}
         for at in mol1_uniques["elements"]:
-            at1_colours[at] = blue
+            at1_colors[at] = blue
 
-        at2_colours = {}
+        at2_colors = {}
         for at in mol2_uniques["elements"]:
-            at2_colours[at] = blue
+            at2_colors[at] = blue
 
-        atom_colours = [at1_colours, at2_colours]
+        atom_colors = [at1_colors, at2_colors]
 
         bonds_list = [mol1_uniques["bonds"], mol2_uniques["bonds"]]
 
@@ -109,7 +109,7 @@ class AtomMapping:
             [self.mol1, self.mol2],
             highlightAtoms=atoms_list,
             highlightBonds=bonds_list,
-            highlightAtomColors=atom_colours,
+            highlightAtomColors=atom_colors,
         )
         d2d.FinishDrawing()
         return d2d.GetDrawingText()
