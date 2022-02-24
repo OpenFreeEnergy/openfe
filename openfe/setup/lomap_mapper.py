@@ -8,7 +8,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 from lomap import mcs as lomap_mcs
 
 
-from . import AtomMapper, AtomMapping
+from . import AtomMapper
 
 
 class LomapAtomMapper(AtomMapper):
