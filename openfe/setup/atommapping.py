@@ -8,8 +8,6 @@ from rdkit import Chem
 
 from openfe.setup import Molecule
 
-AtomMap = NewType("AtomMap", Dict[int, int])
-
 
 @dataclass
 class AtomMapping:
@@ -27,7 +25,7 @@ class AtomMapping:
 
     mol1: Molecule
     mol2: Molecule
-    mol1_to_mol2: AtomMap
+    mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):
         return hash(
@@ -46,7 +44,7 @@ class AtomMapping:
         else:
             return False
 
-    def _get_unique_bonds_and_atoms(self, mapping: AtomMap):
+    def _get_unique_bonds_and_atoms(self, mapping: Dict[int, int]):
 
         uniques = {
             "atoms": [],  # atoms which fully don't exist in mol2
