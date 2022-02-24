@@ -27,19 +27,6 @@ def named_ethane():
     return Molecule(mol, name='ethane')
 
 
-@pytest.fixture
-def serialization_template():
-    def inner(filename):
-        import importlib
-        import string
-        import openfe
-        loc = "openfe.tests.data.serialization"
-        tmpl = importlib.resources.read_text(loc, filename)
-        return tmpl.format(OFE_VERSION=openfe.__version__)
-
-    return inner
-
-
 @pytest.mark.parametrize('rdkit_name,name,expected', [
     ('foo', '', 'foo'),
     ('', 'foo', 'foo'),
@@ -127,11 +114,8 @@ class TestMolecule:
         assert Molecule.from_sdf_string(sdf_str) == named_ethane
 
     def test_from_sdf_string_multiple_molecules(self):
-        rsrc_dir = importlib.resources.files("openfe.tests.data")
-        ref = rsrc_dir.joinpath("multi_molecule.sdf")
-        with open(ref, "r") as fn:
-            contents = fn.read()
-
+        contents = importlib.resources.read_text("openfe.tests.data",
+                                                 "multi_molecule.sdf")
         with pytest.raises(RuntimeError, match="contains more than 1"):
             Molecule.from_sdf_string(contents)
 
@@ -145,16 +129,16 @@ class TestMolecule:
 class TestMoleculeConversion:
     def test_to_off(self, ethane):
         off_ethane = ethane.to_openff()
-        
+
         assert isinstance(off_ethane, openff.toolkit.topology.Molecule)
-    
+
     def test_to_off_name(self, named_ethane):
         off_ethane = named_ethane.to_openff()
-        
+
         assert off_ethane.name == 'ethane'
-    
+
     @pytest.mark.skipif(not HAS_OECHEM, reason="No OEChem available")
     def test_to_oechem(self, ethane):
         oec_ethane = ethane.to_openeye()
-        
+
         assert isinstance(oec_ethane, oechem.OEMol)
