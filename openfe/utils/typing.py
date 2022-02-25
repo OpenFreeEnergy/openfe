@@ -2,7 +2,12 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import TypeVar
+from rdkit import Chem
 
+try:
+    from typing import TypeAlias  # type: ignore
+except ImportError:
+    from typing_extensions import TypeAlias
 
-RDKitMol = TypeVar("RDKitMol")
+RDKitMol: TypeAlias = Chem.rdchem.Mol
 OEMol = TypeVar('OEMol')

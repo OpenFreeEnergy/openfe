@@ -1,3 +1,5 @@
+import importlib
+
 import openff.toolkit.topology
 import pytest
 
@@ -8,6 +10,8 @@ except ImportError:
 else:
     HAS_OECHEM = oechem.OEChemIsLicensed()
 from openfe.setup import Molecule
+from openfe.setup.molecule import _ensure_ofe_name, _ensure_ofe_version
+import openfe
 from rdkit import Chem
 
 
@@ -21,6 +25,34 @@ def named_ethane():
     mol = Chem.MolFromSmiles("CC")
 
     return Molecule(mol, name='ethane')
+
+
+@pytest.mark.parametrize('rdkit_name,name,expected', [
+    ('foo', '', 'foo'),
+    ('', 'foo', 'foo'),
+    ('bar', 'foo', 'foo'),
+])
+def test_ensure_ofe_name(rdkit_name, name, expected, recwarn):
+    rdkit = Chem.MolFromSmiles("CC")
+    if rdkit_name:
+        rdkit.SetProp('ofe-name', rdkit_name)
+
+    out_name = _ensure_ofe_name(rdkit, name)
+
+    if rdkit_name == "bar":
+        assert len(recwarn) == 1
+        assert "Molecule being renamed" in recwarn[0].message.args[0]
+    else:
+        assert len(recwarn) == 0
+
+    assert out_name == expected
+    assert rdkit.GetProp("ofe-name") == out_name
+
+
+def test_ensure_ofe_version():
+    rdkit = Chem.MolFromSmiles("CC")
+    _ensure_ofe_version(rdkit)
+    assert rdkit.GetProp("ofe-version") == openfe.__version__
 
 
 class TestMolecule:
@@ -64,6 +96,28 @@ class TestMolecule:
 
     def test_empty_name(self, alt_ethane):
         assert alt_ethane.name == ''
+
+    def test_serialization_cycle(self, named_ethane):
+        serialized = named_ethane.to_sdf()
+        deserialized = Molecule.from_sdf_string(serialized)
+        reserialized = deserialized.to_sdf()
+
+        assert named_ethane == deserialized
+        assert serialized == reserialized
+
+    def test_to_sdf_string(self, named_ethane, serialization_template):
+        expected = serialization_template("ethane_template.sdf")
+        assert named_ethane.to_sdf() == expected
+
+    def test_from_sdf_string(self, named_ethane, serialization_template):
+        sdf_str = serialization_template("ethane_template.sdf")
+        assert Molecule.from_sdf_string(sdf_str) == named_ethane
+
+    def test_from_sdf_string_multiple_molecules(self):
+        contents = importlib.resources.read_text("openfe.tests.data",
+                                                 "multi_molecule.sdf")
+        with pytest.raises(RuntimeError, match="contains more than 1"):
+            Molecule.from_sdf_string(contents)
 
     def test_from_rdkit(self, named_ethane):
         rdkit = Chem.MolFromSmiles("CC")
