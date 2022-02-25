@@ -1,0 +1,76 @@
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d2" for="edge" attr.name="mapping" attr.type="string" />
+  <key id="d1" for="node" attr.name="sdf" attr.type="string" />
+  <key id="d0" for="graph" attr.name="ofe_version" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="mol0">
+      <data key="d1">
+     RDKit          2D
+
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+M  END
+
+&gt;  &lt;ofe-name&gt;
+
+
+&gt;  &lt;ofe-version&gt;
+{OFE_VERSION}
+
+$$$$
+</data>
+    </node>
+    <node id="mol1">
+      <data key="d1">
+     RDKit          2D
+
+  3  2  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5981   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  1  0
+M  END
+
+&gt;  &lt;ofe-name&gt;
+
+
+&gt;  &lt;ofe-version&gt;
+{OFE_VERSION}
+
+$$$$
+</data>
+    </node>
+    <node id="mol2">
+      <data key="d1">
+     RDKit          2D
+
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+M  END
+
+&gt;  &lt;ofe-name&gt;
+
+
+&gt;  &lt;ofe-version&gt;
+{OFE_VERSION}
+
+$$$$
+</data>
+    </node>
+    <edge source="mol0" target="mol2" id="0">
+      <data key="d2">[[0, 0]]</data>
+    </edge>
+    <edge source="mol1" target="mol0" id="0">
+      <data key="d2">[[0, 0], [1, 1]]</data>
+    </edge>
+    <edge source="mol1" target="mol2" id="0">
+      <data key="d2">[[0, 0], [2, 1]]</data>
+    </edge>
+    <data key="d0">{OFE_VERSION}</data>
+  </graph>
+</graphml>
