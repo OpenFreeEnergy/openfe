@@ -233,3 +233,11 @@ class TestNetwork:
         reserialized = deserialized.to_graphml()
         assert serialized == reserialized
         assert network == deserialized
+
+    def test_to_graphml(self, simple_network, serialization_template):
+        expected = serialization_template("network_template.graphml")
+        assert simple_network.network.to_graphml() + "\n" == expected
+
+    def test_from_graphml(self, simple_network, serialization_template):
+        contents = serialization_template("network_template.graphml")
+        assert Network.from_graphml(contents) == simple_network.network
