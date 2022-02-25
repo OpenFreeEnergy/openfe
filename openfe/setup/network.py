@@ -59,7 +59,7 @@ class Network:
     def __eq__(self, other):
         return self.nodes == other.nodes and self.edges == other.edges
 
-    def _serializable_graph(self):
+    def _serializable_graph(self) -> nx.Graph:
         """
         Create NetworkX graph with serializable attribute representations.
 
@@ -93,7 +93,11 @@ class Network:
         return serializable_graph
 
     @classmethod
-    def _from_serializable_graph(cls, graph):
+    def _from_serializable_graph(cls, graph: nx.Graph):
+        """Create network from NetworkX graph with serializable attributes.
+
+        This is the inverse of ``_serializable_graph``.
+        """
         label_to_mol = {node: Molecule.from_sdf_string(sdf)
                         for node, sdf in graph.nodes(data='sdf')}
 
@@ -106,11 +110,34 @@ class Network:
 
         return cls(edges=edges, nodes=label_to_mol.values())
 
-    def to_graphml(self):
+    def to_graphml(self) -> str:
+        """Return the GraphML string representing this ``Network``.
+
+        This is the primary serialization mechanism for this class.
+
+        Returns
+        -------
+        str :
+            string representing this network in GraphML format
+        """
         return "\n".join(nx.generate_graphml(self._serializable_graph()))
 
     @classmethod
-    def from_graphml(cls, graphml_str):
+    def from_graphml(cls, graphml_str: str):
+        """Create ``Network`` from GraphML string.
+
+        This is the primary deserialization mechanism for this class.
+
+        Parameters
+        ----------
+        graphml_str : str
+            GraphML string representation of a :class:`.Network`
+
+        Returns
+        -------
+        :class:`.Network`:
+            new network from the GraphML
+        """
         return cls._from_serializable_graph(nx.parse_graphml(graphml_str))
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
