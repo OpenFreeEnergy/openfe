@@ -1,9 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import importlib
+import string
 import pytest
 from rdkit import Chem
-from importlib import resources
 
+import openfe
 from openfe.setup import AtomMapping
 from openfe.setup import Molecule
 
@@ -58,8 +60,8 @@ def lomap_basic_test_files():
         '2-naftanol',
         'methylcyclohexane',
         'toluene']:
-        with resources.path('openfe.tests.data.lomap_basic',
-                            f + '.mol2') as fn:
+        with importlib.resources.path('openfe.tests.data.lomap_basic',
+                                      f + '.mol2') as fn:
             mol = Chem.MolFromMol2File(str(fn))
             files[f] = Molecule(mol, name=f)
 
@@ -69,9 +71,6 @@ def lomap_basic_test_files():
 @pytest.fixture
 def serialization_template():
     def inner(filename):
-        import importlib
-        import string
-        import openfe
         loc = "openfe.tests.data.serialization"
         tmpl = importlib.resources.read_text(loc, filename)
         return tmpl.format(OFE_VERSION=openfe.__version__)
