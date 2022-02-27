@@ -16,13 +16,14 @@ def test_get_molecule_smiles():
 
 
 def test_get_molecule_sdf():
-    contents = importlib.resources.read_text(
-        "openfe.tests.data.serialization", "ethane_template.sdf"
-    ).format(OFE_VERSION=openfe.__version__)
-
-    mol = Molecule.from_sdf_string(contents)
-    assert mol.name == "ethane"
-    assert mol.smiles == "CC"
+    with importlib.resources.path("openfe.tests.data.serialization",
+                                  "ethane_template.sdf") as filename:
+        # Note: the template doesn't include a valid version, but it loads
+        # anyway. In the future, we may need to create a temporary file with
+        # template substitutions done, but that seemed like overkill now.
+        mol = get_molecule(filename)
+        assert mol.smiles == "CC"
+        assert mol.name == "ethane"
 
 
 def test_get_molecule_error():
