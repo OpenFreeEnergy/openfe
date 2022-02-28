@@ -112,7 +112,7 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
 
     # invert map
     mol2_to_mol1_map = {v: k for k, v in mol1_to_mol2.items()}
-    mol2_uniques = _get_unique_bonds_and_atoms(mol2_to_mol1_map, mol1, mol2)
+    mol2_uniques = _get_unique_bonds_and_atoms(mol2_to_mol1_map, mol2, mol1)
 
     atoms_list = [
         mol1_uniques["atoms"] | mol1_uniques["elements"],
