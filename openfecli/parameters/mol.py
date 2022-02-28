@@ -20,8 +20,17 @@ def _load_molecule_from_smiles(user_input, context):
     return Molecule(rdkit=mol)
 
 
+def _load_molecule_from_sdf(user_input, context):
+    from openfe.setup import Molecule
+    try:
+        return Molecule.from_sdf_file(user_input)
+    except:  # any exception should try other strategies
+        return NOT_PARSED
+
+
 get_molecule = MultiStrategyGetter(
     strategies=[
+        _load_molecule_from_sdf,
         # NOTE: I think loading from smiles must be last choice, because
         # failure will give meaningless user-facing errors
         _load_molecule_from_smiles,
@@ -31,6 +40,6 @@ get_molecule = MultiStrategyGetter(
 
 MOL = Option(
     "--mol",
-    help="Molecule",
+    help="Molecule. Can be provided as an SDF file or as a SMILES string.",
     getter=get_molecule
 )

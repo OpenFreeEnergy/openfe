@@ -121,6 +121,14 @@ class TestMolecule:
         sdf_str = serialization_template("ethane_template.sdf")
         assert Molecule.from_sdf_string(sdf_str) == named_ethane
 
+    def test_from_sdf_file(self, named_ethane, serialization_template,
+                           tmpdir):
+        sdf_str = serialization_template("ethane_template.sdf")
+        with open(tmpdir / "temp.sdf", mode='w') as tmpf:
+            tmpf.write(sdf_str)
+
+        assert Molecule.from_sdf_file(tmpdir / "temp.sdf") == named_ethane
+
     def test_from_sdf_string_multiple_molecules(self):
         contents = importlib.resources.read_text("openfe.tests.data",
                                                  "multi_molecule.sdf")

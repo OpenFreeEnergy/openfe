@@ -157,6 +157,31 @@ class Molecule:
         # https://sourceforge.net/p/rdkit/mailman/message/27518272/
         supp = Chem.SDMolSupplier()
         supp.SetData(sdf_str)
+        return cls._from_sdf_supplier(supp)
+
+    @classmethod
+    def from_sdf_file(cls, filename: str):
+        """Create ``Molecule`` from SDF file.
+
+        Parameters
+        ----------
+        filename : str
+            name of SDF file
+
+        Returns
+        -------
+        :class:`.Molecule` :
+            the deserialized molecule
+        """
+        # technically, we allow file-like objects
+        supp = Chem.SDMolSupplier(str(filename))
+        return cls._from_sdf_supplier(supp)
+
+    @classmethod
+    def _from_sdf_supplier(cls, supp):
+        """
+        Internal mechanism used by both from_sdf_string and from_sdf_file.
+        """
         mol = next(supp)
 
         # ensure that there's only one molecule in the file
