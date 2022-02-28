@@ -15,7 +15,7 @@ class AtomMapping:
 
     Attributes
     ----------
-    mol1, mol2 : rdkit.Chem.rdchem.Mol
+    mol1, mol2 : Molecule
       the two Molecules in the mapping
     mol1_to_mol2 : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
@@ -23,8 +23,8 @@ class AtomMapping:
 
     """
 
-    mol1: Chem.rdchem.Mol
-    mol2: Chem.rdchem.Mol
+    mol1: Molecule
+    mol2: Molecule
     mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):
