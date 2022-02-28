@@ -52,9 +52,9 @@ class AtomMapping:
         """
         from IPython.display import Image
 
-        return Image(self._draw_mapping(self.mol1_to_mol2,
-                                        self.mol1.to_rdkit(),
-                                        self.mol2.to_rdkit(), d2d))
+        return Image(draw_mapping(self.mol1_to_mol2,
+                                  self.mol1.to_rdkit(),
+                                  self.mol2.to_rdkit(), d2d))
 
     def draw_to_file(self, fname: str, d2d=None):
         """
@@ -71,4 +71,4 @@ class AtomMapping:
             Name of file to save atom map
         """
         with open(fname, "wb") as f:
-            f.write(self._draw_mapping(d2d))
+            f.write(draw_mapping(d2d))

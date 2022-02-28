@@ -68,7 +68,7 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
         idx = at.GetIdx()
         if idx not in mapping:
             uniques["atoms"].add(idx)
-        elif not _match_elements(mol1, idx1, mol2, mapping[idx1]):
+        elif not _match_elements(mol1, idx, mol2, mapping[idx]):
             uniques["elements"].add(idx)
 
     for bond in mol1.GetBonds():
@@ -81,7 +81,7 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
     return uniques
 
 
-def draw_mapping(mol1_to_mol1: Dict[int, int],
+def draw_mapping(mol1_to_mol2: Dict[int, int],
                  mol1: RDKitMol, mol2: RDKitMol, d2d=None):
     """
     Method to visualise the atom map correspondence between two rdkit
@@ -106,11 +106,11 @@ def draw_mapping(mol1_to_mol1: Dict[int, int],
     d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
         Optional MolDraw2D backend to use for visualisation.
     """
-    mol1_uniques = _get_unique_bonds_and_atoms(mol1_to_mol2)
+    mol1_uniques = _get_unique_bonds_and_atoms(mol1_to_mol2, mol1, mol2)
 
     # invert map
     mol2_to_mol1_map = {v: k for k, v in mol1_to_mol2.items()}
-    mol2_uniques = _get_unique_bonds_and_atoms(mol2_to_mol1_map)
+    mol2_uniques = _get_unique_bonds_and_atoms(mol2_to_mol1_map, mol1, mol2)
 
     atoms_list = [
         mol1_uniques["atoms"] | mol1_uniques["elements"],
