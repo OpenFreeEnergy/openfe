@@ -22,7 +22,6 @@ class AtomMapping:
       If this atom has no corresponding atom, None is returned.
 
     """
-
     mol1: Molecule
     mol2: Molecule
     mol1_to_mol2: Dict[int, int]
@@ -116,29 +115,35 @@ class AtomMapping:
         d2d.FinishDrawing()
         return d2d.GetDrawingText()
 
-    def visualize(self, d2d=None):
+    def _ipython_display_(self, d2d=None):
         """
         Visualize atom mapping in a Jupyter Notebook.
+
         Parameters
         ---------
         d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
-            If desired specify an instance of a MolDraw2D object, default None
+            If desired specify an instance of a MolDraw2D object. 
+            Default ``None`` will use the MolDraw2DCairo backend.
+
         Returns
         -------
-        IPython.core.display.Image :
-            Image of atom map
+        Image: IPython.core.display.Image
+            Image of the atom map
         """
         from IPython.display import Image
 
         return Image(self._draw_mapping(d2d))
 
-    def save_to_file(self, fname, d2d=None):
+    def draw_to_file(self, fname, d2d=None):
         """
         Save atom map visualization to disk
+
         Parameters
         ---------
         d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
-            If desired specify an instance of a MolDraw2D object, default None
+            If desired specify an instance of a MolDraw2D object.
+            Default ``None`` will write a .png file using thej MolDraw2DCairo
+            backend.
 
         fname : str
             Name of file to save atom map
