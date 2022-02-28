@@ -75,7 +75,7 @@ def atommapping_print_dict_main(mapper, mol1, mol2):
 def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
     mapping = generate_mapping(mapper, mol2, mol2)
     ext_to_artist = {
-        "png": ..., # TODO
+        "png": ...,  # TODO
     }
     try:
         artist = ext_to_artist[ext]
