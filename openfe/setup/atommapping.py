@@ -1,12 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
-from itertools import chain
-from typing import Dict, NewType
+from typing import Dict
 
 from rdkit import Chem
 
 from openfe.setup import Molecule
+from openfe.utils.visualization import draw_mapping
 
 
 @dataclass
@@ -35,86 +35,6 @@ class AtomMapping:
     def from_perses(cls, perses_mapping):
         raise NotImplementedError()
 
-    def _match_elements(self, idx: int):
-        """Check to see if the element changes in map from mol1 to mol2"""
-        elem_mol1 = self.mol1.GetAtomWithIdx(idx).GetAtomicNum()
-        elem_mol2 = self.mol2.GetAtomWithIdx(self.mol1_to_mol2[idx]).GetAtomicNum()
-
-        return elem_mol1 == elem_mol2
-
-    def _get_unique_bonds_and_atoms(self, mapping: Dict[int, int]):
-        """Get new atoms, element changes, and involved bonds"""
-
-        uniques: Dict[str, set] = {
-            "atoms": set(),  # atoms which fully don't exist in mol2
-            "elements": set(),  # atoms which exist but change elements in mol2
-            "bonds": set(),  # bonds involving either unique atoms or elements
-        }
-
-        for at in self.mol1.GetAtoms():
-            idx = at.GetIdx()
-            if idx not in self.mol1_to_mol2:
-                uniques["atoms"].add(idx)
-            elif not self._match_elements(idx):
-                uniques["elements"].add(idx)
-
-        for bond in self.mol1.GetBonds():
-            bond_at_idxs = [bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()]
-            for at in chain(uniques["atoms"], uniques["elements"]):
-                if at in bond_at_idxs:
-                    bond_idx = bond.GetIdx()
-                    uniques["bonds"].add(bond_idx)
-
-        return uniques
-
-    def _draw_mapping(self, d2d):
-        mol1_uniques = self._get_unique_bonds_and_atoms(self.mol1_to_mol2)
-
-        # invert map
-        mol2_to_mol1_map = {v: k for k, v in self.mol1_to_mol2.items()}
-
-        mol2_uniques = self._get_unique_bonds_and_atoms(mol2_to_mol1_map)
-
-        atoms_list = [
-            mol1_uniques["atoms"] | mol1_uniques["elements"],
-            mol2_uniques["atoms"] | mol2_uniques["elements"],
-        ]
-
-        # highlight core element changes differently from unique atoms
-        # RGBA color value needs to be between 0 and 1, so divide by 255
-        red = (220/255, 50/255, 32/255, 1)
-        blue = (0, 90/255, 181/255, 1)
-
-        at1_colors = {}
-        for at in mol1_uniques["elements"]:
-            at1_colors[at] = blue
-
-        at2_colors = {}
-        for at in mol2_uniques["elements"]:
-            at2_colors[at] = blue
-
-        atom_colors = [at1_colors, at2_colors]
-
-        bonds_list = [mol1_uniques["bonds"], mol2_uniques["bonds"]]
-
-        # If d2d is None, create an object
-        if not d2d:
-            d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300)
-
-        # Use the d2d object we instantiated or the one passed in by the user
-        d2d.drawOptions().useBWAtomPalette()
-        d2d.drawOptions().continousHighlight = False
-        d2d.drawOptions().setHighlightColour(red)
-        d2d.drawOptions().addAtomIndices = True
-        d2d.DrawMolecules(
-            [self.mol1, self.mol2],
-            highlightAtoms=atoms_list,
-            highlightBonds=bonds_list,
-            highlightAtomColors=atom_colors,
-        )
-        d2d.FinishDrawing()
-        return d2d.GetDrawingText()
-
     def _ipython_display_(self, d2d=None):
         """
         Visualize atom mapping in a Jupyter Notebook.
@@ -132,9 +52,11 @@ class AtomMapping:
         """
         from IPython.display import Image
 
-        return Image(self._draw_mapping(d2d))
+        return Image(self._draw_mapping(self.mol1_to_mol2,
+                                        self.mol1.to_rdkit(),
+                                        self.mol2.to_rdkit(), d2d))
 
-    def draw_to_file(self, fname, d2d=None):
+    def draw_to_file(self, fname: str, d2d=None):
         """
         Save atom map visualization to disk
 
