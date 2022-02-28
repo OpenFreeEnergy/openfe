@@ -54,6 +54,14 @@ class Molecule:
     to edit the molecule do this in an appropriate toolkit **before** creating
     this class.
 
+    A molecule can have a name associated with it. The name can be
+    explicitly set by the ``name`` attribute, or implicitly set based on the
+    tags in the input molecular representation (if supported, as with
+    RDKit). If not explicitly set on creation, the molecule will first look
+    for an OpenFE-specific tag ``ofe-name``, and if that doesn't exist, for
+    a commonly-used naming tag (e.g., the ``_Name`` property for RDKit
+    molecules). If no name is found, the empty string is used.
+
     Parameters
     ----------
     rdkit : rdkit.Mol
