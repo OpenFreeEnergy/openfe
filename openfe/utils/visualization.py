@@ -2,8 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from typing import Dict
 from itertools import chain
+import copy
 
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 from openfe.utils.typing import RDKitMol
 
@@ -138,13 +140,19 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
     if not d2d:
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300)
 
+    # Need to squash to 2D
+    mol1_copy = copy.deepcopy(mol1)
+    mol2_copy = copy.deepcopy(mol2)
+    AllChem.Compute2DCoords(mol1_copy)
+    AllChem.Compute2DCoords(mol2_copy)
+
     # Use the d2d object we instantiated or the one passed in by the user
     d2d.drawOptions().useBWAtomPalette()
     d2d.drawOptions().continousHighlight = False
     d2d.drawOptions().setHighlightColour(red)
     d2d.drawOptions().addAtomIndices = True
     d2d.DrawMolecules(
-        [mol1, mol2],
+        [mol1_copy, mol2_copy],
         highlightAtoms=atoms_list,
         highlightBonds=bonds_list,
         highlightAtomColors=atom_colors,
