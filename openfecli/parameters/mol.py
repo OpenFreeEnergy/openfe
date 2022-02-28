@@ -23,9 +23,7 @@ def _load_molecule_from_smiles(user_input, context):
 def _load_molecule_from_sdf(user_input, context):
     from openfe.setup import Molecule
     try:
-        with open(user_input, mode="r") as sdf:
-            contents = sdf.read()
-        return Molecule.from_sdf_string(contents)
+        return Molecule.from_sdf_file(user_input)
     except:  # any exception should try other strategies
         return NOT_PARSED
 
