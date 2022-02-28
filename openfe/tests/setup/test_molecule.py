@@ -27,19 +27,27 @@ def named_ethane():
     return Molecule(mol, name='ethane')
 
 
-@pytest.mark.parametrize('rdkit_name,name,expected', [
-    ('foo', '', 'foo'),
-    ('', 'foo', 'foo'),
-    ('bar', 'foo', 'foo'),
+@pytest.mark.parametrize('internal,rdkit_name,name,expected', [
+    ('', 'foo', '', 'foo'),
+    ('', '', 'foo', 'foo'),
+    ('', 'bar', 'foo', 'foo'),
+    ('bar', '', 'foo', 'foo'),
+    ('baz', 'bar', 'foo', 'foo'),
+    ('foo', '', '', 'foo'),
 ])
-def test_ensure_ofe_name(rdkit_name, name, expected, recwarn):
+def test_ensure_ofe_name(internal, rdkit_name, name, expected, recwarn):
     rdkit = Chem.MolFromSmiles("CC")
+    if internal:
+        rdkit.SetProp('_Name', internal)
+
     if rdkit_name:
         rdkit.SetProp('ofe-name', rdkit_name)
 
     out_name = _ensure_ofe_name(rdkit, name)
 
-    if rdkit_name == "bar":
+    if {rdkit_name, internal} - {'foo', ''}:
+        # we should warn if rdkit properties are anything other than 'foo'
+        # (expected) or the empty string (not set)
         assert len(recwarn) == 1
         assert "Molecule being renamed" in recwarn[0].message.args[0]
     else:

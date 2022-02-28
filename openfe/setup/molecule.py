@@ -24,9 +24,14 @@ def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
     name; ensure that is set in the rdkit representation.
     """
     try:
-        rdkit_name = mol.GetProp("ofe-name")
+        rdkit_name = mol.GetProp("_Name")
     except KeyError:
         rdkit_name = ""
+
+    try:
+        rdkit_name = mol.GetProp("ofe-name")
+    except KeyError:
+        pass
 
     if name and rdkit_name and rdkit_name != name:
         warnings.warn(f"Molecule being renamed from {rdkit_name} to {name}.")
@@ -48,6 +53,14 @@ class Molecule:
     This class is a read-only representation of a molecule, if you want
     to edit the molecule do this in an appropriate toolkit **before** creating
     this class.
+
+    A molecule can have a name associated with it. The name can be
+    explicitly set by the ``name`` attribute, or implicitly set based on the
+    tags in the input molecular representation (if supported, as with
+    RDKit). If not explicitly set on creation, the molecule will first look
+    for an OpenFE-specific tag ``ofe-name``, and if that doesn't exist, for
+    a commonly-used naming tag (e.g., the ``_Name`` property for RDKit
+    molecules). If no name is found, the empty string is used.
 
     Parameters
     ----------
