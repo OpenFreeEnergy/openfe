@@ -1,6 +1,7 @@
 [run]
 omit =
     */_version.py
+    */tests/dev/*py
 
 [report]
 exclude_lines =
