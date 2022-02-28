@@ -126,6 +126,10 @@ def test_atommapping_visualize_main(mols, tmpdir):
 def test_atommapping_visualize_main_bad_extension(mols, tmpdir):
     mol1, mol2 = mols
     mapper = LomapAtomMapper
-    with open(tmpdir / "foo.bar", mode='w') as f:
-        with pytest.raises(click.BadParameter, match="Unknown file format"):
-            atommapping_visualize_main(mapper, mol1, mol2, f, "bar")
+    mapping = AtomMapping(mol1, mol2, {i: i for i in range(7)})
+    with mock.patch('openfecli.commands.atommapping.generate_mapping',
+                    mock.Mock(return_value=mapping)):
+        with open(tmpdir / "foo.bar", mode='w') as f:
+            with pytest.raises(click.BadParameter,
+                               match="Unknown file format"):
+                atommapping_visualize_main(mapper, mol1, mol2, f, "bar")

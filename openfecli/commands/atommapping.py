@@ -82,7 +82,7 @@ def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
     except KeyError:
         raise click.BadParameter(
             f"Unknown file format: '{ext}'. The following formats are "
-            "supported: " + ", ".join(["'{ext}'" for ext in ext_to_artist])
+            "supported: " + ", ".join([f"'{ext}'" for ext in ext_to_artist])
         )
 
     print("This is where we'd create the image and save it")
