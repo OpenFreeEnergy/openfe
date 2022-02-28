@@ -1,6 +1,7 @@
 import pytest
 from openfecli.parameters.output import get_file_and_extension
 
+
 @pytest.mark.parametrize("fname,expected_ext", [
     ("foo.bar", "bar"),
     ("foo.bar.bz", "bz"),

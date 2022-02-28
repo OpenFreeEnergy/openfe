@@ -8,7 +8,8 @@ from openfe.setup import AtomMapping, LomapAtomMapper
 
 from openfecli.parameters import MOL
 from openfecli.commands.atommapping import (
-    atommapping, generate_mapping, atommapping_print_dict_main
+    atommapping, generate_mapping, atommapping_print_dict_main,
+    atommapping_visualize_main
 )
 
 
@@ -116,5 +117,15 @@ def test_atommapping_print_dict_main(capsys, mols):
         assert captured.out == str(mapping.mol1_to_mol2) + "\n"
 
 
-def test_atommapping_visualize_main(tmpdir):
-    pass
+def test_atommapping_visualize_main(mols, tmpdir):
+    mol1, mol2 = mols
+    mapper = LomapAtomMapper
+    pytest.skip()  # TODO: probably with a smoke test
+
+
+def test_atommapping_visualize_main_bad_extension(mols, tmpdir):
+    mol1, mol2 = mols
+    mapper = LomapAtomMapper
+    with open(tmpdir / "foo.bar") as f:
+        with pytest.raises(click.BadParameter, match="Unknown file format"):
+            atommapping_visualize_main(mapper, mol1, mol2, f, "bar")
