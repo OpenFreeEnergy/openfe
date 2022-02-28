@@ -1,9 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from __future__ import annotations
+import json
 
 from typing import FrozenSet, Iterable
+
 from openfe.setup import AtomMapping, Molecule
+import openfe
 
 import networkx as nx
 
@@ -52,6 +55,90 @@ class Network:
     def nodes(self) -> FrozenSet[Molecule]:
         """A read-only view of the nodes of the Network"""
         return self._nodes
+
+    def __eq__(self, other):
+        return self.nodes == other.nodes and self.edges == other.edges
+
+    def _serializable_graph(self) -> nx.Graph:
+        """
+        Create NetworkX graph with serializable attribute representations.
+
+        This enables us to use easily use different serialization
+        approaches.
+        """
+        # sorting ensures that we always preserve order in files, so two
+        # identical networks will show no changes if you diff their
+        # serialized versions
+        sorted_nodes = sorted(self.nodes, key=lambda m: (m.smiles, m.name))
+        mol_to_label = {mol: f"mol{num}"
+                        for num, mol in enumerate(sorted_nodes)}
+
+        edge_data = sorted([
+            (
+                mol_to_label[edge.mol1],
+                mol_to_label[edge.mol2],
+                json.dumps(list(edge.mol1_to_mol2.items()))
+            )
+            for edge in self.edges
+        ])
+
+        # from here, we just build the graph
+        serializable_graph = nx.MultiDiGraph(ofe_version=openfe.__version__)
+        for mol, label in mol_to_label.items():
+            serializable_graph.add_node(label, sdf=mol.to_sdf())
+
+        for mol1, mol2, mapping in edge_data:
+            serializable_graph.add_edge(mol1, mol2, mapping=mapping)
+
+        return serializable_graph
+
+    @classmethod
+    def _from_serializable_graph(cls, graph: nx.Graph):
+        """Create network from NetworkX graph with serializable attributes.
+
+        This is the inverse of ``_serializable_graph``.
+        """
+        label_to_mol = {node: Molecule.from_sdf_string(sdf)
+                        for node, sdf in graph.nodes(data='sdf')}
+
+        edges = [
+            AtomMapping(mol1=label_to_mol[node1],
+                        mol2=label_to_mol[node2],
+                        mol1_to_mol2=dict(json.loads(mapping)))
+            for node1, node2, mapping in graph.edges(data='mapping')
+        ]
+
+        return cls(edges=edges, nodes=label_to_mol.values())
+
+    def to_graphml(self) -> str:
+        """Return the GraphML string representing this ``Network``.
+
+        This is the primary serialization mechanism for this class.
+
+        Returns
+        -------
+        str :
+            string representing this network in GraphML format
+        """
+        return "\n".join(nx.generate_graphml(self._serializable_graph()))
+
+    @classmethod
+    def from_graphml(cls, graphml_str: str):
+        """Create ``Network`` from GraphML string.
+
+        This is the primary deserialization mechanism for this class.
+
+        Parameters
+        ----------
+        graphml_str : str
+            GraphML string representation of a :class:`.Network`
+
+        Returns
+        -------
+        :class:`.Network`:
+            new network from the GraphML
+        """
+        return cls._from_serializable_graph(nx.parse_graphml(graphml_str))
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
         """

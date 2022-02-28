@@ -1,9 +1,11 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 from rdkit import Chem
 
 
 import openfe
-from openfe.setup.lomap_mapper import LomapAtomMapper
+from openfe.setup import LomapAtomMapper, Molecule
 
 
 def test_simple(lomap_basic_test_files):
@@ -39,7 +41,7 @@ def test_generator_length(lomap_basic_test_files):
 
 def test_bad_mapping(lomap_basic_test_files):
     toluene = lomap_basic_test_files['toluene']
-    NigelTheNitrogen = Chem.MolFromSmiles('N')
+    NigelTheNitrogen = Molecule(Chem.MolFromSmiles('N'), name='Nigel')
 
     mapper = LomapAtomMapper()
 

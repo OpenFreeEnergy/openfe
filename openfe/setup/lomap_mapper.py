@@ -8,7 +8,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 from lomap import mcs as lomap_mcs
 
 
-from . import AtomMapper, AtomMapping
+from . import AtomMapper
 
 
 class LomapAtomMapper(AtomMapper):
@@ -37,8 +37,8 @@ class LomapAtomMapper(AtomMapper):
 
     def _mappings_generator(self, mol1, mol2):
         try:
-            mcs = lomap_mcs.MCS(mol1, mol2, time=self.time, threed=self.threed,
-                                max3d=self.max3d)
+            mcs = lomap_mcs.MCS(mol1, mol2, time=self.time,
+                                threed=self.threed, max3d=self.max3d)
         except ValueError:
             # if no match found, Lomap throws ValueError, so we just yield
             # generator with no contents
@@ -53,5 +53,5 @@ class LomapAtomMapper(AtomMapper):
         mapping_dict = dict((map(int, v.split(':'))
                              for v in mapping_string.split(',')))
 
-        yield AtomMapping(mol1=mol1, mol2=mol2, mol1_to_mol2=mapping_dict)
+        yield mapping_dict
         return

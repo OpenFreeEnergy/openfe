@@ -1,3 +1,5 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 from rdkit import Chem
 from importlib import resources
@@ -45,6 +47,7 @@ def other_mapping():
 
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
+    # a dict of {filenames.strip(mol2): Molecule} for a simple set of ligands
     files = {}
     for f in [
         '1,3,7-trimethylnaphthalene',
@@ -57,6 +60,20 @@ def lomap_basic_test_files():
         'toluene']:
         with resources.path('openfe.tests.data.lomap_basic',
                             f + '.mol2') as fn:
-            files[f] = Chem.MolFromMol2File(str(fn))
+            mol = Chem.MolFromMol2File(str(fn))
+            files[f] = Molecule(mol, name=f)
 
     return files
+
+
+@pytest.fixture
+def serialization_template():
+    def inner(filename):
+        import importlib
+        import string
+        import openfe
+        loc = "openfe.tests.data.serialization"
+        tmpl = importlib.resources.read_text(loc, filename)
+        return tmpl.format(OFE_VERSION=openfe.__version__)
+
+    return inner

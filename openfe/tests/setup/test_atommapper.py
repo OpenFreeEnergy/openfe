@@ -26,7 +26,7 @@ class TestAtomMapper:
 
             def _mappings_generator(self, mol1, mol2):
                 for mapping in self.mappings:
-                    yield mapping
+                    yield mapping.mol1_to_mol2
 
         mapper = ConcreteAtomMapper([simple_mapping, other_mapping])
         results = list(mapper.suggest_mappings(mol1, mol2))

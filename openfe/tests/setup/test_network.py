@@ -225,3 +225,19 @@ class TestNetwork:
         for edge in new_network.edges:
             # not sure is this needs to be formally required
             assert edge is not duplicate
+
+    def test_serialization_cycle(self, simple_network):
+        network = simple_network.network
+        serialized = network.to_graphml()
+        deserialized = Network.from_graphml(serialized)
+        reserialized = deserialized.to_graphml()
+        assert serialized == reserialized
+        assert network == deserialized
+
+    def test_to_graphml(self, simple_network, serialization_template):
+        expected = serialization_template("network_template.graphml")
+        assert simple_network.network.to_graphml() + "\n" == expected
+
+    def test_from_graphml(self, simple_network, serialization_template):
+        contents = serialization_template("network_template.graphml")
+        assert Network.from_graphml(contents) == simple_network.network
