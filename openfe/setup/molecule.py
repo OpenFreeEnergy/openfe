@@ -24,9 +24,14 @@ def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
     name; ensure that is set in the rdkit representation.
     """
     try:
-        rdkit_name = mol.GetProp("ofe-name")
+        rdkit_name = mol.GetProp("_Name")
     except KeyError:
         rdkit_name = ""
+
+    try:
+        rdkit_name = mol.GetProp("ofe-name")
+    except KeyError:
+        pass
 
     if name and rdkit_name and rdkit_name != name:
         warnings.warn(f"Molecule being renamed from {rdkit_name} to {name}.")
