@@ -50,11 +50,11 @@ class AtomMapping:
         Image: IPython.core.display.Image
             Image of the atom map
         """
-        from IPython.display import Image
+        from IPython.display import Image, display
 
-        return Image(draw_mapping(self.mol1_to_mol2,
-                                  self.mol1.to_rdkit(),
-                                  self.mol2.to_rdkit(), d2d))
+        return display(Image(draw_mapping(self.mol1_to_mol2,
+                                          self.mol1.to_rdkit(),
+                                          self.mol2.to_rdkit(), d2d)))
 
     def draw_to_file(self, fname: str, d2d=None):
         """
