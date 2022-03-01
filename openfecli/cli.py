@@ -27,6 +27,7 @@ the OpenFE Python library.
 
 @click.command(cls=OpenFECLI, name="openfe", help=_MAIN_HELP,
                context_settings=CONTEXT_SETTINGS)
+@click.version_option(package_name='openfe')
 def main():
     # currently empty: we can add options at the openfe level (as opposed to
     # subcommands) by adding click options here. Subcommand runs after this
