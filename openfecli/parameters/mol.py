@@ -42,9 +42,8 @@ def _load_molecule_from_mol2(user_input, context):
     from rdkit import Chem
     from openfe.setup import Molecule
 
-    try:
-        m = Chem.MolFromMol2File(user_input)
-    except:
+    m = Chem.MolFromMol2File(user_input)
+    if m is None:
         return NOT_PARSED
     else:
         return Molecule(m)
