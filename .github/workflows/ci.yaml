@@ -46,6 +46,7 @@ jobs:
             activate-environment: openfe
 
       - name: Decrypt OpenEye license
+        if: ${{ !github.event.pull_request.head.repo.fork }}
         env:
           OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
         run: |
