@@ -21,7 +21,7 @@ def _load_molecule_from_smiles(user_input, context):
 
 
 def _load_molecule_from_sdf(user_input, context):
-    if '.sdf' not in user_input:  # this silences some stderr spam
+    if '.sdf' not in str(user_input):  # this silences some stderr spam
         return NOT_PARSED
 
     from openfe.setup import Molecule
@@ -32,7 +32,7 @@ def _load_molecule_from_sdf(user_input, context):
 
 
 def _load_molecule_from_mol2(user_input, context):
-    if '.mol2' not in user_input:
+    if '.mol2' not in str(user_input):
         return NOT_PARSED
 
     from rdkit import Chem
