@@ -5,10 +5,11 @@ import logging
 logger = logging.getLogger('openff.toolkit')
 logger.setLevel(logging.ERROR)
 from openff.toolkit.topology import Molecule as OFFMolecule
-
+import warnings
 
 from rdkit import Chem
 
+import openfe
 from openfe.utils.molhashing import hashmol
 from openfe.utils.typing import RDKitMol, OEMol
 
