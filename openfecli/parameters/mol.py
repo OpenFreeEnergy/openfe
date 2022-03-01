@@ -2,6 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
+import os
+import contextlib
 
 
 def _load_molecule_from_smiles(user_input, context):
@@ -21,14 +23,22 @@ def _load_molecule_from_smiles(user_input, context):
 
 
 def _load_molecule_from_sdf(user_input, context):
-    from openfe.setup import Molecule
-    try:
-        return Molecule.from_sdf_file(user_input)
-    except:  # any exception should try other strategies
+    if '.sdf' not in user_input:  # this silences some stderr spam
         return NOT_PARSED
+
+    from openfe.setup import Molecule
+    with open(os.devnull, 'wb') as devnull:
+        with contextlib.redirect_stderr(devnull):
+            try:
+                return Molecule.from_sdf_file(user_input)
+            except:  # any exception should try other strategies
+                return NOT_PARSED
 
 
 def _load_molecule_from_mol2(user_input, context):
+    if '.mol2' not in user_input:
+        return NOT_PARSED
+
     from rdkit import Chem
     from openfe.setup import Molecule
 
@@ -38,6 +48,7 @@ def _load_molecule_from_mol2(user_input, context):
         return NOT_PARSED
     else:
         return Molecule(m)
+
 
 get_molecule = MultiStrategyGetter(
     strategies=[
