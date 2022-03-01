@@ -5,9 +5,10 @@ from rdkit import Chem
 from openfe.utils.visualization import (_match_elements,
                                         _get_unique_bonds_and_atoms,)
 
+
 @pytest.mark.parametrize("at1, idx1, at2, idx2, response", [
-    ["N", 0, "C", 0, False,],
-    ["C", 0, "C", 0, True,],
+    ["N", 0, "C", 0, False],
+    ["C", 0, "C", 0, True],
     ["COC", 1, "NOC", 1, True],
     ["COON", 2, "COC", 2, False],]
 )
@@ -30,8 +31,8 @@ def maps():
 
 
 @pytest.mark.parametrize('molname, atoms, elems, bonds', [
-    ['phenol', {10,}, {12,}, {10, 12}],
-    ['anisole', {0, 1, 3, 4}, {2,}, {0, 1, 2, 3, 13}]
+    ['phenol', {10, }, {12, }, {10, 12}],
+    ['anisole', {0, 1, 3, 4}, {2, }, {0, 1, 2, 3, 13}]
 ])
 def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
                                    benzene_transforms, maps):
@@ -47,9 +48,9 @@ def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
     # no unique atoms in benzene
     assert uniques['atoms'] == set()
     # H->O
-    assert uniques['elements'] == {10,}
+    assert uniques['elements'] == {10, }
     # One bond involved
-    assert uniques['bonds'] == {10,}
+    assert uniques['bonds'] == {10, }
 
     # invert and check the mol2 uniques
     inv_map = {v:k for k,v in mapping.items()}

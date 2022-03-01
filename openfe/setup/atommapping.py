@@ -28,7 +28,8 @@ class AtomMapping:
 
     def __hash__(self):
         return hash(
-            (hash(self.mol1), hash(self.mol2), tuple(self.mol1_to_mol2.items()))
+            (hash(self.mol1), hash(self.mol2),
+             tuple(self.mol1_to_mol2.items()))
         )
 
     @classmethod
@@ -42,7 +43,7 @@ class AtomMapping:
         Parameters
         ---------
         d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
-            If desired specify an instance of a MolDraw2D object. 
+            If desired specify an instance of a MolDraw2D object.
             Default ``None`` will use the MolDraw2DCairo backend.
 
         Returns
@@ -71,7 +72,7 @@ class AtomMapping:
             Name of file to save atom map
         """
         data = draw_mapping(self.mol1_to_mol2, self.mol1.to_rdkit(),
-                                 self.mol2.to_rdkit(), d2d)
+                            self.mol2.to_rdkit(), d2d)
         if type(data) == bytes:
             mode = "wb"
         else:

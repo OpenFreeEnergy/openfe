@@ -14,8 +14,7 @@ def benzene_transforms():
     mols = {}
     with resources.path('openfe.tests.data',
                         'benzene_modifications.sdf') as fn:
-            supplier = Chem.SDMolSupplier(str(fn), removeHs=False)
-            for mol in supplier:
-                mols[mol.GetProp('_Name')] = Molecule(mol)
+        supplier = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for mol in supplier:
+            mols[mol.GetProp('_Name')] = Molecule(mol)
     return mols
-
