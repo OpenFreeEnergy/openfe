@@ -35,7 +35,7 @@ class AtomMapping:
     def from_perses(cls, perses_mapping):
         raise NotImplementedError()
 
-    def _ipython_display_(self, d2d=None):
+    def _ipython_display_(self, d2d=None):  # pragma: no-cover
         """
         Visualize atom mapping in a Jupyter Notebook.
 
