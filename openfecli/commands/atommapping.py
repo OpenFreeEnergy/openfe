@@ -75,7 +75,7 @@ def atommapping_print_dict_main(mapper, mol1, mol2):
 def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
     mapping = generate_mapping(mapper, mol2, mol2)
     ext_to_artist = {
-        "png": ...,  # TODO
+        "png": None,
     }
     try:
         artist = ext_to_artist[ext]
@@ -85,9 +85,7 @@ def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
             "supported: " + ", ".join([f"'{ext}'" for ext in ext_to_artist])
         )
 
-    print("This is where we'd create the image and save it")
-    # contents = func(mappping, artist)
-    # file.write(contents)
+    mapping.draw_to_file(file)
 
 
 PLUGIN = OFECommandPlugin(
