@@ -1,19 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import warnings
-with warnings.catch_warnings():
-    # openff complains about oechem being missing, shhh
-    from openff.toolkit.topology import Molecule as OFFMolecule
+import logging
+# openff complains about oechem being missing, shhh
+logger = logging.getLogger('openff.toolkit')
+logger.setLevel(logging.ERROR)
+from openff.toolkit.topology import Molecule as OFFMolecule
 
-import contextlib
-import io
-import sys
-import warnings
-from typing import TypeVar
 
 from rdkit import Chem
 
-import openfe
 from openfe.utils.molhashing import hashmol
 from openfe.utils.typing import RDKitMol, OEMol
 
