@@ -10,7 +10,7 @@ from openfe.utils.visualization import (_match_elements,
     ["N", 0, "C", 0, False],
     ["C", 0, "C", 0, True],
     ["COC", 1, "NOC", 1, True],
-    ["COON", 2, "COC", 2, False],]
+    ["COON", 2, "COC", 2, False]]
 )
 def test_match_elements(at1, idx1, at2, idx2, response):
     mol1 = Chem.MolFromSmiles(at1)
@@ -53,7 +53,7 @@ def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
     assert uniques['bonds'] == {10, }
 
     # invert and check the mol2 uniques
-    inv_map = {v:k for k,v in mapping.items()}
+    inv_map = {v: k for k, v in mapping.items()}
 
     uniques = _get_unique_bonds_and_atoms(inv_map,
                                           mol2.to_rdkit(), mol1.to_rdkit())
