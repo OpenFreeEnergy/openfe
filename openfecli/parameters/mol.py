@@ -21,16 +21,34 @@ def _load_molecule_from_smiles(user_input, context):
 
 
 def _load_molecule_from_sdf(user_input, context):
+    if '.sdf' not in str(user_input):  # this silences some stderr spam
+        return NOT_PARSED
+
     from openfe.setup import Molecule
     try:
         return Molecule.from_sdf_file(user_input)
-    except:  # any exception should try other strategies
+    except ValueError:  # any exception should try other strategies
         return NOT_PARSED
+
+
+def _load_molecule_from_mol2(user_input, context):
+    if '.mol2' not in str(user_input):
+        return NOT_PARSED
+
+    from rdkit import Chem
+    from openfe.setup import Molecule
+
+    m = Chem.MolFromMol2File(user_input)
+    if m is None:
+        return NOT_PARSED
+    else:
+        return Molecule(m)
 
 
 get_molecule = MultiStrategyGetter(
     strategies=[
         _load_molecule_from_sdf,
+        _load_molecule_from_mol2,
         # NOTE: I think loading from smiles must be last choice, because
         # failure will give meaningless user-facing errors
         _load_molecule_from_smiles,
