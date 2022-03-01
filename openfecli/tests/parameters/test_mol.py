@@ -1,4 +1,5 @@
 import importlib
+from importlib import resources
 
 import pytest
 import click
@@ -24,6 +25,14 @@ def test_get_molecule_sdf():
         mol = get_molecule(filename)
         assert mol.smiles == "CC"
         assert mol.name == "ethane"
+
+
+def test_get_molecule_mol2():
+    with importlib.resources.path("openfe.tests.data.lomap_basic",
+                                  "toluene.mol2") as f:
+        mol = get_molecule(str(f))
+
+        assert mol.smiles == 'Cc1ccccc1'
 
 
 def test_get_molecule_error():
