@@ -15,7 +15,7 @@ def allow_two_molecules(ctx, param, value):
 
 @click.command(
     "atommapping",
-    short_help="Explore the alchemical mutations of a given mapping"
+    short_help="Check the atom mapping of a given pair of ligands"
 )
 @MOL.parameter(multiple=True, callback=allow_two_molecules, required=True,
                help=MOL.kwargs['help'] + " Must be specified twice.")
@@ -73,9 +73,12 @@ def atommapping_print_dict_main(mapper, mol1, mol2):
 
 
 def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
-    mapping = generate_mapping(mapper, mol2, mol2)
+    from rdkit.Chem import Draw
+    from openfe.utils import visualization
+
+    mapping = generate_mapping(mapper, mol1, mol2)
     ext_to_artist = {
-        "png": ...,  # TODO
+        "png": Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300),
     }
     try:
         artist = ext_to_artist[ext]
@@ -85,9 +88,11 @@ def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
             "supported: " + ", ".join([f"'{ext}'" for ext in ext_to_artist])
         )
 
-    print("This is where we'd create the image and save it")
-    # contents = func(mappping, artist)
-    # file.write(contents)
+    contents = visualization.draw_mapping(mapping.mol1_to_mol2,
+                                          mapping.mol1.to_rdkit(),
+                                          mapping.mol2.to_rdkit(), d2d=artist)
+
+    file.write(contents)
 
 
 PLUGIN = OFECommandPlugin(

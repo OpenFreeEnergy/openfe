@@ -65,7 +65,7 @@ class AtomMapping:
         ---------
         d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
             If desired specify an instance of a MolDraw2D object.
-            Default ``None`` will write a .png file using thej MolDraw2DCairo
+            Default ``None`` will write a .png file using the MolDraw2DCairo
             backend.
 
         fname : str
