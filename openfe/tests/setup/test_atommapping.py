@@ -23,9 +23,9 @@ def test_draw_mapping_cairo(tmpdir, simple_mapping):
         assert filed.exists()
 
 
-def test_draw_mapping_svg(tmpdir, simple_mapping):
+def test_draw_mapping_svg(tmpdir, other_mapping):
     with tmpdir.as_cwd():
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DSVG(600, 300, 300, 300)
-        simple_mapping.draw_to_file('test.svg', d2d=d2d)
+        other_mapping.draw_to_file('test.svg', d2d=d2d)
         filed = pathlib.Path('test.svg')
         assert filed.exists()
