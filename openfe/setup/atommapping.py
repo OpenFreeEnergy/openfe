@@ -70,5 +70,13 @@ class AtomMapping:
         fname : str
             Name of file to save atom map
         """
-        with open(fname, "wb") as f:
-            f.write(draw_mapping(d2d))
+        data = draw_mapping(self.mol1_to_mol2, self.mol1.to_rdkit(),
+                                 self.mol2.to_rdkit(), d2d)
+        if type(data) == bytes:
+            mode = "wb"
+        else:
+            mode = "w"
+
+        with open(fname, mode) as f:
+            f.write(draw_mapping(self.mol1_to_mol2, self.mol1.to_rdkit(),
+                                 self.mol2.to_rdkit(), d2d))
