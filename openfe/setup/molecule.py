@@ -179,6 +179,8 @@ class Molecule:
         Internal mechanism used by both from_sdf_string and from_sdf_file.
         """
         mol = next(supp)
+        if mol is None:
+            raise ValueError("Unable to load Molecule")
 
         # ensure that there's only one molecule in the file
         try:

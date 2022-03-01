@@ -1,5 +1,5 @@
 import importlib
-
+import importlib.resources
 import openff.toolkit.topology
 import pytest
 
@@ -128,6 +128,12 @@ class TestMolecule:
             tmpf.write(sdf_str)
 
         assert Molecule.from_sdf_file(tmpdir / "temp.sdf") == named_ethane
+
+    def test_from_sdf_file_junk(self):
+        with importlib.resources.path('openfe.tests.data.lomap_basic',
+                                      'toluene.mol2') as fn:
+            with pytest.raises(ValueError):
+                Molecule.from_sdf_file(str(fn))
 
     def test_from_sdf_string_multiple_molecules(self):
         contents = importlib.resources.read_text("openfe.tests.data",
