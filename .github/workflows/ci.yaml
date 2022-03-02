@@ -40,7 +40,6 @@ jobs:
         with:
             auto-update-conda: true
             use-mamba: true
-            channels: jaimergp/label/unsupported-cudatoolkit-shim
             python-version: ${{ matrix.python-version }}
             miniforge-variant: Mambaforge
             environment-file: environment.yml
