@@ -1,5 +1,6 @@
 name: openfe
 channels:
+  - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
   - openeye
 dependencies:
