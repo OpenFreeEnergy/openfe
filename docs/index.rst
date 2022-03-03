@@ -11,6 +11,7 @@ Welcome to OpenFE's documentation!
    :caption: Contents:
 
    setup
+   api
 
 Indices and tables
 ==================
