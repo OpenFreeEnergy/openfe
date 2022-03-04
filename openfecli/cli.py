@@ -7,7 +7,7 @@ import click
 from plugcli.cli import CLI, CONTEXT_SETTINGS
 from plugcli.plugin_management import FilePluginLoader
 
-import openfe
+import openfecli
 
 from .plugins import OFECommandPlugin
 
@@ -29,7 +29,7 @@ the OpenFE Python library.
 
 @click.command(cls=OpenFECLI, name="openfe", help=_MAIN_HELP,
                context_settings=CONTEXT_SETTINGS)
-@click.version_option(version=openfe.__version__)
+@click.version_option(version=openfecli.__version__)
 def main():
     # currently empty: we can add options at the openfe level (as opposed to
     # subcommands) by adding click options here. Subcommand runs after this
