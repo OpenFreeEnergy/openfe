@@ -1,1 +1,2 @@
 openfe/_version.py export-subst
+openfecli/_version.py export-subst
