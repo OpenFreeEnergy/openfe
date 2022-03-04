@@ -13,7 +13,7 @@ def test_radial_graph(lomap_basic_test_files):
     toluene = lomap_basic_test_files[central_ligand_name]
     mapper = openfe.setup.LomapAtomMapper()
 
-    network = openfe.setup.network_planning.generate_radial_network(
+    network = openfe.setup.ligand_network_planning.generate_radial_network(
         ligands=others, central_ligand=toluene,
         mappers=[mapper], scorer=None,
     )
@@ -32,7 +32,7 @@ def test_radial_network_failure(lomap_basic_test_files):
     nigel = openfe.setup.LigandMolecule(Chem.MolFromSmiles('N'))
 
     with pytest.raises(ValueError, match='No mapping found for'):
-        network = openfe.setup.network_planning.generate_radial_network(
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
             ligands=[nigel], central_ligand=lomap_basic_test_files['toluene'],
             mappers=[openfe.setup.LomapAtomMapper()], scorer=None
         )
