@@ -44,7 +44,7 @@ def get_config():
     cfg.style = "pep440-post"
     cfg.tag_prefix = ""
     cfg.parentdir_prefix = "None"
-    cfg.versionfile_source = "openfe/_version.py"
+    cfg.versionfile_source = "openfecli/_version.py"
     cfg.verbose = False
     return cfg
 

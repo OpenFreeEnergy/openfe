@@ -1,2 +1,2 @@
 include versioneer.py
-include openfe/_version.py
+include openfecli/_version.py
