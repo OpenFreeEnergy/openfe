@@ -30,7 +30,7 @@ def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
         pass
 
     if name and rdkit_name and rdkit_name != name:
-        warnings.warn(f"Molecule being renamed from {rdkit_name} to {name}.")
+        warnings.warn(f"LigandMolecule being renamed from {rdkit_name} to {name}.")
     elif name == "":
         name = rdkit_name
 
@@ -43,19 +43,24 @@ def _ensure_ofe_version(mol: RDKitMol):
     mol.SetProp("ofe-version", openfe.__version__)
 
 
-class Molecule:
-    """Molecule wrapper to provide proper hashing and equality.
+class LigandMolecule:
+    """A molecule wrapper to provide proper hashing and equality.
 
-    This class is a read-only representation of a molecule, if you want
-    to edit the molecule do this in an appropriate toolkit **before** creating
-    this class.
+    This class is designed to act as a node on a LigandNetwork graph.
 
-    A molecule can have a name associated with it. The name can be
-    explicitly set by the ``name`` attribute, or implicitly set based on the
-    tags in the input molecular representation (if supported, as with
-    RDKit). If not explicitly set on creation, the molecule will first look
-    for an OpenFE-specific tag ``ofe-name``, and if that doesn't exist, for
-    a commonly-used naming tag (e.g., the ``_Name`` property for RDKit
+    .. note::
+       This class is a read-only representation of a ligand molecule, if you
+       want to edit the molecule do this in an appropriate toolkit **before**
+       creating this class.
+
+    A ligand molecule can have a name associated with it, which is needed to
+    distinguish two molecules with the same SMILES representation, or is
+    simply useful to help identify ligand molecules later.
+    The name can be explicitly set by the ``name`` attribute, or implicitly set
+    based on the tags in the input molecular representation (if supported, as
+    with RDKit). If not explicitly set on creation, the molecule will first
+    look for an OpenFE-specific tag ``ofe-name``, and if that doesn't exist,
+    for a commonly-used naming tag (e.g., the ``_Name`` property for RDKit
     molecules). If no name is found, the empty string is used.
 
     Parameters
@@ -79,7 +84,7 @@ class Molecule:
 
     @classmethod
     def from_rdkit(cls, rdkit: RDKitMol, name: str = ""):
-        """Create a Molecule copying the input from an rdkit Mol"""
+        """Create a LigandMolecule copying the input from an rdkit Mol"""
         return cls(rdkit=Chem.Mol(rdkit), name=name)
 
     def to_openeye(self) -> OEMol:
@@ -136,7 +141,7 @@ class Molecule:
 
     @classmethod
     def from_sdf_string(cls, sdf_str: str):
-        """Create ``Molecule`` from SDF-formatted string.
+        """Create ``LigandMolecule`` from SDF-formatted string.
 
         This is the primary deserialization mechanism for this class.
 
@@ -147,7 +152,7 @@ class Molecule:
 
         Returns
         -------
-        :class:`.Molecule` :
+        :class:`.LigandMolecule` :
             the deserialized molecule
         """
         supp = Chem.SDMolSupplier()
@@ -156,7 +161,7 @@ class Molecule:
 
     @classmethod
     def from_sdf_file(cls, filename: str):
-        """Create ``Molecule`` from SDF file.
+        """Create ``LigandMolecule`` from SDF file.
 
         Parameters
         ----------
@@ -165,7 +170,7 @@ class Molecule:
 
         Returns
         -------
-        :class:`.Molecule` :
+        :class:`.LigandMolecule` :
             the deserialized molecule
         """
         # technically, we allow file-like objects
@@ -179,7 +184,7 @@ class Molecule:
         """
         mol = next(supp)
         if mol is None:
-            raise ValueError("Unable to load Molecule")
+            raise ValueError("Unable to load LigandMolecule")
 
         # ensure that there's only one molecule in the file
         try:

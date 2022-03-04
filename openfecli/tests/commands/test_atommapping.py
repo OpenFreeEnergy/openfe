@@ -4,7 +4,7 @@ import pytest
 import click
 from click.testing import CliRunner
 
-from openfe.setup import AtomMapping, LomapAtomMapper
+from openfe.setup import LigandAtomMapping, LomapAtomMapper
 
 from openfecli.parameters import MOL
 from openfecli.commands.atommapping import (
@@ -92,8 +92,8 @@ def test_atommapping_missing_mapper(mol1_args, mol2_args):
 def test_generate_mapping(n_mappings, mols):
     mol1, mol2, = mols
     mappings = [
-        AtomMapping(mol1, mol2, {i: i for i in range(7)}),
-        AtomMapping(mol1, mol2, {i: (i + 1) % 7 for i in range(7)}),
+        LigandAtomMapping(mol1, mol2, {i: i for i in range(7)}),
+        LigandAtomMapping(mol1, mol2, {i: (i + 1) % 7 for i in range(7)}),
     ]
     mapper = mock.Mock(
         suggest_mappings=mock.Mock(return_value=mappings[:n_mappings])
@@ -109,7 +109,7 @@ def test_generate_mapping(n_mappings, mols):
 def test_atommapping_print_dict_main(capsys, mols):
     mol1, mol2 = mols
     mapper = LomapAtomMapper
-    mapping = AtomMapping(mol1, mol2, {i: i for i in range(7)})
+    mapping = LigandAtomMapping(mol1, mol2, {i: i for i in range(7)})
     with mock.patch('openfecli.commands.atommapping.generate_mapping',
                     mock.Mock(return_value=mapping)):
         atommapping_print_dict_main(mapper, mol1, mol2)
@@ -126,7 +126,7 @@ def test_atommapping_visualize_main(mols, tmpdir):
 def test_atommapping_visualize_main_bad_extension(mols, tmpdir):
     mol1, mol2 = mols
     mapper = LomapAtomMapper
-    mapping = AtomMapping(mol1, mol2, {i: i for i in range(7)})
+    mapping = LigandAtomMapping(mol1, mol2, {i: i for i in range(7)})
     with mock.patch('openfecli.commands.atommapping.generate_mapping',
                     mock.Mock(return_value=mapping)):
         with open(tmpdir / "foo.bar", mode='w') as f:

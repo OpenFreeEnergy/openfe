@@ -4,8 +4,8 @@ import pytest
 from rdkit import Chem
 from importlib import resources
 
-from openfe.setup import AtomMapping
-from openfe.setup import Molecule
+from openfe.setup import LigandAtomMapping
+from openfe.setup import LigandMolecule
 
 
 @pytest.fixture(scope='session')
@@ -16,5 +16,5 @@ def benzene_transforms():
                         'benzene_modifications.sdf') as fn:
         supplier = Chem.SDMolSupplier(str(fn), removeHs=False)
         for mol in supplier:
-            mols[mol.GetProp('_Name')] = Molecule(mol)
+            mols[mol.GetProp('_Name')] = LigandMolecule(mol)
     return mols

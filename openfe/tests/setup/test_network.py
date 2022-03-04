@@ -1,7 +1,7 @@
 from typing import Iterable, NamedTuple
 import pytest
 
-from openfe.setup import Molecule, AtomMapping, Network
+from openfe.setup import LigandMolecule, LigandAtomMapping, LigandNetwork
 from rdkit import Chem
 
 from networkx import NetworkXError
@@ -9,34 +9,34 @@ from networkx import NetworkXError
 
 class _NetworkTestContainer(NamedTuple):
     """Container to facilitate network testing"""
-    network: Network
-    nodes: Iterable[Molecule]
-    edges: Iterable[AtomMapping]
+    network: LigandNetwork
+    nodes: Iterable[LigandMolecule]
+    edges: Iterable[LigandAtomMapping]
     n_nodes: int
     n_edges: int
 
 
 @pytest.fixture
 def mols():
-    mol1 = Molecule(Chem.MolFromSmiles("CCO"))
-    mol2 = Molecule(Chem.MolFromSmiles("CC"))
-    mol3 = Molecule(Chem.MolFromSmiles("CO"))
+    mol1 = LigandMolecule(Chem.MolFromSmiles("CCO"))
+    mol2 = LigandMolecule(Chem.MolFromSmiles("CC"))
+    mol3 = LigandMolecule(Chem.MolFromSmiles("CO"))
     return mol1, mol2, mol3
 
 
 @pytest.fixture
 def std_edges(mols):
     mol1, mol2, mol3 = mols
-    edge12 = AtomMapping(mol1, mol2, {0: 0, 1: 1})
-    edge23 = AtomMapping(mol2, mol3, {0: 0})
-    edge13 = AtomMapping(mol1, mol3, {0: 0, 2: 1})
+    edge12 = LigandAtomMapping(mol1, mol2, {0: 0, 1: 1})
+    edge23 = LigandAtomMapping(mol2, mol3, {0: 0})
+    edge13 = LigandAtomMapping(mol1, mol3, {0: 0, 2: 1})
     return edge12, edge23, edge13
 
 
 @pytest.fixture
 def simple_network(mols, std_edges):
-    """Network with no edges duplicated and all nodes in edges"""
-    network = Network(std_edges)
+    """LigandNetwork with no edges duplicated and all nodes in edges"""
+    network = LigandNetwork(std_edges)
     return _NetworkTestContainer(
         network=network,
         nodes=mols,
@@ -48,12 +48,12 @@ def simple_network(mols, std_edges):
 
 @pytest.fixture
 def doubled_edge_network(mols, std_edges):
-    """Network with more than one edge associated with a node pair"""
+    """LigandNetwork with more than one edge associated with a node pair"""
     mol1, mol2, mol3 = mols
-    extra_edge = AtomMapping(mol1, mol3, {0: 0, 1: 1})
+    extra_edge = LigandAtomMapping(mol1, mol3, {0: 0, 1: 1})
     edges = list(std_edges) + [extra_edge]
     return _NetworkTestContainer(
-        network=Network(edges),
+        network=LigandNetwork(edges),
         nodes=mols,
         edges=edges,
         n_nodes=3,
@@ -63,11 +63,11 @@ def doubled_edge_network(mols, std_edges):
 
 @pytest.fixture
 def singleton_node_network(mols, std_edges):
-    """Network with nodes not included in any edges"""
-    extra_mol = Molecule(Chem.MolFromSmiles("CCC"))
+    """LigandNetwork with nodes not included in any edges"""
+    extra_mol = LigandMolecule(Chem.MolFromSmiles("CCC"))
     all_mols = list(mols) + [extra_mol]
     return _NetworkTestContainer(
-        network=Network(edges=std_edges, nodes=all_mols),
+        network=LigandNetwork(edges=std_edges, nodes=all_mols),
         nodes=all_mols,
         edges=std_edges,
         n_nodes=4,
@@ -95,11 +95,11 @@ class TestNetwork:
     def test_node_type(self, network_container):
         n = network_container.network
 
-        assert all((isinstance(node, Molecule) for node in n.nodes))
+        assert all((isinstance(node, LigandMolecule) for node in n.nodes))
 
     def test_graph(self, network_container):
         # The NetworkX graph that comes from the ``.graph`` property should
-        # have nodes and edges that match the Network container object.
+        # have nodes and edges that match the LigandNetwork container object.
         graph = network_container.network.graph
         assert len(graph.nodes) == network_container.n_nodes
         assert set(graph.nodes) == set(network_container.nodes)
@@ -109,7 +109,7 @@ class TestNetwork:
             atommapping for _, _, atommapping in graph.edges.data('object')
         ]
         assert set(mappings) == set(network_container.edges)
-        # ensure AtomMapping stored in nx edge is consistent with nx edge
+        # ensure LigandAtomMapping stored in nx edge is consistent with nx edge
         for mol1, mol2, atommapping in graph.edges.data('object'):
             assert atommapping.mol1 == mol1
             assert atommapping.mol2 == mol2
@@ -118,23 +118,23 @@ class TestNetwork:
         # The NetworkX graph that comes from that ``.graph`` property should
         # be immutable.
         graph = network_container.network.graph
-        mol = Molecule(Chem.MolFromSmiles("CCCC"))
+        mol = LigandMolecule(Chem.MolFromSmiles("CCCC"))
         mol_CC = mols[1]
-        edge = AtomMapping(mol, mol_CC, {1: 0, 2: 1})
+        edge = LigandAtomMapping(mol, mol_CC, {1: 0, 2: 1})
         with pytest.raises(NetworkXError, match="Frozen graph"):
             graph.add_node(mol)
         with pytest.raises(NetworkXError, match="Frozen graph"):
             graph.add_edge(edge)
 
     def test_nodes(self, network_container):
-        # The nodes reported by a ``Network`` should match expectations for
+        # The nodes reported by a ``LigandNetwork`` should match expectations for
         # that network.
         network = network_container.network
         assert len(network.nodes) == network_container.n_nodes
         assert set(network.nodes) == set(network_container.nodes)
 
     def test_edges(self, network_container):
-        # The edges reported by a ``Network`` should match expectations for
+        # The edges reported by a ``LigandNetwork`` should match expectations for
         # that network.
         network = network_container.network
         assert len(network.edges) == network_container.n_edges
@@ -143,7 +143,7 @@ class TestNetwork:
     def test_enlarge_graph_add_nodes(self, simple_network):
         # New nodes added via ``enlarge_graph`` should exist in the newly
         # created network
-        new_mol = Molecule(Chem.MolFromSmiles("CCCC"))
+        new_mol = LigandMolecule(Chem.MolFromSmiles("CCCC"))
         network = simple_network.network
         new_network = network.enlarge_graph(nodes=[new_mol])
         assert new_network is not network
@@ -156,7 +156,7 @@ class TestNetwork:
         # New edges added via ``enlarge_graph`` should exist in the newly
         # created network
         mol1, _, mol3 = mols
-        extra_edge = AtomMapping(mol1, mol3, {0: 0, 1: 1})
+        extra_edge = LigandAtomMapping(mol1, mol3, {0: 0, 1: 1})
         network = simple_network.network
         new_network = network.enlarge_graph(edges=[extra_edge])
         assert new_network is not network
@@ -168,9 +168,9 @@ class TestNetwork:
     def test_enlarge_graph_add_edges_new_nodes(self, mols, simple_network):
         # New nodes included implicitly by edges added in ``enlarge_graph``
         # should exist in the newly created network
-        new_mol = Molecule(Chem.MolFromSmiles("CCCC"))
+        new_mol = LigandMolecule(Chem.MolFromSmiles("CCCC"))
         mol_CC = mols[1]
-        extra_edge = AtomMapping(new_mol, mol_CC, {1: 0, 2: 1})
+        extra_edge = LigandAtomMapping(new_mol, mol_CC, {1: 0, 2: 1})
         network = simple_network.network
         new_network = network.enlarge_graph(edges=[extra_edge])
         assert new_network is not network
@@ -184,7 +184,7 @@ class TestNetwork:
     def test_enlarge_graph_add_duplicate_node(self, simple_network):
         # Adding a duplicate of an existing node should create a new network
         # with the same edges and nodes as the previous one.
-        duplicate = Molecule(Chem.MolFromSmiles("CC"))
+        duplicate = LigandMolecule(Chem.MolFromSmiles("CC"))
         network = simple_network.network
 
         existing = network.nodes
@@ -207,7 +207,7 @@ class TestNetwork:
         # Adding a duplicate of an existing edge should create a new network
         # with the same edges and nodes as the previous one.
         mol1, _, mol3 = mols
-        duplicate = AtomMapping(mol1, mol3, {0: 0, 2: 1})
+        duplicate = LigandAtomMapping(mol1, mol3, {0: 0, 2: 1})
         network = simple_network.network
 
         existing = network.edges
@@ -229,7 +229,7 @@ class TestNetwork:
     def test_serialization_cycle(self, simple_network):
         network = simple_network.network
         serialized = network.to_graphml()
-        deserialized = Network.from_graphml(serialized)
+        deserialized = LigandNetwork.from_graphml(serialized)
         reserialized = deserialized.to_graphml()
         assert serialized == reserialized
         assert network == deserialized
@@ -240,4 +240,4 @@ class TestNetwork:
 
     def test_from_graphml(self, simple_network, serialization_template):
         contents = serialization_template("network_template.graphml")
-        assert Network.from_graphml(contents) == simple_network.network
+        assert LigandNetwork.from_graphml(contents) == simple_network.network

@@ -3,9 +3,9 @@
 The ``openfe.setup`` submodule is designed to contain all the tools you will
 require to create a free energy calculation.
 
-## Network planning
+## LigandNetwork planning
 
-Network planning refers to the process of creating routes between the ligands
+LigandNetwork planning refers to the process of creating routes between the ligands
 that you wish to calculate free energy values for.  This results in a graph,
 where nodes are ligands and edges are the alchemical state we must simulate
 along to determine their relative energy.
@@ -15,17 +15,17 @@ along to determine their relative energy.
 
 Loading files.
 
-### Creating your Network
+### Creating your LigandNetwork
 
 Simple radial network.
 
 ### Saving your data.
 
-### Components of the Network creation process
+### Components of the LigandNetwork creation process
 
-The Network 
+The LigandNetwork 
 
-#### AtomMapper
+#### LigandAtomMapper
 
 We need a cartographer.
 
@@ -33,11 +33,11 @@ We need a cartographer.
 
 How good is this?
 
-#### Network Strategy.
+#### LigandNetwork Strategy.
 
 How to use these pieces of info.
 
 ## System setup
 
-With a Network defined, we can now move onto creating an alchemical system
-for each edge on the Network.
+With a LigandNetwork defined, we can now move onto creating an alchemical system
+for each edge on the LigandNetwork.

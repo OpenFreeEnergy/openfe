@@ -6,13 +6,13 @@ import pytest
 from rdkit import Chem
 
 import openfe
-from openfe.setup import AtomMapping
-from openfe.setup import Molecule
+from openfe.setup import LigandAtomMapping
+from openfe.setup import LigandMolecule
 
 
 @pytest.fixture(scope='session')
 def ethane():
-    return Molecule(Chem.MolFromSmiles('CC'))
+    return LigandMolecule(Chem.MolFromSmiles('CC'))
 
 
 @pytest.fixture(scope='session')
@@ -23,10 +23,10 @@ def simple_mapping():
 
     C C
     """
-    molA = Molecule(Chem.MolFromSmiles('CCO'))
-    molB = Molecule(Chem.MolFromSmiles('CC'))
+    molA = LigandMolecule(Chem.MolFromSmiles('CCO'))
+    molB = LigandMolecule(Chem.MolFromSmiles('CC'))
 
-    m = AtomMapping(molA, molB, mol1_to_mol2={0: 0, 1: 1})
+    m = LigandAtomMapping(molA, molB, mol1_to_mol2={0: 0, 1: 1})
 
     return m
 
@@ -39,17 +39,17 @@ def other_mapping():
 
     C   C
     """
-    molA = Molecule(Chem.MolFromSmiles('CCO'))
-    molB = Molecule(Chem.MolFromSmiles('CC'))
+    molA = LigandMolecule(Chem.MolFromSmiles('CCO'))
+    molB = LigandMolecule(Chem.MolFromSmiles('CC'))
 
-    m = AtomMapping(molA, molB, mol1_to_mol2={0: 0, 2: 1})
+    m = LigandAtomMapping(molA, molB, mol1_to_mol2={0: 0, 2: 1})
 
     return m
 
 
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
-    # a dict of {filenames.strip(mol2): Molecule} for a simple set of ligands
+    # a dict of {filenames.strip(mol2): LigandMolecule} for a simple set of ligands
     files = {}
     for f in [
         '1,3,7-trimethylnaphthalene',
@@ -63,7 +63,7 @@ def lomap_basic_test_files():
         with importlib.resources.path('openfe.tests.data.lomap_basic',
                                       f + '.mol2') as fn:
             mol = Chem.MolFromMol2File(str(fn))
-            files[f] = Molecule(mol, name=f)
+            files[f] = LigandMolecule(mol, name=f)
 
     return files
 
