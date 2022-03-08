@@ -7,11 +7,6 @@ from openfe.setup import BoxRepresentation
 
 
 @pytest.fixture
-def cube_box():
-    return BoxRepresentation(np.eye(3))
-
-
-@pytest.fixture
 def triclinic_box():
     return BoxRepresentation(np.array([[1, 0, 0], [0.2, 1, 0], [0.2, 0.2, 1]]))
 
@@ -45,6 +40,10 @@ def test_box_neq(triclinic_box, nearly_triclinic_box):
     assert triclinic_box != nearly_triclinic_box
 
 
+def test_box_neq2(triclinic_box):
+    assert triclinic_box != triclinic_box.to_matrix()
+
+
 def test_box_hash(triclinic_box):
     box2 = BoxRepresentation(triclinic_box.to_matrix())
 
@@ -71,5 +70,12 @@ def test_from_bytes(triclinic_box, ref_bytes):
 def test_invalid_box():
     arr = np.eye(3)
     arr[0][1] = 1.0
+    with pytest.raises(ValueError):
+        _ = BoxRepresentation(arr)
+
+
+def test_invalid_box2():
+    arr = np.array([10, 10, 10, 90, 90, 90])
+
     with pytest.raises(ValueError):
         _ = BoxRepresentation(arr)
