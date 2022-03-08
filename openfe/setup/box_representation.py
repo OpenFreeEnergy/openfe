@@ -47,6 +47,8 @@ class BoxRepresentation:
           the 3x3 matrix representation of the box.  The first line is the
           vector parallel to the "x" dimension, then the vector mostly parallel
           to "y" then "z".
+          To create a rectangular box, only the diagonal elements need be
+          specified.
 
         Notes
         -----
@@ -62,7 +64,7 @@ class BoxRepresentation:
         self._box = np.asarray(box, dtype=np.float64, order='C')
 
         if not is_valid_box(self._box):
-            raise ValueError("Box was not valid")
+            raise ValueError(f"Box was not valid - {box}")
 
     @classmethod
     def from_bytes(cls, serialisation: bytes):
@@ -77,7 +79,8 @@ class BoxRepresentation:
 
           assert newbox == newbox
         """
-        return cls(np.frombuffer(serialisation, dtype=np.float64))
+        return cls(np.frombuffer(serialisation, dtype=np.float64, count=9,
+                                 ).reshape(3, -1))
 
     def to_bytes(self) -> bytes:
         """A byte based representation for serialisation
