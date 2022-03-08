@@ -3,7 +3,7 @@
 import math
 from typing import Iterable
 
-from openfe.setup import LigandNetwork, LigandMolecule, LigandAtomMapper
+from openfe.setup import Network, LigandMolecule, LigandAtomMapper
 
 
 def generate_radial_network(ligands: Iterable[LigandMolecule],
@@ -35,7 +35,7 @@ def generate_radial_network(ligands: Iterable[LigandMolecule],
 
     Returns
     -------
-    network : LigandNetwork
+    network : Network
       will have an edge between each ligand and the central ligand, with the
       mapping being the best possible mapping found using the supplied atom
       mappers.
@@ -63,17 +63,17 @@ def generate_radial_network(ligands: Iterable[LigandMolecule],
             raise ValueError(f"No mapping found for {ligand}")
         edges.append(best_mapping)
 
-    return LigandNetwork(edges)
+    return Network(edges)
 
 
 def minimal_spanning_graph(ligands: Iterable[LigandMolecule],
                            mappers: Iterable[LigandAtomMapper], scorer=None):
-    """Plan a LigandNetwork which connects all ligands with minimal cost
+    """Plan a Network which connects all ligands with minimal cost
 
     Parameters
     ----------
     ligands : Iterable of rdkit Molecules
-      the ligands to include in the LigandNetwork
+      the ligands to include in the Network
     mappers : Iterable of AtomMappers
       the AtomMappers to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the

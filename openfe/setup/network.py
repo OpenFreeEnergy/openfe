@@ -11,7 +11,7 @@ import openfe
 import networkx as nx
 
 
-class LigandNetwork:
+class Network:
     """A directed graph connecting many ligands according to their atom mapping
 
     Parameters
@@ -48,12 +48,12 @@ class LigandNetwork:
 
     @property
     def edges(self) -> FrozenSet[LigandAtomMapping]:
-        """A read-only view of the edges of the LigandNetwork"""
+        """A read-only view of the edges of the Network"""
         return self._edges
 
     @property
     def nodes(self) -> FrozenSet[LigandMolecule]:
-        """A read-only view of the nodes of the LigandNetwork"""
+        """A read-only view of the nodes of the Network"""
         return self._nodes
 
     def __eq__(self, other):
@@ -111,7 +111,7 @@ class LigandNetwork:
         return cls(edges=edges, nodes=label_to_mol.values())
 
     def to_graphml(self) -> str:
-        """Return the GraphML string representing this ``LigandNetwork``.
+        """Return the GraphML string representing this ``Network``.
 
         This is the primary serialization mechanism for this class.
 
@@ -124,23 +124,23 @@ class LigandNetwork:
 
     @classmethod
     def from_graphml(cls, graphml_str: str):
-        """Create ``LigandNetwork`` from GraphML string.
+        """Create ``Network`` from GraphML string.
 
         This is the primary deserialization mechanism for this class.
 
         Parameters
         ----------
         graphml_str : str
-            GraphML string representation of a :class:`.LigandNetwork`
+            GraphML string representation of a :class:`.Network`
 
         Returns
         -------
-        :class:`.LigandNetwork`:
+        :class:`.Network`:
             new network from the GraphML
         """
         return cls._from_serializable_graph(nx.parse_graphml(graphml_str))
 
-    def enlarge_graph(self, *, edges=None, nodes=None) -> LigandNetwork:
+    def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
         """
         Create a new network with the given edges and nodes added
 
@@ -153,7 +153,7 @@ class LigandNetwork:
 
         Returns
         -------
-        :class:`.LigandNetwork :
+        :class:`.Network :
             a new network adding the given edges and nodes to this network
         """
         if edges is None:
@@ -162,12 +162,12 @@ class LigandNetwork:
         if nodes is None:
             nodes = set([])
 
-        return LigandNetwork(self.edges | set(edges), self.nodes | set(nodes))
+        return Network(self.edges | set(edges), self.nodes | set(nodes))
 
-    def annotate_node(self, node, annotation) -> LigandNetwork:
+    def annotate_node(self, node, annotation) -> Network:
         """Return a new network with the additional node annotation"""
         raise NotImplementedError("Waiting on annotations")
 
-    def annotate_edge(self, edge, annotation) -> LigandNetwork:
+    def annotate_edge(self, edge, annotation) -> Network:
         """Return a new network with the additional edge annotation"""
         raise NotImplementedError("Waiting on annotations")

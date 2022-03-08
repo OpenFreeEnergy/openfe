@@ -3,7 +3,7 @@
 from .ligandmolecule import LigandMolecule
 from .ligandatommapping import LigandAtomMapping
 from .ligandatommapper import LigandAtomMapper
-from .ligandnetwork import LigandNetwork
+from .network import Network
 
 from .lomap_mapper import LomapAtomMapper
 

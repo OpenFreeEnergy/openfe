@@ -46,7 +46,7 @@ def _ensure_ofe_version(mol: RDKitMol):
 class LigandMolecule:
     """A molecule wrapper to provide proper hashing and equality.
 
-    This class is designed to act as a node on a LigandNetwork graph.
+    This class is designed to act as a node on a Network graph.
 
     .. note::
        This class is a read-only representation of a ligand molecule, if you

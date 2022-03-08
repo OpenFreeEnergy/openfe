@@ -11,7 +11,7 @@
 # {OFE_VERSION}
 
 from rdkit import Chem
-from openfe.setup import LigandMolecule, LigandAtomMapping, LigandNetwork
+from openfe.setup import LigandMolecule, LigandAtomMapping, Network
 
 # multi_molecule.sdf
 mol1 = Chem.MolFromSmiles("CCO")
@@ -45,7 +45,7 @@ edge12 = LigandAtomMapping(mol1, mol2, {0: 0, 1: 1})
 edge23 = LigandAtomMapping(mol2, mol3, {0: 0})
 edge13 = LigandAtomMapping(mol1, mol3, {0: 0, 2: 1})
 
-network = LigandNetwork([edge12, edge23, edge13])
+network = Network([edge12, edge23, edge13])
 
 with open("network_template.graphml", "w") as fn:
     fn.write(network.to_graphml())
