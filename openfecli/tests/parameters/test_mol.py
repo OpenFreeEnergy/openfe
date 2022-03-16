@@ -23,7 +23,7 @@ def test_get_molecule_sdf():
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
         mol = get_molecule(filename)
-        assert mol.smiles == "CC"
+        assert mol.smiles == "[H]C([H])([H])C([H])([H])[H]"
         assert mol.name == "ethane"
 
 
