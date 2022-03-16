@@ -169,7 +169,7 @@ class Molecule:
             the deserialized molecule
         """
         # technically, we allow file-like objects
-        supp = Chem.SDMolSupplier(str(filename))
+        supp = Chem.SDMolSupplier(str(filename), removeHs=False)
         return cls._from_sdf_supplier(supp)
 
     @classmethod
