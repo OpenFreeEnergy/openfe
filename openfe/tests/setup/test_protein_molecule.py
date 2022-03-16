@@ -7,6 +7,17 @@ from rdkit import Chem
 from openfe.setup import ProteinMolecule
 
 
+@pytest.fixture
+def PDB_181L_mutant(PDB_181L_path):
+    # has a single resname flipped to change the resulting sequence
+    rdm = Chem.MolFromPDBFile(PDB_181L_path)
+
+    at = rdm.GetAtomWithIdx(1)  # important to select the Ca atom
+    at.GetMonomerInfo().SetResidueName('X')
+
+    return ProteinMolecule.from_rdkit(rdm)
+
+
 def test_from_pdbfile(PDB_181L_path):
     p = ProteinMolecule.from_pdbfile(PDB_181L_path, name='Steve')
 
@@ -51,14 +62,26 @@ def test_hash_eq(PDB_181L_path):
     assert hash(m1) == hash(m2)
 
 
-def test_neq(PDB_181L_path):
+def test_neq(PDB_181L_path, PDB_181L_mutant):
+    m1 = ProteinMolecule.from_pdbfile(PDB_181L_path)
+
+    assert m1 != PDB_181L_mutant
+
+
+def test_neq_name(PDB_181L_path):
     m1 = ProteinMolecule.from_pdbfile(PDB_181L_path, name='This')
     m2 = ProteinMolecule.from_pdbfile(PDB_181L_path, name='Other')
 
     assert m1 != m2
 
 
-def test_hash_neq(PDB_181L_path):
+def test_hash_neq(PDB_181L_path, PDB_181L_mutant):
+    m1 = ProteinMolecule.from_pdbfile(PDB_181L_path)
+
+    assert hash(m1) != hash(PDB_181L_mutant)
+
+
+def test_hash_neq_name(PDB_181L_path):
     m1 = ProteinMolecule.from_pdbfile(PDB_181L_path, name='This')
     m2 = ProteinMolecule.from_pdbfile(PDB_181L_path, name='Other')
 
