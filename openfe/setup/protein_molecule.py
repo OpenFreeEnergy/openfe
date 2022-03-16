@@ -21,7 +21,7 @@ class ProteinMolecule:
 
     @classmethod
     def from_pdbfile(cls, pdbfile: str, name=""):
-        cls(rdkit=Chem.MolFromPDBFile(pdbfile), name=name)
+        return cls(rdkit=Chem.MolFromPDBFile(pdbfile), name=name)
 
     @classmethod
     def from_pdbxfile(cls, pdbxfile: str, name=""):
