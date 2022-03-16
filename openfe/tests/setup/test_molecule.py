@@ -141,6 +141,12 @@ class TestMolecule:
         with pytest.raises(RuntimeError, match="contains more than 1"):
             Molecule.from_sdf_string(contents)
 
+    def test_reload_hydrogens(self, serialization_template):
+        # ensure that we don't accidentally strip hydrogens, see #74
+        sdf_str = serialization_template("ethane_with_H_template.sdf")
+        mol = Molecule.from_sdf_string(sdf_str)
+        assert mol.to_rdkit().GetNumAtoms() == 8
+
     def test_from_rdkit(self, named_ethane):
         rdkit = Chem.MolFromSmiles("CC")
         mol = Molecule.from_rdkit(rdkit, "ethane")

@@ -150,9 +150,8 @@ class Molecule:
         :class:`.Molecule` :
             the deserialized molecule
         """
-        # https://sourceforge.net/p/rdkit/mailman/message/27518272/
         supp = Chem.SDMolSupplier()
-        supp.SetData(sdf_str)
+        supp.SetData(sdf_str, removeHs=False)
         return cls._from_sdf_supplier(supp)
 
     @classmethod
