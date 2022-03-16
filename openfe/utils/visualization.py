@@ -83,6 +83,28 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
     return uniques
 
 
+def _draw_molecules(d2d, mols, atoms_list, bonds_list, atom_colors,
+                    highlight_color):
+    # squash to 2D
+    copies = [copy.deepcopy(mol) for mol in mols]
+    for mol in copies:
+        AllChem.Compute2DCoords(mol)
+
+    # standard settings for our visualization
+    d2d.drawOptions().useBWAtomPalette()
+    d2d.drawOptions().continousHighlight = False
+    d2d.drawOptions().setHighlightColour(highlight_color)
+    d2d.drawOptions().addAtomIndices = True
+    d2d.DrawMolecules(
+        copies,
+        highlightAtoms=atoms_list,
+        highlightBonds=bonds_list,
+        highlightAtomColors=atom_colors,
+    )
+    d2d.FinishDrawing()
+    return d2d.GetDrawingText()
+
+
 def draw_mapping(mol1_to_mol2: Dict[int, int],
                  mol1: RDKitMol, mol2: RDKitMol, d2d=None):
     """
@@ -124,13 +146,8 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
     red = (220/255, 50/255, 32/255, 1)
     blue = (0, 90/255, 181/255, 1)
 
-    at1_colors = {}
-    for at in mol1_uniques["elements"]:
-        at1_colors[at] = blue
-
-    at2_colors = {}
-    for at in mol2_uniques["elements"]:
-        at2_colors[at] = blue
+    at1_colors = {at: blue for at in mol1_uniques["elements"]}
+    at2_colors = {at: blue for at in mol2_uniques["elements"]}
 
     atom_colors = [at1_colors, at2_colors]
 
@@ -140,22 +157,51 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
     if not d2d:
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300)
 
-    # Need to squash to 2D
-    mol1_copy = copy.deepcopy(mol1)
-    mol2_copy = copy.deepcopy(mol2)
-    AllChem.Compute2DCoords(mol1_copy)
-    AllChem.Compute2DCoords(mol2_copy)
-
-    # Use the d2d object we instantiated or the one passed in by the user
-    d2d.drawOptions().useBWAtomPalette()
-    d2d.drawOptions().continousHighlight = False
-    d2d.drawOptions().setHighlightColour(red)
-    d2d.drawOptions().addAtomIndices = True
-    d2d.DrawMolecules(
-        [mol1_copy, mol2_copy],
-        highlightAtoms=atoms_list,
-        highlightBonds=bonds_list,
-        highlightAtomColors=atom_colors,
+    return _draw_molecules(
+        d2d,
+        [mol1, mol2],
+        atoms_list=atoms_list,
+        bonds_list=bonds_list,
+        atom_colors=atom_colors,
+        highlight_color=red,
     )
-    d2d.FinishDrawing()
-    return d2d.GetDrawingText()
+
+
+def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
+    """Draw the mapping visualization for a single molecular of a mapping
+
+    This will always draw ``mol1``. To draw ``mol2``, switch order/invert
+    ``mol1_to_mol2`` mapping.
+    """
+    uniques = _get_unique_bonds_and_atoms(mol1_to_mol2, mol1, mol2)
+    atoms_list = [uniques["atoms"] | uniques["elements"]]
+    bonds_list = [uniques["bonds"]]
+    red = (220/255, 50/255, 32/255, 1)
+    blue = (0, 90/255, 181/255, 1)
+
+    atom_colors = [{at: blue for at in uniques["elements"]}]
+    mol = copy.deepcopy(mol1)
+    AllChem.Compute2DCoords(mol)
+
+    if d2d is None:
+        # TODO: we should try to be smarter about the default size here
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
+
+    return _draw_molecules(d2d, [mol], atoms_list, bonds_list, atom_colors,
+                           red)
+
+
+def draw_unhighlighted_molecule(mol, d2d=None):
+    if d2d is None:
+        # TODO: we should try to be smarter about the default size here
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
+
+    red = (220/255, 50/255, 32/255, 1)
+    return _draw_molecules(
+        d2d,
+        [mol],
+        atoms_list=[[]],
+        bonds_list=[[]],
+        atom_colors=[{}],
+        highlight_color=red,
+    )
