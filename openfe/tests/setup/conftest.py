@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import importlib
+import importlib.resources
 import string
 import pytest
 from rdkit import Chem
@@ -76,3 +77,15 @@ def serialization_template():
         return tmpl.format(OFE_VERSION=openfe.__version__)
 
     return inner
+
+
+@pytest.fixture
+def PDB_181L_path():
+    with importlib.resources.path('openfe.tests.data', '181l.pdb') as f:
+        yield str(f)
+
+
+@pytest.fixture
+def PDBx_181L_path():
+    with importlib.resources.path('openfe.tests.data', '181l.cif') as f:
+        yield str(f)

@@ -21,7 +21,11 @@ class ProteinMolecule:
 
     @classmethod
     def from_pdbfile(cls, pdbfile: str, name=""):
-        return cls(rdkit=Chem.MolFromPDBFile(pdbfile), name=name)
+        m = Chem.MolFromPDBFile(pdbfile)
+        if m is None:
+            raise ValueError(f"RDKit failed to produce a molecule from "
+                             "{pdbfile}")
+        return cls(rdkit=m, name=name)
 
     @classmethod
     def from_pdbxfile(cls, pdbxfile: str, name=""):
@@ -49,7 +53,7 @@ class ProteinMolecule:
         raise NotImplementedError()
 
     def __hash__(self):
-        return hash(self.name, Chem.MolToSequence(self._rdkit))
+        return hash((self.name, Chem.MolToSequence(self._rdkit)))
 
     def __eq__(self, other):
         return hash(self) == hash(other)
