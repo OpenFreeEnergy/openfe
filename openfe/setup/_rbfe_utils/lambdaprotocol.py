@@ -8,6 +8,73 @@ import copy
 from openmmtools.alchemy import AlchemicalState
 
 
+class BaseLambdaProtocol:
+    """Base class for defining a Lambda protocol
+
+    """
+    @staticmethod
+    def lambda_sterics_core(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_electrostatics_core(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_serics_insert(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_sterics_delete(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_electrostatic_insert(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_electrostatics_delete(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_bonds(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_angles(value: float) -> float:
+        return value
+
+    @staticmethod
+    def lambda_torsions(value: float) -> float:
+        return value
+
+
+class DefaultLambdaProtocol(BaseLambdaProtocol):
+    """Implements the following rules
+
+    etc etc
+
+    """
+    @staticmethod
+    def lambda_serics_insert(value: float) -> float:
+        # linear ramp until value=0.5
+        return value * 2 if value < 0.5 else 1.0
+        # return min(value * 2.0, 1.0)
+
+    @staticmethod
+    def lambda_sterics_delete(value: float) -> float:
+        # 0.0 until value=0.5 then linear ramp
+        return 0.0 if value < 0.5 else 2 * (value - 0.5)
+
+    @staticmethod
+    def lambda_electrostatic_insert(value: float) -> float:
+        return 0.0 if value < 0.5 else 2 * (value - 0.5)
+
+    @staticmethod
+    def lambda_electrostatics_delete(value: float) -> float:
+        return value * 2 if value < 0.5 else 1.0
+
+
 class LambdaProtocol(object):
     """Protocols for perturbing each of the compent energy terms in alchemical
     free energy simulations.
