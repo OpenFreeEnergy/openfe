@@ -180,14 +180,12 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
     blue = (0, 90/255, 181/255, 1)
 
     atom_colors = [{at: blue for at in uniques["elements"]}]
-    mol = copy.deepcopy(mol1)
-    AllChem.Compute2DCoords(mol)
 
     if d2d is None:
         # TODO: we should try to be smarter about the default size here
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
 
-    return _draw_molecules(d2d, [mol], atoms_list, bonds_list, atom_colors,
+    return _draw_molecules(d2d, [mol1], atoms_list, bonds_list, atom_colors,
                            red)
 
 
