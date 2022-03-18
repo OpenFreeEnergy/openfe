@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from typing import Dict
+from typing import Dict, Iterable, Set, Tuple
 from itertools import chain
 import copy
 
@@ -83,8 +83,47 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
     return uniques
 
 
-def _draw_molecules(d2d, mols, atoms_list, bonds_list, atom_colors,
-                    highlight_color):
+def _draw_molecules(
+    d2d,
+    mols: Iterable[RDKitMol],
+    atoms_list: Iterable[Set[int]],
+    bonds_list: Iterable[Set[int]],
+    atom_colors: Iterable[Dict[int, Tuple[float, float, float, float]]],
+    highlight_color: Tuple[float, float, float, float]
+) -> str:
+    """
+    Internal method to visualize a molecule, possibly with mapping info
+
+    Parameters
+    ----------
+    d2d : 
+        renderer to draw the molecule; currently we only support 
+    mols : Iterable[RDKitMol]
+        molecules to visualize
+    atoms_list: Iterable[Set[int]]
+        iterable containing one set per molecule in ``mols``, with each set
+        containing the indices of the atoms to highlight
+    bonds_list: Iterable[Set[int]]
+        iterable containing one set per molecule in ``mols``, with each set
+        containing the indices of the atoms involved in bonds to highlight
+    atom_colors: Iterable[Dict[int, Tuple[float, float, float, float]]]
+        iterable containing one dict per molecule in ``mols``, with each
+        dict containing a mapping of atom index to color, expressed as an
+        RGBA tuple, for atoms that need special coloring (e.g., element
+        changes)
+    highlight_color: Tuple[float, float, float, float]
+        RGBA tuple for the default highlight color used in the mapping
+        visualization
+    """
+    if d2d is None:
+        # select default layout based on number of molecules
+        grid_x, grid_y = {
+            1: (1, 1),
+            2: (2, 1),
+        }[len(mols)]
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(grid_x*300, grid_y*300,
+                                                   300, 300)
+
     # squash to 2D
     copies = [copy.deepcopy(mol) for mol in mols]
     for mol in copies:
@@ -153,10 +192,6 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
 
     bonds_list = [mol1_uniques["bonds"], mol2_uniques["bonds"]]
 
-    # If d2d is None, use MolDraw2DCairo
-    if not d2d:
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(600, 300, 300, 300)
-
     return _draw_molecules(
         d2d,
         [mol1, mol2],
@@ -172,6 +207,21 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
 
     This will always draw ``mol1``. To draw ``mol2``, switch order/invert
     ``mol1_to_mol2`` mapping.
+
+    See :func:`.draw_mapping` for details on the meaning of different
+    colors.
+
+    Parameters
+    ----------
+    mol1_to_mol2 : dict of int:int
+        Atom mapping between input molecules.
+    mol1 : RDKit.Mol
+        RDKit representation of molecule 1
+    mol2 : RDKit.Mol
+        RDKit representation of molecule 2
+    d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
+        Optional MolDraw2D backend to use for visualisation.
+
     """
     uniques = _get_unique_bonds_and_atoms(mol1_to_mol2, mol1, mol2)
     atoms_list = [uniques["atoms"] | uniques["elements"]]
@@ -181,19 +231,25 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
 
     atom_colors = [{at: blue for at in uniques["elements"]}]
 
-    if d2d is None:
-        # TODO: we should try to be smarter about the default size here
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
-
     return _draw_molecules(d2d, [mol1], atoms_list, bonds_list, atom_colors,
                            red)
 
 
 def draw_unhighlighted_molecule(mol, d2d=None):
-    if d2d is None:
-        # TODO: we should try to be smarter about the default size here
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
+    """
+    Draw a molecule without any mapping information.
 
+    This uses the same mechanisms as the mapping visualizations, and so can
+    be useful in cases where you want the same visual style both for a plain
+    molecule and a molecule with the mapping highlighted.
+
+    Parameters
+    ----------
+    mol : RDKit.Mol
+        RDKit representation of the molecule
+    d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
+        Optional MolDraw2D backend to use for visualisation.
+    """
     red = (220/255, 50/255, 32/255, 1)
     return _draw_molecules(
         d2d,

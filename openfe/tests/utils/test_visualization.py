@@ -112,7 +112,6 @@ def test_draw_mapping(mock_func, benzene_phenol_mapping):
     mock_func.assert_called_once()
     args = bound_args(mock_func, mock_func.call_args.args,
                       mock_func.call_args.kwargs)
-    assert isinstance(args['d2d'], Chem.Draw.rdMolDraw2D.MolDraw2DCairo)
     assert args['mols'] == [mol1, mol2]
     assert args['atoms_list'] == [{10}, {10, 12}]
     assert args['bonds_list'] == [{10}, {10, 12}]
@@ -145,7 +144,6 @@ def test_draw_one_molecule_mapping(mock_func, benzene_phenol_mapping,
     args = bound_args(mock_func, mock_func.call_args.args,
                       mock_func.call_args.kwargs)
 
-    assert isinstance(args['d2d'], Chem.Draw.rdMolDraw2D.MolDraw2DCairo)
     assert args['mols'] == [mol1]
     assert args['atoms_list'] == atoms_list
     assert args['bonds_list'] == bonds_list
@@ -163,7 +161,6 @@ def test_draw_unhighlighted_molecule(mock_func, benzene_transforms):
     mock_func.assert_called_once()
     args = bound_args(mock_func, mock_func.call_args.args,
                       mock_func.call_args.kwargs)
-    assert isinstance(args['d2d'], Chem.Draw.rdMolDraw2D.MolDraw2DCairo)
     assert args['mols'] == [mol]
     assert args['atoms_list'] == [[]]
     assert args['bonds_list'] == [[]]
