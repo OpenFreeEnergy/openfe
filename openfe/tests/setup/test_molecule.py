@@ -17,14 +17,13 @@ from rdkit import Chem
 
 @pytest.fixture
 def alt_ethane():
-    return Molecule(Chem.MolFromSmiles("CC"))
+    return Molecule(Chem.AddHs(Chem.MolFromSmiles("CC")))
 
 
 @pytest.fixture
 def named_ethane():
     mol = Chem.MolFromSmiles("CC")
-
-    return Molecule(mol, name='ethane')
+    return Molecule(Chem.AddHs(mol), name='ethane')
 
 
 @pytest.mark.parametrize('internal,rdkit_name,name,expected', [
@@ -64,12 +63,6 @@ def test_ensure_ofe_version():
 
 
 class TestMolecule:
-    def test_rdkit_behavior(self, ethane, alt_ethane):
-        # Check that fixture setup is correct (we aren't accidentally
-        # testing tautologies)
-        assert ethane is not alt_ethane
-        assert ethane.to_rdkit() is not alt_ethane.to_rdkit()
-
     def test_rdkit_independence(self):
         # once we've constructed a Molecule, it is independent from the source
         mol = Chem.MolFromSmiles('CC')
@@ -87,7 +80,8 @@ class TestMolecule:
 
         assert our_mol.to_rdkit().GetProp('foo') == 'bar'
 
-    def test_equality_and_hash(self, ethane, alt_ethane):
+    def test_equality_and_hash(self, alt_ethane):
+        ethane = Molecule(Chem.AddHs(Chem.MolFromSmiles("CC")))
         assert hash(ethane) == hash(alt_ethane)
         assert ethane == alt_ethane
 
@@ -97,7 +91,7 @@ class TestMolecule:
         assert ethane != named_ethane
 
     def test_smiles(self, named_ethane):
-        assert named_ethane.smiles == 'CC'
+        assert named_ethane.smiles == '[H]C([H])([H])C([H])([H])[H]'
 
     def test_name(self, named_ethane):
         assert named_ethane.name == 'ethane'
@@ -127,7 +121,10 @@ class TestMolecule:
         with open(tmpdir / "temp.sdf", mode='w') as tmpf:
             tmpf.write(sdf_str)
 
-        assert Molecule.from_sdf_file(tmpdir / "temp.sdf") == named_ethane
+        mol = Molecule.from_sdf_file(tmpdir / "temp.sdf")
+        assert mol.name == named_ethane.name
+        assert mol.smiles == named_ethane.smiles
+        assert mol == named_ethane
 
     def test_from_sdf_file_junk(self):
         with importlib.resources.path('openfe.tests.data.lomap_basic',
@@ -141,9 +138,15 @@ class TestMolecule:
         with pytest.raises(RuntimeError, match="contains more than 1"):
             Molecule.from_sdf_string(contents)
 
+    def test_reload_hydrogens(self, serialization_template):
+        # ensure that we don't accidentally strip hydrogens, see #74
+        sdf_str = serialization_template("ethane_template.sdf")
+        mol = Molecule.from_sdf_string(sdf_str)
+        assert mol.to_rdkit().GetNumAtoms() == 8
+
     def test_from_rdkit(self, named_ethane):
         rdkit = Chem.MolFromSmiles("CC")
-        mol = Molecule.from_rdkit(rdkit, "ethane")
+        mol = Molecule.from_rdkit(Chem.AddHs(rdkit), "ethane")
         assert mol == named_ethane
         assert mol.to_rdkit() is not rdkit
 
