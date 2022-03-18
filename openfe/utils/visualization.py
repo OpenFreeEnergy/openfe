@@ -184,8 +184,8 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
 
     # highlight core element changes differently from unique atoms
     # RGBA color value needs to be between 0 and 1, so divide by 255
-    red = (220/255, 50/255, 32/255, 1)
-    blue = (0, 90/255, 181/255, 1)
+    red = (220/255, 50/255, 32/255, 1.)
+    blue = (0., 90/255, 181/255, 1.)
 
     at1_colors = {at: blue for at in mol1_uniques["elements"]}
     at2_colors = {at: blue for at in mol2_uniques["elements"]}
@@ -228,8 +228,8 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
     uniques = _get_unique_bonds_and_atoms(mol1_to_mol2, mol1, mol2)
     atoms_list = [uniques["atoms"] | uniques["elements"]]
     bonds_list = [uniques["bonds"]]
-    red = (220/255, 50/255, 32/255, 1)
-    blue = (0, 90/255, 181/255, 1)
+    red = (220/255, 50/255, 32/255, 1.)
+    blue = (0, 90/255, 181/255, 1.)
 
     atom_colors = [{at: blue for at in uniques["elements"]}]
 
@@ -252,7 +252,7 @@ def draw_unhighlighted_molecule(mol, d2d=None):
     d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
         Optional MolDraw2D backend to use for visualisation.
     """
-    red = (220/255, 50/255, 32/255, 1)
+    red = (220/255, 50/255, 32/255, 1.)
     return _draw_molecules(
         d2d,
         [mol],
