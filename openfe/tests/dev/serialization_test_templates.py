@@ -29,6 +29,12 @@ m = Molecule(Chem.MolFromSmiles("CC"), name="ethane")
 with open("ethane_template.sdf", mode="w") as tmpl:
     tmpl.write(m.to_sdf())
 
+# ethane_with_H_template.sdf
+m2 = Molecule(Chem.AddHs(m.to_rdkit()))
+
+with open("ethane_with_H_template.sdf", mode="w") as tmpl:
+    tmpl.write(m2.to_sdf())
+
 
 # network_template.graphml
 mol1 = Molecule(Chem.MolFromSmiles("CCO"))
