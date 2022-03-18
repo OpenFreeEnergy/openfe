@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from typing import Dict, Iterable, Set, Tuple
+from typing import Dict, Sized, Set, Tuple, Any
 from itertools import chain
 import copy
 
@@ -85,10 +85,10 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
 
 def _draw_molecules(
     d2d,
-    mols: Iterable[RDKitMol],
-    atoms_list: Iterable[Set[int]],
-    bonds_list: Iterable[Set[int]],
-    atom_colors: Iterable[Dict[int, Tuple[float, float, float, float]]],
+    mols: Sized[RDKitMol],
+    atoms_list: Sized[Set[int]],
+    bonds_list: Sized[Set[int]],
+    atom_colors: Sized[Dict[Any, Tuple[float, float, float, float]]],
     highlight_color: Tuple[float, float, float, float]
 ) -> str:
     """
@@ -96,19 +96,20 @@ def _draw_molecules(
 
     Parameters
     ----------
-    d2d : 
-        renderer to draw the molecule; currently we only support 
-    mols : Iterable[RDKitMol]
+    d2d :
+        renderer to draw the molecule; currently we only support
+        rdkit.rdMolDraw2D
+    mols : Sized[RDKitMol]
         molecules to visualize
-    atoms_list: Iterable[Set[int]]
+    atoms_list: Sized[Set[int]]
         iterable containing one set per molecule in ``mols``, with each set
         containing the indices of the atoms to highlight
-    bonds_list: Iterable[Set[int]]
+    bonds_list: Sized[Set[int]]
         iterable containing one set per molecule in ``mols``, with each set
         containing the indices of the atoms involved in bonds to highlight
-    atom_colors: Iterable[Dict[int, Tuple[float, float, float, float]]]
+    atom_colors: Sized[Dict[Any, Tuple[float, float, float, float]]]
         iterable containing one dict per molecule in ``mols``, with each
-        dict containing a mapping of atom index to color, expressed as an
+        dict containing a mapping of RDKit atom to color, expressed as an
         RGBA tuple, for atoms that need special coloring (e.g., element
         changes)
     highlight_color: Tuple[float, float, float, float]
