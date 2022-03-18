@@ -7,7 +7,7 @@ import copy
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-from openfe.utils.typing import RDKitMol
+from openfe.utils.custom_typing import RDKitMol
 
 
 def _match_elements(mol1: RDKitMol, idx1: int,

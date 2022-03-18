@@ -11,7 +11,7 @@ from rdkit import Chem
 
 import openfe
 from openfe.utils.molhashing import hashmol
-from openfe.utils.typing import RDKitMol, OEMol
+from openfe.utils.custom_typing import RDKitMol, OEMol
 
 
 def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
