@@ -19,7 +19,10 @@ class FEMethod:
 
         These can be modified and passed back in to the class init
         """
-        return cls._SETTINGS_CLASS
+        if cls._SETTINGS_CLASS is not None:
+            return cls._SETTINGS_CLASS()
+        else:
+            raise NotImplementedError()
 
     def to_xml(self) -> str:
         """Serialise this method to xml"""

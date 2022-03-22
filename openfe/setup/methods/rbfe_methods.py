@@ -83,6 +83,7 @@ class LigandLigandTransform(FEMethod):
 class ComplexTransformResults:
     pass
 
+
 class ComplexTransform(FEMethod):
     """Calculates the free energy of an alchemical ligand swap in complex"""
     def __init__(self,
