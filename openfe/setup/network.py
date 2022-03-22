@@ -22,7 +22,9 @@ class Network:
         nodes for this network
     """
     def __init__(
-        self, edges: Iterable[LigandAtomMapping], nodes: Iterable[LigandMolecule] = None
+        self,
+        edges: Iterable[LigandAtomMapping],
+        nodes: Iterable[LigandMolecule] = None
     ):
         if nodes is None:
             nodes = []
