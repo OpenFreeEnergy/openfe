@@ -17,13 +17,13 @@ from rdkit import Chem
 
 @pytest.fixture
 def alt_ethane():
-    return LigandMolecule(Chem.MolFromSmiles("CC"))
+    return LigandMolecule(Chem.AddHs(Chem.MolFromSmiles("CC")))
 
 
 @pytest.fixture
 def named_ethane():
     mol = Chem.MolFromSmiles("CC")
-    return LigandMolecule(mol, name='ethane')
+    return LigandMolecule(Chem.AddHs(mol), name='ethane')
 
 
 @pytest.mark.parametrize('internal,rdkit_name,name,expected', [
