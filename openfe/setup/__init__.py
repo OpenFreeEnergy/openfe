@@ -10,3 +10,6 @@ from .network import Network
 from .lomap_mapper import LomapAtomMapper
 
 from . import ligand_network_planning
+
+from .methods import rbfe_methods
+
