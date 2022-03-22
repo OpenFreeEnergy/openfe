@@ -4,9 +4,22 @@
 
 
 """
-from typing import Dict
+from __future__ import annotations
+
+from typing import Dict, Union
 
 from openfe.setup import AtomMapping, Molecule
+
+
+class LigandLigandTransformSettings:
+    """Dict-like object holding the default settings for a ligand transform"""
+    def update(self, settings: Union[Dict, LigandLigandTransformSettings]):
+        pass
+
+
+class LigandLigandTransformResults:
+    """Dict-like container for the output of a LigandLigandTransform"""
+    pass
 
 
 class LigandLigandTransform:
@@ -14,15 +27,15 @@ class LigandLigandTransform:
 
     """
     def __init__(self,
-                 ligand1: Molecule,
-                 ligand2: Molecule,
+                 ligandA: Molecule,
+                 ligandB: Molecule,
                  ligandmapping: AtomMapping,
-                 settings=None,
+                 settings: Union[Dict, LigandLigandTransformSettings] = None,
                  ):
         """
         Parameters
         ----------
-        ligand1, ligand2 : Molecule
+        ligandA, ligandB : Molecule
           the two ligand molecules to transform between.  The transformation
           will go from ligandA to ligandB.
         ligandmapping : AtomMapping
@@ -33,8 +46,8 @@ class LigandLigandTransform:
         The default settings for this method can be accessed via the
         get_default_settings method,
         """
-        self._ligand1 = ligand1
-        self._ligand2 = ligand2
+        self._ligandA = ligandA
+        self._ligandB = ligandB
         self._mapping = ligandmapping
         self._settings = self.__class__.get_default_settings()
         if settings is not None:
@@ -42,15 +55,20 @@ class LigandLigandTransform:
         # TODO: Prepare the workload
 
     @staticmethod
-    def get_default_settings() -> Dict:
+    def get_default_settings() -> LigandLigandTransformSettings:
         """Get the default settings for this Method
 
         These can be updated and passed back to create the Method
         """
-        return dict()
+        return LigandLigandTransformSettings()
 
     def to_xml(self) -> str:
         """Serialise this method to xml"""
+        raise NotImplementedError()
+
+    @classmethod
+    def from_xml(cls, xml: str):
+        """Deserialise this from a saved xml representation"""
         raise NotImplementedError()
 
     def run(self) -> bool:
@@ -60,11 +78,11 @@ class LigandLigandTransform:
         # TODO: Execute the workload
         return False
 
-    def is_complete(self):
-        """Check status of this workload"""
+    def is_complete(self) -> bool:
+        """Check if the results of this workload already exist"""
         return False
 
-    def get_results(self):
+    def get_results(self) -> LigandLigandTransformResults:
         """Return payload created by this workload"""
         return None
 
