@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Contains RBFE methods for
+"""Contains RBFE methods
 
 
 """
@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Dict, Union
 
 from openfe.setup import AtomMapping, Molecule
+from openfe.setup.methods import FEMethod
 
 
 class LigandLigandTransformSettings:
@@ -22,10 +23,12 @@ class LigandLigandTransformResults:
     pass
 
 
-class LigandLigandTransform:
+class LigandLigandTransform(FEMethod):
     """Calculates the free energy of an alchemical ligand swap in solvent
 
     """
+    _SETTINGS_CLASS = LigandLigandTransformSettings
+
     def __init__(self,
                  ligandA: Molecule,
                  ligandB: Molecule,
@@ -54,23 +57,6 @@ class LigandLigandTransform:
             self._settings.update(settings)
         # TODO: Prepare the workload
 
-    @staticmethod
-    def get_default_settings() -> LigandLigandTransformSettings:
-        """Get the default settings for this Method
-
-        These can be updated and passed back to create the Method
-        """
-        return LigandLigandTransformSettings()
-
-    def to_xml(self) -> str:
-        """Serialise this method to xml"""
-        raise NotImplementedError()
-
-    @classmethod
-    def from_xml(cls, xml: str):
-        """Deserialise this from a saved xml representation"""
-        raise NotImplementedError()
-
     def run(self) -> bool:
         """Perform this method, returning success"""
         if self.is_complete():
@@ -79,15 +65,25 @@ class LigandLigandTransform:
         return False
 
     def is_complete(self) -> bool:
-        """Check if the results of this workload already exist"""
         return False
 
     def get_results(self) -> LigandLigandTransformResults:
-        """Return payload created by this workload"""
-        return None
+        """Return payload created by this workload
+
+        Raises
+        ------
+        ValueError
+          if the results do not exist yet
+        """
+        if not self.is_complete():
+            raise ValueError("Results have not been generated")
+        return LigandLigandTransformResults()
 
 
-class ComplexTransform:
+class ComplexTransformResults:
+    pass
+
+class ComplexTransform(FEMethod):
     """Calculates the free energy of an alchemical ligand swap in complex"""
     def __init__(self,
                  ligand1: Molecule,
@@ -104,10 +100,11 @@ class ComplexTransform:
         if settings is not None:
             self._settings.update(settings)
 
-    @staticmethod
-    def get_default_settings() -> Dict:
-        return dict()
+    def is_complete(self) -> bool:
+        return False
 
-    def to_xml(self) -> str:
-        raise NotImplementedError
+    def get_results(self) -> ComplexTransformResults:
+        if not self.is_complete():
+            raise ValueError("Results have not been generated")
 
+        return ComplexTransformResults()
