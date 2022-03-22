@@ -58,6 +58,7 @@ get_molecule = MultiStrategyGetter(
 
 MOL = Option(
     "--mol",
-    help="LigandMolecule. Can be provided as an SDF file or as a SMILES string.",
+    help=("LigandMolecule. Can be provided as an SDF file or as a SMILES "
+          " string."),
     getter=get_molecule
 )

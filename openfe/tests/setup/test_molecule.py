@@ -70,7 +70,8 @@ class TestMolecule:
         assert ethane.to_rdkit() is not alt_ethane.to_rdkit()
 
     def test_rdkit_independence(self):
-        # once we've constructed a LigandMolecule, it is independent from the source
+        # once we've constructed a LigandMolecule, it is independent from
+        # the source
         mol = Chem.MolFromSmiles('CC')
         our_mol = LigandMolecule.from_rdkit(mol)
 

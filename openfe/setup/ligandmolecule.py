@@ -30,7 +30,8 @@ def _ensure_ofe_name(mol: RDKitMol, name: str) -> str:
         pass
 
     if name and rdkit_name and rdkit_name != name:
-        warnings.warn(f"LigandMolecule being renamed from {rdkit_name} to {name}.")
+        warnings.warn(f"LigandMolecule being renamed from {rdkit_name} to "
+                      f"{name}.")
     elif name == "":
         name = rdkit_name
 

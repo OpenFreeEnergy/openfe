@@ -8,7 +8,7 @@ from ..utils.errors import ABSTRACT_ERROR_STRING
 
 
 class LigandAtomMapper:
-    """LigandAtomMapper suggests AtomMappings for a pair of :class:`LigandMolecule`s.
+    """Suggests AtomMappings for a pair of :class:`LigandMolecule`s.
 
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
