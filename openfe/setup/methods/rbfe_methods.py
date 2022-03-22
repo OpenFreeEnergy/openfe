@@ -57,8 +57,14 @@ class LigandLigandTransform(FEMethod):
             self._settings.update(settings)
         # TODO: Prepare the workload
 
+    def to_xml(self) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_xml(cls, xml: str):
+        raise NotImplementedError()
+
     def run(self) -> bool:
-        """Perform this method, returning success"""
         if self.is_complete():
             return True
         # TODO: Execute the workload
@@ -78,34 +84,3 @@ class LigandLigandTransform(FEMethod):
         if not self.is_complete():
             raise ValueError("Results have not been generated")
         return LigandLigandTransformResults()
-
-
-class ComplexTransformResults:
-    pass
-
-
-class ComplexTransform(FEMethod):
-    """Calculates the free energy of an alchemical ligand swap in complex"""
-    def __init__(self,
-                 ligand1: Molecule,
-                 ligand2: Molecule,
-                 ligandmapping: AtomMapping,
-                 protein: Molecule,
-                 settings: Dict = None,
-                 ):
-        self._ligand1 = ligand1
-        self._ligand2 = ligand2
-        self._mapping = ligandmapping
-        self._protein = protein
-        self._settings = self.__class__.get_default_settings()
-        if settings is not None:
-            self._settings.update(settings)
-
-    def is_complete(self) -> bool:
-        return False
-
-    def get_results(self) -> ComplexTransformResults:
-        if not self.is_complete():
-            raise ValueError("Results have not been generated")
-
-        return ComplexTransformResults()
