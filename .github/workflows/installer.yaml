@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    name: Building single file installer on ${{ matrix.cfg.os }}, Python ${{ matrix.python-version }}
+    name: Building single file installer on ${{ matrix.os }}, Python ${{ matrix.python-version }}
 
     runs-on: ${{ matrix.os }}
 
