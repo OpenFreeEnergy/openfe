@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 
-from openfe.setup import BoxRepresentation
+from openfe.setup import Box, VacuumBox
 
 
 @pytest.fixture
 def triclinic_box():
-    return BoxRepresentation(np.array([[1, 0, 0], [0.2, 1, 0], [0.2, 0.2, 1]]))
+    return Box(np.array([[1, 0, 0], [0.2, 1, 0], [0.2, 0.2, 1]]))
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def nearly_triclinic_box(triclinic_box):
     # oh so close, but not quite
     alt_boxarr = np.array(triclinic_box.to_matrix())
     alt_boxarr[0][0] += np.nextafter(1, 2, dtype=np.float64)  # smallest delta
-    return BoxRepresentation(alt_boxarr)
+    return Box(alt_boxarr)
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def test_to_matrix(triclinic_box):
 
 
 def test_box_eq(triclinic_box):
-    box2 = BoxRepresentation(triclinic_box.to_matrix())
+    box2 = Box(triclinic_box.to_matrix())
 
     assert triclinic_box == box2
 
@@ -45,7 +45,7 @@ def test_box_neq2(triclinic_box):
 
 
 def test_box_hash(triclinic_box):
-    box2 = BoxRepresentation(triclinic_box.to_matrix())
+    box2 = Box(triclinic_box.to_matrix())
 
     assert hash(box2) == hash(triclinic_box)
 
@@ -62,7 +62,7 @@ def test_to_bytes(triclinic_box):
 
 
 def test_from_bytes(triclinic_box, ref_bytes):
-    newbox = BoxRepresentation.from_bytes(ref_bytes)
+    newbox = Box.from_bytes(ref_bytes)
 
     assert newbox == triclinic_box
 
@@ -71,11 +71,28 @@ def test_invalid_box():
     arr = np.eye(3)
     arr[0][1] = 1.0
     with pytest.raises(ValueError):
-        _ = BoxRepresentation(arr)
+        _ = Box(arr)
 
 
 def test_invalid_box2():
     arr = np.array([10, 10, 10, 90, 90, 90])
 
     with pytest.raises(ValueError):
-        _ = BoxRepresentation(arr)
+        _ = Box(arr)
+
+
+def test_vacuum():
+    vacbox1 = VacuumBox()
+    vacbox2 = VacuumBox()
+
+    assert vacbox1 == vacbox2
+    assert hash(vacbox1) == hash(vacbox2)
+    assert vacbox1 == 'vacuum'
+    assert hash(vacbox1) == hash('vacuum')
+    assert 'vacuum' == vacbox1
+
+
+def test_new_vacuum(triclinic_box):
+    vacbox = VacuumBox()
+
+    assert vacbox != triclinic_box

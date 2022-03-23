@@ -31,7 +31,7 @@ def is_valid_box(box: np.ndarray) -> bool:
     return True
 
 
-class BoxRepresentation:
+class Box:
     """The simulation cell in which all components sit
 
     For the purposes of simulation planning, the box is considered a component
@@ -74,8 +74,8 @@ class BoxRepresentation:
         --------
         The from_str classmethod is the inverse operation to str, i.e.:
 
-          box = BoxRepresentation(np.eye(3))
-          newbox = BoxRepresentation.from_str(str(box))
+          box = Box(np.eye(3))
+          newbox = Box.from_bytes(box.to_bytes())
 
           assert newbox == newbox
         """
@@ -102,3 +102,14 @@ class BoxRepresentation:
     def to_matrix(self) -> np.ndarray:
         """Returns a 3x3 matrix of box vectors"""
         return np.array(self._box)  # return copy
+
+
+class VacuumBox:
+    def __str__(self):
+        return 'vacuum'
+
+    def __hash__(self):
+        return hash('vacuum')
+
+    def __eq__(self, other):
+        return str(other).lower() == 'vacuum'
