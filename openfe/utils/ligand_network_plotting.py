@@ -18,22 +18,23 @@ class LigandEdge(Edge):
         img_bytes = draw_one_molecule_mapping(mol1_to_mol2,
                                               mol1.to_rdkit(),
                                               mol2.to_rdkit())
-        # from openfe.utils.visualization import draw_unhighlighted_molecule
-        # img_bytes = draw_unhighlighted_molecule(mol1.to_rdkit())
-        img_filelike = io.BytesIO(img_bytes)
+        img_filelike = io.BytesIO(img_bytes)  # imread needs filelike
         img_data = matplotlib.pyplot.imread(img_filelike)
 
-
-        # create BboxImage
         ax = self.artist.axes
         x0, x1, y0, y1 = extent
+
+        # version A: using AxesImage
+        im = matplotlib.image.AxesImage(ax, extent=extent, zorder=10)
+
+        # version B: using BboxImage
+        # keep this commented code around for later performance checks
+        # checks
         # bounds = (x0, y0, x1 - x0, y1 - y0)
         # bounds = (0.2, 0.2, 0.3, 0.3)
         # bbox0 = matplotlib.transforms.Bbox.from_bounds(*bounds)
         # bbox = matplotlib.transforms.TransformedBbox(bbox0, ax.transAxes)
         # im = matplotlib.image.BboxImage(bbox)
-
-        im = matplotlib.image.AxesImage(ax, extent=extent, zorder=10)
 
         # set image data and register
         im.set_data(img_data)
@@ -48,7 +49,7 @@ class LigandEdge(Edge):
         xs = [node.xy[0] for node in self.node_artists]
         if xs[0] <= xs[1]:
             left = mapping.mol1
-            right =  mapping.mol2
+            right = mapping.mol2
             left_to_right = mapping.mol1_to_mol2
         else:
             left = mapping.mol2
@@ -80,8 +81,8 @@ class LigandEdge(Edge):
                                                       right_to_left)
         graph.fig.canvas.draw()
 
-    def set_standard(self):
-        super().set_standard()
+    def unselect(self):
+        super().unselect()
         for artist in [self.left_image, self.right_image]:
             if artist is not None:
                 artist.remove()
@@ -109,4 +110,3 @@ if __name__ == "__main__":
     network = openfe.setup.Network.from_graphml(graphml)
     fig = plot_network(network)
     matplotlib.pyplot.show()
-
