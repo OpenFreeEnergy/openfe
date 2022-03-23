@@ -11,7 +11,7 @@
 # {OFE_VERSION}
 
 from rdkit import Chem
-from openfe.setup import Molecule, AtomMapping, Network
+from openfe.setup import LigandMolecule, LigandAtomMapping, Network
 
 # multi_molecule.sdf
 mol1 = Chem.MolFromSmiles("CCO")
@@ -24,26 +24,26 @@ writer.close()
 
 
 # ethane_template.sdf
-m = Molecule(Chem.MolFromSmiles("CC"), name="ethane")
+m = LigandMolecule(Chem.MolFromSmiles("CC"), name="ethane")
 
 with open("ethane_template.sdf", mode="w") as tmpl:
     tmpl.write(m.to_sdf())
 
 # ethane_with_H_template.sdf
-m2 = Molecule(Chem.AddHs(m.to_rdkit()))
+m2 = LigandMolecule(Chem.AddHs(m.to_rdkit()))
 
 with open("ethane_with_H_template.sdf", mode="w") as tmpl:
     tmpl.write(m2.to_sdf())
 
 
 # network_template.graphml
-mol1 = Molecule(Chem.MolFromSmiles("CCO"))
-mol2 = Molecule(Chem.MolFromSmiles("CC"))
-mol3 = Molecule(Chem.MolFromSmiles("CO"))
+mol1 = LigandMolecule(Chem.MolFromSmiles("CCO"))
+mol2 = LigandMolecule(Chem.MolFromSmiles("CC"))
+mol3 = LigandMolecule(Chem.MolFromSmiles("CO"))
 
-edge12 = AtomMapping(mol1, mol2, {0: 0, 1: 1})
-edge23 = AtomMapping(mol2, mol3, {0: 0})
-edge13 = AtomMapping(mol1, mol3, {0: 0, 2: 1})
+edge12 = LigandAtomMapping(mol1, mol2, {0: 0, 1: 1})
+edge23 = LigandAtomMapping(mol2, mol3, {0: 0})
+edge13 = LigandAtomMapping(mol1, mol3, {0: 0, 2: 1})
 
 network = Network([edge12, edge23, edge13])
 

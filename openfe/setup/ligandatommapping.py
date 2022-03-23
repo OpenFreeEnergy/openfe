@@ -5,25 +5,25 @@ from typing import Dict
 
 from rdkit import Chem
 
-from openfe.setup import Molecule
+from openfe.setup import LigandMolecule
 from openfe.utils.visualization import draw_mapping
 
 
 @dataclass
-class AtomMapping:
+class LigandAtomMapping:
     """Simple container with the mapping between two Molecules
 
     Attributes
     ----------
-    mol1, mol2 : Molecule
+    mol1, mol2 : LigandMolecule
       the two Molecules in the mapping
     mol1_to_mol2 : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
       If this atom has no corresponding atom, None is returned.
 
     """
-    mol1: Molecule
-    mol2: Molecule
+    mol1: LigandMolecule
+    mol2: LigandMolecule
     mol1_to_mol2: Dict[int, int]
 
     def __hash__(self):

@@ -3,15 +3,15 @@
 
 from typing import Iterable, Dict
 
-from . import AtomMapping, Molecule
+from . import LigandAtomMapping, LigandMolecule
 from ..utils.errors import ABSTRACT_ERROR_STRING
 
 
-class AtomMapper:
-    """AtomMapper suggests AtomMappings for a pair of molecules.
+class LigandAtomMapper:
+    """Suggests AtomMappings for a pair of :class:`LigandMolecule`s.
 
     Subclasses will typically implement the ``_mappings_generator`` method,
-    which returns an iterable of :class:`.AtomMapping` suggestions.
+    which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
     def _mappings_generator(self, mol1, mol2) -> Iterable[Dict[int, int]]:
         """
@@ -33,19 +33,19 @@ class AtomMapper:
         ))
 
     def suggest_mappings(
-        self, mol1: Molecule, mol2: Molecule
-    ) -> Iterable[AtomMapping]:
+        self, mol1: LigandMolecule, mol2: LigandMolecule
+    ) -> Iterable[LigandAtomMapping]:
         """
-        Suggest :class:`.AtomMapping` options for the input molecules.
+        Suggest :class:`.LigandAtomMapping` options for the input molecules.
 
         Parameters
         ---------
-        mol1, mol2 : :class:`.Molecule`
+        mol1, mol2 : :class:`.LigandMolecule`
             the two molecules to create a mapping for
 
         Returns
         -------
-        Iterable[AtomMapping] :
+        Iterable[LigandAtomMapping] :
             an iterable over proposed mappings
         """
         # For this base class, implementation is redundant with
@@ -55,4 +55,4 @@ class AtomMapper:
         # implement _mappings_generator.
         for map_dct in self._mappings_generator(mol1.to_rdkit(),
                                                 mol2.to_rdkit()):
-            yield AtomMapping(mol1, mol2, map_dct)
+            yield LigandAtomMapping(mol1, mol2, map_dct)

@@ -8,10 +8,10 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 from lomap import mcs as lomap_mcs
 
 
-from . import AtomMapper
+from . import LigandAtomMapper
 
 
-class LomapAtomMapper(AtomMapper):
+class LomapAtomMapper(LigandAtomMapper):
     def __init__(self, time: int = 20, threed: bool = False,
                  max3d: float = 1000.0):
         """Wraps the MCS atom mapper from Lomap.

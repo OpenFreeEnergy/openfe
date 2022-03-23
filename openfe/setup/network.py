@@ -5,24 +5,26 @@ import json
 
 from typing import FrozenSet, Iterable
 
-from openfe.setup import AtomMapping, Molecule
+from openfe.setup import LigandAtomMapping, LigandMolecule
 import openfe
 
 import networkx as nx
 
 
 class Network:
-    """Network container
+    """A directed graph connecting many ligands according to their atom mapping
 
     Parameters
     ----------
-    edges : Iterable[AtomMapping]
+    edges : Iterable[LigandAtomMapping]
         edges for this network
-    nodes : Iterable[Molecule]
+    nodes : Iterable[LigandMolecule]
         nodes for this network
     """
     def __init__(
-        self, edges: Iterable[AtomMapping], nodes: Iterable[Molecule] = None
+        self,
+        edges: Iterable[LigandAtomMapping],
+        nodes: Iterable[LigandMolecule] = None
     ):
         if nodes is None:
             nodes = []
@@ -47,12 +49,12 @@ class Network:
         return self._graph
 
     @property
-    def edges(self) -> FrozenSet[AtomMapping]:
+    def edges(self) -> FrozenSet[LigandAtomMapping]:
         """A read-only view of the edges of the Network"""
         return self._edges
 
     @property
-    def nodes(self) -> FrozenSet[Molecule]:
+    def nodes(self) -> FrozenSet[LigandMolecule]:
         """A read-only view of the nodes of the Network"""
         return self._nodes
 
@@ -98,13 +100,13 @@ class Network:
 
         This is the inverse of ``_serializable_graph``.
         """
-        label_to_mol = {node: Molecule.from_sdf_string(sdf)
+        label_to_mol = {node: LigandMolecule.from_sdf_string(sdf)
                         for node, sdf in graph.nodes(data='sdf')}
 
         edges = [
-            AtomMapping(mol1=label_to_mol[node1],
-                        mol2=label_to_mol[node2],
-                        mol1_to_mol2=dict(json.loads(mapping)))
+            LigandAtomMapping(mol1=label_to_mol[node1],
+                              mol2=label_to_mol[node2],
+                              mol1_to_mol2=dict(json.loads(mapping)))
             for node1, node2, mapping in graph.edges(data='mapping')
         ]
 
@@ -146,9 +148,9 @@ class Network:
 
         Parameters
         ----------
-        edges : Iterable[:class:`.AtomMapping`]
+        edges : Iterable[:class:`.LigandAtomMapping`]
             edges to append to this network
-        nodes : Iterable[:class:`.Molecule`]
+        nodes : Iterable[:class:`.LigandMolecule`]
             nodes to append to this network
 
         Returns
