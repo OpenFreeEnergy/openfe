@@ -12,6 +12,7 @@ except ImportError:
     from typing_extensions import TypeAlias
 
 RDKitMol: TypeAlias = Chem.rdchem.Mol
+
 OEMol = TypeVar('OEMol')
 MPL_FigureCanvasBase: TypeAlias = matplotlib.backend_bases.FigureCanvasBase
 MPL_MouseEvent: TypeAlias = matplotlib.backend_bases.MouseEvent
