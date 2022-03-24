@@ -1,5 +1,6 @@
 import pytest
 from unittest import mock
+from numpy import testing as npt
 
 from matplotlib import pyplot as plt
 import networkx as nx
@@ -10,7 +11,10 @@ from openfe.utils.network_plotting import (
 from matplotlib.backend_bases import MouseEvent, MouseButton
 
 
-def mock_event(fig, xdata, ydata, event_name):
+def mock_event(event_name, xdata, ydata, fig=None):
+    if fig is None:
+        fig, ax = plt.subplots()
+
     if len(fig.axes) != 1:
         raise RuntimeError("Error in test setup: figure must have exactly "
                            "one Axes object associated")
@@ -46,13 +50,19 @@ def drawing_graph(nx_graph):
 class TestNode:
     def setup(self):
         self.node = Node("B", 0.5, 0.0)
+        self.fig, self.ax = plt.subplots()
+        self.node.register_artist(self.ax)
+
+    def teardown(self):
+        plt.close(self.fig)
 
     def test_register_artist(self):
+        node = Node("B", 0.6, 0.0)
         fig, ax = plt.subplots()
         assert len(ax.patches) == 0
-        self.node.register_artist(ax)
+        node.register_artist(ax)
         assert len(ax.patches) == 1
-        assert self.node.artist == ax.patches[0]
+        assert node.artist == ax.patches[0]
 
     def test_extent(self):
         assert self.node.extent == (0.5, 0.6, 0.0, 0.1)
@@ -87,37 +97,79 @@ class TestNode:
         ((-10, -10), False),
     ])
     def test_contains(self, point, expected):
-        fig, ax = plt.subplots()
-        self.node.register_artist(ax)
-        event = mock_event(fig, *point, 'drag')
+        event = mock_event('drag', *point, fig=self.fig)
         assert self.node.contains(event) == expected
 
     def test_on_mousedown_in_rect(self, drawing_graph):
-        fig, ax = plt.subplots()
-        self.node.register_artist(ax)
-        event = mock_event(fig, 0.55, 0.05, 'mousedown')
-
+        event = mock_event('mousedown', 0.55, 0.05, self.fig)
         assert Node.lock is None
         assert self.node.press is None
+
         self.node.on_mousedown(event, drawing_graph)
         assert Node.lock == self.node
         assert self.node.press is not None
         Node.lock = None
 
-    def test_on_mousedown_in_axes(self):
-        pass
+    def test_on_mousedown_in_axes(self, drawing_graph):
+        event = mock_event('mousedown', 0.25, 0.25, self.fig)
 
-    def test_on_mousedown_out_axes(self):
-        pass
+        assert Node.lock is None
+        assert self.node.press is None
+        self.node.on_mousedown(event, drawing_graph)
+        assert Node.lock is None
+        assert self.node.press is None
 
-    def test_on_drag(self):
-        pass
+    def test_on_mousedown_out_axes(self, drawing_graph):
+        node = Node("B", 0.5, 0.6)
+        event = mock_event('mousedown', 0.55, 0.05, self.fig)
 
-    def test_on_drag_do_nothing(self):
-        pass
+        fig2, ax2 = plt.subplots()
+        node.register_artist(ax2)
 
-    def test_on_mouseup(self):
-        pass
+        assert Node.lock is None
+        assert node.press is None
+        node.on_mousedown(event, drawing_graph)
+        assert Node.lock is None
+        assert node.press is None
+
+    def test_on_drag(self, drawing_graph):
+        event = mock_event('drag', 0.7, 0.7, self.fig)
+        # set up things that should happen on mousedown
+        Node.lock = self.node
+        self.node.press = (0.5, 0.0), (0.55, 0.05)
+
+        self.node.on_drag(event, drawing_graph)
+
+        npt.assert_allclose(self.node.xy, (0.65, 0.65))
+
+        # undo the lock; normally handled by mouseup
+        Node.lock = None
+
+    def test_on_drag_do_nothing(self, drawing_graph):
+        event = mock_event('drag', 0.7, 0.7, self.fig)
+
+        # don't set lock -- early exit
+        original = self.node.xy
+        self.node.on_drag(event, drawing_graph)
+        assert self.node.xy == original
+
+    def test_on_drag_no_mousedown(self, drawing_graph):
+        event = mock_event('drag', 0.7, 0.7, self.fig)
+        Node.lock = self.node
+
+        with pytest.raises(RuntimeError, match="drag until mouse down"):
+            self.node.on_drag(event, drawing_graph)
+
+        Node.lock = None
+
+    def test_on_mouseup(self, drawing_graph):
+        event = mock_event('drag', 0.7, 0.7, self.fig)
+        Node.lock = self.node
+        self.node.press = (0.5, 0.0), (0.55, 0.05)
+
+        self.node.on_mouseup(event, drawing_graph)
+        assert Node.lock is None
+        assert self.node.press is None
 
     def test_blitting(self):
         pytest.skip("Blitting hasn't been implemented yet")

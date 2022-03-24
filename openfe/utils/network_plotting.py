@@ -113,6 +113,8 @@ class Node:
         if self.press:
             (x0, y0), (xpress, ypress) = self.press
         else:
+            # this should be impossible in practice, but mypy needed the
+            # explicit check so it didn't unpack None
             raise RuntimeError("Can't drag until mouse down!")
 
         dx = event.xdata - xpress

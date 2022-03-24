@@ -7,7 +7,7 @@ from openfe.utils.visualization import draw_one_molecule_mapping
 
 from typing import Dict
 from openfe.utils.custom_typing import MPL_MouseEvent
-from openfe.setup import Molecule
+from openfe.setup import LigandMolecule
 
 
 class AtomMappingEdge(Edge):
