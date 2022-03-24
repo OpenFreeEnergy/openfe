@@ -25,7 +25,7 @@ Simple radial network.
 
 The Network 
 
-#### AtomMapper
+#### LigandAtomMapper
 
 We need a cartographer.
 

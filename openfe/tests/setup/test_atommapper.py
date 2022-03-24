@@ -1,6 +1,6 @@
 import pytest
 
-from openfe.setup.atommapper import AtomMapper
+from openfe.setup.ligandatommapper import LigandAtomMapper
 
 
 class TestAtomMapper:
@@ -9,8 +9,8 @@ class TestAtomMapper:
         # tries to directly user the abstract class
         mol1 = simple_mapping.mol1
         mol2 = simple_mapping.mol2
-        mapper = AtomMapper()
-        match_re = "'AtomMapper'.*abstract.*_mappings_generator"
+        mapper = LigandAtomMapper()
+        match_re = "'LigandAtomMapper'.*abstract.*_mappings_generator"
         with pytest.raises(NotImplementedError, match=match_re):
             list(mapper.suggest_mappings(mol1, mol2))
 
@@ -20,7 +20,7 @@ class TestAtomMapper:
         mol1 = simple_mapping.mol1
         mol2 = simple_mapping.mol2
 
-        class ConcreteAtomMapper(AtomMapper):
+        class ConcreteLigandAtomMapper(LigandAtomMapper):
             def __init__(self, mappings):
                 self.mappings = mappings
 
@@ -28,7 +28,7 @@ class TestAtomMapper:
                 for mapping in self.mappings:
                     yield mapping.mol1_to_mol2
 
-        mapper = ConcreteAtomMapper([simple_mapping, other_mapping])
+        mapper = ConcreteLigandAtomMapper([simple_mapping, other_mapping])
         results = list(mapper.suggest_mappings(mol1, mol2))
         assert len(results) == 2
         assert results == [simple_mapping, other_mapping]

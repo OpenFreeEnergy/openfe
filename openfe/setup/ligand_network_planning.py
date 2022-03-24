@@ -3,28 +3,29 @@
 import math
 from typing import Iterable
 
-from openfe.setup import Network, Molecule, AtomMapper
+from openfe.setup import Network, LigandMolecule, LigandAtomMapper
 
 
-def generate_radial_network(ligands: Iterable[Molecule],
-                            central_ligand: Molecule,
-                            mappers: Iterable[AtomMapper], scorer=None):
-    """Radial Network generator
+def generate_radial_network(ligands: Iterable[LigandMolecule],
+                            central_ligand: LigandMolecule,
+                            mappers: Iterable[LigandAtomMapper], scorer=None):
+    """Generate a radial network with all ligands connected to a central node
 
     Also known as hub and spoke or star-map, this plans a Network where
     all ligands are connected via a central ligand.
 
     Parameters
     ----------
-    ligands : iterable of Molecules
+    ligands : iterable of LigandMolecules
       the ligands to arrange around the central ligand
-    central_ligand : Molecule
+    central_ligand : LigandMolecule
       the ligand to use as the hub/central ligand
-    mappers : iterable of AtomMappers
+    mappers : iterable of LigandAtomMappers
       mappers to use, at least 1 required
     scorer : scoring function, optional
-      a callable which returns a float for any AtomMapping.  Used to assign
-      scores to potential mappings, higher scores indicate worse mappings.
+      a callable which returns a float for any LigandAtomMapping.  Used to
+      assign scores to potential mappings, higher scores indicate worse
+      mappings.
 
     Raises
     ------
@@ -65,9 +66,10 @@ def generate_radial_network(ligands: Iterable[Molecule],
     return Network(edges)
 
 
-def minimal_spanning_graph(ligands: Iterable[Molecule],
-                           mappers: Iterable[AtomMapper], scorer=None):
+def minimal_spanning_graph(ligands: Iterable[LigandMolecule],
+                           mappers: Iterable[LigandAtomMapper], scorer=None):
     """Plan a Network which connects all ligands with minimal cost
+
     Parameters
     ----------
     ligands : Iterable of rdkit Molecules
@@ -77,6 +79,6 @@ def minimal_spanning_graph(ligands: Iterable[Molecule],
       but many can be given, in which case all will be tried to find the
       lowest score edges
     scorer : Scoring function
-      any callable which takes an AtomMapping and returns a float
+      any callable which takes an LigandAtomMapping and returns a float
     """
     raise NotImplementedError
