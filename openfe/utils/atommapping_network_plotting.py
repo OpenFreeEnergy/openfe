@@ -5,14 +5,26 @@ from rdkit import Chem
 from network_plotting import GraphDrawing, Node, Edge
 from openfe.utils.visualization import draw_one_molecule_mapping
 
+from typing import Dict
+from openfe.utils.custom_typing import MPL_MouseEvent
+from openfe.setup import Molecule
 
-class LigandEdge(Edge):
-    def __init__(self, node_artist1, node_artist2, data):
+
+class AtomMappingEdge(Edge):
+    """Edge to draw AtomMapping from a LigandNetwork
+    """
+    def __init__(self, node_artist1: Node, node_artist2: Node, data: Dict):
         super().__init__(node_artist1, node_artist2, data)
         self.left_image = None
         self.right_image = None
 
-    def _draw_mapped_molecule(self, extent, mol1, mol2, mol1_to_mol2):
+    def _draw_mapped_molecule(
+        self,
+        extent,
+        mol1,
+        mol2,
+        mol1_to_mol2
+    ):
         # create the image in a format matplotlib can handle
         # TODO: use a custom draw2d object; figure size from transforms
         img_bytes = draw_one_molecule_mapping(mol1_to_mol2,
@@ -91,13 +103,13 @@ class LigandEdge(Edge):
         self.right_image = None
 
 
-class LigandNetworkDrawing(GraphDrawing):
+class AtomMappingNetworkDrawing(GraphDrawing):
     NodeCls = Node
-    EdgeCls = LigandEdge
+    EdgeCls = AtomMappingEdge
 
 
 def plot_network(network):
-    return LigandNetworkDrawing(network.graph).fig
+    return AtomMappingNetworkDrawing(network.graph).fig
 
 
 if __name__ == "__main__":

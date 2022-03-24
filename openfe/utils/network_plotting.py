@@ -54,18 +54,18 @@ class Node:
         ax.add_patch(self.artist)
 
     @property
-    def extent(self) -> List[List[float]]:  # TODO: this should be a tuple
+    def extent(self) -> Tuple[float, float, float, float]:
         """extent of this node in matplotlib data coordinates"""
         bounds = self.artist.get_bbox().bounds
-        return [[bounds[0], bounds[0] + bounds[2]],
-                [bounds[1], bounds[1] + bounds[3]]]
+        return (bounds[0], bounds[0] + bounds[2],
+                bounds[1], bounds[1] + bounds[3])
 
     @property
     def xy(self) -> Tuple[float, float]:
         """lower left (matplotlib data coordinates) position of this node"""
         return self.artist.xy
 
-    def select(self, event: MPL_MouseEvent, graph: GraphDrawing):
+    def select(self, event: MPL_MouseEvent, graph: GraphDrawing):  # -no-cov-
         """Set this node to its state when it is selected (clicked on)"""
         return
 
@@ -96,7 +96,7 @@ class Node:
         if event.inaxes != self.artist.axes:
             return
 
-        if not self.artist.contains(event):
+        if not self.contains(event):
             return
 
         # record the original click location; lock that we're the only
@@ -109,14 +109,17 @@ class Node:
         """Handle dragging this node"""
         if event.inaxes != self.artist.axes or Node.lock is not self:
             return
+
         if self.press:
             (x0, y0), (xpress, ypress) = self.press
         else:
             raise RuntimeError("Can't drag until mouse down!")
+
         dx = event.xdata - xpress
         dy = event.ydata - ypress
         self.update_location(x0 + dx, y0 + dy)
 
+        # TODO: this might be cached on mousedown
         edges = graph.edges_for_node(self.node)
         for edge in edges:
             edge.update_locations()
@@ -127,6 +130,7 @@ class Node:
     def on_mouseup(self, event: MPL_MouseEvent, graph: GraphDrawing):
         """Handle mouseup event (button_release_event)"""
         self.press = None
+        Node.lock = None
         # TODO: blitting
         self.artist.figure.canvas.draw()
 
@@ -169,7 +173,7 @@ class Edge:
     @staticmethod
     def _edge_xs_ys(node1: Node, node2: Node):
         def get_midpoint(node):
-            (x0, x1), (y0, y1) = node.extent
+            x0, x1, y0, y1 = node.extent
             return (0.5 * (x0 + x1), 0.5 * (y0 + y1))
 
         midpt1 = get_midpoint(node1)
@@ -327,9 +331,8 @@ class GraphDrawing:
     ----------
     graph : nx.MultiDiGraph
         NetworkX graph with information in nodes and edges to be drawn
-    positions : Optional[ArrayLike]
-        Array of x, y positions for each node, in the order of
-        ``graph.nodes``
+    positions : Optional[Dict[Any, Tuple[float, float]]]
+        mapping of node to position
     """
     NodeCls = Node
     EdgeCls = Edge
@@ -372,22 +375,26 @@ class GraphDrawing:
         return [self.edges[edge] for edge in edges]
 
     def _get_nodes_extent(self):
-        """Find the extent all all nodes (used in setting bounds)"""
+        """Find the extent of all nodes (used in setting bounds)"""
+        # TODO: c'mon David, this can be written with a generator expression
+        # and a zip*, requiring only 4 calls total of min/max. Faster and
+        # smaller.
         min_x = float("inf")
         max_x = float("-inf")
         min_y = float("inf")
         max_y = float("-inf")
         for node in self.nodes.values():
-            (lo_x, hi_x), (lo_y, hi_y) = node.extent
+            lo_x, hi_x, lo_y, hi_y = node.extent
             min_x = min([lo_x, min_x])
             max_x = max([hi_x, max_x])
             min_y = min([lo_y, min_y])
             max_y = max([hi_y, max_y])
-        return [min_x, max_x], [min_y, max_y]
+
+        return min_x, max_x, min_y, max_y
 
     def reset_bounds(self):
         """Set the bounds of the matplotlib Axes to include all nodes"""
-        (min_x, max_x), (min_y, max_y) = self._get_nodes_extent()
+        min_x, max_x, min_y, max_y = self._get_nodes_extent()
         self.ax.set_xlim(min_x, max_x)
         self.ax.set_ylim(min_y, max_y)
 
