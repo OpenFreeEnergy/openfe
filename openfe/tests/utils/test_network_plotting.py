@@ -12,10 +12,10 @@ from matplotlib.backend_bases import MouseEvent, MouseButton
 
 
 def mock_event(event_name, xdata, ydata, fig=None):
-    if fig is None:
+    if fig is None:  # -no-cov-
         fig, ax = plt.subplots()
 
-    if len(fig.axes) != 1:
+    if len(fig.axes) != 1:  # -no-cov-
         raise RuntimeError("Error in test setup: figure must have exactly "
                            "one Axes object associated")
 
@@ -177,18 +177,38 @@ class TestNode:
 
 class TestEdge:
     def setup(self):
-        pass
+        self.nodes = [Node("A", 0.0, 0.0), Node("B", 0.5, 0.0)]
+        self.data = {"data": "values"}
+        self.edge = Edge(*self.nodes, self.data)
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_xlim(-1, 1)
+        self.ax.set_ylim(-1, 1)
+        self.edge.register_artist(self.ax)
+
+    def teardown(self):
+        plt.close(self.fig)
 
     def test_register_artist(self):
-        pass
+        fig, ax = plt.subplots()
+        edge = Edge(*self.nodes, self.data)
+        assert len(ax.get_lines()) == 0
+        edge.register_artist(ax)
+        assert len(ax.get_lines()) == 1
+        assert ax.get_lines()[0] == edge.artist
 
-    def test_contains(self):
-        pass
+    @pytest.mark.parametrize('point,expected', [
+        ((0.25, 0.05), True),
+        ((0.6, 0.1), False),
+    ])
+    def test_contains(self, point, expected):
+        event = mock_event('drag', *point, fig=self.fig)
+        assert self.edge.contains(event) == expected
 
     def test_edge_xs_ys(self):
-        pass
+        npt.assert_allclose(self.edge._edge_xs_ys(*self.nodes),
+                            ((0.05, 0.55), (0.05, 0.05)))
 
-    def test_set_standard(self):
+    def test_unselect(self):
         pass
 
     def test_select(self):

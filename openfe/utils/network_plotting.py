@@ -186,15 +186,15 @@ class Edge:
 
     def on_mousedown(self, event: MPL_MouseEvent, graph: GraphDrawing):
         """Handle mousedown event (button_press_event)"""
-        return
+        return  # -no-cov-
 
     def on_drag(self, event: MPL_MouseEvent, graph: GraphDrawing):
         """Handle drag event"""
-        return
+        return  # -no-cov-
 
     def on_mouseup(self, event: MPL_MouseEvent, graph: GraphDrawing):
         """Handle mouseup event (button_release_event)"""
-        return
+        return  # -no-cov-
 
     def unselect(self):
         """Reset this edge to its standard, unselected visualization"""
