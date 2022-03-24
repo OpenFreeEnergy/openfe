@@ -52,6 +52,7 @@ jobs:
         ls -l devtools
         ls -l devtools/scripts
         cd toolkit-installer-constructor
+        echo latest tag $LATEST_TAG pyver $PYVER ci os $CI_OS
         python ../devtools/scripts/build_cookiecutter_json.py $LATEST_TAG $PYVER $CI_OS
         cp new_cookiecutter.json cookiecutter/cookiecutter.json
         cat new_cookiecutter.json
