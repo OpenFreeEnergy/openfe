@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional, Any
 from openfe.utils.custom_typing import (
     MPL_MouseEvent, MPL_FigureCanvasBase, MPL_Axes
 )
@@ -40,7 +40,7 @@ class Node:
         self.dy = dx
         self.artist = self._make_artist(x, y, dx, dy)
         self.picked = False
-        self.press = None
+        self.press: Optional[Tuple[Tuple[float, float], Tuple[Any, Any]]] = None
 
     def _make_artist(self, x, y, dx, dy):
         return Rectangle((x, y), dx, dy, color='blue')
@@ -84,20 +84,30 @@ class Node:
         return self.artist.contains(event)[0]
 
     def on_mousedown(self, event: MPL_MouseEvent, graph):
+        """Handle mousedown event (button_press_event)"""
+        # these early returns probably won't be called in practice, since
+        # the event handler should only call this method when those
+        # conditions are met; still, defensive programming!
         if event.inaxes != self.artist.axes:
             return
 
         if not self.artist.contains(event):
             return
 
+        # record the original click location; lock that we're the only
+        # object being dragged
         self.press = self.xy, (event.xdata, event.ydata)
         Node.lock = self
         # TODO: blitting
 
-    def on_drag(self, event, graph):
+    def on_drag(self, event: MPL_MouseEvent, graph):
+        """Handle dragging this node"""
         if event.inaxes != self.artist.axes or Node.lock is not self:
             return
-        (x0, y0), (xpress, ypress) = self.press
+        if self.press:
+            (x0, y0), (xpress, ypress) = self.press
+        else:
+            raise RuntimeError("Can't drag until mouse down!")
         dx = event.xdata - xpress
         dy = event.ydata - ypress
         self.update_location(x0 + dx, y0 + dy)
@@ -110,12 +120,19 @@ class Node:
         self.artist.figure.canvas.draw()
 
     def on_mouseup(self, event, graph):
+        """Handle mouseup event (button_release_event)"""
         self.press = None
         # TODO: blitting
         self.artist.figure.canvas.draw()
 
 
 class Edge:
+    """Edge in the GraphDrawing network.
+
+    This connects an edge in the NetworkX graph to the matplotlib artist. In
+    addition to the edge data, this needs to know the two GraphDrawing
+    ``Node`` instances associated with this edge.
+    """
     pickable = True
 
     def __init__(self, node_artist1: Node, node_artist2: Node, data: Dict):
@@ -128,10 +145,11 @@ class Edge:
         xs, ys = self._edge_xs_ys(node_artist1, node_artist2)
         return Line2D(xs, ys, color='black', picker=True, zorder=-1)
 
-    def register_artist(self, ax):
+    def register_artist(self, ax: MPL_Axes):
         ax.add_line(self.artist)
 
-    def contains(self, event):
+    def contains(self, event: MPL_MouseEvent) -> bool:
+        """Report whether this object contains the given event"""
         return self.artist.contains(event)[0]
 
     @staticmethod
@@ -147,6 +165,7 @@ class Edge:
         return xs, ys
 
     def on_mousedown(self, event, graph):
+        """Handle mousedown event (button_press_event)"""
         return
 
     def on_drag(self, event, graph):
@@ -288,7 +307,7 @@ class GraphDrawing:
     Parameters
     ----------
     graph : nx.MultiDiGraph
-        NetworkX graph with 
+        NetworkX graph with information in nodes and edges to be drawn
     """
     NodeCls = Node
     EdgeCls = Edge

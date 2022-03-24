@@ -3,7 +3,8 @@
 
 from typing import TypeVar
 from rdkit import Chem
-import matplotlib
+import matplotlib.axes
+import matplotlib.backend_bases
 
 try:
     from typing import TypeAlias  # type: ignore
