@@ -231,14 +231,14 @@ class EventHandler:
 
     Attributes
     ----------
-    active : Union[Node, Edge, None]
+    active : Optional[Union[Node, Edge]]
         Object activated by a mousedown event, or None if either no object
         activated by mousedown or if mouse is not currently pressed. This is
         primarily used to handle drag events.
-    selected : Union[Node, Edge, None]
+    selected : Optional[Union[Node, Edge]]
         Object selected by a mouse click (after mouse is up), or None if no
         object has been selected in the graph.
-    click_location : Union[Tuple, None]
+    click_location : Optional[Tuple[int, int]]
         Cached location of the mousedown event, or None if mouse is up
     connections : List[int]
         list of IDs for connections to matplotlib canvas
@@ -262,6 +262,8 @@ class EventHandler:
         """Disconnect all connections to the canvas."""
         for cid in self.connections:
             canvas.mpl_disconnect(cid)
+        self.connections = []
+
 
     def _get_event_container(self, event: MPL_MouseEvent):
         """Identify which object should process an event.
@@ -270,12 +272,13 @@ class EventHandler:
         could be a node or an edge, it is interpreted as clicking on the
         node.
         """
-        container = None
         containers = itertools.chain(self.graph.nodes.values(),
                                      self.graph.edges.values())
         for container in containers:
             if container.contains(event):
                 break
+        else:
+            container = None
 
         return container
 
@@ -299,6 +302,7 @@ class EventHandler:
 
     def on_mouseup(self, event: MPL_MouseEvent):
         """Handle mouseup event (button_release_event)"""
+        breakpoint()
         if self.click_location == (event.xdata, event.ydata):
             # mouse hasn't moved; call it a click
             # first unselect whatever was previously selected
@@ -366,7 +370,7 @@ class GraphDrawing:
 
         self.event_handler.connect(self.fig.canvas)
 
-    def _ipython_display_(self):
+    def _ipython_display_(self):  # -no-cov-
         return self.fig
 
     def edges_for_node(self, node: Node) -> List[Edge]:

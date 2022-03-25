@@ -11,14 +11,19 @@ from openfe.utils.network_plotting import (
 from matplotlib.backend_bases import MouseEvent, MouseButton
 
 
-def mock_event(event_name, xdata, ydata, fig=None):
-    if fig is None:  # -no-cov-
-        fig, ax = plt.subplots()
+def _get_fig_ax(fig):
+    if fig is None:
+        fig, _ = plt.subplots()
 
     if len(fig.axes) != 1:  # -no-cov-
         raise RuntimeError("Error in test setup: figure must have exactly "
                            "one Axes object associated")
 
+    return fig, fig.axes[0]
+
+
+def mock_event(event_name, xdata, ydata, fig=None):
+    fig, ax = _get_fig_ax(fig)
     name = {
         'mousedown': 'button_press_event',
         'mouseup': 'button_release_event',
@@ -31,7 +36,7 @@ def mock_event(event_name, xdata, ydata, fig=None):
         'drag': MouseButton.LEFT,
     }
     button = matplotlib_buttons.get(event_name, None)
-    x, y = fig.axes[0].transData.transform((xdata, ydata))
+    x, y = ax.transData.transform((xdata, ydata))
     return MouseEvent(name, fig.canvas, x, y, button)
 
 
@@ -45,6 +50,30 @@ def drawing_graph(nx_graph):
     return GraphDrawing(nx_graph, positions={
         "A": (0.0, 0.0), "B": (0.5, 0.0), "C": (0.5, 0.5), "D": (0.0, 0.5)
     })
+
+
+def make_mock_graph(fig=None):
+    fig, ax = _get_fig_ax(fig)
+    def make_mock_node(node, x, y):
+        return mock.Mock(node=node, x=x, y=y)
+
+    def make_mock_edge(node1, node2, data):
+        return mock.Mock(node_artists=[node1, node2], data=data)
+
+    node_A = make_mock_node("A", 0.0, 0.0)
+    node_B = make_mock_node("B", 0.5, 0.0)
+    node_C = make_mock_node("C", 0.5, 0.5)
+    node_D = make_mock_node("D", 0.0, 0.5)
+    edge_AB = make_mock_edge(node_A, node_B, {'data': "AB"})
+    edge_BC = make_mock_edge(node_B, node_C, {'data': "BC"})
+    edge_BD = make_mock_edge(node_B, node_D, {'data': "BD"})
+
+    mock_graph = mock.Mock(
+        nodes={node.node: node for node in [node_A, node_B, node_C, node_D]},
+        edges={tuple(edge.node_artists): edge
+               for edge in [edge_AB, edge_BC, edge_BD]},
+    )
+    return mock_graph
 
 
 class TestNode:
@@ -243,8 +272,8 @@ class TestEdge:
 
         assert changed[self.edge] == "red"  # mpl doesn't convert to RGBA?!
         # it might be better in the future to pass that through some MPL
-        # func that converts color string to RGBA; that MPL keeps color name
-        # in line2d seems like an implementation detail
+        # func that converts color string to RGBA; the fact that MPL keeps
+        # color name in line2d seems like an implementation detail
 
     def test_update_locations(self):
         for node in self.nodes:
@@ -258,25 +287,202 @@ class TestEdge:
 
 class TestEventHandler:
     def setup(self):
-        pass
+        self.event_handler = EventHandler(graph=make_mock_graph())
+        graph = self.event_handler.graph
+        node = graph.nodes["C"]
+        edge = graph.edges[graph.nodes["B"], graph.nodes["C"]]
+        self.setup_contains = {
+            "node": (node, [node]),
+            "edge": (edge, [edge]),
+            "node+edge": (node, [node, edge]),
+            "miss": (None, []),
+        }
 
-    def test_connect(self):
-        pass
+    def _mock_for_connections(self):
+        self.event_handler.on_mousedown = mock.Mock()
+        self.event_handler.on_mouseup = mock.Mock()
+        self.event_handler.on_drag = mock.Mock()
 
-    def test_disconnect(self):
-        pass
+    @pytest.mark.parametrize('event_type', ['mousedown', 'mouseup', 'drag'])
+    def test_connect(self, event_type):
+        self._mock_for_connections()
+        fig, _ = plt.subplots()
+        event = mock_event(event_type, 0.2, 0.2, fig)
 
-    def test_get_event_container(self):
-        pass
+        methods = {
+            'mousedown': self.event_handler.on_mousedown,
+            'mouseup': self.event_handler.on_mouseup,
+            'drag': self.event_handler.on_drag,
+        }
+        should_call = methods[event_type]
+        should_not_call = set(methods.values()) - {should_call}
+        assert len(self.event_handler.connections) == 0
 
-    def test_on_mousedown(self):
-        pass
+        self.event_handler.connect(fig.canvas)
+        assert len(self.event_handler.connections) == 3
 
-    def test_on_drag(self):
-        pass
+        # check that the event is processed
+        fig.canvas.callbacks.process(event.name, event)
+        should_call.assert_called_once()
+        for method in should_not_call:
+            assert not method.called
 
-    def test_on_mouseup(self):
-        pass
+    @pytest.mark.parametrize('event_type', ['mousedown', 'mouseup', 'drag'])
+    def test_disconnect(self, event_type):
+        self._mock_for_connections()
+        fig, _ = plt.subplots()
+        event = mock_event(event_type, 0.2, 0.2, fig)
+
+        self.event_handler.connect(fig.canvas)  # not quite full isolation
+        assert len(self.event_handler.connections) == 3
+
+        self.event_handler.disconnect(fig.canvas)
+        assert len(self.event_handler.connections) == 0
+        methods = [self.event_handler.on_mousedown,
+                   self.event_handler.on_mousedown,
+                   self.event_handler.on_drag]
+
+        fig.canvas.callbacks.process(event.name, event)
+        for method in methods:
+            assert not method.called
+
+    def _mock_contains(self, mock_objs):
+        graph = self.event_handler.graph
+        objs = list(graph.nodes.values()) + list(graph.edges.values())
+        for obj in objs:
+            if obj in mock_objs:
+                obj.contains = mock.Mock(return_value=True)
+            else:
+                obj.contains = mock.Mock(return_value=False)
+
+    @staticmethod
+    def _count_contains_calls(graph):
+        objs = list(graph.nodes.values()) + list(graph.edges.values())
+        return sum(mock_obj.contains.called for mock_obj in objs)
+
+    @pytest.mark.parametrize('hit', ['node', 'edge', 'node+edge', 'miss'])
+    def test_get_event_container_select_node(self, hit):
+        expected, contains_event = self.setup_contains[hit]
+        expected_count = {
+            "node": 3,  # nodes A, B, C
+            "edge": 6,  # nodes A, B, C, D; edges AB, BC
+            "node+edge": 3,  # nodes A, B, C
+            "miss": 7,  # nodes A, B, C, D; edges AB BC, BD
+        }[hit]
+        self._mock_contains(contains_event)
+        event = mock.Mock()
+        found = self.event_handler._get_event_container(event)
+        assert found is expected
+        for container in contains_event:
+            if container is not expected:
+                assert not container.called
+
+        graph = self.event_handler.graph
+        all_objs = list(graph.nodes.values()) + list(graph.edges.values())
+        contains_count = sum(obj.contains.called for obj in all_objs)
+        assert contains_count == expected_count
+
+    @pytest.mark.parametrize('hit', ['node', 'edge', 'node+edge', 'miss'])
+    def test_on_mousedown(self, hit):
+        expected, contains_event = self.setup_contains[hit]
+        self._mock_contains(contains_event)
+        event = mock_event('mousedown', 0.5, 0.5)
+
+        assert self.event_handler.click_location is None
+        assert self.event_handler.active is None
+        self.event_handler.on_mousedown(event)
+        npt.assert_allclose(self.event_handler.click_location, (0.5, 0.5))
+        assert self.event_handler.active is expected
+        if expected is not None:
+            expected.on_mousedown.assert_called_once()
+
+    @pytest.mark.parametrize('is_active', [True, False])
+    def test_on_drag(self, is_active):
+        fig, ax = plt.subplots()
+        node = self.event_handler.graph.nodes["C"]
+        node.artist.axes = ax
+        event = mock_event('drag', 0.25, 0.25, fig)
+        if is_active:
+            self.event_handler.active = node
+
+        self.event_handler.on_drag(event)
+
+        if is_active:
+            node.on_drag.assert_called_once()
+        else:
+            assert not node.on_drag.called
+
+    @pytest.mark.parametrize('has_selected', [True, False])
+    def test_on_mouseup_click_select(self, has_selected):
+        # start: mouse hasn't moved, and something is active
+        graph = self.event_handler.graph
+        edge = graph.edges[graph.nodes["B"], graph.nodes["C"]]
+        if has_selected:
+            old_selected = graph.edges[graph.nodes["A"], graph.nodes["B"]]
+            self.event_handler.selected = old_selected
+
+        self._mock_contains([edge])
+        event = mock_event('mouseup', 0.25, 0.25)
+        self.event_handler.click_location = (event.xdata, event.ydata)
+        self.event_handler.active = edge
+
+        # this should select the active object
+        self.event_handler.on_mouseup(event)
+
+        if has_selected:
+            old_selected.unselect.assert_called_once()
+
+        edge.select.assert_called_once()
+        edge.on_mouseup.assert_called_once()
+        assert self.event_handler.selected is edge
+        assert self.event_handler.active is None
+        assert self.event_handler.click_location is None
+        graph.draw.assert_called_once()
+
+    @pytest.mark.parametrize('has_selected', [True, False])
+    def test_on_mouseup_click_not_select(self, has_selected):
+        # start: mouse hasn't moved, nothing is active
+        graph = self.event_handler.graph
+        if has_selected:
+            old_selected = graph.edges[graph.nodes["A"], graph.nodes["B"]]
+            self.event_handler.selected = old_selected
+
+        event = mock_event('mouseup', 0.25, 0.25)
+        self.event_handler.click_location = (event.xdata, event.ydata)
+
+        self.event_handler.on_mouseup(event)
+
+        if has_selected:
+            old_selected.unselect.assert_called_once()
+
+        assert self.event_handler.selected is None
+        assert self.event_handler.active is None
+        assert self.event_handler.click_location is None
+        graph.draw.assert_called_once()
+
+    @pytest.mark.parametrize('has_selected', [True, False])
+    def test_on_mouseup_drag(self, has_selected):
+        # start: mouse has moved, something is active
+        graph = self.event_handler.graph
+        edge = graph.edges[graph.nodes["B"], graph.nodes["C"]]
+        if has_selected:
+            old_selected = graph.edges[graph.nodes["A"], graph.nodes["B"]]
+            self.event_handler.selected = old_selected
+
+        event = mock_event('mouseup', 0.25, 0.25)
+        self.event_handler.click_location = (0.5, 0.5)
+        self.event_handler.active = edge
+
+        self.event_handler.on_mouseup(event)
+
+        if has_selected:
+            assert not old_selected.unselect.called
+
+        assert not edge.selected.called
+        edge.on_mouseup.assert_called_once()
+        assert self.event_handler.active is None
+        assert self.event_handler.click_location is None
+        graph.draw.assert_called_once()
 
 
 class TestGraphDrawing:
