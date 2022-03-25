@@ -264,7 +264,6 @@ class EventHandler:
             canvas.mpl_disconnect(cid)
         self.connections = []
 
-
     def _get_event_container(self, event: MPL_MouseEvent):
         """Identify which object should process an event.
 
@@ -302,7 +301,6 @@ class EventHandler:
 
     def on_mouseup(self, event: MPL_MouseEvent):
         """Handle mouseup event (button_release_event)"""
-        breakpoint()
         if self.click_location == (event.xdata, event.ydata):
             # mouse hasn't moved; call it a click
             # first unselect whatever was previously selected
@@ -366,7 +364,7 @@ class GraphDrawing:
         self.reset_bounds()
         self.ax.set_aspect(1)
         if was_interactive:
-            plt.ion()
+            plt.ion()  # -no-cov-
 
         self.event_handler.connect(self.fig.canvas)
 

@@ -54,6 +54,7 @@ def drawing_graph(nx_graph):
 
 def make_mock_graph(fig=None):
     fig, ax = _get_fig_ax(fig)
+
     def make_mock_node(node, x, y):
         return mock.Mock(node=node, x=x, y=y)
 
@@ -327,6 +328,8 @@ class TestEventHandler:
         for method in should_not_call:
             assert not method.called
 
+        plt.close(fig)
+
     @pytest.mark.parametrize('event_type', ['mousedown', 'mouseup', 'drag'])
     def test_disconnect(self, event_type):
         self._mock_for_connections()
@@ -345,6 +348,8 @@ class TestEventHandler:
         fig.canvas.callbacks.process(event.name, event)
         for method in methods:
             assert not method.called
+
+        plt.close(fig)
 
     def _mock_contains(self, mock_objs):
         graph = self.event_handler.graph
@@ -396,6 +401,8 @@ class TestEventHandler:
         if expected is not None:
             expected.on_mousedown.assert_called_once()
 
+        plt.close(event.canvas.figure)
+
     @pytest.mark.parametrize('is_active', [True, False])
     def test_on_drag(self, is_active):
         fig, ax = plt.subplots()
@@ -411,6 +418,8 @@ class TestEventHandler:
             node.on_drag.assert_called_once()
         else:
             assert not node.on_drag.called
+
+        plt.close(fig)
 
     @pytest.mark.parametrize('has_selected', [True, False])
     def test_on_mouseup_click_select(self, has_selected):
@@ -439,6 +448,8 @@ class TestEventHandler:
         assert self.event_handler.click_location is None
         graph.draw.assert_called_once()
 
+        plt.close(event.canvas.figure)
+
     @pytest.mark.parametrize('has_selected', [True, False])
     def test_on_mouseup_click_not_select(self, has_selected):
         # start: mouse hasn't moved, nothing is active
@@ -459,6 +470,7 @@ class TestEventHandler:
         assert self.event_handler.active is None
         assert self.event_handler.click_location is None
         graph.draw.assert_called_once()
+        plt.close(event.canvas.figure)
 
     @pytest.mark.parametrize('has_selected', [True, False])
     def test_on_mouseup_drag(self, has_selected):
@@ -483,6 +495,7 @@ class TestEventHandler:
         assert self.event_handler.active is None
         assert self.event_handler.click_location is None
         graph.draw.assert_called_once()
+        plt.close(event.canvas.figure)
 
 
 class TestGraphDrawing:
