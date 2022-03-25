@@ -208,14 +208,52 @@ class TestEdge:
         npt.assert_allclose(self.edge._edge_xs_ys(*self.nodes),
                             ((0.05, 0.55), (0.05, 0.05)))
 
-    def test_unselect(self):
-        pass
+    def _get_colors(self):
+        colors = {node: node.artist.get_facecolor()
+                  for node in self.nodes}
+        colors[self.edge] = self.edge.artist.get_color()
+        return colors
 
-    def test_select(self):
-        pass
+    def test_unselect(self):
+        original = self._get_colors()
+
+        for node in self.nodes:
+            node.artist.set(color='red')
+
+        self.edge.artist.set(color='red')
+
+        # ensure that we have changed from the original values
+        changed = self._get_colors()
+        for key in original:
+            assert changed[key] != original[key]
+
+        self.edge.unselect()
+        after = self._get_colors()
+        assert after == original
+
+    def test_select(self, drawing_graph):
+        event = mock_event('mouseup', 0.25, 0.05, self.fig)
+        original = self._get_colors()
+        self.edge.select(event, drawing_graph)
+        changed = self._get_colors()
+
+        for key in self.nodes:
+            assert changed[key] != original[key]
+            assert changed[key] == (1.0, 0.0, 0.0, 1.0)  # red
+
+        assert changed[self.edge] == "red"  # mpl doesn't convert to RGBA?!
+        # it might be better in the future to pass that through some MPL
+        # func that converts color string to RGBA; that MPL keeps color name
+        # in line2d seems like an implementation detail
 
     def test_update_locations(self):
-        pass
+        for node in self.nodes:
+            x, y = node.xy
+            node.update_location(x + 0.2, y + 0.2)
+
+        self.edge.update_locations()
+        npt.assert_allclose(self.edge.artist.get_xdata(), [0.25, 0.75])
+        npt.assert_allclose(self.edge.artist.get_ydata(), [0.25, 0.25])
 
 
 class TestEventHandler:

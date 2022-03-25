@@ -5,7 +5,7 @@ from rdkit import Chem
 from network_plotting import GraphDrawing, Node, Edge
 from openfe.utils.visualization import draw_one_molecule_mapping
 
-from typing import Dict
+from typing import Dict, Tuple
 from openfe.utils.custom_typing import MPL_MouseEvent
 from openfe.setup import LigandMolecule
 
@@ -20,10 +20,10 @@ class AtomMappingEdge(Edge):
 
     def _draw_mapped_molecule(
         self,
-        extent,
-        mol1,
-        mol2,
-        mol1_to_mol2
+        extent: Tuple[float, float, float, float],
+        mol1: LigandMolecule,
+        mol2: LigandMolecule,
+        mol1_to_mol2: Dict[int, int]
     ):
         # create the image in a format matplotlib can handle
         # TODO: use a custom draw2d object; figure size from transforms
@@ -41,7 +41,6 @@ class AtomMappingEdge(Edge):
 
         # version B: using BboxImage
         # keep this commented code around for later performance checks
-        # checks
         # bounds = (x0, y0, x1 - x0, y1 - y0)
         # bounds = (0.2, 0.2, 0.3, 0.3)
         # bbox0 = matplotlib.transforms.Bbox.from_bounds(*bounds)
