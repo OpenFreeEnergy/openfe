@@ -41,12 +41,8 @@ def mock_event(event_name, xdata, ydata, fig=None):
 
 
 @pytest.fixture
-def nx_graph():
-    return nx.MultiDiGraph([("A", "B"), ("B", "C"), ("B", "D")])
-
-
-@pytest.fixture
-def drawing_graph(nx_graph):
+def drawing_graph():
+    nx_graph = nx.MultiDiGraph([("A", "B"), ("B", "C"), ("B", "D")])
     return GraphDrawing(nx_graph, positions={
         "A": (0.0, 0.0), "B": (0.5, 0.0), "C": (0.5, 0.5), "D": (0.0, 0.5)
     })
@@ -500,16 +496,48 @@ class TestEventHandler:
 
 class TestGraphDrawing:
     def setup(self):
-        pass
+        self.nx_graph = nx.MultiDiGraph()
+        self.nx_graph.add_edges_from([
+            ("A", "B", {'data': "AB"}),
+            ("B", "C", {'data': "BC"}),
+            ("B", "D", {'data': "BD"}),
+        ])
+        self.graph = GraphDrawing(self.nx_graph, positions={
+            "A": (0.0, 0.0), "B": (0.5, 0.0), "C": (0.5, 0.5),
+            "D": (-0.1, 0.6)
+        })
 
-    def test_edges_for_node(self):
-        pass
+    def test_init(self):
+        # this also tests _register_node, _register_edge
+        assert len(self.graph.nodes) == 4
+        assert len(self.graph.edges) == 3
+        assert len(self.graph.fig.axes) == 1
+        assert self.graph.fig.axes[0] is self.graph.ax
+        assert len(self.graph.ax.patches) == 4
+        assert len(self.graph.ax.lines) == 3
+
+    @pytest.mark.parametrize('node,edges', [
+        ("A", [("A", "B")]),
+        ("B", [("A", "B"), ("B", "C"), ("B", "D")]),
+        ("C", [("B", "C")]),
+    ])
+    def test_edges_for_node(self, node, edges):
+        expected_edges = {self.graph.edges[n1, n2] for n1, n2 in edges}
+        assert set(self.graph.edges_for_node(node)) == expected_edges
 
     def test_get_nodes_extent(self):
-        pass
+        assert self.graph._get_nodes_extent() == (-0.1, 0.6, 0.0, 0.7)
 
     def test_reset_bounds(self):
-        pass
+        old_xlim = self.graph.ax.get_xlim()
+        old_ylim = self.graph.ax.get_ylim()
+        self.graph.ax.set_xlim(old_xlim[0] * 2, old_xlim[1] * 2)
+        self.graph.ax.set_ylim(old_ylim[0] * 2, old_ylim[1] * 2)
+        self.graph.reset_bounds()
+        assert self.graph.ax.get_xlim() == old_xlim
+        assert self.graph.ax.get_ylim() == old_ylim
 
     def test_draw(self):
-        pass
+        # just a smoke test; there's really nothing that we can test here
+        # other that integration
+        self.graph.draw()
