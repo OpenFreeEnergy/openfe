@@ -40,14 +40,6 @@ def mock_event(event_name, xdata, ydata, fig=None):
     return MouseEvent(name, fig.canvas, x, y, button)
 
 
-@pytest.fixture
-def drawing_graph():
-    nx_graph = nx.MultiDiGraph([("A", "B"), ("B", "C"), ("B", "D")])
-    return GraphDrawing(nx_graph, positions={
-        "A": (0.0, 0.0), "B": (0.5, 0.0), "C": (0.5, 0.5), "D": (0.0, 0.5)
-    })
-
-
 def make_mock_graph(fig=None):
     fig, ax = _get_fig_ax(fig)
 
@@ -126,8 +118,9 @@ class TestNode:
         event = mock_event('drag', *point, fig=self.fig)
         assert self.node.contains(event) == expected
 
-    def test_on_mousedown_in_rect(self, drawing_graph):
+    def test_on_mousedown_in_rect(self):
         event = mock_event('mousedown', 0.55, 0.05, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
         assert Node.lock is None
         assert self.node.press is None
 
@@ -136,8 +129,9 @@ class TestNode:
         assert self.node.press is not None
         Node.lock = None
 
-    def test_on_mousedown_in_axes(self, drawing_graph):
+    def test_on_mousedown_in_axes(self):
         event = mock_event('mousedown', 0.25, 0.25, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
 
         assert Node.lock is None
         assert self.node.press is None
@@ -145,9 +139,10 @@ class TestNode:
         assert Node.lock is None
         assert self.node.press is None
 
-    def test_on_mousedown_out_axes(self, drawing_graph):
+    def test_on_mousedown_out_axes(self):
         node = Node("B", 0.5, 0.6)
         event = mock_event('mousedown', 0.55, 0.05, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
 
         fig2, ax2 = plt.subplots()
         node.register_artist(ax2)
@@ -158,8 +153,14 @@ class TestNode:
         assert Node.lock is None
         assert node.press is None
 
-    def test_on_drag(self, drawing_graph):
+    def test_on_drag(self):
         event = mock_event('drag', 0.7, 0.7, self.fig)
+        # this test some integration, so we need more than a mock
+        drawing_graph = GraphDrawing(
+            nx.MultiDiGraph(([("A", "B"), ("B", "C"), ("B", "D")])),
+            positions={"A": (0.0, 0.0), "B": (0.5, 0.0),
+                       "C": (0.5, 0.5), "D": (0.0, 0.5)}
+        )
         # set up things that should happen on mousedown
         Node.lock = self.node
         self.node.press = (0.5, 0.0), (0.55, 0.05)
@@ -171,16 +172,18 @@ class TestNode:
         # undo the lock; normally handled by mouseup
         Node.lock = None
 
-    def test_on_drag_do_nothing(self, drawing_graph):
+    def test_on_drag_do_nothing(self):
         event = mock_event('drag', 0.7, 0.7, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
 
         # don't set lock -- early exit
         original = self.node.xy
         self.node.on_drag(event, drawing_graph)
         assert self.node.xy == original
 
-    def test_on_drag_no_mousedown(self, drawing_graph):
+    def test_on_drag_no_mousedown(self):
         event = mock_event('drag', 0.7, 0.7, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
         Node.lock = self.node
 
         with pytest.raises(RuntimeError, match="drag until mouse down"):
@@ -188,8 +191,9 @@ class TestNode:
 
         Node.lock = None
 
-    def test_on_mouseup(self, drawing_graph):
+    def test_on_mouseup(self):
         event = mock_event('drag', 0.7, 0.7, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
         Node.lock = self.node
         self.node.press = (0.5, 0.0), (0.55, 0.05)
 
@@ -257,8 +261,9 @@ class TestEdge:
         after = self._get_colors()
         assert after == original
 
-    def test_select(self, drawing_graph):
+    def test_select(self):
         event = mock_event('mouseup', 0.25, 0.05, self.fig)
+        drawing_graph = make_mock_graph(self.fig)
         original = self._get_colors()
         self.edge.select(event, drawing_graph)
         changed = self._get_colors()
@@ -355,11 +360,6 @@ class TestEventHandler:
                 obj.contains = mock.Mock(return_value=True)
             else:
                 obj.contains = mock.Mock(return_value=False)
-
-    @staticmethod
-    def _count_contains_calls(graph):
-        objs = list(graph.nodes.values()) + list(graph.edges.values())
-        return sum(mock_obj.contains.called for mock_obj in objs)
 
     @pytest.mark.parametrize('hit', ['node', 'edge', 'node+edge', 'miss'])
     def test_get_event_container_select_node(self, hit):
@@ -541,3 +541,4 @@ class TestGraphDrawing:
         # just a smoke test; there's really nothing that we can test here
         # other that integration
         self.graph.draw()
+
