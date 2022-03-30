@@ -7,6 +7,8 @@ from importlib import resources
 from openfe.setup import LigandAtomMapping
 from openfe.setup import LigandMolecule
 
+from openfe.tests.setup.test_network import mols, std_edges, simple_network
+
 
 @pytest.fixture(scope='session')
 def benzene_transforms():

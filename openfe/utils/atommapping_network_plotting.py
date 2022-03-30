@@ -2,12 +2,12 @@ import io
 import matplotlib
 from rdkit import Chem
 
-from network_plotting import GraphDrawing, Node, Edge
+from openfe.utils.network_plotting import GraphDrawing, Node, Edge
 from openfe.utils.visualization import draw_one_molecule_mapping
 
 from typing import Dict, Tuple
 from openfe.utils.custom_typing import MPL_MouseEvent
-from openfe.setup import LigandMolecule
+from openfe.setup import LigandMolecule, Network
 
 
 class AtomMappingEdge(Edge):
@@ -52,6 +52,20 @@ class AtomMappingEdge(Edge):
         ax.add_artist(im)
         return im
 
+    def _get_image_extents(self):
+        # figure out the extent for left and right
+        x0, x1 = self.artist.axes.get_xlim()
+        dx = x1 - x0
+        left_x0, left_x1 = 0.05 * dx + x0, 0.45 * dx + x0
+        right_x0, right_x1 = 0.55 * dx + x0, 0.95 * dx + x0
+        y0, y1 = self.artist.axes.get_ylim()
+        dy = y1 - y0
+        y_bottom, y_top = 0.5 * dx + y0, 0.9 * dx + y0
+
+        left_extent = (left_x0, left_x1, y_bottom, y_top)
+        right_extent = (right_x0, right_x1, y_bottom, y_top)
+        return left_extent, right_extent
+
     def select(self, event, graph):
         super().select(event, graph)
         mapping = self.data['object']
@@ -69,19 +83,8 @@ class AtomMappingEdge(Edge):
 
         right_to_left = {v: k for k, v in left_to_right.items()}
 
-        # figure out the extent for left and right
-        x0, x1 = self.artist.axes.get_xlim()
-        dx = x1 - x0
-        left_x0, left_x1 = 0.05 * dx + x0, 0.45 * dx + x0
-        right_x0, right_x1 = 0.55 * dx + x0, 0.95 * dx + x0
-        y0, y1 = self.artist.axes.get_ylim()
-        dy = y1 - y0
-        y_bottom, y_top = 0.5 * dx + y0, 0.9 * dx + y0
+        left_extent, right_extent = self._get_image_extents()
 
-        left_extent = (left_x0, left_x1, y_bottom, y_top)
-        right_extent = (right_x0, right_x1, y_bottom, y_top)
-
-        # add the images
         self.left_image = self._draw_mapped_molecule(left_extent,
                                                      left,
                                                      right,
@@ -107,7 +110,7 @@ class AtomMappingNetworkDrawing(GraphDrawing):
     EdgeCls = AtomMappingEdge
 
 
-def plot_network(network):
+def plot_network(network: Network):
     return AtomMappingNetworkDrawing(network.graph).fig
 
 
