@@ -9,11 +9,12 @@ authors:
   orcid: "https://orcid.org/0000-0001-5787-9130"
 - family-names: "Swenson"
   given-names: "David W.H."
-  orcid: "https://orcid.org/0000-0001-9922-7923"
 - family-names: "Henry"
   given-names: "Michael M."
   orcid: "https://orcid.org/0000-0002-3870-9993"
 title: "The Open Free Energy library"
 version: 0.1
 date-released: 2022-03-28
-url: "https://github.com/openfreeEnergy/openfe"
+url: "https://openfree.energy/"
+license: MIT License
+repository-code: "https://github.com/openfreeEnergy/openfe"
