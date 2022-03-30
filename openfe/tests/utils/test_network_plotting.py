@@ -517,6 +517,13 @@ class TestGraphDrawing:
         assert len(self.graph.ax.patches) == 4
         assert len(self.graph.ax.lines) == 3
 
+    def test_register_node_error(self):
+        with pytest.raises(RuntimeError, match="multiple times"):
+            self.graph._register_node(
+                node=list(self.nx_graph.nodes)[0],
+                position=(0,0)
+            )
+
     @pytest.mark.parametrize('node,edges', [
         ("A", [("A", "B")]),
         ("B", [("A", "B"), ("B", "C"), ("B", "D")]),

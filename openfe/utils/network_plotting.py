@@ -325,8 +325,9 @@ class EventHandler:
 
 class GraphDrawing:
     """
-    Central drawing class. Connects to the matplotlib figure and to the
-    underlying NetworkX graph.
+    Base class for drawing networks with matplotlib.
+
+    Connects to the matplotlib figure and to the underlying NetworkX graph.
 
     Typical use will require a subclass with custom values of ``NodeCls``
     and ``EdgeCls`` to handle the specific visualization.

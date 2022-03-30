@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import matplotlib.figure
 
 from openfe.utils.atommapping_network_plotting import (
-    AtomMappingEdge, AtomMappingNetworkDrawing, plot_network
+    AtomMappingEdge, AtomMappingNetworkDrawing, plot_atommapping_network
 )
 
 from openfe.tests.utils.test_network_plotting import mock_event
@@ -114,6 +114,6 @@ class TestAtomMappingEdge:
         assert default_edge.left_image is None
 
 
-def test_plot_network(simple_network):
-    fig = plot_network(simple_network.network)
+def test_plot_atommapping_network(simple_network):
+    fig = plot_atommapping_network(simple_network.network)
     assert isinstance(fig, matplotlib.figure.Figure)

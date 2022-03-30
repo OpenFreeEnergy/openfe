@@ -11,7 +11,18 @@ from openfe.setup import LigandMolecule, Network
 
 
 class AtomMappingEdge(Edge):
-    """Edge to draw AtomMapping from a LigandNetwork
+    """Edge to draw AtomMapping from a LigandNetwork.
+
+    The ``select`` and ``unselect`` methods are implemented here to force
+    the mapped molecule to be drawn/disappear.
+
+    Parameters
+    ----------
+    node_artist1, node_artist2 : :class:`.Node`
+        GraphDrawing nodes for this edge
+    data : Dict
+        Data dictionary for this edge. Must have key ``object``, which maps
+        to an :class:`.AtomMapping`.
     """
     def __init__(self, node_artist1: Node, node_artist2: Node, data: Dict):
         super().__init__(node_artist1, node_artist2, data)
@@ -109,11 +120,33 @@ class AtomMappingEdge(Edge):
 
 
 class AtomMappingNetworkDrawing(GraphDrawing):
+    """
+    Class for drawing atom mappings from a provided ligang network.
+
+    Parameters
+    ----------
+    graph : nx.MultiDiGraph
+        NetworkX representation of the LigandNetwork
+    positions : Optional[Dict[LigandMolecule, Tuple[float, float]]]
+        mapping of node to position
+    """
     NodeCls = Node
     EdgeCls = AtomMappingEdge
 
 
-def plot_network(network: Network):
+def plot_atommapping_network(network: Network):
+    """Convenience method for plotting the atom mapping network
+
+    Parameters
+    ----------
+    network : :class:`.Network`
+        the network to plot
+
+    Returns
+    -------
+    :class:`matplotlib.figure.Figure` :
+        the matplotlib figure containing the iteractive visualization
+    """
     return AtomMappingNetworkDrawing(network.graph).fig
 
 
