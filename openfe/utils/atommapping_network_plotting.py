@@ -26,10 +26,13 @@ class AtomMappingEdge(Edge):
         mol1_to_mol2: Dict[int, int]
     ):
         # create the image in a format matplotlib can handle
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)
+        d2d.drawOptions().setBackgroundColour((1, 1, 1, 0.7))
         # TODO: use a custom draw2d object; figure size from transforms
         img_bytes = draw_one_molecule_mapping(mol1_to_mol2,
                                               mol1.to_rdkit(),
-                                              mol2.to_rdkit())
+                                              mol2.to_rdkit(),
+                                              d2d=d2d)
         img_filelike = io.BytesIO(img_bytes)  # imread needs filelike
         img_data = matplotlib.pyplot.imread(img_filelike)
 

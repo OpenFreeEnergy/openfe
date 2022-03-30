@@ -289,7 +289,8 @@ class TestEdge:
 
 class TestEventHandler:
     def setup(self):
-        self.event_handler = EventHandler(graph=make_mock_graph())
+        self.fig, _ = plt.subplots()
+        self.event_handler = EventHandler(graph=make_mock_graph(self.fig))
         graph = self.event_handler.graph
         node = graph.nodes["C"]
         edge = graph.edges[graph.nodes["B"], graph.nodes["C"]]
@@ -300,6 +301,9 @@ class TestEventHandler:
             "miss": (None, []),
         }
 
+    def teardown(self):
+        plt.close(self.fig)
+
     def _mock_for_connections(self):
         self.event_handler.on_mousedown = mock.Mock()
         self.event_handler.on_mouseup = mock.Mock()
@@ -308,8 +312,7 @@ class TestEventHandler:
     @pytest.mark.parametrize('event_type', ['mousedown', 'mouseup', 'drag'])
     def test_connect(self, event_type):
         self._mock_for_connections()
-        fig, _ = plt.subplots()
-        event = mock_event(event_type, 0.2, 0.2, fig)
+        event = mock_event(event_type, 0.2, 0.2, self.fig)
 
         methods = {
             'mousedown': self.event_handler.on_mousedown,
@@ -328,8 +331,6 @@ class TestEventHandler:
         should_call.assert_called_once()
         for method in should_not_call:
             assert not method.called
-
-        plt.close(fig)
 
     @pytest.mark.parametrize('event_type', ['mousedown', 'mouseup', 'drag'])
     def test_disconnect(self, event_type):
@@ -541,4 +542,3 @@ class TestGraphDrawing:
         # just a smoke test; there's really nothing that we can test here
         # other that integration
         self.graph.draw()
-

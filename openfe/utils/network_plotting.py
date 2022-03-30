@@ -341,7 +341,7 @@ class GraphDrawing:
     NodeCls = Node
     EdgeCls = Edge
 
-    def __init__(self, graph: nx.Graph, positions=None):
+    def __init__(self, graph: nx.Graph, positions=None, ax=None):
         # TODO: use scale to scale up the positions?
         self.event_handler = EventHandler(self)
         self.graph = graph
@@ -353,16 +353,22 @@ class GraphDrawing:
 
         was_interactive = plt.isinteractive()
         plt.ioff()
-        self.fig, self.ax = plt.subplots(figsize=(8, 8))
+        if ax is None:
+            self.fig, self.ax = plt.subplots(figsize=(8, 8))
+        else:
+            self.fig, self.ax = ax.figure, ax
+
         for node, pos in positions.items():
             self._register_node(node, pos)
 
-        self.fig.canvas.draw()
+        self.fig.canvas.draw()  # required to get renderer
         for edge in graph.edges(data=True):
             self._register_edge(edge)
 
         self.reset_bounds()
         self.ax.set_aspect(1)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
         if was_interactive:
             plt.ion()  # -no-cov-
 
@@ -373,28 +379,16 @@ class GraphDrawing:
 
     def edges_for_node(self, node: Node) -> List[Edge]:
         """List of edges for the given node"""
-        # return list(self.graph.edges(node))
         edges = (list(self.graph.in_edges(node))
                  + list(self.graph.out_edges(node)))
         return [self.edges[edge] for edge in edges]
 
     def _get_nodes_extent(self):
         """Find the extent of all nodes (used in setting bounds)"""
-        # TODO: c'mon David, this can be written with a generator expression
-        # and a zip*, requiring only 4 calls total of min/max. Faster and
-        # smaller.
-        min_x = float("inf")
-        max_x = float("-inf")
-        min_y = float("inf")
-        max_y = float("-inf")
-        for node in self.nodes.values():
-            lo_x, hi_x, lo_y, hi_y = node.extent
-            min_x = min([lo_x, min_x])
-            max_x = max([hi_x, max_x])
-            min_y = min([lo_y, min_y])
-            max_y = max([hi_y, max_y])
-
-        return min_x, max_x, min_y, max_y
+        min_xs, max_xs, min_ys, max_ys = zip(*(
+            node.extent for node in self.nodes.values()
+        ))
+        return min(min_xs), max(max_xs), min(min_ys), max(max_ys)
 
     def reset_bounds(self):
         """Set the bounds of the matplotlib Axes to include all nodes"""
