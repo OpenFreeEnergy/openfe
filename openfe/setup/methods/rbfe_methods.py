@@ -6,16 +6,119 @@
 """
 from __future__ import annotations
 
-from typing import Dict, Union
-
-from openfe.setup import AtomMapping, Molecule
+from openfe.setup import LigandAtomMapping, LigandMolecule
 from openfe.setup.methods import FEMethod
+from typing import Dict, Union
+from pydantic import BaseModel, validator
+from openff.units import unit
 
 
-class LigandLigandTransformSettings:
-    """Dict-like object holding the default settings for a ligand transform"""
-    def update(self, settings: Union[Dict, LigandLigandTransformSettings]):
-        pass
+class ForcefieldSettings(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    # mapping of component name to forcefield path
+    forcefield: Dict[str, str]
+    nonbonded_electostatics = 'PME'
+    nonbonded_cutoff = 0.9 * unit.nanometer
+    constraints = 'HBonds'
+    rigid_water = True
+
+
+class StatePoint(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    temperature = 298.15 * unit.kelvin
+    pressure = 1 * unit.bar
+
+    # TODO: Validate that the units are correct (i.e. a pressure unit for pressure)
+    @validator('pressure', 'temperature')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError("Must be positive")
+        return v
+
+
+# maybe this shouldn't be a pydantic class and instead our lambda protocol object
+class LambdaProtocol(BaseModel):
+    functions = 'default'
+    windows = 11
+    sample_endstates = False
+
+
+class OtherBarostat(BaseModel):
+    class Config:
+        extra = 'forbid'
+
+    freq = 10
+    thing = 20
+
+
+class OpenMM_MonteCarloBarostat(BaseModel):
+    class Config:
+        extra = 'forbid'
+
+    frequency = 50  # TODO: Use timestep unit?
+
+
+class MCMC_LangevinSplittingDynamicsMove(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    timestep = 0.02 * unit.femtosecond
+    collision_rate = 1 / unit.picosecond
+    n_steps = 2500
+    reassign_velocities = True
+    n_restart_attempts = 20
+    constraint_tolerance = 1e-06
+
+
+class HybridTopologyFactorySettings(BaseModel):
+    use_dispersion_correction = False
+    softcore_alpha = 0.5
+    softcore_LJ_v2 = True
+    softcore_LJ_v2_alpha = 0.85
+    softcore_electrostatics = True
+    softcore_electrostatics_alpha = 0.3
+    softcore_sigma_Q = 1.0
+    interpolate_old_and_new_14s = False
+    flatten_torsions = False
+
+
+class ReporterSettings(BaseModel):
+    output_filename = 'rbfe.nc'
+    checkpoint_interval = 10
+
+
+class SimulationLength(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    minimization = 1000
+    equilibration = 5 * unit.picosecond
+    production: unit.Quantity
+
+
+class LigandLigandTransformSettings(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    forcefield_settings: ForcefieldSettings
+    state_point: StatePoint
+
+    lambda_protocol: LambdaProtocol
+
+    # solvent model?
+    solvent_padding = 1.2 * unit.nanometer
+
+    barostat: Union[OtherBarostat, OpenMM_MonteCarloBarostat]
+    integrator: Union[MCMC_LangevinSplittingDynamicsMove]
+
+    hybrid_topology_factory_settings: HybridTopologyFactorySettings
+    reporter_settings: ReporterSettings
+    simulation_length: SimulationLength
+
 
 
 class LigandLigandTransformResults:
@@ -30,17 +133,17 @@ class LigandLigandTransform(FEMethod):
     _SETTINGS_CLASS = LigandLigandTransformSettings
 
     def __init__(self,
-                 ligandA: Molecule,
-                 ligandB: Molecule,
-                 ligandmapping: AtomMapping,
+                 ligandA: LigandMolecule,
+                 ligandB: LigandMolecule,
+                 ligandmapping: LigandAtomMapping,
                  settings: Union[Dict, LigandLigandTransformSettings] = None,
                  ):
         """
         Parameters
         ----------
-        ligandA, ligandB : Molecule
-          the two ligand molecules to transform between.  The transformation
-          will go from ligandA to ligandB.
+        ligandA, ligandB : LigandMolecule
+          the two ligand LigandMolecules to transform between.  The
+          transformation will go from ligandA to ligandB.
         ligandmapping : AtomMapping
           the mapping of atoms between the
         settings : dict

@@ -16,6 +16,8 @@ dependencies:
   - click
   - openeye-toolkits
   - typing-extensions
+  - pydantic
+  - openff-units
   - pip:
     - git+https://github.com/OpenFreeEnergy/Lomap@main
     - plugcli
