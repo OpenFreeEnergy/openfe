@@ -521,7 +521,7 @@ class TestGraphDrawing:
         with pytest.raises(RuntimeError, match="multiple times"):
             self.graph._register_node(
                 node=list(self.nx_graph.nodes)[0],
-                position=(0,0)
+                position=(0, 0)
             )
 
     @pytest.mark.parametrize('node,edges', [

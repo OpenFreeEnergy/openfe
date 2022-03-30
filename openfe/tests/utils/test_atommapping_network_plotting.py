@@ -12,6 +12,7 @@ from openfe.tests.utils.test_visualization import bound_args
 
 from openfe.utils.network_plotting import Node
 
+
 @pytest.fixture
 def network_drawing(simple_network):
     nx_graph = simple_network.network.graph
@@ -26,6 +27,7 @@ def network_drawing(simple_network):
     graph.ax.set_ylim(0, 1)
     yield graph
     plt.close(graph.fig)
+
 
 @pytest.fixture
 def default_edge(network_drawing):

@@ -158,5 +158,5 @@ if __name__ == "__main__":
         graphml = f.read()
 
     network = openfe.setup.Network.from_graphml(graphml)
-    fig = plot_network(network)
+    fig = plot_atommapping_network(network)
     matplotlib.pyplot.show()
