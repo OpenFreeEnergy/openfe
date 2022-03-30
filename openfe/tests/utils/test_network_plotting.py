@@ -81,6 +81,7 @@ class TestNode:
         node.register_artist(ax)
         assert len(ax.patches) == 1
         assert node.artist == ax.patches[0]
+        plt.close(fig)
 
     def test_extent(self):
         assert self.node.extent == (0.5, 0.6, 0.0, 0.1)
@@ -152,6 +153,7 @@ class TestNode:
         node.on_mousedown(event, drawing_graph)
         assert Node.lock is None
         assert node.press is None
+        plt.close(fig2)
 
     def test_on_drag(self):
         event = mock_event('drag', 0.7, 0.7, self.fig)
@@ -225,6 +227,7 @@ class TestEdge:
         edge.register_artist(ax)
         assert len(ax.get_lines()) == 1
         assert ax.get_lines()[0] == edge.artist
+        plt.close(fig)
 
     @pytest.mark.parametrize('point,expected', [
         ((0.25, 0.05), True),
@@ -289,7 +292,7 @@ class TestEdge:
 
 class TestEventHandler:
     def setup(self):
-        self.fig, _ = plt.subplots()
+        self.fig, self.ax = plt.subplots()
         self.event_handler = EventHandler(graph=make_mock_graph(self.fig))
         graph = self.event_handler.graph
         node = graph.nodes["C"]
@@ -323,11 +326,11 @@ class TestEventHandler:
         should_not_call = set(methods.values()) - {should_call}
         assert len(self.event_handler.connections) == 0
 
-        self.event_handler.connect(fig.canvas)
+        self.event_handler.connect(self.fig.canvas)
         assert len(self.event_handler.connections) == 3
 
         # check that the event is processed
-        fig.canvas.callbacks.process(event.name, event)
+        self.fig.canvas.callbacks.process(event.name, event)
         should_call.assert_called_once()
         for method in should_not_call:
             assert not method.called
@@ -402,10 +405,9 @@ class TestEventHandler:
 
     @pytest.mark.parametrize('is_active', [True, False])
     def test_on_drag(self, is_active):
-        fig, ax = plt.subplots()
         node = self.event_handler.graph.nodes["C"]
-        node.artist.axes = ax
-        event = mock_event('drag', 0.25, 0.25, fig)
+        node.artist.axes = self.ax
+        event = mock_event('drag', 0.25, 0.25, self.fig)
         if is_active:
             self.event_handler.active = node
 
@@ -415,8 +417,6 @@ class TestEventHandler:
             node.on_drag.assert_called_once()
         else:
             assert not node.on_drag.called
-
-        plt.close(fig)
 
     @pytest.mark.parametrize('has_selected', [True, False])
     def test_on_mouseup_click_select(self, has_selected):
