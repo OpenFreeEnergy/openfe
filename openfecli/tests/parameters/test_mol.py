@@ -6,12 +6,12 @@ import click
 
 import openfe
 from openfecli.parameters.mol import get_molecule
-from openfe.setup import Molecule
+from openfe.setup import LigandMolecule
 
 
 def test_get_molecule_smiles():
     mol = get_molecule("CC")
-    assert isinstance(mol, Molecule)
+    assert isinstance(mol, LigandMolecule)
     assert mol.name == ""
     assert mol.smiles == "CC"
 
@@ -23,7 +23,7 @@ def test_get_molecule_sdf():
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
         mol = get_molecule(filename)
-        assert mol.smiles == "CC"
+        assert mol.smiles == "[H]C([H])([H])C([H])([H])[H]"
         assert mol.name == "ethane"
 
 
