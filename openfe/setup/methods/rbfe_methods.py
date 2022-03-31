@@ -149,11 +149,6 @@ class HybridTopologyFactorySettings(BaseModel):
     flatten_torsions = False
 
 
-class ReporterSettings(BaseModel):
-    output_filename = 'rbfe.nc'
-    checkpoint_interval = 10
-
-
 class SimulationLengthSettings(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -161,7 +156,11 @@ class SimulationLengthSettings(BaseModel):
     minimization = 1000
     equilibration = 5 * unit.picosecond
     production: unit.Quantity
-    
+
+    # reporter settings
+    output_filename = 'rbfe.nc'
+    checkpoint_interval = 10 * unit.timestep
+
     @validator('equilibration', 'production')
     def is_time(cls, v):
         # these are time units, not simulation steps
@@ -186,7 +185,6 @@ class LigandLigandTransformSettings(BaseModel):
     integrator: MCMCLangevinSplittingDynamicsMoveSettings
 
     hybrid_topology_factory_settings: HybridTopologyFactorySettings
-    reporter_settings: ReporterSettings
     simulation_length: SimulationLengthSettings
 
 
