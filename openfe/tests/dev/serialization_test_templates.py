@@ -2,16 +2,16 @@
 
 # This script creates several files used in testing setup serialization:
 #
-# * penfe/tests/data/multi_molecule.sdf
+# * openfe/tests/data/multi_molecule.sdf
 # * openfe/tests/data/serialization/ethane_template.sdf
 # * openfe/tests/data/serialization/network_template.graphml
 #
 # The two serialization templates need manual editing to replace the current
-# version of OpenFE with:
-# {OFE_VERSION}
+# version of gufe with:
+# {GUFE_VERSION}
 
 from rdkit import Chem
-from openfe.setup import LigandMolecule, LigandAtomMapping, Network
+from openfe.setup import SmallMoleculeComponent, LigandAtomMapping, Network
 
 # multi_molecule.sdf
 mol1 = Chem.MolFromSmiles("CCO")
@@ -24,22 +24,22 @@ writer.close()
 
 
 # ethane_template.sdf
-m = LigandMolecule(Chem.MolFromSmiles("CC"), name="ethane")
+m = SmallMoleculeComponent(Chem.MolFromSmiles("CC"), name="ethane")
 
 with open("ethane_template.sdf", mode="w") as tmpl:
     tmpl.write(m.to_sdf())
 
 # ethane_with_H_template.sdf
-m2 = LigandMolecule(Chem.AddHs(m.to_rdkit()))
+m2 = SmallMoleculeComponent(Chem.AddHs(m.to_rdkit()))
 
 with open("ethane_with_H_template.sdf", mode="w") as tmpl:
     tmpl.write(m2.to_sdf())
 
 
 # network_template.graphml
-mol1 = LigandMolecule(Chem.MolFromSmiles("CCO"))
-mol2 = LigandMolecule(Chem.MolFromSmiles("CC"))
-mol3 = LigandMolecule(Chem.MolFromSmiles("CO"))
+mol1 = SmallMoleculeComponent(Chem.MolFromSmiles("CCO"))
+mol2 = SmallMoleculeComponent(Chem.MolFromSmiles("CC"))
+mol3 = SmallMoleculeComponent(Chem.MolFromSmiles("CO"))
 
 edge12 = LigandAtomMapping(mol1, mol2, {0: 0, 1: 1})
 edge23 = LigandAtomMapping(mol2, mol3, {0: 0})

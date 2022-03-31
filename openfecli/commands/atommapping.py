@@ -48,7 +48,7 @@ def generate_mapping(mapper, mol1, mol2):
     ----------
     mapper : :class:`.LigandAtomMapper`
         the mapper to use to generate the mapping
-    mol1, mol2 : :class:`.LigandMolecule`
+    mol1, mol2 : :class:`.SmallMoleculeComponent`
         molecules to map between
 
     Returns

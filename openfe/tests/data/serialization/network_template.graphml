@@ -17,7 +17,7 @@ M  END
 
 
 &gt;  &lt;ofe-version&gt;
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$
 </data>
@@ -38,7 +38,7 @@ M  END
 
 
 &gt;  &lt;ofe-version&gt;
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$
 </data>
@@ -57,7 +57,7 @@ M  END
 
 
 &gt;  &lt;ofe-version&gt;
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$
 </data>
