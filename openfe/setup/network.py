@@ -5,7 +5,7 @@ import json
 
 from typing import FrozenSet, Iterable
 
-from openfe.setup import LigandAtomMapping, LigandMolecule
+from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
 import openfe
 
 import networkx as nx
@@ -18,13 +18,13 @@ class Network:
     ----------
     edges : Iterable[LigandAtomMapping]
         edges for this network
-    nodes : Iterable[LigandMolecule]
+    nodes : Iterable[SmallMoleculeComponent]
         nodes for this network
     """
     def __init__(
         self,
         edges: Iterable[LigandAtomMapping],
-        nodes: Iterable[LigandMolecule] = None
+        nodes: Iterable[SmallMoleculeComponent] = None
     ):
         if nodes is None:
             nodes = []
@@ -54,7 +54,7 @@ class Network:
         return self._edges
 
     @property
-    def nodes(self) -> FrozenSet[LigandMolecule]:
+    def nodes(self) -> FrozenSet[SmallMoleculeComponent]:
         """A read-only view of the nodes of the Network"""
         return self._nodes
 
@@ -100,7 +100,7 @@ class Network:
 
         This is the inverse of ``_serializable_graph``.
         """
-        label_to_mol = {node: LigandMolecule.from_sdf_string(sdf)
+        label_to_mol = {node: SmallMoleculeComponent.from_sdf_string(sdf)
                         for node, sdf in graph.nodes(data='sdf')}
 
         edges = [
@@ -150,7 +150,7 @@ class Network:
         ----------
         edges : Iterable[:class:`.LigandAtomMapping`]
             edges to append to this network
-        nodes : Iterable[:class:`.LigandMolecule`]
+        nodes : Iterable[:class:`.SmallMoleculeComponent`]
             nodes to append to this network
 
         Returns

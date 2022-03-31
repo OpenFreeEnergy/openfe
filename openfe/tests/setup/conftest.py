@@ -7,12 +7,12 @@ from rdkit import Chem
 
 import openfe
 from openfe.setup import LigandAtomMapping
-from openfe.setup import LigandMolecule
+from openfe.setup import SmallMoleculeComponent
 
 
 @pytest.fixture(scope='session')
 def ethane():
-    return LigandMolecule(Chem.MolFromSmiles('CC'))
+    return SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
 
 
 @pytest.fixture(scope='session')
@@ -23,8 +23,8 @@ def simple_mapping():
 
     C C
     """
-    molA = LigandMolecule(Chem.MolFromSmiles('CCO'))
-    molB = LigandMolecule(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
+    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
 
     m = LigandAtomMapping(molA, molB, mol1_to_mol2={0: 0, 1: 1})
 
@@ -39,8 +39,8 @@ def other_mapping():
 
     C   C
     """
-    molA = LigandMolecule(Chem.MolFromSmiles('CCO'))
-    molB = LigandMolecule(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
+    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
 
     m = LigandAtomMapping(molA, molB, mol1_to_mol2={0: 0, 2: 1})
 
@@ -49,7 +49,7 @@ def other_mapping():
 
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
-    # a dict of {filenames.strip(mol2): LigandMolecule} for a simple set of
+    # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple set of
     # ligands
     files = {}
     for f in [
@@ -64,7 +64,7 @@ def lomap_basic_test_files():
         with importlib.resources.path('openfe.tests.data.lomap_basic',
                                       f + '.mol2') as fn:
             mol = Chem.MolFromMol2File(str(fn))
-            files[f] = LigandMolecule(mol, name=f)
+            files[f] = SmallMoleculeComponent(mol, name=f)
 
     return files
 

@@ -29,7 +29,7 @@ def test_radial_graph(lomap_basic_test_files):
 
 
 def test_radial_network_failure(lomap_basic_test_files):
-    nigel = openfe.setup.LigandMolecule(Chem.MolFromSmiles('N'))
+    nigel = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles('N'))
 
     with pytest.raises(ValueError, match='No mapping found for'):
         network = openfe.setup.ligand_network_planning.generate_radial_network(
