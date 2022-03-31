@@ -23,6 +23,6 @@ M  END
 ethane
 
 >  <ofe-version>
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$

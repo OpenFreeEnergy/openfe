@@ -17,7 +17,7 @@ M  END
 
 
 &gt;  &lt;ofe-version&gt;
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$
 </data>
@@ -38,7 +38,7 @@ M  END
 
 
 &gt;  &lt;ofe-version&gt;
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$
 </data>
@@ -57,7 +57,7 @@ M  END
 
 
 &gt;  &lt;ofe-version&gt;
-{OFE_VERSION}
+{GUFE_VERSION}
 
 $$$$
 </data>
@@ -71,6 +71,6 @@ $$$$
     <edge source="mol1" target="mol2" id="0">
       <data key="d2">[[0, 0], [2, 1]]</data>
     </edge>
-    <data key="d0">{OFE_VERSION}</data>
+    <data key="d0">{GUFE_VERSION}</data>
   </graph>
 </graphml>

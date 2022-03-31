@@ -2,13 +2,13 @@
 
 # This script creates several files used in testing setup serialization:
 #
-# * penfe/tests/data/multi_molecule.sdf
+# * openfe/tests/data/multi_molecule.sdf
 # * openfe/tests/data/serialization/ethane_template.sdf
 # * openfe/tests/data/serialization/network_template.graphml
 #
 # The two serialization templates need manual editing to replace the current
-# version of OpenFE with:
-# {OFE_VERSION}
+# version of gufe with:
+# {GUFE_VERSION}
 
 from rdkit import Chem
 from openfe.setup import SmallMoleculeComponent, LigandAtomMapping, Network

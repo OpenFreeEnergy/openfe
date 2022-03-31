@@ -5,7 +5,7 @@ import string
 import pytest
 from rdkit import Chem
 
-import openfe
+import gufe
 from openfe.setup import LigandAtomMapping
 from openfe.setup import SmallMoleculeComponent
 
@@ -49,8 +49,8 @@ def other_mapping():
 
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
-    # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple set of
-    # ligands
+    # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
+    # set of ligands
     files = {}
     for f in [
         '1,3,7-trimethylnaphthalene',
@@ -74,6 +74,6 @@ def serialization_template():
     def inner(filename):
         loc = "openfe.tests.data.serialization"
         tmpl = importlib.resources.read_text(loc, filename)
-        return tmpl.format(OFE_VERSION=openfe.__version__)
+        return tmpl.format(GUFE_VERSION=gufe.__version__)
 
     return inner
