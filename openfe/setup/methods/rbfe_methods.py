@@ -104,6 +104,7 @@ class MonteCarloBarostatSettings(BaseModel):
     """
     class Config:
         extra = 'forbid'
+        arbitrary_types_allowed = True
 
     frequency = 50 * unit.timestep
 
