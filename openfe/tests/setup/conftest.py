@@ -6,6 +6,7 @@ import pytest
 from rdkit import Chem
 
 import gufe
+import openfe
 from openfe.setup import LigandAtomMapping
 from openfe.setup import SmallMoleculeComponent
 
@@ -74,6 +75,7 @@ def serialization_template():
     def inner(filename):
         loc = "openfe.tests.data.serialization"
         tmpl = importlib.resources.read_text(loc, filename)
-        return tmpl.format(GUFE_VERSION=gufe.__version__)
+        return tmpl.format(GUFE_VERSION=gufe.__version__,
+                           OFE_VERSION=openfe.__version__)
 
     return inner
