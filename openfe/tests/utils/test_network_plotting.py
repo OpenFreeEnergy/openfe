@@ -503,10 +503,11 @@ class TestGraphDrawing:
             ("B", "C", {'data': "BC"}),
             ("B", "D", {'data': "BD"}),
         ])
-        self.graph = GraphDrawing(self.nx_graph, positions={
+        self.positions = {
             "A": (0.0, 0.0), "B": (0.5, 0.0), "C": (0.5, 0.5),
             "D": (-0.1, 0.6)
-        })
+        }
+        self.graph = GraphDrawing(self.nx_graph, positions=self.positions)
 
     def test_init(self):
         # this also tests _register_node, _register_edge
@@ -516,6 +517,14 @@ class TestGraphDrawing:
         assert self.graph.fig.axes[0] is self.graph.ax
         assert len(self.graph.ax.patches) == 4
         assert len(self.graph.ax.lines) == 3
+
+    def test_init_custom_ax(self):
+        fig, ax = plt.subplots()
+        graph = GraphDrawing(self.nx_graph, positions=self.positions,
+                             ax=ax)
+        assert graph.fig is fig
+        assert graph.ax is ax
+        plt.close(fig)
 
     def test_register_node_error(self):
         with pytest.raises(RuntimeError, match="multiple times"):

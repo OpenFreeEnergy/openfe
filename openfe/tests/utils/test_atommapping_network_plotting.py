@@ -63,36 +63,45 @@ class TestAtomMappingEdge:
         assert default_edge.picked
         assert len(default_edge.artist.axes.images) == 2
 
-    def test_select_mock_drawing(self, default_edge, network_drawing):
+    @pytest.mark.parametrize('edge_str,left_right,mol1_to_mol2', [
+        (("CCO", "CC"), ("CC", "CCO"), {0: 0, 1: 1}),
+        (("CC", "CO"), ("CC", "CO"), {0: 0}),
+        (("CCO", "CO"), ("CCO", "CO"), {0: 0, 2: 1}),
+    ])
+    def test_select_mock_drawing(self, edge_str, left_right, mol1_to_mol2,
+                                 network_drawing):
         # this tests that we call _draw_mapped_molecule with the correct
         # kwargs -- in particular, it ensures that we get the left and right
         # molecules correctly
-        func = default_edge._draw_mapped_molecule  # save for bound_args
-        default_edge._draw_mapped_molecule = mock.Mock()
-        node1, node2 = default_edge.node_artists
-        # these should be true but check here to catch the assumption early
-        # before actual testing
-        assert node1.xy == (0.0, 0.0)
-        assert node2.xy == (0.5, 0.0)
+        node_dict = {node.smiles: node
+                     for node in network_drawing.graph.nodes}
+        edge_tuple = tuple(node_dict[node] for node in edge_str)
+        edge = network_drawing.edges[edge_tuple]
+        left, right = [network_drawing.nodes[node_dict[node]]
+                       for node in left_right]
+        # ensure that we have them labelled correctly
+        assert left.xy[0] < right.xy[0]
+        func = edge._draw_mapped_molecule  # save for bound_args
+        edge._draw_mapped_molecule = mock.Mock()
 
         event = mock_event('mouseup', 0.25, 0.0, network_drawing.fig)
-        default_edge.select(event, network_drawing)
+        edge.select(event, network_drawing)
 
         arg_dicts = [
             bound_args(func, call.args, call.kwargs)
-            for call in default_edge._draw_mapped_molecule.mock_calls
+            for call in edge._draw_mapped_molecule.mock_calls
         ]
         expected_left = {
             'extent': (0.05, 0.45, 0.5, 0.9),
-            'mol1': node1.node,
-            'mol2': node2.node,
-            'mol1_to_mol2': {0: 0},
+            'mol1': left.node,
+            'mol2': right.node,
+            'mol1_to_mol2': mol1_to_mol2,
         }
         expected_right = {
             'extent': (0.55, 0.95, 0.5, 0.9),
-            'mol1': node2.node,
-            'mol2': node1.node,
-            'mol1_to_mol2': {0: 0}
+            'mol1': right.node,
+            'mol2': left.node,
+            'mol1_to_mol2': {v: k for k, v in mol1_to_mol2.items()},
         }
         assert len(arg_dicts) == 2
         assert expected_left in arg_dicts
