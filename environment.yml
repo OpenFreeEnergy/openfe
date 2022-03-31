@@ -3,6 +3,7 @@ channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
   - openeye
+  - mmh
 dependencies:
   - numpy
   - networkx
@@ -16,6 +17,7 @@ dependencies:
   - click
   - openeye-toolkits
   - typing-extensions
+  - gufe
   - pip:
     - git+https://github.com/OpenFreeEnergy/Lomap@main
     - plugcli
