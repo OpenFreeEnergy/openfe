@@ -13,8 +13,29 @@ from typing import Dict, Union
 from pydantic import BaseModel, validator
 from openff.units import unit
 
+# define a timestep
+# this isn't convertible to time (e.g ps) and is used to not confuse these two
+# definitions of "duration" within a simulation
+unit.define('timestep = [timestep] = _ = timesteps')
+
 
 class ForcefieldSettings(BaseModel):
+    """Settings describing the forcefield to use for each component
+
+    Attributes
+    ----------
+    forcefield
+      a mapping of each components name to the xml forcefield to apply
+    nonbonded_electrostatics
+      which nonbonded electrostatics method to use, currently only 'PME'
+      allowed
+    nonbonded_cutoff
+      range of nonbonded forces
+    constraints
+      which bonds to apply constraints to
+    rigid_water
+      whether apply rigid constraints to water molecules, default True
+    """
     class Config:
         arbitrary_types_allowed = True
 
@@ -27,40 +48,89 @@ class ForcefieldSettings(BaseModel):
 
 
 class StatePoint(BaseModel):
+    """Description of the temperature and pressure to model"""
     class Config:
         arbitrary_types_allowed = True
 
     temperature = 298.15 * unit.kelvin
     pressure = 1 * unit.bar
 
-    # TODO: Validate that the units are correct (i.e. a pressure unit for pressure)
     @validator('pressure', 'temperature')
     def must_be_positive(cls, v):
         if v <= 0:
-            raise ValueError("Must be positive")
+            raise ValueError("Pressure and temperature must be positive")
         return v
 
+    @validator('pressure')
+    def is_pressure(cls, v):
+        if not v.is_compatible_with(unit.bar):
+            raise ValueError("Must be pressure value, e.g. use unit.bar")
+        return v
 
-class LambdaProtocol(BaseModel):
+    @validator('temperature')
+    def is_temperature(cls, v):
+        if not v.is_compatible_with(unit.kelvin):
+            raise ValueError("Must be temperature value, e.g. use unit.kelvin")
+
+
+class LambdaProtocolSettings(BaseModel):
+    """Settings for the lambda protocol
+
+    This describes a fixed number of windows
+
+    Attributes
+    ----------
+    functions : str, default 'default'
+      key of which switching functions to use for alchemical mutation
+    windows : int, default 11
+      number of lambda windows to calculate
+    sample_endstate : bool, default False
+      whether to sample the endstates ???
+    """
     functions = 'default'
     windows = 11
     sample_endstates = False
 
 
-class MonteCarloBarostat(BaseModel):
+class MonteCarloBarostatSettings(BaseModel):
+    """Settings for the OpenMM Monte-Carlo Barostat
+
+    The temperature and pressure value is taken from the StatePoint variable
+
+    Attributes
+    ----------
+    frequency : unit.timestep
+      the number of timesteps between attempts of changing the pressure
+    """
     class Config:
         extra = 'forbid'
 
     frequency = 50 * unit.timestep
 
 
-class MCMCLangevinSplittingDynamicsMove(BaseModel):
+class MCMCLangevinSplittingDynamicsMoveSettings(BaseModel):
+    """Settings for the integrator
+
+    Attributes
+    ----------
+    timestep
+      size of timestep
+    collision_rate
+
+    n_steps
+
+    reassign_velocities
+
+    n_restart_attempts
+
+    constraint_tolerance
+    """
     class Config:
         arbitrary_types_allowed = True
 
     timestep = 0.02 * unit.femtosecond
     collision_rate = 1 / unit.picosecond
-    n_steps = 2500
+    n_steps = 2500 * unit.timestep
     reassign_velocities = True
     n_restart_attempts = 20
     constraint_tolerance = 1e-06
@@ -83,13 +153,20 @@ class ReporterSettings(BaseModel):
     checkpoint_interval = 10
 
 
-class SimulationLength(BaseModel):
+class SimulationLengthSettings(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
     minimization = 1000
     equilibration = 5 * unit.picosecond
     production: unit.Quantity
+    
+    @validator('equilibration', 'production')
+    def is_time(cls, v):
+        # these are time units, not simulation steps
+        if not v.is_compatible_with(unit.picosecond):
+            raise ValueError("Durations must be in time units")
+        return v
 
 
 class LigandLigandTransformSettings(BaseModel):
@@ -99,17 +176,17 @@ class LigandLigandTransformSettings(BaseModel):
     forcefield_settings: ForcefieldSettings
     state_point: StatePoint
 
-    lambda_protocol: LambdaProtocol
+    lambda_protocol: LambdaProtocolSettings
 
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
 
-    barostat: MonteCarloBarostat
-    integrator: MCMCLangevinSplittingDynamicsMove
+    barostat: MonteCarloBarostatSettings
+    integrator: MCMCLangevinSplittingDynamicsMoveSettings
 
     hybrid_topology_factory_settings: HybridTopologyFactorySettings
     reporter_settings: ReporterSettings
-    simulation_length: SimulationLength
+    simulation_length: SimulationLengthSettings
 
 
 class LigandLigandTransformResults:
