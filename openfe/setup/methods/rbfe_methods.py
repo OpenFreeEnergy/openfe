@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 """Contains RBFE methods
 
+This module implements.....
 
 """
 from __future__ import annotations
@@ -40,29 +41,20 @@ class StatePoint(BaseModel):
         return v
 
 
-# maybe this shouldn't be a pydantic class and instead our lambda protocol object
 class LambdaProtocol(BaseModel):
     functions = 'default'
     windows = 11
     sample_endstates = False
 
 
-class OtherBarostat(BaseModel):
+class MonteCarloBarostat(BaseModel):
     class Config:
         extra = 'forbid'
 
-    freq = 10
-    thing = 20
+    frequency = 50 * unit.timestep
 
 
-class OpenMM_MonteCarloBarostat(BaseModel):
-    class Config:
-        extra = 'forbid'
-
-    frequency = 50  # TODO: Use timestep unit?
-
-
-class MCMC_LangevinSplittingDynamicsMove(BaseModel):
+class MCMCLangevinSplittingDynamicsMove(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -112,13 +104,12 @@ class LigandLigandTransformSettings(BaseModel):
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
 
-    barostat: Union[OtherBarostat, OpenMM_MonteCarloBarostat]
-    integrator: Union[MCMC_LangevinSplittingDynamicsMove]
+    barostat: MonteCarloBarostat
+    integrator: MCMCLangevinSplittingDynamicsMove
 
     hybrid_topology_factory_settings: HybridTopologyFactorySettings
     reporter_settings: ReporterSettings
     simulation_length: SimulationLength
-
 
 
 class LigandLigandTransformResults:
