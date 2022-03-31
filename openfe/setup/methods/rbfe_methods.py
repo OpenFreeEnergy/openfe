@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from openfe.setup import LigandAtomMapping, LigandMolecule
 from openfe.setup.methods import FEMethod
-from typing import Dict, Union
+from typing import Dict, List, Union
 from pydantic import BaseModel, validator
 from openff.units import unit
 
@@ -39,8 +39,8 @@ class ForcefieldSettings(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    # mapping of component name to forcefield path
-    forcefield: Dict[str, str]
+    # mapping of component name to forcefield path(s)
+    forcefield: Dict[str, Union[List[str, ...], str]]
     nonbonded_electostatics = 'PME'
     nonbonded_cutoff = 0.9 * unit.nanometer
     constraints = 'HBonds'
