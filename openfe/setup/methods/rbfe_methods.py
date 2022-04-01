@@ -43,9 +43,9 @@ class SystemSettings(BaseModel):
 
     nonbonded_method = 'PME'
     nonbonded_cutoff = 1.0 * unit.nanometer
-    constraints = Union[str, None] # Usually use HBonds
+    constraints = Union[str, None]  # Usually use HBonds
     rigid_water = True
-    remove_com = True # Probably want False here
+    remove_com = True  # Probably want False here
     hydrogen_mass = Union[float, None]
 
 
@@ -87,7 +87,8 @@ class AlchemicalSettings(BaseModel):
       Whether to have extra unsampled endstate windows for long range
       correction. Default False.
     use_dispersion_correction: bool
-      Whether to use dispersion correction in the hybrid topology state. Default False.
+      Whether to use dispersion correction in the hybrid topology state.
+      Default False.
     softcore_LJ_v2 : bool
       Whether to use the LJ softcore function as defined by
       Gapsys et al. JCTC 2012 Default True.
@@ -132,7 +133,7 @@ class OpenMMEngineSettings(BaseModel):
     compute_platform : str
       Which compute platform to perform the simulation on. If 'fastest', the
       fastest compute platform available will be chosen. Default 'fastest'.
-     
+
     TODO
     ----
     * In the future make precision and deterministic forces user defined too.
@@ -183,7 +184,7 @@ class SamplerSettings(BaseModel):
     gamma0 = 0.0
 
     @validator('online_analysis_target_error',
-            'online_analysis_minimum_iterations', 'gamma0')
+               'online_analysis_minimum_iterations', 'gamma0')
     def must_be_positive(cls, v):
         if v < 0:
             errmsg = ("Online analysis target error, minimum iteration "
@@ -346,22 +347,22 @@ class RelativeLigandTransformSettings(BaseModel):
         arbitrary_types_allowed = True
 
     # Things for creating the systems
-    system_settings : SystemSettings
+    system_settings: SystemSettings
     topology_settings: TopologySettings
 
     # Alchemical settings
-    alchemical_settings : AlchemicalSettings
+    alchemical_settings: AlchemicalSettings
 
     # MD Engine things
-    engine_settings : OpenMMEngineSettings
+    engine_settings: OpenMMEngineSettings
 
     # Sampling State defining things
-    integrator_settings : IntegratorSettings
-    barostat_settings : BarostatSettings
-    sampler_settings : SamplerSettings
+    integrator_settings: IntegratorSettings
+    barostat_settings: BarostatSettings
+    sampler_settings: SamplerSettings
 
     # Simulation run settings
-    simulation_settings : SimulationSettings
+    simulation_settings: SimulationSettings
 
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
