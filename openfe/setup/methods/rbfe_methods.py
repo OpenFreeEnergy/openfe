@@ -1,8 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Contains RBFE methods
+"""Settings for Equilibrium RBFE methods using OpenMM in a Perses-like manner.
 
-This module implements.....
+This module implements....
 
 """
 from __future__ import annotations
@@ -140,19 +140,8 @@ class OpenMMEngineSettings(BaseModel):
     compute_platform = 'fastest'
 
 
-class LangevinIntegratorSettings(BaseModel):
-    temperature = 298.15 * unit.kelvin
-
-    @validator('temperature')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError("Pressure and temperature must be positive")
-        return v
-
-    @validator('temperature')
-    def is_temperature(cls, v):
-        if not v.is_compatible_with(unit.kelvin):
-            raise ValueError("Must be temperature value, e.g. use unit.kelvin")
+class EquilibriumSamplerSettings(BaseModel):
+    pass
 
 
 class BarostatSettings(BaseModel):
@@ -175,32 +164,65 @@ class BarostatSettings(BaseModel):
         return v
 
 
-class MCMCLangevinSplittingDynamicsMoveSettings(BaseModel):
-    """Settings for the integrator
+class IntegratorSettings(BaseModel):
+    """Settings for the LangevinSplittingDynamicsMove integrator
 
     Attributes
     ----------
-    timestep
-      size of timestep
-    collision_rate
-
-    n_steps
-
-    reassign_velocities
-
-    n_restart_attempts
-
-    constraint_tolerance
+    timestep : float * unit.femtosecond
+      Size of the simulation timestep. Default 2 * unit.femtosecond.
+    temperature : float * unit.kelvin
+      Target simulation temperature. Default 298.15 * unit.kelvin.
+    collision_rate : float / unit.picosecond
+      Collision frequency. Default 1 / unit.pisecond.
+    n_steps : int * unit.timestep
+      Number of integration timesteps each time the MCMC move is applied.
+      Default 1000.
+    reassign_velocities : bool
+      If True, velocities are reassigned from the Maxwell-Boltzmann
+      distribution at the beginning of move. Default False.
+    splitting : str
+      Sequence of "R", "V", "O" substeps to be carried out at each
+      timestep. Default "V R O R V".
+    n_restart_attempts : int
+      Number of attempts to restart from Context if there are NaNs in the
+      energies after integration. Default 20.
+    constraint_tolerance : float
+      Tolerance for the constraint solver. Default 1e-6.
     """
     class Config:
         arbitrary_types_allowed = True
 
-    timestep = 0.02 * unit.femtosecond
+    timestep = 2 * unit.femtosecond
+    temperature = 298.15 * unit.kelvin
     collision_rate = 1 / unit.picosecond
-    n_steps = 2500 * unit.timestep
+    n_steps = 1000 * unit.timestep
     reassign_velocities = True
+    splitting = "V R O R V"
     n_restart_attempts = 20
     constraint_tolerance = 1e-06
+
+    @validator('timestep', 'temperature', 'collision_rate', 'n_steps',
+               'n_restart_attemps', 'constraint_tolerance')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = ("timestep, temperature, collision_rate, n_steps, "
+                      "n_restart_atttempts, constraint_tolerance must be "
+                      "positive")
+            raise ValueError(errmsg)
+
+    @validator('temperature')
+    def is_temperature(cls, v):
+        if not v.is_compatible_with(unit.kelvin):
+            raise ValueError("Must be temperature value, e.g. use unit.kelvin")
+
+    @validator('timestep', 'collision_rate')
+    def is_time(cls, v):
+        # these are time units, not simulation steps
+        if not v.is_compatible_with(unit.picosecond):
+            errmsg = "timestep and collision_rate must be in time units"
+            raise ValueError(errmsg)
+        return v
 
 
 class SimulationSettings(BaseModel):
@@ -210,7 +232,7 @@ class SimulationSettings(BaseModel):
     Attributes
     ----------
     minimization_steps : int
-      Number of minimization steps to perform.
+      Number of minimization steps to perform. Default 10000.
     equilibration_length : float * unit.picosecond
       Length of the equilibration phase in units of time.
     production_length : float * unit.picosecond
