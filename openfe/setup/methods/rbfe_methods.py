@@ -140,8 +140,47 @@ class OpenMMEngineSettings(BaseModel):
     compute_platform = 'fastest'
 
 
-class EquilibriumSamplerSettings(BaseModel):
-    pass
+class SamplerSettings(BaseModel):
+    """Settings for the Equilibrium sampler, currently supporting either
+    HybridSAMSSampler or HybridRepexSampler.
+
+    Attributes
+    ----------
+    sampler_method : str
+      Sampler method to use, currently supports repex (hamiltonian replica
+      exchange) and sams (self-adjusted mixture sampling). Default repex.
+    online_analysis_interval : int
+      The interval at which to perform online analysis of the free energy.
+      At each interval the free energy is estimate and the simulation is
+      considered complete if the free energy estimate is below
+      ``online_analysis_target_error``. Default `None`.
+    online_analysis_target_error : float * unit.kt
+      Target error for the online analysis measured in kT.
+      Once the free energy is at or below this value, the simulation will be
+      considered complete.
+    online_analysis_minimum_iterations : float
+      Set number of iterations which must pass before online analysis is
+      carried out. Default 50.
+    flatness_criteria : str
+      SAMS only. Method for asessing when to switch to asymptomatically
+      optimal scheme.
+      One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
+      Default 'logZ-flatness'.
+    gamma0 : float
+      SAMS only. Initial weight adaptation rate. Default 0.0.
+
+    TODO
+    ----
+    * Work out how this fits within the context of independent window FEPs.
+    * It'd be great if we could pass in the sampler object rather than using
+      strings to define which one we want.
+    """
+    sampler_method = "repex"
+    online_analysis_interval = Union[int, None]
+    online_analysis_target_error = 0.2 * unit.kt
+    online_analysis_minimum_iterations = 50
+    flatness_criteria = 'logZ-flatness'
+    gamma0 = 0.0
 
 
 class BarostatSettings(BaseModel):
