@@ -20,5 +20,6 @@ dependencies:
   - openff-units
   - gufe
   - lomap2
+  - openmmtools
   - pip:
     - plugcli
