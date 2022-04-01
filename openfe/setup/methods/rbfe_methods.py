@@ -12,6 +12,8 @@ from openfe.setup.methods import FEMethod
 from typing import Dict, List, Union
 from pydantic import BaseModel, validator
 from openff.units import unit
+import os
+from openmmtools import multistate
 
 # define a timestep
 # this isn't convertible to time (e.g ps) and is used to not confuse these two
@@ -190,7 +192,38 @@ class LigandLigandTransformSettings(BaseModel):
 
 class LigandLigandTransformResults:
     """Dict-like container for the output of a LigandLigandTransform"""
-    pass
+    def __init__(self, settings: LigandLigandTransformSettings):
+        self._parent_settings = settings
+        fn = self._parent_settings.simulation_length.output_filename
+        self._reporter = multistate.MultiStateReporter(fn)
+        self._analyzer = multistate.MultiStateSamplerAnalyzer(self._reporter)
+
+    def dG(self):
+        """Free energy difference of this transformation
+
+        Returns
+        -------
+        dG : unit.Quantity
+          The free energy difference between the first and last states. This is
+          a Quantity defined with units.
+          
+        TODO
+        ----
+        * Check this holds up completely for SAMS.
+        """
+        dG, _ = self._analyzer.get_free_energy()
+        dG = (dG[0, -1] * self._analyzer.kT).in_units_of(
+            unit.kilocalories_per_mol)
+
+        return dG
+
+    def dG_error(self):
+        """The uncertainty/error in the dG value"""
+        _, error = self._analyzer.get_free_energy()
+        error = (error[0, -1] * self._analyzer.kT).in_units_of(
+            unit.kilocalories_per_mol)
+
+        return error
 
 
 class LigandLigandTransform(FEMethod):
@@ -241,7 +274,11 @@ class LigandLigandTransform(FEMethod):
         return False
 
     def is_complete(self) -> bool:
-        return False
+        results_file = self._settings.SimulationLengthSettings.output_filename
+
+        # TODO: Can improve upon this by checking expected length of the
+        #       nc archive?
+        return os.path.exists(results_file)
 
     def get_results(self) -> LigandLigandTransformResults:
         """Return payload created by this workload
@@ -253,4 +290,4 @@ class LigandLigandTransform(FEMethod):
         """
         if not self.is_complete():
             raise ValueError("Results have not been generated")
-        return LigandLigandTransformResults()
+        return LigandLigandTransformResults(self._settings)
