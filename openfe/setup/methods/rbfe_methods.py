@@ -49,56 +49,20 @@ class SystemSettings(BaseModel):
     hydrogen_mass = Union[float, None]
 
 
-class SolventBoxSettings(BaseModel):
-    """Settings for the creation of the simulation box, inc. solvation
-    and addition of ions
-
-    Attributes
-    ----------
-    model : str
-      The water model to use. Default 'tip3p'.
-    padding : float
-      Padding distance from the solute to the edge of the box. Default None.
-    ionic_strength : float
-      Total concentration of ions (both positive and negative) to add,
-      excluding the ions required to neutralize the system.
-      Default 0 * unit.molar.
-    num_added : int
-      Total number of molecules (waters and ions) to add. Default None.
-    positive_ion : str
-      Type of positive ion to add, only monovalent ions are supported.
-      Default 'Na+'.
-    negative_ion : str
-      Type of negative ion to add, only monovalent ions are supported.
-      Default 'Cl-'.
-    neutralize : float
-      Whether to add ions to neutralize the system. Default True.
-    box_vectors : tuple of Vec3
-      User defined box vectors to fill with water. Default None.
-    box_size : Vec3
-      User defined box size to fill with water. Default None.
-    """
-    model = 'tip3p'
-    padding = Union[float, None]
-    ionic_strength = 0 * unit.molar
-    num_added = Union[int, None]
-    positive_ion = 'Na+'
-    negative_ion = 'Cl-'
-    neutralize = True
-    box_vectors = Union[tuple(Vec3), None]
-    box_size = Union[Vec3, None]
-
-
 class TopologySettings(BaseModel):
     """Settings for creating Topologies for each component
 
     Attributes
     ----------
-    forcefield: dictionary of list of strings
+    forcefield : dictionary of list of strings
       A mapping of each components name to the xml forcefield to apply
+    solvent_model : str
+      The water model to use. Note, the relevant force field file should
+      also be included in ``forcefield``. Default 'tip3p'.
     """
     # mapping of component name to forcefield path(s)
     forcefield: Dict[str, Union[List[str, ...], str]]
+    solvent_model = 'tip3p'
 
 
 class AlchemicalSettings(BaseModel):
