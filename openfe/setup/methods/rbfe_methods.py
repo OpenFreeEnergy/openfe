@@ -59,6 +59,11 @@ class TopologySettings(BaseModel):
     solvent_model : str
       The water model to use. Note, the relevant force field file should
       also be included in ``forcefield``. Default 'tip3p'.
+
+    TODO
+    ----
+    * We can probably just detect the solvent model from the force field
+      defn. In that case we wouldn't have to have ``solvent_model`` here.
     """
     # mapping of component name to forcefield path(s)
     forcefield: Dict[str, Union[List[str, ...], str]]
@@ -118,9 +123,6 @@ class AlchemicalSettings(BaseModel):
     interpolate_old_and_new_14s = False
     flatten_torsions = False
 
-
-class SimulationSettings(BaseModel):
-    pass
 
 class OpenMMEngineSettings(BaseModel):
     """OpenMM MD engine settings
@@ -201,23 +203,53 @@ class MCMCLangevinSplittingDynamicsMoveSettings(BaseModel):
     constraint_tolerance = 1e-06
 
 
-class SimulationLengthSettings(BaseModel):
+class SimulationSettings(BaseModel):
+    """Settings for simulation control, including lengths, writing to disk,
+       etc...
+
+    Attributes
+    ----------
+    minimization_steps : int
+      Number of minimization steps to perform.
+    equilibration_length : float * unit.picosecond
+      Length of the equilibration phase in units of time.
+    production_length : float * unit.picosecond
+      Length of the production phase in units of time.
+    output_filename : str
+      Path to the storage file for analysis. Default 'rbfe.nc'.
+    checkpoint_interval : int * unit.timestep
+      Frequency to write the checkpoint file. Default 50 * unit.timestep
+    checkpoint_storage : str
+      Optional separate filename for the checkpoint file. Note, this should
+      not be a full path, just a filename. If None, the checkpoint will be
+      written to the same file as output_filename. Default None.
+    """
     class Config:
         arbitrary_types_allowed = True
 
-    minimization = 1000
-    equilibration = 5 * unit.picosecond
-    production: unit.Quantity
+    minimization_steps = 10000
+    equilibration_length: unit.Quantity
+    production_length: unit.Quantity
 
     # reporter settings
     output_filename = 'rbfe.nc'
-    checkpoint_interval = 10 * unit.timestep
+    checkpoint_interval = 50 * unit.timestep
+    checkpoint_storage = Union[str, None]
 
     @validator('equilibration', 'production')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
             raise ValueError("Durations must be in time units")
+        return v
+
+    @validator('minimization', 'equilibration', 'production',
+               'checkpoint_interval')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = ("Minimization steps, MD lengths, and checkpoint "
+                      "intervals must be positive")
+            raise ValueError(errmsg)
         return v
 
 
