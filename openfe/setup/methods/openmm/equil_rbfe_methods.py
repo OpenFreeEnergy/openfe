@@ -1,8 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Settings for Equilibrium RBFE methods using OpenMM in a Perses-like manner.
+"""Equilibrium RBFE methods using OpenMM in a Perses-like manner.
 
-This module implements....
+This module implements the necessary methodology toolking to run calculate a
+ligand relative free energy transformation using OpenMM tools and either
+Hamiltonian Replica Exchange or SAMS.
+
+TODO
+----
+* Improve this docstring by adding an example use case.
 
 """
 from __future__ import annotations
