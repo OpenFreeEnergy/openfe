@@ -163,7 +163,7 @@ class SamplerSettings(BaseModel):
       At each interval the free energy is estimate and the simulation is
       considered complete if the free energy estimate is below
       ``online_analysis_target_error``. Default `None`.
-    online_analysis_target_error : float * unit.kt
+    online_analysis_target_error : float * unit.boltzmann_constant * unit.kelvin
       Target error for the online analysis measured in kT.
       Once the free energy is at or below this value, the simulation will be
       considered complete.
@@ -186,7 +186,7 @@ class SamplerSettings(BaseModel):
     """
     sampler_method = "repex"
     online_analysis_interval = Union[int, None]
-    online_analysis_target_error = 0.2 * unit.kt
+    online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
     online_analysis_minimum_iterations = 50
     flatness_criteria = 'logZ-flatness'
     gamma0 = 0.0
