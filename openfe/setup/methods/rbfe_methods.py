@@ -182,6 +182,15 @@ class SamplerSettings(BaseModel):
     flatness_criteria = 'logZ-flatness'
     gamma0 = 0.0
 
+    @validator('online_analysis_target_error',
+            'online_analysis_minimum_iterations', 'gamma0')
+    def must_be_positive(cls, v):
+        if v < 0:
+            errmsg = ("Online analysis target error, minimum iteration "
+                      "and SAMS gamm0 must be 0 or positive values")
+            raise ValueError(errmsg)
+        return v
+
 
 class BarostatSettings(BaseModel):
     """Settings for the OpenMM Monte Carlo barostat series
@@ -336,23 +345,30 @@ class RelativeLigandTransformSettings(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    forcefield_settings: ForcefieldSettings
-    state_point: StatePoint
+    # Things for creating the systems
+    system_settings : SystemSettings
+    topology_settings: TopologySettings
 
-    lambda_protocol: LambdaProtocolSettings
+    # Alchemical settings
+    alchemical_settings : AlchemicalSettings
+
+    # MD Engine things
+    engine_settings : OpenMMEngineSettings
+
+    # Sampling State defining things
+    integrator_settings : IntegratorSettings
+    barostat_settings : BarostatSettings
+    sampler_settings : SamplerSettings
+
+    # Simulation run settings
+    simulation_settings : SimulationSettings
 
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
 
-    barostat: MonteCarloBarostatSettings
-    integrator: MCMCLangevinSplittingDynamicsMoveSettings
-
-    hybrid_topology_factory_settings: HybridTopologyFactorySettings
-    simulation_length: SimulationLengthSettings
-
 
 class RelativeLigandTransformResults:
-    """Dict-like container for the output of a LigandLigandTransform"""
+    """Dict-like container for the output of a RelativeLigandTransform"""
     pass
 
 
@@ -360,13 +376,13 @@ class RelativeLigandTransform(FEMethod):
     """Calculates the free energy of an alchemical ligand swap in solvent
 
     """
-    _SETTINGS_CLASS = LigandLigandTransformSettings
+    _SETTINGS_CLASS = RelativeLigandTransformSettings
 
     def __init__(self,
                  ligandA: LigandMolecule,
                  ligandB: LigandMolecule,
                  ligandmapping: LigandAtomMapping,
-                 settings: Union[Dict, LigandLigandTransformSettings] = None,
+                 settings: Union[Dict, RelativeLigandTransformSettings] = None,
                  ):
         """
         Parameters
@@ -406,7 +422,7 @@ class RelativeLigandTransform(FEMethod):
     def is_complete(self) -> bool:
         return False
 
-    def get_results(self) -> LigandLigandTransformResults:
+    def get_results(self) -> RelativeLigandTransformResults:
         """Return payload created by this workload
 
         Raises
