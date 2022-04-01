@@ -145,11 +145,29 @@ class EquilibriumSamplerSettings(BaseModel):
 
 
 class BarostatSettings(BaseModel):
+    """Settings for the OpenMM Monte Carlo barostat series
+
+    Attributes
+    ----------
+    pressure : float * unit.bar
+      Target pressure acting on the system. Default 1 * unit.bar.
+    frequency : int * unit.timestep
+      Frequency at which volume scaling changes should be attempted.
+      Default 25 * unit.timestep.
+
+    Notes
+    -----
+    * The temperature is defined under IntegratorSettings
+
+    TODO
+    ----
+    * Add support for anisotropic and membrane barostats.
+    """
     class Config:
         arbitrary_types_allowed = True
 
     pressure = 1 * unit.bar
-    frequency = 50 * unit.timestep
+    frequency = 25 * unit.timestep
 
     @validator('pressure')
     def must_be_positive(cls, v):
