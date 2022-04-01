@@ -3,12 +3,12 @@
 
 from typing import Iterable, Dict
 
-from . import LigandAtomMapping, LigandMolecule
+from . import LigandAtomMapping, SmallMoleculeComponent
 from ..utils.errors import ABSTRACT_ERROR_STRING
 
 
 class LigandAtomMapper:
-    """Suggests AtomMappings for a pair of :class:`LigandMolecule`s.
+    """Suggests AtomMappings for a pair of :class:`SmallMoleculeComponent`s.
 
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
@@ -33,14 +33,14 @@ class LigandAtomMapper:
         ))
 
     def suggest_mappings(
-        self, mol1: LigandMolecule, mol2: LigandMolecule
+        self, mol1: SmallMoleculeComponent, mol2: SmallMoleculeComponent
     ) -> Iterable[LigandAtomMapping]:
         """
         Suggest :class:`.LigandAtomMapping` options for the input molecules.
 
         Parameters
         ---------
-        mol1, mol2 : :class:`.LigandMolecule`
+        mol1, mol2 : :class:`.SmallMoleculeComponent`
             the two molecules to create a mapping for
 
         Returns

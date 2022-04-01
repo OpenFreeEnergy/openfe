@@ -3,11 +3,11 @@
 import math
 from typing import Iterable
 
-from openfe.setup import Network, LigandMolecule, LigandAtomMapper
+from openfe.setup import Network, SmallMoleculeComponent, LigandAtomMapper
 
 
-def generate_radial_network(ligands: Iterable[LigandMolecule],
-                            central_ligand: LigandMolecule,
+def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
+                            central_ligand: SmallMoleculeComponent,
                             mappers: Iterable[LigandAtomMapper], scorer=None):
     """Generate a radial network with all ligands connected to a central node
 
@@ -18,7 +18,7 @@ def generate_radial_network(ligands: Iterable[LigandMolecule],
     ----------
     ligands : iterable of LigandMolecules
       the ligands to arrange around the central ligand
-    central_ligand : LigandMolecule
+    central_ligand : SmallMoleculeComponent
       the ligand to use as the hub/central ligand
     mappers : iterable of LigandAtomMappers
       mappers to use, at least 1 required
@@ -66,7 +66,7 @@ def generate_radial_network(ligands: Iterable[LigandMolecule],
     return Network(edges)
 
 
-def minimal_spanning_graph(ligands: Iterable[LigandMolecule],
+def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
                            mappers: Iterable[LigandAtomMapper], scorer=None):
     """Plan a Network which connects all ligands with minimal cost
 

@@ -6,12 +6,12 @@ import click
 
 import openfe
 from openfecli.parameters.mol import get_molecule
-from openfe.setup import LigandMolecule
+from openfe.setup import SmallMoleculeComponent
 
 
 def test_get_molecule_smiles():
     mol = get_molecule("CC")
-    assert isinstance(mol, LigandMolecule)
+    assert isinstance(mol, SmallMoleculeComponent)
     assert mol.name == ""
     assert mol.smiles == "CC"
 

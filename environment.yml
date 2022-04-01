@@ -18,6 +18,7 @@ dependencies:
   - typing-extensions
   - pydantic
   - openff-units
+  - gufe
+  - lomap2
   - pip:
-    - git+https://github.com/OpenFreeEnergy/Lomap@main
     - plugcli
