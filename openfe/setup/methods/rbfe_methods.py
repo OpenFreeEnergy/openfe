@@ -206,6 +206,10 @@ class LigandLigandTransformResults:
         dG : unit.Quantity
           The free energy difference between the first and last states. This is
           a Quantity defined with units.
+          
+        TODO
+        ----
+        * Check this holds up completely for SAMS.
         """
         dG, _ = self._analyzer.get_free_energy()
         dG = (dG[0, -1] * self._analyzer.kT).in_units_of(
