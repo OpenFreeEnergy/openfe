@@ -2,4 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from .base import FEMethod
-from . import openmm
+from .openmm import (
+    RelativeLigandTransformSettings,
+    RelativeLigandTransformResults,
+    RelativeLigandTransform,
+)

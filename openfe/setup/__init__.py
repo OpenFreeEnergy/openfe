@@ -11,5 +11,5 @@ from .lomap_mapper import LomapAtomMapper
 
 from . import ligand_network_planning
 
-from .methods import rbfe_methods
+from . import methods
 
