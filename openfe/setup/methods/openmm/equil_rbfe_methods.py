@@ -12,14 +12,15 @@ TODO
 
 """
 from __future__ import annotations
-import os
 
-from openfe.setup import LigandAtomMapping, LigandMolecule
-from openfe.setup.methods import FEMethod
-from typing import Dict, List, Union
-from pydantic import BaseModel, validator
+import os
 from openff.units import unit
 from openmmtools import multistate
+from pydantic import BaseModel, validator
+from typing import Dict, List, Union
+
+from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
+from openfe.setup.methods import FEMethod
 
 # define a timestep
 # this isn't convertible to time (e.g ps) and is used to not confuse these two
@@ -229,7 +230,7 @@ class BarostatSettings(BaseModel):
     @validator('pressure')
     def must_be_positive(cls, v):
         if v <= 0:
-            raise ValueError("Pressure and temperature must be positive")
+            raise ValueError("Pressure must be positive")
         return v
 
     @validator('pressure')
@@ -380,7 +381,7 @@ class RelativeLigandTransformResults:
     """Dict-like container for the output of a RelativeLigandTransform"""
     def __init__(self, settings: RelativeLigandTransformSettings):
         self._parent_settings = settings
-        fn = self._parent_settings.simulation_length.output_filename
+        fn = self._parent_settings.simulation_settings.output_filename
         self._reporter = multistate.MultiStateReporter(fn)
         self._analyzer = multistate.MultiStateSamplerAnalyzer(self._reporter)
 
@@ -419,16 +420,16 @@ class RelativeLigandTransform(FEMethod):
     _SETTINGS_CLASS = RelativeLigandTransformSettings
 
     def __init__(self,
-                 ligandA: LigandMolecule,
-                 ligandB: LigandMolecule,
+                 ligandA: SmallMoleculeComponent,
+                 ligandB: SmallMoleculeComponent,
                  ligandmapping: LigandAtomMapping,
                  settings: Union[Dict, RelativeLigandTransformSettings] = None,
                  ):
         """
         Parameters
         ----------
-        ligandA, ligandB : LigandMolecule
-          the two ligand LigandMolecules to transform between.  The
+        ligandA, ligandB : SmallMoleculeComponent
+          the two ligand SmallMoleculeComponents to transform between.  The
           transformation will go from ligandA to ligandB.
         ligandmapping : AtomMapping
           the mapping of atoms between the

@@ -2,4 +2,4 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from .base import FEMethod
-from . import rbfe_methods
+from . import openmm
