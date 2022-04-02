@@ -172,7 +172,7 @@ class SamplerSettings(BaseModel):
       Set number of iterations which must pass before online analysis is
       carried out. Default 50.
     flatness_criteria : str
-      SAMS only. Method for asessing when to switch to asymptomatically
+      SAMS only. Method for assessing when to switch to asymptomatically
       optimal scheme.
       One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
       Default 'logZ-flatness'.
