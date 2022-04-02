@@ -75,7 +75,7 @@ class TopologySettings(BaseModel):
       defn. In that case we wouldn't have to have ``solvent_model`` here.
     """
     # mapping of component name to forcefield path(s)
-    forcefield: Dict[str, Union[List[str, ...], str]]
+    forcefield: Dict[str, Union[list[str, ...], str]]
     solvent_model = 'tip3p'
 
 
@@ -185,6 +185,9 @@ class SamplerSettings(BaseModel):
     * It'd be great if we could pass in the sampler object rather than using
       strings to define which one we want.
     """
+    class Config:
+        arbitrary_types_allowed = True
+
     sampler_method = "repex"
     online_analysis_interval = Union[int, None]
     online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
@@ -279,7 +282,7 @@ class IntegratorSettings(BaseModel):
     constraint_tolerance = 1e-06
 
     @validator('timestep', 'temperature', 'collision_rate', 'n_steps',
-               'n_restart_attemps', 'constraint_tolerance')
+               'n_restart_attempts', 'constraint_tolerance')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = ("timestep, temperature, collision_rate, n_steps, "
@@ -334,15 +337,15 @@ class SimulationSettings(BaseModel):
     checkpoint_interval = 50 * unit.timestep
     checkpoint_storage = Union[str, None]
 
-    @validator('equilibration', 'production')
+    @validator('equilibration_length', 'production_length')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
             raise ValueError("Durations must be in time units")
         return v
 
-    @validator('minimization', 'equilibration', 'production',
-               'checkpoint_interval')
+    @validator('minimization_steps', 'equilibration_length',
+               'production_length', 'checkpoint_interval')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = ("Minimization steps, MD lengths, and checkpoint "
