@@ -52,10 +52,10 @@ class SystemSettings(BaseModel):
 
     nonbonded_method = 'PME'
     nonbonded_cutoff = 1.0 * unit.nanometer
-    constraints = Union[str, None]  # Usually use HBonds
+    constraints: Union[str, None] = 'HBonds'  # Usually use HBonds
     rigid_water = True
     remove_com = True  # Probably want False here
-    hydrogen_mass = Union[float, None]
+    hydrogen_mass: Union[float, None] = None
 
 
 class TopologySettings(BaseModel):
@@ -366,7 +366,7 @@ class RelativeLigandTransformSettings(BaseModel):
     alchemical_settings: AlchemicalSettings
 
     # MD Engine things
-    engine_settings: OpenMMEngineSettings
+    engine_settings = OpenMMEngineSettings()
 
     # Sampling State defining things
     integrator_settings: IntegratorSettings
@@ -448,7 +448,39 @@ class RelativeLigandTransform(FEMethod):
         self._settings = self.__class__.get_default_settings()
         if settings is not None:
             self._settings.update(settings)
-        # TODO: Prepare the workload
+        # TODO: Sanity checks
+
+    @classmethod
+    def get_default_settings(cls) -> RelativeLigandTransformSettings:
+        """A dictionary of initial settings for this creating this Protocol
+
+        These settings are intended as a suitable starting point for creating
+        an instance of this protocol.  It is recommended, however that care is
+        taken to inspect and customize these before performing a Protocol.
+
+        Returns
+        -------
+        RelativeLigandTransformSettings
+          a set of default settings
+        """
+        return RelativeLigandTransformSettings(
+            system_settings=SystemSettings(
+                constraints='HBonds'
+            ),
+            topology_settings=TopologySettings(
+                forcefield={'protein': 'amber',
+                            'ligand': 'openff',
+                            'solvent': 'tip3p.xml'},
+            ),
+            alchemical_settings=AlchemicalSettings(),
+            sampler_settings=SamplerSettings(),
+            barostat_settings=BarostatSettings(),
+            integrator_settings=IntegratorSettings(),
+            simulation_settings=SimulationSettings(
+                equilibration_length=50.0 * unit.picosecond,
+                production_length=5.0 * unit.nanosecond,
+            )
+        )
 
     def to_xml(self) -> str:
         raise NotImplementedError()
