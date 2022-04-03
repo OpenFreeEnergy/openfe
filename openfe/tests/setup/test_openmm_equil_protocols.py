@@ -51,6 +51,7 @@ def test_create_protocol(benzene_system, toluene_system,
 
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
+    # state B doesn't have a ligand component
     stateB = setup.ChemicalState({'solvent': setup.SolventComponent()})
 
     with pytest.raises(ValueError, match='Missing ligand in state B'):
@@ -64,6 +65,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
 
 def test_missing_solvent(benzene_system, benzene_modifications,
                          benzene_to_toluene_mapping):
+    # state B doesn't have a solvent component (i.e. its vacuum)
     stateB = setup.ChemicalState({'ligand': benzene_modifications['toluene']})
 
     with pytest.raises(ValueError, match="Missing solvent in state B"):
@@ -77,6 +79,7 @@ def test_missing_solvent(benzene_system, benzene_modifications,
 
 def test_incompatible_solvent(benzene_system, benzene_modifications,
                               benzene_to_toluene_mapping):
+    # the solvents are different
     stateB = setup.ChemicalState(
         {'ligand': benzene_modifications['toluene'],
          'solvent': setup.SolventComponent(ions=('K', 'Cl'))},
@@ -87,5 +90,38 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
             stateA=benzene_system,
             stateB=stateB,
             ligandmapping=benzene_to_toluene_mapping,
+            settings=openmm.RelativeLigandTransform.get_default_settings(),
+        )
+
+
+def test_mapping_mismatch_A(benzene_system, toluene_system,
+                            benzene_modifications):
+    # the atom mapping doesn't refer to the ligands in the systems
+    mapping = setup.LigandAtomMapping(mol1=benzene_system.components['ligand'],
+                                      mol2=benzene_modifications['phenol'],
+                                      mol1_to_mol2=dict())
+
+    with pytest.raises(ValueError,
+                       match="Ligand in state B doesn't match mapping"):
+        _ = openmm.RelativeLigandTransform(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            ligandmapping=mapping,
+            settings=openmm.RelativeLigandTransform.get_default_settings(),
+        )
+
+
+def test_mapping_mismatch_B(benzene_system, toluene_system,
+                            benzene_modifications):
+    mapping = setup.LigandAtomMapping(mol1=benzene_modifications['phenol'],
+                                      mol2=toluene_system.components['ligand'],
+                                      mol1_to_mol2=dict())
+
+    with pytest.raises(ValueError,
+                       match="Ligand in state A doesn't match mapping"):
+        _ = openmm.RelativeLigandTransform(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            ligandmapping=mapping,
             settings=openmm.RelativeLigandTransform.get_default_settings(),
         )
