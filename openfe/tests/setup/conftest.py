@@ -70,6 +70,17 @@ def lomap_basic_test_files():
     return files
 
 
+@pytest.fixture(scope='session')
+def benzene_modifications():
+    files = {}
+    with importlib.resources.path('openfe.tests.data',
+                                  'benzene_modifications.sdf') as fn:
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
 @pytest.fixture
 def serialization_template():
     def inner(filename):

@@ -19,7 +19,9 @@ from openmmtools import multistate
 from pydantic import BaseModel, validator
 from typing import Dict, List, Union
 
-from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
+from openfe.setup import (
+    ChemicalState, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
+)
 from openfe.setup.methods import FEMethod
 
 # define a timestep
@@ -423,32 +425,48 @@ class RelativeLigandTransform(FEMethod):
     _SETTINGS_CLASS = RelativeLigandTransformSettings
 
     def __init__(self,
-                 ligandA: SmallMoleculeComponent,
-                 ligandB: SmallMoleculeComponent,
+                 stateA: ChemicalState,
+                 stateB: ChemicalState,
                  ligandmapping: LigandAtomMapping,
                  settings: Union[Dict, RelativeLigandTransformSettings] = None,
                  ):
         """
         Parameters
         ----------
-        ligandA, ligandB : SmallMoleculeComponent
+        stateA, stateB : ChemicalSystem
           the two ligand SmallMoleculeComponents to transform between.  The
           transformation will go from ligandA to ligandB.
-        ligandmapping : AtomMapping
-          the mapping of atoms between the
-        settings : dict
+        ligandmapping : LigandAtomMapping
+          the mapping of atoms between the two ligand components
+        settings : RelativeLigandTransformSettings
           the settings for the Method.
 
         The default settings for this method can be accessed via the
         get_default_settings method,
         """
-        self._ligandA = ligandA
-        self._ligandB = ligandB
+        self._stateA = stateA
+        self._stateB = stateB
         self._mapping = ligandmapping
         self._settings = self.__class__.get_default_settings()
-        if settings is not None:
-            self._settings.update(settings)
-        # TODO: Sanity checks
+        # TODO: Figure out how to supply partial settings?
+        #if settings is not None:
+        #    self._settings.update(settings)
+
+        # Checks on the inputs!
+        # check that both states have solvent and ligand
+        for state, label in [(stateA, 'A'), (stateB, 'B')]:
+            if 'solvent' not in state.components:
+                raise ValueError(f"Missing solvent in state {label}")
+            if 'ligand' not in state.components:
+                raise ValueError(f"Missing ligand in state {label}")
+        # check that both states have same solvent
+        if not stateA.components['solvent'] == stateB.components['solvent']:
+            raise ValueError("Solvents aren't identical between states")
+        # check that the mapping refers to the two ligand components
+        if stateA.components['ligand'] != ligandmapping.mol1:
+            raise ValueError("Ligand in state A doesn't match mapping")
+        if stateB.components['ligand'] != ligandmapping.mol2:
+            raise ValueError("Ligand in state B doesn't match mapping")
 
     @classmethod
     def get_default_settings(cls) -> RelativeLigandTransformSettings:
