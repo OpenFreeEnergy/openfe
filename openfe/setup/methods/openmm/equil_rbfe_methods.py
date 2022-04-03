@@ -468,8 +468,8 @@ class RelativeLigandTransform(FEMethod):
                 constraints='HBonds'
             ),
             topology_settings=TopologySettings(
-                forcefield={'protein': 'amber',
-                            'ligand': 'openff',
+                forcefield={'protein': 'amber99sb.xml',
+                            'ligand': 'openff-2.0.0.offxml',
                             'solvent': 'tip3p.xml'},
             ),
             alchemical_settings=AlchemicalSettings(),
@@ -477,7 +477,7 @@ class RelativeLigandTransform(FEMethod):
             barostat_settings=BarostatSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettings(
-                equilibration_length=50.0 * unit.picosecond,
+                equilibration_length=2.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             )
         )
