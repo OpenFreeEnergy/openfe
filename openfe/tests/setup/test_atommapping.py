@@ -46,7 +46,8 @@ class TestLigandAtomMappingSerialization:
 
         assert roundtrip == simple_mapping
 
-        # TODO: Check that molA and molB coordinates haven't changed
+        # We don't check coordinates since that's already done in guefe for
+        # SmallMoleculeComponent
 
         assert roundtrip != other_mapping
 
