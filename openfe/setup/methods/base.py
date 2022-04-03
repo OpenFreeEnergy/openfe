@@ -2,16 +2,17 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import abc
+from openff.toolkit.utils.serialization import Serializable
 
 
-class FEMethod(abc.ABC):
+class FEMethod(abc.ABC, Serializable):
     """Base class for defining a free energy method
 
     Child classes must implement:
-    - the associated Settings class (assigning to _SETTINGS_CLASS)
+    - the associated Settings class and a default point for this
     - init, taking the Settings class
     - run()
-    -
+    - to_dict and from_dict for serialization
     """
     @classmethod
     @abc.abstractmethod
@@ -20,16 +21,6 @@ class FEMethod(abc.ABC):
 
         These can be modified and passed back in to the class init
         """
-        ...
-
-    @abc.abstractmethod
-    def to_xml(self) -> str:
-        """Serialise this method to xml"""
-        ...
-
-    @classmethod
-    @abc.abstractmethod
-    def from_xml(cls, xml: str):
         ...
 
     @abc.abstractmethod

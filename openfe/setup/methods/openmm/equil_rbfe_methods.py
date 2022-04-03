@@ -428,7 +428,7 @@ class RelativeLigandTransform(FEMethod):
                  stateA: ChemicalState,
                  stateB: ChemicalState,
                  ligandmapping: LigandAtomMapping,
-                 settings: Union[Dict, RelativeLigandTransformSettings] = None,
+                 settings: RelativeLigandTransformSettings,
                  ):
         """
         Parameters
@@ -439,18 +439,15 @@ class RelativeLigandTransform(FEMethod):
         ligandmapping : LigandAtomMapping
           the mapping of atoms between the two ligand components
         settings : RelativeLigandTransformSettings
-          the settings for the Method.
+          the settings for the Method.  This can be constructed using the
+          get_default_settings classmethod to give a starting point that
+          can be updated to suit.
 
-        The default settings for this method can be accessed via the
-        get_default_settings method,
         """
         self._stateA = stateA
         self._stateB = stateB
         self._mapping = ligandmapping
-        self._settings = self.__class__.get_default_settings()
-        # TODO: Figure out how to supply partial settings?
-        #if settings is not None:
-        #    self._settings.update(settings)
+        self._settings = settings
 
         # Checks on the inputs!
         # check that both states have solvent and ligand
@@ -500,12 +497,24 @@ class RelativeLigandTransform(FEMethod):
             )
         )
 
-    def to_xml(self) -> str:
-        raise NotImplementedError()
+    def to_dict(self) -> dict:
+        """Serialize to dict representation"""
+        return {
+            'stateA': self._stateA.to_dict(),
+            'stateB': self._stateB.to_dict(),
+            'mapping': self._mapping.to_dict(),
+            'settings': dict(self._settings),
+        }
 
     @classmethod
-    def from_xml(cls, xml: str):
-        raise NotImplementedError()
+    def from_dict(cls, d: dict):
+        """Deserialize from a dict representation"""
+        return cls(
+            stateA=ChemicalState.from_dict(d['stateA']),
+            stateB=ChemicalState.from_dict(d['stateB']),
+            mapping=LigandAtomMapping.from_dict(d['mapping']),
+            settings=dict(**d['settings']),
+        )
 
     def run(self) -> bool:
         if self.is_complete():
