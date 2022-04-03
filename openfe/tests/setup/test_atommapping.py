@@ -54,7 +54,7 @@ class TestLigandAtomMappingSerialization:
 
         with tmpdir.as_cwd():
             with open('tmpfile.json', 'w') as f:
-                f.write(smple_mapping.to_json())
+                f.write(simple_mapping.to_json())
 
             with open('tmpfile.json', 'r') as f:
                 d = json.load(f)
