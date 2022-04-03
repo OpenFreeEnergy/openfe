@@ -49,7 +49,7 @@ def other_mapping():
 
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
-    # a dict of {filenames.strip(molB): SmallMoleculeComponent} for a simple
+    # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
     # set of ligands
     files = {}
     for f in [
