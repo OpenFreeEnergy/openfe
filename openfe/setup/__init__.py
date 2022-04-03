@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from gufe import (
-    ChemicalState,
+    ChemicalSystem,
     Component,
     ProteinComponent,
     SmallMoleculeComponent,
