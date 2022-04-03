@@ -77,7 +77,7 @@ class TopologySettings(BaseModel):
       defn. In that case we wouldn't have to have ``solvent_model`` here.
     """
     # mapping of component name to forcefield path(s)
-    forcefield: Dict[str, Union[list[str, ...], str]]
+    forcefield: Dict[str, Union[list[str], str]]
     solvent_model = 'tip3p'
 
 
@@ -514,7 +514,7 @@ class RelativeLigandTransform(FEMethod):
         return False
 
     def is_complete(self) -> bool:
-        results_file = self._settings.SimulationLengthSettings.output_filename
+        results_file = self._settings.simulation_settings.output_filename
 
         # TODO: Can improve upon this by checking expected length of the
         #       nc archive?
