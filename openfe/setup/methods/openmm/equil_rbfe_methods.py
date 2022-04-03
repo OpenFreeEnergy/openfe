@@ -14,15 +14,22 @@ TODO
 from __future__ import annotations
 
 import os
+
+import openmm
 from openff.units import unit
+import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
 from typing import Dict, List, Union
+from openmm import app
+from openmmforcefields.generators import SMIRNOFFTemplateGenerator
+import openmmtools
 
 from openfe.setup import (
     ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
 )
 from openfe.setup.methods import FEMethod
+from openfe.setup import _rbfe_utils
 
 # define a timestep
 # this isn't convertible to time (e.g ps) and is used to not confuse these two
@@ -517,10 +524,172 @@ class RelativeLigandTransform(FEMethod):
         )
 
     def run(self) -> bool:
-        if self.is_complete():
-            return True
-        # TODO: Execute the workload
-        return False
+        stateA_openff_ligand = self._stateA.components['ligand'].to_openff()
+        stateB_openff_ligand = self._stateB.components['ligand'].to_openff()
+
+        smirnoff_stateA = SMIRNOFFTemplateGenerator(
+            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            molecules=[stateA_openff_ligand],
+        )
+        omm_forcefield_stateA = app.ForceField(
+            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+              if not comp == 'ligand']
+        )
+        omm_forcefield_stateA.registerTemplateGenerator(smirnoff_stateA.generator)
+
+        stateA_modeller = app.Modeller(
+            stateA_openff_ligand.to_topology().to_openmm(),
+            stateA_openff_ligand.conformers[0],
+        )
+
+        # Solvate the complex in a 0.15 mM cubic water box with 1.2 nm from the
+        # solute to the edges of the box
+        stateA_modeller.addSolvent(
+            omm_forcefield_stateA,
+            model=self._settings.topology_settings.solvent_model,
+            padding=self._settings.solvent_padding,
+            ionicStrength=self._stateA.components['solvent'].concentration,
+        )
+
+        # Create OpenMM system + topology + initial positions for "A" system
+        nonbonded_method = {
+            # TODO: Other methods here
+            'PME': app.PME,
+        }[self._settings.system_settings.nonbonded_method]
+        constraints = {
+            # TODO: Other constraints here
+            'HBonds': app.HBonds,
+        }[self._settings.system_settings.constraints]
+
+        stateA_system = omm_forcefield_stateA.createSystem(
+            stateA_modeller.topology,
+            nonbondedMethod=nonbonded_method,
+            nonbondedCutoff=self._settings.system_settings.nonbonded_cutoff,
+            constraints=constraints,
+            rigidWater=self._settings.system_settings.rigid_water,
+        )
+
+        stateA_topology = stateA_modeller.getTopology()
+
+        # TODO: Algorithm this magic number
+        # We center the system by adding (14, 14, 14) [box is ~ 28.6 A per side]
+        stateA_positions = stateA_modeller.getPositions() + np.array([14, 14, 14]) * unit.angstrom
+
+        # Remove the ligand from state A and replace with state B ligand
+        stateB_topology = _rbfe_utils.append_new_topology_item(
+            stateA_topology,
+            stateB_openff_ligand.to_topology().to_openmm(),
+            exclude_residue_name=stateA_openff_ligand.name,
+        )
+
+        # Create the state B System
+        smirnoff_stateB = SMIRNOFFTemplateGenerator(
+            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            molecules=[stateB_openff_ligand],
+        )
+        omm_forcefield_stateB = app.ForceField(
+            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+              if not comp == 'ligand']
+        )
+        omm_forcefield_stateB.registerTemplateGenerator(smirnoff_stateA.generator)
+        stateB_system = omm_forcefield_stateB.createSystem(
+            stateB_topology,
+            nonbondedMethod=nonbonded_method,
+            nonbondedCutoff=self._settings.system_settings.nonbonded_cutoff,
+            constraints=constraints,
+            rigidWater=self._settings.system_settings.rigid_water,
+        )
+
+        # Define mappings between the two systems
+        ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
+            self._mapping.mol1_to_mol2,
+            stateA_system, stateA_topology, stateA_openff_ligand.name,
+            stateB_system, stateB_topology, stateB_openff_ligand.name,
+            # TODO: Are these settings?
+            fix_constraints=True,
+            remove_element_changes=True,
+        )
+
+        stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
+            ligand_mappings, stateA_topology, stateB_topology,
+            insert_positions=stateB_openff_ligand.conformers[0],
+            # TODO: Remove this magic number
+            shift_insert=np.array([14, 14, 14]),
+        )
+
+        alchem_settings = self._settings.alchemical_settings
+        hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
+            stateA_system, stateA_positions, stateA_topology,
+            stateB_system, stateB_positions, stateB_topology,
+            old_to_new_atom_map=solvent_mappings['old_to_new_atom_map'],
+            old_to_new_core_atom_map=solvent_mappings['old_to_new_core_atom_map'],
+            use_dispersion_correction=alchem_settings.use_dispersion_correction,
+            softcore_alpha=alchem_settings.softcore_alpha,
+            softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
+            # TODO: Is this setting missing?
+            softcore_LJ_v2_alpha=0.85,
+            softcore_electrostatics=alchem_settings.softcore_electrostatics,
+            softcore_electrostatics_alpha=alchem_settings.softcore_electrostatics_alpha,
+            softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
+            interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
+            flatten_torsions=alchem_settings.flatten_torsions,
+        )
+        hybrid_factory.addForce(
+            openmm.MonteCarloBarostat(
+                self._settings.barostat_settings.pressure.to(unit.bar).m,
+                self._settings.integrator_settings.temperature.m,
+                self._settings.barostat_settings.frequency.m,
+            )
+        )
+
+        lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+            functions=alchem_settings.lambda_functions,
+            windows=alchem_settings.lambda_windows
+        )
+
+        selection_indices = hybrid_factory.hybrid_topology.select('all')
+        reporter = multistate.MultiStateReporter(
+            self._settings.simulation_settings.output_filename,
+            analysis_particle_indices=selection_indices,
+            checkpoint_interval=self._settings.simulation_settings.checkpoint_interval.m,
+        )
+
+        # Get platform and context caches
+        platform = _rbfe_utils.compute.get_openmm_platform(
+            self._settings.engine_settings.compute_platform
+        )
+        energy_context_cache = openmmtools.cache.ContextCache(
+            capacity=None, time_to_live=None, platform=platform,
+        )
+        sampler_context_cache = openmmtools.cache.ContextCache(
+            capacity=None, time_to_live=None, platform=platform,
+        )
+
+        int_settings = self._settings.integrator_settings
+        integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
+            timestep=int_settings.timestep,
+            collision_rate=int_settings.collision_rate,
+            n_steps=int_settings.n_steps.m,
+            reassign_velocities=int_settings.reassign_velocities,
+            n_restart_attempts=int_settings.n_restart_attempts,
+            constraint_tolerance=int_settings.constraint_tolerance,
+        )
+
+        sampler = _rbfe_utils.multistate.HybridRepexSampler(
+            mcmc_moves=integrator,
+            hybrid_factory=hybrid_factory,
+        )
+        sampler.setup(
+            reporter=reporter,
+            platform=platform,
+            lambda_protocol=lambdas,
+            temperature=self._settings.integrator_settings.temperature,
+            endstates=alchem_settings.unsampled_endstates,
+        )
+        sampler.energy_context_cache = energy_context_cache
+        sampler.sampler_context_cache = sampler_context_cache
+
+        return True
 
     def is_complete(self) -> bool:
         results_file = self._settings.simulation_settings.output_filename
