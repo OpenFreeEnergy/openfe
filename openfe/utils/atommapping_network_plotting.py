@@ -1,13 +1,14 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
 import io
 import matplotlib
 from rdkit import Chem
+from typing import Dict, Tuple
 
 from openfe.utils.network_plotting import GraphDrawing, Node, Edge
 from openfe.utils.visualization import draw_one_molecule_mapping
-
-from typing import Dict, Tuple
 from openfe.utils.custom_typing import MPL_MouseEvent
-from openfe.setup import LigandMolecule, Network
+from openfe.setup import SmallMoleculeComponent, Network
 
 
 class AtomMappingEdge(Edge):
@@ -32,8 +33,8 @@ class AtomMappingEdge(Edge):
     def _draw_mapped_molecule(
         self,
         extent: Tuple[float, float, float, float],
-        mol1: LigandMolecule,
-        mol2: LigandMolecule,
+        mol1: SmallMoleculeComponent,
+        mol2: SmallMoleculeComponent,
         mol1_to_mol2: Dict[int, int]
     ):
         # create the image in a format matplotlib can handle
@@ -127,7 +128,7 @@ class AtomMappingNetworkDrawing(GraphDrawing):
     ----------
     graph : nx.MultiDiGraph
         NetworkX representation of the LigandNetwork
-    positions : Optional[Dict[LigandMolecule, Tuple[float, float]]]
+    positions : Optional[Dict[SmallMoleculeComponent, Tuple[float, float]]]
         mapping of node to position
     """
     NodeCls = Node

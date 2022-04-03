@@ -16,7 +16,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
 
     Parameters
     ----------
-    ligands : iterable of LigandMolecules
+    ligands : iterable of SmallMoleculeComponents
       the ligands to arrange around the central ligand
     central_ligand : SmallMoleculeComponent
       the ligand to use as the hub/central ligand
