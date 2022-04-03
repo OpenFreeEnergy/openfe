@@ -20,7 +20,7 @@ from pydantic import BaseModel, validator
 from typing import Dict, List, Union
 
 from openfe.setup import (
-    ChemicalState, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
+    ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
 )
 from openfe.setup.methods import FEMethod
 
