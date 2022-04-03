@@ -16,8 +16,8 @@ dependencies:
   - click
   - openeye-toolkits
   - typing-extensions
-  - gufe
   - lomap2
   - openmmtools
   - pip:
+    - git+https://github.com/OpenFreeEnergy/gufe@main
     - plugcli
