@@ -29,7 +29,7 @@ def test_get_molecule_sdf():
 
 def test_get_molecule_mol2():
     with importlib.resources.path("openfe.tests.data.lomap_basic",
-                                  "toluene.mol2") as f:
+                                  "toluene.molB") as f:
         mol = get_molecule(str(f))
 
         assert mol.smiles == 'Cc1ccccc1'

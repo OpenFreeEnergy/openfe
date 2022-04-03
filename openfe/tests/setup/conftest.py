@@ -7,8 +7,7 @@ from rdkit import Chem
 
 import gufe
 import openfe
-from openfe.setup import LigandAtomMapping
-from openfe.setup import SmallMoleculeComponent
+from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
 
 
 @pytest.fixture(scope='session')
@@ -27,7 +26,7 @@ def simple_mapping():
     molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
     molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
 
-    m = LigandAtomMapping(molA, molB, mol1_to_mol2={0: 0, 1: 1})
+    m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 1: 1})
 
     return m
 
@@ -43,14 +42,14 @@ def other_mapping():
     molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
     molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
 
-    m = LigandAtomMapping(molA, molB, mol1_to_mol2={0: 0, 2: 1})
+    m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 2: 1})
 
     return m
 
 
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
-    # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
+    # a dict of {filenames.strip(molB): SmallMoleculeComponent} for a simple
     # set of ligands
     files = {}
     for f in [

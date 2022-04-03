@@ -4,11 +4,11 @@ from rdkit import Chem
 
 
 def test_atommapping_usage(simple_mapping):
-    assert simple_mapping.mol1_to_mol2[1] == 1
-    assert simple_mapping.mol1_to_mol2.get(2, None) is None
+    assert simple_mapping.molA_to_molB[1] == 1
+    assert simple_mapping.molA_to_molB.get(2, None) is None
 
     with pytest.raises(KeyError):
-        simple_mapping.mol1_to_mol2[3]
+        simple_mapping.molA_to_molB[3]
 
 
 def test_atommapping_hash(simple_mapping, other_mapping):
