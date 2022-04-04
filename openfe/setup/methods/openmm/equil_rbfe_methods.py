@@ -545,17 +545,32 @@ class RelativeLigandTransform(FEMethod):
             *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
-        omm_forcefield_stateA.registerTemplateGenerator(smirnoff_stateA.generator)
+
+        omm_forcefield_stateA.registerTemplateGenerator(
+                smirnoff_stateA.generator)
 
         # state B
         omm_forcefield_stateB = app.ForceField(
             *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
-        omm_forcefield_stateB.registerTemplateGenerator(smirnoff_stateB.generator)
+
+        omm_forcefield_stateB.registerTemplateGenerator(
+                smirnoff_stateB.generator)
 
 
-        ## 
+        ##  Model state A
+        # todo - add logic for PDBFile once it's been fixed upstream
+        # if 'protein' in self._stateA.components:
+        #     pdbfile = self._stateA.components['protein'].to_openmm_PDBFile()
+        #     stateA_modeller = app.Modeller(pdbfile.topology,
+        #                                    pdbfile.positions)
+        #     stateA_modeller.add(
+        #         stateA_openff_ligand.to_topology().to_openmm(),
+        #         stateA_openff_ligand.conformers[0],
+        #     )
+        # else:
+        # --- add below --
         stateA_modeller = app.Modeller(
             stateA_openff_ligand.to_topology().to_openmm(),
             stateA_openff_ligand.conformers[0],
