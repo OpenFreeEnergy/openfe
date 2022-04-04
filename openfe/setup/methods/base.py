@@ -5,7 +5,7 @@ import abc
 from openff.toolkit.utils.serialization import Serializable
 
 
-class FEMethod(Serializable):
+class FEMethod(abc.ABC):
     """Base class for defining a free energy method
 
     Child classes must implement:
@@ -13,6 +13,10 @@ class FEMethod(Serializable):
     - init, taking the Settings class
     - run()
     - to_dict and from_dict for serialization
+
+    TODO
+    ----
+    * Serializable was removed because of an MRO, needs to be re-added?
     """
     @classmethod
     @abc.abstractmethod
