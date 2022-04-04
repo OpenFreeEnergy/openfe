@@ -7,7 +7,7 @@ from openfe.setup.methods import openmm
 
 @pytest.fixture
 def benzene_system(benzene_modifications):
-    return setup.ChemicalState(
+    return setup.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
          'solvent': setup.SolventComponent(ions=('Na', 'Cl'))},
     )
@@ -15,7 +15,7 @@ def benzene_system(benzene_modifications):
 
 @pytest.fixture
 def toluene_system(benzene_modifications):
-    return setup.ChemicalState(
+    return setup.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
          'solvent': setup.SolventComponent(ions=('Na', 'Cl'))},
     )
@@ -52,7 +52,7 @@ def test_create_protocol(benzene_system, toluene_system,
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
     # state B doesn't have a ligand component
-    stateB = setup.ChemicalState({'solvent': setup.SolventComponent()})
+    stateB = setup.ChemicalSystem({'solvent': setup.SolventComponent()})
 
     with pytest.raises(ValueError, match='Missing ligand in state B'):
         _ = openmm.RelativeLigandTransform(
@@ -66,7 +66,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
 def test_missing_solvent(benzene_system, benzene_modifications,
                          benzene_to_toluene_mapping):
     # state B doesn't have a solvent component (i.e. its vacuum)
-    stateB = setup.ChemicalState({'ligand': benzene_modifications['toluene']})
+    stateB = setup.ChemicalSystem({'ligand': benzene_modifications['toluene']})
 
     with pytest.raises(ValueError, match="Missing solvent in state B"):
         _ = openmm.RelativeLigandTransform(
@@ -80,7 +80,7 @@ def test_missing_solvent(benzene_system, benzene_modifications,
 def test_incompatible_solvent(benzene_system, benzene_modifications,
                               benzene_to_toluene_mapping):
     # the solvents are different
-    stateB = setup.ChemicalState(
+    stateB = setup.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
          'solvent': setup.SolventComponent(ions=('K', 'Cl'))},
     )
