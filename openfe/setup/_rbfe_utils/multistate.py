@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import openmm
 from openmm import unit
-from openmmtools.multistate import replicaexchange
+from openmmtools.multistate import replicaexchange, sams
 from openmmtools import cache
 from openmmtools.states import (CompoundThermodynamicState,
                                 SamplerState, ThermodynamicState)
