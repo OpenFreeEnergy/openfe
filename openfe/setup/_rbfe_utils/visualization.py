@@ -6,8 +6,14 @@ from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem import AllChem
 from urllib import parse
 from networkx.readwrite import cytoscape_data
-import cyjupyter
-from cyjupyter import Cytoscape
+
+try:
+    import cyjupyter
+    from cyjupyter import Cytoscape
+except ImportError:
+    HAS_CYJUPYTER = False
+else:
+    HAS_CYJUPYTER = True
 
 
 def draw_radial_network(network):
@@ -19,6 +25,9 @@ def draw_radial_network(network):
     This is pretty much a pseudo-hardcoded radial network viz, I'll need some
     input on fixing the edge setting at some point.
     """
+
+    if not HAS_CYJUPYTER:
+        raise ImportError("please install cyjupyter to use this method")
 
     def image(rdmol):
         drawer = rdMolDraw2D.MolDraw2DSVG(690, 400)
