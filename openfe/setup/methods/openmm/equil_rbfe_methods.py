@@ -18,11 +18,13 @@ import os
 import numpy as np
 import openmm
 from openff.units import unit
+from openff.units.openmm import to_openmm
 import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
 from typing import Dict, List, Union
 from openmm import app
+from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 import openmmtools
 
@@ -598,11 +600,22 @@ class RelativeLigandTransform(FEMethod):
 
         # Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
         # solute to the edges of the box
+        conc = self._stateA.components['solvent'].ion_concentration
+        if conc is None:
+            conc = 0.0 * unit.molar
+        pos = self._stateA.components['solvent'].positive_ion
+        if pos is None:
+            pos = 'Na+'
+        neg = self._stateA.components['solvent'].negative_ion
+        if neg is None:
+            neg = 'Cl-'
+
         stateA_modeller.addSolvent(
             omm_forcefield_stateA,
             model=self._settings.topology_settings.solvent_model,
-            padding=self._settings.solvent_padding,
-            ionicStrength=self._stateA.components['solvent'].concentration,
+            padding=to_openmm(self._settings.solvent_padding),
+            positiveIon=pos, negativeIon=neg,
+            ionicStrength=to_openmm(conc),
         )
 
         ## Create OpenMM system + topology + initial positions for "A" system
@@ -628,7 +641,7 @@ class RelativeLigandTransform(FEMethod):
         stateA_system = omm_forcefield_stateA.createSystem(
             stateA_modeller.topology,
             nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=self._settings.system_settings.nonbonded_cutoff,
+            nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
             rigidWater=self._settings.system_settings.rigid_water,
         )
@@ -644,12 +657,13 @@ class RelativeLigandTransform(FEMethod):
             * Deal with non-cubic boxes
             """
             # Cubic so we can safely assume the boxes are the same length
-            edge_length = omm_system.GetDefaultPeriodicBoxVectors()[0][0]
-            edge_nm = edge_length.value_in_unit(unit.nanometer)
-            return np.array(edge_nm, edge_nm, edge_nm) * unit.nanometer
+            edge_length = omm_system.getDefaultPeriodicBoxVectors()[0][0]
+            edge_nm = edge_length.value_in_unit(omm_unit.nanometer) / 2
+            return np.array([edge_nm, edge_nm, edge_nm]) * omm_unit.nanometer
 
         # Center the positions in the middle of the box by shifting by offset
         center_offset = get_center_offset(stateA_system)
+        #center_offset = np.array([14, 14, 14])
         stateA_positions = stateA_modeller.getPositions() + center_offset
 
         ## Create OpenMM system + topology + positions for "B" system
@@ -664,7 +678,7 @@ class RelativeLigandTransform(FEMethod):
         stateB_system = omm_forcefield_stateB.createSystem(
             stateB_topology,
             nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=self._settings.system_settings.nonbonded_cutoff,
+            nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
             rigidWater=self._settings.system_settings.rigid_water,
         )
@@ -684,7 +698,7 @@ class RelativeLigandTransform(FEMethod):
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=stateA_positions,
             insert_positions=stateB_openff_ligand.conformers[0],
-            shift_insert=center_offset,
+            shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
         )
 
         ## Create the hybrid topology
