@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
+import json
 from typing import Dict
 from openff.toolkit.utils.serialization import Serializable
 from rdkit import Chem
@@ -29,18 +30,23 @@ class LigandAtomMapping(Serializable):
     def to_dict(self):
         """Serialize to dict"""
         return {
-            'molA': self.molA.to_dict(),
-            'molB': self.molB.to_dict(),
+            # openff serialization doesn't go deep, so stringify at this level
+            'molA': self.molA.to_json(),
+            'molB': self.molB.to_json(),
             'molA_to_molB': self.molA_to_molB,
         }
 
     @classmethod
     def from_dict(cls, d: dict):
         """Deserialize from dict"""
+        # the mapping dict gets mangled sometimes
+        mapping = d['molA_to_molB']
+        fixed = {int(k): int(v) for k, v in mapping.items()}
+
         return cls(
-            molA=SmallMoleculeComponent.from_dict(d['molA']),
-            molB=SmallMoleculeComponent.from_dict(d['molB']),
-            molA_to_molB=d['molA_to_molB'],
+            molA=SmallMoleculeComponent.from_dict(json.loads(d['molA'])),
+            molB=SmallMoleculeComponent.from_dict(json.loads(d['molB'])),
+            molA_to_molB=fixed,
         )
 
     def __hash__(self):

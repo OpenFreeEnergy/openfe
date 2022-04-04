@@ -39,6 +39,9 @@ class TestLigandAtomMappingSerialization:
         d = benzene_phenol_mapping.to_dict()
 
         assert isinstance(d, dict)
+        assert 'molA' in d
+        assert 'molB' in d
+        assert isinstance(d['molA'], str)
 
     def test_deserialize_roundtrip(self, benzene_phenol_mapping,
                                    benzene_anisole_mapping):
@@ -54,7 +57,6 @@ class TestLigandAtomMappingSerialization:
         assert roundtrip != benzene_anisole_mapping
 
     def test_file_roundtrip(self, benzene_phenol_mapping, tmpdir):
-
         with tmpdir.as_cwd():
             with open('tmpfile.json', 'w') as f:
                 f.write(benzene_phenol_mapping.to_json())
