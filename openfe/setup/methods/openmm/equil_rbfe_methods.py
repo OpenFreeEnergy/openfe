@@ -468,9 +468,9 @@ class RelativeLigandTransform(FEMethod):
         if not stateA.components['solvent'] == stateB.components['solvent']:
             raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
-        if stateA.components['ligand'] != ligandmapping.mol1:
+        if stateA.components['ligand'] != ligandmapping.molA:
             raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB.components['ligand'] != ligandmapping.mol2:
+        if stateB.components['ligand'] != ligandmapping.molB:
             raise ValueError("Ligand in state B doesn't match mapping")
 
     @classmethod
@@ -603,7 +603,7 @@ class RelativeLigandTransform(FEMethod):
 
         # Define mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
-            self._mapping.mol1_to_mol2,
+            self._mapping.molA_to_molB,
             stateA_system, stateA_topology, stateA_openff_ligand.name,
             stateB_system, stateB_topology, stateB_openff_ligand.name,
             # TODO: Are these settings?
