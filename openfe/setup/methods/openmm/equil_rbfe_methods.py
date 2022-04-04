@@ -805,6 +805,7 @@ class RelativeLigandTransform(FEMethod):
             # add some logging for verbosity
 
             # minimize
+            sampler.minimize(max_iterations=self._settings.simulation_settings.minimization_steps)
 
             # equilibrate - possibly on a tdqm loop so you can track progress?
 
