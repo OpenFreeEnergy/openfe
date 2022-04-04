@@ -103,16 +103,16 @@ def benzene_maps():
     return MAPS
 
 
-@pytest.fixture(scope='module')
-def benzene_phenol_mapping(benzene_transforms, maps):
+@pytest.fixture(scope='session')
+def benzene_phenol_mapping(benzene_transforms, benzene_maps):
     molA = benzene_transforms['benzene'].to_rdkit()
     molB = benzene_transforms['phenol'].to_rdkit()
     m = LigandAtomMapping(molA, molB, benzene_maps['phenol'])
     return m
 
 
-@pytest.fixture(scope='module')
-def benzene_anisole_mapping(benzene_transforms, maps):
+@pytest.fixture(scope='session')
+def benzene_anisole_mapping(benzene_transforms, benzene_maps):
     molA = benzene_transforms['benzene'].to_rdkit()
     molB = benzene_transforms['anisole'].to_rdkit()
     m = LigandAtomMapping(molA, molB, benzene_maps['anisole'])
