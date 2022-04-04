@@ -107,7 +107,7 @@ def benzene_maps():
 def benzene_phenol_mapping(benzene_transforms, maps):
     molA = benzene_transforms['benzene'].to_rdkit()
     molB = benzene_transforms['phenol'].to_rdkit()
-    m = LigandAtomMapping(molA, molB, maps['phenol'])
+    m = LigandAtomMapping(molA, molB, benzene_maps['phenol'])
     return m
 
 
@@ -115,5 +115,5 @@ def benzene_phenol_mapping(benzene_transforms, maps):
 def benzene_anisole_mapping(benzene_transforms, maps):
     molA = benzene_transforms['benzene'].to_rdkit()
     molB = benzene_transforms['anisole'].to_rdkit()
-    m = LigandAtomMapping(molA, molB, maps['anisole'])
+    m = LigandAtomMapping(molA, molB, benzene_maps['anisole'])
     return m
