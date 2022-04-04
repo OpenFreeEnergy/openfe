@@ -528,16 +528,34 @@ class RelativeLigandTransform(FEMethod):
         stateA_openff_ligand = self._stateA.components['ligand'].to_openff()
         stateB_openff_ligand = self._stateB.components['ligand'].to_openff()
 
+        ## Get smirnoff template generators
         smirnoff_stateA = SMIRNOFFTemplateGenerator(
             forcefield=self._settings.topology_settings.forcefield['ligand'],
             molecules=[stateA_openff_ligand],
         )
+
+        smirnoff_stateB = SMIRNOFFTemplateGenerator(
+            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            molecules=[stateB_openff_ligand],
+        )
+
+        ## Create forece fields and register them
+        # state A
         omm_forcefield_stateA = app.ForceField(
             *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
         omm_forcefield_stateA.registerTemplateGenerator(smirnoff_stateA.generator)
 
+        # state B
+        omm_forcefield_stateB = app.ForceField(
+            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+              if not comp == 'ligand']
+        )
+        omm_forcefield_stateB.registerTemplateGenerator(smirnoff_stateB.generator)
+
+
+        ## 
         stateA_modeller = app.Modeller(
             stateA_openff_ligand.to_topology().to_openmm(),
             stateA_openff_ligand.conformers[0],
@@ -583,16 +601,6 @@ class RelativeLigandTransform(FEMethod):
             exclude_residue_name=stateA_openff_ligand.name,
         )
 
-        # Create the state B System
-        smirnoff_stateB = SMIRNOFFTemplateGenerator(
-            forcefield=self._settings.topology_settings.forcefield['ligand'],
-            molecules=[stateB_openff_ligand],
-        )
-        omm_forcefield_stateB = app.ForceField(
-            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
-              if not comp == 'ligand']
-        )
-        omm_forcefield_stateB.registerTemplateGenerator(smirnoff_stateA.generator)
         stateB_system = omm_forcefield_stateB.createSystem(
             stateB_topology,
             nonbondedMethod=nonbonded_method,
