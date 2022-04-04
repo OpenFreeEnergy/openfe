@@ -426,7 +426,7 @@ class RelativeLigandTransformResults:
 
 
 class RelativeLigandTransform(FEMethod):
-    """Calculates the free energy of an alchemical ligand swap in solvent
+    """Calculates the relative free energy of an alchemical ligand transformation.
 
     """
     _SETTINGS_CLASS = RelativeLigandTransformSettings
@@ -464,6 +464,7 @@ class RelativeLigandTransform(FEMethod):
             if 'ligand' not in state.components:
                 raise ValueError(f"Missing ligand in state {label}")
         # check that both states have same solvent
+        # TODO: this is not always true if state A or B have a defined box etc... logic to be expanded
         if not stateA.components['solvent'] == stateB.components['solvent']:
             raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
@@ -542,7 +543,7 @@ class RelativeLigandTransform(FEMethod):
             stateA_openff_ligand.conformers[0],
         )
 
-        # Solvate the complex in a 0.15 mM cubic water box with 1.2 nm from the
+        # Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
         # solute to the edges of the box
         stateA_modeller.addSolvent(
             omm_forcefield_stateA,
@@ -627,7 +628,7 @@ class RelativeLigandTransform(FEMethod):
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             # TODO: Is this setting missing?
-            softcore_LJ_v2_alpha=0.85,
+            softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             softcore_electrostatics=alchem_settings.softcore_electrostatics,
             softcore_electrostatics_alpha=alchem_settings.softcore_electrostatics_alpha,
             softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
