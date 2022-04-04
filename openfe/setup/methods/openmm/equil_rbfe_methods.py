@@ -787,10 +787,21 @@ class RelativeLigandTransform(FEMethod):
         sampler.sampler_context_cache = sampler_context_cache
 
         if not dry:
-            if verbose:
-                pass
+            # TODO
+            # add some logging for verbosity
 
-        return True
+            # minimize
+
+            # equilibrate - possibly on a tdqm loop so you can track progress?
+
+            # production - possibly on a tqdm loop so you can track progress?
+
+            return True
+        else:
+            # clean up the reporter file
+            fn = self._parent_settings.simulation_settings.output_filename
+            os.remove(fn)
+            return True
 
     def is_complete(self) -> bool:
         results_file = self._settings.simulation_settings.output_filename
