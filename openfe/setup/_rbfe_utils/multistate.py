@@ -91,8 +91,6 @@ class HybridCompatibilityMixin(object):
             warnings.warn(wmsg)
             n_replicas = n_states
 
-        self.n_replicas = n_replicas
-
         lambda_schedule = lambda_protocol.lambda_schedule
         if len(lambda_schedule) != n_states:
             errmsg = ("length of lambda_schedule must match the number of "
@@ -126,7 +124,7 @@ class HybridCompatibilityMixin(object):
             # picking roughly evenly spaced sampler states
             # if n_replicas == 1, then it will pick the first in the list
             samples = np.linspace(0, len(sampler_state_list) - 1,
-                                  self.n_replicas)
+                                  n_replicas)
             idx = np.round(samples).astype(int)
             sampler_state_list = [state for i, state in
                                   enumerate(sampler_state_list) if i in idx]
