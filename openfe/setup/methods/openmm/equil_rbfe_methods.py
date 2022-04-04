@@ -85,7 +85,7 @@ class TopologySettings(BaseModel):
       defn. In that case we wouldn't have to have ``solvent_model`` here.
     """
     # mapping of component name to forcefield path(s)
-    forcefield: Dict[str, Union[list[str], str]]
+    forcefield: Dict[str, Union[List[str], str]]
     solvent_model = 'tip3p'
 
 
@@ -799,7 +799,7 @@ class RelativeLigandTransform(FEMethod):
             return True
         else:
             # clean up the reporter file
-            fn = self._parent_settings.simulation_settings.output_filename
+            fn = self._settings.simulation_settings.output_filename
             os.remove(fn)
             return True
 
