@@ -5,7 +5,7 @@ import abc
 from openff.toolkit.utils.serialization import Serializable
 
 
-class FEMethod(abc.ABC, Serializable):
+class FEMethod(Serializable):
     """Base class for defining a free energy method
 
     Child classes must implement:
