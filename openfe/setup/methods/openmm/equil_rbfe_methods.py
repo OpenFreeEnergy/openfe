@@ -528,7 +528,24 @@ class RelativeLigandTransform(FEMethod):
             settings=dict(**d['settings']),
         )
 
-    def run(self) -> bool:
+    def run(self, dry=False, verbose=True) -> bool:
+        """Run the relative free energy calculation.
+
+        Parameters
+        ----------
+        dry : bool
+          Do a dry run of the calculation, creating all necessary hybrid
+          system components (topology, system, sampler, etc...) but without
+          running the simulation.
+
+        verbose : bool
+          Verbose output of the simulation progress.
+
+        Returns
+        -------
+        bool
+          True if everything went well.
+        """
         stateA_openff_ligand = self._stateA.components['ligand'].to_openff()
         stateB_openff_ligand = self._stateB.components['ligand'].to_openff()
 
@@ -701,7 +718,8 @@ class RelativeLigandTransform(FEMethod):
 
 
         ## Create lambda schedule
-        # TODO - this should be exposed to users
+        # TODO - this should be exposed to users, maybe we should offer the
+        # ability to print the schedule directly in settings?
         lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
             functions=alchem_settings.lambda_functions,
             windows=alchem_settings.lambda_windows
@@ -720,18 +738,26 @@ class RelativeLigandTransform(FEMethod):
             checkpoint_interval=self._settings.simulation_settings.checkpoint_interval.m,
         )
 
-        # Get platform and context caches
+        ## Get platform and context caches
         platform = _rbfe_utils.compute.get_openmm_platform(
             self._settings.engine_settings.compute_platform
         )
+
+        # Create context caches (energy + sampler)
+        # Note: these needs to exist on the compute node
         energy_context_cache = openmmtools.cache.ContextCache(
             capacity=None, time_to_live=None, platform=platform,
         )
+
         sampler_context_cache = openmmtools.cache.ContextCache(
             capacity=None, time_to_live=None, platform=platform,
         )
 
-        int_settings = self._settings.integrator_settings
+        ## Set the integrator
+        # get integrator settings
+        integrator_settings = self._settings.integrator_settings
+
+        # create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
             timestep=int_settings.timestep,
             collision_rate=int_settings.collision_rate,
@@ -741,10 +767,14 @@ class RelativeLigandTransform(FEMethod):
             constraint_tolerance=int_settings.constraint_tolerance,
         )
 
+        ## Create sampler
+        # TODO - this needs to variably allow for a SAMS sampler too
         sampler = _rbfe_utils.multistate.HybridRepexSampler(
             mcmc_moves=integrator,
             hybrid_factory=hybrid_factory,
         )
+
+        # setup sampler and feed it the context caches
         sampler.setup(
             reporter=reporter,
             platform=platform,
@@ -752,8 +782,13 @@ class RelativeLigandTransform(FEMethod):
             temperature=self._settings.integrator_settings.temperature,
             endstates=alchem_settings.unsampled_endstates,
         )
+
         sampler.energy_context_cache = energy_context_cache
         sampler.sampler_context_cache = sampler_context_cache
+
+        if not dry:
+            if verbose:
+                pass
 
         return True
 
