@@ -157,6 +157,19 @@ class HybridRepexSampler(HybridCompatibilityMixin,
         self._factory = hybrid_factory
 
 
+class HybridSAMSSampler(HybridCompatibilityMixin, sams.SAMSSampler):
+    """
+    SAMSSampler that supports unsampled end states with a different number
+    of positions
+    """
+
+    def __init__(self, *args, hybrid_factory=None, **kwargs):
+        super(HybridSAMSSampler, self).__init__(
+                *args, hybrid_factory=hybrid_factory, **kwargs
+        )
+        self._factory = hybrid_factory
+
+
 def create_endstates(first_thermostate, last_thermostate):
     """
     Utility function to generate unsampled endstates
