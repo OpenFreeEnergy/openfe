@@ -2440,4 +2440,4 @@ class HybridTopologyFactory:
         -------
         hybrid_topology : simtk.openmm.app.Topology
         """
-        return md.Topology.to_openmm(self._hybrid_topology)
+        return mdt.Topology.to_openmm(self._hybrid_topology)
