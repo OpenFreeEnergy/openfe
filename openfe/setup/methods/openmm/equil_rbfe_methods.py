@@ -588,7 +588,6 @@ class RelativeLigandTransform(FEMethod):
         ## Create OpenMM system + topology + initial positions for "A" system
         # Get nonbond method
         nonbonded_method = {
-            # TODO: Other methods here
             'PME': app.PME,
             'NoCutoff': app.NoCutoff,
             'CutoffNonPeriodic': app.CutoffNonPeriodic,
@@ -596,11 +595,15 @@ class RelativeLigandTransform(FEMethod):
             'Ewald': app.Ewald
         }[self._settings.system_settings.nonbonded_method]
 
+        # Get the constraint method
         constraints = {
-            # TODO: Other constraints here
             'HBonds': app.HBonds,
+            'None': None,
+            'AllBonds': app.AllBonds,
+            'HAngles': app.HAngles
         }[self._settings.system_settings.constraints]
 
+        # create the stateA System
         stateA_system = omm_forcefield_stateA.createSystem(
             stateA_modeller.topology,
             nonbondedMethod=nonbonded_method,
