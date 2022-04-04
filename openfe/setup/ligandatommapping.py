@@ -1,8 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
+import json
 from typing import Dict
-
+from openff.toolkit.utils.serialization import Serializable
 from rdkit import Chem
 
 from openfe.setup import SmallMoleculeComponent
@@ -10,26 +11,48 @@ from openfe.utils.visualization import draw_mapping
 
 
 @dataclass
-class LigandAtomMapping:
+class LigandAtomMapping(Serializable):
     """Simple container with the mapping between two Molecules
 
     Attributes
     ----------
-    mol1, mol2 : SmallMoleculeComponent
+    molA, molB : SmallMoleculeComponent
       the two Molecules in the mapping
-    mol1_to_mol2 : dict
+    molA_to_molB : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
       If this atom has no corresponding atom, None is returned.
 
     """
-    mol1: SmallMoleculeComponent
-    mol2: SmallMoleculeComponent
-    mol1_to_mol2: Dict[int, int]
+    molA: SmallMoleculeComponent
+    molB: SmallMoleculeComponent
+    molA_to_molB: Dict[int, int]
+
+    def to_dict(self):
+        """Serialize to dict"""
+        return {
+            # openff serialization doesn't go deep, so stringify at this level
+            'molA': self.molA.to_json(),
+            'molB': self.molB.to_json(),
+            'molA_to_molB': self.molA_to_molB,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """Deserialize from dict"""
+        # the mapping dict gets mangled sometimes
+        mapping = d['molA_to_molB']
+        fixed = {int(k): int(v) for k, v in mapping.items()}
+
+        return cls(
+            molA=SmallMoleculeComponent.from_dict(json.loads(d['molA'])),
+            molB=SmallMoleculeComponent.from_dict(json.loads(d['molB'])),
+            molA_to_molB=fixed,
+        )
 
     def __hash__(self):
         return hash(
-            (hash(self.mol1), hash(self.mol2),
-             tuple(self.mol1_to_mol2.items()))
+            (hash(self.molA), hash(self.molB),
+             tuple(self.molA_to_molB.items()))
         )
 
     @classmethod
@@ -53,9 +76,9 @@ class LigandAtomMapping:
         """
         from IPython.display import Image, display
 
-        return display(Image(draw_mapping(self.mol1_to_mol2,
-                                          self.mol1.to_rdkit(),
-                                          self.mol2.to_rdkit(), d2d)))
+        return display(Image(draw_mapping(self.molA_to_molB,
+                                          self.molA.to_rdkit(),
+                                          self.molB.to_rdkit(), d2d)))
 
     def draw_to_file(self, fname: str, d2d=None):
         """
@@ -71,13 +94,13 @@ class LigandAtomMapping:
         fname : str
             Name of file to save atom map
         """
-        data = draw_mapping(self.mol1_to_mol2, self.mol1.to_rdkit(),
-                            self.mol2.to_rdkit(), d2d)
+        data = draw_mapping(self.molA_to_molB, self.molA.to_rdkit(),
+                            self.molB.to_rdkit(), d2d)
         if type(data) == bytes:
             mode = "wb"
         else:
             mode = "w"
 
         with open(fname, mode) as f:
-            f.write(draw_mapping(self.mol1_to_mol2, self.mol1.to_rdkit(),
-                                 self.mol2.to_rdkit(), d2d))
+            f.write(draw_mapping(self.molA_to_molB, self.molA.to_rdkit(),
+                                 self.molB.to_rdkit(), d2d))

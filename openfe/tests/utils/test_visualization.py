@@ -91,7 +91,7 @@ def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
     # One bond involved
     assert uniques['bonds'] == {10, }
 
-    # invert and check the mol2 uniques
+    # invert and check the molB uniques
     inv_map = {v: k for k, v in mapping.items()}
 
     uniques = _get_unique_bonds_and_atoms(inv_map,

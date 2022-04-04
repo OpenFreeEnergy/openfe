@@ -24,7 +24,7 @@ def test_radial_graph(lomap_basic_test_files):
     ligands_in_network = {mol.name for mol in network.nodes}
     assert ligands_in_network == set(lomap_basic_test_files.keys())
     # check that every edge has the central ligand within
-    assert all((central_ligand_name in {mapping.mol1.name, mapping.mol2.name})
+    assert all((central_ligand_name in {mapping.molA.name, mapping.molB.name})
                for mapping in network.edges)
 
 
