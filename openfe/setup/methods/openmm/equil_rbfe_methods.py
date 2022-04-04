@@ -793,7 +793,7 @@ class RelativeLigandTransform(FEMethod):
             reporter=reporter,
             platform=platform,
             lambda_protocol=lambdas,
-            temperature=self._settings.integrator_settings.temperature,
+            temperature=to_openmm(self._settings.integrator_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
         )
 
