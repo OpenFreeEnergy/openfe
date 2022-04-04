@@ -327,6 +327,9 @@ class SimulationSettings(BaseModel):
       Length of the production phase in units of time.
     output_filename : str
       Path to the storage file for analysis. Default 'rbfe.nc'.
+    output_indices : str
+      Selection string for which part of the system to write coordinates for.
+      Default 'all'.
     checkpoint_interval : int * unit.timestep
       Frequency to write the checkpoint file. Default 50 * unit.timestep
     checkpoint_storage : str
@@ -343,6 +346,7 @@ class SimulationSettings(BaseModel):
 
     # reporter settings
     output_filename = 'rbfe.nc'
+    output_indices = 'all'
     checkpoint_interval = 50 * unit.timestep
     checkpoint_storage = Union[str, None]
 
@@ -695,12 +699,21 @@ class RelativeLigandTransform(FEMethod):
             )
         )
 
+
+        ## Create lambda schedule
+        # TODO - this should be exposed to users
         lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
             functions=alchem_settings.lambda_functions,
             windows=alchem_settings.lambda_windows
         )
 
-        selection_indices = hybrid_factory.hybrid_topology.select('all')
+        ## Create the multistate reporter
+        # Get the sub selection of the system to print coords for
+        selection_indices = hybrid_factory.hybrid_topology.select(
+                self._settings.simulation_settings.output_indices
+        )
+
+        # Create the multistate reporter
         reporter = multistate.MultiStateReporter(
             self._settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
