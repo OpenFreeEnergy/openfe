@@ -3,6 +3,7 @@
 import importlib
 import string
 import pytest
+from importlib import resources
 from rdkit import Chem
 
 import gufe
