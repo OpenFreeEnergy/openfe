@@ -69,7 +69,7 @@ def generate_mapping(mapper, mol1, mol2):
 def atommapping_print_dict_main(mapper, mol1, mol2):
     """Main function for generating and printing out the mapping"""
     mapping = generate_mapping(mapper, mol1, mol2)
-    print(mapping.mol1_to_mol2)
+    print(mapping.molA_to_molB)
 
 
 def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
@@ -88,9 +88,9 @@ def atommapping_visualize_main(mapper, mol1, mol2, file, ext):
             "supported: " + ", ".join([f"'{ext}'" for ext in ext_to_artist])
         )
 
-    contents = visualization.draw_mapping(mapping.mol1_to_mol2,
-                                          mapping.mol1.to_rdkit(),
-                                          mapping.mol2.to_rdkit(), d2d=artist)
+    contents = visualization.draw_mapping(mapping.molA_to_molB,
+                                          mapping.molA.to_rdkit(),
+                                          mapping.molB.to_rdkit(), d2d=artist)
 
     file.write(contents)
 

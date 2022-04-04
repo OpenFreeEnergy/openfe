@@ -13,8 +13,8 @@ from openfe.utils.custom_typing import RDKitMol
 def _match_elements(mol1: RDKitMol, idx1: int,
                     mol2: RDKitMol, idx2: int) -> bool:
     """
-    Convenience method to check if elements between two molecules (mol1
-    and mol2) are the same.
+    Convenience method to check if elements between two molecules (molA
+    and molB) are the same.
 
     Parameters
     ----------
@@ -61,8 +61,8 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
     """
 
     uniques: Dict[str, set] = {
-        "atoms": set(),  # atoms which fully don't exist in mol2
-        "elements": set(),  # atoms which exist but change elements in mol2
+        "atoms": set(),  # atoms which fully don't exist in molB
+        "elements": set(),  # atoms which exist but change elements in molB
         "bonds": set(),  # bonds involving either unique atoms or elements
     }
 
@@ -206,8 +206,8 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
 def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
     """Draw the mapping visualization for a single molecular of a mapping
 
-    This will always draw ``mol1``. To draw ``mol2``, switch order/invert
-    ``mol1_to_mol2`` mapping.
+    This will always draw ``molA``. To draw ``molB``, switch order/invert
+    ``molA_to_molB`` mapping.
 
     See :func:`.draw_mapping` for details on the meaning of different
     colors.

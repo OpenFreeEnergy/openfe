@@ -63,12 +63,12 @@ class TestAtomMappingEdge:
         assert default_edge.picked
         assert len(default_edge.artist.axes.images) == 2
 
-    @pytest.mark.parametrize('edge_str,left_right,mol1_to_mol2', [
+    @pytest.mark.parametrize('edge_str,left_right,molA_to_molB', [
         (("CCO", "CC"), ("CC", "CCO"), {0: 0, 1: 1}),
         (("CC", "CO"), ("CC", "CO"), {0: 0}),
         (("CCO", "CO"), ("CCO", "CO"), {0: 0, 2: 1}),
     ])
-    def test_select_mock_drawing(self, edge_str, left_right, mol1_to_mol2,
+    def test_select_mock_drawing(self, edge_str, left_right, molA_to_molB,
                                  network_drawing):
         # this tests that we call _draw_mapped_molecule with the correct
         # kwargs -- in particular, it ensures that we get the left and right
@@ -93,15 +93,15 @@ class TestAtomMappingEdge:
         ]
         expected_left = {
             'extent': (0.05, 0.45, 0.5, 0.9),
-            'mol1': left.node,
-            'mol2': right.node,
-            'mol1_to_mol2': mol1_to_mol2,
+            'molA': left.node,
+            'molB': right.node,
+            'molA_to_molB': molA_to_molB,
         }
         expected_right = {
             'extent': (0.55, 0.95, 0.5, 0.9),
-            'mol1': right.node,
-            'mol2': left.node,
-            'mol1_to_mol2': {v: k for k, v in mol1_to_mol2.items()},
+            'molA': right.node,
+            'molB': left.node,
+            'molA_to_molB': {v: k for k, v in molA_to_molB.items()},
         }
         assert len(arg_dicts) == 2
         assert expected_left in arg_dicts

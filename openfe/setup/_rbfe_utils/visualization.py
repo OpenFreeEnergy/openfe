@@ -47,8 +47,8 @@ def draw_radial_network(network):
                 molecules[name] += 1
             else:
                 molecules[name] = 1
-        add_to_dict(molecules, edge.mol1.name)
-        add_to_dict(molecules, edge.mol2.name)
+        add_to_dict(molecules, edge.molA.name)
+        add_to_dict(molecules, edge.molB.name)
 
     central_ligand = max(molecules, key=molecules.get)
     print("central ligand is: ", central_ligand)

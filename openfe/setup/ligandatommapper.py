@@ -13,19 +13,19 @@ class LigandAtomMapper:
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
-    def _mappings_generator(self, mol1, mol2) -> Iterable[Dict[int, int]]:
+    def _mappings_generator(self, molA, molB) -> Iterable[Dict[int, int]]:
         """
         Suggest mapping options for the input molecules.
 
         Parameters
         ----------
-        mol1, mol2 : rdkit.Mol
+        molA, molB : rdkit.Mol
             the two molecules to create a mapping for
 
         Returns
         -------
         Iterable[Dict[int, int]] :
-            an iterable over proposed mappings from mol1 to mol2
+            an iterable over proposed mappings from molA to molB
         """
         raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
             cls=self.__class__.__name__,
@@ -33,14 +33,14 @@ class LigandAtomMapper:
         ))
 
     def suggest_mappings(
-        self, mol1: SmallMoleculeComponent, mol2: SmallMoleculeComponent
+        self, molA: SmallMoleculeComponent, molB: SmallMoleculeComponent
     ) -> Iterable[LigandAtomMapping]:
         """
         Suggest :class:`.LigandAtomMapping` options for the input molecules.
 
         Parameters
         ---------
-        mol1, mol2 : :class:`.SmallMoleculeComponent`
+        molA, molB : :class:`.SmallMoleculeComponent`
             the two molecules to create a mapping for
 
         Returns
@@ -53,6 +53,6 @@ class LigandAtomMapper:
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
-        for map_dct in self._mappings_generator(mol1.to_rdkit(),
-                                                mol2.to_rdkit()):
-            yield LigandAtomMapping(mol1, mol2, map_dct)
+        for map_dct in self._mappings_generator(molA.to_rdkit(),
+                                                molB.to_rdkit()):
+            yield LigandAtomMapping(molA, molB, map_dct)

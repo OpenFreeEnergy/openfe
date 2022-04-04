@@ -111,8 +111,8 @@ class TestNetwork:
         assert set(mappings) == set(network_container.edges)
         # ensure LigandAtomMapping stored in nx edge is consistent with nx edge
         for mol1, mol2, atommapping in graph.edges.data('object'):
-            assert atommapping.mol1 == mol1
-            assert atommapping.mol2 == mol2
+            assert atommapping.molA == mol1
+            assert atommapping.molB == mol2
 
     def test_graph_immutability(self, mols, network_container):
         # The NetworkX graph that comes from that ``.graph`` property should
