@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 
+import numpy as np
 import openmm
 from openff.units import unit
 import openmmtools
@@ -433,11 +434,9 @@ class RelativeLigandTransform(FEMethod):
     """Calculates the relative free energy of an alchemical ligand transformation.
 
     """
-    _SETTINGS_CLASS = RelativeLigandTransformSettings
-
     def __init__(self,
-                 stateA: ChemicalState,
-                 stateB: ChemicalState,
+                 stateA: ChemicalSystem,
+                 stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
                  settings: RelativeLigandTransformSettings,
                  ):
@@ -522,10 +521,10 @@ class RelativeLigandTransform(FEMethod):
     def from_dict(cls, d: dict):
         """Deserialize from a dict representation"""
         return cls(
-            stateA=ChemicalState.from_dict(d['stateA']),
-            stateB=ChemicalState.from_dict(d['stateB']),
-            mapping=LigandAtomMapping.from_dict(d['mapping']),
-            settings=dict(**d['settings']),
+            stateA=ChemicalSystem.from_dict(d['stateA']),
+            stateB=ChemicalSystem.from_dict(d['stateB']),
+            ligandmapping=LigandAtomMapping.from_dict(d['mapping']),
+            settings=RelativeLigandTransformSettings(**d['settings']),
         )
 
     def run(self, dry=False, verbose=True) -> bool:
@@ -620,6 +619,7 @@ class RelativeLigandTransform(FEMethod):
         constraints = {
             'HBonds': app.HBonds,
             'None': None,
+            None: None,
             'AllBonds': app.AllBonds,
             'HAngles': app.HAngles
         }[self._settings.system_settings.constraints]
@@ -654,7 +654,7 @@ class RelativeLigandTransform(FEMethod):
 
         ## Create OpenMM system + topology + positions for "B" system
         # stateB topology from stateA (replace out the ligands)
-        stateB_topology = _rbfe_utils.append_new_topology_item(
+        stateB_topology = _rbfe_utils.topologyhelpers.append_new_topology_item(
             stateA_topology,
             stateB_openff_ligand.to_topology().to_openmm(),
             exclude_residue_name=stateA_openff_ligand.name,
@@ -682,6 +682,7 @@ class RelativeLigandTransform(FEMethod):
         # Finally get the positions
         stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
+            old_positions=stateA_positions,
             insert_positions=stateB_openff_ligand.conformers[0],
             shift_insert=center_offset,
         )
@@ -694,8 +695,8 @@ class RelativeLigandTransform(FEMethod):
         hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
-            old_to_new_atom_map=solvent_mappings['old_to_new_atom_map'],
-            old_to_new_core_atom_map=solvent_mappings['old_to_new_core_atom_map'],
+            old_to_new_atom_map=ligand_mappings['old_to_new_atom_map'],
+            old_to_new_core_atom_map=ligand_mappings['old_to_new_core_atom_map'],
             use_dispersion_correction=alchem_settings.use_dispersion_correction,
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
@@ -715,7 +716,6 @@ class RelativeLigandTransform(FEMethod):
                 self._settings.barostat_settings.frequency.m,
             )
         )
-
 
         ## Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
@@ -759,12 +759,12 @@ class RelativeLigandTransform(FEMethod):
 
         # create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
-            timestep=int_settings.timestep,
-            collision_rate=int_settings.collision_rate,
-            n_steps=int_settings.n_steps.m,
-            reassign_velocities=int_settings.reassign_velocities,
-            n_restart_attempts=int_settings.n_restart_attempts,
-            constraint_tolerance=int_settings.constraint_tolerance,
+            timestep=integrator_settings.timestep,
+            collision_rate=integrator_settings.collision_rate,
+            n_steps=integrator_settings.n_steps.m,
+            reassign_velocities=integrator_settings.reassign_velocities,
+            n_restart_attempts=integrator_settings.n_restart_attempts,
+            constraint_tolerance=integrator_settings.constraint_tolerance,
         )
 
         ## Create sampler
