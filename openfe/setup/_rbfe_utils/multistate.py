@@ -91,6 +91,8 @@ class HybridCompatibilityMixin(object):
             warnings.warn(wmsg)
             n_replicas = n_states
 
+        self.n_replicas = n_replicas
+
         lambda_schedule = lambda_protocol.lambda_schedule
         if len(lambda_schedule) != n_states:
             errmsg = ("length of lambda_schedule must match the number of "
