@@ -151,15 +151,15 @@ class OpenMMEngineSettings(BaseModel):
 
     Attributes
     ----------
-    compute_platform : str
-      Which compute platform to perform the simulation on. If 'fastest', the
-      fastest compute platform available will be chosen. Default 'fastest'.
+    compute_platform : str, optional
+      Which compute platform to perform the simulation on. If None, the
+      fastest compute platform available will be chosen. Default None.
 
     TODO
     ----
     * In the future make precision and deterministic forces user defined too.
     """
-    compute_platform = 'fastest'
+    compute_platform: Optional[str] = None
 
 
 class SamplerSettings(BaseModel):
