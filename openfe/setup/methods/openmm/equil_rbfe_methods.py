@@ -612,11 +612,24 @@ class RelativeLigandTransform(FEMethod):
             rigidWater=self._settings.system_settings.rigid_water,
         )
 
+        # crate stateA topology
         stateA_topology = stateA_modeller.getTopology()
 
-        # TODO: Algorithm this magic number
-        # We center the system by adding (14, 14, 14) [box is ~ 28.6 A per side]
-        stateA_positions = stateA_modeller.getPositions() + np.array([14, 14, 14]) * unit.angstrom
+        def get_center_offset(omm_system):
+            """Helper function to get the centering offset for a cubic box.
+
+            TODO
+            ----
+            * Deal with non-cubic boxes
+            """
+            # Cubic so we can safely assume the boxes are the same length
+            edge_length = omm_system.GetDefaultPeriodicBoxVectors()[0][0]
+            edge_nm = edge_length.value_in_unit(unit.nanometer)
+            return np.array(edge_nm, edge_nm, edge_nm) * unit.nanometer
+
+        # Center the positions in the middle of the box by shifting by offset
+        center_offset = get_center_offset(stateA_system)
+        stateA_positions = stateA_modeller.getPositions() + center_offset
 
         # Remove the ligand from state A and replace with state B ligand
         stateB_topology = _rbfe_utils.append_new_topology_item(
