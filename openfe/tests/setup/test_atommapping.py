@@ -35,27 +35,29 @@ def test_draw_mapping_svg(tmpdir, other_mapping):
 
 
 class TestLigandAtomMappingSerialization:
-    def test_to_dict(self, simple_mapping):
-        d = simple_mapping.to_dict()
+    def test_to_dict(self, benzene_phenol_mapping):
+        d = benzene_phenol_mapping.to_dict()
 
         assert isinstance(d, dict)
 
-    def test_deserialize_roundtrip(self, simple_mapping, other_mapping):
+    def test_deserialize_roundtrip(self, benzene_phenol_mapping,
+                                   benzene_anisole_mapping):
 
-        roundtrip = LigandAtomMapping.from_dict(simple_mapping.to_dict())
+        roundtrip = LigandAtomMapping.from_dict(
+                        benzene_phenol_mapping.to_dict())
 
-        assert roundtrip == simple_mapping
+        assert roundtrip == benzene_phenol_mapping
 
         # We don't check coordinates since that's already done in guefe for
         # SmallMoleculeComponent
 
-        assert roundtrip != other_mapping
+        assert roundtrip != benzene_anisole_mapping
 
-    def test_file_roundtrip(self, simple_mapping, tmpdir):
+    def test_file_roundtrip(self, benzene_phenol_mapping, tmpdir):
 
         with tmpdir.as_cwd():
             with open('tmpfile.json', 'w') as f:
-                f.write(simple_mapping.to_json())
+                f.write(benzene_phenol_mapping.to_json())
 
             with open('tmpfile.json', 'r') as f:
                 d = json.load(f)
@@ -63,4 +65,4 @@ class TestLigandAtomMappingSerialization:
             assert isinstance(d, dict)
             roundtrip = LigandAtomMapping.from_dict(d)
 
-            assert roundtrip == simple_mapping
+            assert roundtrip == benzene_phenol_mapping
