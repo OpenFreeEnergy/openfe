@@ -631,13 +631,15 @@ class RelativeLigandTransform(FEMethod):
         center_offset = get_center_offset(stateA_system)
         stateA_positions = stateA_modeller.getPositions() + center_offset
 
-        # Remove the ligand from state A and replace with state B ligand
+        ## Create OpenMM system + topology + positions for "B" system
+        # stateB topology from stateA (replace out the ligands)
         stateB_topology = _rbfe_utils.append_new_topology_item(
             stateA_topology,
             stateB_openff_ligand.to_topology().to_openmm(),
             exclude_residue_name=stateA_openff_ligand.name,
         )
 
+        # Create the system
         stateB_system = omm_forcefield_stateB.createSystem(
             stateB_topology,
             nonbondedMethod=nonbonded_method,
@@ -646,24 +648,28 @@ class RelativeLigandTransform(FEMethod):
             rigidWater=self._settings.system_settings.rigid_water,
         )
 
-        # Define mappings between the two systems
+        # Define correspondence mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
             self._mapping.molA_to_molB,
             stateA_system, stateA_topology, stateA_openff_ligand.name,
             stateB_system, stateB_topology, stateB_openff_ligand.name,
-            # TODO: Are these settings?
+            # These are non-optional settings for this method
             fix_constraints=True,
             remove_element_changes=True,
         )
 
+        # Finally get the positions
         stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             insert_positions=stateB_openff_ligand.conformers[0],
-            # TODO: Remove this magic number
-            shift_insert=np.array([14, 14, 14]),
+            shift_insert=center_offset,
         )
 
+        ## Create the hybrid topology
+        # Get alchemical settings
         alchem_settings = self._settings.alchemical_settings
+
+        # Create the hybrid topology factory
         hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
@@ -672,7 +678,6 @@ class RelativeLigandTransform(FEMethod):
             use_dispersion_correction=alchem_settings.use_dispersion_correction,
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
-            # TODO: Is this setting missing?
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             softcore_electrostatics=alchem_settings.softcore_electrostatics,
             softcore_electrostatics_alpha=alchem_settings.softcore_electrostatics_alpha,
@@ -680,7 +685,9 @@ class RelativeLigandTransform(FEMethod):
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
             flatten_torsions=alchem_settings.flatten_torsions,
         )
-        hybrid_factory.addForce(
+
+        # Add a barostat to the hybrid system
+        hybrid_factory.hybrid_system.addForce(
             openmm.MonteCarloBarostat(
                 self._settings.barostat_settings.pressure.to(unit.bar).m,
                 self._settings.integrator_settings.temperature.m,
