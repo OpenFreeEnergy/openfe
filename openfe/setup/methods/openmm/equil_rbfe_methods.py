@@ -585,11 +585,17 @@ class RelativeLigandTransform(FEMethod):
             ionicStrength=self._stateA.components['solvent'].concentration,
         )
 
-        # Create OpenMM system + topology + initial positions for "A" system
+        ## Create OpenMM system + topology + initial positions for "A" system
+        # Get nonbond method
         nonbonded_method = {
             # TODO: Other methods here
             'PME': app.PME,
+            'NoCutoff': app.NoCutoff,
+            'CutoffNonPeriodic': app.CutoffNonPeriodic,
+            'CutoffPeriodic': app.CutoffPeriodic,
+            'Ewald': app.Ewald
         }[self._settings.system_settings.nonbonded_method]
+
         constraints = {
             # TODO: Other constraints here
             'HBonds': app.HBonds,
