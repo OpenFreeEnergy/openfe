@@ -11,12 +11,14 @@ dependencies:
   - pytest
   - pytest-xdist
   - pytest-cov
+  - pydantic
   - coverage
   - openff-toolkit
+  - openff-units
   - click
   - openeye-toolkits
   - typing-extensions
-  - gufe
   - lomap2
   - pip:
+    - git+https://github.com/OpenFreeEnergy/gufe@main
     - plugcli

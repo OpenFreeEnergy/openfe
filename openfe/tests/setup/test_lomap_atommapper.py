@@ -21,7 +21,7 @@ def test_simple(lomap_basic_test_files):
     assert isinstance(mapping, openfe.setup.LigandAtomMapping)
     # methylcyclohexane to toluene is a 1:1 mapping between all atoms
     # so 7 values should be present
-    assert len(mapping.mol1_to_mol2) == 7
+    assert len(mapping.molA_to_molB) == 7
 
 
 def test_generator_length(lomap_basic_test_files):
