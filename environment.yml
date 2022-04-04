@@ -15,6 +15,7 @@ dependencies:
   - coverage
   - openff-toolkit
   - openff-units
+  - openmmforcefields
   - click
   - openeye-toolkits
   - typing-extensions
