@@ -14,6 +14,7 @@ TODO
 from __future__ import annotations
 
 import os
+import logging
 
 import numpy as np
 import openmm
@@ -38,6 +39,9 @@ from openfe.setup import _rbfe_utils
 # this isn't convertible to time (e.g ps) and is used to not confuse these two
 # definitions of "duration" within a simulation
 unit.define('timestep = [timestep] = _ = timesteps')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class SystemSettings(BaseModel):
@@ -546,13 +550,17 @@ class RelativeLigandTransform(FEMethod):
           running the simulation.
 
         verbose : bool
-          Verbose output of the simulation progress.
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
 
         Returns
         -------
         bool
           True if everything went well.
         """
+        if verbose:
+            logger.info("creating hybrid system")
+
         # 0. General setup and settings dependency resolution step
 
         # a. check equilibration and production are divisible by n_steps
@@ -847,12 +855,21 @@ class RelativeLigandTransform(FEMethod):
             # add some logging for verbosity
 
             # minimize
+            if verbose:
+                logger.info("minimizing systems")
+
             sampler.minimize(max_iterations=self._settings.simulation_settings.minimization_steps)
 
             # equilibrate
+            if verbose:
+                logger.info("equilibrating systems")
+
             sampler.equilibrate(equil_steps.m % mc_steps)
 
             # production
+            if verbose:
+                logger.info("running production phase")
+
             sampler.extend(equil_steps.m % mc_steps)
 
             return True

@@ -69,7 +69,7 @@ def test_create_protocol(benzene_system, toluene_system,
 
 
 def test_dry_run_ligand(benzene_system, toluene_system,
-                        benzene_to_toluene_mapping):
+                        benzene_to_toluene_mapping, tmpdir):
     # this might be a bit time consuming
     protocol = openmm.RelativeLigandTransform(
             stateA=benzene_system,
@@ -78,11 +78,12 @@ def test_dry_run_ligand(benzene_system, toluene_system,
             settings=openmm.RelativeLigandTransform.get_default_settings(),
     )
     # Returns True if everything is OK
-    assert protocol.run(dry=True)
+    with tmpdir.as_cwd():
+        assert protocol.run(dry=True)
 
 
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
-                         benzene_to_toluene_mapping):
+                         benzene_to_toluene_mapping, tmpdir):
     # this will be very time consuming
     protocol = openmm.RelativeLigandTransform(
             stateA=benzene_complex_system,
@@ -91,7 +92,8 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
             settings=openmm.RelativeLigandTransform.get_default_settings(),
     )
     # Returns True if everything is OK
-    assert protocol.run(dry=True)
+    with tmpdir.as_cwd():
+        assert protocol.run(dry=True)
 
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
