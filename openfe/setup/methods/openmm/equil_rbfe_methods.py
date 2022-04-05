@@ -480,12 +480,12 @@ class RelativeLigandTransform(FEMethod):
                 raise ValueError(f"Missing ligand in state {label}")
         # check that both states have same solvent
         # TODO: this is not always true if state A or B have a defined box etc... logic to be expanded
-        if not stateA.components['solvent'] == stateB.components['solvent']:
+        if not stateA['solvent'] == stateB['solvent']:
             raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
-        if stateA.components['ligand'] != ligandmapping.molA:
+        if stateA['ligand'] != ligandmapping.molA:
             raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB.components['ligand'] != ligandmapping.molB:
+        if stateB['ligand'] != ligandmapping.molB:
             raise ValueError("Ligand in state B doesn't match mapping")
 
     @classmethod
@@ -571,8 +571,9 @@ class RelativeLigandTransform(FEMethod):
 
         equil_time = sim_settings.equilibration_length.to('femtosecond')
         equil_steps = round(equil_time / timestep)
-        
-        if (equil_steps.m % mc_steps) != 0:
+
+        # mypy gets the return type of round wrong, it's a Quantity
+        if (equil_steps.m % mc_steps) != 0:  # type: ignore
             errmsg = (f"Equilibration time {equil_time} should contain a "
                       "number of steps divisible by the number of integrator "
                       f"timesteps between MC moves {mc_steps}")
@@ -581,15 +582,15 @@ class RelativeLigandTransform(FEMethod):
         prod_time = sim_settings.equilibration_length.to('femtosecond')
         prod_steps = round(prod_time / timestep)
 
-        if (prod_steps.m % mc_steps) != 0:
+        if (prod_steps.m % mc_steps) != 0:  # type: ignore
             errmsg = (f"Production time {prod_time} should contain a "
                       "number of steps divisible by the number of integrator "
                       f"timesteps between MC moves {mc_steps}")
             raise ValueError(errmsg)
 
         # b. get the openff objects for the ligands
-        stateA_openff_ligand = self._stateA.components['ligand'].to_openff()
-        stateB_openff_ligand = self._stateB.components['ligand'].to_openff()
+        stateA_openff_ligand = self._stateA['ligand'].to_openff()
+        stateB_openff_ligand = self._stateB['ligand'].to_openff()
 
         #  1. Get smirnoff template generators
         smirnoff_stateA = SMIRNOFFTemplateGenerator(
@@ -639,13 +640,13 @@ class RelativeLigandTransform(FEMethod):
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
         #    solute to the edges of the box
-        conc = self._stateA.components['solvent'].ion_concentration
+        conc = self._stateA['solvent'].ion_concentration
         if conc is None:
             conc = 0.0 * unit.molar
-        pos = self._stateA.components['solvent'].positive_ion
+        pos = self._stateA['solvent'].positive_ion
         if pos is None:
             pos = 'Na+'
-        neg = self._stateA.components['solvent'].negative_ion
+        neg = self._stateA['solvent'].negative_ion
         if neg is None:
             neg = 'Cl-'
 
@@ -851,9 +852,6 @@ class RelativeLigandTransform(FEMethod):
         sampler.sampler_context_cache = sampler_context_cache
 
         if not dry:
-            # TODO
-            # add some logging for verbosity
-
             # minimize
             if verbose:
                 logger.info("minimizing systems")
@@ -864,13 +862,13 @@ class RelativeLigandTransform(FEMethod):
             if verbose:
                 logger.info("equilibrating systems")
 
-            sampler.equilibrate(equil_steps.m % mc_steps)
+            sampler.equilibrate(equil_steps.m % mc_steps)  # type: ignore
 
             # production
             if verbose:
                 logger.info("running production phase")
 
-            sampler.extend(equil_steps.m % mc_steps)
+            sampler.extend(equil_steps.m % mc_steps)  # type: ignore
 
             return True
         else:
