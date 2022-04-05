@@ -446,6 +446,12 @@ class RelativeLigandTransform(FEMethod):
     """Calculates the relative free energy of an alchemical ligand transformation.
 
     """
+    _stateA: ChemicalSystem
+    _stateB: ChemicalSystem
+    _mapping: LigandAtomMapping
+    _settings: RelativeLigandTransformSettings
+    _is_complex: bool
+
     def __init__(self,
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
@@ -478,8 +484,17 @@ class RelativeLigandTransform(FEMethod):
                 raise ValueError(f"Missing solvent in state {label}")
             if 'ligand' not in state.components:
                 raise ValueError(f"Missing ligand in state {label}")
+        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
+        if nproteins == 1:  # only one state has a protein defined
+            raise ValueError("Only one state had a protein component")
+        elif nproteins == 2:
+            if stateA['protein'] != stateB['protein']:
+                raise ValueError("Proteins in each state aren't compatible")
+        self._is_complex = nproteins == 2
+
         # check that both states have same solvent
-        # TODO: this is not always true if state A or B have a defined box etc... logic to be expanded
+        # TODO: defined box compatibility check
+        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
         if not stateA['solvent'] == stateB['solvent']:
             raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components

@@ -183,3 +183,36 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
             ligandmapping=mapping,
             settings=openmm.RelativeLigandTransform.get_default_settings(),
         )
+
+
+def test_complex_mismatch(benzene_system, toluene_complex_system,
+                          benzene_to_toluene_mapping):
+    # only one complex
+    with pytest.raises(ValueError):
+        _ = openmm.RelativeLigandTransform(
+            stateA=benzene_system,
+            stateB=toluene_complex_system,
+            ligandmapping=benzene_to_toluene_mapping,
+            settings=openmm.RelativeLigandTransform.get_default_settings(),
+        )
+
+
+def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
+                          benzene_to_toluene_mapping):
+    # hack one protein to be labelled differently
+    prot = toluene_complex_system['protein']
+    alt_prot = setup.ProteinComponent(prot._openmm_top, prot._openmm_pos,
+                                      name='Mickey Mouse')
+    alt_toluene_complex_system = setup.ChemicalSystem(
+                 {'ligand': toluene_complex_system['ligand'],
+                  'solvent': toluene_complex_system['solvent'],
+                  'protein': alt_prot}
+    )
+
+    with pytest.raises(ValueError):
+        _ = openmm.RelativeLigandTransform(
+            stateA=benzene_complex_system,
+            stateB=alt_toluene_complex_system,
+            ligandmapping=benzene_to_toluene_mapping,
+            settings=openmm.RelativeLigandTransform.get_default_settings(),
+        )
