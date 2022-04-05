@@ -386,6 +386,7 @@ class GraphDrawing:
 
     def _get_nodes_extent(self):
         """Find the extent of all nodes (used in setting bounds)"""
+        # TODO: remove; no longer needed
         min_xs, max_xs, min_ys, max_ys = zip(*(
             node.extent for node in self.nodes.values()
         ))
@@ -393,7 +394,9 @@ class GraphDrawing:
 
     def reset_bounds(self):
         """Set the bounds of the matplotlib Axes to include all nodes"""
-        min_x, max_x, min_y, max_y = self._get_nodes_extent()
+        bbox = self.ax.get_tightbbox()
+        trans = self.ax.transData.invert()
+        [[min_x, min_y], [max_x, max_y]] = trans.transform(bbox)
         self.ax.set_xlim(min_x, max_x)
         self.ax.set_ylim(min_y, max_y)
 
