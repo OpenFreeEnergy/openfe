@@ -661,7 +661,6 @@ class RelativeLigandTransform(FEMethod):
 
         # Center the positions in the middle of the box by shifting by offset
         center_offset = get_center_offset(stateA_system)
-        #center_offset = np.array([14, 14, 14])
         stateA_positions = stateA_modeller.getPositions() + center_offset
 
         ## Create OpenMM system + topology + positions for "B" system
@@ -748,6 +747,7 @@ class RelativeLigandTransform(FEMethod):
             self._settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=self._settings.simulation_settings.checkpoint_interval.m,
+            checkpoint_storage=self._settings.simulation_settings.checkpoint_storage,
         )
 
         ## Get platform and context caches
@@ -777,23 +777,34 @@ class RelativeLigandTransform(FEMethod):
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
+            splitting=integrator_settings.splitting
         )
 
         ## Create sampler
-        # TODO - this needs to variably allow for a SAMS sampler too
-        sampler = _rbfe_utils.multistate.HybridRepexSampler(
-            mcmc_moves=integrator,
-            hybrid_factory=hybrid_factory,
-        )
-
-        # setup sampler and feed it the context caches
-        sampler.setup(
-            reporter=reporter,
-            platform=platform,
-            lambda_protocol=lambdas,
-            temperature=to_openmm(self._settings.integrator_settings.temperature),
-            endstates=alchem_settings.unsampled_endstates,
-        )
+        sampler_settings = self._settings.sampler_settings
+        
+        if sampler_settings.sampler_method == "repex":
+            sampler = _rbfe_utils.multistate.HybridRepexSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+            )
+            # TODO - update to more verbosely pass in n_replicas and n_states, which will avoid
+            # duplication in the SAMS code path
+            sampler.setup(
+                reporter=reporter,
+                platform=platform,
+                lambda_protocol=lambdas,
+                temperature=to_openmm(self._settings.integrator_settings.temperature),
+                endstates=alchem_settings.unsampled_endstates,
+            )
+        elif sampler_settings.sampler_method == "sams":
+            # TODO - add SAMS sampler - see PR #125
+            raise AttributeError(f"SAMS sampler is not available yet")
+        else:
+            raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
 
         sampler.energy_context_cache = energy_context_cache
         sampler.sampler_context_cache = sampler_context_cache
