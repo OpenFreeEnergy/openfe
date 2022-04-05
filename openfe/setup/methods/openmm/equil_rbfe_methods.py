@@ -877,13 +877,13 @@ class RelativeLigandTransform(FEMethod):
             if verbose:
                 logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps.m % mc_steps))  # type: ignore
+            sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
 
             # production
             if verbose:
                 logger.info("running production phase")
 
-            sampler.extend(int(equil_steps.m % mc_steps))  # type: ignore
+            sampler.extend(int(equil_steps.m / mc_steps))  # type: ignore
 
             return True
         else:
