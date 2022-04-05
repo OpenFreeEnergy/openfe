@@ -582,21 +582,19 @@ class RelativeLigandTransform(FEMethod):
 
 
         ##  Model state A
-        # todo - add logic for PDBFile once it's been fixed upstream
-        # if 'protein' in self._stateA.components:
-        #     pdbfile = self._stateA.components['protein'].to_openmm_PDBFile()
-        #     stateA_modeller = app.Modeller(pdbfile.topology,
-        #                                    pdbfile.positions)
-        #     stateA_modeller.add(
-        #         stateA_openff_ligand.to_topology().to_openmm(),
-        #         stateA_openff_ligand.conformers[0],
-        #     )
-        # else:
-        # --- add below --
-        stateA_modeller = app.Modeller(
-            stateA_openff_ligand.to_topology().to_openmm(),
-            stateA_openff_ligand.conformers[0],
-        )
+        if 'protein' in self._stateA.components:
+            pdbfile = self._stateA.components['protein'].to_openmm_PDBFile()
+            stateA_modeller = app.Modeller(pdbfile.topology,
+                                           pdbfile.positions)
+            stateA_modeller.add(
+                stateA_openff_ligand.to_topology().to_openmm(),
+                stateA_openff_ligand.conformers[0],
+            )
+        else:
+            stateA_modeller = app.Modeller(
+                stateA_openff_ligand.to_topology().to_openmm(),
+                stateA_openff_ligand.conformers[0],
+            )
 
         # Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
         # solute to the edges of the box
