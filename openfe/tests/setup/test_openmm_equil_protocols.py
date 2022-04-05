@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+from openff.units import unit
 
 from openfe import setup
 from openfe.setup.methods import openmm
@@ -9,7 +10,10 @@ from openfe.setup.methods import openmm
 def benzene_system(benzene_modifications):
     return setup.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
-         'solvent': setup.SolventComponent(ions=('Na', 'Cl'))},
+         'solvent': setup.SolventComponent(
+             positive_ion='Na', negative_ion='Cl',
+             ion_concentration=0.15 * unit.molar)
+        },
     )
 
 
@@ -17,7 +21,9 @@ def benzene_system(benzene_modifications):
 def benzene_complex_system(benzene_modification, T4_protein_component):
     return setup.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
-         'solvent': setup.SolventComponent(ions=('Na', 'Cl')),
+         'solvent': setup.SolventComponent(
+             positive_ion='Na', negative_ion='Cl',
+             ion_concentration=0.15 * unit.molar),
          'protein': T4_protein_component,}
     )
 
@@ -26,7 +32,10 @@ def benzene_complex_system(benzene_modification, T4_protein_component):
 def toluene_system(benzene_modifications):
     return setup.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
-         'solvent': setup.SolventComponent(ions=('Na', 'Cl'))},
+         'solvent': setup.SolventComponent(
+             positive_ion='Na', negative_ion='Cl',
+             ion_concentration=0.15 * unit.molar),
+        },
     )
 
 
@@ -34,7 +43,9 @@ def toluene_system(benzene_modifications):
 def toluene_complex_system(benzene_modification, T4_protein_component):
     return setup.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
-         'solvent': setup.SolventComponent(ions=('Na', 'Cl')),
+         'solvent': setup.SolventComponent(
+             positive_ion='Na', negative_ion='Cl',
+             ion_concentration=0.15 * unit.molar),
          'protein': T4_protein_component,}
     )
 
