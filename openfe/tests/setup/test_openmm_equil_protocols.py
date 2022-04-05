@@ -50,6 +50,19 @@ def test_create_protocol(benzene_system, toluene_system,
     assert protocol
 
 
+def test_dry_run_ligand(benzene_system, toluene_system,
+                        benzene_to_toluene_mapping):
+    # this might be a bit time consuming
+    protocol = openmm.RelativeLigandTransform(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            ligandmapping=benzene_to_toluene_mapping,
+            settings=openmm.RelativeLigandTransform.get_default_settings(),
+    )
+    # Returns True if everything is OK
+    assert protocol.run(dry=True)
+
+
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
     # state B doesn't have a ligand component
     stateB = setup.ChemicalSystem({'solvent': setup.SolventComponent()})
