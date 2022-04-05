@@ -828,8 +828,8 @@ class RelativeLigandTransform(FEMethod):
 
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
-            timestep=integrator_settings.timestep,
-            collision_rate=integrator_settings.collision_rate,
+            timestep=to_openmm(integrator_settings.timestep),
+            collision_rate=to_openmm(integrator_settings.collision_rate),
             n_steps=integrator_settings.n_steps.m,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
