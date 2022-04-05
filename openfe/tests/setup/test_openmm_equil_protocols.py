@@ -18,7 +18,7 @@ def benzene_system(benzene_modifications):
 
 
 @pytest.fixture
-def benzene_complex_system(benzene_modification, T4_protein_component):
+def benzene_complex_system(benzene_modifications, T4_protein_component):
     return setup.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
          'solvent': setup.SolventComponent(
@@ -40,7 +40,7 @@ def toluene_system(benzene_modifications):
 
 
 @pytest.fixture
-def toluene_complex_system(benzene_modification, T4_protein_component):
+def toluene_complex_system(benzene_modifications, T4_protein_component):
     return setup.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
          'solvent': setup.SolventComponent(
@@ -139,7 +139,8 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
     # the solvents are different
     stateB = setup.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
-         'solvent': setup.SolventComponent(ions=('K', 'Cl'))},
+         'solvent': setup.SolventComponent(
+             positive_ion='K', negative_ion='Cl')}
     )
 
     with pytest.raises(ValueError, match="Solvents aren't identical"):

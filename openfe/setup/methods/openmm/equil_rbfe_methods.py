@@ -23,7 +23,7 @@ from openff.units.openmm import to_openmm
 import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -205,7 +205,7 @@ class SamplerSettings(BaseModel):
         arbitrary_types_allowed = True
 
     sampler_method = "repex"
-    online_analysis_interval = Union[int, None]
+    online_analysis_interval: Optional[int] = None
     online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
     online_analysis_minimum_iterations = 50
     flatness_criteria = 'logZ-flatness'
@@ -361,7 +361,7 @@ class SimulationSettings(BaseModel):
     output_filename = 'rbfe.nc'
     output_indices = 'all'
     checkpoint_interval = 50 * unit.timestep
-    checkpoint_storage = Union[str, None]
+    checkpoint_storage: Optional[str] = None
 
     @validator('equilibration_length', 'production_length')
     def is_time(cls, v):
@@ -784,6 +784,7 @@ class RelativeLigandTransform(FEMethod):
         )
 
         #  a. Create the multistate reporter
+        print(self._settings.simulation_settings.checkpoint_storage, type(self._settings.simulation_settings.checkpoint_storage))
         reporter = multistate.MultiStateReporter(
             self._settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,

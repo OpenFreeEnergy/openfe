@@ -134,6 +134,6 @@ def benzene_anisole_mapping(benzene_transforms, benzene_maps):
 @pytest.fixture(scope='session')
 def T4_protein_component():
     with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
-        comp = gufe.ProteinComponent.from_pdbfile(fn, name="T4_protein")
+        comp = gufe.ProteinComponent.from_pdbfile(str(fn), name="T4_protein")
 
     return comp
