@@ -325,9 +325,15 @@ class SimulationSettings(BaseModel):
     minimization_steps : int
       Number of minimization steps to perform. Default 10000.
     equilibration_length : float * unit.picosecond
-      Length of the equilibration phase in units of time.
+      Length of the equilibration phase in units of time. The total number of
+      steps from this equilibration length (i.e.
+      ``equilibration_length`` / :class:`IntegratorSettings.timestep`) must be
+      a multiple of the value defined for :class:`IntegratorSettings.n_steps`.
     production_length : float * unit.picosecond
-      Length of the production phase in units of time.
+      Length of the production phase in units of time. The total number of
+      steps from this production length (i.e.
+      ``production_length`` / :class:`IntegratorSettings.timestep`) must be
+      a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
     output_filename : str
       Path to the storage file for analysis. Default 'rbfe.nc'.
     output_indices : str
@@ -547,10 +553,37 @@ class RelativeLigandTransform(FEMethod):
         bool
           True if everything went well.
         """
+        # 0. General setup and settings dependency resolution step
+
+        # a. check equilibration and production are divisible by n_steps
+
+        sim_settings = self._settings.simulation_settings
+        timestep = self._settings.integrator_settings.timestep
+        mc_steps = self._settings.integrator_settings.n_steps.m
+
+        equil_time = sim_settings.equilibration_length.to('femtosecond')
+        equil_steps = round(equil_time / timestep)
+        
+        if (equil_steps.m % mc_steps) != 0:
+            errmsg = (f"Equilibration time {equil_time} should contain a "
+                      "number of steps divisible by the number of integrator "
+                      f"timesteps between MC moves {mc_steps}")
+            raise ValueError(errmsg)
+
+        prod_time = sim_settings.equilibration_length.to('femtosecond')
+        prod_steps = round(prod_time / timestep)
+
+        if (prod_steps.m % mc_steps) != 0:
+            errmsg = (f"Production time {prod_time} should contain a "
+                      "number of steps divisible by the number of integrator "
+                      f"timesteps between MC moves {mc_steps}")
+            raise ValueError(errmsg)
+
+        # b. get the openff objects for the ligands
         stateA_openff_ligand = self._stateA.components['ligand'].to_openff()
         stateB_openff_ligand = self._stateB.components['ligand'].to_openff()
 
-        ## Get smirnoff template generators
+        #  1. Get smirnoff template generators
         smirnoff_stateA = SMIRNOFFTemplateGenerator(
             forcefield=self._settings.topology_settings.forcefield['ligand'],
             molecules=[stateA_openff_ligand],
@@ -561,8 +594,8 @@ class RelativeLigandTransform(FEMethod):
             molecules=[stateB_openff_ligand],
         )
 
-        ## Create forece fields and register them
-        # state A
+        # 2. Create forece fields and register them
+        #  a. state A
         omm_forcefield_stateA = app.ForceField(
             *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
@@ -571,7 +604,7 @@ class RelativeLigandTransform(FEMethod):
         omm_forcefield_stateA.registerTemplateGenerator(
                 smirnoff_stateA.generator)
 
-        # state B
+        #  b. state B
         omm_forcefield_stateB = app.ForceField(
             *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
@@ -581,7 +614,7 @@ class RelativeLigandTransform(FEMethod):
                 smirnoff_stateB.generator)
 
 
-        ##  Model state A
+        # 3. Model state A
         if 'protein' in self._stateA.components:
             pdbfile = self._stateA.components['protein'].to_openmm_PDBFile()
             stateA_modeller = app.Modeller(pdbfile.topology,
@@ -596,8 +629,8 @@ class RelativeLigandTransform(FEMethod):
                 stateA_openff_ligand.conformers[0],
             )
 
-        # Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
-        # solute to the edges of the box
+        # 4. Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
+        #    solute to the edges of the box
         conc = self._stateA.components['solvent'].ion_concentration
         if conc is None:
             conc = 0.0 * unit.molar
@@ -616,8 +649,8 @@ class RelativeLigandTransform(FEMethod):
             ionicStrength=to_openmm(conc),
         )
 
-        ## Create OpenMM system + topology + initial positions for "A" system
-        # Get nonbond method
+        # 5.  Create OpenMM system + topology + initial positions for "A" system
+        #  a. Get nonbond method
         nonbonded_method = {
             'PME': app.PME,
             'NoCutoff': app.NoCutoff,
@@ -626,7 +659,7 @@ class RelativeLigandTransform(FEMethod):
             'Ewald': app.Ewald
         }[self._settings.system_settings.nonbonded_method]
 
-        # Get the constraint method
+        #  b. Get the constraint method
         constraints = {
             'HBonds': app.HBonds,
             'None': None,
@@ -635,7 +668,7 @@ class RelativeLigandTransform(FEMethod):
             'HAngles': app.HAngles
         }[self._settings.system_settings.constraints]
 
-        # create the stateA System
+        #  c. create the stateA System
         stateA_system = omm_forcefield_stateA.createSystem(
             stateA_modeller.topology,
             nonbondedMethod=nonbonded_method,
@@ -644,7 +677,7 @@ class RelativeLigandTransform(FEMethod):
             rigidWater=self._settings.system_settings.rigid_water,
         )
 
-        # crate stateA topology
+        #  d. crate stateA topology
         stateA_topology = stateA_modeller.getTopology()
 
         def get_center_offset(omm_system):
@@ -659,19 +692,19 @@ class RelativeLigandTransform(FEMethod):
             edge_nm = edge_length.value_in_unit(omm_unit.nanometer) / 2
             return np.array([edge_nm, edge_nm, edge_nm]) * omm_unit.nanometer
 
-        # Center the positions in the middle of the box by shifting by offset
+        #  e. Center the positions in the middle of the box by shifting by offset
         center_offset = get_center_offset(stateA_system)
         stateA_positions = stateA_modeller.getPositions() + center_offset
 
-        ## Create OpenMM system + topology + positions for "B" system
-        # stateB topology from stateA (replace out the ligands)
+        # 6.  Create OpenMM system + topology + positions for "B" system
+        #  a. stateB topology from stateA (replace out the ligands)
         stateB_topology = _rbfe_utils.topologyhelpers.append_new_topology_item(
             stateA_topology,
             stateB_openff_ligand.to_topology().to_openmm(),
             exclude_residue_name=stateA_openff_ligand.name,
         )
 
-        # Create the system
+        #  b. Create the system
         stateB_system = omm_forcefield_stateB.createSystem(
             stateB_topology,
             nonbondedMethod=nonbonded_method,
@@ -680,7 +713,7 @@ class RelativeLigandTransform(FEMethod):
             rigidWater=self._settings.system_settings.rigid_water,
         )
 
-        # Define correspondence mappings between the two systems
+        #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
             self._mapping.molA_to_molB,
             stateA_system, stateA_topology, stateA_openff_ligand.name,
@@ -690,7 +723,7 @@ class RelativeLigandTransform(FEMethod):
             remove_element_changes=True,
         )
 
-        # Finally get the positions
+        #  d. Finally get the positions
         stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=stateA_positions,
@@ -698,11 +731,11 @@ class RelativeLigandTransform(FEMethod):
             shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
         )
 
-        ## Create the hybrid topology
-        # Get alchemical settings
+        # 7. Create the hybrid topology
+        #  a. Get alchemical settings
         alchem_settings = self._settings.alchemical_settings
 
-        # Create the hybrid topology factory
+        #  b. Create the hybrid topology factory
         hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
@@ -719,7 +752,7 @@ class RelativeLigandTransform(FEMethod):
             flatten_torsions=alchem_settings.flatten_torsions,
         )
 
-        # Add a barostat to the hybrid system
+        #  c. Add a barostat to the hybrid system
         hybrid_factory.hybrid_system.addForce(
             openmm.MonteCarloBarostat(
                 self._settings.barostat_settings.pressure.to(unit.bar).m,
@@ -728,7 +761,7 @@ class RelativeLigandTransform(FEMethod):
             )
         )
 
-        ## Create lambda schedule
+        # 8. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
         lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
@@ -736,13 +769,13 @@ class RelativeLigandTransform(FEMethod):
             windows=alchem_settings.lambda_windows
         )
 
-        ## Create the multistate reporter
+        # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
         selection_indices = hybrid_factory.hybrid_topology.select(
                 self._settings.simulation_settings.output_indices
         )
 
-        # Create the multistate reporter
+        #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
             self._settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
@@ -750,13 +783,13 @@ class RelativeLigandTransform(FEMethod):
             checkpoint_storage=self._settings.simulation_settings.checkpoint_storage,
         )
 
-        ## Get platform and context caches
+        # 10. Get platform and context caches
         platform = _rbfe_utils.compute.get_openmm_platform(
             self._settings.engine_settings.compute_platform
         )
 
-        # Create context caches (energy + sampler)
-        # Note: these needs to exist on the compute node
+        #  a. Create context caches (energy + sampler)
+        #     Note: these needs to exist on the compute node
         energy_context_cache = openmmtools.cache.ContextCache(
             capacity=None, time_to_live=None, platform=platform,
         )
@@ -765,11 +798,11 @@ class RelativeLigandTransform(FEMethod):
             capacity=None, time_to_live=None, platform=platform,
         )
 
-        ## Set the integrator
-        # get integrator settings
+        # 11. Set the integrator
+        #  a. get integrator settings
         integrator_settings = self._settings.integrator_settings
 
-        # create langevin integrator
+        #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
             timestep=integrator_settings.timestep,
             collision_rate=integrator_settings.collision_rate,
@@ -780,7 +813,7 @@ class RelativeLigandTransform(FEMethod):
             splitting=integrator_settings.splitting
         )
 
-        ## Create sampler
+        # 12. Create sampler
         sampler_settings = self._settings.sampler_settings
         
         if sampler_settings.sampler_method == "repex":
@@ -816,9 +849,11 @@ class RelativeLigandTransform(FEMethod):
             # minimize
             sampler.minimize(max_iterations=self._settings.simulation_settings.minimization_steps)
 
-            # equilibrate - possibly on a tdqm loop so you can track progress?
+            # equilibrate
+            sampler.equilibrate(equil_steps.m % mc_steps)
 
-            # production - possibly on a tqdm loop so you can track progress?
+            # production
+            sampler.extend(equil_steps.m % mc_steps)
 
             return True
         else:
