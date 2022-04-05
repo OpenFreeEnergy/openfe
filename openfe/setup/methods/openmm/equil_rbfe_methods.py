@@ -429,7 +429,7 @@ class RelativeLigandTransformResults:
         """
         dG, _ = self._analyzer.get_free_energy()
         dG = (dG[0, -1] * self._analyzer.kT).in_units_of(
-            unit.kilocalories_per_mol)
+            omm_unit.kilocalories_per_mole)
 
         return dG
 
@@ -437,7 +437,7 @@ class RelativeLigandTransformResults:
         """The uncertainty/error in the dG value"""
         _, error = self._analyzer.get_free_energy()
         error = (error[0, -1] * self._analyzer.kT).in_units_of(
-            unit.kilocalories_per_mol)
+            omm_unit.kilocalories_per_mole)
 
         return error
 
