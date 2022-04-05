@@ -624,9 +624,9 @@ class RelativeLigandTransform(FEMethod):
 
         # 3. Model state A
         if 'protein' in self._stateA.components:
-            pdbfile = self._stateA.components['protein'].to_openmm_PDBFile()
-            stateA_modeller = app.Modeller(pdbfile.topology,
-                                           pdbfile.positions)
+            pdbfile = self._stateA['protein']
+            stateA_modeller = app.Modeller(pdbfile._openmm_top, # forgive me
+                                           pdbfile._openmm_pos)
             stateA_modeller.add(
                 stateA_openff_ligand.to_topology().to_openmm(),
                 stateA_openff_ligand.conformers[0],
@@ -784,7 +784,6 @@ class RelativeLigandTransform(FEMethod):
         )
 
         #  a. Create the multistate reporter
-        print(self._settings.simulation_settings.checkpoint_storage, type(self._settings.simulation_settings.checkpoint_storage))
         reporter = multistate.MultiStateReporter(
             self._settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
