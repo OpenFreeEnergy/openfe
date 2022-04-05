@@ -5,6 +5,7 @@ import string
 import pytest
 from importlib import resources
 from rdkit import Chem
+from openmm.app import PDBFile
 
 import gufe
 import openfe
@@ -128,3 +129,11 @@ def benzene_anisole_mapping(benzene_transforms, benzene_maps):
     molB = SmallMoleculeComponent(benzene_transforms['anisole'].to_rdkit())
     m = LigandAtomMapping(molA, molB, benzene_maps['anisole'])
     return m
+
+
+@pytest.fixture(scope='session')
+def T4_protein_component():
+    with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
+        comp = gufe.ProteinComponent.from_pdbfile(fn, name="T4_protein")
+
+    return comp
