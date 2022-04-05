@@ -427,7 +427,9 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     # copy over the old positions for mapped atoms
     new_pos_array[new_idxs, :] = old_pos_array[old_idxs, :]
     # copy over the new alchemical molecule positions
-    new_pos_array[new_mol_idxs, :] = add_pos_array + shift_insert
+    new_pos_array[new_mol_idxs, :] = add_pos_array
+    if shift_insert is not None:
+        new_pos_array[new_mol_idxs, :] += shift_insert
 
     # loop through all mapped atoms and make sure we don't deviate by more than
     # tolerance - not super necessary, but it's a nice sanity check that should

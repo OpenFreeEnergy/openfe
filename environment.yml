@@ -15,10 +15,12 @@ dependencies:
   - coverage
   - openff-toolkit
   - openff-units
+  - openmmforcefields
   - click
   - openeye-toolkits
   - typing-extensions
   - lomap2
+  - openmmtools
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
     - plugcli
