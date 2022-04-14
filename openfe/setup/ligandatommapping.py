@@ -86,9 +86,9 @@ class LigandAtomMapping(Serializable):
                 and self._annotations == other.annotations)
 
     def __repr__(self):
-        return (f"{self.__class__}(molA={self.molA}, molB={self.molB}, "
-                f"molA_to_molB={self.molA_to_molB}, "
-                f"annotations={self.annotations}")
+        return (f"{self.__class__.__name__}(molA={self.molA!r}, "
+                f"molB={self.molB!r}, molA_to_molB={self.molA_to_molB!r}, "
+                f"annotations={self.annotations!r})")
 
     @classmethod
     def from_perses(cls, perses_mapping):
