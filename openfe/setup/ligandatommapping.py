@@ -23,7 +23,7 @@ class LigandAtomMapping(Serializable):
     annotations : Dict[str, Any]
       Mapping of annotation identifier to annotation data. Annotations may
       contain arbitrary JSON-serializable data. Annotation identifiers
-      starting with ``ofe/`` may have special meaning in other parts of
+      starting with ``ofe-`` may have special meaning in other parts of
       OpenFE.
     """
     def __init__(
