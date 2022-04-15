@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
 from typing import Iterable
+import itertools
 
 from openfe.setup import Network, SmallMoleculeComponent, LigandAtomMapper
 
@@ -48,17 +49,20 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
         best_score = math.inf
         best_mapping = None
 
-        for mapper in mappers:
-            for mapping in mapper.suggest_mappings(central_ligand, ligand):
-                if not scorer:
-                    best_mapping = mapping
-                    break
-                score = scorer(mapping)
-                mapping = mapping.with_annotations({"ofe-score": score})
+        for mapping in itertools.chain.from_iterable(
+            mapper.suggest_mappings(central_ligand, ligand)
+            for mapper in mappers
+        ):
+            if not scorer:
+                best_mapping = mapping
+                break
 
-                if score < best_score:
-                    best_mapping = mapping
-                    best_score = score
+            score = scorer(mapping)
+            mapping = mapping.with_annotations({"ofe-score": score})
+
+            if score < best_score:
+                best_mapping = mapping
+                best_score = score
 
         if best_mapping is None:
             raise ValueError(f"No mapping found for {ligand}")
