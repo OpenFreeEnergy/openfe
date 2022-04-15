@@ -114,6 +114,13 @@ class TestNetwork:
             assert atommapping.molA == mol1
             assert atommapping.molB == mol2
 
+    def test_graph_annotations(self, mols, std_edges):
+        mol1, mol2, mol3 = mols
+        edge12, edge23, edge13 = std_edges
+        annotated = edge12.with_annotations({'foo': 'bar'})
+        network = Network([annotated, edge23, edge13])
+        assert network.graph[mol1][mol2][0]['foo'] == 'bar'
+
     def test_graph_immutability(self, mols, network_container):
         # The NetworkX graph that comes from that ``.graph`` property should
         # be immutable.

@@ -42,7 +42,8 @@ class Network:
             for node in self._nodes:
                 graph.add_node(node)
             for edge in self._edges:
-                graph.add_edge(edge.molA, edge.molB, object=edge)
+                graph.add_edge(edge.molA, edge.molB, object=edge,
+                               **edge.annotations)
 
             self._graph = nx.freeze(graph)
 
