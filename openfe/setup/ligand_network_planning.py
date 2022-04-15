@@ -3,7 +3,9 @@
 import math
 from typing import Iterable, Callable
 
-from openfe.setup import Network, SmallMoleculeComponent, LigandAtomMapper
+from openfe.setup import (
+    Network, SmallMoleculeComponent, LigandAtomMapper, LigandAtomMapping
+)
 
 
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
