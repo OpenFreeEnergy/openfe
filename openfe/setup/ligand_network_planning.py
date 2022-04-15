@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable
+from typing import Iterable, Callable
 
 from openfe.setup import Network, SmallMoleculeComponent, LigandAtomMapper
 
@@ -67,7 +67,8 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
 
 
 def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
-                           mappers: Iterable[LigandAtomMapper], scorer=None):
+                           mappers: Iterable[LigandAtomMapper],
+                           scorer: Callable[LigandAtomMapping, float]):
     """Plan a Network which connects all ligands with minimal cost
 
     Parameters
@@ -81,4 +82,16 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
     scorer : Scoring function
       any callable which takes an LigandAtomMapping and returns a float
     """
-    raise NotImplementedError
+    nodes = list(ligands)
+    mappings = sum([list(mapper.suggest_mappings(molA, molB))
+                    for molA, molB in itertools.combinations(nodes, 2)
+                    for mapper in mappers], [])
+    mappings = [mapping.with_annotation({'ofe-score': scorer(mapping)})
+                for mapping in mappings]
+    network = Network(mappings, nodes=nodes)
+    min_edges = nx.minimal_spanning_graph(network.graph,
+                                          weight='ofe-score')
+    # TODO: I don't think this is quite right
+    min_mappings = [network.graph[edge] for edge in min_edges]
+    min_network = Network(min_mappings, nodes=nodes)
+    return min_network
