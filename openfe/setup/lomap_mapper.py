@@ -255,3 +255,24 @@ class LomapAtomMapper(LigandAtomMapper):
     def transmuting_ring_sizes_score(self, mapping: LigandAtomMapping):
         mcs = self._get_mcs(mapping)
         return 1 - mcs.transmuting_ring_sizes_rule()
+
+    def default_lomap_score(self, mapping: LigandAtomMapping):
+        """The default score function from Lomap2
+
+        Note
+        ----
+        Like other scores, relative to the original Lomap this is (1 - score)
+        I.e. high values are "bad", low values are "good"
+        """
+        score = math.prod((
+            1 - self.mcnar_score(mapping),
+            1 - self.mcsr_score(mapping),
+            1 - self.atomic_number_score(mapping),
+            1 - self.hybridization_score(mapping),
+            1 - self.sulfonamides_score(mapping),
+            1 - self.heterocycles_score(mapping),
+            1 - self.transmuting_methyl_into_ring_score(mapping),
+            1 - self.transmuting_ring_sizes_score(mapping)
+        ))
+        
+        return 1 - score
