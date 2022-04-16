@@ -5,7 +5,6 @@
 The MCS class from Lomap shamelessly wrapped and used here to match our API.
 
 """
-from typing import Dict, TypeVar
 from lomap import mcs as lomap_mcs
 import math
 import sys
@@ -14,11 +13,10 @@ if sys.version_info >= (3, 10):
 else:
      from typing_extensions import TypeAlias
 
-from . import LigandAtomMapper
+from . import LigandAtomMapper, LigandAtomMapping
 
 Lomap_MCS: TypeAlias = lomap_mcs.MCS
 
-class LomapAtomMapper(LigandAtomMapper):
 DEFAULT_ANS_DIFFICULTY = {
     # H to element - not sure this has any effect currently
     1: {9: 0.5, 17: 0.25, 35: 0, 53: -0.5},
@@ -88,14 +86,14 @@ class LomapAtomMapper(LigandAtomMapper):
         try:
             mcs = self._mcs_cache[mapping]
         except KeyError:
-            mcs = lomap_mcs.MCS(mapping.mol1.rdkit, mapping.mol2.rdkit,
+            mcs = lomap_mcs.MCS(mapping.molA.to_rdkit(), mapping.molB.to_rdkit(),
                                 self.time, threed=self.threed,
                                 max3d=self.max3d)
             self._mcs_cache[mapping] = mcs
         return mcs
 
     @staticmethod
-    def mcsr_score(mapping: AtomMapping, beta: float = 0.1):
+    def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
         """Maximum command substructure rule
 
         This rule was originally defined as::
@@ -109,33 +107,34 @@ class LomapAtomMapper(LigandAtomMapper):
 
         This is turned into a score by simply returning (1-mcsr)
         """
-        n1 = mapping.mol1.rdkit.GetNumAtoms()
-        n2 = mapping.mol2.rdkit.GetNumAtoms()
-        n_common = len(mapping.mol1_to_mol2)
+        n1 = mapping.molA.to_rdkit().GetNumAtoms()
+        n2 = mapping.molB.to_rdkit().GetNumAtoms()
+        n_common = len(mapping.molA_to_molB)
 
         mcsr = math.exp(-beta * (n1 + n2 - 2 * n_common))
 
         return 1 - mcsr
 
     @staticmethod
-    def mcnar_score(mapping: AtomMapping, ths: int = 4):
+    def mcnar_score(mapping: LigandAtomMapping, ths: int = 4):
         """Minimum number of common atoms rule
 
 
         """
-        n1 = mapping.mol1.rdkit.GetNumHeavyAtoms()
-        n2 = mapping.mol2.rdkit.GetNumHeavyAtoms()
-        n_common = len(mapping.mol1_to_mol2)
+        n1 = mapping.molA.to_rdkit().GetNumHeavyAtoms()
+        n2 = mapping.molB.to_rdkit().GetNumHeavyAtoms()
+        n_common = len(mapping.molA_to_molB)
 
         ok = (n_common > ths) or (n1 < ths + 3) or (n2 < ths + 3)
 
         return 0.0 if ok else float('inf')
 
-    def tmcsr_score(self, mapping: AtomMapping):
+    def tmcsr_score(self, mapping: LigandAtomMapping):
         raise NotImplementedError
 
     @staticmethod
-    def atomic_number_score(mapping: AtomMapping, beta=0.1, difficulty=None):
+    def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
+                            difficulty=None):
         """A score on the elemental changes happening in the mapping
 
         For each transmuted atom, a mismatch score is summed, according to the
@@ -146,7 +145,7 @@ class LomapAtomMapper(LigandAtomMapper):
 
         Parameters
         ----------
-        mapping : AtomMapping
+        mapping : LigandAtomMapping
         beta : float, optional
           scaling factor for this rule, default 0.1
         difficulty : dict, optional
@@ -164,11 +163,11 @@ class LomapAtomMapper(LigandAtomMapper):
         if difficulty is None:
             difficulty = DEFAULT_ANS_DIFFICULTY
 
-        mol1 = mapping.mol1.rdkit
-        mol2 = mapping.mol2.rdkit
+        mol1 = mapping.molA.to_rdkit()
+        mol2 = mapping.molB.to_rdkit()
 
         nmismatch = 0
-        for i, j in mapping.mol1_to_mol2.items():
+        for i, j in mapping.molA_to_molB.items():
             atom_i = mol1.GetAtomWithIdx(i)
             atom_j = mol2.GetAtomWithIdx(j)
 
@@ -197,7 +196,7 @@ class LomapAtomMapper(LigandAtomMapper):
         return 1 - atomic_number_rule
 
     @staticmethod
-    def hybridization_score(mapping: AtomMapping, beta=0.1, penalty=1.5):
+    def hybridization_score(mapping: LigandAtomMapping, beta=0.1, penalty=1.5):
         """
 
         Score calculated as:
@@ -206,7 +205,7 @@ class LomapAtomMapper(LigandAtomMapper):
 
         Parameters
         ----------
-        mapping : AtomMapping
+        mapping : LigandAtomMapping
         beta : float, optional
           default 0.1
         penalty : float, optional
@@ -217,10 +216,10 @@ class LomapAtomMapper(LigandAtomMapper):
         score : float
         """
         nmismatch = 0
-        mol1 = mapping.mol1.rdkit
-        mol2 = mapping.mol2.rdkit
+        mol1 = mapping.molA.to_rdkit()
+        mol2 = mapping.molB.to_rdkit()
 
-        for i, j in mapping.mol1_to_mol2.items():
+        for i, j in mapping.molA_to_molB.items():
             atom_i = mol1.GetAtomWithIdx(i)
             atom_j = mol2.GetAtomWithIdx(j)
 
@@ -240,19 +239,19 @@ class LomapAtomMapper(LigandAtomMapper):
 
         return 1 - hybridization_rule
 
-    def sulfonamides_score(self, mapping: AtomMapping, penalty=4):
+    def sulfonamides_score(self, mapping: LigandAtomMapping, penalty=4):
         mcs = self._get_mcs(mapping)
         return 1 - mcs.sulfonamides_rule(penalty)
 
-    def heterocycles_score(self, mapping: AtomMapping, penalty=4):
+    def heterocycles_score(self, mapping: LigandAtomMapping, penalty=4):
         mcs = self._get_mcs(mapping)
         return 1 - mcs.heterocycles_rule(penalty)
 
-    def transmuting_methyl_into_ring_score(self, mapping: AtomMapping,
+    def transmuting_methyl_into_ring_score(self, mapping: LigandAtomMapping,
                                            penalty=6):
         mcs = self._get_mcs(mapping)
         return 1 - mcs.transmuting_methyl_into_ring_rule(penalty)
 
-    def transmuting_ring_sizes_score(self, mapping: AtomMapping):
+    def transmuting_ring_sizes_score(self, mapping: LigandAtomMapping):
         mcs = self._get_mcs(mapping)
         return 1 - mcs.transmuting_ring_sizes_rule()

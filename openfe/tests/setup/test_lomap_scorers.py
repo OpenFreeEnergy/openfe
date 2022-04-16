@@ -14,7 +14,7 @@ def toluene_to_cyclohexane(lomap_basic_test_files):
     tolu = lomap_basic_test_files['toluene']
     mapping = [(0, 0), (1, 1), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2)]
 
-    return openfe.setup.AtomMapping(tolu, meth, mol1_to_mol2=dict(mapping))
+    return openfe.setup.LigandAtomMapping(tolu, meth, molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -23,7 +23,7 @@ def toluene_to_methylnaphthalene(lomap_basic_test_files):
     naph = lomap_basic_test_files['2-methylnaphthalene']
     mapping = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 8), (5, 9), (6, 10)]
 
-    return openfe.setup.AtomMapping(tolu, naph, mol1_to_mol2=dict(mapping))
+    return openfe.setup.LigandAtomMapping(tolu, naph, molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -31,11 +31,11 @@ def toluene_to_heptane(lomap_basic_test_files):
     tolu = lomap_basic_test_files['toluene']
     hept = Chem.MolFromSmiles('CCCCCCC')
     Chem.rdDepictor.Compute2DCoords(hept)
-    hept = openfe.setup.Molecule(hept)
+    hept = openfe.setup.SmallMoleculeComponent(hept)
 
     mapping = [(6, 0)]
 
-    return openfe.setup.AtomMapping(tolu, hept, mol1_to_mol2=dict(mapping))
+    return openfe.setup.LigandAtomMapping(tolu, hept, molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -45,7 +45,7 @@ def methylnaphthalene_to_naphthol(lomap_basic_test_files):
     mapping = [(0, 0), (1, 1), (2, 10), (3, 9), (4, 8), (5, 7), (6, 6), (7, 5),
                (8, 4), (9, 3), (10, 2)]
 
-    return openfe.setup.AtomMapping(m1, m2, mol1_to_mol2=dict(mapping))
+    return openfe.setup.LigandAtomMapping(m1, m2, molA_to_molB=dict(mapping))
 
 
 class TestScorer:
