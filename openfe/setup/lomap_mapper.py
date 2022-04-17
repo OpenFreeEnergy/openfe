@@ -107,9 +107,17 @@ class LomapAtomMapper(LigandAtomMapper):
 
         This is turned into a score by simply returning (1-mcsr)
         """
-        n1 = mapping.molA.to_rdkit().GetNumAtoms()
-        n2 = mapping.molB.to_rdkit().GetNumAtoms()
-        n_common = len(mapping.molA_to_molB)
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+
+        n1 = molA.GetNumHeavyAtoms()
+        n2 = molB.GetNumHeavyAtoms()
+        # get heavy atom mcs count
+        n_common = 0
+        for i, j in mapping.molA_to_molB.items():
+            if (molA.GetAtomWithIdx(i).GetAtomicNum() != 1
+                and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
+                n_common += 1
 
         mcsr = math.exp(-beta * (n1 + n2 - 2 * n_common))
 
@@ -121,9 +129,15 @@ class LomapAtomMapper(LigandAtomMapper):
 
 
         """
-        n1 = mapping.molA.to_rdkit().GetNumHeavyAtoms()
-        n2 = mapping.molB.to_rdkit().GetNumHeavyAtoms()
-        n_common = len(mapping.molA_to_molB)
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+        n1 = molA.GetNumHeavyAtoms()
+        n2 = molB.GetNumHeavyAtoms()
+        n_common = 0
+        for i, j in mapping.molA_to_molB.items():
+            if (molA.GetAtomWithIdx(i).GetAtomicNum() != 1
+                    and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
+                n_common += 1
 
         ok = (n_common > ths) or (n1 < ths + 3) or (n2 < ths + 3)
 
@@ -163,18 +177,20 @@ class LomapAtomMapper(LigandAtomMapper):
         if difficulty is None:
             difficulty = DEFAULT_ANS_DIFFICULTY
 
-        mol1 = mapping.molA.to_rdkit()
-        mol2 = mapping.molB.to_rdkit()
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
 
         nmismatch = 0
         for i, j in mapping.molA_to_molB.items():
-            atom_i = mol1.GetAtomWithIdx(i)
-            atom_j = mol2.GetAtomWithIdx(j)
+            atom_i = molA.GetAtomWithIdx(i)
+            atom_j = molB.GetAtomWithIdx(j)
 
             n_i = atom_i.GetAtomicNum()
             n_j = atom_j.GetAtomicNum()
 
             if n_i == n_j:
+                continue
+            elif n_i == 1 or n_j == 1:  # ignore hydrogen switches?
                 continue
 
             try:
@@ -222,6 +238,10 @@ class LomapAtomMapper(LigandAtomMapper):
         for i, j in mapping.molA_to_molB.items():
             atom_i = mol1.GetAtomWithIdx(i)
             atom_j = mol2.GetAtomWithIdx(j)
+
+            if atom_i.GetAtomicNum() == 1 or atom_j.GetAtomicNum() == 1:
+                # skip hydrogen changes
+                continue
 
             hyb_i = lomap_mcs.atom_hybridization(atom_i)
             hyb_j = lomap_mcs.atom_hybridization(atom_j)
