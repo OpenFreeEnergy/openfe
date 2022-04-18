@@ -92,6 +92,7 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
       any callable which takes an LigandAtomMapping and returns a float
     """
     nodes = list(ligands)
+    mappings: List[LigandAtomMapping] = []  # for mypy 🙄
     mappings = sum([list(mapper.suggest_mappings(molA, molB))
                     for molA, molB in itertools.combinations(nodes, 2)
                     for mapper in mappers], [])
