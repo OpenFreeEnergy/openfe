@@ -4,6 +4,8 @@ import math
 from typing import Iterable, Callable
 import itertools
 
+import networkx as nx
+
 from openfe.setup import (
     Network, SmallMoleculeComponent, LigandAtomMapper, LigandAtomMapping
 )
@@ -93,12 +95,11 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
     mappings = sum([list(mapper.suggest_mappings(molA, molB))
                     for molA, molB in itertools.combinations(nodes, 2)
                     for mapper in mappers], [])
-    mappings = [mapping.with_annotation({'ofe-score': scorer(mapping)})
+    mappings = [mapping.with_annotations({'score': scorer(mapping)})
                 for mapping in mappings]
     network = Network(mappings, nodes=nodes)
-    min_edges = nx.minimal_spanning_graph(network.graph,
-                                          weight='ofe-score')
-    # TODO: I don't think this is quite right
-    min_mappings = [network.graph[edge] for edge in min_edges]
+    min_edges = nx.minimum_spanning_edges(nx.MultiGraph(network.graph),
+                                          weight='score')
+    min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
     min_network = Network(min_mappings, nodes=nodes)
     return min_network
