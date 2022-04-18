@@ -1,7 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import itertools
+import lomap
 import math
+import numpy as np
+from numpy.testing import assert_allclose
 import openfe
 from openfe.setup import LomapAtomMapper
 import pytest
@@ -98,3 +102,39 @@ class TestScorer:
 
         # single mismatch @ (1 - 0.75)
         assert score == pytest.approx(1 - math.exp(-0.1 * 0.25))
+
+
+# back to back test again lomap
+def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
+                          lomap_basic_test_files):
+    # run lomap
+    dbmols = lomap.DBMolecules(lomap_basic_test_files_dir)
+    matrix, _ = dbmols.build_matrices()
+    matrix = matrix.to_numpy_2D_array()
+
+    assert matrix.shape == (8, 8)
+
+    # now run the openfe equivalent
+    # first, get the order identical to lomap
+    smallmols = []
+    for i in range(matrix.shape[0]):
+        nm = dbmols[i].getName()
+        smallmols.append(lomap_basic_test_files[nm[:-5]])  # - ".mol2"
+
+    mapper = openfe.setup.LomapAtomMapper()
+    scorer = mapper.default_lomap_score
+    scores = np.zeros_like(matrix)
+    for i, j in itertools.combinations(range(matrix.shape[0]), 2):
+        molA = smallmols[i]
+        molB = smallmols[j]
+
+        mapping = next(mapper.suggest_mappings(molA, molB))
+        score = scorer(mapping)
+
+        scores[i, j] = scores[j, i] = score
+    scores = 1 - scores
+    # fudge diagonal for comparison
+    for i in range(matrix.shape[0]):
+        scores[i, i] = 0
+
+    assert_allclose(matrix, scores)

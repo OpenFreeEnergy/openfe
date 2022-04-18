@@ -49,6 +49,22 @@ def other_mapping():
     return m
 
 
+@pytest.fixture()
+def lomap_basic_test_files_dir(tmpdir_factory):
+    # for lomap, which wants the files in a directory
+    lomap_files = tmpdir_factory.mktemp('lomap_files')
+
+    for f in importlib.resources.contents('openfe.tests.data.lomap_basic'):
+        if not f.endswith('mol2'):
+            continue
+        stuff = importlib.resources.read_binary('openfe.tests.data.lomap_basic', f)
+
+        with open(str(lomap_files.join(f)), 'wb') as fout:
+            fout.write(stuff)
+
+    yield str(lomap_files)
+
+
 @pytest.fixture(scope='session')
 def lomap_basic_test_files():
     # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
@@ -65,7 +81,7 @@ def lomap_basic_test_files():
         'toluene']:
         with importlib.resources.path('openfe.tests.data.lomap_basic',
                                       f + '.mol2') as fn:
-            mol = Chem.MolFromMol2File(str(fn))
+            mol = Chem.MolFromMol2File(str(fn), removeHs=False)
             files[f] = SmallMoleculeComponent(mol, name=f)
 
     return files
