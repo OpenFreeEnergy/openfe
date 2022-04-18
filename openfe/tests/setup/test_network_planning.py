@@ -56,8 +56,8 @@ def test_radial_graph_with_scorer(toluene_vs_others):
 
     for edge in network.edges:
         assert len(edge.molA_to_molB) > 1  # we didn't take the bad mapper
-        assert 'ofe-score' in edge.annotations
-        assert edge.annotations['ofe-score'] == 1.0 / len(edge.molA_to_molB)
+        assert 'score' in edge.annotations
+        assert edge.annotations['score'] == 1.0 / len(edge.molA_to_molB)
 
 
 def test_radial_graph_multiple_mappers_no_scorer(toluene_vs_others):

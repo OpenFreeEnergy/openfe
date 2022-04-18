@@ -58,7 +58,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
                 break
 
             score = scorer(mapping)
-            mapping = mapping.with_annotations({"ofe-score": score})
+            mapping = mapping.with_annotations({"score": score})
 
             if score < best_score:
                 best_mapping = mapping
