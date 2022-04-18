@@ -77,7 +77,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
 
 def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
                            mappers: Iterable[LigandAtomMapper],
-                           scorer: Callable[LigandAtomMapping, float]):
+                           scorer: Callable[[LigandAtomMapping], float]):
     """Plan a Network which connects all ligands with minimal cost
 
     Parameters
