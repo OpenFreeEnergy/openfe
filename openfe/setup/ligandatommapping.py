@@ -24,7 +24,7 @@ class LigandAtomMapping(Serializable):
       Mapping of annotation identifier to annotation data. Annotations may
       contain arbitrary JSON-serializable data. Annotation identifiers
       starting with ``ofe-`` may have special meaning in other parts of
-      OpenFE.
+      OpenFE. ``score`` is a reserved annotation identifier.
     """
     def __init__(
         self,
