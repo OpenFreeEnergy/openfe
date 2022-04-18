@@ -8,6 +8,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 from lomap import mcs as lomap_mcs
 import math
 import sys
+from typing import Dict
 if sys.version_info >= (3, 10):
     from typing import TypeAlias
 else:
@@ -35,6 +36,7 @@ class LomapAtomMapper(LigandAtomMapper):
     time: int
     threed: bool
     max3d: float
+    _mcs_cache: Dict[LigandAtomMapping, Lomap_MCS]
 
     def __init__(self, time: int = 20, threed: bool = False,
                  max3d: float = 1000.0):
