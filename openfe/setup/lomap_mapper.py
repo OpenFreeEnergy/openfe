@@ -7,7 +7,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 """
 from lomap import mcs as lomap_mcs
 import math
-from typing import Dict
+from rdkit import Chem
 
 from . import LigandAtomMapper, LigandAtomMapping
 
@@ -33,7 +33,6 @@ class LomapAtomMapper(LigandAtomMapper):
     time: int
     threed: bool
     max3d: float
-    _mcs_cache: Dict[LigandAtomMapping, Lomap_MCS]
 
     def __init__(self, time: int = 20, threed: bool = False,
                  max3d: float = 1000.0):
@@ -57,7 +56,6 @@ class LomapAtomMapper(LigandAtomMapper):
         self.time = time
         self.threed = threed
         self.max3d = max3d
-        self._mcs_cache = {}
 
     def _mappings_generator(self, molA, molB):
         try:
@@ -67,9 +65,6 @@ class LomapAtomMapper(LigandAtomMapper):
             # if no match found, Lomap throws ValueError, so we just yield
             # generator with no contents
             return
-        # TODO: Once Lomap scorers exist, we'll want to keep a cache of
-        #       these mcs objects ({mapping: mcs}), so we can later query the
-        #       mcs that made a particular mapping to retrieve scores.
 
         mapping_string = mcs.all_atom_match_list()
         # lomap spits out "1:1,2:2,...,x:y", so split around commas,
@@ -79,18 +74,6 @@ class LomapAtomMapper(LigandAtomMapper):
 
         yield mapping_dict
         return
-
-    def _get_mcs(self, mapping):
-        # get mcs from cache, else create and place into cache
-        try:
-            mcs = self._mcs_cache[mapping]
-        except KeyError:
-            mcs = lomap_mcs.MCS(mapping.molA.to_rdkit(),
-                                mapping.molB.to_rdkit(),
-                                self.time, threed=self.threed,
-                                max3d=self.max3d)
-            self._mcs_cache[mapping] = mcs
-        return mcs
 
     @staticmethod
     def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
@@ -116,7 +99,7 @@ class LomapAtomMapper(LigandAtomMapper):
         n_common = 0
         for i, j in mapping.molA_to_molB.items():
             if (molA.GetAtomWithIdx(i).GetAtomicNum() != 1
-               and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
+                    and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
                 n_common += 1
 
         mcsr = math.exp(-beta * (n1 + n2 - 2 * n_common))
@@ -249,7 +232,7 @@ class LomapAtomMapper(LigandAtomMapper):
             mismatch = hyb_i != hyb_j
             # Allow Nsp3 to match Nsp2, otherwise guanidines etc become painful
             if (atom_i.GetAtomicNum() == 7 and atom_j.GetAtomicNum() == 7 and
-                hyb_i in [2, 3] and hyb_j in [2, 3]):
+                    hyb_i in [2, 3] and hyb_j in [2, 3]):
                 mismatch = False
 
             if mismatch:
@@ -259,24 +242,118 @@ class LomapAtomMapper(LigandAtomMapper):
 
         return 1 - hybridization_rule
 
-    def sulfonamides_score(self, mapping: LigandAtomMapping, penalty=4):
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.sulfonamides_rule(penalty)
+    @staticmethod
+    def sulfonamides_score(mapping: LigandAtomMapping, penalty=4):
+        """Checks if a sulfonamide appears
 
-    def heterocycles_score(self, mapping: LigandAtomMapping, penalty=4):
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.heterocycles_rule(penalty)
+        Returns 1 if this happens, else 0
+        """
 
-    def transmuting_methyl_into_ring_score(self, mapping: LigandAtomMapping,
-                                           penalty=6):
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.transmuting_methyl_into_ring_rule(penalty)
+        def has_sulfonamide(mol):
+            return mol.HasSubstructMatch(Chem.MolFromSmarts('S(=O)(=O)N'))
 
-    def transmuting_ring_sizes_score(self, mapping: LigandAtomMapping):
-        mcs = self._get_mcs(mapping)
-        return 1 - mcs.transmuting_ring_sizes_rule()
+        # create "remainders" of both molA and molB
+        remA = Chem.EditableMol(mapping.molA.to_rdkit())
+        for i in sorted(mapping.molA_to_molB, reverse=True):
+            remA.RemoveAtom(i)
+        remB = Chem.EditableMol(mapping.molB.to_rdkit())
+        for i in sorted(mapping.molA_to_molB.values(), reverse=True):
+            remB.RemoveAtom(i)
 
-    def default_lomap_score(self, mapping: LigandAtomMapping):
+        if has_sulfonamide(remA.GetMol()) or has_sulfonamide(remB.GetMol()):
+            return 1
+        else:
+            return 0
+
+    @staticmethod
+    def heterocycles_score(mapping: LigandAtomMapping, penalty=4):
+        """Checks if a heterocycle is formed
+
+        Returns 1 if this happens, else 0
+        """
+
+        def creates_heterocyle(mol):
+            # these patterns are lifted from lomap2 repo
+            return (mol.HasSubstructMatch(
+                Chem.MolFromSmarts('[n]1[c,n][c,n][c,n][c,n][c,n]1'))
+                    or
+                    mol.HasSubstructMatch(
+                        Chem.MolFromSmarts('[o,n,s]1[n][c,n][c,n][c,n]1'))
+                    or
+                    mol.HasSubstructMatch(
+                        Chem.MolFromSmarts('[o,n,s]1[c,n][n][c,n][c,n]1')))
+
+        # create "remainders" of both molA and molB
+        remA = Chem.EditableMol(mapping.molA.to_rdkit())
+        for i in sorted(mapping.molA_to_molB, reverse=True):
+            remA.RemoveAtom(i)
+        remB = Chem.EditableMol(mapping.molB.to_rdkit())
+        for i in sorted(mapping.molA_to_molB.values(), reverse=True):
+            remB.RemoveAtom(i)
+
+        if (creates_heterocyle(remA.GetMol()) or
+                creates_heterocyle(remB.GetMol())):
+            return 1
+        else:
+            return 0
+
+    @staticmethod
+    def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
+                                           beta=0.1, penalty=6.0):
+        """Penalises ring forming
+
+        Check if any atoms transition to/from rings in the mapping, if so
+        returns a score of::
+
+          1 - exp(-1 * beta * penalty)
+
+        Parameters
+        ----------
+        mapping : LigandAtomMapping
+        beta : float
+        penalty : float
+
+        Returns
+        -------
+        score : float
+        """
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+
+        ringbreak = False
+        for i, j in mapping.molA_to_molB.items():
+            a = molA.GetAtomWithIdx(i)
+            b = molB.GetAtomWithIdx(j)
+            if a.IsInRing() ^ b.IsInRing():
+                ringbreak = True
+                break
+
+        if not ringbreak:
+            return 0
+        else:
+            return 1 - math.exp(- beta * penalty)
+
+    @staticmethod
+    def transmuting_ring_sizes_score(mapping: LigandAtomMapping):
+        """Checks if mapping alters a ring size"""
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+
+        is_bad = False
+
+        ringA = molA.GetRingInfo()
+        ringB = molB.GetRingInfo()
+        # iterate over common atoms, if their ring sizes change it's bad
+        for i, j in mapping.molA_to_molB.items():
+            # AtomRingSizes returns tuple of ring sizes for this atom
+            if ringA.AtomRingSizes(i) != ringB.AtomRingSizes(j):
+                is_bad = True
+                break
+
+        return 1 - 0.1 if is_bad else 0
+
+    @classmethod
+    def default_lomap_score(cls, mapping: LigandAtomMapping):
         """The default score function from Lomap2
 
         Note
@@ -285,14 +362,14 @@ class LomapAtomMapper(LigandAtomMapper):
         I.e. high values are "bad", low values are "good"
         """
         score = math.prod((
-            1 - self.mcnar_score(mapping),
-            1 - self.mcsr_score(mapping),
-            1 - self.atomic_number_score(mapping),
-            1 - self.hybridization_score(mapping),
-            1 - self.sulfonamides_score(mapping),
-            1 - self.heterocycles_score(mapping),
-            1 - self.transmuting_methyl_into_ring_score(mapping),
-            1 - self.transmuting_ring_sizes_score(mapping)
+            1 - cls.mcnar_score(mapping),
+            1 - cls.mcsr_score(mapping),
+            1 - cls.atomic_number_score(mapping),
+            1 - cls.hybridization_score(mapping),
+            1 - cls.sulfonamides_score(mapping),
+            1 - cls.heterocycles_score(mapping),
+            1 - cls.transmuting_methyl_into_ring_score(mapping),
+            1 - cls.transmuting_ring_sizes_score(mapping)
         ))
-        
+
         return 1 - score
