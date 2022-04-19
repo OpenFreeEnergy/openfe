@@ -82,23 +82,29 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
 
     Parameters
     ----------
-    ligands : Iterable of rdkit Molecules
+    ligands : Iterable[SmallMoleculeComponent]
       the ligands to include in the Network
-    mappers : Iterable of AtomMappers
+    mappers : Iterable[LigandAtomMapper]
       the AtomMappers to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the
       lowest score edges
     scorer : Scoring function
-      any callable which takes an LigandAtomMapping and returns a float
+      any callable which takes a LigandAtomMapping and returns a float
     """
     nodes = list(ligands)
     mappings: List[LigandAtomMapping] = []  # for mypy 🙄
+
+    # First create a network with all the proposed mappings (scored)
     mappings = sum([list(mapper.suggest_mappings(molA, molB))
                     for molA, molB in itertools.combinations(nodes, 2)
                     for mapper in mappers], [])
     mappings = [mapping.with_annotations({'score': scorer(mapping)})
                 for mapping in mappings]
     network = Network(mappings, nodes=nodes)
+
+    # Next analyze that network to create minimal spanning network. Because
+    # we carry the original (directed) LigandAtomMapping, we don't lose
+    # direction information when converting to an undirected graph.
     min_edges = nx.minimum_spanning_edges(nx.MultiGraph(network.graph),
                                           weight='score')
     min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
