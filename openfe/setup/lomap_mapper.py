@@ -7,14 +7,11 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 """
 from lomap import mcs as lomap_mcs
 import math
-import sys
 from typing import Dict
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-     from typing_extensions import TypeAlias
 
 from . import LigandAtomMapper, LigandAtomMapping
+
+from openfe.utils.custom_typing import TypeAlias
 
 Lomap_MCS: TypeAlias = lomap_mcs.MCS
 
@@ -88,7 +85,8 @@ class LomapAtomMapper(LigandAtomMapper):
         try:
             mcs = self._mcs_cache[mapping]
         except KeyError:
-            mcs = lomap_mcs.MCS(mapping.molA.to_rdkit(), mapping.molB.to_rdkit(),
+            mcs = lomap_mcs.MCS(mapping.molA.to_rdkit(),
+                                mapping.molB.to_rdkit(),
                                 self.time, threed=self.threed,
                                 max3d=self.max3d)
             self._mcs_cache[mapping] = mcs
@@ -118,7 +116,7 @@ class LomapAtomMapper(LigandAtomMapper):
         n_common = 0
         for i, j in mapping.molA_to_molB.items():
             if (molA.GetAtomWithIdx(i).GetAtomicNum() != 1
-                and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
+               and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
                 n_common += 1
 
         mcsr = math.exp(-beta * (n1 + n2 - 2 * n_common))
