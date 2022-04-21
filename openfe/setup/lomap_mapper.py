@@ -243,25 +243,39 @@ class LomapAtomMapper(LigandAtomMapper):
         return 1 - hybridization_rule
 
     @staticmethod
-    def sulfonamides_score(mapping: LigandAtomMapping, penalty=4):
-        """Checks if a sulfonamide appears
+    def sulfonamides_score(mapping: LigandAtomMapping):
+        """Checks if a sulfonamide appears and disallow this.
 
-        Returns 1 if this happens, else 0
+        Returns inf if this happens, else 0
         """
 
         def has_sulfonamide(mol):
             return mol.HasSubstructMatch(Chem.MolFromSmarts('S(=O)(=O)N'))
 
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+
         # create "remainders" of both molA and molB
-        remA = Chem.EditableMol(mapping.molA.to_rdkit())
-        for i in sorted(mapping.molA_to_molB, reverse=True):
+        remA = Chem.EditableMol(molA)
+        # this incremental deletion only works when we go from high to low,
+        # as atoms are reindexed as we delete
+        for i, j in sorted(mapping.molA_to_molB.items(), reverse=True):
+            if (molA.GetAtomWithIdx(i).GetAtomicNum() !=
+                    molB.GetAtomWithIdx(j).GetAtomicNum()):
+                continue
             remA.RemoveAtom(i)
-        remB = Chem.EditableMol(mapping.molB.to_rdkit())
-        for i in sorted(mapping.molA_to_molB.values(), reverse=True):
-            remB.RemoveAtom(i)
+        # loop molB separately, sorted by A indices doesn't necessarily sort
+        # the B indices too, so these loops are in different orders
+        remB = Chem.EditableMol(molB)
+        for i, j in sorted(mapping.molA_to_molB.items(), key=lambda x: x[1],
+                           reverse=True):
+            if (molA.GetAtomWithIdx(i).GetAtomicNum() !=
+                    molB.GetAtomWithIdx(j).GetAtomicNum()):
+                continue
+            remB.RemoveAtom(j)
 
         if has_sulfonamide(remA.GetMol()) or has_sulfonamide(remB.GetMol()):
-            return 1
+            return float('inf')
         else:
             return 0
 
