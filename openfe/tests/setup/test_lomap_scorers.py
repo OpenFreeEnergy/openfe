@@ -104,6 +104,55 @@ class TestScorer:
         assert score == pytest.approx(1 - math.exp(-0.1 * 0.25))
 
 
+class TestSulfonamideRule:
+    @staticmethod
+    @pytest.fixture
+    def ethylbenzene():
+        m = Chem.AddHs(Chem.MolFromSmiles('c1ccccc1CCC'))
+
+        return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
+
+    @staticmethod
+    @pytest.fixture
+    def sulfonamide():
+        # technically 3-phenylbutane-1-sulfonamide
+        m = Chem.AddHs(Chem.MolFromSmiles('c1ccccc1C(C)CCS(=O)(=O)N'))
+
+        return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
+
+    @staticmethod
+    @pytest.fixture
+    def from_sulf_mapping():
+        # this is the standard output from LomapAtomMapper
+        return {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 14,
+                8: 7, 9: 8, 10: 18, 14: 9, 15: 10, 16: 11, 17: 12,
+                18: 13, 19: 15, 23: 16, 24: 17, 25: 19, 26: 20}
+
+    @staticmethod
+    def test_sulfonamide_hit_backwards(ethylbenzene, sulfonamide,
+                                       from_sulf_mapping):
+        # a sulfonamide completely disappears on the RHS, so should trigger the
+        # sulfonamide score to try and forbid this
+
+        mapping = openfe.setup.LigandAtomMapping(molA=sulfonamide,
+                                                 molB=ethylbenzene,
+                                                 molA_to_molB=from_sulf_mapping,
+        )
+        assert LomapAtomMapper.sulfonamides_score(mapping) == float('inf')
+
+    @staticmethod
+    def test_sulfonamide_hit_forwards(ethylbenzene, sulfonamide,
+                                      from_sulf_mapping):
+        AtoB = {v: k for k, v in from_sulf_mapping.items()}
+
+        # this is the standard output from LomapAtomMapper
+        mapping = openfe.setup.LigandAtomMapping(molA=ethylbenzene,
+                                                 molB=sulfonamide,
+                                                 molA_to_molB=AtoB)
+
+        assert LomapAtomMapper.sulfonamides_score(mapping) == float('inf')
+
+
 # back to back test again lomap
 def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
                           lomap_basic_test_files):
