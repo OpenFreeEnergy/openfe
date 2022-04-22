@@ -10,6 +10,7 @@ import openfe
 from openfe.setup import LomapAtomMapper
 import pytest
 from rdkit import Chem
+from rdkit.Chem.AllChem import Compute2DCoords
 
 
 @pytest.fixture()
@@ -151,6 +152,34 @@ class TestSulfonamideRule:
                                                  molA_to_molB=AtoB)
 
         assert LomapAtomMapper.sulfonamides_score(mapping) == float('inf')
+
+
+@pytest.mark.parametrize('base,other,name,hit', [
+    ('CCc1ccccc1', 'CCc1ccc(-c2ccco2)cc1', 'phenylfuran', False),
+    ('CCc1ccccc1', 'CCc1ccc(-c2cnc[nH]2)cc1', 'phenylimidazole', True),
+    ('CCc1ccccc1', 'CCc1ccc(-c2ccno2)cc1', 'phenylisoxazole', True),
+    ('CCc1ccccc1', 'CCc1ccc(-c2cnco2)cc1', 'phenyloxazole', True),
+    ('CCc1ccccc1', 'CCc1ccc(-c2cccnc2)cc1', 'phenylpyridine1', True),
+    ('CCc1ccccc1', 'CCc1ccc(-c2ccccn2)cc1', 'phenylpyridine2', True),
+    ('CCc1ccccc1', 'CCc1ccc(-c2cncnc2)cc1', 'phenylpyrimidine', True),
+    ('CCc1ccccc1', 'CCc1ccc(-c2ccc[nH]2)cc1', 'phenylpyrrole', False),
+    ('CCc1ccccc1', 'CCc1ccc(-c2ccccc2)cc1', 'phenylphenyl', False),
+])
+def test_heterocycle_score(base, other, name, hit):
+    # base -> other transform, if *hit* a forbidden heterocycle is created
+    r1 = Chem.AddHs(Chem.MolFromSmiles(base))
+    r2 = Chem.AddHs(Chem.MolFromSmiles(other))
+    # add 2d coords to stop Lomap crashing for now
+    for r in [r1, r2]:
+        Compute2DCoords(r)
+    m1 = openfe.setup.SmallMoleculeComponent.from_rdkit(r1)
+    m2 = openfe.setup.SmallMoleculeComponent.from_rdkit(r2)
+
+    mapper = openfe.setup.LomapAtomMapper()
+    mapping = next(mapper.suggest_mappings(m1, m2))
+    score = mapper.heterocycles_score(mapping)
+
+    assert score == 0 if not hit else score > 0
 
 
 # back to back test again lomap
