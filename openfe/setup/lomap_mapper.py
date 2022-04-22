@@ -5,6 +5,7 @@
 The MCS class from Lomap shamelessly wrapped and used here to match our API.
 
 """
+from collections import defaultdict
 from lomap import mcs as lomap_mcs
 import math
 from rdkit import Chem
@@ -369,16 +370,47 @@ class LomapAtomMapper(LigandAtomMapper):
         molA = mapping.molA.to_rdkit()
         molB = mapping.molB.to_rdkit()
 
-        is_bad = False
+        def gen_ringdict(mol):
+            # maps atom idx to ring sizes
+            ringinfo = mol.GetRingInfo()
 
-        ringA = molA.GetRingInfo()
-        ringB = molB.GetRingInfo()
-        # iterate over common atoms, if their ring sizes change it's bad
+            idx_to_ringsizes = defaultdict(list)
+            for r in ringinfo.AtomRings():
+                for idx in r:
+                    idx_to_ringsizes[idx].append(len(r))
+            return idx_to_ringsizes
+        # generate ring size dicts
+        ringdictA = gen_ringdict(molA)
+        ringdictB = gen_ringdict(molB)
+
+        is_bad = False
+        # check first degree neighbours of core atoms to see if their ring
+        # sizes are the same
         for i, j in mapping.molA_to_molB.items():
-            # AtomRingSizes returns tuple of ring sizes for this atom
-            if ringA.AtomRingSizes(i) != ringB.AtomRingSizes(j):
-                is_bad = True
-                break
+            atomA = molA.GetAtomWithIdx(i)
+
+            for bA in atomA.GetBonds():
+                otherA = bA.GetOtherAtom(atomA)
+                if otherA.GetIdx() in mapping.molA_to_molB:
+                    # if other end of bond in core, ignore
+                    continue
+                # otherA is an atom not in the mapping, but bonded to an
+                # atom in the mapping
+                if not otherA.IsInRing():
+                    continue
+
+                # try and find the corresponding atom in molecule B
+                atomB = molB.GetAtomWithIdx(j)
+                for bB in atomB.GetBonds():
+                    otherB = bB.GetOtherAtom(atomB)
+                    if otherB.GetIdx() in mapping.molA_to_molB.values():
+                        continue
+                    if not otherB.IsInRing():
+                        continue
+
+                    # ringdict[idx] will give the list of ringsizes for an atom
+                    if set(ringdictA[otherA.GetIdx()]) != set(ringdictB[otherB.GetIdx()]):
+                        is_bad = True
 
         return 1 - 0.1 if is_bad else 0
 
