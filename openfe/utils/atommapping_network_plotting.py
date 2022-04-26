@@ -132,8 +132,7 @@ class LigandNode(Node):
     @property
     def extent(self):
         txt = self.artist
-        trans = txt.axes.transData.inverted()
-        ext = trans.transform(txt.get_window_extent())
+        ext = txt.axes.transData.inverted().transform(txt.get_window_extent())
         [[xmin, ymin], [xmax, ymax]] = ext
         return xmin, xmax, ymin, ymax
 
