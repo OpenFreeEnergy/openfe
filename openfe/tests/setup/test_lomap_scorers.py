@@ -7,7 +7,7 @@ import math
 import numpy as np
 from numpy.testing import assert_allclose
 import openfe
-from openfe.setup import LomapAtomMapper
+from openfe.setup import lomap_scorers
 import pytest
 from rdkit import Chem
 from rdkit.Chem.AllChem import Compute2DCoords
@@ -55,39 +55,39 @@ def methylnaphthalene_to_naphthol(lomap_basic_test_files):
 
 class TestScorer:
     def test_mcsr_zero(self, toluene_to_cyclohexane):
-        score = LomapAtomMapper.mcsr_score(toluene_to_cyclohexane)
+        score = lomap_scorers.mcsr_score(toluene_to_cyclohexane)
 
         # all atoms map, so perfect score
         assert score == 0
 
     def test_mcsr_nonzero(self, toluene_to_methylnaphthalene):
-        score = LomapAtomMapper.mcsr_score(toluene_to_methylnaphthalene)
+        score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene)
 
         assert score == pytest.approx(1 - math.exp(-0.1 * 4))
 
     def test_mcsr_custom_beta(self, toluene_to_methylnaphthalene):
-        score = LomapAtomMapper.mcsr_score(toluene_to_methylnaphthalene,
-                                           beta=0.2)
+        score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene,
+                                         beta=0.2)
 
         assert score == pytest.approx(1 - math.exp(-0.2 * 4))
 
     def test_mcnar_score_pass(self, toluene_to_cyclohexane):
-        score = LomapAtomMapper.mcnar_score(toluene_to_cyclohexane)
+        score = lomap_scorers.mcnar_score(toluene_to_cyclohexane)
 
         assert score == 0
 
     def test_mcnar_score_fail(self, toluene_to_heptane):
-        score = LomapAtomMapper.mcnar_score(toluene_to_heptane)
+        score = lomap_scorers.mcnar_score(toluene_to_heptane)
 
         assert score == float('inf')
 
     def test_atomic_number_score_pass(self, toluene_to_cyclohexane):
-        score = LomapAtomMapper.atomic_number_score(toluene_to_cyclohexane)
+        score = lomap_scorers.atomic_number_score(toluene_to_cyclohexane)
 
         assert score == 0.0
 
     def test_atomic_number_score_fail(self, methylnaphthalene_to_naphthol):
-        score = LomapAtomMapper.atomic_number_score(
+        score = lomap_scorers.atomic_number_score(
             methylnaphthalene_to_naphthol)
 
         # single mismatch @ 0.5
@@ -98,7 +98,7 @@ class TestScorer:
             8: {6: 0.75},  # oxygen to carbon @ 12
         }
 
-        score = LomapAtomMapper.atomic_number_score(
+        score = lomap_scorers.atomic_number_score(
             methylnaphthalene_to_naphthol, difficulty=difficulty)
 
         # single mismatch @ (1 - 0.75)
@@ -124,7 +124,7 @@ class TestSulfonamideRule:
     @staticmethod
     @pytest.fixture
     def from_sulf_mapping():
-        # this is the standard output from LomapAtomMapper
+        # this is the standard output from lomap_scorers
         return {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 14,
                 8: 7, 9: 8, 10: 18, 14: 9, 15: 10, 16: 11, 17: 12,
                 18: 13, 19: 15, 23: 16, 24: 17, 25: 19, 26: 20}
@@ -139,19 +139,19 @@ class TestSulfonamideRule:
                                                  molB=ethylbenzene,
                                                  molA_to_molB=from_sulf_mapping,
         )
-        assert LomapAtomMapper.sulfonamides_score(mapping) == float('inf')
+        assert lomap_scorers.sulfonamides_score(mapping) == float('inf')
 
     @staticmethod
     def test_sulfonamide_hit_forwards(ethylbenzene, sulfonamide,
                                       from_sulf_mapping):
         AtoB = {v: k for k, v in from_sulf_mapping.items()}
 
-        # this is the standard output from LomapAtomMapper
+        # this is the standard output from lomap_scorers
         mapping = openfe.setup.LigandAtomMapping(molA=ethylbenzene,
                                                  molB=sulfonamide,
                                                  molA_to_molB=AtoB)
 
-        assert LomapAtomMapper.sulfonamides_score(mapping) == float('inf')
+        assert lomap_scorers.sulfonamides_score(mapping) == float('inf')
 
 
 @pytest.mark.parametrize('base,other,name,hit', [
@@ -177,7 +177,7 @@ def test_heterocycle_score(base, other, name, hit):
 
     mapper = openfe.setup.LomapAtomMapper()
     mapping = next(mapper.suggest_mappings(m1, m2))
-    score = mapper.heterocycles_score(mapping)
+    score = lomap_scorers.heterocycles_score(mapping)
 
     assert score == 0 if not hit else score > 0
 
@@ -200,7 +200,7 @@ def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
         smallmols.append(lomap_basic_test_files[nm[:-5]])  # - ".mol2"
 
     mapper = openfe.setup.LomapAtomMapper()
-    scorer = mapper.default_lomap_score
+    scorer = lomap_scorers.default_lomap_score
     scores = np.zeros_like(matrix)
     for i, j in itertools.combinations(range(matrix.shape[0]), 2):
         molA = smallmols[i]

@@ -14,7 +14,7 @@ from .ligandatommapper import LigandAtomMapper
 from .network import Network
 
 from .lomap_mapper import LomapAtomMapper
-
+from . import lomap_scorers
 from . import ligand_network_planning
 
 from . import methods
