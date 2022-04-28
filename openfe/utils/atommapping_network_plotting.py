@@ -120,6 +120,27 @@ class AtomMappingEdge(Edge):
         self.right_image = None
 
 
+class LigandNode(Node):
+    def _make_artist(self, x, y, dx, dy):
+        artist = matplotlib.text.Text(x, y, self.node.name, color='blue',
+                                      backgroundcolor='white')
+        return artist
+
+    def register_artist(self, ax):
+        ax.add_artist(self.artist)
+
+    @property
+    def extent(self):
+        txt = self.artist
+        ext = txt.axes.transData.inverted().transform(txt.get_window_extent())
+        [[xmin, ymin], [xmax, ymax]] = ext
+        return xmin, xmax, ymin, ymax
+
+    @property
+    def xy(self):
+        return self.artist.get_position()
+
+
 class AtomMappingNetworkDrawing(GraphDrawing):
     """
     Class for drawing atom mappings from a provided ligang network.
@@ -131,7 +152,7 @@ class AtomMappingNetworkDrawing(GraphDrawing):
     positions : Optional[Dict[SmallMoleculeComponent, Tuple[float, float]]]
         mapping of node to position
     """
-    NodeCls = Node
+    NodeCls = LigandNode
     EdgeCls = AtomMappingEdge
 
 
