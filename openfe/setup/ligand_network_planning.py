@@ -92,14 +92,15 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
       any callable which takes a LigandAtomMapping and returns a float
     """
     nodes = list(ligands)
-    mappings: List[LigandAtomMapping] = []  # for mypy 🙄
 
     # First create a network with all the proposed mappings (scored)
-    mappings = sum([list(mapper.suggest_mappings(molA, molB))
-                    for molA, molB in itertools.combinations(nodes, 2)
-                    for mapper in mappers], [])
+    mapping_generator = itertools.chain.from_iterable(
+        mapper.suggest_mappings(molA, molB)
+        for molA, molB in itertools.combinations(nodes, 2)
+        for mapper in mappers
+    )
     mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                for mapping in mappings]
+                for mapping in mapping_generator]
     network = Network(mappings, nodes=nodes)
 
     # Next analyze that network to create minimal spanning network. Because
