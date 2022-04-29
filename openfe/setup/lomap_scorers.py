@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from collections import defaultdict
+from lomap import dbmol as _dbmol
 from lomap import mcs as lomap_mcs
 import math
 from rdkit import Chem
@@ -21,8 +22,8 @@ DEFAULT_ANS_DIFFICULTY = {
 }
 
 
-def ecr_score():
-    raise NotImplementedError
+def ecr_score(mapping: LigandAtomMapping):
+    return 1 - _dbmol.ecr(mapping.molA.to_rdkit(), mapping.molB.to_rdkit())
 
 
 def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
@@ -303,14 +304,23 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
 
     ringbreak = False
     for i, j in mapping.molA_to_molB.items():
-        a = molA.GetAtomWithIdx(i)
-        b = molB.GetAtomWithIdx(j)
-        if a.GetAtomicNum() == 1 or b.GetAtomicNum() == 1:
-            continue
+        atomA = molA.GetAtomWithIdx(i)
 
-        if a.IsInRing() ^ b.IsInRing():
-            ringbreak = True
-            break
+        for bA in atomA.GetBonds():
+            otherA = bA.GetOtherAtom(atomA)
+            if otherA.GetIdx() in mapping.molA_to_molB:
+                # if other end of bond in core, ignore
+                continue
+
+            # try and find the corresponding atom in molecule B
+            atomB = molB.GetAtomWithIdx(j)
+            for bB in atomB.GetBonds():
+                otherB = bB.GetOtherAtom(atomB)
+                if otherB.GetIdx() in mapping.molA_to_molB.values():
+                    continue
+
+                if otherA.IsInRing() ^ otherB.IsInRing():
+                    ringbreak = True
 
     if not ringbreak:
         return 0
@@ -379,6 +389,7 @@ def default_lomap_score(mapping: LigandAtomMapping):
     I.e. high values are "bad", low values are "good"
     """
     score = math.prod((
+        1 - ecr_score(mapping),
         1 - mncar_score(mapping),
         1 - mcsr_score(mapping),
         1 - atomic_number_score(mapping),
