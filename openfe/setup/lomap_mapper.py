@@ -10,7 +10,6 @@ from lomap import mcs as lomap_mcs
 from . import LigandAtomMapper
 
 
-
 class LomapAtomMapper(LigandAtomMapper):
     time: int
     threed: bool

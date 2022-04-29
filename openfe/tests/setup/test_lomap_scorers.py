@@ -211,8 +211,8 @@ def test_lomap_individual_scores(params,
     mapping = next(mapper.suggest_mappings(molA, molB))
     openfe_version = getattr(lomap_scorers, SCORE_NAMES[scorename])(mapping)
 
-    assert (lomap_version == pytest.approx(1 - openfe_version),
-            f"{molA.name} {molB.name} {scorename}")
+    assert lomap_version == pytest.approx(1 - openfe_version), \
+           f"{molA.name} {molB.name} {scorename}"
 
 
 # full back to back test again lomap
