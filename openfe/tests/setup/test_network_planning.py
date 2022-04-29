@@ -110,3 +110,18 @@ def test_minimal_spanning_graph(toluene_vs_others):
         found_pairs.add(pair)
 
     assert nx.is_connected(nx.MultiGraph(network.graph))
+
+
+def test_minimal_spanning_graph_unreachable(toluene_vs_others):
+    toluene, others = toluene_vs_others
+    nimrod = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles("N"))
+
+    def scorer(mapping):
+        return 1.0 / len(mapping.molA_to_molB)
+
+    with pytest.raises(RuntimeError, match="Unable to create edges"):
+        network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
+            ligands=others + [toluene, nimrod],
+            mappers=[openfe.setup.LomapAtomMapper()],
+            scorer=scorer
+        )

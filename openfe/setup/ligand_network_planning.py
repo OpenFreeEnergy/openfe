@@ -109,5 +109,10 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
     min_edges = nx.minimum_spanning_edges(nx.MultiGraph(network.graph),
                                           weight='score')
     min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
-    min_network = Network(min_mappings, nodes=nodes)
+    min_network = Network(min_mappings)
+    missing_nodes = set(nodes) - set(min_network.nodes)
+    if missing_nodes:
+        raise RuntimeError("Unable to create edges to some nodes: "
+                           + str(list(missing_nodes)))
+
     return min_network
