@@ -53,7 +53,7 @@ def other_mapping():
 def lomap_basic_test_files_dir(tmpdir_factory):
     # for lomap, which wants the files in a directory
     lomap_files = tmpdir_factory.mktemp('lomap_files')
-    lomap_basic = 'openfe.tests.dara.lomap_basic'
+    lomap_basic = 'openfe.tests.data.lomap_basic'
 
     for f in importlib.resources.contents(lomap_basic):
         if not f.endswith('mol2'):
