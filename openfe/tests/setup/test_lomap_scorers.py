@@ -53,56 +53,54 @@ def methylnaphthalene_to_naphthol(lomap_basic_test_files):
     return openfe.setup.LigandAtomMapping(m1, m2, molA_to_molB=dict(mapping))
 
 
-class TestScorer:
-    def test_mcsr_zero(self, toluene_to_cyclohexane):
-        score = lomap_scorers.mcsr_score(toluene_to_cyclohexane)
+def test_mcsr_zero(toluene_to_cyclohexane):
+    score = lomap_scorers.mcsr_score(toluene_to_cyclohexane)
 
-        # all atoms map, so perfect score
-        assert score == 0
+    # all atoms map, so perfect score
+    assert score == 0
 
-    def test_mcsr_nonzero(self, toluene_to_methylnaphthalene):
-        score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene)
+def test_mcsr_nonzero(toluene_to_methylnaphthalene):
+    score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene)
 
-        assert score == pytest.approx(1 - math.exp(-0.1 * 4))
+    assert score == pytest.approx(1 - math.exp(-0.1 * 4))
 
-    def test_mcsr_custom_beta(self, toluene_to_methylnaphthalene):
-        score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene,
-                                         beta=0.2)
+def test_mcsr_custom_beta(toluene_to_methylnaphthalene):
+    score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene, beta=0.2)
 
-        assert score == pytest.approx(1 - math.exp(-0.2 * 4))
+    assert score == pytest.approx(1 - math.exp(-0.2 * 4))
 
-    def test_mcnar_score_pass(self, toluene_to_cyclohexane):
-        score = lomap_scorers.mcnar_score(toluene_to_cyclohexane)
+def test_mcnar_score_pass(toluene_to_cyclohexane):
+    score = lomap_scorers.mncar_score(toluene_to_cyclohexane)
 
-        assert score == 0
+    assert score == 0
 
-    def test_mcnar_score_fail(self, toluene_to_heptane):
-        score = lomap_scorers.mcnar_score(toluene_to_heptane)
+def test_mcnar_score_fail(toluene_to_heptane):
+    score = lomap_scorers.mncar_score(toluene_to_heptane)
 
-        assert score == float('inf')
+    assert score == 1.0
 
-    def test_atomic_number_score_pass(self, toluene_to_cyclohexane):
-        score = lomap_scorers.atomic_number_score(toluene_to_cyclohexane)
+def test_atomic_number_score_pass(toluene_to_cyclohexane):
+    score = lomap_scorers.atomic_number_score(toluene_to_cyclohexane)
 
-        assert score == 0.0
+    assert score == 0.0
 
-    def test_atomic_number_score_fail(self, methylnaphthalene_to_naphthol):
-        score = lomap_scorers.atomic_number_score(
-            methylnaphthalene_to_naphthol)
+def test_atomic_number_score_fail(methylnaphthalene_to_naphthol):
+    score = lomap_scorers.atomic_number_score(
+        methylnaphthalene_to_naphthol)
 
-        # single mismatch @ 0.5
-        assert score == pytest.approx(1 - math.exp(-0.1 * 0.5))
+    # single mismatch @ 0.5
+    assert score == pytest.approx(1 - math.exp(-0.1 * 0.5))
 
-    def test_atomic_number_score_weights(self, methylnaphthalene_to_naphthol):
-        difficulty = {
-            8: {6: 0.75},  # oxygen to carbon @ 12
-        }
+def test_atomic_number_score_weights(methylnaphthalene_to_naphthol):
+    difficulty = {
+        8: {6: 0.75},  # oxygen to carbon @ 12
+    }
 
-        score = lomap_scorers.atomic_number_score(
-            methylnaphthalene_to_naphthol, difficulty=difficulty)
+    score = lomap_scorers.atomic_number_score(
+        methylnaphthalene_to_naphthol, difficulty=difficulty)
 
-        # single mismatch @ (1 - 0.75)
-        assert score == pytest.approx(1 - math.exp(-0.1 * 0.25))
+    # single mismatch @ (1 - 0.75)
+    assert score == pytest.approx(1 - math.exp(-0.1 * 0.25))
 
 
 class TestSulfonamideRule:
@@ -139,7 +137,7 @@ class TestSulfonamideRule:
                                                  molB=ethylbenzene,
                                                  molA_to_molB=from_sulf_mapping,
         )
-        assert lomap_scorers.sulfonamides_score(mapping) == float('inf')
+        assert lomap_scorers.sulfonamides_score(mapping) == 1 - math.exp(-1 * 0.4)
 
     @staticmethod
     def test_sulfonamide_hit_forwards(ethylbenzene, sulfonamide,
@@ -151,7 +149,7 @@ class TestSulfonamideRule:
                                                  molB=sulfonamide,
                                                  molA_to_molB=AtoB)
 
-        assert lomap_scorers.sulfonamides_score(mapping) == float('inf')
+        assert lomap_scorers.sulfonamides_score(mapping) == 1 - math.exp(-1 * 0.4)
 
 
 @pytest.mark.parametrize('base,other,name,hit', [
@@ -179,10 +177,45 @@ def test_heterocycle_score(base, other, name, hit):
     mapping = next(mapper.suggest_mappings(m1, m2))
     score = lomap_scorers.heterocycles_score(mapping)
 
-    assert score == 0 if not hit else score > 0
+    assert score == 0 if not hit else score == 1 - math.exp(-0.4)
 
 
-# back to back test again lomap
+# test individual scoring functions against lomap
+SCORE_NAMES = {
+    'mcsr': 'mcsr_score',
+    'mncar': 'mncar_score',
+    'atomic_number_rule': 'atomic_number_score',
+    'hybridization_rule': 'hybridization_score',
+    'sulfonamides_rule': 'sulfonamides_score',
+    'heterocycles_rule': 'heterocycles_score',
+    'transmuting_methyl_into_ring_rule': 'transmuting_methyl_into_ring_score',
+    'transmuting_ring_sizes_rule': 'transmuting_ring_sizes_score'
+}
+IX = itertools.combinations(range(8), 2)
+
+
+@pytest.mark.parametrize('params', itertools.product(SCORE_NAMES, IX))
+def test_lomap_individual_scores(params,
+                                 lomap_basic_test_files):
+    scorename, (i, j) = params
+    mols = sorted(lomap_basic_test_files.items())
+    _, molA = mols[i]
+    _, molB = mols[j]
+
+    # reference value
+    lomap_version = getattr(lomap.MCS(molA.to_rdkit(),
+                                      molB.to_rdkit()), scorename)()
+
+    # longer way
+    mapper = openfe.setup.LomapAtomMapper()
+    mapping = next(mapper.suggest_mappings(molA, molB))
+    openfe_version = getattr(lomap_scorers, SCORE_NAMES[scorename])(mapping)
+
+    assert (lomap_version == pytest.approx(1 - openfe_version),
+            f"{molA.name} {molB.name} {scorename}")
+
+
+# full back to back test again lomap
 def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
                           lomap_basic_test_files):
     # run lomap

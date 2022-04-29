@@ -21,6 +21,10 @@ DEFAULT_ANS_DIFFICULTY = {
 }
 
 
+def ecr_score():
+    raise NotImplementedError
+
+
 def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
     """Maximum command substructure rule
 
@@ -52,10 +56,13 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
     return 1 - mcsr
 
 
-def mcnar_score(mapping: LigandAtomMapping, ths: int = 4):
+def mncar_score(mapping: LigandAtomMapping, ths: int = 4):
     """Minimum number of common atoms rule
 
-
+    Parameters
+    ----------
+    ths : int
+      the minimum number of atoms to share
     """
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
@@ -69,7 +76,7 @@ def mcnar_score(mapping: LigandAtomMapping, ths: int = 4):
 
     ok = (n_common > ths) or (n1 < ths + 3) or (n2 < ths + 3)
 
-    return 0.0 if ok else float('inf')
+    return 0.0 if ok else 1.0
 
 
 def tmcsr_score(self, mapping: LigandAtomMapping):
@@ -141,20 +148,18 @@ def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
     return 1 - atomic_number_rule
 
 
-def hybridization_score(mapping: LigandAtomMapping, beta=0.1, penalty=1.5):
+def hybridization_score(mapping: LigandAtomMapping, beta=0.15):
     """
 
     Score calculated as:
 
-    1 - math.exp(-beta * nmismatch * penalty)
+    1 - math.exp(-beta * nmismatch)
 
     Parameters
     ----------
     mapping : LigandAtomMapping
     beta : float, optional
-      default 0.1
-    penalty : float, optional
-      default 1.5
+      default 0.15
 
     Returns
     -------
@@ -184,15 +189,15 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.1, penalty=1.5):
         if mismatch:
             nmismatch += 1
 
-    hybridization_rule = math.exp(- beta * nmismatch * penalty)
+    hybridization_rule = math.exp(- beta * nmismatch)
 
     return 1 - hybridization_rule
 
 
-def sulfonamides_score(mapping: LigandAtomMapping):
+def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4):
     """Checks if a sulfonamide appears and disallow this.
 
-    Returns inf if this happens, else 0
+    Returns (1 - math.exp(- beta)) if this happens, else 0
     """
 
     def has_sulfonamide(mol):
@@ -221,7 +226,7 @@ def sulfonamides_score(mapping: LigandAtomMapping):
         remB.RemoveAtom(j)
 
     if has_sulfonamide(remA.GetMol()) or has_sulfonamide(remB.GetMol()):
-        return float('inf')
+        return 1 - math.exp(-beta)
     else:
         return 0
 
@@ -300,6 +305,9 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
     for i, j in mapping.molA_to_molB.items():
         a = molA.GetAtomWithIdx(i)
         b = molB.GetAtomWithIdx(j)
+        if a.GetAtomicNum() == 1 or b.GetAtomicNum() == 1:
+            continue
+
         if a.IsInRing() ^ b.IsInRing():
             ringbreak = True
             break
@@ -371,7 +379,7 @@ def default_lomap_score(mapping: LigandAtomMapping):
     I.e. high values are "bad", low values are "good"
     """
     score = math.prod((
-        1 - mcnar_score(mapping),
+        1 - mncar_score(mapping),
         1 - mcsr_score(mapping),
         1 - atomic_number_score(mapping),
         1 - hybridization_score(mapping),
