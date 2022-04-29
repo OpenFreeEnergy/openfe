@@ -5,16 +5,10 @@
 The MCS class from Lomap shamelessly wrapped and used here to match our API.
 
 """
-from collections import defaultdict
 from lomap import mcs as lomap_mcs
-import math
-from rdkit import Chem
 
-from . import LigandAtomMapper, LigandAtomMapping
+from . import LigandAtomMapper
 
-from openfe.utils.custom_typing import TypeAlias
-
-Lomap_MCS: TypeAlias = lomap_mcs.MCS
 
 
 class LomapAtomMapper(LigandAtomMapper):
