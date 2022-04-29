@@ -23,7 +23,10 @@ DEFAULT_ANS_DIFFICULTY = {
 
 
 def ecr_score(mapping: LigandAtomMapping):
-    return 1 - _dbmol.ecr(mapping.molA.to_rdkit(), mapping.molB.to_rdkit())
+    molA = mapping.molA.to_rdkit()
+    molB = mapping.molB.to_rdkit()
+
+    return 1 - _dbmol.ecr(molA,  molB)
 
 
 def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
@@ -42,12 +45,13 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
     """
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
 
     n1 = molA.GetNumHeavyAtoms()
     n2 = molB.GetNumHeavyAtoms()
     # get heavy atom mcs count
     n_common = 0
-    for i, j in mapping.molA_to_molB.items():
+    for i, j in molA_to_molB.items():
         if (molA.GetAtomWithIdx(i).GetAtomicNum() != 1
                 and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
             n_common += 1
@@ -67,10 +71,12 @@ def mncar_score(mapping: LigandAtomMapping, ths: int = 4):
     """
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
+
     n1 = molA.GetNumHeavyAtoms()
     n2 = molB.GetNumHeavyAtoms()
     n_common = 0
-    for i, j in mapping.molA_to_molB.items():
+    for i, j in molA_to_molB.items():
         if (molA.GetAtomWithIdx(i).GetAtomicNum() != 1
                 and molB.GetAtomWithIdx(j).GetAtomicNum() != 1):
             n_common += 1
@@ -111,14 +117,15 @@ def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
     -------
     score : float
     """
+    molA = mapping.molA.to_rdkit()
+    molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
+
     if difficulty is None:
         difficulty = DEFAULT_ANS_DIFFICULTY
 
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-
     nmismatch = 0
-    for i, j in mapping.molA_to_molB.items():
+    for i, j in molA_to_molB.items():
         atom_i = molA.GetAtomWithIdx(i)
         atom_j = molB.GetAtomWithIdx(j)
 
@@ -166,11 +173,12 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15):
     -------
     score : float
     """
-    nmismatch = 0
     mol1 = mapping.molA.to_rdkit()
     mol2 = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
 
-    for i, j in mapping.molA_to_molB.items():
+    nmismatch = 0
+    for i, j in molA_to_molB.items():
         atom_i = mol1.GetAtomWithIdx(i)
         atom_j = mol2.GetAtomWithIdx(j)
 
@@ -200,18 +208,18 @@ def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4):
 
     Returns (1 - math.exp(- beta)) if this happens, else 0
     """
+    molA = mapping.molA.to_rdkit()
+    molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
 
     def has_sulfonamide(mol):
         return mol.HasSubstructMatch(Chem.MolFromSmarts('S(=O)(=O)N'))
-
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
 
     # create "remainders" of both molA and molB
     remA = Chem.EditableMol(molA)
     # this incremental deletion only works when we go from high to low,
     # as atoms are reindexed as we delete
-    for i, j in sorted(mapping.molA_to_molB.items(), reverse=True):
+    for i, j in sorted(molA_to_molB.items(), reverse=True):
         if (molA.GetAtomWithIdx(i).GetAtomicNum() !=
                 molB.GetAtomWithIdx(j).GetAtomicNum()):
             continue
@@ -219,7 +227,7 @@ def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4):
     # loop molB separately, sorted by A indices doesn't necessarily sort
     # the B indices too, so these loops are in different orders
     remB = Chem.EditableMol(molB)
-    for i, j in sorted(mapping.molA_to_molB.items(), key=lambda x: x[1],
+    for i, j in sorted(molA_to_molB.items(), key=lambda x: x[1],
                        reverse=True):
         if (molA.GetAtomWithIdx(i).GetAtomicNum() !=
                 molB.GetAtomWithIdx(j).GetAtomicNum()):
@@ -241,6 +249,7 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
     """
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
 
     def creates_heterocyle(mol):
         # these patterns are lifted from lomap2 repo
@@ -258,7 +267,7 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
     remA = Chem.EditableMol(molA)
     # this incremental deletion only works when we go from high to low,
     # as atoms are reindexed as we delete
-    for i, j in sorted(mapping.molA_to_molB.items(), reverse=True):
+    for i, j in sorted(molA_to_molB.items(), reverse=True):
         if (molA.GetAtomWithIdx(i).GetAtomicNum() !=
                 molB.GetAtomWithIdx(j).GetAtomicNum()):
             continue
@@ -266,7 +275,7 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
     # loop molB separately, sorted by A indices doesn't necessarily sort
     # the B indices too, so these loops are in different orders
     remB = Chem.EditableMol(molB)
-    for i, j in sorted(mapping.molA_to_molB.items(), key=lambda x: x[1],
+    for i, j in sorted(molA_to_molB.items(), key=lambda x: x[1],
                        reverse=True):
         if (molA.GetAtomWithIdx(i).GetAtomicNum() !=
                 molB.GetAtomWithIdx(j).GetAtomicNum()):
@@ -301,14 +310,15 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
     """
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
 
     ringbreak = False
-    for i, j in mapping.molA_to_molB.items():
+    for i, j in molA_to_molB.items():
         atomA = molA.GetAtomWithIdx(i)
 
         for bA in atomA.GetBonds():
             otherA = bA.GetOtherAtom(atomA)
-            if otherA.GetIdx() in mapping.molA_to_molB:
+            if otherA.GetIdx() in molA_to_molB:
                 # if other end of bond in core, ignore
                 continue
 
@@ -316,7 +326,7 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
             atomB = molB.GetAtomWithIdx(j)
             for bB in atomB.GetBonds():
                 otherB = bB.GetOtherAtom(atomB)
-                if otherB.GetIdx() in mapping.molA_to_molB.values():
+                if otherB.GetIdx() in molA_to_molB.values():
                     continue
 
                 if otherA.IsInRing() ^ otherB.IsInRing():
@@ -332,6 +342,7 @@ def transmuting_ring_sizes_score(mapping: LigandAtomMapping):
     """Checks if mapping alters a ring size"""
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
+    molA_to_molB = mapping.molA_to_molB
 
     def gen_ringdict(mol):
         # maps atom idx to ring sizes
@@ -350,12 +361,12 @@ def transmuting_ring_sizes_score(mapping: LigandAtomMapping):
     is_bad = False
     # check first degree neighbours of core atoms to see if their ring
     # sizes are the same
-    for i, j in mapping.molA_to_molB.items():
+    for i, j in molA_to_molB.items():
         atomA = molA.GetAtomWithIdx(i)
 
         for bA in atomA.GetBonds():
             otherA = bA.GetOtherAtom(atomA)
-            if otherA.GetIdx() in mapping.molA_to_molB:
+            if otherA.GetIdx() in molA_to_molB:
                 # if other end of bond in core, ignore
                 continue
             # otherA is an atom not in the mapping, but bonded to an
@@ -367,7 +378,7 @@ def transmuting_ring_sizes_score(mapping: LigandAtomMapping):
             atomB = molB.GetAtomWithIdx(j)
             for bB in atomB.GetBonds():
                 otherB = bB.GetOtherAtom(atomB)
-                if otherB.GetIdx() in mapping.molA_to_molB.values():
+                if otherB.GetIdx() in molA_to_molB.values():
                     continue
                 if not otherB.IsInRing():
                     continue
