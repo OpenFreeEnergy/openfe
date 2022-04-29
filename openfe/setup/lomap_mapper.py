@@ -7,11 +7,14 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 """
 from lomap import mcs as lomap_mcs
 
-
 from . import LigandAtomMapper
 
 
 class LomapAtomMapper(LigandAtomMapper):
+    time: int
+    threed: bool
+    max3d: float
+
     def __init__(self, time: int = 20, threed: bool = False,
                  max3d: float = 1000.0):
         """Wraps the MCS atom mapper from Lomap.
@@ -43,9 +46,6 @@ class LomapAtomMapper(LigandAtomMapper):
             # if no match found, Lomap throws ValueError, so we just yield
             # generator with no contents
             return
-        # TODO: Once Lomap scorers exist, we'll want to keep a cache of
-        #       these mcs objects ({mapping: mcs}), so we can later query the
-        #       mcs that made a particular mapping to retrieve scores.
 
         mapping_string = mcs.all_atom_match_list()
         # lomap spits out "1:1,2:2,...,x:y", so split around commas,
