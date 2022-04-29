@@ -19,7 +19,8 @@ def toluene_to_cyclohexane(lomap_basic_test_files):
     tolu = lomap_basic_test_files['toluene']
     mapping = [(0, 0), (1, 1), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2)]
 
-    return openfe.setup.LigandAtomMapping(tolu, meth, molA_to_molB=dict(mapping))
+    return openfe.setup.LigandAtomMapping(tolu, meth,
+                                          molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -28,7 +29,8 @@ def toluene_to_methylnaphthalene(lomap_basic_test_files):
     naph = lomap_basic_test_files['2-methylnaphthalene']
     mapping = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 8), (5, 9), (6, 10)]
 
-    return openfe.setup.LigandAtomMapping(tolu, naph, molA_to_molB=dict(mapping))
+    return openfe.setup.LigandAtomMapping(tolu, naph,
+                                          molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -40,7 +42,8 @@ def toluene_to_heptane(lomap_basic_test_files):
 
     mapping = [(6, 0)]
 
-    return openfe.setup.LigandAtomMapping(tolu, hept, molA_to_molB=dict(mapping))
+    return openfe.setup.LigandAtomMapping(tolu, hept,
+                                          molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -59,30 +62,36 @@ def test_mcsr_zero(toluene_to_cyclohexane):
     # all atoms map, so perfect score
     assert score == 0
 
+
 def test_mcsr_nonzero(toluene_to_methylnaphthalene):
     score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene)
 
     assert score == pytest.approx(1 - math.exp(-0.1 * 4))
+
 
 def test_mcsr_custom_beta(toluene_to_methylnaphthalene):
     score = lomap_scorers.mcsr_score(toluene_to_methylnaphthalene, beta=0.2)
 
     assert score == pytest.approx(1 - math.exp(-0.2 * 4))
 
+
 def test_mcnar_score_pass(toluene_to_cyclohexane):
     score = lomap_scorers.mncar_score(toluene_to_cyclohexane)
 
     assert score == 0
+
 
 def test_mcnar_score_fail(toluene_to_heptane):
     score = lomap_scorers.mncar_score(toluene_to_heptane)
 
     assert score == 1.0
 
+
 def test_atomic_number_score_pass(toluene_to_cyclohexane):
     score = lomap_scorers.atomic_number_score(toluene_to_cyclohexane)
 
     assert score == 0.0
+
 
 def test_atomic_number_score_fail(methylnaphthalene_to_naphthol):
     score = lomap_scorers.atomic_number_score(
@@ -90,6 +99,7 @@ def test_atomic_number_score_fail(methylnaphthalene_to_naphthol):
 
     # single mismatch @ 0.5
     assert score == pytest.approx(1 - math.exp(-0.1 * 0.5))
+
 
 def test_atomic_number_score_weights(methylnaphthalene_to_naphthol):
     difficulty = {
@@ -130,14 +140,16 @@ class TestSulfonamideRule:
     @staticmethod
     def test_sulfonamide_hit_backwards(ethylbenzene, sulfonamide,
                                        from_sulf_mapping):
-        # a sulfonamide completely disappears on the RHS, so should trigger the
-        # sulfonamide score to try and forbid this
+        # a sulfonamide completely disappears on the RHS, so should trigger
+        # the sulfonamide score to try and forbid this
 
-        mapping = openfe.setup.LigandAtomMapping(molA=sulfonamide,
-                                                 molB=ethylbenzene,
-                                                 molA_to_molB=from_sulf_mapping,
+        mapping = openfe.setup.LigandAtomMapping(
+            molA=sulfonamide,
+            molB=ethylbenzene,
+            molA_to_molB=from_sulf_mapping,
         )
-        assert lomap_scorers.sulfonamides_score(mapping) == 1 - math.exp(-1 * 0.4)
+        expected = 1 - math.exp(-1 * 0.4)
+        assert lomap_scorers.sulfonamides_score(mapping) == expected
 
     @staticmethod
     def test_sulfonamide_hit_forwards(ethylbenzene, sulfonamide,
@@ -149,7 +161,8 @@ class TestSulfonamideRule:
                                                  molB=sulfonamide,
                                                  molA_to_molB=AtoB)
 
-        assert lomap_scorers.sulfonamides_score(mapping) == 1 - math.exp(-1 * 0.4)
+        expected = 1 - math.exp(-1 * 0.4)
+        assert lomap_scorers.sulfonamides_score(mapping) == expected
 
 
 @pytest.mark.parametrize('base,other,name,hit', [
