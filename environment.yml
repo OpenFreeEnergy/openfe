@@ -14,7 +14,7 @@ dependencies:
   - pydantic
   - coverage
   - openff-toolkit
-  - openff-units
+  - openff-units>=0.1.6
   - openmmforcefields
   - click
   - openeye-toolkits

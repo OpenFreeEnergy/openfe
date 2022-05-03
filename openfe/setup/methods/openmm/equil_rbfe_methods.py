@@ -35,11 +35,6 @@ from openfe.setup import (
 from openfe.setup.methods import FEMethod
 from openfe.setup import _rbfe_utils
 
-# define a timestep
-# this isn't convertible to time (e.g ps) and is used to not confuse these two
-# definitions of "duration" within a simulation
-unit.define('timestep = [timestep] = _ = timesteps')
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
