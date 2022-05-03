@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from rdkit import Chem
 import pytest
+import networkx as nx
 
 import openfe.setup
 
@@ -82,4 +83,45 @@ def test_radial_network_failure(lomap_basic_test_files):
         network = openfe.setup.ligand_network_planning.generate_radial_network(
             ligands=[nigel], central_ligand=lomap_basic_test_files['toluene'],
             mappers=[openfe.setup.LomapAtomMapper()], scorer=None
+        )
+
+
+def test_minimal_spanning_graph(toluene_vs_others):
+    toluene, others = toluene_vs_others
+    mappers = [BadMapper(), openfe.setup.LomapAtomMapper()]
+
+    def scorer(mapping):
+        return 1.0 / len(mapping.molA_to_molB)
+
+    network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
+        ligands=others + [toluene],
+        mappers=mappers,
+        scorer=scorer
+    )
+
+    assert len(network.nodes) == len(others) + 1
+    for edge in network.edges:
+        assert edge.molA_to_molB != {0: 0}  # lomap should find something
+
+    found_pairs = set()
+    for edge in network.edges:
+        pair = frozenset([edge.molA, edge.molB])
+        assert pair not in found_pairs
+        found_pairs.add(pair)
+
+    assert nx.is_connected(nx.MultiGraph(network.graph))
+
+
+def test_minimal_spanning_graph_unreachable(toluene_vs_others):
+    toluene, others = toluene_vs_others
+    nimrod = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles("N"))
+
+    def scorer(mapping):
+        return 1.0 / len(mapping.molA_to_molB)
+
+    with pytest.raises(RuntimeError, match="Unable to create edges"):
+        network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
+            ligands=others + [toluene, nimrod],
+            mappers=[openfe.setup.LomapAtomMapper()],
+            scorer=scorer
         )
