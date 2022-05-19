@@ -589,7 +589,7 @@ class RelativeLigandTransform(FEMethod):
                       f"timesteps between MC moves {mc_steps}")
             raise ValueError(errmsg)
 
-        prod_time = sim_settings.equilibration_length.to('femtosecond')
+        prod_time = sim_settings.production_length.to('femtosecond')
         prod_steps = round(prod_time / timestep)
 
         if (prod_steps.m % mc_steps) != 0:  # type: ignore
@@ -878,7 +878,7 @@ class RelativeLigandTransform(FEMethod):
             if verbose:
                 logger.info("running production phase")
 
-            sampler.extend(int(equil_steps.m / mc_steps))  # type: ignore
+            sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
             return True
         else:
