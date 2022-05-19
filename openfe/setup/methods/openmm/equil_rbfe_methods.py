@@ -878,7 +878,7 @@ class RelativeLigandTransform(FEMethod):
             if verbose:
                 logger.info("running production phase")
 
-            sampler.extend(int(equil_steps.m / mc_steps))  # type: ignore
+            sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
             return True
         else:
