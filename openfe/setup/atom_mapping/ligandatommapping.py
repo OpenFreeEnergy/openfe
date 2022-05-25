@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import gufe
 import json
 from typing import Any, Dict, List, Optional
 import numpy as np
@@ -10,7 +11,7 @@ from openfe.setup import SmallMoleculeComponent
 from openfe.utils.visualization import draw_mapping
 
 
-class LigandAtomMapping(Serializable):
+class LigandAtomMapping(gufe.Mapping, Serializable):
     """Simple container with the mapping between two Molecules
 
     Attributes

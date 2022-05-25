@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import gufe
 import pytest
 from openff.units import unit
 
@@ -82,13 +83,9 @@ def test_create_default_settings():
     assert settings
 
 
-def test_create_default_protocol(benzene_system, toluene_system,
-                                 benzene_to_toluene_mapping):
+def test_create_default_protocol():
     # this is roughly how it should be created
     protocol = openmm.RelativeLigandTransform(
-        stateA=benzene_system,
-        stateB=toluene_system,
-        ligandmapping=benzene_to_toluene_mapping,
         settings=openmm.RelativeLigandTransform.get_default_settings(),
     )
 

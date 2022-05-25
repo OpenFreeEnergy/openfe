@@ -19,6 +19,8 @@ from __future__ import annotations
 import os
 import logging
 
+import gufe
+import networkx as nx
 import numpy as np
 import openmm
 from openff.units import unit
@@ -30,13 +32,12 @@ from typing import Dict, List, Union, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
+from typing import Any, Iterable
 import openmmtools
 
 from openfe.setup import (
-    ChemicalSystem, SmallMoleculeComponent, SolventComponent,
+    ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
 )
-from openfe.setup.atom_mapping import LigandAtomMapping
-from openfe.setup.methods import FEMethod
 from openfe.setup import _rbfe_utils
 
 logger = logging.getLogger(__name__)
@@ -456,7 +457,69 @@ class RelativeLigandTransformResults:
         return error
 
 
-class RelativeLigandTransform(FEMethod):
+class RelativeLigandTransform(gufe.Protocol):
+    _results_cls = RelativeLigandTransformResults
+
+    def __init__(self, settings: RelativeLigandTransformSettings):
+        super().__init__(settings)
+
+    @classmethod
+    def get_default_settings(cls) -> RelativeLigandTransformSettings:
+        """A dictionary of initial settings for this creating this Protocol
+
+        These settings are intended as a suitable starting point for creating
+        an instance of this protocol.  It is recommended, however that care is
+        taken to inspect and customize these before performing a Protocol.
+
+        Returns
+        -------
+        RelativeLigandTransformSettings
+          a set of default settings
+        """
+        return RelativeLigandTransformSettings(
+            system_settings=SystemSettings(
+                constraints='HBonds'
+            ),
+            topology_settings=TopologySettings(
+                forcefield={'protein': 'amber99sb.xml',
+                            'ligand': 'openff-2.0.0.offxml',
+                            'solvent': 'tip3p.xml'},
+            ),
+            alchemical_settings=AlchemicalSettings(),
+            sampler_settings=SamplerSettings(),
+            barostat_settings=BarostatSettings(),
+            integrator_settings=IntegratorSettings(),
+            simulation_settings=SimulationSettings(
+                equilibration_length=2.0 * unit.nanosecond,
+                production_length=5.0 * unit.nanosecond,
+            )
+        )
+
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: LigandAtomMapping = None,
+        extend_from: Optional[gufe.ProtocolDAGResult] = None,
+    ) -> nx.DiGraph:
+        # our DAG has no dependencies, so just load up a graph with nodes
+        g = nx.DiGraph()
+
+        g.add_node(RelativeLigandTransformUnit(
+            stateA=stateA, stateB=stateB, ligandmapping=mapping,
+            settings=self.settings,
+        ))
+
+        return g
+
+    def _gather(
+        self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
+    ) -> Dict[str, Any]:
+        return {
+            i: r for i, r in enumerate(protocol_dag_results)
+        }
+
+class RelativeLigandTransformUnit(gufe.ProtocolUnit):
     """Calculates the relative free energy of an alchemical ligand transformation.
 
     """
@@ -536,38 +599,6 @@ class RelativeLigandTransform(FEMethod):
                     f"Element change in mapping between atoms "
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
                     f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
-
-    @classmethod
-    def get_default_settings(cls) -> RelativeLigandTransformSettings:
-        """A dictionary of initial settings for this creating this Protocol
-
-        These settings are intended as a suitable starting point for creating
-        an instance of this protocol.  It is recommended, however that care is
-        taken to inspect and customize these before performing a Protocol.
-
-        Returns
-        -------
-        RelativeLigandTransformSettings
-          a set of default settings
-        """
-        return RelativeLigandTransformSettings(
-            system_settings=SystemSettings(
-                constraints='HBonds'
-            ),
-            topology_settings=TopologySettings(
-                forcefield={'protein': 'amber99sb.xml',
-                            'ligand': 'openff-2.0.0.offxml',
-                            'solvent': 'tip3p.xml'},
-            ),
-            alchemical_settings=AlchemicalSettings(),
-            sampler_settings=SamplerSettings(),
-            barostat_settings=BarostatSettings(),
-            integrator_settings=IntegratorSettings(),
-            simulation_settings=SimulationSettings(
-                equilibration_length=2.0 * unit.nanosecond,
-                production_length=5.0 * unit.nanosecond,
-            )
-        )
 
     def to_dict(self) -> dict:
         """Serialize to dict representation"""
@@ -950,6 +981,17 @@ class RelativeLigandTransform(FEMethod):
             fn = self._settings.simulation_settings.output_filename
             os.remove(fn)
             return True
+
+    def _execute(
+        self, dependency_results: Iterable[gufe.ProtocolUnitResult]
+    ) -> Dict[str, Any]:
+        if not self.run():
+            # TODO: Need failure return
+            raise ValueError
+
+        return {
+            'nc': self._settings.simulation_settings.output_filename,
+        }
 
     def is_complete(self) -> bool:
         results_file = self._settings.simulation_settings.output_filename
