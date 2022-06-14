@@ -29,6 +29,7 @@ from typing import Dict, List, Union, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
+import pathlib
 from typing import Any, Iterable
 
 from openfe.setup import (
@@ -339,6 +340,8 @@ class SimulationSettings(BaseModel):
     output_indices : str
       Selection string for which part of the system to write coordinates for.
       Default 'all'.
+    keep_ncfile: bool
+      If to keep the entire timeseries of energies, default "False"
     checkpoint_interval : int * unit.timestep
       Frequency to write the checkpoint file. Default 50 * unit.timestep
     checkpoint_storage : str
@@ -356,6 +359,7 @@ class SimulationSettings(BaseModel):
     # reporter settings
     output_filename = 'rbfe.nc'
     output_indices = 'all'
+    keep_ncfile: bool = False
     checkpoint_interval = 50 * unit.timestep
     checkpoint_storage: Optional[str] = None
 
@@ -400,6 +404,8 @@ class RelativeLigandTransformSettings(BaseModel):
 
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
+
+    results_settings: ResultsSettings
 
 
 class RelativeLigandTransformResults:
@@ -486,6 +492,7 @@ class RelativeLigandTransform(gufe.Protocol):
         # our DAG has no dependencies, so just load up a graph with nodes
         g = nx.DiGraph()
 
+        # TODO: This should be once per replica
         g.add_node(RelativeLigandTransformUnit(
             stateA=stateA, stateB=stateB, ligandmapping=mapping,
             settings=self.settings,
@@ -496,9 +503,12 @@ class RelativeLigandTransform(gufe.Protocol):
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> Dict[str, Any]:
+        # smush many finished DAGs into a single Result object
+        # this dict gets wrapped inside
         return {
             i: r for i, r in enumerate(protocol_dag_results)
         }
+
 
 class RelativeLigandTransformUnit(gufe.ProtocolUnit):
     """Calculates the relative free energy of an alchemical ligand transformation.
@@ -530,6 +540,10 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
           can be updated to suit.
 
         """
+        super().__init__(
+            settings=settings,
+        )
+
         self._stateA = stateA
         self._stateB = stateB
         self._mapping = ligandmapping
@@ -925,25 +939,21 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             # TODO: Need failure return
             raise ValueError
 
+        # TODO: Metadata here too?
         return {
-            'nc': self._settings.simulation_settings.output_filename,
+            'nc': pathlib.Path(self._settings.simulation_settings.output_filename),
         }
 
-    def is_complete(self) -> bool:
-        results_file = self._settings.simulation_settings.output_filename
 
-        # TODO: Can improve upon this by checking expected length of the
-        #       nc archive?
-        return os.path.exists(results_file)
+class RelativeLigandTransformResult(gufe.ProtocolResult):
+    def to_dict(self) -> dict:
+        pass
 
-    def get_results(self) -> RelativeLigandTransformResults:
-        """Return payload created by this workload
+    def get_estimate(self):
+        pass
 
-        Raises
-        ------
-        ValueError
-          if the results do not exist yet
-        """
-        if not self.is_complete():
-            raise ValueError("Results have not been generated")
-        return RelativeLigandTransformResults(self._settings)
+    def get_uncertainty(self):
+        pass
+
+    def get_rate_of_convergence(self):
+        pass
