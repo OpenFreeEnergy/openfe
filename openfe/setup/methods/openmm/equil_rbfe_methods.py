@@ -424,18 +424,29 @@ class RelativeLigandTransformSettings(BaseModel):
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
 
-    results_settings: ResultsSettings
 
-
-class RelativeLigandTransformResults:
+class RelativeLigandTransformResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeLigandTransform"""
-    def __init__(self, settings: RelativeLigandTransformSettings):
-        self._parent_settings = settings
-        fn = self._parent_settings.simulation_settings.output_filename
-        self._reporter = multistate.MultiStateReporter(fn)
-        self._analyzer = multistate.MultiStateSamplerAnalyzer(self._reporter)
+    def __init__(self, dags: Iterable[gufe.ProtocolDAGResult]):
+        # i.e. self._data = dags
+        super().__init__(dags)
+        # TODO: Detect when we have extensions and stitch these together?
 
-    def dG(self):
+        self._analyzers = []
+
+        gen: gufe.ProtocolDAGResult
+        run: gufe.ProtocolUnitResult
+        for gen in self._data:
+            for run in gen.protocol_unit_results:
+                reporter = multistate.MultiStateReporter(run.nc)
+                analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
+
+                self._analyzers.append(analyzer)
+
+    def to_dict(self) -> dict:
+        raise NotImplementedError
+
+    def get_estimate(self):
         """Free energy difference of this transformation
 
         Returns
@@ -454,7 +465,7 @@ class RelativeLigandTransformResults:
 
         return dG
 
-    def dG_error(self):
+    def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
         _, error = self._analyzer.get_free_energy()
         error = (error[0, -1] * self._analyzer.kT).in_units_of(
@@ -462,9 +473,12 @@ class RelativeLigandTransformResults:
 
         return error
 
+    def get_rate_of_convergence(self):
+        return 0
+
 
 class RelativeLigandTransform(gufe.Protocol):
-    _results_cls = RelativeLigandTransformResults
+    _results_cls = RelativeLigandTransformResult
 
     def __init__(self, settings: RelativeLigandTransformSettings):
         super().__init__(settings)
@@ -523,7 +537,7 @@ class RelativeLigandTransform(gufe.Protocol):
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> Dict[str, Any]:
         # smush many finished DAGs into a single Result object
-        # this dict gets wrapped inside
+        # this dict gets passed to RelativeLigandTransformResult
         return {
             i: r for i, r in enumerate(protocol_dag_results)
         }
@@ -1005,19 +1019,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         # TODO: Metadata here too?
         return {
+            # TODO: Is this already abs?
             'nc': pathlib.Path(self._settings.simulation_settings.output_filename),
         }
-
-
-class RelativeLigandTransformResult(gufe.ProtocolResult):
-    def to_dict(self) -> dict:
-        pass
-
-    def get_estimate(self):
-        pass
-
-    def get_uncertainty(self):
-        pass
-
-    def get_rate_of_convergence(self):
-        pass
