@@ -459,14 +459,27 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         ----
         * Check this holds up completely for SAMS.
         """
-        dG, _ = self._analyzer.get_free_energy()
-        dG = (dG[0, -1] * self._analyzer.kT).in_units_of(
-            omm_unit.kilocalories_per_mole)
+        raise NotImplementedError()
 
-        return dG
+        dGs = []
+        weights = []
+
+        for analyzer in self._analyzers:
+            dG, _ = analyzer.get_free_energy()
+            dG = (dG[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole)
+
+            weight = analyzer._get_equilibration_data()[2]
+
+            dGs.append(dG)
+            weights.append(weight)
+
+        return np.average(dGs, weights=weights)
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
+        # https: // en.wikipedia.org / wiki / Inverse - variance_weighting ?
+        raise NotImplementedError()
         _, error = self._analyzer.get_free_energy()
         error = (error[0, -1] * self._analyzer.kT).in_units_of(
             omm_unit.kilocalories_per_mole)
