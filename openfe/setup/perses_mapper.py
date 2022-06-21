@@ -7,9 +7,12 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 """
 
 from enum import Enum
-from perses.rjmc.atom_mapping import AtomMapper
 
-from . import LigandAtomMapper
+from openmm import unit
+
+from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+
+from openfe.setup import LigandAtomMapper
 
 class PersesMappingType(Enum):
     best = 1
@@ -17,56 +20,75 @@ class PersesMappingType(Enum):
     proposed = 3
     all = 4
 
+
+"""Wraps the MCS atom mapper from Lomap.
+
+Kwargs are passed directly to the MCS class from Lomap for each mapping
+created
+
+Parameters
+----------
+time : int, optional
+  timeout of MCS algorithm, passed to RDKit
+  default 20
+threed : bool, optional
+  if true, positional info is used to choose between symmetry
+  equivalent mappings, default False
+max3d : float, optional
+  maximum discrepancy in Angstroms between atoms before mapping is not
+  allowed, default 1000.0, which effectively trims no atoms
+"""
+
+
+
+
+
+
 class PersesAtomMapper(LigandAtomMapper):
     unmap_partially_mapped_cycles: bool
     preserve_chirality: bool
     mapping_type:PersesMappingType
 
+    _atom_mappings: AtomMapping
+
     __atom_mapper: AtomMapper
 
 
-    def __init__(self, full_cycles_only:bool=True, preserve_chirality:bool=True,
-                 mapping_type:PersesMappingType=PersesMappingType.best):
-        """Wraps the MCS atom mapper from Lomap.
+    def __init__(self, full_cycles_only:bool=True, preserve_chirality:bool=True, use_positions:bool=True,
+                 mapping_type:PersesMappingType=PersesMappingType.best, coordinate_tolerance:float=0.25*unit.angstrom):
 
-        Kwargs are passed directly to the MCS class from Lomap for each mapping
-        created
-
-        Parameters
-        ----------
-        time : int, optional
-          timeout of MCS algorithm, passed to RDKit
-          default 20
-        threed : bool, optional
-          if true, positional info is used to choose between symmetry
-          equivalent mappings, default False
-        max3d : float, optional
-          maximum discrepancy in Angstroms between atoms before mapping is not
-          allowed, default 1000.0, which effectively trims no atoms
-        """
-        self.unmap_partially_mapped_cycles = unmap_partially_mapped_cycles
+        self.unmap_partially_mapped_cycles = full_cycles_only
         self.preserve_chirality = preserve_chirality
         self.mapping_type = mapping_type
+        #self.map_stength = map_strength
+        self.use_positions = use_positions
+        self.coordinate_tolerance = coordinate_tolerance
 
+        self._atom_mappings = None
 
 
     def _mappings_generator(self, molA, molB):
-        self.__atom_mapper = AtomMapper()
+        self.__atom_mapper = AtomMapper(use_positions=self.use_positions, coordinate_tolerance=self.coordinate_tolerance)
 
+        #Type of mapping
         if(self.mapping_type == PersesMappingType.best):
-            self.atom_mappings = self.__atom_mapper.get_best_mapping(old_mol=molA, new_mol=molB)
+            self._atom_mappings = self.__atom_mapper.get_best_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())
         elif(self.mapping_type == PersesMappingType.sampled):
-            self.__atom_mapper.get_sampled_mapping(old_mol=molA, new_mol=molB)
+            self._atom_mappings = self.__atom_mapper.get_sampled_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())
         elif(self.mapping_type == PersesMappingType.proposed): #Not Implemented right now
-            self.__atom_mapper.propose_mapping(old_mol=molA, new_mol=molB)
+            self._atom_mappings = self.__atom_mapper.propose_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())
         elif(self.mapping_type == PersesMappingType.all):
-            self.__atom_mapper.get_all_mappings(old_mol=molA, new_mol=molB)
+            raise NotImplementedError("This feature is note available in openFE")
+            self._atom_mappings = self.__atom_mapper.get_all_mappings(old_mol=molA.to_openff(), new_mol=molB.to_openff())
         else:
-            raise ValueError("Mapping type value error! Please chose one of the provided Enum options. Given: "str(self.mapping_type))
+            raise ValueError("Mapping type value error! Please chose one of the provided Enum options. Given: "+str(self.mapping_type))
 
-        mapping_dict = dict((map(int, v.split(':'))
-                             for v in mapping_string.split(',')))
+        #Post processing
+        if(self.unmap_partially_mapped_cycles):
+            self._atom_mappings.unmap_partially_mapped_cycles()
+        if(self.preserve_chirality):
+            self._atom_mappings.preserve_chirality()
 
+        mapping_dict = self._atom_mappings.new_to_old_atom_map
         yield mapping_dict
         return
-from perses.rjmc.atom_mapping import AtomMapper
