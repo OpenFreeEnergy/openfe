@@ -53,6 +53,5 @@ class LigandAtomMapper:
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
-        for map_dct in self._mappings_generator(molA.to_rdkit(),
-                                                molB.to_rdkit()):
+        for map_dct in self._mappings_generator(molA, molB):
             yield LigandAtomMapping(molA, molB, map_dct)
