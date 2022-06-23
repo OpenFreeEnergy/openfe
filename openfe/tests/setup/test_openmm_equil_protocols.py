@@ -216,3 +216,26 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
             ligandmapping=benzene_to_toluene_mapping,
             settings=openmm.RelativeLigandTransform.get_default_settings(),
         )
+
+
+def test_element_change_rejection(lomap_basic_test_files):
+    # check a mapping with element change gets rejected early
+    l1 = lomap_basic_test_files['2-methylnaphthalene']
+    l2 = lomap_basic_test_files['2-naftanol']
+
+    mapper = setup.LomapAtomMapper()
+    mapping = next(mapper.suggest_mappings(l1, l2))
+
+    sys1 = setup.ChemicalSystem(
+        {'ligand': l1, 'solvent': setup.SolventComponent()},
+    )
+    sys2 = setup.ChemicalSystem(
+        {'ligand': l2, 'solvent': setup.SolventComponent()},
+    )
+
+    with pytest.raises(ValueError, match="Element change"):
+        _ = openmm.RelativeLigandTransform(
+            stateA=sys1, stateB=sys2,
+            ligandmapping=mapping,
+            settings=openmm.RelativeLigandTransform.get_default_settings(),
+        )
