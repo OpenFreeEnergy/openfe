@@ -11,8 +11,8 @@
 # {GUFE_VERSION}
 
 from rdkit import Chem
-from openfe.setup import SmallMoleculeComponent, LigandAtomMapping, Network
-
+from openfe.setup import SmallMoleculeComponent, Network
+from openfe.setup.atom_mapping import LigandAtomMapping
 # multi_molecule.sdf
 mol1 = Chem.MolFromSmiles("CCO")
 mol2 = Chem.MolFromSmiles("CCC")

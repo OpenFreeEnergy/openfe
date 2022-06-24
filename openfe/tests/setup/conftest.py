@@ -9,8 +9,8 @@ from openmm.app import PDBFile
 
 import gufe
 import openfe
-from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
-
+from openfe.setup import SmallMoleculeComponent
+from openfe.setup.atom_mapping import LigandAtomMapping
 
 @pytest.fixture(scope='session')
 def ethane():

@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
-from openfe.setup import LigandAtomMapping
+from .ligandatommapping import LigandAtomMapping
 
 
 def default_perses_scorer(mapping: LigandAtomMapping):

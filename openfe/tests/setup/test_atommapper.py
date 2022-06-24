@@ -1,6 +1,6 @@
 import pytest
 
-from openfe.setup.ligandatommapper import LigandAtomMapper
+from openfe.setup.atom_mapping.ligandatommapper import LigandAtomMapper
 
 
 class TestAtomMapper:

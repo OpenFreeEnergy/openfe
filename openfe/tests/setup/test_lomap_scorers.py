@@ -7,11 +7,13 @@ import math
 import numpy as np
 from numpy.testing import assert_allclose
 import openfe
-from openfe.setup import lomap_scorers
+from openfe.setup.atom_mapping import lomap_scorers
+
 import pytest
 from rdkit import Chem
 from rdkit.Chem.AllChem import Compute2DCoords
 
+atom_mapping_cls = openfe.setup.atom_mapping.LigandAtomMapping
 
 @pytest.fixture()
 def toluene_to_cyclohexane(lomap_basic_test_files):
@@ -19,8 +21,8 @@ def toluene_to_cyclohexane(lomap_basic_test_files):
     tolu = lomap_basic_test_files['toluene']
     mapping = [(0, 0), (1, 1), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2)]
 
-    return openfe.setup.LigandAtomMapping(tolu, meth,
-                                          molA_to_molB=dict(mapping))
+    return atom_mapping_cls(tolu, meth,
+                        molA_to_molB=dict(mapping))
 
 
 @pytest.fixture()
@@ -29,7 +31,7 @@ def toluene_to_methylnaphthalene(lomap_basic_test_files):
     naph = lomap_basic_test_files['2-methylnaphthalene']
     mapping = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 8), (5, 9), (6, 10)]
 
-    return openfe.setup.LigandAtomMapping(tolu, naph,
+    return atom_mapping_cls(tolu, naph,
                                           molA_to_molB=dict(mapping))
 
 
@@ -42,7 +44,7 @@ def toluene_to_heptane(lomap_basic_test_files):
 
     mapping = [(6, 0)]
 
-    return openfe.setup.LigandAtomMapping(tolu, hept,
+    return atom_mapping_cls(tolu, hept,
                                           molA_to_molB=dict(mapping))
 
 
@@ -53,7 +55,7 @@ def methylnaphthalene_to_naphthol(lomap_basic_test_files):
     mapping = [(0, 0), (1, 1), (2, 10), (3, 9), (4, 8), (5, 7), (6, 6), (7, 5),
                (8, 4), (9, 3), (10, 2)]
 
-    return openfe.setup.LigandAtomMapping(m1, m2, molA_to_molB=dict(mapping))
+    return atom_mapping_cls(m1, m2, molA_to_molB=dict(mapping))
 
 
 def test_mcsr_zero(toluene_to_cyclohexane):
@@ -143,7 +145,7 @@ class TestSulfonamideRule:
         # a sulfonamide completely disappears on the RHS, so should trigger
         # the sulfonamide score to try and forbid this
 
-        mapping = openfe.setup.LigandAtomMapping(
+        mapping = atom_mapping_cls(
             molA=sulfonamide,
             molB=ethylbenzene,
             molA_to_molB=from_sulf_mapping,
@@ -157,7 +159,7 @@ class TestSulfonamideRule:
         AtoB = {v: k for k, v in from_sulf_mapping.items()}
 
         # this is the standard output from lomap_scorers
-        mapping = openfe.setup.LigandAtomMapping(molA=ethylbenzene,
+        mapping = atom_mapping_cls(molA=ethylbenzene,
                                                  molB=sulfonamide,
                                                  molA_to_molB=AtoB)
 
@@ -186,7 +188,7 @@ def test_heterocycle_score(base, other, name, hit):
     m1 = openfe.setup.SmallMoleculeComponent.from_rdkit(r1)
     m2 = openfe.setup.SmallMoleculeComponent.from_rdkit(r2)
 
-    mapper = openfe.setup.LomapAtomMapper()
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper()
     mapping = next(mapper.suggest_mappings(m1, m2))
     score = lomap_scorers.heterocycles_score(mapping)
 
@@ -220,7 +222,7 @@ def test_lomap_individual_scores(params,
                                       molB.to_rdkit()), scorename)()
 
     # longer way
-    mapper = openfe.setup.LomapAtomMapper()
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper()
     mapping = next(mapper.suggest_mappings(molA, molB))
     openfe_version = getattr(lomap_scorers, SCORE_NAMES[scorename])(mapping)
 
@@ -245,7 +247,7 @@ def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
         nm = dbmols[i].getName()
         smallmols.append(lomap_basic_test_files[nm[:-5]])  # - ".mol2"
 
-    mapper = openfe.setup.LomapAtomMapper()
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper()
     scorer = lomap_scorers.default_lomap_score
     scores = np.zeros_like(matrix)
     for i, j in itertools.combinations(range(matrix.shape[0]), 2):

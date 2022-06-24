@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import json
 from typing import Dict, Any, Optional
 from openff.toolkit.utils.serialization import Serializable
-from rdkit import Chem
 
 from openfe.setup import SmallMoleculeComponent
 from openfe.utils.visualization import draw_mapping

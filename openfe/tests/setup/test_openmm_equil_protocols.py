@@ -52,7 +52,7 @@ def toluene_complex_system(benzene_modifications, T4_protein_component):
 
 @pytest.fixture
 def benzene_to_toluene_mapping(benzene_modifications):
-    mapper = setup.LomapAtomMapper()
+    mapper = setup.atom_mapping.LomapAtomMapper()
 
     molA = benzene_modifications['benzene']
     molB = benzene_modifications['toluene']
@@ -155,7 +155,7 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
 def test_mapping_mismatch_A(benzene_system, toluene_system,
                             benzene_modifications):
     # the atom mapping doesn't refer to the ligands in the systems
-    mapping = setup.LigandAtomMapping(molA=benzene_system.components['ligand'],
+    mapping = setup.atom_mapping.LigandAtomMapping(molA=benzene_system.components['ligand'],
                                       molB=benzene_modifications['phenol'],
                                       molA_to_molB=dict())
 
@@ -171,7 +171,7 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
 
 def test_mapping_mismatch_B(benzene_system, toluene_system,
                             benzene_modifications):
-    mapping = setup.LigandAtomMapping(molA=benzene_modifications['phenol'],
+    mapping = setup.atom_mapping.LigandAtomMapping(molA=benzene_modifications['phenol'],
                                       molB=toluene_system.components['ligand'],
                                       molA_to_molB=dict())
 

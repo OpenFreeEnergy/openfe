@@ -12,7 +12,7 @@ from openmm import unit
 
 from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
-from openfe.setup import LigandAtomMapper
+from .ligandatommapper import LigandAtomMapper
 
 class PersesMappingType(Enum):
     best = 1

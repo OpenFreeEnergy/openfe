@@ -30,8 +30,9 @@ from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 import openmmtools
 
 from openfe.setup import (
-    ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
+    ChemicalSystem, SmallMoleculeComponent, SolventComponent,
 )
+from openfe.setup.atom_mapping import LigandAtomMapping
 from openfe.setup.methods import FEMethod
 from openfe.setup import _rbfe_utils
 

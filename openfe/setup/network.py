@@ -5,7 +5,9 @@ import json
 
 from typing import FrozenSet, Iterable
 
-from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
+from openfe.setup import SmallMoleculeComponent
+from openfe.setup.atom_mapping import LigandAtomMapping
+
 import openfe
 
 import networkx as nx

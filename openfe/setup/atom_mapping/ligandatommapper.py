@@ -3,8 +3,10 @@
 
 from typing import Iterable, Dict
 
-from . import LigandAtomMapping, SmallMoleculeComponent
-from ..utils.errors import ABSTRACT_ERROR_STRING
+from openfe.setup import SmallMoleculeComponent
+from .ligandatommapping import LigandAtomMapping
+
+from openfe.utils.errors import ABSTRACT_ERROR_STRING
 
 
 class LigandAtomMapper:

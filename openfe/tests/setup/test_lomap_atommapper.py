@@ -5,8 +5,8 @@ from rdkit import Chem
 
 
 import openfe
-from openfe.setup import LomapAtomMapper, SmallMoleculeComponent
-
+from openfe.setup import SmallMoleculeComponent
+from openfe.setup.atom_mapping import LomapAtomMapper
 
 def test_simple(lomap_basic_test_files):
     # basic sanity check on the LigandAtomMapper
@@ -18,7 +18,7 @@ def test_simple(lomap_basic_test_files):
     mapping_gen = mapper.suggest_mappings(mol1, mol2)
 
     mapping = next(mapping_gen)
-    assert isinstance(mapping, openfe.setup.LigandAtomMapping)
+    assert isinstance(mapping, openfe.setup.atom_mapping.LigandAtomMapping)
     # maps (CH3) off methyl and (6C + 5H) on ring
     assert len(mapping.molA_to_molB) == 15
 
