@@ -9,7 +9,8 @@ from gufe import (
     SolventComponent,
 )
 
-from . import atom_mapping
+from .atom_mapping import LomapAtomMapper,  lomap_scorers, PersesAtomMapper, perses_mapper
+
 
 from .network import Network
 from . import ligand_network_planning
