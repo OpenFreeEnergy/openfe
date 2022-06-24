@@ -55,7 +55,7 @@ class PersesAtomMapper(LigandAtomMapper):
 
 
     def __init__(self, full_cycles_only:bool=False, preserve_chirality:bool=True, use_positions:bool=True,
-                 mapping_type:PersesMappingType=PersesMappingType.best, coordinate_tolerance:float=0.25*unit.angstrom):
+                 mapping_type:PersesMappingType=PersesMappingType.all, coordinate_tolerance:float=0.25*unit.angstrom):
         """
         This class uses the perses code to facilitate the mapping of the atoms of two molecules to each other.
 
@@ -94,7 +94,6 @@ class PersesAtomMapper(LigandAtomMapper):
         elif(self.mapping_type == PersesMappingType.proposed): #Not Implemented right now
             self._atom_mappings = self.__atom_mapper.propose_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())
         elif(self.mapping_type == PersesMappingType.all):
-            raise NotImplementedError("This feature is note available in openFE")
             self._atom_mappings = self.__atom_mapper.get_all_mappings(old_mol=molA.to_openff(), new_mol=molB.to_openff())
         else:
             raise ValueError("Mapping type value error! Please chose one of the provided Enum options. Given: "+str(self.mapping_type))
