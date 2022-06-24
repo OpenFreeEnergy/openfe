@@ -54,8 +54,24 @@ class PersesAtomMapper(LigandAtomMapper):
     __atom_mapper: AtomMapper
 
 
-    def __init__(self, full_cycles_only:bool=True, preserve_chirality:bool=True, use_positions:bool=True,
+    def __init__(self, full_cycles_only:bool=False, preserve_chirality:bool=True, use_positions:bool=True,
                  mapping_type:PersesMappingType=PersesMappingType.best, coordinate_tolerance:float=0.25*unit.angstrom):
+        """
+        This class uses the perses code to facilitate the mapping of the atoms of two molecules to each other.
+
+        Parameters
+        ----------
+        full_cycles_only: bool, optional
+            this option checks if on only full cycles of the molecules shall be mapped, default: False
+        preserve_chirality: bool, optional
+             , default: True
+        use_positions: bool, optional
+            this option defines, if the
+        mapping_type: PersesMappingType, optional
+            how to calculate the mapping and amount of mappings, default: PersesMappingType.best
+        coordinate_tolerance: float, optional
+            tolerance on how close coordinates need to be, such they can be mapped, default: 0.25*unit.angstrom
+        """
 
         self.unmap_partially_mapped_cycles = full_cycles_only
         self.preserve_chirality = preserve_chirality
@@ -89,6 +105,6 @@ class PersesAtomMapper(LigandAtomMapper):
         if(self.preserve_chirality):
             self._atom_mappings.preserve_chirality()
 
-        mapping_dict = self._atom_mappings.new_to_old_atom_map
+        mapping_dict = self._atom_mappings.old_to_new_atom_map
         yield mapping_dict
         return

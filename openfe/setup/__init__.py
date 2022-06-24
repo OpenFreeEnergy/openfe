@@ -15,6 +15,7 @@ from .network import Network
 
 from .lomap_mapper import LomapAtomMapper
 from .perses_mapper import PersesAtomMapper
+from . import perses_scorers
 from . import lomap_scorers
 from . import ligand_network_planning
 
