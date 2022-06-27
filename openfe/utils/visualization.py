@@ -89,7 +89,8 @@ def _draw_molecules(
     atoms_list: Collection[Set[int]],
     bonds_list: Collection[Set[int]],
     atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
-    highlight_color: Tuple[float, float, float, float]
+    highlight_color: Tuple[float, float, float, float],
+    atom_mapping: Dict[int, int]
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
@@ -127,8 +128,12 @@ def _draw_molecules(
 
     # squash to 2D
     copies = [copy.deepcopy(mol) for mol in mols]
-    for mol in copies:
-        AllChem.Compute2DCoords(mol)
+    AllChem.Compute2DCoords(copies[0])
+    for (i, j), atomMap in atom_mapping.items():
+        try:
+            AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
+        except:
+            rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k,v) for v,k in atomMap.items()])
 
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
@@ -200,6 +205,7 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
         bonds_list=bonds_list,
         atom_colors=atom_colors,
         highlight_color=red,
+        atom_mapping={(0,1):mol1_to_mol2}
     )
 
 
