@@ -10,7 +10,7 @@ from enum import Enum
 
 from openmm import unit
 
-from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
 
 from .ligandatommapper import LigandAtomMapper
 
@@ -25,9 +25,6 @@ class PersesAtomMapper(LigandAtomMapper):
     unmap_partially_mapped_cycles: bool
     preserve_chirality: bool
     mapping_type:PersesMappingType
-
-
-
 
     def __init__(self, full_cycles_only:bool=False, preserve_chirality:bool=True, use_positions:bool=True,
                  mapping_type:PersesMappingType=PersesMappingType.all, coordinate_tolerance:float=0.25*unit.angstrom):
@@ -62,16 +59,19 @@ class PersesAtomMapper(LigandAtomMapper):
         _atom_mapper = AtomMapper(use_positions=self.use_positions, coordinate_tolerance=self.coordinate_tolerance)
 
         #Type of mapping
-        if(self.mapping_type == PersesMappingType.best):
-            _atom_mappings = [_atom_mapper.get_best_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())]
-        elif(self.mapping_type == PersesMappingType.sampled):
-            _atom_mappings = [_atom_mapper.get_sampled_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())]
-        elif(self.mapping_type == PersesMappingType.proposed): #Not Implemented right now
-            _atom_mappings = [_atom_mapper.propose_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())]
-        elif(self.mapping_type == PersesMappingType.all):
-            _atom_mappings = _atom_mapper.get_all_mappings(old_mol=molA.to_openff(), new_mol=molB.to_openff())
-        else:
-            raise ValueError("Mapping type value error! Please chose one of the provided Enum options. Given: "+str(self.mapping_type))
+        try:
+            if(self.mapping_type == PersesMappingType.best):
+                _atom_mappings = [_atom_mapper.get_best_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())]
+            elif(self.mapping_type == PersesMappingType.sampled):
+                _atom_mappings = [_atom_mapper.get_sampled_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())]
+            elif(self.mapping_type == PersesMappingType.proposed): #Not Implemented right now
+                _atom_mappings = [_atom_mapper.propose_mapping(old_mol=molA.to_openff(), new_mol=molB.to_openff())]
+            elif(self.mapping_type == PersesMappingType.all):
+                _atom_mappings = _atom_mapper.get_all_mappings(old_mol=molA.to_openff(), new_mol=molB.to_openff())
+            else:
+                raise ValueError("Mapping type value error! Please chose one of the provided Enum options. Given: "+str(self.mapping_type))
+        except InvalidMappingException:
+            _atom_mappings = []
 
         #Post processing
         if(self.unmap_partially_mapped_cycles):
@@ -79,6 +79,6 @@ class PersesAtomMapper(LigandAtomMapper):
         if(self.preserve_chirality):
             [x.preserve_chirality() for x in _atom_mappings]
 
-        mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
+        mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings) if(len(_atom_mappings)>0) else [{}]
         return mapping_dict
 
