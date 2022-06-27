@@ -3,10 +3,10 @@
 import pytest
 from rdkit import Chem
 
-
 import openfe
 from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import PersesAtomMapper
+
 
 def test_simple(lomap_basic_test_files):
     # basic sanity check on the LigandAtomMapper
@@ -46,11 +46,10 @@ def test_bad_mapping(lomap_basic_test_files):
 
     mapping_gen = mapper.suggest_mappings(toluene, NigelTheNitrogen)
     with pytest.raises(StopIteration):
-        i=0
+        i = 0
         while True:
             next(mapping_gen)
-            if(i>1000):
+            if (i > 1000):
                 raise Exception("this is an inf loop... but should not be!")
             else:
-                i+=1
-
+                i += 1
