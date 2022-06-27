@@ -84,13 +84,13 @@ def _get_unique_bonds_and_atoms(mapping: Dict[int, int],
 
 
 def _draw_molecules(
-    d2d,
-    mols: Collection[RDKitMol],
-    atoms_list: Collection[Set[int]],
-    bonds_list: Collection[Set[int]],
-    atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
-    highlight_color: Tuple[float, float, float, float],
-    atom_mapping: Dict[Tuple[int,int], Dict[int, int]] = None
+        d2d,
+        mols: Collection[RDKitMol],
+        atoms_list: Collection[Set[int]],
+        bonds_list: Collection[Set[int]],
+        atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
+        highlight_color: Tuple[float, float, float, float],
+        atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
@@ -125,7 +125,7 @@ def _draw_molecules(
             1: (1, 1),
             2: (2, 1),
         }[len(mols)]
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(grid_x*300, grid_y*300,
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(grid_x * 300, grid_y * 300,
                                                    300, 300)
 
     # squash to 2D
@@ -136,8 +136,8 @@ def _draw_molecules(
         try:
             AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
         except:
-            if(atomMap is not None):
-                rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k,v) for v,k in atomMap.items()])
+            if (atomMap is not None):
+                rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k, v) for v, k in atomMap.items()])
 
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
@@ -192,8 +192,8 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
 
     # highlight core element changes differently from unique atoms
     # RGBA color value needs to be between 0 and 1, so divide by 255
-    red = (220/255, 50/255, 32/255, 1.)
-    blue = (0., 90/255, 181/255, 1.)
+    red = (220 / 255, 50 / 255, 32 / 255, 1.)
+    blue = (0., 90 / 255, 181 / 255, 1.)
 
     at1_colors = {at: blue for at in mol1_uniques["elements"]}
     at2_colors = {at: blue for at in mol2_uniques["elements"]}
@@ -209,7 +209,7 @@ def draw_mapping(mol1_to_mol2: Dict[int, int],
         bonds_list=bonds_list,
         atom_colors=atom_colors,
         highlight_color=red,
-        atom_mapping={(0,1):mol1_to_mol2}
+        atom_mapping={(0, 1): mol1_to_mol2}
     )
 
 
@@ -237,8 +237,8 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
     uniques = _get_unique_bonds_and_atoms(mol1_to_mol2, mol1, mol2)
     atoms_list = [uniques["atoms"] | uniques["elements"]]
     bonds_list = [uniques["bonds"]]
-    red = (220/255, 50/255, 32/255, 1.)
-    blue = (0, 90/255, 181/255, 1.)
+    red = (220 / 255, 50 / 255, 32 / 255, 1.)
+    blue = (0, 90 / 255, 181 / 255, 1.)
 
     atom_colors = [{at: blue for at in uniques["elements"]}]
 
@@ -261,7 +261,7 @@ def draw_unhighlighted_molecule(mol, d2d=None):
     d2d : :class:`rdkit.Chem.Draw.rdMolDraw2D.MolDraw2D`
         Optional MolDraw2D backend to use for visualisation.
     """
-    red = (220/255, 50/255, 32/255, 1.)
+    red = (220 / 255, 50 / 255, 32 / 255, 1.)
     return _draw_molecules(
         d2d,
         [mol],
