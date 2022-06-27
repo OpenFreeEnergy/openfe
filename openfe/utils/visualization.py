@@ -130,13 +130,13 @@ def _draw_molecules(
 
     # squash to 2D
     copies = [copy.deepcopy(mol) for mol in mols]
-    [Chem.Compute2DCoords(mol) for mol in copies]
+    [AllChem.Compute2DCoords(mol) for mol in copies]
 
-    for (i, j), atomMap in atom_mapping.items():
-        try:
-            AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
-        except:
-            if (atomMap is not None):
+    if (atom_mapping is not None):
+        for (i, j), atomMap in atom_mapping.items():
+            try:
+                AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
+            except:
                 rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k, v) for v, k in atomMap.items()])
 
     # standard settings for our visualization
