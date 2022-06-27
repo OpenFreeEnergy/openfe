@@ -16,6 +16,8 @@ from __future__ import annotations
 import os
 import logging
 
+import gufe
+import networkx as nx
 import numpy as np
 import openmm
 from openff.units import unit
@@ -27,12 +29,12 @@ from typing import Dict, List, Union, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
-import openmmtools
+import pathlib
+from typing import Any, Iterable
 
 from openfe.setup import (
     ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
 )
-from openfe.setup.methods import FEMethod
 from openfe.setup import _rbfe_utils
 
 logger = logging.getLogger(__name__)
@@ -338,6 +340,8 @@ class SimulationSettings(BaseModel):
     output_indices : str
       Selection string for which part of the system to write coordinates for.
       Default 'all'.
+    keep_ncfile: bool
+      If to keep the entire timeseries of energies, default "False"
     checkpoint_interval : int * unit.timestep
       Frequency to write the checkpoint file. Default 50 * unit.timestep
     checkpoint_storage : str
@@ -355,6 +359,7 @@ class SimulationSettings(BaseModel):
     # reporter settings
     output_filename = 'rbfe.nc'
     output_indices = 'all'
+    keep_ncfile: bool = False
     checkpoint_interval = 50 * unit.timestep
     checkpoint_storage: Optional[str] = None
 
@@ -401,15 +406,28 @@ class RelativeLigandTransformSettings(BaseModel):
     solvent_padding = 1.2 * unit.nanometer
 
 
-class RelativeLigandTransformResults:
+class RelativeLigandTransformResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeLigandTransform"""
-    def __init__(self, settings: RelativeLigandTransformSettings):
-        self._parent_settings = settings
-        fn = self._parent_settings.simulation_settings.output_filename
-        self._reporter = multistate.MultiStateReporter(fn)
-        self._analyzer = multistate.MultiStateSamplerAnalyzer(self._reporter)
+    def __init__(self, dags: Iterable[gufe.ProtocolDAGResult]):
+        # i.e. self._data = dags
+        super().__init__(dags)
+        # TODO: Detect when we have extensions and stitch these together?
 
-    def dG(self):
+        self._analyzers = []
+
+        gen: gufe.ProtocolDAGResult
+        run: gufe.ProtocolUnitResult
+        for gen in self._data:
+            for run in gen.protocol_unit_results:
+                reporter = multistate.MultiStateReporter(run.nc)
+                analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
+
+                self._analyzers.append(analyzer)
+
+    def to_dict(self) -> dict:
+        raise NotImplementedError
+
+    def get_estimate(self):
         """Free energy difference of this transformation
 
         Returns
@@ -422,81 +440,42 @@ class RelativeLigandTransformResults:
         ----
         * Check this holds up completely for SAMS.
         """
-        dG, _ = self._analyzer.get_free_energy()
-        dG = (dG[0, -1] * self._analyzer.kT).in_units_of(
-            omm_unit.kilocalories_per_mole)
+        raise NotImplementedError()
 
-        return dG
+        dGs = []
+        weights = []
 
-    def dG_error(self):
+        for analyzer in self._analyzers:
+            dG, _ = analyzer.get_free_energy()
+            dG = (dG[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole)
+
+            weight = analyzer._get_equilibration_data()[2]
+
+            dGs.append(dG)
+            weights.append(weight)
+
+        return np.average(dGs, weights=weights)
+
+    def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
+        # https: // en.wikipedia.org / wiki / Inverse - variance_weighting ?
+        raise NotImplementedError()
         _, error = self._analyzer.get_free_energy()
         error = (error[0, -1] * self._analyzer.kT).in_units_of(
             omm_unit.kilocalories_per_mole)
 
         return error
 
+    def get_rate_of_convergence(self):
+        return 0
 
-class RelativeLigandTransform(FEMethod):
-    """Calculates the relative free energy of an alchemical ligand transformation.
 
-    """
-    _stateA: ChemicalSystem
-    _stateB: ChemicalSystem
-    _mapping: LigandAtomMapping
-    _settings: RelativeLigandTransformSettings
-    _is_complex: bool
+class RelativeLigandTransform(gufe.Protocol):
+    _results_cls = RelativeLigandTransformResult
 
-    def __init__(self,
-                 stateA: ChemicalSystem,
-                 stateB: ChemicalSystem,
-                 ligandmapping: LigandAtomMapping,
-                 settings: RelativeLigandTransformSettings,
-                 ):
-        """
-        Parameters
-        ----------
-        stateA, stateB : ChemicalSystem
-          the two ligand SmallMoleculeComponents to transform between.  The
-          transformation will go from ligandA to ligandB.
-        ligandmapping : LigandAtomMapping
-          the mapping of atoms between the two ligand components
-        settings : RelativeLigandTransformSettings
-          the settings for the Method.  This can be constructed using the
-          get_default_settings classmethod to give a starting point that
-          can be updated to suit.
-
-        """
-        self._stateA = stateA
-        self._stateB = stateB
-        self._mapping = ligandmapping
-        self._settings = settings
-
-        # Checks on the inputs!
-        # check that both states have solvent and ligand
-        for state, label in [(stateA, 'A'), (stateB, 'B')]:
-            if 'solvent' not in state.components:
-                raise ValueError(f"Missing solvent in state {label}")
-            if 'ligand' not in state.components:
-                raise ValueError(f"Missing ligand in state {label}")
-        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
-        if nproteins == 1:  # only one state has a protein defined
-            raise ValueError("Only one state had a protein component")
-        elif nproteins == 2:
-            if stateA['protein'] != stateB['protein']:
-                raise ValueError("Proteins in each state aren't compatible")
-        self._is_complex = nproteins == 2
-
-        # check that both states have same solvent
-        # TODO: defined box compatibility check
-        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
-        if not stateA['solvent'] == stateB['solvent']:
-            raise ValueError("Solvents aren't identical between states")
-        # check that the mapping refers to the two ligand components
-        if stateA['ligand'] != ligandmapping.molA:
-            raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != ligandmapping.molB:
-            raise ValueError("Ligand in state B doesn't match mapping")
+    def __init__(self, settings: RelativeLigandTransformSettings):
+        super().__init__(settings)
 
     @classmethod
     def get_default_settings(cls) -> RelativeLigandTransformSettings:
@@ -529,6 +508,99 @@ class RelativeLigandTransform(FEMethod):
                 production_length=5.0 * unit.nanosecond,
             )
         )
+
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: LigandAtomMapping = None,
+        extend_from: Optional[gufe.ProtocolDAGResult] = None,
+    ) -> nx.DiGraph:
+        # our DAG has no dependencies, so just load up a graph with nodes
+        g = nx.DiGraph()
+
+        # TODO: This should be once per replica
+        g.add_node(RelativeLigandTransformUnit(
+            stateA=stateA, stateB=stateB, ligandmapping=mapping,
+            settings=self.settings,
+        ))
+
+        return g
+
+    def _gather(
+        self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
+    ) -> Dict[str, Any]:
+        # smush many finished DAGs into a single Result object
+        # this dict gets passed to RelativeLigandTransformResult
+        return {
+            i: r for i, r in enumerate(protocol_dag_results)
+        }
+
+
+class RelativeLigandTransformUnit(gufe.ProtocolUnit):
+    """Calculates the relative free energy of an alchemical ligand transformation.
+
+    """
+    _stateA: ChemicalSystem
+    _stateB: ChemicalSystem
+    _mapping: LigandAtomMapping
+    _settings: RelativeLigandTransformSettings
+    _is_complex: bool
+
+    def __init__(self,
+                 stateA: ChemicalSystem,
+                 stateB: ChemicalSystem,
+                 ligandmapping: LigandAtomMapping,
+                 settings: RelativeLigandTransformSettings,
+                 ):
+        """
+        Parameters
+        ----------
+        stateA, stateB : ChemicalSystem
+          the two ligand SmallMoleculeComponents to transform between.  The
+          transformation will go from ligandA to ligandB.
+        ligandmapping : LigandAtomMapping
+          the mapping of atoms between the two ligand components
+        settings : RelativeLigandTransformSettings
+          the settings for the Method.  This can be constructed using the
+          get_default_settings classmethod to give a starting point that
+          can be updated to suit.
+
+        """
+        super().__init__(
+            settings=settings,
+        )
+
+        self._stateA = stateA
+        self._stateB = stateB
+        self._mapping = ligandmapping
+        self._settings = settings
+
+        # Checks on the inputs!
+        # check that both states have solvent and ligand
+        for state, label in [(stateA, 'A'), (stateB, 'B')]:
+            if 'solvent' not in state.components:
+                raise ValueError(f"Missing solvent in state {label}")
+            if 'ligand' not in state.components:
+                raise ValueError(f"Missing ligand in state {label}")
+        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
+        if nproteins == 1:  # only one state has a protein defined
+            raise ValueError("Only one state had a protein component")
+        elif nproteins == 2:
+            if stateA['protein'] != stateB['protein']:
+                raise ValueError("Proteins in each state aren't compatible")
+        self._is_complex = nproteins == 2
+
+        # check that both states have same solvent
+        # TODO: defined box compatibility check
+        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
+        if not stateA['solvent'] == stateB['solvent']:
+            raise ValueError("Solvents aren't identical between states")
+        # check that the mapping refers to the two ligand components
+        if stateA['ligand'] != ligandmapping.molA:
+            raise ValueError("Ligand in state A doesn't match mapping")
+        if stateB['ligand'] != ligandmapping.molB:
+            raise ValueError("Ligand in state B doesn't match mapping")
 
     def to_dict(self) -> dict:
         """Serialize to dict representation"""
@@ -887,21 +959,15 @@ class RelativeLigandTransform(FEMethod):
             os.remove(fn)
             return True
 
-    def is_complete(self) -> bool:
-        results_file = self._settings.simulation_settings.output_filename
+    def _execute(
+        self, dependency_results: Iterable[gufe.ProtocolUnitResult]
+    ) -> Dict[str, Any]:
+        if not self.run():
+            # TODO: Need failure return
+            raise ValueError
 
-        # TODO: Can improve upon this by checking expected length of the
-        #       nc archive?
-        return os.path.exists(results_file)
-
-    def get_results(self) -> RelativeLigandTransformResults:
-        """Return payload created by this workload
-
-        Raises
-        ------
-        ValueError
-          if the results do not exist yet
-        """
-        if not self.is_complete():
-            raise ValueError("Results have not been generated")
-        return RelativeLigandTransformResults(self._settings)
+        # TODO: Metadata here too?
+        return {
+            # TODO: Is this already abs?
+            'nc': pathlib.Path(self._settings.simulation_settings.output_filename),
+        }
