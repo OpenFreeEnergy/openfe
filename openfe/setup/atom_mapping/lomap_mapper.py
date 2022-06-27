@@ -15,7 +15,7 @@ class LomapAtomMapper(LigandAtomMapper):
     threed: bool
     max3d: float
 
-    def __init__(self, time: int = 20, threed: bool = False,
+    def __init__(self, time: int = 20, threed: bool = True,
                  max3d: float = 1000.0):
         """Wraps the MCS atom mapper from Lomap.
 
@@ -28,8 +28,8 @@ class LomapAtomMapper(LigandAtomMapper):
           timeout of MCS algorithm, passed to RDKit
           default 20
         threed : bool, optional
-          if true, positional info is used to choose between symmetry
-          equivalent mappings, default False
+          if true, positional info is used to choose between symmetrically
+          equivalent mappings and prune the mapping, default True
         max3d : float, optional
           maximum discrepancy in Angstroms between atoms before mapping is not
           allowed, default 1000.0, which effectively trims no atoms

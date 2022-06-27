@@ -188,7 +188,7 @@ def test_heterocycle_score(base, other, name, hit):
     m1 = openfe.setup.SmallMoleculeComponent.from_rdkit(r1)
     m2 = openfe.setup.SmallMoleculeComponent.from_rdkit(r2)
 
-    mapper = openfe.setup.atom_mapping.LomapAtomMapper()
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper(threed=False)
     mapping = next(mapper.suggest_mappings(m1, m2))
     score = lomap_scorers.heterocycles_score(mapping)
 
@@ -222,7 +222,7 @@ def test_lomap_individual_scores(params,
                                       molB.to_rdkit()), scorename)()
 
     # longer way
-    mapper = openfe.setup.atom_mapping.LomapAtomMapper()
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper(threed=False)
     mapping = next(mapper.suggest_mappings(molA, molB))
     openfe_version = getattr(lomap_scorers, SCORE_NAMES[scorename])(mapping)
 
@@ -247,7 +247,7 @@ def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
         nm = dbmols[i].getName()
         smallmols.append(lomap_basic_test_files[nm[:-5]])  # - ".mol2"
 
-    mapper = openfe.setup.atom_mapping.LomapAtomMapper()
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper(threed=False)
     scorer = lomap_scorers.default_lomap_score
     scores = np.zeros_like(matrix)
     for i, j in itertools.combinations(range(matrix.shape[0]), 2):
