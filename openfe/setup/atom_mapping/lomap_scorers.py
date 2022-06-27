@@ -26,7 +26,7 @@ def ecr_score(mapping: LigandAtomMapping):
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
 
-    return 1 - _dbmol.ecr(molA,  molB)
+    return 1 - _dbmol.ecr(molA, molB)
 
 
 def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
