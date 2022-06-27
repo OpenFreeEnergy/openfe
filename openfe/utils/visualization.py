@@ -139,6 +139,7 @@ def _draw_molecules(
             except:
                 rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k, v) for v, k in atomMap.items()])
 
+
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
     d2d.drawOptions().continousHighlight = False
