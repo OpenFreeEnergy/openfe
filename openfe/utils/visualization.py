@@ -90,7 +90,7 @@ def _draw_molecules(
     bonds_list: Collection[Set[int]],
     atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
     highlight_color: Tuple[float, float, float, float],
-    atom_mapping: Dict[Tuple[int,int], Dict[int, int]]
+    atom_mapping: Dict[Tuple[int,int], Dict[int, int]] = None
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
@@ -116,8 +116,8 @@ def _draw_molecules(
     highlight_color: Tuple[float, float, float, float]
         RGBA tuple for the default highlight color used in the mapping
         visualization
-    atom_mapping: Dict[Tuple[int,int], Dict[int, int]]
-        used to align the molecules to each othter for clearer visualization
+    atom_mapping: Dict[Tuple[int,int], Dict[int, int]], optional
+        used to align the molecules to each othter for clearer visualization, default None
     """
     if d2d is None:
         # select default layout based on number of molecules
@@ -130,13 +130,14 @@ def _draw_molecules(
 
     # squash to 2D
     copies = [copy.deepcopy(mol) for mol in mols]
-    AllChem.Compute2DCoords(copies[0])
+    [Chem.Compute2DCoords(mol) for mol in copies]
+
     for (i, j), atomMap in atom_mapping.items():
         try:
             AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
         except:
-            print("WARN THIS WS Doof!")
-            rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k,v) for v,k in atomMap.items()])
+            if(atomMap is not None):
+                rms = AllChem.AlignMol(copies[j], copies[i], atomMap=[(k,v) for v,k in atomMap.items()])
 
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
