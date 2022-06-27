@@ -55,6 +55,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+debug.png
 
 # Translations
 *.mo
@@ -158,3 +159,4 @@ cython_debug/
 
 # vim
 *.swp
+
