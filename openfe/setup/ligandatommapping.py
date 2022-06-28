@@ -1,10 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from dataclasses import dataclass
 import json
-from typing import Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+import numpy as np
+from numpy.typing import NDArray
 from openff.toolkit.utils.serialization import Serializable
-from rdkit import Chem
 
 from openfe.setup import SmallMoleculeComponent
 from openfe.utils.visualization import draw_mapping
@@ -156,3 +156,15 @@ class LigandAtomMapping(Serializable):
             molA_to_molB=self.molA_to_molB,
             annotations=dict(**self.annotations, **annotations)
         )
+
+    def get_distances(self) -> NDArray[np.float64]:
+        """Return the distances between pairs of atoms in the mapping"""
+        dists = []
+        molA = self.molA.to_rdkit().GetConformer()
+        molB = self.molB.to_rdkit().GetConformer()
+        for i, j in self.molA_to_molB.items():
+            dA = molA.GetAtomPosition(i)
+            dB = molB.GetAtomPosition(j)
+            dists.append(dA.Distance(dB))
+
+        return np.array(dists)
