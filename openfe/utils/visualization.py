@@ -85,13 +85,13 @@ def _get_unique_bonds_and_atoms(
 
 
 def _draw_molecules(
-        d2d,
-        mols: Collection[RDKitMol],
-        atoms_list: Collection[Set[int]],
-        bonds_list: Collection[Set[int]],
-        atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
-        highlight_color: Tuple[float, float, float, float],
-        atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
+    d2d,
+    mols: Collection[RDKitMol],
+    atoms_list: Collection[Set[int]],
+    bonds_list: Collection[Set[int]],
+    atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
+    highlight_color: Tuple[float, float, float, float],
+    atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
@@ -134,9 +134,10 @@ def _draw_molecules(
             try:
                 AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
             except Exception:
-                rms = AllChem.AlignMol(
+                AllChem.AlignMol(
                     copies[j], copies[i], atomMap=[(k, v) for v, k in atomMap.items()]
                 )
+
 
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
