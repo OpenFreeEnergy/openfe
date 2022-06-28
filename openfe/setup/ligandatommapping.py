@@ -157,7 +157,7 @@ class LigandAtomMapping(Serializable):
             annotations=dict(**self.annotations, **annotations)
         )
 
-    def get_distances(self) -> NDArray[float]:
+    def get_distances(self) -> NDArray[np.float64]:
         """Return the distances between pairs of atoms in the mapping"""
         dists = []
         molA = self.molA.to_rdkit().GetConformer()
