@@ -37,7 +37,7 @@ def _match_elements(mol1: RDKitMol, idx1: int, mol2: RDKitMol, idx2: int) -> boo
 
 
 def _get_unique_bonds_and_atoms(
-    mapping: Dict[int, int], mol1: RDKitMol, mol2: RDKitMol
+        mapping: Dict[int, int], mol1: RDKitMol, mol2: RDKitMol
 ) -> Dict:
     """
     Given an input mapping, returns new atoms, element changes, and
@@ -73,6 +73,7 @@ def _get_unique_bonds_and_atoms(
         elif not _match_elements(mol1, idx, mol2, mapping[idx]):
             uniques["elements"].add(idx)
 
+
     for bond in mol1.GetBonds():
         bond_at_idxs = [bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()]
         for at in chain(uniques["atoms"], uniques["elements"]):
@@ -84,13 +85,13 @@ def _get_unique_bonds_and_atoms(
 
 
 def _draw_molecules(
-    d2d,
-    mols: Collection[RDKitMol],
-    atoms_list: Collection[Set[int]],
-    bonds_list: Collection[Set[int]],
-    atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
-    highlight_color: Tuple[float, float, float, float],
-    atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
+        d2d,
+        mols: Collection[RDKitMol],
+        atoms_list: Collection[Set[int]],
+        bonds_list: Collection[Set[int]],
+        atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
+        highlight_color: Tuple[float, float, float, float],
+        atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
@@ -121,7 +122,7 @@ def _draw_molecules(
     """
     if d2d is None:
         # select default layout based on number of molecules
-        grid_x, grid_y = {1: (1, 1), 2: (2, 1),}[len(mols)]
+        grid_x, grid_y = {1: (1, 1), 2: (2, 1), }[len(mols)]
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(grid_x * 300, grid_y * 300, 300, 300)
 
     # squash to 2D
@@ -132,7 +133,7 @@ def _draw_molecules(
         for (i, j), atomMap in atom_mapping.items():
             try:
                 AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
-            except _:
+            except Exception:
                 rms = AllChem.AlignMol(
                     copies[j], copies[i], atomMap=[(k, v) for v, k in atomMap.items()]
                 )
@@ -153,7 +154,7 @@ def _draw_molecules(
 
 
 def draw_mapping(
-    mol1_to_mol2: Dict[int, int], mol1: RDKitMol, mol2: RDKitMol, d2d=None
+        mol1_to_mol2: Dict[int, int], mol1: RDKitMol, mol2: RDKitMol, d2d=None
 ):
     """
     Method to visualise the atom map correspondence between two rdkit
