@@ -3,7 +3,6 @@
 import pytest
 from rdkit import Chem
 
-
 import openfe
 from openfe.setup import LomapAtomMapper, SmallMoleculeComponent
 
@@ -38,7 +37,8 @@ def test_distances(lomap_basic_test_files):
     ref_d = mol1.to_rdkit().GetConformer().GetAtomPosition(i).Distance(
         mol2.to_rdkit().GetConformer().GetAtomPosition(j)
     )
-    assert dists[0] == ref_d
+    assert pytest.approx(dists[0], rel=1e-5) == ref_d
+    assert pytest.approx(dists[0], rel=1e-5) == 0.07249779
 
 
 def test_generator_length(lomap_basic_test_files):
