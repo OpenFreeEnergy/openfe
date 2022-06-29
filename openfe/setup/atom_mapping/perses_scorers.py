@@ -49,6 +49,11 @@ def default_perses_scorer(mapping: LigandAtomMapping,
         can be compared for one scorer metric, default = True
         *Warning* does not work for use_positions right now!
 
+    Raises
+    ------
+    NotImplementedError
+
+
     Returns
     -------
         float
@@ -73,7 +78,7 @@ def default_perses_scorer(mapping: LigandAtomMapping,
         else:
 
             smallerMolecule = oeyMolA if (
-                oeyMolA.NumAtoms() < oeyMolB.NumAtoms()) else oeyMolB
+                    oeyMolA.NumAtoms() < oeyMolB.NumAtoms()) else oeyMolB
             numMaxPossibleMappingAtoms = smallerMolecule.NumAtoms()
             # Max possible Aromatic mappings
             numMaxPossibleAromaticMappings = _get_all_mapped_atoms_with(
@@ -94,10 +99,10 @@ def default_perses_scorer(mapping: LigandAtomMapping,
                 criterium=lambda x: x.IsInRing())
 
             # These weights are totally arbitrary
-            normalize_score = 1.0 * numMaxPossibleMappingAtoms \
-                + 0.8 * numMaxPossibleAromaticMappings \
-                + 0.5 * numMaxPossibleHeavyAtomMappings \
-                + 0.4 * numMaxPossibleRingMappings
+            normalize_score = (1.0 * numMaxPossibleMappingAtoms +
+                               0.8 * numMaxPossibleAromaticMappings +
+                               0.5 * numMaxPossibleHeavyAtomMappings +
+                               0.4 * numMaxPossibleRingMappings)
 
         score /= normalize_score  # final normalize score
 
