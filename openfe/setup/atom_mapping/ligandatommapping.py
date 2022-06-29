@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional,
 from openff.toolkit.utils.serialization import Serializable
 
 from openfe.setup import SmallMoleculeComponent
@@ -25,6 +25,7 @@ class LigandAtomMapping(Serializable):
       starting with ``ofe-`` may have special meaning in other parts of
       OpenFE. ``score`` is a reserved annotation identifier.
     """
+
     def __init__(
         self,
         molA: SmallMoleculeComponent,
@@ -88,10 +89,6 @@ class LigandAtomMapping(Serializable):
         return (f"{self.__class__.__name__}(molA={self.molA!r}, "
                 f"molB={self.molB!r}, molA_to_molB={self.molA_to_molB!r}, "
                 f"annotations={self.annotations!r})")
-
-    @classmethod
-    def from_perses(cls, perses_mapping):
-        raise NotImplementedError()
 
     def _ipython_display_(self, d2d=None):  # pragma: no-cover
         """

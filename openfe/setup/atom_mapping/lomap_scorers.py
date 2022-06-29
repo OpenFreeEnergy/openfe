@@ -255,12 +255,12 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
         # these patterns are lifted from lomap2 repo
         return (mol.HasSubstructMatch(
             Chem.MolFromSmarts('[n]1[c,n][c,n][c,n][c,n][c,n]1'))
-                or
-                mol.HasSubstructMatch(
-                    Chem.MolFromSmarts('[o,n,s]1[n][c,n][c,n][c,n]1'))
-                or
-                mol.HasSubstructMatch(
-                    Chem.MolFromSmarts('[o,n,s]1[c,n][n][c,n][c,n]1')))
+            or
+            mol.HasSubstructMatch(
+            Chem.MolFromSmarts('[o,n,s]1[n][c,n][c,n][c,n]1'))
+            or
+            mol.HasSubstructMatch(
+            Chem.MolFromSmarts('[o,n,s]1[c,n][n][c,n][c,n]1')))
 
     # create "remainders" of both molA and molB
     # create "remainders" of both molA and molB
