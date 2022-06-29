@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from dataclasses import dataclass
 import json
-from typing import Dict, Any, Optional,
+from typing import Dict, Any, Optional
 from openff.toolkit.utils.serialization import Serializable
 
 from openfe.setup import SmallMoleculeComponent
