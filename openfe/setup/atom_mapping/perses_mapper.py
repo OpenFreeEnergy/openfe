@@ -88,6 +88,8 @@ class PersesAtomMapper(LigandAtomMapper):
         if (self.preserve_chirality):
             [x.preserve_chirality() for x in _atom_mappings]
 
-        mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings) if (
-            len(_atom_mappings) > 0) else [{}]
+        if(len(_atom_mappings) > 0)
+            mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
+        else:
+            mapping_dict = [{}]
         return mapping_dict
