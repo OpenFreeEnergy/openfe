@@ -4,20 +4,19 @@
 import itertools
 import numpy as np
 from numpy.testing import assert_allclose, assert_
-import openfe
-from openfe.setup.atom_mapping import perses_scorers, LigandAtomMapping
+
+from lomap import mcs as lomap_mcs
 from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
-atom_mapping_cls = openfe.setup.atom_mapping.LigandAtomMapping
 
+import openfe
+from openfe.setup.atom_mapping import perses_scorers, LigandAtomMapping
 
 # full back to back test again lomap
 def test_perses_regression(lomap_basic_test_files_dir,  # in a dir for lomap
                            lomap_basic_test_files):
-    # run lomap
-    from lomap import mcs as lomap_mcs
 
-    # generate test_data - Ligand_atom_mappings
+    # generate test_data - Ligand_atom_mappings with lomap
     def mapper(a,b):
         return lomap_mcs.MCS(a, b,
                             time=20,
