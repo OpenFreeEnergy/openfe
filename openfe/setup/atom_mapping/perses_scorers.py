@@ -1,17 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from typing.Callable import callable
+from typing import Callable
+from openff.toolkit.utils.exceptions import LicenseError
+from openff.toolkit.utils import toolkits
 from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
 from .ligandatommapping import LigandAtomMapping
 
 
 # Helpfer Function / reducing code amount
-def _getAllMappableAtomsWith(self,
-                              oeyMolA, oeyMolB,
-                              numMaxPossibleMappingAtoms: int,
-                              criterium: callable) -> int:
+def _getAllMappableAtomsWith(oeyMolA,
+                             oeyMolB,
+                             numMaxPossibleMappingAtoms: int,
+                             criterium: Callable) -> int:
     molA_allAtomsWith = len(
         list(filter(criterium, oeyMolA.GetAtoms())))
     molB_allAtomsWith = len(
@@ -50,6 +52,11 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     -------
         float
     """
+
+    if (not toolkits.OPENEYE_AVAILABLE):
+        raise LicenseError(
+            msg="The Openeye Toolkit License was not found!")
+
     score = AtomMapper(use_positions=use_positions).score_mapping(
         AtomMapping(old_mol=mapping.molA.to_openff(),
                     new_mol=mapping.molB.to_openff(),
@@ -82,7 +89,7 @@ def default_perses_scorer(mapping: LigandAtomMapping,
             # Max possible ring mappings
             numMaxPossibleRingMappings = _getAllMappableAtomsWith(
                 oeyMolA=oeyMolA, oeyMolB=oeyMolB,
-                umMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
+                numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
                 criterium=lambda x: x.IsInRing())
 
             # These weights are totally arbitrary

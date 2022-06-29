@@ -6,29 +6,25 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
-from enum import Enum
-
 from openmm import unit
+
+#Test if Openeye license present! on class construction.
+from openff.toolkit.utils.exceptions import LicenseError
+from openff.toolkit.utils import toolkits
 
 from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
 
+
 from .ligandatommapper import LigandAtomMapper
-
-
-class PersesMappingType(Enum):
-    best = 1
-    sampled = 2
-    proposed = 3
-    all = 4
 
 
 class PersesAtomMapper(LigandAtomMapper):
     unmap_partially_mapped_cycles: bool
     preserve_chirality: bool
-    mapping_type: PersesMappingType
 
-    def __init__(self, full_cycles_only: bool = False, preserve_chirality: bool = True, use_positions: bool = True,
-                 mapping_type: PersesMappingType = PersesMappingType.all,
+    def __init__(self, full_cycles_only: bool = False,
+                 preserve_chirality: bool = True,
+                 use_positions: bool = True,
                  coordinate_tolerance: float = 0.25 * unit.angstrom):
         """
         This class uses the perses code to facilitate the mapping of the
@@ -54,9 +50,12 @@ class PersesAtomMapper(LigandAtomMapper):
 
         self.unmap_partially_mapped_cycles = full_cycles_only
         self.preserve_chirality = preserve_chirality
-        self.mapping_type = mapping_type
         self.use_positions = use_positions
         self.coordinate_tolerance = coordinate_tolerance
+
+        if (not toolkits.OPENEYE_AVAILABLE):
+            raise LicenseError(
+                msg="The Openeye Toolkit License was not found!")
 
     def _mappings_generator(self, molA, molB):
         _atom_mapper = AtomMapper(
@@ -65,20 +64,8 @@ class PersesAtomMapper(LigandAtomMapper):
 
         # Type of mapping
         try:
-            if (self.mapping_type == PersesMappingType.best):
-                _atom_mappings = [_atom_mapper.get_best_mapping(
-                    old_mol=molA.to_openff(), new_mol=molB.to_openff())]
-            elif (self.mapping_type == PersesMappingType.sampled):
-                _atom_mappings = [_atom_mapper.get_sampled_mapping(
-                    old_mol=molA.to_openff(), new_mol=molB.to_openff())]
-            elif (self.mapping_type == PersesMappingType.all):
-                _atom_mappings = _atom_mapper.get_all_mappings(
+            _atom_mappings = _atom_mapper.get_all_mappings(
                     old_mol=molA.to_openff(), new_mol=molB.to_openff())
-            else:
-                raise ValueError(
-                    "Mapping type value error! Please chose one of "
-                    "the provided Enum options. Given: " + str(
-                        self.mapping_type))
         except InvalidMappingException:
             _atom_mappings = []
 
