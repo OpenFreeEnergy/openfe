@@ -27,6 +27,7 @@ def _get_all_mapped_atoms_with(oeyMolA,
 
     return numMaxPossibleMappings
 
+
 def default_perses_scorer(mapping: LigandAtomMapping,
                           use_positions: bool = False,
                           normalize: bool = True) -> float:

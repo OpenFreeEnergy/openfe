@@ -12,17 +12,15 @@ from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 import openfe
 from openfe.setup.atom_mapping import perses_scorers, LigandAtomMapping
 
+
 # full back to back test again lomap
 def test_perses_regression(lomap_basic_test_files_dir,  # in a dir for lomap
                            lomap_basic_test_files):
 
     # generate test_data - Ligand_atom_mappings with lomap
-    def mapper(a,b):
-        return lomap_mcs.MCS(a, b,
-                            time=20,
-                            threed=False,
-                            max3d=1000
-                             )
+    def mapper(a, b):
+        return lomap_mcs.MCS(a, b, time=20, threed=False, max3d=1000)
+
     ligand_atom_mappings = {}
     for i, molA in enumerate(list(lomap_basic_test_files.keys())):
         for j, molB in enumerate(list(lomap_basic_test_files.keys())):

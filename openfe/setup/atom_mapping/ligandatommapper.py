@@ -16,8 +16,10 @@ class LigandAtomMapper:
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
 
-    def _mappings_generator(self, molA: SmallMoleculeComponent,
-                            molB: SmallMoleculeComponent) -> Iterable[Dict[int, int]]:
+    def _mappings_generator(self,
+                            molA: SmallMoleculeComponent,
+                            molB: SmallMoleculeComponent
+                            ) -> Iterable[Dict[int, int]]:
         """
         Suggest mapping options for the input molecules.
 
@@ -37,7 +39,7 @@ class LigandAtomMapper:
         ))
 
     def suggest_mappings(
-        self, molA: SmallMoleculeComponent, molB: SmallMoleculeComponent
+            self, molA: SmallMoleculeComponent, molB: SmallMoleculeComponent
     ) -> Iterable[LigandAtomMapping]:
         """
         Suggest :class:`.LigandAtomMapping` options for the input molecules.

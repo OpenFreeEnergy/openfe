@@ -19,8 +19,8 @@ class LomapAtomMapper(LigandAtomMapper):
                  max3d: float = 1000.0):
         """Wraps the MCS atom mapper from Lomap.
 
-        Kwargs are passed directly to the MCS class from Lomap for each mapping
-        created
+        Kwargs are passed directly to the MCS class from Lomap for each
+        mapping created
 
         Parameters
         ----------

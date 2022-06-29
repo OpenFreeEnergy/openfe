@@ -8,7 +8,7 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 from openmm import unit
 
-#Test if Openeye license present! on class construction.
+# Test if Openeye license present! on class construction.
 from openff.toolkit.utils.exceptions import LicenseError
 from openff.toolkit.utils import toolkits
 
