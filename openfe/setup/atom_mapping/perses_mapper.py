@@ -46,6 +46,12 @@ class PersesAtomMapper(LigandAtomMapper):
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom
 
+        Raises
+        ------
+        LicenseError
+            If Openeye License can not be found, the perses functionality can
+            not be used.
+
         """
 
         self.allow_ring_breaking = allow_ring_breaking

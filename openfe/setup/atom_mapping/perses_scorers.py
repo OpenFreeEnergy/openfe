@@ -52,7 +52,11 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     Raises
     ------
     NotImplementedError
-
+        Normalization of the score using positions is not implemented right
+        now.
+    LicenseError
+        If Openeye License can not be found, the perses functionality can
+        not be used.
 
     Returns
     -------
