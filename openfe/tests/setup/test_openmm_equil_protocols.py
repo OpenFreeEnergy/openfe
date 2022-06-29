@@ -52,7 +52,7 @@ def toluene_complex_system(benzene_modifications, T4_protein_component):
 
 @pytest.fixture
 def benzene_to_toluene_mapping(benzene_modifications):
-    mapper = setup.LomapAtomMapper()
+    mapper = setup.LomapAtomMapper(element_change=False)
 
     molA = benzene_modifications['benzene']
     molB = benzene_modifications['toluene']
