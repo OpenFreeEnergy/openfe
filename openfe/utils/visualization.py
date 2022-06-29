@@ -134,15 +134,10 @@ def _draw_molecules(
 
     if atom_mapping is not None and len(atom_mapping) > 0:
         for (i, j), atomMap in atom_mapping.items():
-            try:
-                AllChem.GenerateDepictionMatching2DStructure(
-                    copies[j], copies[i])
-            except Exception as err:
-                print("doof, err: ", type(err), err, err.args)
-                AllChem.AlignMol(
-                    copies[j], copies[i], atomMap=[
-                        (k, v) for v, k in atomMap.items()]
-                )
+            AllChem.AlignMol(
+                copies[j], copies[i],
+                atomMap=[(k, v) for v, k in atomMap.items()]
+            )
 
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
