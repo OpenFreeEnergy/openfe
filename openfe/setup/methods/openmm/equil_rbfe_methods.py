@@ -755,7 +755,6 @@ class RelativeLigandTransform(FEMethod):
             stateB_system, stateB_topology, stateB_openff_ligand.name,
             # These are non-optional settings for this method
             fix_constraints=True,
-            remove_element_changes=True,
         )
 
         #  d. Finally get the positions
