@@ -4,7 +4,12 @@
 from typing import Callable
 from openff.toolkit.utils.exceptions import LicenseError
 from openff.toolkit.utils import toolkits
-from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+
+from openfe.utils.integration_tools import (HAS_PERSES,
+                                            error_if_no_perses,
+                                            error_if_no_openeye_license)
+if HAS_PERSES:
+    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
 from .ligandatommapping import LigandAtomMapping
 
@@ -62,10 +67,8 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     -------
         float
     """
-
-    if (not toolkits.OPENEYE_AVAILABLE):
-        raise LicenseError(
-            msg="The Openeye Toolkit License was not found!")
+    error_if_no_perses(__name__)
+    error_if_no_openeye_license(__name__)
 
     score = AtomMapper(use_positions=use_positions).score_mapping(
         AtomMapping(old_mol=mapping.molA.to_openff(),

@@ -7,13 +7,11 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 """
 
 from openmm import unit
-
-# Test if Openeye license present! on class construction.
-from openff.toolkit.utils.exceptions import LicenseError
-from openff.toolkit.utils import toolkits
-
-from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
-
+from openfe.utils.integration_tools import (HAS_PERSES,
+                                            error_if_no_perses,
+                                            error_if_no_openeye_license)
+if HAS_PERSES:
+    from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
 
 from .ligandatommapper import LigandAtomMapper
 
@@ -53,15 +51,13 @@ class PersesAtomMapper(LigandAtomMapper):
             not be used.
 
         """
+        error_if_no_perses(__name__)
+        error_if_no_openeye_license(__name__)
 
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality
         self.use_positions = use_positions
         self.coordinate_tolerance = coordinate_tolerance
-
-        if (not toolkits.OPENEYE_AVAILABLE):
-            raise LicenseError(
-                msg="The Openeye Toolkit License was not found!")
 
     def _mappings_generator(self, molA, molB):
         _atom_mapper = AtomMapper(
