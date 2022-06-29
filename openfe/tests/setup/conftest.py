@@ -12,6 +12,7 @@ import openfe
 from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LigandAtomMapping
 
+
 @pytest.fixture(scope='session')
 def ethane():
     return SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
