@@ -19,10 +19,8 @@ dependencies:
   - click
   - openeye-toolkits
   - typing-extensions
-  # temporarily disable lomap to use main instead
-  # - lomap2
+  - lomap2
   - openmmtools
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/OpenFreeEnergy/Lomap@main
     - plugcli
