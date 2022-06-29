@@ -60,7 +60,8 @@ class PersesAtomMapper(LigandAtomMapper):
     def _mappings_generator(self, molA, molB):
         _atom_mapper = AtomMapper(
             use_positions=self.use_positions,
-            coordinate_tolerance=self.coordinate_tolerance)
+            coordinate_tolerance=self.coordinate_tolerance,
+            allow_ring_breaking=self.allow_ring_breaking)
 
         # Type of mapping
         try:
@@ -70,8 +71,6 @@ class PersesAtomMapper(LigandAtomMapper):
             _atom_mappings = []
 
         # Post processing
-        if (not self.allow_ring_breaking):
-            [x.unmap_partially_mapped_cycles() for x in _atom_mappings]
         if (self.preserve_chirality):
             [x.preserve_chirality() for x in _atom_mappings]
 
