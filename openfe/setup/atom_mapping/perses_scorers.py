@@ -77,7 +77,8 @@ def default_perses_scorer(mapping: LigandAtomMapping,
         oeyMolA = mapping.molA.to_openeye()
         oeyMolB = mapping.molB.to_openeye()
         if (use_positions):
-            raise NotImplementedError("normalizing using positions is not currently implemented")
+            raise NotImplementedError("normalizing using positions is "
+                                      "not currently implemented")
 
         else:
 
