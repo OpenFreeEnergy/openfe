@@ -10,7 +10,9 @@ from rdkit.Chem import AllChem
 from openfe.utils.custom_typing import RDKitMol
 
 
-def _match_elements(mol1: RDKitMol, idx1: int, mol2: RDKitMol, idx2: int) -> bool:
+def _match_elements(
+        mol1: RDKitMol, idx1: int, mol2: RDKitMol, idx2: int
+) -> bool:
     """
     Convenience method to check if elements between two molecules (molA
     and molB) are the same.
@@ -84,13 +86,13 @@ def _get_unique_bonds_and_atoms(
 
 
 def _draw_molecules(
-        d2d,
-        mols: Collection[RDKitMol],
-        atoms_list: Collection[Set[int]],
-        bonds_list: Collection[Set[int]],
-        atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
-        highlight_color: Tuple[float, float, float, float],
-        atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
+    d2d,
+    mols: Collection[RDKitMol],
+    atoms_list: Collection[Set[int]],
+    bonds_list: Collection[Set[int]],
+    atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
+    highlight_color: Tuple[float, float, float, float],
+    atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
@@ -117,7 +119,8 @@ def _draw_molecules(
         RGBA tuple for the default highlight color used in the mapping
         visualization
     atom_mapping: Dict[Tuple[int,int], Dict[int, int]], optional
-        used to align the molecules to each othter for clearer visualization, default None
+        used to align the molecules to each othter for clearer visualization,
+        default None
     """
     if d2d is None:
         # select default layout based on number of molecules
@@ -126,15 +129,16 @@ def _draw_molecules(
             grid_x * 300, grid_y * 300, 300, 300)
 
     # squash to 2D
-    copies = [copy.deepcopy(mol) for mol in mols]
+    copies = [Chem.Mol(mol) for mol in mols]
     [AllChem.Compute2DCoords(mol) for mol in copies]
 
-    if atom_mapping is not None:
+    if atom_mapping is not None and len(atom_mapping) > 0:
         for (i, j), atomMap in atom_mapping.items():
             try:
                 AllChem.GenerateDepictionMatching2DStructure(
                     copies[j], copies[i])
-            except Exception:
+            except Exception as err:
+                print("doof, err: ", type(err), err, err.args)
                 AllChem.AlignMol(
                     copies[j], copies[i], atomMap=[
                         (k, v) for v, k in atomMap.items()]
@@ -244,7 +248,13 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
 
     atom_colors = [{at: blue for at in uniques["elements"]}]
 
-    return _draw_molecules(d2d, [mol1], atoms_list, bonds_list, atom_colors, red)
+    return _draw_molecules(d2d,
+                           [mol1],
+                           atoms_list,
+                           bonds_list,
+                           atom_colors,
+                           red
+                           )
 
 
 def draw_unhighlighted_molecule(mol, d2d=None):
