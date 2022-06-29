@@ -9,7 +9,10 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 from openmm import unit
 from openfe.utils.integration_tools import (HAS_PERSES,
                                             error_if_no_perses,
-                                            error_if_no_openeye_license)
+                                            error_if_no_openeye_license,
+                                            requires_license_for_openeye,
+                                            requires_package)
+
 if HAS_PERSES:
     from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
 
@@ -20,6 +23,8 @@ class PersesAtomMapper(LigandAtomMapper):
     allow_ring_breaking: bool
     preserve_chirality: bool
 
+    @requires_package("perses")
+    @requires_license_for_openeye
     def __init__(self, allow_ring_breaking: bool = True,
                  preserve_chirality: bool = True,
                  use_positions: bool = True,
@@ -51,8 +56,8 @@ class PersesAtomMapper(LigandAtomMapper):
             not be used.
 
         """
-        error_if_no_perses(__name__)
-        error_if_no_openeye_license(__name__)
+        #error_if_no_perses(__name__)
+        #error_if_no_openeye_license(__name__)
 
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality

@@ -2,12 +2,13 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import Callable
-from openff.toolkit.utils.exceptions import LicenseError
-from openff.toolkit.utils import toolkits
 
 from openfe.utils.integration_tools import (HAS_PERSES,
                                             error_if_no_perses,
-                                            error_if_no_openeye_license)
+                                            error_if_no_openeye_license,
+                                            requires_license_for_openeye,
+                                            requires_package)
+
 if HAS_PERSES:
     from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
@@ -32,7 +33,8 @@ def _get_all_mapped_atoms_with(oeyMolA,
 
     return numMaxPossibleMappings
 
-
+@requires_package("perses")
+@requires_license_for_openeye
 def default_perses_scorer(mapping: LigandAtomMapping,
                           use_positions: bool = False,
                           normalize: bool = True) -> float:
@@ -67,8 +69,8 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     -------
         float
     """
-    error_if_no_perses(__name__)
-    error_if_no_openeye_license(__name__)
+    #error_if_no_perses(__name__)
+    #error_if_no_openeye_license(__name__)
 
     score = AtomMapper(use_positions=use_positions).score_mapping(
         AtomMapping(old_mol=mapping.molA.to_openff(),
