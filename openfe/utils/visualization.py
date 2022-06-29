@@ -73,7 +73,6 @@ def _get_unique_bonds_and_atoms(
         elif not _match_elements(mol1, idx, mol2, mapping[idx]):
             uniques["elements"].add(idx)
 
-
     for bond in mol1.GetBonds():
         bond_at_idxs = [bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()]
         for at in chain(uniques["atoms"], uniques["elements"]):
@@ -123,7 +122,8 @@ def _draw_molecules(
     if d2d is None:
         # select default layout based on number of molecules
         grid_x, grid_y = {1: (1, 1), 2: (2, 1), }[len(mols)]
-        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(grid_x * 300, grid_y * 300, 300, 300)
+        d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(
+            grid_x * 300, grid_y * 300, 300, 300)
 
     # squash to 2D
     copies = [copy.deepcopy(mol) for mol in mols]
@@ -132,10 +132,12 @@ def _draw_molecules(
     if atom_mapping is not None:
         for (i, j), atomMap in atom_mapping.items():
             try:
-                AllChem.GenerateDepictionMatching2DStructure(copies[j], copies[i])
+                AllChem.GenerateDepictionMatching2DStructure(
+                    copies[j], copies[i])
             except Exception:
                 AllChem.AlignMol(
-                    copies[j], copies[i], atomMap=[(k, v) for v, k in atomMap.items()]
+                    copies[j], copies[i], atomMap=[
+                        (k, v) for v, k in atomMap.items()]
                 )
 
     # standard settings for our visualization
