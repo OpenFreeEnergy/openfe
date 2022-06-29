@@ -15,7 +15,9 @@ class LigandAtomMapper:
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
-    def _mappings_generator(self, molA, molB) -> Iterable[Dict[int, int]]:
+
+    def _mappings_generator(self, molA: SmallMoleculeComponent,
+                            molB: SmallMoleculeComponent) -> Iterable[Dict[int, int]]:
         """
         Suggest mapping options for the input molecules.
 
