@@ -7,7 +7,6 @@ dependencies:
   - numpy
   - networkx
   - rdkit
-  - perses
   - pip
   - pytest
   - pytest-xdist
