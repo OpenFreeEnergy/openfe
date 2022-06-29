@@ -40,7 +40,8 @@ def test_generator_length(lomap_basic_test_files):
 
 def test_bad_mapping(lomap_basic_test_files):
     toluene = lomap_basic_test_files['toluene']
-    NigelTheNitrogen = SmallMoleculeComponent(Chem.MolFromSmiles('N'), name='Nigel')
+    NigelTheNitrogen = SmallMoleculeComponent(
+        Chem.MolFromSmiles('N'), name='Nigel')
 
     mapper = PersesAtomMapper()
 
