@@ -19,10 +19,10 @@ from .ligandatommapper import LigandAtomMapper
 
 
 class PersesAtomMapper(LigandAtomMapper):
-    unmap_partially_mapped_cycles: bool
+    allow_ring_breaking: bool
     preserve_chirality: bool
 
-    def __init__(self, full_cycles_only: bool = False,
+    def __init__(self, allow_ring_breaking: bool = True,
                  preserve_chirality: bool = True,
                  use_positions: bool = True,
                  coordinate_tolerance: float = 0.25 * unit.angstrom):
@@ -32,7 +32,7 @@ class PersesAtomMapper(LigandAtomMapper):
 
         Parameters
         ----------
-        full_cycles_only: bool, optional
+        allow_ring_breaking: bool, optional
             this option checks if on only full cycles of the molecules shall
             be mapped, default: False
         preserve_chirality: bool, optional
@@ -48,7 +48,7 @@ class PersesAtomMapper(LigandAtomMapper):
 
         """
 
-        self.unmap_partially_mapped_cycles = full_cycles_only
+        self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality
         self.use_positions = use_positions
         self.coordinate_tolerance = coordinate_tolerance
@@ -70,7 +70,7 @@ class PersesAtomMapper(LigandAtomMapper):
             _atom_mappings = []
 
         # Post processing
-        if (self.unmap_partially_mapped_cycles):
+        if (not self.allow_ring_breaking):
             [x.unmap_partially_mapped_cycles() for x in _atom_mappings]
         if (self.preserve_chirality):
             [x.preserve_chirality() for x in _atom_mappings]

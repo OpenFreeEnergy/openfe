@@ -10,10 +10,10 @@ from .ligandatommapping import LigandAtomMapping
 
 
 # Helpfer Function / reducing code amount
-def _getAllMappableAtomsWith(oeyMolA,
-                             oeyMolB,
-                             numMaxPossibleMappingAtoms: int,
-                             criterium: Callable) -> int:
+def _get_all_mapped_atoms_with(oeyMolA,
+                               oeyMolB,
+                               numMaxPossibleMappingAtoms: int,
+                               criterium: Callable) -> int:
     molA_allAtomsWith = len(
         list(filter(criterium, oeyMolA.GetAtoms())))
     molB_allAtomsWith = len(
@@ -75,19 +75,19 @@ def default_perses_scorer(mapping: LigandAtomMapping,
                 oeyMolA.NumAtoms() < oeyMolB.NumAtoms()) else oeyMolB
             numMaxPossibleMappingAtoms = smallerMolecule.NumAtoms()
             # Max possible Aromatic mappings
-            numMaxPossibleAromaticMappings = _getAllMappableAtomsWith(
+            numMaxPossibleAromaticMappings = _get_all_mapped_atoms_with(
                 oeyMolA=oeyMolA, oeyMolB=oeyMolB,
                 numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
                 criterium=lambda x: x.IsAromatic())
 
             # Max possible heavy mappings
-            numMaxPossibleHeavyAtomMappings = _getAllMappableAtomsWith(
+            numMaxPossibleHeavyAtomMappings = _get_all_mapped_atoms_with(
                 oeyMolA=oeyMolA, oeyMolB=oeyMolB,
                 numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
                 criterium=lambda x: x.GetAtomicNum() > 1)
 
             # Max possible ring mappings
-            numMaxPossibleRingMappings = _getAllMappableAtomsWith(
+            numMaxPossibleRingMappings = _get_all_mapped_atoms_with(
                 oeyMolA=oeyMolA, oeyMolB=oeyMolB,
                 numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
                 criterium=lambda x: x.IsInRing())
