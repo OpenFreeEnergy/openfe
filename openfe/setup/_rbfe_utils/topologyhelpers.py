@@ -122,46 +122,6 @@ def _get_indices(topology, residue_name):
     return [at.index for at in residues[0].atoms()]
 
 
-def _exclude_element_changes(old_to_new_atom_map, old_topology, new_topology):
-    """
-    Remove any mappings that involve changes in elements.
-
-    Parameters
-    ----------
-    old_to_new_atom_map : dict of int : int
-        Atom mapping between the old and new systems.
-    old_topology : openmm.app.Topology
-        Topology of the "old" alchemical state.
-    new_topology : openmm.app.Topology
-        Topology of the "new" alchemical state.
-
-    Returns
-    -------
-    no_elem_old_to_new_atom_map : dict of int : int
-        Adjusted version of the input mapping but with atoms involving changes
-        in elements removed.
-
-    TODO
-    ----
-    * This will probably fail if the Topology entry does not have an element
-      entry - should not be an issue but we might need a better error message.
-    """
-    no_elem_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
-
-    to_del = []
-    for old_at in old_topology.atoms():
-        if old_at.index in old_to_new_atom_map.keys():
-            new_at = [at for at in new_topology.atoms()
-                      if at.index == old_to_new_atom_map[old_at.index]][0]
-            if old_at.element != new_at.element:
-                to_del.append(old_at.index)
-
-    for idx in to_del:
-        del no_elem_old_to_new_atom_map[idx]
-
-    return no_elem_old_to_new_atom_map
-
-
 def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
                         new_system, new_topology):
     """
@@ -235,7 +195,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
 def get_system_mappings(old_to_new_atom_map,
                         old_system, old_topology, old_residue,
                         new_system, new_topology, new_residue,
-                        fix_constraints=True, remove_element_changes=True):
+                        fix_constraints=True):
     """
     From a starting alchemical map between two molecules, get the mappings
     between two alchemical end state systems.
@@ -263,9 +223,6 @@ def get_system_mappings(old_to_new_atom_map,
         Whether to fix the atom mapping by removing any atoms which are
         involved in constrained bonds that change length across the alchemical
         change.
-    remove_element_changes : bool, default True
-        Whether to remove atoms from the atom mapping which involve element
-        changes in the alchemical transformation.
 
     Returns
     -------
@@ -304,11 +261,6 @@ def get_system_mappings(old_to_new_atom_map,
         shift_old = old_at_indices[0] + key
         shift_new = new_at_indices[0] + value
         adjusted_old_to_new_map[shift_old] = shift_new
-
-    if remove_element_changes:
-        adjusted_old_to_new_map = _exclude_element_changes(
-                                      adjusted_old_to_new_map,
-                                      old_topology, new_topology)
 
     # TODO: the original intent here was to apply over the full mapping of all
     # the atoms in the two systems. For now we are only doing the alchemical
