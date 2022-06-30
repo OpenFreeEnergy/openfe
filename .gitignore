@@ -158,6 +158,3 @@ cython_debug/
 
 # vim
 *.swp
-
-#pre-commit
-.pre-commit-config.yaml

@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from typing import Dict, Set, Tuple, Any, Collection
+from typing import Dict, Set, Tuple, Any, Collection, Optional
 from itertools import chain
 import copy
 
@@ -122,6 +122,10 @@ def _draw_molecules(
         used to align the molecules to each othter for clearer visualization,
         default None
     """
+    #input standardization:
+    if atom_mapping is None:
+        atom_mapping = {}
+
     if d2d is None:
         # select default layout based on number of molecules
         grid_x, grid_y = {1: (1, 1), 2: (2, 1), }[len(mols)]
@@ -130,14 +134,15 @@ def _draw_molecules(
 
     # squash to 2D
     copies = [Chem.Mol(mol) for mol in mols]
-    [AllChem.Compute2DCoords(mol) for mol in copies]
+    for mol in copies:
+        AllChem.Compute2DCoords(mol)
 
-    if atom_mapping is not None and len(atom_mapping) > 0:
-        for (i, j), atomMap in atom_mapping.items():
-            AllChem.AlignMol(
-                copies[j], copies[i],
-                atomMap=[(k, v) for v, k in atomMap.items()]
-            )
+    # mol alignments if atom_mapping present
+    for (i, j), atomMap in atom_mapping.items():
+        AllChem.AlignMol(
+            copies[j], copies[i],
+            atomMap=[(k, v) for v, k in atomMap.items()]
+        )
 
     # standard settings for our visualization
     d2d.drawOptions().useBWAtomPalette()
