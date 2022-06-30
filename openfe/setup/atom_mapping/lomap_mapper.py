@@ -16,11 +16,11 @@ class LomapAtomMapper(LigandAtomMapper):
     max3d: float
 
     def __init__(self, time: int = 20, threed: bool = True,
-                 max3d: float = 1000.0):
+                 max3d: float = 1000.0, element_change: bool = True):
         """Wraps the MCS atom mapper from Lomap.
 
-        Kwargs are passed directly to the MCS class from Lomap for each
-        mapping created
+        Kwargs are passed directly to the MCS class from Lomap for each mapping
+        created
 
         Parameters
         ----------
@@ -33,18 +33,20 @@ class LomapAtomMapper(LigandAtomMapper):
         max3d : float, optional
           maximum discrepancy in Angstroms between atoms before mapping is not
           allowed, default 1000.0, which effectively trims no atoms
+        element_change: bool, optional
+          whether to allow element changes in the mappings, default True
         """
         self.time = time
         self.threed = threed
         self.max3d = max3d
+        self.element_change = element_change
 
     def _mappings_generator(self, molA, molB):
         try:
             mcs = lomap_mcs.MCS(molA.to_rdkit(), molB.to_rdkit(),
                                 time=self.time,
-                                threed=self.threed,
-                                max3d=self.max3d
-                                )
+                                threed=self.threed, max3d=self.max3d,
+                                element_change=self.element_change)
         except ValueError:
             # if no match found, Lomap throws ValueError, so we just yield
             # generator with no contents

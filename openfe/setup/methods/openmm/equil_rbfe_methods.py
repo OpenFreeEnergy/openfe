@@ -467,6 +467,10 @@ class RelativeLigandTransform(FEMethod):
           get_default_settings classmethod to give a starting point that
           can be updated to suit.
 
+        Notes
+        -----
+        The mapping used must not involve any elemental changes.  A check for
+        this is done on class creation.
         """
         self._stateA = stateA
         self._stateB = stateB
@@ -498,6 +502,18 @@ class RelativeLigandTransform(FEMethod):
             raise ValueError("Ligand in state A doesn't match mapping")
         if stateB['ligand'] != ligandmapping.molB:
             raise ValueError("Ligand in state B doesn't match mapping")
+        # check that the mapping doesn't involve element changes
+        # this is currently a requirement of the method
+        molA = ligandmapping.molA.to_rdkit()
+        molB = ligandmapping.molB.to_rdkit()
+        for i, j in ligandmapping.molA_to_molB.items():
+            atomA = molA.GetAtomWithIdx(i)
+            atomB = molB.GetAtomWithIdx(j)
+            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
+                raise ValueError(
+                    f"Element change in mapping between atoms "
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
 
     @classmethod
     def get_default_settings(cls) -> RelativeLigandTransformSettings:
@@ -740,7 +756,6 @@ class RelativeLigandTransform(FEMethod):
             stateB_system, stateB_topology, stateB_openff_ligand.name,
             # These are non-optional settings for this method
             fix_constraints=True,
-            remove_element_changes=True,
         )
 
         #  d. Finally get the positions
