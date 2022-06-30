@@ -3,14 +3,12 @@
 
 from typing import Callable
 
-from openfe.utils.integration_tools import (HAS_PERSES,
-                                            error_if_no_perses,
-                                            error_if_no_openeye_license,
-                                            requires_license_for_openeye,
-                                            requires_package)
+from openfe.utils import requires_package
 
-if HAS_PERSES:
+try:
     from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+except ImportError:
+    pass    # Don't throw  error, will happen later
 
 from .ligandatommapping import LigandAtomMapping
 
@@ -35,7 +33,6 @@ def _get_all_mapped_atoms_with(oeyMolA,
 
 
 @requires_package("perses")
-@requires_license_for_openeye
 def default_perses_scorer(mapping: LigandAtomMapping,
                           use_positions: bool = False,
                           normalize: bool = True) -> float:
