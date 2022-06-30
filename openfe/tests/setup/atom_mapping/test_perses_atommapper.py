@@ -7,6 +7,8 @@ import openfe
 from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 
+pytest.importorskip('perses')
+
 
 def test_simple(lomap_basic_test_files):
     # basic sanity check on the LigandAtomMapper

@@ -4,10 +4,15 @@
 import itertools
 import numpy as np
 from numpy.testing import assert_allclose, assert_
-
+import pytest
 from lomap import mcs as lomap_mcs
-from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
+
+pytest.importorskip('perses')
+try:
+    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+except ImportError:
+    pass
 
 import openfe
 from openfe.setup.atom_mapping import perses_scorers, LigandAtomMapping
