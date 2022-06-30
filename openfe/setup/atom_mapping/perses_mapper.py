@@ -56,8 +56,8 @@ class PersesAtomMapper(LigandAtomMapper):
             not be used.
 
         """
-        #error_if_no_perses(__name__)
-        #error_if_no_openeye_license(__name__)
+        # error_if_no_perses(__name__)  # Todo: Remove depending on team
+        # error_if_no_openeye_license(__name__) # Todo: as above
 
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality

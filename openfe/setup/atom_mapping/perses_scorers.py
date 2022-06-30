@@ -33,6 +33,7 @@ def _get_all_mapped_atoms_with(oeyMolA,
 
     return numMaxPossibleMappings
 
+
 @requires_package("perses")
 @requires_license_for_openeye
 def default_perses_scorer(mapping: LigandAtomMapping,
@@ -69,8 +70,8 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     -------
         float
     """
-    #error_if_no_perses(__name__)
-    #error_if_no_openeye_license(__name__)
+    # error_if_no_perses(__name__)  # Todo: Remove depending on team
+    # error_if_no_openeye_license(__name__)  # Todo: as above
 
     score = AtomMapper(use_positions=use_positions).score_mapping(
         AtomMapping(old_mol=mapping.molA.to_openff(),

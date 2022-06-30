@@ -6,7 +6,7 @@ import numpy as np
 from numpy.testing import assert_allclose, assert_
 import pytest
 from lomap import mcs as lomap_mcs
-
+from openfe.setup import perses_scorers, LigandAtomMapping
 
 pytest.importorskip('perses')
 try:
@@ -14,11 +14,9 @@ try:
 except ImportError:
     pass
 
-import openfe
-from openfe.setup.atom_mapping import perses_scorers, LigandAtomMapping
+# TODO: test notimplemented error
+# TODO: clean test file
 
-
-# full back to back test again lomap
 def test_perses_regression(lomap_basic_test_files_dir,  # in a dir for lomap
                            lomap_basic_test_files):
 
@@ -79,13 +77,6 @@ def test_perses_regression(lomap_basic_test_files_dir,  # in a dir for lomap
             normalize=True)
         scores[i, j] = scores[j, i] = score
         norm_scores[i, j] = norm_scores[j, i] = norm_score
-
-    # print("matrix: ")
-    # print(matrix)
-    # print("scores: ")
-    # print(scores)
-    # print("Norm scores between 0 and 1: ")
-    # print(np.all((norm_score <= 1) & (norm_score >= 0.0)))
 
     assert_allclose(
         actual=matrix,
