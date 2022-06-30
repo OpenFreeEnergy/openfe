@@ -92,7 +92,7 @@ def _draw_molecules(
     bonds_list: Collection[Set[int]],
     atom_colors: Collection[Dict[Any, Tuple[float, float, float, float]]],
     highlight_color: Tuple[float, float, float, float],
-    atom_mapping: Dict[Tuple[int, int], Dict[int, int]] = None,
+    atom_mapping: Optional[Dict[Tuple[int, int], Dict[int, int]]] = None,
 ) -> str:
     """
     Internal method to visualize a molecule, possibly with mapping info
