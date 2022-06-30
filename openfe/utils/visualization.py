@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from typing import Dict, Set, Tuple, Any, Collection, Optional
 from itertools import chain
-import copy
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -119,10 +118,13 @@ def _draw_molecules(
         RGBA tuple for the default highlight color used in the mapping
         visualization
     atom_mapping: Dict[Tuple[int,int], Dict[int, int]], optional
-        used to align the molecules to each othter for clearer visualization,
+        used to align the molecules to each othter for clearer visualization.
+        The structure contains the indices of the molecules in mols as key
+        Tuple[molA, molB] and maps the atom indices via the value Dict[
+        molA_atom_idx, molB_atom_idx]
         default None
     """
-    #input standardization:
+    # input standardization:
     if atom_mapping is None:
         atom_mapping = {}
 
