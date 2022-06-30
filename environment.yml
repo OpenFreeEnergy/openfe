@@ -21,6 +21,7 @@ dependencies:
   - typing-extensions
   - lomap2
   - openmmtools
+  - perses
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
     - plugcli
