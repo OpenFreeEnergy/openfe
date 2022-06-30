@@ -1,8 +1,10 @@
 """
 Tools for integration with miscellaneous non-required packages.
-shamelessly borrowed from openpathsampling author: dwhswenson
+shamelessly borrowed from openpathsampling author: dwhswenson and
+openff.toolkit
 """
 import functools
+from typing import Callable
 from openff.toolkit.utils import toolkits
 from .errors import MissingPackageError, LicenseError
 
@@ -16,9 +18,11 @@ def error_if_no_package(name: str, package_name: str, has_package: bool):
     if not has_package:
         raise MissingPackageError(required_by=name, package_name=package_name)
 
+
 """
  ===========================================================================
     SOLUTION 1
+    - nice, no decorator. (but easy to transform)
  ===========================================================================
 """
 # Licenses
@@ -50,13 +54,17 @@ except ImportError:
 def error_if_no_perses(name: str):
     return error_if_no_package(name, 'perses', HAS_PERSES)
 
+
 """
  ===========================================================================
     SOLUTION 2
+    - stable
  ===========================================================================
 """
 # Decorator Test:
-def requires_package(package_name: str):
+
+
+def requires_package(package_name: str) -> Callable:
     """
     Helper function to denote that a funciton requires some optional
     dependency. A function decorated with this decorator will raise
@@ -71,7 +79,7 @@ def requires_package(package_name: str):
     MissingDependencyError
     """
 
-    def test_import_for_require_package(function):
+    def test_import_for_require_package(function: Callable) -> Callable:
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
             import importlib
@@ -92,7 +100,7 @@ def requires_package(package_name: str):
     return test_import_for_require_package
 
 
-def requires_license_for_openeye(function):
+def requires_license_for_openeye(function: Callable) -> Callable:
     """
     Wrapper function to denote that a function requires the openeye
     license. A function decorated with this decorator will raise
@@ -100,8 +108,8 @@ def requires_license_for_openeye(function):
 
     Parameters
     ----------
-    required_by : str
-        name of the function, that requires the license
+    function : str
+        function to be wrapped
 
     Raises
     ------
@@ -133,6 +141,42 @@ def requires_license_for_openeye(function):
             error_if_no_license(name=function.__name__,
                                 license_name="Openeye Toolkit License",
                                 has_license=False)
+        else:
+            return function(*args, **kwargs)
+
+    return wrapper
+
+
+"""
+ ===========================================================================
+    SOLUTION 3 - import openFF and add decorator for oeye lic
+     - short and concise
+     - relies on openff.toolkit
+ ===========================================================================
+"""
+
+
+def requires_license_for_openeye(function: Callable) -> Callable:
+    """
+    Wrapper function to denote that a function requires the openeye
+    license. A function decorated with this decorator will raise
+    `LicenseError` if the openeye license is not around or invalid.
+
+    Parameters
+    ----------
+    required_by : str
+        name of the function, that requires the license
+
+    Raises
+    ------
+    LicenseError
+        if openeye license is missing or invalid.
+    """
+
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        if(not toolkits.OPENEYE_AVAILABLE):
+            error_if_no_license(function.__name__, 'OpenEye Toolkit', False)
         else:
             return function(*args, **kwargs)
 

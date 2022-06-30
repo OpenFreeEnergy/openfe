@@ -5,6 +5,8 @@ ABSTRACT_ERROR_STRING = ("'{cls}' is an abstract class and should not be "
 """
 The exceptions are heavily inspired by OpenFF-toolkit!
 """
+
+
 class OpenFEException(Exception):
     """Base exception for custom exceptions raised by the OpenFE Repository"""
 
@@ -19,10 +21,9 @@ class OpenFEException(Exception):
 class MissingPackageError(OpenFEException, ImportError):
     """
     Exception for when an optional dependency is needed but not installed
-
     """
 
-    def __init__(self, package_name:str, required_by:str):
+    def __init__(self, package_name: str, required_by: str):
         self.msg = (
             f"Missing dependency {package_name} for {required_by}. "
             f"Try installing it with\n\n$ "
@@ -35,7 +36,7 @@ class MissingPackageError(OpenFEException, ImportError):
 class LicenseError(OpenFEException):
     """This function requires a license that cannot be found."""
 
-    def __init__(self, license_name:str, required_by:str):
+    def __init__(self, license_name: str, required_by: str):
         self.msg = (
             f"Missing License {license_name} for {required_by}."
         )
