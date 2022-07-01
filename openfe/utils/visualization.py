@@ -255,7 +255,7 @@ def draw_one_molecule_mapping(mol1_to_mol2, mol1, mol2, d2d=None):
                            atoms_list,
                            bonds_list,
                            atom_colors,
-                           red
+                           red,
                            )
 
 
