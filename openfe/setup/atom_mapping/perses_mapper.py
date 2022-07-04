@@ -82,4 +82,4 @@ class PersesAtomMapper(LigandAtomMapper):
             mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
         else:
             mapping_dict = [{}]
-        return mapping_dict
+        yield mapping_dict

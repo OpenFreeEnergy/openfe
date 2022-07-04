@@ -7,6 +7,7 @@ import openfe
 from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LomapAtomMapper
 
+
 def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
     mol1 = atom_mapping_basic_test_files['methylcyclohexane']

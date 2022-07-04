@@ -81,8 +81,10 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
 
     with pytest.raises(ValueError, match='No mapping found for'):
         network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=[nigel], central_ligand=atom_mapping_basic_test_files['toluene'],
-            mappers=[openfe.setup.atom_mapping.LomapAtomMapper()], scorer=None
+            ligands=[nigel],
+            central_ligand=atom_mapping_basic_test_files['toluene'],
+            mappers=[openfe.setup.atom_mapping.LomapAtomMapper()],
+            scorer=None
         )
 
 

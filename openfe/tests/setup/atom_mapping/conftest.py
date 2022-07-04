@@ -11,12 +11,13 @@ from openfe.setup import LigandAtomMapping
 
 
 def _translate_lomap_mapping(atom_mapping_str: str) -> Dict[int, int]:
-    return dict(map(lambda x: tuple(map(int, x.split(":"))),
-                    atom_mapping_str.split(",")))
+    mapped_atom_tuples = map(lambda x: tuple(map(int, x.split(":"))),
+                             atom_mapping_str.split(","))
+    return {i: j for i, j in mapped_atom_tuples}
 
 
-def _get_atom_mapping_dict(lomap_atom_mappings)->Dict[Tuple[int, int],
-                                                      Dict[int, int]]:
+def _get_atom_mapping_dict(lomap_atom_mappings) -> Dict[Tuple[int, int],
+                                                        Dict[int, int]]:
     return {mol_pair: _translate_lomap_mapping(atom_mapping_str) for
             mol_pair, atom_mapping_str in
             lomap_atom_mappings.mcs_map_store.items()}
@@ -26,7 +27,6 @@ def _get_atom_mapping_dict(lomap_atom_mappings)->Dict[Tuple[int, int],
 def gufe_atom_mapping_matrix(lomap_basic_test_files_dir,
                              atom_mapping_basic_test_files
                              ) -> Dict[Tuple[int, int], LigandAtomMapping]:
-
     dbmols = lomap.DBMolecules(lomap_basic_test_files_dir, verbose='off')
     _, _ = dbmols.build_matrices()
     molecule_pair_atom_mappings = _get_atom_mapping_dict(dbmols)

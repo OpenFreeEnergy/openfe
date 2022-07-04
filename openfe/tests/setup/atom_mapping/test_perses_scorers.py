@@ -17,8 +17,7 @@ except ImportError:
     pass
 
 
-
-def test_perses_normalization_notUsingPositions(gufe_atom_mapping_matrix):
+def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
     # now run the openfe equivalent with the same ligand atom _mappings
     scorer = perses_scorers.default_perses_scorer
     molecule_row = np.max(list(gufe_atom_mapping_matrix.keys()))+1
@@ -36,7 +35,7 @@ def test_perses_normalization_notUsingPositions(gufe_atom_mapping_matrix):
             msg="OpenFE norm value larger than 1 or smaller than 0")
 
 
-def test_perses_notImplemented_positionUsing(gufe_atom_mapping_matrix):
+def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
     scorer = perses_scorers.default_perses_scorer
 
     first_key = list(gufe_atom_mapping_matrix.keys())[0]
@@ -46,7 +45,6 @@ def test_perses_notImplemented_positionUsing(gufe_atom_mapping_matrix):
             gufe_atom_mapping_matrix[first_key],
             use_positions=True,
             normalize=True)
-
 
 
 def test_perses_regression(gufe_atom_mapping_matrix):
