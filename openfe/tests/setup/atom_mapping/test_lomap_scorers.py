@@ -15,9 +15,9 @@ from rdkit.Chem.AllChem import Compute2DCoords
 
 
 @pytest.fixture()
-def toluene_to_cyclohexane(lomap_basic_test_files):
-    meth = lomap_basic_test_files['methylcyclohexane']
-    tolu = lomap_basic_test_files['toluene']
+def toluene_to_cyclohexane(atom_mapping_basic_test_files):
+    meth = atom_mapping_basic_test_files['methylcyclohexane']
+    tolu = atom_mapping_basic_test_files['toluene']
     mapping = [(0, 0), (1, 1), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2)]
 
     return LigandAtomMapping(tolu, meth,
@@ -25,9 +25,9 @@ def toluene_to_cyclohexane(lomap_basic_test_files):
 
 
 @pytest.fixture()
-def toluene_to_methylnaphthalene(lomap_basic_test_files):
-    tolu = lomap_basic_test_files['toluene']
-    naph = lomap_basic_test_files['2-methylnaphthalene']
+def toluene_to_methylnaphthalene(atom_mapping_basic_test_files):
+    tolu = atom_mapping_basic_test_files['toluene']
+    naph = atom_mapping_basic_test_files['2-methylnaphthalene']
     mapping = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 8), (5, 9), (6, 10)]
 
     return LigandAtomMapping(tolu, naph,
@@ -35,8 +35,8 @@ def toluene_to_methylnaphthalene(lomap_basic_test_files):
 
 
 @pytest.fixture()
-def toluene_to_heptane(lomap_basic_test_files):
-    tolu = lomap_basic_test_files['toluene']
+def toluene_to_heptane(atom_mapping_basic_test_files):
+    tolu = atom_mapping_basic_test_files['toluene']
     hept = Chem.MolFromSmiles('CCCCCCC')
     Chem.rdDepictor.Compute2DCoords(hept)
     hept = openfe.setup.SmallMoleculeComponent(hept)
@@ -48,9 +48,9 @@ def toluene_to_heptane(lomap_basic_test_files):
 
 
 @pytest.fixture()
-def methylnaphthalene_to_naphthol(lomap_basic_test_files):
-    m1 = lomap_basic_test_files['2-methylnaphthalene']
-    m2 = lomap_basic_test_files['2-naftanol']
+def methylnaphthalene_to_naphthol(atom_mapping_basic_test_files):
+    m1 = atom_mapping_basic_test_files['2-methylnaphthalene']
+    m2 = atom_mapping_basic_test_files['2-naftanol']
     mapping = [(0, 0), (1, 1), (2, 10), (3, 9), (4, 8), (5, 7), (6, 6), (7, 5),
                (8, 4), (9, 3), (10, 2)]
 
@@ -210,9 +210,9 @@ IX = itertools.combinations(range(8), 2)
 
 @pytest.mark.parametrize('params', itertools.product(SCORE_NAMES, IX))
 def test_lomap_individual_scores(params,
-                                 lomap_basic_test_files):
+                                 atom_mapping_basic_test_files):
     scorename, (i, j) = params
-    mols = sorted(lomap_basic_test_files.items())
+    mols = sorted(atom_mapping_basic_test_files.items())
     _, molA = mols[i]
     _, molB = mols[j]
 
@@ -231,7 +231,7 @@ def test_lomap_individual_scores(params,
 
 # full back to back test again lomap
 def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
-                          lomap_basic_test_files):
+                          atom_mapping_basic_test_files):
     # run lomap
     dbmols = lomap.DBMolecules(lomap_basic_test_files_dir)
     matrix, _ = dbmols.build_matrices()
@@ -244,7 +244,7 @@ def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
     smallmols = []
     for i in range(matrix.shape[0]):
         nm = dbmols[i].getName()
-        smallmols.append(lomap_basic_test_files[nm[:-5]])  # - ".mol2"
+        smallmols.append(atom_mapping_basic_test_files[nm[:-5]])  # - ".mol2"
 
     mapper = openfe.setup.atom_mapping.LomapAtomMapper(threed=False)
     scorer = lomap_scorers.default_lomap_score

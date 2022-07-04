@@ -18,22 +18,25 @@ except ImportError:
 # TODO: clean test file
 
 
+def test_perses_regression():
+    pass
+
 def test_perses_regression(lomap_basic_test_files_dir,  # in a dir for lomap
-                           lomap_basic_test_files):
+                           atom_mapping_basic_test_files):
 
     # generate test_data - Ligand_atom_mappings with lomap
     def mapper(a, b):
         return lomap_mcs.MCS(a, b, time=20, threed=False, max3d=1000)
 
     ligand_atom_mappings = {}
-    for i, molA in enumerate(list(lomap_basic_test_files.keys())):
-        for j, molB in enumerate(list(lomap_basic_test_files.keys())):
+    for i, molA in enumerate(list(atom_mapping_basic_test_files.keys())):
+        for j, molB in enumerate(list(atom_mapping_basic_test_files.keys())):
             # Build Ligand Atom Mapping for testing
             try:
                 # print(molA, lomap_basic_test_files[molA])
                 mcs = mapper(
-                    a=lomap_basic_test_files[molA].to_rdkit(),
-                    b=lomap_basic_test_files[molB].to_rdkit())
+                    a=atom_mapping_basic_test_files[molA].to_rdkit(),
+                    b=atom_mapping_basic_test_files[molB].to_rdkit())
                 mapping_string = mcs.all_atom_match_list()
                 atom_mapping = dict((map(int, v.split(':'))
                                     for v in mapping_string.split(',')))
@@ -41,15 +44,15 @@ def test_perses_regression(lomap_basic_test_files_dir,  # in a dir for lomap
                 atom_mapping = {}
 
             ligand_mapping = LigandAtomMapping(
-                molA=lomap_basic_test_files[molA],
-                molB=lomap_basic_test_files[molB],
+                molA=atom_mapping_basic_test_files[molA],
+                molB=atom_mapping_basic_test_files[molB],
                 molA_to_molB=atom_mapping
             )
             ligand_atom_mappings[(i, j)] = ligand_mapping
 
     # This is the way how perses does scoring
-    matrix = np.zeros([len(lomap_basic_test_files),
-                      len(lomap_basic_test_files)])
+    matrix = np.zeros([len(atom_mapping_basic_test_files),
+                       len(atom_mapping_basic_test_files)])
     for (i, j) in ligand_atom_mappings:
         ligand_atom_mapping = ligand_atom_mappings[(i, j)]
         perses_atom_mapping = AtomMapping(

@@ -68,7 +68,7 @@ def lomap_basic_test_files_dir(tmpdir_factory):
 
 
 @pytest.fixture(scope='session')
-def lomap_basic_test_files():
+def atom_mapping_basic_test_files():
     # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
     # set of ligands
     files = {}

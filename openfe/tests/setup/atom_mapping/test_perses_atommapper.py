@@ -10,10 +10,10 @@ from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 pytest.importorskip('perses')
 
 
-def test_simple(lomap_basic_test_files):
+def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
-    mol1 = lomap_basic_test_files['methylcyclohexane']
-    mol2 = lomap_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
+    mol2 = atom_mapping_basic_test_files['toluene']
 
     mapper = PersesAtomMapper()
 
@@ -25,11 +25,11 @@ def test_simple(lomap_basic_test_files):
     assert len(mapping.molA_to_molB) == 4
 
 
-def test_generator_length(lomap_basic_test_files):
+def test_generator_length(atom_mapping_basic_test_files):
     # check that we get one mapping back from Lomap LigandAtomMapper then the
     # generator stops correctly
-    mol1 = lomap_basic_test_files['methylcyclohexane']
-    mol2 = lomap_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
+    mol2 = atom_mapping_basic_test_files['toluene']
 
     mapper = PersesAtomMapper()
 
@@ -40,8 +40,8 @@ def test_generator_length(lomap_basic_test_files):
         next(mapping_gen)
 
 
-def test_bad_mapping(lomap_basic_test_files):
-    toluene = lomap_basic_test_files['toluene']
+def test_bad_mapping(atom_mapping_basic_test_files):
+    toluene = atom_mapping_basic_test_files['toluene']
     NigelTheNitrogen = SmallMoleculeComponent(
         Chem.MolFromSmiles('N'), name='Nigel')
 
