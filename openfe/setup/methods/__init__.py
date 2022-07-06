@@ -4,6 +4,6 @@
 from .base import FEMethod
 from .openmm import (
     RelativeLigandTransformSettings,
-    RelativeLigandTransformResults,
+    RelativeLigandTransformResult,
     RelativeLigandTransform,
 )

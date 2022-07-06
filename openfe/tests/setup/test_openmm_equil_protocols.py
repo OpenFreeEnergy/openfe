@@ -95,14 +95,19 @@ def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, tmpdir):
     # this might be a bit time consuming
     protocol = openmm.RelativeLigandTransform(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            ligandmapping=benzene_to_toluene_mapping,
             settings=openmm.RelativeLigandTransform.get_default_settings(),
     )
-    # Returns True if everything is OK
-    with tmpdir.as_cwd():
-        assert protocol.run(dry=True)
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+
+    assert len(dag.graph) == 1
+
+    ## Returns True if everything is OK
+    #with tmpdir.as_cwd():
+    #    assert protocol.run(dry=True)
 
 
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
