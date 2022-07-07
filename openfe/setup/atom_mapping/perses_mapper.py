@@ -36,12 +36,9 @@ class PersesAtomMapper(LigandAtomMapper):
             this option checks if on only full cycles of the molecules shall
             be mapped, default: False
         preserve_chirality: bool, optional
-             , default: True
+             if mappings must strictly preserve chirality, default: True
         use_positions: bool, optional
             this option defines, if the
-        mapping_type: PersesMappingType, optional
-            how to calculate the mapping and amount of mappings,
-            default: PersesMappingType.best
         coordinate_tolerance: float, optional
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom

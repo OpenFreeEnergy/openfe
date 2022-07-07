@@ -6,16 +6,11 @@ from numpy.testing import assert_allclose, assert_
 
 import numpy as np
 
-from .conftest import gufe_atom_mapping_matrix
-
 from openfe.setup import perses_scorers
 
 pytest.importorskip('perses')
 pytest.importorskip('openeye')
-try:
-    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
-except ImportError:
-    pass
+from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
 
 def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):

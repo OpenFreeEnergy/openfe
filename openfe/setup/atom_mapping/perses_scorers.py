@@ -43,7 +43,7 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     Parameters
     ----------
     mapping: LigandAtomMapping
-        is an openFE Ligand Mapping, that should be mapped
+        is an OpenFE Ligand Mapping, that should be mapped
     use_positions: bool, optional
         if the positions are used, perses takes the inverse eucledian distance
         of mapped atoms into account.
@@ -59,17 +59,11 @@ def default_perses_scorer(mapping: LigandAtomMapping,
     NotImplementedError
         Normalization of the score using positions is not implemented right
         now.
-    LicenseError
-        If Openeye License can not be found, the perses functionality can
-        not be used.
 
     Returns
     -------
         float
     """
-    # error_if_no_perses(__name__)  # Todo: Remove depending on team
-    # error_if_no_openeye_license(__name__)  # Todo: as above
-
     score = AtomMapper(use_positions=use_positions).score_mapping(
         AtomMapping(old_mol=mapping.molA.to_openff(),
                     new_mol=mapping.molB.to_openff(),
@@ -82,7 +76,6 @@ def default_perses_scorer(mapping: LigandAtomMapping,
         if (use_positions):
             raise NotImplementedError("normalizing using positions is "
                                       "not currently implemented")
-
         else:
 
             smallerMolecule = oeyMolA if (
