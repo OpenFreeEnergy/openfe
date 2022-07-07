@@ -39,21 +39,3 @@ def test_generator_length(atom_mapping_basic_test_files):
     _ = next(mapping_gen)
     with pytest.raises(StopIteration):
         next(mapping_gen)
-
-
-def test_bad_mapping(atom_mapping_basic_test_files):
-    toluene = atom_mapping_basic_test_files['toluene']
-    NigelTheNitrogen = SmallMoleculeComponent(
-        Chem.MolFromSmiles('N'), name='Nigel')
-
-    mapper = PersesAtomMapper()
-
-    mapping_gen = mapper.suggest_mappings(toluene, NigelTheNitrogen)
-    with pytest.raises(StopIteration):
-        i = 0
-        while True:
-            next(mapping_gen)
-            if (i > 1000):
-                raise Exception("this is an inf loop... but should not be!")
-            else:
-                i += 1
