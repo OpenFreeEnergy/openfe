@@ -11,6 +11,7 @@ from .conftest import gufe_atom_mapping_matrix
 from openfe.setup import perses_scorers
 
 pytest.importorskip('perses')
+pytest.importorskip('oechem')
 try:
     from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 except ImportError:
