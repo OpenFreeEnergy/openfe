@@ -8,7 +8,7 @@ from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 
 pytest.importorskip('perses')
-pytest.importorskip('oechem')
+pytest.importorskip('openeye')
 
 
 def test_simple(atom_mapping_basic_test_files):

@@ -46,16 +46,7 @@ class PersesAtomMapper(LigandAtomMapper):
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom
 
-        Raises
-        ------
-        LicenseError
-            If Openeye License can not be found, the perses functionality can
-            not be used.
-
         """
-        # error_if_no_perses(__name__)  # Todo: Remove depending on team
-        # error_if_no_openeye_license(__name__) # Todo: as above
-
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality
         self.use_positions = use_positions
@@ -81,5 +72,5 @@ class PersesAtomMapper(LigandAtomMapper):
         if(len(_atom_mappings) > 0):
             mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
         else:
-            mapping_dict = [{}]
-        yield mapping_dict
+            mapping_dict = []
+        yield from mapping_dict
