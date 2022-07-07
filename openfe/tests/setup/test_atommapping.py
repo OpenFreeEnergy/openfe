@@ -36,6 +36,23 @@ def test_draw_mapping_cairo(tmpdir, simple_mapping):
         assert filed.exists()
 
 
+def test_mapping_invert(other_mapping):
+    inv = other_mapping.invert()
+
+    assert inv.molA is other_mapping.molB
+    assert inv.molB is other_mapping.molA
+    assert inv.molA_to_molB == {0: 0, 1: 2}
+
+
+def test_mapping_invert_annotations(annotated_simple_mapping):
+    inv = annotated_simple_mapping.invert()
+
+    assert inv.molA is annotated_simple_mapping.molB
+    assert inv.molB is annotated_simple_mapping.molA
+    assert inv.molA_to_molB == {0: 0, 1: 1}
+    assert inv.annotations == {'foo': 'bar'}
+
+
 def test_draw_mapping_svg(tmpdir, other_mapping):
     with tmpdir.as_cwd():
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DSVG(600, 300, 300, 300)

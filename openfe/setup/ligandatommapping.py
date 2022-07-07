@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from __future__ import annotations as _  # to avoid shadowing annotations
+
 import json
 from typing import Any, Dict, List, Optional
 import numpy as np
@@ -42,6 +44,21 @@ class LigandAtomMapping(Serializable):
             annotations = {}
 
         self._annotations = annotations
+
+    def invert(self) -> LigandAtomMapping:
+        """Return a copy of this AtomMapping with 'A' and 'B' swapped
+
+        This method will reverse the molA, molB and molA_to_molB mapping. It
+        will *not* inspect any annotations and reverse these, so any
+        annotations referring to molA or molB will be incorrect after this
+        method.
+        """
+        return self.__class__(
+            molA=self.molB,
+            molB=self.molA,
+            molA_to_molB={v: k for k, v in self.molA_to_molB.items()},
+            annotations=self.annotations,
+        )
 
     @property
     def annotations(self):
