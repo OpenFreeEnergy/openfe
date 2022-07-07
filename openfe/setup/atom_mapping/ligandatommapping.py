@@ -81,6 +81,8 @@ class LigandAtomMapping(Serializable):
         ))
 
     def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
         return (self.molA == other.molA
                 and self.molB == other.molB
                 and self.molA_to_molB == other.molA_to_molB
