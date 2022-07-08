@@ -26,6 +26,7 @@ class LigandAtomMapping(Serializable):
       starting with ``ofe-`` may have special meaning in other parts of
       OpenFE. ``score`` is a reserved annotation identifier.
     """
+
     def __init__(
         self,
         molA: SmallMoleculeComponent,
@@ -80,6 +81,8 @@ class LigandAtomMapping(Serializable):
         ))
 
     def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
         return (self.molA == other.molA
                 and self.molB == other.molB
                 and self.molA_to_molB == other.molA_to_molB
@@ -89,10 +92,6 @@ class LigandAtomMapping(Serializable):
         return (f"{self.__class__.__name__}(molA={self.molA!r}, "
                 f"molB={self.molB!r}, molA_to_molB={self.molA_to_molB!r}, "
                 f"annotations={self.annotations!r})")
-
-    @classmethod
-    def from_perses(cls, perses_mapping):
-        raise NotImplementedError()
 
     def _ipython_display_(self, d2d=None):  # pragma: no-cover
         """

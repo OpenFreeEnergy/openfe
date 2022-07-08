@@ -6,7 +6,7 @@ from lomap import mcs as lomap_mcs
 import math
 from rdkit import Chem
 
-from openfe.setup import LigandAtomMapping
+from .ligandatommapping import LigandAtomMapping
 
 DEFAULT_ANS_DIFFICULTY = {
     # H to element - not sure this has any effect currently
@@ -26,7 +26,7 @@ def ecr_score(mapping: LigandAtomMapping):
     molA = mapping.molA.to_rdkit()
     molB = mapping.molB.to_rdkit()
 
-    return 1 - _dbmol.ecr(molA,  molB)
+    return 1 - _dbmol.ecr(molA, molB)
 
 
 def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
@@ -255,12 +255,12 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
         # these patterns are lifted from lomap2 repo
         return (mol.HasSubstructMatch(
             Chem.MolFromSmarts('[n]1[c,n][c,n][c,n][c,n][c,n]1'))
-                or
-                mol.HasSubstructMatch(
-                    Chem.MolFromSmarts('[o,n,s]1[n][c,n][c,n][c,n]1'))
-                or
-                mol.HasSubstructMatch(
-                    Chem.MolFromSmarts('[o,n,s]1[c,n][n][c,n][c,n]1')))
+            or
+            mol.HasSubstructMatch(
+            Chem.MolFromSmarts('[o,n,s]1[n][c,n][c,n][c,n]1'))
+            or
+            mol.HasSubstructMatch(
+            Chem.MolFromSmarts('[o,n,s]1[c,n][n][c,n][c,n]1')))
 
     # create "remainders" of both molA and molB
     # create "remainders" of both molA and molB

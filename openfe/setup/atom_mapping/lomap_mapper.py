@@ -7,7 +7,7 @@ The MCS class from Lomap shamelessly wrapped and used here to match our API.
 """
 from lomap import mcs as lomap_mcs
 
-from . import LigandAtomMapper
+from .ligandatommapper import LigandAtomMapper
 
 
 class LomapAtomMapper(LigandAtomMapper):
@@ -43,7 +43,8 @@ class LomapAtomMapper(LigandAtomMapper):
 
     def _mappings_generator(self, molA, molB):
         try:
-            mcs = lomap_mcs.MCS(molA, molB, time=self.time,
+            mcs = lomap_mcs.MCS(molA.to_rdkit(), molB.to_rdkit(),
+                                time=self.time,
                                 threed=self.threed, max3d=self.max3d,
                                 element_change=self.element_change)
         except ValueError:

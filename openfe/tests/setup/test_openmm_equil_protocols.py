@@ -218,10 +218,10 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
         )
 
 
-def test_element_change_rejection(lomap_basic_test_files):
+def test_element_change_rejection(atom_mapping_basic_test_files):
     # check a mapping with element change gets rejected early
-    l1 = lomap_basic_test_files['2-methylnaphthalene']
-    l2 = lomap_basic_test_files['2-naftanol']
+    l1 = atom_mapping_basic_test_files['2-methylnaphthalene']
+    l2 = atom_mapping_basic_test_files['2-naftanol']
 
     mapper = setup.LomapAtomMapper()
     mapping = next(mapper.suggest_mappings(l1, l2))

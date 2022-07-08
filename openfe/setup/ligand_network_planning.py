@@ -6,9 +6,8 @@ import itertools
 
 import networkx as nx
 
-from openfe.setup import (
-    Network, SmallMoleculeComponent, LigandAtomMapper, LigandAtomMapping
-)
+from openfe.setup import Network, SmallMoleculeComponent
+from openfe.setup.atom_mapping import LigandAtomMapper, LigandAtomMapping
 
 
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],

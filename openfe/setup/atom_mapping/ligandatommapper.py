@@ -3,8 +3,10 @@
 
 from typing import Iterable, Dict
 
-from . import LigandAtomMapping, SmallMoleculeComponent
-from ..utils.errors import ABSTRACT_ERROR_STRING
+from openfe.setup import SmallMoleculeComponent
+from .ligandatommapping import LigandAtomMapping
+
+from openfe.utils.errors import ABSTRACT_ERROR_STRING
 
 
 class LigandAtomMapper:
@@ -13,7 +15,11 @@ class LigandAtomMapper:
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
-    def _mappings_generator(self, molA, molB) -> Iterable[Dict[int, int]]:
+
+    def _mappings_generator(self,
+                            molA: SmallMoleculeComponent,
+                            molB: SmallMoleculeComponent
+                            ) -> Iterable[Dict[int, int]]:
         """
         Suggest mapping options for the input molecules.
 
@@ -33,7 +39,7 @@ class LigandAtomMapper:
         ))
 
     def suggest_mappings(
-        self, molA: SmallMoleculeComponent, molB: SmallMoleculeComponent
+            self, molA: SmallMoleculeComponent, molB: SmallMoleculeComponent
     ) -> Iterable[LigandAtomMapping]:
         """
         Suggest :class:`.LigandAtomMapping` options for the input molecules.
@@ -53,6 +59,5 @@ class LigandAtomMapper:
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
-        for map_dct in self._mappings_generator(molA.to_rdkit(),
-                                                molB.to_rdkit()):
+        for map_dct in self._mappings_generator(molA, molB):
             yield LigandAtomMapping(molA, molB, map_dct)

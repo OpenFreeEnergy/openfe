@@ -3,7 +3,7 @@ import pathlib
 import json
 from rdkit import Chem
 
-from openfe.setup import LigandAtomMapping
+from openfe.setup.atom_mapping import LigandAtomMapping
 
 
 @pytest.fixture
