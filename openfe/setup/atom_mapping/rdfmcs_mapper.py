@@ -154,3 +154,15 @@ class RDFMCSMapper(LigandAtomMapper):
         m = get_mapping(molA.to_rdkit(),
                         molB.to_rdkit())
         yield m.molA_to_molB
+
+    def common_core(self, molecules: list[SmallMoleculeComponent]) -> str:
+        """Identify a common core across many molecules
+
+        Returns a smarts string of the common core
+        """
+        # todo: this FindMCS should also use the same parameters as the
+        #  "get_mapping" call above.  I.e. the common core must follow the
+        #  same rules as the pairwise mappings
+        core = rdFMCS.FindMCS([m.to_rdkit() for m in molecules])
+
+        return core.smartsString
