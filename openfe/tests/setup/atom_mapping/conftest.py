@@ -44,14 +44,18 @@ def gufe_atom_mapping_matrix(lomap_basic_test_files_dir,
 
     return ligand_atom_mappings
 
+
 @pytest.fixture()
-def mol_pair_to_shock_perses_mapper()->Tuple[SmallMoleculeComponent]:
+def mol_pair_to_shock_perses_mapper() -> Tuple[SmallMoleculeComponent]:
     """
-        This pair of Molecules leads to an empty Atom mapping in the Perses Mapper with certain settings.
+        This pair of Molecules leads to an empty Atom mapping in
+        Perses Mapper with certain settings.
 
     Returns:
         Tuple[SmallMoleculeComponent]: two molecule objs for the test
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('c1ccccc1'), 'benzene')
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('C1CCCCC1'), 'cyclohexane')
+    molA = SmallMoleculeComponent(Chem.MolFromSmiles('c1ccccc1'),
+                                  'benzene')
+    molB = SmallMoleculeComponent(Chem.MolFromSmiles('C1CCCCC1'),
+                                  'cyclohexane')
     return (molA, molB)
