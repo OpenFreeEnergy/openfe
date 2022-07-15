@@ -39,3 +39,16 @@ def test_generator_length(atom_mapping_basic_test_files):
     _ = next(mapping_gen)
     with pytest.raises(StopIteration):
         next(mapping_gen)
+
+def test_empty_atommappings(mol_pair_to_shock_perses_mapper):
+    mol1, mol2 = mol_pair_to_shock_perses_mapper
+    mapper = PersesAtomMapper()
+
+    mapping_gen = mapper.suggest_mappings(mol1, mol2)
+    
+    #The expected return is an empty mapping
+    assert len(list(mapping_gen)) == 0
+    
+    with pytest.raises(StopIteration):
+        next(mapping_gen)
+    
