@@ -20,6 +20,7 @@ from .ligandatommapper import LigandAtomMapper
 class PersesAtomMapper(LigandAtomMapper):
     allow_ring_breaking: bool
     preserve_chirality: bool
+    use_positions: bool
 
     @requires_package("perses")
     def __init__(self, allow_ring_breaking: bool = True,
@@ -42,7 +43,7 @@ class PersesAtomMapper(LigandAtomMapper):
         coordinate_tolerance: float, optional
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom
-        
+
         """
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality
@@ -50,18 +51,20 @@ class PersesAtomMapper(LigandAtomMapper):
         self.coordinate_tolerance = coordinate_tolerance
 
     def _mappings_generator(self, molA, molB):
+        # Construct Perses Mapper
         _atom_mapper = AtomMapper(
             use_positions=self.use_positions,
             coordinate_tolerance=self.coordinate_tolerance,
             allow_ring_breaking=self.allow_ring_breaking)
 
-        # Type of mapping
+        # Try generating a mapping
         try:
             _atom_mappings = _atom_mapper.get_all_mappings(
                     old_mol=molA.to_openff(), new_mol=molB.to_openff())
         except InvalidMappingException:
             _atom_mappings = []
-        
+
+        # Catch empty mappings here
         if(_atom_mappings is None):
             _atom_mappings = []
 
@@ -69,9 +72,10 @@ class PersesAtomMapper(LigandAtomMapper):
         if (self.preserve_chirality):
             [x.preserve_chirality() for x in _atom_mappings]
 
+        # Translate mapping objects
         if(len(_atom_mappings) > 0):
             mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
         else:
-            mapping_dict = []
+            mapping_dict = [{}]
+
         yield from mapping_dict
-   
