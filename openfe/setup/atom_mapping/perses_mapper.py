@@ -36,13 +36,18 @@ class PersesAtomMapper(LigandAtomMapper):
             this option checks if on only full cycles of the molecules shall
             be mapped, default: False
         preserve_chirality: bool, optional
-             if mappings must strictly preserve chirality, default: True
+            if mappings must strictly preserve chirality, default: True
         use_positions: bool, optional
             this option defines, if the
         coordinate_tolerance: float, optional
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom
 
+        Raises
+        ------
+        ValueError
+            This Error is triggered if no Atom mapping was found
+        
         """
         self.allow_ring_breaking = allow_ring_breaking
         self.preserve_chirality = preserve_chirality
@@ -60,14 +65,15 @@ class PersesAtomMapper(LigandAtomMapper):
             _atom_mappings = _atom_mapper.get_all_mappings(
                     old_mol=molA.to_openff(), new_mol=molB.to_openff())
         except InvalidMappingException:
-            _atom_mappings = []
-
+            _atom_mappings = None   #safety in case this error was thrown as it should
+            
+        if(_atom_mappings is None or len(_atom_mappings) == 0): # defined behaviour throw error if no mapping
+            raise ValueError("Perses Atom Mapper could not find any valid atom mapping for the ligand pair!")
+        
         # Post processing
         if (self.preserve_chirality):
             [x.preserve_chirality() for x in _atom_mappings]
 
-        if(len(_atom_mappings) > 0):
-            mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
-        else:
-            mapping_dict = []
+        mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
+        
         yield from mapping_dict
