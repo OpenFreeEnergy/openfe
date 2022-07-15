@@ -67,7 +67,7 @@ class PersesAtomMapper(LigandAtomMapper):
         except InvalidMappingException:
             _atom_mappings = None   #safety in case this error was thrown as it should
             
-        if(_atom_mappings is None or len(_atom_mappings) == 0): # defined behaviour throw error if no mapping
+        if(_atom_mappings is None): # defined behaviour throw error if no mapping
             raise ValueError("Perses Atom Mapper could not find any valid atom mapping for the ligand pair!")
         
         # Post processing
