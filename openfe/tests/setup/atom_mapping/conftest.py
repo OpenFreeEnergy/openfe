@@ -46,7 +46,7 @@ def gufe_atom_mapping_matrix(lomap_basic_test_files_dir,
 
 
 @pytest.fixture()
-def mol_pair_to_shock_perses_mapper() -> Tuple[SmallMoleculeComponent]:
+def mol_pair_to_shock_perses_mapper() -> Tuple[SmallMoleculeComponent,SmallMoleculeComponent]:
     """
         This pair of Molecules leads to an empty Atom mapping in
         Perses Mapper with certain settings.
