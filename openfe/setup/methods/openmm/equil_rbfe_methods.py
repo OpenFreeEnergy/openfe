@@ -749,7 +749,7 @@ class RelativeLigandTransform(FEMethod):
             nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
             rigidWater=self._settings.system_settings.rigid_water,
-            hydrogenMass=self._settings.sytem_settings.hydrogen_mass,
+            hydrogenMass=self._settings.system_settings.hydrogen_mass,
             removeCMMotion=self._settings.system_settings.remove_com,
         )
 
