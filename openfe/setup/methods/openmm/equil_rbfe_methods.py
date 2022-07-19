@@ -711,6 +711,8 @@ class RelativeLigandTransform(FEMethod):
             nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
             rigidWater=self._settings.system_settings.rigid_water,
+            hydrogenMass=self._settings.sytem_settings.hydrogen_mass,
+            removeCMMotion=self._settings.system_settings.remove_com,
         )
 
         #  d. crate stateA topology
@@ -747,6 +749,8 @@ class RelativeLigandTransform(FEMethod):
             nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
             rigidWater=self._settings.system_settings.rigid_water,
+            hydrogenMass=self._settings.sytem_settings.hydrogen_mass,
+            removeCMMotion=self._settings.system_settings.remove_com,
         )
 
         #  c. Define correspondence mappings between the two systems
