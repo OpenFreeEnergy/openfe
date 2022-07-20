@@ -6,6 +6,14 @@ from openff.units import unit
 from openfe import setup
 from openfe.setup.methods import openmm
 
+
+@pytest.fixture
+def benzene_vacuum_system(benzene_modifications):
+    return setup.ChemicalSystem(
+        {'ligand': benzene_modifications['benzene']},
+    )
+
+
 @pytest.fixture
 def benzene_system(benzene_modifications):
     return setup.ChemicalSystem(
@@ -25,6 +33,13 @@ def benzene_complex_system(benzene_modifications, T4_protein_component):
              positive_ion='Na', negative_ion='Cl',
              ion_concentration=0.15 * unit.molar),
          'protein': T4_protein_component,}
+    )
+
+
+@pytest.fixture
+def toluene_vacuum_system(benzene_modifications):
+    return setup.ChemicalSystem(
+        {'ligand': benzene_modifications['toluene']},
     )
 
 
@@ -79,6 +94,21 @@ def test_create_protocol(benzene_system, toluene_system,
     assert protocol
 
 
+def test_dry_run_vacuum(benzene_vacuum_system, toluene_vacuum_system,
+                        benzene_to_toluene_mapping, tmpdir):
+    vac_settings = openmm.RelativeLigandTransform.get_default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+
+    protocol = openmm.RelativeLigandTransform(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            ligandmapping=benzene_to_toluene_mapping,
+            settings=vac_settings,
+    )
+    with tmpdir.as_cwd():
+        assert protocol.run(dry=True)
+
+
 def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, tmpdir):
     # this might be a bit time consuming
@@ -120,12 +150,13 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         )
 
 
-def test_missing_solvent(benzene_system, benzene_modifications,
-                         benzene_to_toluene_mapping):
+def test_vaccuum_PME_error(benzene_system, benzene_modifications,
+                           benzene_to_toluene_mapping):
     # state B doesn't have a solvent component (i.e. its vacuum)
     stateB = setup.ChemicalSystem({'ligand': benzene_modifications['toluene']})
 
-    with pytest.raises(ValueError, match="Missing solvent in state B"):
+    errmsg = "PME cannot be used for vacuum transform"
+    with pytest.raises(ValueError, match=errmsg):
         _ = openmm.RelativeLigandTransform(
             stateA=benzene_system,
             stateB=stateB,

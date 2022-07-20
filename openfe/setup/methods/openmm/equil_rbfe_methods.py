@@ -485,7 +485,10 @@ class RelativeLigandTransform(FEMethod):
         # check that both states have solvent and ligand
         for state, label in [(stateA, 'A'), (stateB, 'B')]:
             if 'solvent' not in state.components:
-                raise ValueError(f"Missing solvent in state {label}")
+                nonbond = self._settings.system_settings.nonbonded_method
+                if nonbond != 'nocutoff':
+                    errmsg = f"{nonbond} cannot be used for vacuum transform"
+                    raise ValueError(errmsg)
             if 'ligand' not in state.components:
                 raise ValueError(f"Missing ligand in state {label}")
         nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
@@ -499,8 +502,9 @@ class RelativeLigandTransform(FEMethod):
         # check that both states have same solvent
         # TODO: defined box compatibility check
         #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
-        if not stateA['solvent'] == stateB['solvent']:
-            raise ValueError("Solvents aren't identical between states")
+        if 'solvent' in stateA.components:
+            if not stateA['solvent'] == stateB['solvent']:
+                raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
         if stateA['ligand'] != ligandmapping.molA:
             raise ValueError("Ligand in state A doesn't match mapping")
@@ -669,25 +673,26 @@ class RelativeLigandTransform(FEMethod):
                 stateA_openff_ligand.conformers[0],
             )
 
-        # 4. Solvate the complex in a `concentration` mM cubic water box with `solvent_padding` from the
-        #    solute to the edges of the box
-        conc = self._stateA['solvent'].ion_concentration
-        if conc is None:
-            conc = 0.0 * unit.molar
-        pos = self._stateA['solvent'].positive_ion
-        if pos is None:
-            pos = 'Na+'
-        neg = self._stateA['solvent'].negative_ion
-        if neg is None:
-            neg = 'Cl-'
+        # 4. Solvate the complex in a `concentration` mM cubic water box with
+        # `solvent_padding` from the solute to the edges of the box
+        if 'solvent' in self._stateA.components:
+            conc = self._stateA['solvent'].ion_concentration
+            if conc is None:
+                conc = 0.0 * unit.molar
+            pos = self._stateA['solvent'].positive_ion
+            if pos is None:
+                pos = 'Na+'
+            neg = self._stateA['solvent'].negative_ion
+            if neg is None:
+                neg = 'Cl-'
 
-        stateA_modeller.addSolvent(
-            omm_forcefield_stateA,
-            model=self._settings.topology_settings.solvent_model,
-            padding=to_openmm(self._settings.solvent_padding),
-            positiveIon=pos, negativeIon=neg,
-            ionicStrength=to_openmm(conc),
-        )
+            stateA_modeller.addSolvent(
+                omm_forcefield_stateA,
+                model=self._settings.topology_settings.solvent_model,
+                padding=to_openmm(self._settings.solvent_padding),
+                positiveIon=pos, negativeIon=neg,
+                ionicStrength=to_openmm(conc),
+            )
 
         # 5.  Create OpenMM system + topology + initial positions for "A" system
         #  a. Get nonbond method
@@ -797,13 +802,14 @@ class RelativeLigandTransform(FEMethod):
         )
 
         #  c. Add a barostat to the hybrid system
-        hybrid_factory.hybrid_system.addForce(
-            openmm.MonteCarloBarostat(
-                self._settings.barostat_settings.pressure.to(unit.bar).m,
-                self._settings.integrator_settings.temperature.m,
-                self._settings.barostat_settings.frequency.m,
+        if 'solvent' in self._stateA.components:
+            hybrid_factory.hybrid_system.addForce(
+                openmm.MonteCarloBarostat(
+                    self._settings.barostat_settings.pressure.to(unit.bar).m,
+                    self._settings.integrator_settings.temperature.m,
+                    self._settings.barostat_settings.frequency.m,
+                )
             )
-        )
 
         # 8. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
