@@ -62,11 +62,11 @@ class PersesAtomMapper(LigandAtomMapper):
             _atom_mappings = _atom_mapper.get_all_mappings(
                     old_mol=molA.to_openff(), new_mol=molB.to_openff())
         except InvalidMappingException:
-            _atom_mappings = []
+            return
 
         # Catch empty mappings here
         if (_atom_mappings is None):
-            _atom_mappings = []
+            return
 
         # Post processing
         if self.preserve_chirality:
@@ -74,9 +74,6 @@ class PersesAtomMapper(LigandAtomMapper):
                 x.preserve_chirality()
 
         # Translate mapping objects
-        if(len(_atom_mappings) > 0):
-            mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
-        else:
-            mapping_dict = []
+        mapping_dict = (x.old_to_new_atom_map for x in _atom_mappings)
 
         yield from mapping_dict
