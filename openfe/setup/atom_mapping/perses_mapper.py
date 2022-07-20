@@ -69,8 +69,9 @@ class PersesAtomMapper(LigandAtomMapper):
             _atom_mappings = []
 
         # Post processing
-        if (self.preserve_chirality):
-            [x.preserve_chirality() for x in _atom_mappings]
+        if self.preserve_chirality:
+            for x in _atom_mappings:
+                x.preserve_chirality()
 
         # Translate mapping objects
         if(len(_atom_mappings) > 0):
