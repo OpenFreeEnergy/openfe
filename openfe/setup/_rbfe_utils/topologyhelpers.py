@@ -335,7 +335,7 @@ def get_system_mappings(old_to_new_atom_map,
 
 def set_and_check_new_positions(mapping, old_topology, new_topology,
                                 old_positions, insert_positions,
-                                shift_insert=None, tolerance=1e-5):
+                                shift_insert=None, tolerance=0.5):
     """
     Utility to create new positions given a mapping, the old positions and
     the positions of the molecule being inserted, defined by `insert_positions.
