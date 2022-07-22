@@ -65,7 +65,7 @@ class PersesAtomMapper(LigandAtomMapper):
             return
 
         # Catch empty mappings here
-        if (_atom_mappings is None):
+        if _atom_mappings is None:
             return
 
         # Post processing
