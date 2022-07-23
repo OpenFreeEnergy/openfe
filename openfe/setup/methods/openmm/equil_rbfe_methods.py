@@ -129,6 +129,9 @@ class AlchemicalSettings(BaseModel):
       Whether to scale torsion terms involving unique atoms, such that at the
       endstate the torsion term is turned off/on depending on the state the
       unique atoms belong to.
+    atom_overlap_tolerance : float
+      Maximum allowed deviation along any dimension (x,y,z) in mapped atoms
+      between the positions of state A and B. Default 0.5.
     """
     # Lambda settings
     lambda_functions = 'default'
@@ -144,6 +147,7 @@ class AlchemicalSettings(BaseModel):
     softcore_sigma_Q = 1.0
     interpolate_old_and_new_14s = False
     flatten_torsions = False
+    atom_overlap_tolerance = 0.5
 
 
 class OpenMMEngineSettings(BaseModel):
@@ -768,6 +772,7 @@ class RelativeLigandTransform(FEMethod):
             old_positions=stateA_positions,
             insert_positions=stateB_openff_ligand.conformers[0],
             shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
+            tolerance=self._settings.alchemical_settings.atom_overlap_tolerance
         )
 
         # 7. Create the hybrid topology
