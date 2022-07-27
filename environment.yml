@@ -19,7 +19,7 @@ dependencies:
   - click
   - openeye-toolkits
   - typing-extensions
-  - lomap2
+  - lomap2>=2.1.0
   - openmmtools
   - perses
   - pip:
