@@ -677,14 +677,8 @@ class RelativeLigandTransform(FEMethod):
         # `solvent_padding` from the solute to the edges of the box
         if 'solvent' in self._stateA.components:
             conc = self._stateA['solvent'].ion_concentration
-            if conc is None:
-                conc = 0.0 * unit.molar
             pos = self._stateA['solvent'].positive_ion
-            if pos is None:
-                pos = 'Na+'
             neg = self._stateA['solvent'].negative_ion
-            if neg is None:
-                neg = 'Cl-'
 
             stateA_modeller.addSolvent(
                 omm_forcefield_stateA,
