@@ -11,7 +11,9 @@ from gufe import (
 
 from .atom_mapping import (LigandAtomMapping,
                            LomapAtomMapper, lomap_scorers,
-                           PersesAtomMapper, perses_scorers)
+                           PersesAtomMapper, perses_scorers,
+                           RDFMCSMapper,
+                           )
 
 from .network import Network
 from . import ligand_network_planning
