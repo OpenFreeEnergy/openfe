@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from enum import Enum
+import itertools
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
 
@@ -23,14 +24,68 @@ class bond_comparisons(Enum):
     order = rdFMCS.BondCompare.CompareOrder
     orderExact = rdFMCS.BondCompare.CompareOrderExact
 
-# Mapper:
+
+def total_mismatch(molA: Chem.Mol, idxA: tuple[int], molB: Chem.Mol, idxB: tuple[int]) -> float:
+    """Total distance between atoms in mapping
+
+    molA/B : rdkit Mols
+    idxA/B : indices of the mapping, same length
+
+    Returns distance as float
+    """
+    confA = molA.GetConformer()
+    confB = molB.GetConformer()
+
+    total = 0
+    for i, j in zip(idxA, idxB):
+        dA = confA.GetAtomPosition(i)
+        dB = confB.GetAtomPosition(j)
+
+        dist = dA.Distance(dB)
+
+        total += dist
+
+    return total
+
+
+def select_best_mapping(molA, molB, smarts: str) -> tuple[tuple[int], tuple[int]]:
+    """work around symmetry to find best mapping in 3d
+
+    Parameters
+    ----------
+    molA, molB : rdkit.Mol
+    smarts : str
+      smarts string of the MCS
+
+    Returns
+    -------
+    mapping : pair of tuple[int]
+      the best pairing of indices to use as a mapping
+      this pairing has the minimum distance between atoms
+    """
+    query = Chem.MolFromSmarts(smarts)
+
+    mA_matches = molA.GetSubstructMatches(query, uniquify=False)
+    mB_matches = molB.GetSubstructMatches(query, uniquify=False)
+
+    ret = tuple()
+    best = float('inf')
+
+    for mA, mB in itertools.product(mA_matches, mB_matches):
+        d = total_mismatch(molA, mA, molB, mB)
+
+        if d < best:
+            best = d
+            ret = (mA, mB)
+
+    return ret
 
 
 class RDFMCSMapper(LigandAtomMapper):
     mcs_params: rdFMCS.MCSParameters
 
     # todo; investigate MCSParameters and hook these up here
-    def __init__(self,
+    def __init__(self, *,
                  mcs_seed: Optional[str] = None,
                  atom_match: Optional[str] = 'any',
                  atom_match_valences: Optional[bool] = False,
@@ -38,7 +93,6 @@ class RDFMCSMapper(LigandAtomMapper):
                  atom_match_charge: Optional[bool] = False,
                  atom_ring_matches_ring: Optional[bool] = False,
                  atom_complete_rings: Optional[bool] = False,
-                 atom_match_isotope: Optional[bool] = False,
                  atom_max_distance: Optional[float] = 1.0,
                  bond_match: Optional[str] = 'any'):
         """
@@ -53,128 +107,74 @@ class RDFMCSMapper(LigandAtomMapper):
             Element forces an exact match, Heavy allows any heavy
             atoms to match, and Any allows hydrogens to match heavy
             atoms.  default 'Any'
-        atom_match_distance : float, optional
+        atom_match_valences : bool, optional
+            atoms must strictly match valence to be included in mapping,
+            default False
+        atom_match_chiral : bool, optional
+            atoms must match chirality to be included in mapping
+            default False
+        atom_ring_matches_ring : bool, optional
+            default False
+        atom_max_distance : float, optional
             geometric criteria for two atoms, how far their distance
-            can be maximal.
+            can be maximal. Default 1.0
         """
 
         # Settings Catalog
         self.mcs_params = rdFMCS.MCSParameters()
-        self.atom_comparison_type = atom_match
-        self.atom_comparison_type = bond_match
-        self.atom_match_valences = atom_match_valences
-        self.atom_max_distance = atom_max_distance
-        self.atom_complete_rings = atom_complete_rings
-        self.atom_ring_matches_ring = atom_ring_matches_ring
-        self.atom_match_charge = atom_match_charge
-        self.atom_match_isotope = atom_match_isotope
-        self.atom_match_chiral = atom_match_chiral
-        self.mcs_seed = mcs_seed
-        # self.mcs_params.Threshold
+        try:
+            self.mcs_params.AtomTyper = atom_comparisons[str(atom_match).lower()]
+        except KeyError:
+            raise ValueError("Atom comparison type was not recognized, you "
+                             f"provided: {atom_match}\n"
+                             "Please provide on of: "
+                             f"{list(atom_comparisons._member_names_)}")
+        self.mcs_params.AtomCompareParameters.MatchValences = atom_match_valences
+        # TODO: Not sure this is what we want for chirality handling
+        #       this will rely on CIP priority, which might get flipped
+        #       on changing certain r-groups
+        self.mcs_params.AtomCompareParameters.MatchChiralTag = atom_match_chiral
+        self.mcs_params.AtomCompareParameters.MatchFormalCharge = atom_match_charge
+        self.mcs_params.AtomCompareParameters.CompleteRingsOnly = atom_ring_matches_ring
 
-    # Properties
+        self.mcs_params.AtomCompareParameters.MaxDistance = atom_max_distance
+        self.mcs_seed = mcs_seed
 
     @property
     def atom_comparison_type(self) -> str:
         return atom_comparisons(self.mcs_params.AtomTyper).name
 
-    @atom_comparison_type.setter
-    def atom_comparison_type(self, value: str):
-        try:
-            self.mcs_params.AtomTyper = atom_comparisons[str(
-                value).lower()].value
-        except KeyError:
-            raise ValueError("Atom comparison type was not recognized! \n"
-                             "you provided:" + str(value) + "\n"
-                             "Please provide on of: " + str(list(
-                                 atom_comparisons._member_names_)))
-
     @property
     def bond_comparison_type(self) -> str:
         return bond_comparisons(self.mcs_params.BondTyper).name
-
-    @bond_comparison_type.setter
-    def bond_comparison_type(self, value: str):
-        try:
-            self.mcs_params.BondTyper = bond_comparisons[str(
-                value).lower()].value
-        except KeyError:
-            raise ValueError("Bond comparison type was not recognized! \n"
-                             "you provided:" + str(value) + "\n"
-                             "Please provide on of: " + str(list(
-                                 bond_comparisons._member_names_)))
 
     @property
     def atom_match_valences(self) -> bool:
         return self.mcs_params.AtomCompareParameters.MatchValences
 
-    @atom_match_valences.setter
-    def atom_match_valences(self, value: bool):
-        self.mcs_params.AtomCompareParameters.MatchValences = bool(value)
-
     @property
     def atom_max_distance(self) -> bool:
         return self.mcs_params.AtomCompareParameters.MaxDistance
-
-    @atom_max_distance.setter
-    def atom_max_distance(self, value: bool):
-        self.mcs_params.AtomCompareParameters.MaxDistance = bool(value)
 
     @property
     def atom_complete_rings(self) -> bool:
         return self.mcs_params.AtomCompareParameters.CompleteRingsOnly
 
-    @atom_complete_rings.setter
-    def atom_complete_rings(self, value: bool):
-        self.mcs_params.AtomCompareParameters.CompleteRingsOnly = bool(
-            value)
-
     @property
     def atom_ring_matches_ring(self) -> bool:
         return self.mcs_params.AtomCompareParameters.RingMatchesRingOnly
-
-    @atom_ring_matches_ring.setter
-    def atom_ring_matches_ring(self, value: bool):
-        self.mcs_params.AtomCompareParameters.RingMatchesRingOnly = bool(
-            value)
 
     @property
     def atom_match_charge(self) -> bool:
         return self.mcs_params.AtomCompareParameters.MatchFormalCharge
 
-    @atom_match_charge.setter
-    def atom_match_charge(self, value: bool):
-        self.mcs_params.AtomCompareParameters.MatchFormalCharge = bool(
-            value)
-
-    @property
-    def atom_match_isotope(self) -> bool:
-        return self.mcs_params.AtomCompareParameters.MatchIsotope
-
-    @atom_match_isotope.setter
-    def atom_match_isotope(self, value: bool):
-        self.mcs_params.AtomCompareParameters.MatchIsotope = bool(value)
-
     @property
     def atom_match_chiral(self) -> bool:
         return self.mcs_params.AtomCompareParameters.MatchChiralTag
 
-    @atom_match_chiral.setter
-    def atom_match_chiral(self, value: bool):
-        self.mcs_params.AtomCompareParameters.MatchChiralTag = bool(value)
-
     @property
     def mcs_seed(self) -> str:
         return self.mcs_params.InitialSeed
-
-    @mcs_seed.setter
-    def mcs_seed(self, value: str):
-        if value:
-            self.mcs_params.InitialSeed = str(value)
-
-    """
-        Functions
-    """
 
     def _mappings_generator(self,
                             molA: SmallMoleculeComponent,
@@ -219,9 +219,7 @@ class RDFMCSMapper(LigandAtomMapper):
                              )
 
         # convert match to mapping
-        q = Chem.MolFromSmarts(res.smartsString)
-        m1_idx = mol1b.GetSubstructMatch(q)
-        m2_idx = mol2b.GetSubstructMatch(q)
+        m1_idx, m2_idx = select_best_mapping(mol1b, mol2b, res.smartsString)
 
         # remap indices to original molecule
         m1_idx = [
@@ -262,7 +260,7 @@ class RDFMCSMapper(LigandAtomMapper):
         extras = dict()
 
         for i, j in mapping.molA_to_molB.items():
-            # grab neighbours of of this pair in the mapping
+            # grab neighbours of this pair in the mapping
             A_nebs = [b.GetOtherAtomIdx(i)
                       for b in molA.GetAtomWithIdx(i).GetBonds()
                       if not b.GetOtherAtomIdx(i) in mapping.molA_to_molB]
@@ -296,21 +294,23 @@ class RDFMCSMapper(LigandAtomMapper):
 
         return extras
 
-    def common_core(self, molecules: List[SmallMoleculeComponent]):
+    def common_core(self, molecules: List[SmallMoleculeComponent]) -> str:
         """
         Identify a common core across many molecules
         the common core is stored in mcs_seed
         """
+        # TODO: We properly copy settings out here so we don't break anything
         # TODO: Works only with this weird construct for me.
         tmp_type = self.mcs_params.AtomTyper
         self.mcs_params.AtomTyper = atom_comparisons['element'].value
         self.mcs_params.Threshold = 0.75
         core = rdFMCS.FindMCS([m.to_rdkit()
                               for m in molecules], parameters=self.mcs_params)
-        self.mcs_seed = core.smartsString
         self.mcs_params.AtomTyper = tmp_type
 
-    # Helper func
+        return core.smartsString
+
+    @staticmethod
     def _assign_idx(self, m: Chem.Mol):
         for i, a in enumerate(m.GetAtoms()):
             # dont set to zero, this clears the tag
