@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from enum import Enum
+import itertools
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
 
@@ -23,7 +24,61 @@ class bond_comparisons(Enum):
     order = rdFMCS.BondCompare.CompareOrder
     orderExact = rdFMCS.BondCompare.CompareOrderExact
 
-# Mapper:
+
+def total_mismatch(molA: Chem.Mol, idxA: tuple[int], molB: Chem.Mol, idxB: tuple[int]) -> float:
+    """Total distance between atoms in mapping
+
+    molA/B : rdkit Mols
+    idxA/B : indices of the mapping, same length
+
+    Returns distance as float
+    """
+    confA = molA.GetConformer()
+    confB = molB.GetConformer()
+
+    total = 0
+    for i, j in zip(idxA, idxB):
+        dA = confA.GetAtomPosition(i)
+        dB = confB.GetAtomPosition(j)
+
+        dist = dA.Distance(dB)
+
+        total += dist
+
+    return total
+
+
+def select_best_mapping(molA, molB, smarts: str) -> tuple[tuple[int], tuple[int]]:
+    """work around symmetry to find best mapping in 3d
+
+    Parameters
+    ----------
+    molA, molB : rdkit.Mol
+    smarts : str
+      smarts string of the MCS
+
+    Returns
+    -------
+    mapping : pair of tuple[int]
+      the best pairing of indices to use as a mapping
+      this pairing has the minimum distance between atoms
+    """
+    query = Chem.MolFromSmarts(smarts)
+
+    mA_matches = molA.GetSubstructMatches(query, uniquify=False)
+    mB_matches = molB.GetSubstructMatches(query, uniquify=False)
+
+    ret = tuple()
+    best = float('inf')
+
+    for mA, mB in itertools.product(mA_matches, mB_matches):
+        d = total_mismatch(molA, mA, molB, mB)
+
+        if d < best:
+            best = d
+            ret = (mA, mB)
+
+    return ret
 
 
 class RDFMCSMapper(LigandAtomMapper):
@@ -164,9 +219,7 @@ class RDFMCSMapper(LigandAtomMapper):
                              )
 
         # convert match to mapping
-        q = Chem.MolFromSmarts(res.smartsString)
-        m1_idx = mol1b.GetSubstructMatch(q)
-        m2_idx = mol2b.GetSubstructMatch(q)
+        m1_idx, m2_idx = select_best_mapping(mol1b, mol2b, res.smartsString)
 
         # remap indices to original molecule
         m1_idx = [
