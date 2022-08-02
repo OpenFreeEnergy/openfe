@@ -25,7 +25,7 @@ jobs:
         with:
             auto-update-conda: true
             use-mamba: true
-            python-version: 3.8
+            python-version: 3.9
             miniforge-variant: Mambaforge
             environment-file: environment.yml
             activate-environment: openfe

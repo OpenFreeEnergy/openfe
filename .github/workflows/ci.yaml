@@ -27,7 +27,6 @@ jobs:
       matrix:
         os: ['ubuntu', 'macos']
         python-version:
-          - 3.8
           - 3.9
 
     env:
