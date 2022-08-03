@@ -7,6 +7,8 @@ import openfe
 from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LomapAtomMapper
 
+from .conftest import mol_from_smiles
+
 
 def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
@@ -59,7 +61,8 @@ def test_generator_length(atom_mapping_basic_test_files):
 
 def test_bad_mapping(atom_mapping_basic_test_files):
     toluene = atom_mapping_basic_test_files['toluene']
-    NigelTheNitrogen = SmallMoleculeComponent(Chem.MolFromSmiles('N'), name='Nigel')
+    NigelTheNitrogen = SmallMoleculeComponent(mol_from_smiles('N'),
+                                              name='Nigel')
 
     mapper = LomapAtomMapper()
 

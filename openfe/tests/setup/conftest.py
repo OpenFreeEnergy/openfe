@@ -5,6 +5,7 @@ import string
 import pytest
 from importlib import resources
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from openmm.app import PDBFile
 
 import gufe
@@ -13,9 +14,15 @@ from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LigandAtomMapping
 
 
+def mol_from_smiles(smiles: str) -> Chem.Mol:
+    m = Chem.MolFromSmiles(smiles)
+    AllChem.Compute2DCoords(m)
+
+    return m
+
 @pytest.fixture(scope='session')
 def ethane():
-    return SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    return SmallMoleculeComponent(mol_from_smiles('CC'))
 
 
 @pytest.fixture(scope='session')
@@ -26,8 +33,8 @@ def simple_mapping():
 
     C C
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
+    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
     m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 1: 1})
 
@@ -42,8 +49,8 @@ def other_mapping():
 
     C   C
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
+    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
     m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 2: 1})
 

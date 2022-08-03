@@ -6,6 +6,7 @@ import networkx as nx
 
 import openfe.setup
 
+from .conftest import mol_from_smiles
 
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
     def _mappings_generator(self, molA, molB):
@@ -77,7 +78,7 @@ def test_radial_graph_multiple_mappers_no_scorer(toluene_vs_others):
 
 
 def test_radial_network_failure(atom_mapping_basic_test_files):
-    nigel = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles('N'))
+    nigel = openfe.setup.SmallMoleculeComponent(mol_from_smiles('N'))
 
     with pytest.raises(ValueError, match='No mapping found for'):
         network = openfe.setup.ligand_network_planning.generate_radial_network(
@@ -116,7 +117,7 @@ def test_minimal_spanning_graph(toluene_vs_others):
 
 def test_minimal_spanning_graph_unreachable(toluene_vs_others):
     toluene, others = toluene_vs_others
-    nimrod = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles("N"))
+    nimrod = openfe.setup.SmallMoleculeComponent(mol_from_smiles("N"))
 
     def scorer(mapping):
         return 1.0 / len(mapping.molA_to_molB)
