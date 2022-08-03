@@ -6,10 +6,11 @@ from typing import Dict, Tuple
 from rdkit import Chem
 from openfe.setup import SmallMoleculeComponent
 import lomap
-
 import pytest
 
 from openfe.setup import LigandAtomMapping
+
+from ..conftest import mol_from_smiles
 
 
 def _translate_lomap_mapping(atom_mapping_str: str) -> Dict[int, int]:
@@ -55,8 +56,6 @@ def mol_pair_to_shock_perses_mapper() -> Tuple[SmallMoleculeComponent,
     Returns:
         Tuple[SmallMoleculeComponent]: two molecule objs for the test
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('c1ccccc1'),
-                                  'benzene')
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('C1CCCCC1'),
-                                  'cyclohexane')
-    return (molA, molB)
+    molA = SmallMoleculeComponent(mol_from_smiles('c1ccccc1'), 'benzene')
+    molB = SmallMoleculeComponent(mol_from_smiles('C1CCCCC1'), 'cyclohexane')
+    return molA, molB
