@@ -30,6 +30,7 @@ def mol_from_smiles(smiles: str) -> Chem.Mol:
 
     return m
 
+
 # ethane_template.sdf
 m = SmallMoleculeComponent(mol_from_smiles("CC"), name="ethane")
 
