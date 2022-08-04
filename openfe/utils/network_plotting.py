@@ -393,9 +393,17 @@ class GraphDrawing:
 
     def reset_bounds(self):
         """Set the bounds of the matplotlib Axes to include all nodes"""
+        # I feel like the following should be a better approach, but it
+        # doesn't seem to work
+        # renderer = self.fig.canvas.get_renderer()
+        # bbox = self.ax.get_tightbbox(renderer)
+        # trans = self.ax.transData.inverted()
+        # [[min_x, min_y], [max_x, max_y]] = trans.transform(bbox)
         min_x, max_x, min_y, max_y = self._get_nodes_extent()
-        self.ax.set_xlim(min_x, max_x)
-        self.ax.set_ylim(min_y, max_y)
+        pad_x = (max_x - min_x) * 0.05
+        pad_y = (max_y - min_y) * 0.05
+        self.ax.set_xlim(min_x - pad_x, max_x + pad_x)
+        self.ax.set_ylim(min_y - pad_y, max_y + pad_y)
 
     def draw(self):
         """Draw the current canvas"""

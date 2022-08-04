@@ -5,7 +5,9 @@ import json
 
 from typing import FrozenSet, Iterable
 
-from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
+from openfe.setup import SmallMoleculeComponent
+from openfe.setup.atom_mapping import LigandAtomMapping
+
 import openfe
 
 import networkx as nx
@@ -42,7 +44,8 @@ class Network:
             for node in self._nodes:
                 graph.add_node(node)
             for edge in self._edges:
-                graph.add_edge(edge.molA, edge.molB, object=edge)
+                graph.add_edge(edge.molA, edge.molB, object=edge,
+                               **edge.annotations)
 
             self._graph = nx.freeze(graph)
 

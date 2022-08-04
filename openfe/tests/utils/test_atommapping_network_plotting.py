@@ -4,7 +4,8 @@ from matplotlib import pyplot as plt
 import matplotlib.figure
 
 from openfe.utils.atommapping_network_plotting import (
-    AtomMappingEdge, AtomMappingNetworkDrawing, plot_atommapping_network
+    AtomMappingEdge, AtomMappingNetworkDrawing, plot_atommapping_network,
+    LigandNode
 )
 
 from openfe.tests.utils.test_network_plotting import mock_event
@@ -33,6 +34,13 @@ def network_drawing(simple_network):
 def default_edge(network_drawing):
     node_dict = {node.smiles: node for node in network_drawing.graph.nodes}
     yield network_drawing.edges[node_dict["CC"], node_dict["CO"]]
+
+
+@pytest.fixture
+def default_node(network_drawing):
+    node_dict = {node.smiles: node for node in network_drawing.graph.nodes}
+    yield LigandNode(node_dict["CC"], 0.5, 0.5, 0.1, 0.1)
+
 
 
 class TestAtomMappingEdge:
@@ -123,6 +131,33 @@ class TestAtomMappingEdge:
         assert len(default_edge.artist.axes.images) == 0
         assert default_edge.right_image is None
         assert default_edge.left_image is None
+
+
+class TestLigandNode:
+    def setup(self):
+        self.fig, self.ax = plt.subplots()
+
+    def teardown(self):
+        plt.close(self.fig)
+
+    def test_register_artist(self, default_node):
+        assert len(self.ax.texts) == 0
+        default_node.register_artist(self.ax)
+        assert len(self.ax.texts) == 1
+        assert self.ax.texts[0] == default_node.artist
+
+    def test_extent(self, default_node):
+        default_node.register_artist(self.ax)
+        xmin, xmax, ymin, ymax = default_node.extent
+        assert xmin == pytest.approx(0.5)
+        assert ymin == pytest.approx(0.5)
+        # can't do anything about upper bounds
+
+    def test_xy(self, default_node):
+        # default_node.register_artist(self.ax)
+        x, y = default_node.xy
+        assert x == pytest.approx(0.5)
+        assert y == pytest.approx(0.5)
 
 
 def test_plot_atommapping_network(simple_network):

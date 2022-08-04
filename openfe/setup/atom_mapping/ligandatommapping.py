@@ -1,16 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from dataclasses import dataclass
 import json
-from typing import Dict
+from typing import Any, Dict, List, Optional
+import numpy as np
+from numpy.typing import NDArray
 from openff.toolkit.utils.serialization import Serializable
-from rdkit import Chem
 
 from openfe.setup import SmallMoleculeComponent
 from openfe.utils.visualization import draw_mapping
 
 
-@dataclass
 class LigandAtomMapping(Serializable):
     """Simple container with the mapping between two Molecules
 
@@ -21,11 +20,34 @@ class LigandAtomMapping(Serializable):
     molA_to_molB : dict
       maps the index of an atom in either molecule **A** or **B** to the other.
       If this atom has no corresponding atom, None is returned.
-
+    annotations : Dict[str, Any]
+      Mapping of annotation identifier to annotation data. Annotations may
+      contain arbitrary JSON-serializable data. Annotation identifiers
+      starting with ``ofe-`` may have special meaning in other parts of
+      OpenFE. ``score`` is a reserved annotation identifier.
     """
-    molA: SmallMoleculeComponent
-    molB: SmallMoleculeComponent
-    molA_to_molB: Dict[int, int]
+
+    def __init__(
+        self,
+        molA: SmallMoleculeComponent,
+        molB: SmallMoleculeComponent,
+        molA_to_molB: Dict[int, int],
+        annotations: Optional[Dict[str, Any]] = None,
+    ):
+        self.molA = molA
+        self.molB = molB
+        self.molA_to_molB = molA_to_molB
+
+        if annotations is None:
+            # TODO: this should be a frozen dict
+            annotations = {}
+
+        self._annotations = annotations
+
+    @property
+    def annotations(self):
+        # return a copy (including copy of nested)
+        return json.loads(json.dumps(self._annotations))
 
     def to_dict(self):
         """Serialize to dict"""
@@ -34,6 +56,7 @@ class LigandAtomMapping(Serializable):
             'molA': self.molA.to_json(),
             'molB': self.molB.to_json(),
             'molA_to_molB': self.molA_to_molB,
+            'annotations': json.dumps(self.annotations),
         }
 
     @classmethod
@@ -47,17 +70,28 @@ class LigandAtomMapping(Serializable):
             molA=SmallMoleculeComponent.from_dict(json.loads(d['molA'])),
             molB=SmallMoleculeComponent.from_dict(json.loads(d['molB'])),
             molA_to_molB=fixed,
+            annotations=json.loads(d['annotations'])
         )
 
     def __hash__(self):
-        return hash(
-            (hash(self.molA), hash(self.molB),
-             tuple(self.molA_to_molB.items()))
-        )
+        return hash((
+            hash(self.molA), hash(self.molB),
+            tuple(self.molA_to_molB.items()),
+            json.dumps(self.annotations, sort_keys=True),
+        ))
 
-    @classmethod
-    def from_perses(cls, perses_mapping):
-        raise NotImplementedError()
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.molA == other.molA
+                and self.molB == other.molB
+                and self.molA_to_molB == other.molA_to_molB
+                and self._annotations == other.annotations)
+
+    def __repr__(self):
+        return (f"{self.__class__.__name__}(molA={self.molA!r}, "
+                f"molB={self.molB!r}, molA_to_molB={self.molA_to_molB!r}, "
+                f"annotations={self.annotations!r})")
 
     def _ipython_display_(self, d2d=None):  # pragma: no-cover
         """
@@ -104,3 +138,32 @@ class LigandAtomMapping(Serializable):
         with open(fname, mode) as f:
             f.write(draw_mapping(self.molA_to_molB, self.molA.to_rdkit(),
                                  self.molB.to_rdkit(), d2d))
+
+    def with_annotations(self, annotations: Dict[str, Any]):
+        """Create an new mapping based on this one with extra annotations.
+
+        Parameters
+        ----------
+        annotations : Dict[str, Any]
+            Annotation update for this mapping. New annotation keys will be
+            added to the annotations dict; existing keys will be replaced by
+            the data provided here.
+        """
+        return self.__class__(
+            molA=self.molA,
+            molB=self.molB,
+            molA_to_molB=self.molA_to_molB,
+            annotations=dict(**self.annotations, **annotations)
+        )
+
+    def get_distances(self) -> NDArray[np.float64]:
+        """Return the distances between pairs of atoms in the mapping"""
+        dists = []
+        molA = self.molA.to_rdkit().GetConformer()
+        molB = self.molB.to_rdkit().GetConformer()
+        for i, j in self.molA_to_molB.items():
+            dA = molA.GetAtomPosition(i)
+            dB = molB.GetAtomPosition(j)
+            dists.append(dA.Distance(dB))
+
+        return np.array(dists)

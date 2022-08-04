@@ -27,14 +27,13 @@ jobs:
       matrix:
         os: ['ubuntu', 'macos']
         python-version:
-          - 3.8
           - 3.9
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: conda-incubator/setup-miniconda@v2
         with:

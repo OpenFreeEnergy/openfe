@@ -5,15 +5,24 @@ import string
 import pytest
 from importlib import resources
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from openmm.app import PDBFile
 
 import gufe
 import openfe
-from openfe.setup import LigandAtomMapping, SmallMoleculeComponent
+from openfe.setup import SmallMoleculeComponent
+from openfe.setup.atom_mapping import LigandAtomMapping
 
+
+def mol_from_smiles(smiles: str) -> Chem.Mol:
+    m = Chem.MolFromSmiles(smiles)
+    AllChem.Compute2DCoords(m)
+
+    return m
 
 @pytest.fixture(scope='session')
 def ethane():
-    return SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    return SmallMoleculeComponent(mol_from_smiles('CC'))
 
 
 @pytest.fixture(scope='session')
@@ -24,8 +33,8 @@ def simple_mapping():
 
     C C
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
+    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
     m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 1: 1})
 
@@ -40,16 +49,33 @@ def other_mapping():
 
     C   C
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
+    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
     m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 2: 1})
 
     return m
 
 
+@pytest.fixture()
+def lomap_basic_test_files_dir(tmpdir_factory):
+    # for lomap, which wants the files in a directory
+    lomap_files = tmpdir_factory.mktemp('lomap_files')
+    lomap_basic = 'openfe.tests.data.lomap_basic'
+
+    for f in importlib.resources.contents(lomap_basic):
+        if not f.endswith('mol2'):
+            continue
+        stuff = importlib.resources.read_binary(lomap_basic, f)
+
+        with open(str(lomap_files.join(f)), 'wb') as fout:
+            fout.write(stuff)
+
+    yield str(lomap_files)
+
+
 @pytest.fixture(scope='session')
-def lomap_basic_test_files():
+def atom_mapping_basic_test_files():
     # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
     # set of ligands
     files = {}
@@ -64,9 +90,20 @@ def lomap_basic_test_files():
         'toluene']:
         with importlib.resources.path('openfe.tests.data.lomap_basic',
                                       f + '.mol2') as fn:
-            mol = Chem.MolFromMol2File(str(fn))
+            mol = Chem.MolFromMol2File(str(fn), removeHs=False)
             files[f] = SmallMoleculeComponent(mol, name=f)
 
+    return files
+
+
+@pytest.fixture(scope='session')
+def benzene_modifications():
+    files = {}
+    with importlib.resources.path('openfe.tests.data',
+                                  'benzene_modifications.sdf') as fn:
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
     return files
 
 
@@ -117,3 +154,11 @@ def benzene_anisole_mapping(benzene_transforms, benzene_maps):
     molB = SmallMoleculeComponent(benzene_transforms['anisole'].to_rdkit())
     m = LigandAtomMapping(molA, molB, benzene_maps['anisole'])
     return m
+
+
+@pytest.fixture(scope='session')
+def T4_protein_component():
+    with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
+        comp = gufe.ProteinComponent.from_pdbfile(str(fn), name="T4_protein")
+
+    return comp

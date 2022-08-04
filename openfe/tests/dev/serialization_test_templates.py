@@ -11,8 +11,9 @@
 # {GUFE_VERSION}
 
 from rdkit import Chem
-from openfe.setup import SmallMoleculeComponent, LigandAtomMapping, Network
-
+from rdkit.Chem import AllChem
+from openfe.setup import SmallMoleculeComponent, Network
+from openfe.setup.atom_mapping import LigandAtomMapping
 # multi_molecule.sdf
 mol1 = Chem.MolFromSmiles("CCO")
 mol2 = Chem.MolFromSmiles("CCC")
@@ -23,8 +24,15 @@ writer.write(mol2)
 writer.close()
 
 
+def mol_from_smiles(smiles: str) -> Chem.Mol:
+    m = Chem.MolFromSmiles(smiles)
+    AllChem.Compute2DCoords(m)
+
+    return m
+
+
 # ethane_template.sdf
-m = SmallMoleculeComponent(Chem.MolFromSmiles("CC"), name="ethane")
+m = SmallMoleculeComponent(mol_from_smiles("CC"), name="ethane")
 
 with open("ethane_template.sdf", mode="w") as tmpl:
     tmpl.write(m.to_sdf())
@@ -37,9 +45,9 @@ with open("ethane_with_H_template.sdf", mode="w") as tmpl:
 
 
 # network_template.graphml
-mol1 = SmallMoleculeComponent(Chem.MolFromSmiles("CCO"))
-mol2 = SmallMoleculeComponent(Chem.MolFromSmiles("CC"))
-mol3 = SmallMoleculeComponent(Chem.MolFromSmiles("CO"))
+mol1 = SmallMoleculeComponent(mol_from_smiles("CCO"))
+mol2 = SmallMoleculeComponent(mol_from_smiles("CC"))
+mol3 = SmallMoleculeComponent(mol_from_smiles("CO"))
 
 edge12 = LigandAtomMapping(mol1, mol2, {0: 0, 1: 1})
 edge23 = LigandAtomMapping(mol2, mol3, {0: 0})

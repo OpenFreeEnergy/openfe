@@ -4,3 +4,4 @@
 from . import custom_typing
 from . import molhashing
 from . import errors
+from .optional_imports import requires_package
