@@ -210,6 +210,7 @@ class SamplerSettings(BaseModel):
     online_analysis_minimum_iterations = 50
     flatness_criteria = 'logZ-flatness'
     gamma0 = 0.0
+    n_replicas: Optional[int] = None
 
     @validator('online_analysis_target_error',
                'online_analysis_minimum_iterations', 'gamma0')
@@ -878,8 +879,23 @@ class RelativeLigandTransform(FEMethod):
                 endstates=alchem_settings.unsampled_endstates,
             )
         elif sampler_settings.sampler_method == "sams":
-            # TODO - add SAMS sampler - see PR #125
-            raise AttributeError(f"SAMS sampler is not available yet")
+            sampler = _rbfe_utils.multistate.HybridSAMSSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
+                flatness_criteria=sampler_settings.flatness_criteria,
+                gamma0=sampler_settings.gamma0,
+            )
+            # TODO - move this out of the if/else, n_replicas should just get fed in for hrex
+            sampler.setup(
+                n_replicas=sampler_settings.n_replicas,
+                reporter=reporter,
+                platform=platform,
+                lambda_protocol=lambdas,
+                temperature=to_openmm(self._settings.integrator_settings.temperature),
+                endstates=alchem_settings.unsampled_endstates,
+            )
         else:
             raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
 
