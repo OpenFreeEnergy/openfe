@@ -152,8 +152,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
 
 
 def test_lambda_schedule_default():
-        lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
-                functions='default')
+    lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
     assert len(lambdas.lambda_schedule) == 11
 
 
