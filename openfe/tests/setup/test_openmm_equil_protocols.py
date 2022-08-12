@@ -95,7 +95,8 @@ def test_create_default_protocol(benzene_system, toluene_system,
     assert protocol
 
 
-@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
+@pytest.mark.parametrize('method', 
+        ['repex', 'sams', 'independent', 'InDePeNdENT'])
 def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, method, tmpdir):
 

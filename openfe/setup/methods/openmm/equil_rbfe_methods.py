@@ -883,7 +883,7 @@ class RelativeLigandTransform(FEMethod):
         # this protocol up
         sampler_settings = self._settings.sampler_settings
         
-        if sampler_settings.sampler_method == "repex":
+        if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rbfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
@@ -891,7 +891,7 @@ class RelativeLigandTransform(FEMethod):
                 online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
                 online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
             )
-        elif sampler_settings.sampler_method == "sams":
+        elif sampler_settings.sampler_method.lower() == "sams":
             sampler = _rbfe_utils.multistate.HybridSAMSSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
@@ -900,7 +900,7 @@ class RelativeLigandTransform(FEMethod):
                 flatness_criteria=sampler_settings.flatness_criteria,
                 gamma0=sampler_settings.gamma0,
             )
-        elif sampler_settings.sampler_method == 'independent':
+        elif sampler_settings.sampler_method.lower() == 'independent':
             sampler = _rbfe_utils.multistate.HybridMultiStateSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
