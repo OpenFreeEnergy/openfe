@@ -237,6 +237,7 @@ class TestNetwork:
             # not sure is this needs to be formally required
             assert edge is not duplicate
 
+    @pytest.mark.xfail
     def test_serialization_cycle(self, simple_network):
         network = simple_network.network
         serialized = network.to_graphml()
@@ -249,6 +250,7 @@ class TestNetwork:
         expected = serialization_template("network_template.graphml")
         assert simple_network.network.to_graphml() + "\n" == expected
 
+    @pytest.mark.xfail
     def test_from_graphml(self, simple_network, serialization_template):
         contents = serialization_template("network_template.graphml")
         assert Network.from_graphml(contents) == simple_network.network
