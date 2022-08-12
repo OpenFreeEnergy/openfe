@@ -151,12 +151,16 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         assert protocol.run(dry=True)
 
 
-@pytest.mark.parametrize('windows', [None, 11, 6])
+def test_lambda_schedule_default():
+        lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+                functions='default')
+    assert len(lambdas.lambda_schedule) == 11
+
+
+@pytest.mark.parametrize('windows', [11, 6, 9000])
 def test_lambda_schedule(windows):
-    lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
-            functions='default', windows=windows)
-    if windows is None:
-        windows = 10
+        lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+                functions='default', windows=windows)
     assert len(lambdas.lambda_schedule) == windows
 
 
