@@ -3,8 +3,11 @@
 """Equilibrium RBFE methods using OpenMM in a Perses-like manner.
 
 This module implements the necessary methodology toolking to run calculate a
-ligand relative free energy transformation using OpenMM tools and either
-Hamiltonian Replica Exchange or SAMS.
+ligand relative free energy transformation using OpenMM tools and one of the
+following methods:
+    - Hamiltonian Replica Exchange
+    - Self-adjusted mixture sampling
+    - Independent window sampling
 
 TODO
 ----
@@ -173,8 +176,11 @@ class SamplerSettings(BaseModel):
     Attributes
     ----------
     sampler_method : str
-      Sampler method to use, currently supports repex (hamiltonian replica
-      exchange) and sams (self-adjusted mixture sampling). Default repex.
+      Sampler method to use, currently supports:
+          - repex (hamiltonian replica exchange)
+          - sams (self-adjusted mixture sampling)
+          - independent (independent lambda sampling)
+      Default repex.
     online_analysis_interval : int
       The interval at which to perform online analysis of the free energy.
       At each interval the free energy is estimate and the simulation is
@@ -193,13 +199,20 @@ class SamplerSettings(BaseModel):
       One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
       Default 'logZ-flatness'.
     gamma0 : float
-      SAMS only. Initial weight adaptation rate. Default 0.0.
+      SAMS only. Initial weight adaptation rate. Default 1.0.
+    n_replicas : int
+      Number of replicas to use. Default 11.
 
     TODO
     ----
     * Work out how this fits within the context of independent window FEPs.
     * It'd be great if we could pass in the sampler object rather than using
       strings to define which one we want.
+    * Make n_replicas optional such that: If `None` or greater than the number
+      of lambda windows set in :class:`AlchemicalSettings`, this will default
+      to the number of lambda windows. If less than the number of lambda
+      windows, the replica lambda states will be picked at equidistant
+      intervals along the lambda schedule.
     """
     class Config:
         arbitrary_types_allowed = True
@@ -209,7 +222,8 @@ class SamplerSettings(BaseModel):
     online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
     online_analysis_minimum_iterations = 50
     flatness_criteria = 'logZ-flatness'
-    gamma0 = 0.0
+    gamma0 = 1.0
+    n_replicas = 11
 
     @validator('online_analysis_target_error',
                'online_analysis_minimum_iterations', 'gamma0')
@@ -813,6 +827,14 @@ class RelativeLigandTransform(FEMethod):
             windows=alchem_settings.lambda_windows
         )
 
+        # PR #125 temporarily pin lambda schedule spacing to n_replicas
+        n_replicas = self._settings.sampler_settings.n_replicas
+        if n_replicas != len(lambdas.lambda_schedule):
+            errmsg = (f"Number of replicas {n_replicas} "
+                      f"does not equal the number of lambda windows "
+                      f"{len(lambdas.lambda_schedule)}")
+            raise ValueError(errmsg)
+
         # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
         selection_indices = hybrid_factory.hybrid_topology.select(
@@ -858,9 +880,11 @@ class RelativeLigandTransform(FEMethod):
         )
 
         # 12. Create sampler
+        # TODO: leave the if/elif branch for now, eventually we need to split
+        # this protocol up
         sampler_settings = self._settings.sampler_settings
         
-        if sampler_settings.sampler_method == "repex":
+        if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rbfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
@@ -868,20 +892,35 @@ class RelativeLigandTransform(FEMethod):
                 online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
                 online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
             )
-            # TODO - update to more verbosely pass in n_replicas and n_states, which will avoid
-            # duplication in the SAMS code path
-            sampler.setup(
-                reporter=reporter,
-                platform=platform,
-                lambda_protocol=lambdas,
-                temperature=to_openmm(self._settings.integrator_settings.temperature),
-                endstates=alchem_settings.unsampled_endstates,
+        elif sampler_settings.sampler_method.lower() == "sams":
+            sampler = _rbfe_utils.multistate.HybridSAMSSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
+                flatness_criteria=sampler_settings.flatness_criteria,
+                gamma0=sampler_settings.gamma0,
             )
-        elif sampler_settings.sampler_method == "sams":
-            # TODO - add SAMS sampler - see PR #125
-            raise AttributeError(f"SAMS sampler is not available yet")
+        elif sampler_settings.sampler_method.lower() == 'independent':
+            sampler = _rbfe_utils.multistate.HybridMultiStateSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+            )
+
         else:
             raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
+
+        sampler.setup(
+            n_replicas=sampler_settings.n_replicas,
+            reporter=reporter,
+            platform=platform,
+            lambda_protocol=lambdas,
+            temperature=to_openmm(self._settings.integrator_settings.temperature),
+            endstates=alchem_settings.unsampled_endstates,
+        )
 
         sampler.energy_context_cache = energy_context_cache
         sampler.sampler_context_cache = sampler_context_cache
