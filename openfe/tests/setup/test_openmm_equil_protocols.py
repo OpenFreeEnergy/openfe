@@ -158,8 +158,8 @@ def test_lambda_schedule_default():
 
 @pytest.mark.parametrize('windows', [11, 6, 9000])
 def test_lambda_schedule(windows):
-        lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
-                functions='default', windows=windows)
+    lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+            functions='default', windows=windows)
     assert len(lambdas.lambda_schedule) == windows
 
 
