@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import openmm
 from openmm import unit
-from openmmtools.multistate import replicaexchange, sams
+from openmmtools.multistate import replicaexchange, sams, multistatesampler
 from openmmtools import cache
 from openmmtools.states import (CompoundThermodynamicState,
                                 SamplerState, ThermodynamicState)
@@ -47,7 +47,7 @@ class HybridCompatibilityMixin(object):
         temperature : openmm.Quantity
             Simulation temperature, default to 298.15 K
         n_replicas : int
-            Number of HREX replicas to simulate. Sets to the number of lambda
+            Number of replicas to simulate. Sets to the number of lambda
             states (as defined by lambda_protocol) if ``None``.
             Default ``None``.
         endstates : bool
@@ -165,6 +165,19 @@ class HybridSAMSSampler(HybridCompatibilityMixin, sams.SAMSSampler):
 
     def __init__(self, *args, hybrid_factory=None, **kwargs):
         super(HybridSAMSSampler, self).__init__(
+                *args, hybrid_factory=hybrid_factory, **kwargs
+        )
+        self._factory = hybrid_factory
+
+
+class HybridMultiStateSampler(HybridCompatibilityMixin,
+                              multistatesampler.MultiStateSampler):
+    """
+    MultiStateSampler that supports unsample end states with a different
+    number of positions
+    """
+    def __init__(self, *args, hybrid_factory=None, **kwargs):
+        super(HybridMultiStateSampler, self).__init__(
                 *args, hybrid_factory=hybrid_factory, **kwargs
         )
         self._factory = hybrid_factory

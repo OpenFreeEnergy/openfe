@@ -5,6 +5,7 @@ from openff.units import unit
 
 from openfe import setup
 from openfe.setup.methods import openmm
+from openfe.setup import _rbfe_utils
 
 
 @pytest.fixture
@@ -81,8 +82,8 @@ def test_create_default_settings():
     assert settings
 
 
-def test_create_protocol(benzene_system, toluene_system,
-                         benzene_to_toluene_mapping):
+def test_create_default_protocol(benzene_system, toluene_system,
+                                 benzene_to_toluene_mapping):
     # this is roughly how it should be created
     protocol = openmm.RelativeLigandTransform(
         stateA=benzene_system,
@@ -94,10 +95,13 @@ def test_create_protocol(benzene_system, toluene_system,
     assert protocol
 
 
-def test_dry_run_vacuum(benzene_vacuum_system, toluene_vacuum_system,
-                        benzene_to_toluene_mapping, tmpdir):
+@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
+def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
+                                benzene_to_toluene_mapping, method, tmpdir):
+
     vac_settings = openmm.RelativeLigandTransform.get_default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.sampler_settings.sampler_method = method
 
     protocol = openmm.RelativeLigandTransform(
             stateA=benzene_vacuum_system,
@@ -109,32 +113,48 @@ def test_dry_run_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         assert protocol.run(dry=True)
 
 
+@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_ligand(benzene_system, toluene_system,
-                        benzene_to_toluene_mapping, tmpdir):
+                        benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
+    settings = openmm.RelativeLigandTransform.get_default_settings()
+    settings.sampler_settings.sampler_method = method
+
     protocol = openmm.RelativeLigandTransform(
             stateA=benzene_system,
             stateB=toluene_system,
             ligandmapping=benzene_to_toluene_mapping,
-            settings=openmm.RelativeLigandTransform.get_default_settings(),
+            settings=settings,
     )
     # Returns True if everything is OK
     with tmpdir.as_cwd():
         assert protocol.run(dry=True)
 
 
+@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
-                         benzene_to_toluene_mapping, tmpdir):
+                         benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
+    settings = openmm.RelativeLigandTransform.get_default_settings()
+    settings.sampler_settings.sampler_method = method
+
     protocol = openmm.RelativeLigandTransform(
             stateA=benzene_complex_system,
             stateB=toluene_complex_system,
             ligandmapping=benzene_to_toluene_mapping,
-            settings=openmm.RelativeLigandTransform.get_default_settings(),
+            settings=settings,
     )
     # Returns True if everything is OK
     with tmpdir.as_cwd():
         assert protocol.run(dry=True)
+
+
+@pytest.mark.parametrize('n_replicas', [None, 11, 6])
+def test_replicas_n_states(n_replicas):
+    # TODO - needs completing before PR merge
+    lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+            functions='default', windows=11)
+    assert len(lambdas.lambda_schedule) == 11
 
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
