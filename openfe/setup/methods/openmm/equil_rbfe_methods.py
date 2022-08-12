@@ -828,8 +828,9 @@ class RelativeLigandTransform(FEMethod):
         )
 
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
-        if sampler_settings.n_replicas != len(lambdas.lambda_schedule):
-            errmsg = (f"Number of replicas {sampler_settings.n_replicas} "
+        n_replicas = self._settings.sampler_settings.n_replicas
+        if n_replicas != len(lambdas.lambda_schedule):
+            errmsg = (f"Number of replicas {n_replicas} "
                       f"does not equal the number of lambda windows "
                       f"{len(lambdas.lambda_schedule)}")
             raise ValueError(errmsg)
