@@ -91,7 +91,8 @@ class Network:
         serializable_graph = nx.MultiDiGraph(ofe_version=openfe.__version__)
         for mol, label in mol_to_label.items():
             serializable_graph.add_node(label,
-                                        moldict=json.dumps(mol.to_dict()))
+                                        moldict=json.dumps(mol.to_dict(),
+                                                           sort_keys=True))
 
         for molA, molB, mapping in edge_data:
             serializable_graph.add_edge(molA, molB, mapping=mapping)
