@@ -153,7 +153,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
 
 def test_lambda_schedule_default():
     lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
-    assert len(lambdas.lambda_schedule) == 11
+    assert len(lambdas.lambda_schedule) == 10
 
 
 @pytest.mark.parametrize('windows', [11, 6, 9000])
@@ -169,10 +169,11 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
     # For PR #125 we pin such that the number of lambda windows
     # equals the numbers of replicas used - TODO: remove limitation
     settings = openmm.RelativeLigandTransform.get_default_settings()
-    settings.sampler_settings.n_replicas = 12  # default lambda windows is 11
+    # default lambda windows is 11
+    settings.sampler_settings.n_replicas = 13
     settings.system_settings.nonbonded_method = 'nocutoff'
 
-    errmsg = ("Number of replicas 12 does not equal the number of "
+    errmsg = ("Number of replicas 13 does not equal the number of "
               "lambda windows 11")
 
     with tmpdir.as_cwd():
@@ -182,7 +183,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
                     stateB=toluene_vacuum_system,
                     ligandmapping=benzene_to_toluene_mapping,
                     settings=settings,
-            )
+            ).run(dry=True)
 
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
