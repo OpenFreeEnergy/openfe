@@ -95,8 +95,9 @@ def test_create_default_protocol(benzene_system, toluene_system,
     assert protocol
 
 
-@pytest.mark.parametrize('method', 
-        ['repex', 'sams', 'independent', 'InDePeNdENT'])
+@pytest.mark.parametrize('method', [
+    'repex', 'sams', 'independent', 'InDePeNdENT'
+])
 def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, method, tmpdir):
 
@@ -157,18 +158,6 @@ def test_lambda_schedule(windows):
     if windows is None:
         windows = 10
     assert len(lambdas.lambda_schedule) == windows
-
-
-def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
-                                benzene_to_toluene_mapping, method, tmpdir):
-
-
-    protocol = openmm.RelativeLigandTransform(
-            stateA=benzene_vacuum_system,
-            stateB=toluene_vacuum_system,
-            ligandmapping=benzene_to_toluene_mapping,
-            settings=vac_settings,
-    )
 
 
 def test_n_replicas_not_n_windows(benzene_vacuum_system,
