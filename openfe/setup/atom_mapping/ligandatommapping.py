@@ -53,8 +53,8 @@ class LigandAtomMapping(Serializable):
         """Serialize to dict"""
         return {
             # openff serialization doesn't go deep, so stringify at this level
-            'molA': self.molA.to_json(),
-            'molB': self.molB.to_json(),
+            'molA': json.dumps(self.molA.to_dict()),
+            'molB': json.dumps(self.molB.to_dict()),
             'molA_to_molB': self.molA_to_molB,
             'annotations': json.dumps(self.annotations),
         }
