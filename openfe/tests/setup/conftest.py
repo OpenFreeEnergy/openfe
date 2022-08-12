@@ -112,8 +112,7 @@ def serialization_template():
     def inner(filename):
         loc = "openfe.tests.data.serialization"
         tmpl = importlib.resources.read_text(loc, filename)
-        return tmpl.format(GUFE_VERSION=gufe.__version__,
-                           OFE_VERSION=openfe.__version__)
+        return tmpl.replace('{OFE_VERSION}', openfe.__version__)
 
     return inner
 
