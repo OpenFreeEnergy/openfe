@@ -90,7 +90,8 @@ class Network:
         # from here, we just build the graph
         serializable_graph = nx.MultiDiGraph(ofe_version=openfe.__version__)
         for mol, label in mol_to_label.items():
-            serializable_graph.add_node(label, sdf=mol.to_sdf())
+            serializable_graph.add_node(label,
+                                        moldict=json.dumps(mol.to_dict()))
 
         for molA, molB, mapping in edge_data:
             serializable_graph.add_edge(molA, molB, mapping=mapping)
@@ -103,8 +104,8 @@ class Network:
 
         This is the inverse of ``_serializable_graph``.
         """
-        label_to_mol = {node: SmallMoleculeComponent.from_sdf_string(sdf)
-                        for node, sdf in graph.nodes(data='sdf')}
+        label_to_mol = {node: SmallMoleculeComponent.from_dict(json.loads(d))
+                        for node, d in graph.nodes(data='moldict')}
 
         edges = [
             LigandAtomMapping(molA=label_to_mol[node1],
