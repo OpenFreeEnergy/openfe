@@ -149,12 +149,47 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         assert protocol.run(dry=True)
 
 
-@pytest.mark.parametrize('n_replicas', [None, 11, 6])
-def test_replicas_n_states(n_replicas):
-    # TODO - needs completing before PR merge
+@pytest.mark.parametrize('windows', [None, 11, 6])
+def test_lambda_schedule(windows):
     lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
-            functions='default', windows=11)
-    assert len(lambdas.lambda_schedule) == 11
+            functions='default', windows=windows)
+    if windows is None:
+        windows = 10
+    assert len(lambdas.lambda_schedule) == windows
+
+
+def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
+                                benzene_to_toluene_mapping, method, tmpdir):
+
+
+    protocol = openmm.RelativeLigandTransform(
+            stateA=benzene_vacuum_system,
+            stateB=toluene_vacuum_system,
+            ligandmapping=benzene_to_toluene_mapping,
+            settings=vac_settings,
+    )
+
+
+def test_n_replicas_not_n_windows(benzene_vacuum_system,
+                                  toluene_vacuum_system,
+                                  benzene_to_toluene_mapping, tmpdir):
+    # For PR #125 we pin such that the number of lambda windows
+    # equals the numbers of replicas used - TODO: remove limitation
+    settings = openmm.RelativeLigandTransform.get_default_settings()
+    settings.sampler_settings.n_replicas = 12  # default lambda windows is 11
+    settings.system_settings.nonbonded_method = 'nocutoff'
+
+    errmsg = ("Number of replicas 12 does not equal the number of "
+              "lambda windows 11")
+
+    with tmpdir.as_cwd():
+        with pytest.raises(ValueError, match=errmsg):
+            _ = openmm.RelativeLigandTransform(
+                    stateA=benzene_vacuum_system,
+                    stateB=toluene_vacuum_system,
+                    ligandmapping=benzene_to_toluene_mapping,
+                    settings=settings,
+            )
 
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):

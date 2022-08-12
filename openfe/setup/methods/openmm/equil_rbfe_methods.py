@@ -201,17 +201,18 @@ class SamplerSettings(BaseModel):
     gamma0 : float
       SAMS only. Initial weight adaptation rate. Default 1.0.
     n_replicas : int
-      Number of replicas to use. If `None` or greater than the number of lambda
-      windows set in :class:`AlchemicalSettings`, this will default to the
-      number of lambda windows. If less than the number of lambda windows, the
-      replica lambda states will be picked at equidistant intervals along the
-      lambda schedule.
+      Number of replicas to use. Default 11.
 
     TODO
     ----
     * Work out how this fits within the context of independent window FEPs.
     * It'd be great if we could pass in the sampler object rather than using
       strings to define which one we want.
+    * Make n_replicas optional such that: If `None` or greater than the number
+      of lambda windows set in :class:`AlchemicalSettings`, this will default
+      to the number of lambda windows. If less than the number of lambda
+      windows, the replica lambda states will be picked at equidistant
+      intervals along the lambda schedule.
     """
     class Config:
         arbitrary_types_allowed = True
@@ -222,7 +223,7 @@ class SamplerSettings(BaseModel):
     online_analysis_minimum_iterations = 50
     flatness_criteria = 'logZ-flatness'
     gamma0 = 1.0
-    n_replicas: Optional[int] = None
+    n_replicas = 11
 
     @validator('online_analysis_target_error',
                'online_analysis_minimum_iterations', 'gamma0')
@@ -825,6 +826,13 @@ class RelativeLigandTransform(FEMethod):
             functions=alchem_settings.lambda_functions,
             windows=alchem_settings.lambda_windows
         )
+
+        # PR #125 temporarily pin lambda schedule spacing to n_replicas
+        if sampler_settings.n_replicas != len(lambdas.lambda_schedule):
+            errmsg = (f"Number of replicas {sampler_settings.n_replicas} "
+                      f"does not equal the number of lambda windows "
+                      f"{len(lambdas.lambda_schedule)}")
+            raise ValueError(errmsg)
 
         # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
