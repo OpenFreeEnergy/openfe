@@ -3,8 +3,11 @@
 """Equilibrium RBFE methods using OpenMM in a Perses-like manner.
 
 This module implements the necessary methodology toolking to run calculate a
-ligand relative free energy transformation using OpenMM tools and either
-Hamiltonian Replica Exchange or SAMS.
+ligand relative free energy transformation using OpenMM tools and one of the
+following methods:
+    - Hamiltonian Replica Exchange
+    - Self-adjusted mixture sampling
+    - Independent window sampling
 
 TODO
 ----
@@ -173,8 +176,11 @@ class SamplerSettings(BaseModel):
     Attributes
     ----------
     sampler_method : str
-      Sampler method to use, currently supports repex (hamiltonian replica
-      exchange) and sams (self-adjusted mixture sampling). Default repex.
+      Sampler method to use, currently supports:
+          - repex (hamiltonian replica exchange)
+          - sams (self-adjusted mixture sampling)
+          - independent (independent lambda sampling)
+      Default repex.
     online_analysis_interval : int
       The interval at which to perform online analysis of the free energy.
       At each interval the free energy is estimate and the simulation is
