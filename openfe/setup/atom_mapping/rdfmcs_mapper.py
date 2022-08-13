@@ -123,7 +123,7 @@ class RDFMCSMapper(LigandAtomMapper):
         # Settings Catalog
         self.mcs_params = rdFMCS.MCSParameters()
         try:
-            self.mcs_params.AtomTyper = atom_comparisons[str(atom_match).lower()]
+            self.mcs_params.AtomTyper = atom_comparisons[str(atom_match).lower()].value
         except KeyError:
             raise ValueError("Atom comparison type was not recognized, you "
                              f"provided: {atom_match}\n"
@@ -138,12 +138,17 @@ class RDFMCSMapper(LigandAtomMapper):
         self.mcs_params.AtomCompareParameters.CompleteRingsOnly = atom_ring_matches_ring
 
         self.mcs_params.AtomCompareParameters.MaxDistance = atom_max_distance
-        self.mcs_seed = mcs_seed
+        if(mcs_seed is not None):
+            self.mcs_seed = str(mcs_seed)
 
     @property
     def atom_comparison_type(self) -> str:
         return atom_comparisons(self.mcs_params.AtomTyper).name
 
+    #
+    def atom_comparison_type(self) -> str:
+        return atom_comparisons(self.mcs_params.AtomTyper).name
+    
     @property
     def bond_comparison_type(self) -> str:
         return bond_comparisons(self.mcs_params.BondTyper).name
@@ -175,6 +180,10 @@ class RDFMCSMapper(LigandAtomMapper):
     @property
     def mcs_seed(self) -> str:
         return self.mcs_params.InitialSeed
+    
+    @mcs_seed.setter
+    def mcs_seed(self, value:str):
+        self.mcs_params.InitialSeed=value
 
     def _mappings_generator(self,
                             molA: SmallMoleculeComponent,
@@ -311,7 +320,7 @@ class RDFMCSMapper(LigandAtomMapper):
         return core.smartsString
 
     @staticmethod
-    def _assign_idx(self, m: Chem.Mol):
+    def _assign_idx(m: Chem.Mol):
         for i, a in enumerate(m.GetAtoms()):
             # dont set to zero, this clears the tag
             a.SetAtomMapNum(i + 1)
