@@ -13,6 +13,8 @@ import pytest
 from rdkit import Chem
 from rdkit.Chem.AllChem import Compute2DCoords
 
+from .conftest import mol_from_smiles
+
 
 @pytest.fixture()
 def toluene_to_cyclohexane(atom_mapping_basic_test_files):
@@ -118,7 +120,7 @@ class TestSulfonamideRule:
     @staticmethod
     @pytest.fixture
     def ethylbenzene():
-        m = Chem.AddHs(Chem.MolFromSmiles('c1ccccc1CCC'))
+        m = Chem.AddHs(mol_from_smiles('c1ccccc1CCC'))
 
         return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
 
@@ -126,7 +128,7 @@ class TestSulfonamideRule:
     @pytest.fixture
     def sulfonamide():
         # technically 3-phenylbutane-1-sulfonamide
-        m = Chem.AddHs(Chem.MolFromSmiles('c1ccccc1C(C)CCS(=O)(=O)N'))
+        m = Chem.AddHs(mol_from_smiles('c1ccccc1C(C)CCS(=O)(=O)N'))
 
         return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
 
@@ -179,8 +181,8 @@ class TestSulfonamideRule:
 ])
 def test_heterocycle_score(base, other, name, hit):
     # base -> other transform, if *hit* a forbidden heterocycle is created
-    r1 = Chem.AddHs(Chem.MolFromSmiles(base))
-    r2 = Chem.AddHs(Chem.MolFromSmiles(other))
+    r1 = Chem.AddHs(mol_from_smiles(base))
+    r2 = Chem.AddHs(mol_from_smiles(other))
     # add 2d coords to stop Lomap crashing for now
     for r in [r1, r2]:
         Compute2DCoords(r)
