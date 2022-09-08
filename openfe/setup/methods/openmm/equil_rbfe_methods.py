@@ -497,7 +497,7 @@ class RelativeLigandTransform(gufe.Protocol):
         super().__init__(settings)
 
     @classmethod
-    def get_default_settings(cls) -> RelativeLigandTransformSettings:
+    def _default_settings(cls) -> RelativeLigandTransformSettings:
         """A dictionary of initial settings for this creating this Protocol
 
         These settings are intended as a suitable starting point for creating
