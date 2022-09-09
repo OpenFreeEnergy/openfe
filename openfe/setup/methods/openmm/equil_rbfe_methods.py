@@ -564,13 +564,13 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
     _stateB: ChemicalSystem
     _mapping: LigandAtomMapping
     _settings: RelativeLigandTransformSettings
-    _is_complex: bool
 
-    def __init__(self,
+    def __init__(self, *,
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
                  settings: RelativeLigandTransformSettings,
+                 name: Optional[str]=None,
                  ):
         """
         Parameters
@@ -591,19 +591,18 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         this is done on class creation.
         """
         super().__init__(
+            name=name,
+            stateA=stateA,
+            stateB=stateB,
+            mapping=ligandmapping,
             settings=settings,
         )
-
-        self._stateA = stateA
-        self._stateB = stateB
-        self._mapping = ligandmapping
-        self._settings = settings
 
         # Checks on the inputs!
         # check that both states have solvent and ligand
         for state, label in [(stateA, 'A'), (stateB, 'B')]:
             if 'solvent' not in state.components:
-                nonbond = self._settings.system_settings.nonbonded_method
+                nonbond = settings.system_settings.nonbonded_method
                 if nonbond != 'nocutoff':
                     errmsg = f"{nonbond} cannot be used for vacuum transform"
                     raise ValueError(errmsg)
@@ -615,7 +614,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         elif nproteins == 2:
             if stateA['protein'] != stateB['protein']:
                 raise ValueError("Proteins in each state aren't compatible")
-        self._is_complex = nproteins == 2
 
         # check that both states have same solvent
         # TODO: defined box compatibility check
@@ -640,25 +638,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                     f"Element change in mapping between atoms "
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
                     f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
-
-    def to_dict(self) -> dict:
-        """Serialize to dict representation"""
-        return {
-            'stateA': self._stateA.to_dict(),
-            'stateB': self._stateB.to_dict(),
-            'mapping': self._mapping.to_dict(),
-            'settings': dict(self._settings),
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict):
-        """Deserialize from a dict representation"""
-        return cls(
-            stateA=ChemicalSystem.from_dict(d['stateA']),
-            stateB=ChemicalSystem.from_dict(d['stateB']),
-            ligandmapping=LigandAtomMapping.from_dict(d['mapping']),
-            settings=RelativeLigandTransformSettings(**d['settings']),
-        )
 
     def run(self, dry=False, verbose=True) -> bool:
         """Run the relative free energy calculation.
@@ -685,10 +664,14 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # 0. General setup and settings dependency resolution step
 
         # a. check equilibration and production are divisible by n_steps
+        settings = self._inputs['settings']
+        stateA = self._inputs['stateA']
+        stateB = self._inputs['stateB']
+        mapping = self._inputs['mapping']
 
-        sim_settings = self._settings.simulation_settings
-        timestep = self._settings.integrator_settings.timestep
-        mc_steps = self._settings.integrator_settings.n_steps.m
+        sim_settings = settings.simulation_settings
+        timestep = settings.integrator_settings.timestep
+        mc_steps = settings.integrator_settings.n_steps.m
 
         equil_time = sim_settings.equilibration_length.to('femtosecond')
         equil_steps = round(equil_time / timestep)
@@ -710,24 +693,24 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             raise ValueError(errmsg)
 
         # b. get the openff objects for the ligands
-        stateA_openff_ligand = self._stateA['ligand'].to_openff()
-        stateB_openff_ligand = self._stateB['ligand'].to_openff()
+        stateA_openff_ligand = stateA['ligand'].to_openff()
+        stateB_openff_ligand = stateB['ligand'].to_openff()
 
         #  1. Get smirnoff template generators
         smirnoff_stateA = SMIRNOFFTemplateGenerator(
-            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            forcefield=settings.topology_settings.forcefield['ligand'],
             molecules=[stateA_openff_ligand],
         )
 
         smirnoff_stateB = SMIRNOFFTemplateGenerator(
-            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            forcefield=settings.topology_settings.forcefield['ligand'],
             molecules=[stateB_openff_ligand],
         )
 
         # 2. Create forece fields and register them
         #  a. state A
         omm_forcefield_stateA = app.ForceField(
-            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+            *[ff for (comp, ff) in settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
 
@@ -736,7 +719,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         #  b. state B
         omm_forcefield_stateB = app.ForceField(
-            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+            *[ff for (comp, ff) in settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
 
@@ -745,8 +728,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
 
         # 3. Model state A
-        if 'protein' in self._stateA.components:
-            pdbfile = self._stateA['protein']
+        if 'protein' in stateA.components:
+            pdbfile = stateA['protein']
             stateA_modeller = app.Modeller(pdbfile._openmm_top, # forgive me
                                            pdbfile._openmm_pos)
             stateA_modeller.add(
@@ -761,15 +744,15 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with
         # `solvent_padding` from the solute to the edges of the box
-        if 'solvent' in self._stateA.components:
-            conc = self._stateA['solvent'].ion_concentration
-            pos = self._stateA['solvent'].positive_ion
-            neg = self._stateA['solvent'].negative_ion
+        if 'solvent' in stateA.components:
+            conc = stateA['solvent'].ion_concentration
+            pos = stateA['solvent'].positive_ion
+            neg = stateA['solvent'].negative_ion
 
             stateA_modeller.addSolvent(
                 omm_forcefield_stateA,
-                model=self._settings.topology_settings.solvent_model,
-                padding=to_openmm(self._settings.solvent_padding),
+                model=settings.topology_settings.solvent_model,
+                padding=to_openmm(settings.solvent_padding),
                 positiveIon=pos, negativeIon=neg,
                 ionicStrength=to_openmm(conc),
             )
@@ -782,7 +765,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             'cutoffnonperiodic': app.CutoffNonPeriodic,
             'cutoffperiodic': app.CutoffPeriodic,
             'ewald': app.Ewald
-        }[self._settings.system_settings.nonbonded_method.lower()]
+        }[settings.system_settings.nonbonded_method.lower()]
 
         #  b. Get the constraint method
         constraints = {
@@ -791,17 +774,17 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             'allbonds': app.AllBonds,
             'hangles': app.HAngles
             # vvv can be None so string it
-        }[str(self._settings.system_settings.constraints).lower()]
+        }[str(settings.system_settings.constraints).lower()]
 
         #  c. create the stateA System
         stateA_system = omm_forcefield_stateA.createSystem(
             stateA_modeller.topology,
             nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
+            nonbondedCutoff=to_openmm(settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
-            rigidWater=self._settings.system_settings.rigid_water,
-            hydrogenMass=self._settings.system_settings.hydrogen_mass,
-            removeCMMotion=self._settings.system_settings.remove_com,
+            rigidWater=settings.system_settings.rigid_water,
+            hydrogenMass=settings.system_settings.hydrogen_mass,
+            removeCMMotion=settings.system_settings.remove_com,
         )
 
         #  d. crate stateA topology
@@ -835,16 +818,16 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         stateB_system = omm_forcefield_stateB.createSystem(
             stateB_topology,
             nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
+            nonbondedCutoff=to_openmm(settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
-            rigidWater=self._settings.system_settings.rigid_water,
-            hydrogenMass=self._settings.system_settings.hydrogen_mass,
-            removeCMMotion=self._settings.system_settings.remove_com,
+            rigidWater=settings.system_settings.rigid_water,
+            hydrogenMass=settings.system_settings.hydrogen_mass,
+            removeCMMotion=settings.system_settings.remove_com,
         )
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
-            self._mapping.molA_to_molB,
+            mapping.molA_to_molB,
             stateA_system, stateA_topology, stateA_openff_ligand.name,
             stateB_system, stateB_topology, stateB_openff_ligand.name,
             # These are non-optional settings for this method
@@ -857,12 +840,12 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             old_positions=stateA_positions,
             insert_positions=stateB_openff_ligand.conformers[0],
             shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
-            tolerance=self._settings.alchemical_settings.atom_overlap_tolerance
+            tolerance=settings.alchemical_settings.atom_overlap_tolerance
         )
 
         # 7. Create the hybrid topology
         #  a. Get alchemical settings
-        alchem_settings = self._settings.alchemical_settings
+        alchem_settings = settings.alchemical_settings
 
         #  b. Create the hybrid topology factory
         hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
@@ -882,12 +865,12 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         )
 
         #  c. Add a barostat to the hybrid system
-        if 'solvent' in self._stateA.components:
+        if 'solvent' in stateA.components:
             hybrid_factory.hybrid_system.addForce(
                 openmm.MonteCarloBarostat(
-                    self._settings.barostat_settings.pressure.to(unit.bar).m,
-                    self._settings.integrator_settings.temperature.m,
-                    self._settings.barostat_settings.frequency.m,
+                    settings.barostat_settings.pressure.to(unit.bar).m,
+                    settings.integrator_settings.temperature.m,
+                    settings.barostat_settings.frequency.m,
                 )
             )
 
@@ -910,20 +893,20 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
         selection_indices = hybrid_factory.hybrid_topology.select(
-                self._settings.simulation_settings.output_indices
+                settings.simulation_settings.output_indices
         )
 
         #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            self._settings.simulation_settings.output_filename,
+            settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=self._settings.simulation_settings.checkpoint_interval.m,
-            checkpoint_storage=self._settings.simulation_settings.checkpoint_storage,
+            checkpoint_interval=settings.simulation_settings.checkpoint_interval.m,
+            checkpoint_storage=settings.simulation_settings.checkpoint_storage,
         )
 
         # 10. Get platform and context caches
         platform = _rbfe_utils.compute.get_openmm_platform(
-            self._settings.engine_settings.compute_platform
+            settings.engine_settings.compute_platform
         )
 
         #  a. Create context caches (energy + sampler)
@@ -938,7 +921,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         # 11. Set the integrator
         #  a. get integrator settings
-        integrator_settings = self._settings.integrator_settings
+        integrator_settings = settings.integrator_settings
 
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
@@ -954,7 +937,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # 12. Create sampler
         # TODO: leave the if/elif branch for now, eventually we need to split
         # this protocol up
-        sampler_settings = self._settings.sampler_settings
+        sampler_settings = settings.sampler_settings
         
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rbfe_utils.multistate.HybridRepexSampler(
@@ -990,7 +973,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             reporter=reporter,
             platform=platform,
             lambda_protocol=lambdas,
-            temperature=to_openmm(self._settings.integrator_settings.temperature),
+            temperature=to_openmm(settings.integrator_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
         )
 
@@ -1002,7 +985,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             if verbose:
                 logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=self._settings.simulation_settings.minimization_steps)
+            sampler.minimize(max_iterations=settings.simulation_settings.minimization_steps)
 
             # equilibrate
             if verbose:
@@ -1019,7 +1002,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             return True
         else:
             # clean up the reporter file
-            fn = self._settings.simulation_settings.output_filename
+            fn = settings.simulation_settings.output_filename
             os.remove(fn)
             return True
 
@@ -1033,5 +1016,5 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # TODO: Metadata here too?
         return {
             # TODO: Is this already abs?
-            'nc': pathlib.Path(self._settings.simulation_settings.output_filename),
+            'nc': pathlib.Path(self._inputs['settings'].simulation_settings.output_filename),
         }
