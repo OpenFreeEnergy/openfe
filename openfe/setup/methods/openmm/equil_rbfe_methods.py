@@ -195,6 +195,8 @@ class SamplerSettings(BaseModel):
     online_analysis_minimum_iterations : float
       Set number of iterations which must pass before online analysis is
       carried out. Default 50.
+    n_repeats : int
+      number of independent repeats to run.  Default 3
     flatness_criteria : str
       SAMS only. Method for assessing when to switch to asymptomatically
       optimal scheme.
@@ -223,6 +225,7 @@ class SamplerSettings(BaseModel):
     online_analysis_interval: Optional[int] = None
     online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
     online_analysis_minimum_iterations = 50
+    n_repeats = 3
     flatness_criteria = 'logZ-flatness'
     gamma0 = 1.0
     n_replicas = 11
