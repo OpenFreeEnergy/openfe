@@ -20,7 +20,6 @@ import os
 import logging
 
 import gufe
-import networkx as nx
 import numpy as np
 import openmm
 from openff.units import unit
@@ -537,17 +536,17 @@ class RelativeLigandTransform(gufe.Protocol):
         stateB: ChemicalSystem,
         mapping: LigandAtomMapping = None,
         extend_from: Optional[gufe.ProtocolDAGResult] = None,
-    ) -> nx.DiGraph:
-        # our DAG has no dependencies, so just load up a graph with nodes
-        g = nx.DiGraph()
+    ) -> list[gufe.ProtocolUnit]:
+        # TODO: Extensions?
+        if extend_from:
+            raise NotImplementedError
 
-        # TODO: This should be once per replica
-        g.add_node(RelativeLigandTransformUnit(
-            stateA=stateA, stateB=stateB, ligandmapping=mapping,
-            settings=self.settings,
-        ))
+        # our DAG has no dependencies, so just list units
+        units = [RelativeLigandTransformUnit(stateA=stateA, stateB=stateB, ligandmapping=mapping,
+                                             settings=self.settings)
+                 for _ in range(self.settings.sampler_settings.n_repeats)]
 
-        return g
+        return units
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
