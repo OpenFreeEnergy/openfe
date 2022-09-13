@@ -641,7 +641,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
                     f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
 
-    def run(self, dry=False, verbose=True) -> bool:
+    def run(self, dry=False, verbose=True) -> Union[bool, Exception]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -659,6 +659,11 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         -------
         bool
           True if everything went well.
+
+        Raises
+        ------
+        error
+          exception if anything failed
         """
         if verbose:
             logger.info("creating hybrid system")
@@ -1010,13 +1015,14 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
     def _execute(
         self, dependency_results: Iterable[gufe.ProtocolUnitResult]
-    ) -> Dict[str, Any]:
-        if not self.run():
-            # TODO: Need failure return
-            raise ValueError
-
-        # TODO: Metadata here too?
-        return {
-            # TODO: Is this already abs?
-            'nc': pathlib.Path(self._inputs['settings'].simulation_settings.output_filename),
-        }
+    ) -> Union[Dict[str, Any], Exception]:
+        try:
+            self.run()
+        except Exception as e:
+            return e
+        else:
+            # TODO: Metadata here too?
+            return {
+                # TODO: Is this already abs?
+                'nc': pathlib.Path(self._inputs['settings'].simulation_settings.output_filename),
+            }
