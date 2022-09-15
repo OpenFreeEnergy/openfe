@@ -642,7 +642,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
                     f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
 
-    def run(self, dry=False, verbose=True) -> Union[bool, Exception]:
+    def run(self, dry=False, verbose=True, basepath=None) -> Union[bool, Exception]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -655,6 +655,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
+        basepath : Pathlike, optional
+          where to run the calculation, defaults to current working directory
 
         Returns
         -------
@@ -668,6 +670,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         """
         if verbose:
             logger.info("creating hybrid system")
+        if basepath is None:
+            # use cwd
+            basepath = pathlib.Path('.')
 
         # 0. General setup and settings dependency resolution step
 
@@ -738,6 +743,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # 3. Model state A
         if 'protein' in stateA.components:
             pdbfile = stateA['protein']
+            # TODO: Update to use new gufe protein
             stateA_modeller = app.Modeller(pdbfile._openmm_top, # forgive me
                                            pdbfile._openmm_pos)
             stateA_modeller.add(
@@ -906,9 +912,10 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            settings.simulation_settings.output_filename,
+            basepath / settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=settings.simulation_settings.checkpoint_interval.m,
+            # TODO: How are checkpoints used?  This is optional, so what does it default to?
             checkpoint_storage=settings.simulation_settings.checkpoint_storage,
         )
 
@@ -1015,15 +1022,14 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             return True
 
     def _execute(
-        self, dependency_results: Iterable[gufe.ProtocolUnitResult]
-    ) -> Union[Dict[str, Any], Exception]:
+        self, ctx: gufe.Context, **kwargs,
+    ) -> Dict[str, Any]:
         try:
-            self.run()
+            self.run(basepath=ctx.shared)
         except Exception as e:
-            return e
+            raise e
         else:
             # TODO: Metadata here too?
             return {
-                # TODO: Is this already abs?
-                'nc': pathlib.Path(self._inputs['settings'].simulation_settings.output_filename),
+                'nc': ctx.shared / self._inputs['settings'].simulation_settings.output_filename,
             }
