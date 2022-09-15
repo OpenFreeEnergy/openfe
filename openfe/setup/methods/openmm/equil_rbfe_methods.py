@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 import logging
 
+from collections import defaultdict
 import gufe
 import numpy as np
 import openmm
@@ -429,21 +430,19 @@ class RelativeLigandTransformSettings(BaseModel):
 
 class RelativeLigandTransformResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeLigandTransform"""
-    def __init__(self, dags: Iterable[gufe.ProtocolDAGResult]):
-        # i.e. self._data = dags
-        super().__init__(dags)
+    def __init__(self, **data):
+        super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
+        if any(len(files) > 2 for files in self.data['nc_files']):
+            raise NotImplementedError
 
         self._analyzers = []
+        for f in self.data['nc_files']:
+            nc = f[0]
+            reporter = multistate.MultiStateReporter(run.nc)
+            analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
 
-        gen: gufe.ProtocolDAGResult
-        run: gufe.ProtocolUnitResult
-        for gen in self._data:
-            for run in gen.protocol_unit_results:
-                reporter = multistate.MultiStateReporter(run.nc)
-                analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
-
-                self._analyzers.append(analyzer)
+            self._analyzers.append(analyzer)
 
     def to_dict(self) -> dict:
         raise NotImplementedError
@@ -461,8 +460,6 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         ----
         * Check this holds up completely for SAMS.
         """
-        raise NotImplementedError()
-
         dGs = []
         weights = []
 
@@ -471,6 +468,7 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
             dG = (dG[0, -1] * analyzer.kT).in_units_of(
                 omm_unit.kilocalories_per_mole)
 
+            # hack to get simulation length in uncorrelated samples
             weight = analyzer._get_equilibration_data()[2]
 
             dGs.append(dG)
@@ -552,10 +550,23 @@ class RelativeLigandTransform(gufe.Protocol):
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> Dict[str, Any]:
-        # smush many finished DAGs into a single Result object
-        # this dict gets passed to RelativeLigandTransformResult
+        # result units will have a repeat_id and generation
+        # first group according to repeat_id
+        repeats = defaultdict(list)
+        for d in protocol_dag_results:
+            for unit in d.protocol_unit_results:
+                rep = unit.outputs['repeat_id']
+                gen = unit.outputs['generation']
+
+                repeats[rep].append((gen, unit.outputs['nc']))
+        data = []
+        for rep in sorted(repeats.items()):
+            # then sort within a repeat according to generation
+            nc_files = [ncpath for gen, ncpath in sorted(rep)]
+            data.append(nc_files)
+
         return {
-            i: r for i, r in enumerate(protocol_dag_results)
+            'nc_files': data,
         }
 
 
@@ -1046,5 +1057,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         else:
             # TODO: Metadata here too?
             return {
+                'repeat_id': self.repeat_id,
+                'generation': self.generation,
                 'nc': ctx.shared / self._inputs['settings'].simulation_settings.output_filename,
             }
