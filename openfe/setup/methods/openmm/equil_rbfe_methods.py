@@ -224,7 +224,7 @@ class SamplerSettings(BaseModel):
     online_analysis_interval: Optional[int] = None
     online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
     online_analysis_minimum_iterations = 50
-    n_repeats = 3
+    n_repeats: int = 3
     flatness_criteria = 'logZ-flatness'
     gamma0 = 1.0
     n_replicas = 11
@@ -543,8 +543,9 @@ class RelativeLigandTransform(gufe.Protocol):
 
         # our DAG has no dependencies, so just list units
         units = [RelativeLigandTransformUnit(stateA=stateA, stateB=stateB, ligandmapping=mapping,
-                                             settings=self.settings)
-                 for _ in range(self.settings.sampler_settings.n_repeats)]
+                                             settings=self.settings,
+                                             generation=0, repeat_id=i)
+                 for i in range(self.settings.sampler_settings.n_repeats)]
 
         return units
 
@@ -566,6 +567,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
     _stateB: ChemicalSystem
     _mapping: LigandAtomMapping
     _settings: RelativeLigandTransformSettings
+    generation: int
+    repeat_id: int
+    name: str
 
     def __init__(self, *,
                  stateA: ChemicalSystem,
@@ -573,6 +577,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                  ligandmapping: LigandAtomMapping,
                  settings: RelativeLigandTransformSettings,
                  name: Optional[str]=None,
+                 generation: Optional[int] = 0,
+                 repeat_id: Optional[int] = 0,
                  ):
         """
         Parameters
@@ -586,6 +592,13 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
           the settings for the Method.  This can be constructed using the
           get_default_settings classmethod to give a starting point that
           can be updated to suit.
+        name : str, optional
+          human-readable identifier for this Unit
+        repeat_id : int, optional
+          identifier for which repeat (aka replica/clone) this Unit is,
+          default 0
+        generation : int, optional
+          counter for how many times this repeat has been extended, default 0
 
         Notes
         -----
@@ -599,6 +612,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             mapping=ligandmapping,
             settings=settings,
         )
+        self.repeat_id = repeat_id
+        self.generation = generation
 
         # TODO: Can probably put these pre flight checks into Protocol._create() ?
         # Checks on the inputs!
