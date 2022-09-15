@@ -600,6 +600,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             settings=settings,
         )
 
+        # TODO: Can probably put these pre flight checks into Protocol._create() ?
         # Checks on the inputs!
         # check that both states have solvent and ligand
         for state, label in [(stateA, 'A'), (stateB, 'B')]:
