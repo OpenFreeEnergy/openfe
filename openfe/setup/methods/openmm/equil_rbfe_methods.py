@@ -434,7 +434,7 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
         if any(len(files) > 2 for files in self.data['nc_files']):
-            raise NotImplementedError
+            raise NotImplementedError("Can't stitch together results yet")
 
         self._analyzers = []
         for f in self.data['nc_files']:
@@ -443,9 +443,6 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
             analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
 
             self._analyzers.append(analyzer)
-
-    def to_dict(self) -> dict:
-        raise NotImplementedError
 
     def get_estimate(self):
         """Free energy difference of this transformation
