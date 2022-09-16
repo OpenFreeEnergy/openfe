@@ -439,7 +439,7 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         self._analyzers = []
         for f in self.data['nc_files']:
             nc = f[0]
-            reporter = multistate.MultiStateReporter(run.nc)
+            reporter = multistate.MultiStateReporter(nc)
             analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
 
             self._analyzers.append(analyzer)
