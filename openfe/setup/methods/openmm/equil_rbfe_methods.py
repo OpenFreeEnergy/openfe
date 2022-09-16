@@ -529,7 +529,7 @@ class RelativeLigandTransform(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: LigandAtomMapping = None,
+        mapping: LigandAtomMapping,
         extend_from: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
@@ -585,8 +585,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                  ligandmapping: LigandAtomMapping,
                  settings: RelativeLigandTransformSettings,
                  name: Optional[str]=None,
-                 generation: Optional[int] = 0,
-                 repeat_id: Optional[int] = 0,
+                 generation: int = 0,
+                 repeat_id: int = 0,
                  ):
         """
         Parameters
