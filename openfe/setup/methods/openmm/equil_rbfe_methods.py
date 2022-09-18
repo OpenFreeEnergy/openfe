@@ -553,11 +553,11 @@ class RelativeLigandTransform(gufe.Protocol):
         # first group according to repeat_id
         repeats = defaultdict(list)
         for d in protocol_dag_results:
-            for unit in d.protocol_unit_results:
-                rep = unit.outputs['repeat_id']
-                gen = unit.outputs['generation']
+            for pu in d.protocol_unit_results:
+                rep = pu.outputs['repeat_id']
+                gen = pu.outputs['generation']
 
-                repeats[rep].append((gen, unit.outputs['nc']))
+                repeats[rep].append((gen, pu.outputs['nc']))
         data = []
         for rep in sorted(repeats.items()):
             # then sort within a repeat according to generation
@@ -586,7 +586,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
                  settings: RelativeLigandTransformSettings,
-                 name: Optional[str]=None,
+                 name: Optional[str] = None,
                  generation: int = 0,
                  repeat_id: int = 0,
                  ):
@@ -763,7 +763,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         omm_forcefield_stateB.registerTemplateGenerator(
                 smirnoff_stateB.generator)
-
 
         # 3. Model state A
         if 'protein' in stateA.components:
@@ -1058,5 +1057,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             return {
                 'repeat_id': self.repeat_id,
                 'generation': self.generation,
-                'nc': ctx.shared / self._inputs['settings'].simulation_settings.output_filename,
+                'nc': os.path.join(ctx.shared,
+                                   self._inputs['settings'].simulation_settings.output_filename),
             }
