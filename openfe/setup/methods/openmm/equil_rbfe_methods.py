@@ -529,10 +529,12 @@ class RelativeLigandTransform(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: LigandAtomMapping,
+        mapping: LigandAtomMapping = None,
         extend_from: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
+        if mapping is None:
+            raise ValueError("`mapping` is required for this Protocol")
         if extend_from:
             raise NotImplementedError
 
