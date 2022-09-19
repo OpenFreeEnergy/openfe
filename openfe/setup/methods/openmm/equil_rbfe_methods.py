@@ -21,6 +21,7 @@ import logging
 
 from collections import defaultdict
 import gufe
+import json
 import numpy as np
 import openmm
 from openff.units import unit
@@ -330,7 +331,7 @@ class IntegratorSettings(BaseModel):
         if not v.is_compatible_with(unit.kelvin):
             raise ValueError("Must be temperature value, e.g. use unit.kelvin")
 
-    @validator('timestep', 'collision_rate')
+    @validator('collision_rate')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
@@ -492,6 +493,42 @@ class RelativeLigandTransform(gufe.Protocol):
 
     def __init__(self, settings: RelativeLigandTransformSettings):
         super().__init__(settings)
+
+    def _to_dict(self):
+        def serialise_unit(thing):
+            if not isinstance(thing, unit.Quantity):
+                raise TypeError
+            return '__Quantity__' + str(thing)
+        return {'settings': self.settings.json(encoder=serialise_unit)}
+
+    @classmethod
+    def _from_dict(cls, dct: Dict):
+        def undo_mash(dct):
+            for k, v in dct.items():
+                if isinstance(v, str) and v.startswith('__Quantity__'):
+                    dct[k] = unit.Quantity(v[12:])  # 12==strlen ^^
+                elif isinstance(v, dict):
+                    dct[k] = undo_mash(v)
+            return dct
+
+        raw = json.loads(dct['settings'])
+        raw = undo_mash(raw)
+
+        # for some reason this particular settings dict is being problematic...
+        i = IntegratorSettings()
+
+        sett = RelativeLigandTransformSettings(
+            system_settings=SystemSettings(**raw['system_settings']),
+            topology_settings=TopologySettings(**raw['topology_settings']),
+            alchemical_settings=AlchemicalSettings(**raw['alchemical_settings']),
+            integrator_settings=i,
+            barostat_settings=BarostatSettings(**raw['barostat_settings']),
+            sampler_settings=SamplerSettings(**raw['sampler_settings']),
+            simulation_settings=SimulationSettings(**raw['simulation_settings']),
+            solvent_padding=raw['solvent_padding'],
+        )
+
+        return cls(sett)
 
     @classmethod
     def _default_settings(cls) -> RelativeLigandTransformSettings:

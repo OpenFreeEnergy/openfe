@@ -92,6 +92,18 @@ def test_create_default_protocol():
     assert protocol
 
 
+def test_serialize_protocol():
+    protocol = openmm.RelativeLigandTransform(
+        settings=openmm.RelativeLigandTransform.default_settings(),
+    )
+
+    ser = protocol.to_dict()
+
+    ret = openmm.RelativeLigandTransform.from_dict(ser)
+
+    assert protocol == ret
+
+
 @pytest.mark.parametrize('method', [
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
