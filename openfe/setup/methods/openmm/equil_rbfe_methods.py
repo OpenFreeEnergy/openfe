@@ -437,6 +437,32 @@ class RelativeLigandTransformSettings(BaseModel):
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
 
+    def _gufe_tokenize(self):
+        return serialise_pydantic(self)
+
+def serialise_pydantic(settings: RelativeLigandTransformSettings):
+    def serialise_unit(thing):
+        # this gets called when a thing can't get jsonified by pydantic
+        # for now only unit.Quantity fall foul of this requirement
+        if not isinstance(thing, unit.Quantity):
+            raise TypeError
+        return '__Quantity__' + str(thing)
+    return settings.json(encoder=serialise_unit)
+
+def deserialise_pydantic(raw: str) -> RelativeLigandTransformSettings:
+    def undo_mash(d):
+        for k, v in d.items():
+            if isinstance(v, str) and v.startswith('__Quantity__'):
+                d[k] = unit.Quantity(v[12:])  # 12==strlen ^^
+            elif isinstance(v, dict):
+                d[k] = undo_mash(v)
+        return d
+
+    dct = json.loads(raw)
+    dct = undo_mash(dct)
+
+    return RelativeLigandTransformSettings(**dct)
+
 
 class RelativeLigandTransformResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeLigandTransform"""
@@ -504,28 +530,11 @@ class RelativeLigandTransform(gufe.Protocol):
         super().__init__(settings)
 
     def _to_dict(self):
-        def serialise_unit(thing):
-            # this gets called when a thing can't get jsonified by pydantic
-            # for now only unit.Quantity fall foul of this requirement
-            if not isinstance(thing, unit.Quantity):
-                raise TypeError
-            return '__Quantity__' + str(thing)
-        return {'settings': self.settings.json(encoder=serialise_unit)}
+        return {'settings': serialise_pydantic(self.settings)}
 
     @classmethod
     def _from_dict(cls, dct: Dict):
-        def undo_mash(d):
-            for k, v in d.items():
-                if isinstance(v, str) and v.startswith('__Quantity__'):
-                    d[k] = unit.Quantity(v[12:])  # 12==strlen ^^
-                elif isinstance(v, dict):
-                    d[k] = undo_mash(v)
-            return d
-
-        raw = json.loads(dct['settings'])
-        raw = undo_mash(raw)
-
-        return cls(settings=RelativeLigandTransformSettings(**raw))
+        return cls(settings=deserialise_pydantic(dct['settings']))
 
     @classmethod
     def _default_settings(cls) -> RelativeLigandTransformSettings:
@@ -700,6 +709,25 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                     f"Element change in mapping between atoms "
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
                     f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+
+    def _to_dict(self):
+        return {
+            'inputs': self.inputs,
+            'generation': self.generation,
+            'repeat_id': self.repeat_id,
+            'name': self.name,
+        }
+
+    @classmethod
+    def _from_dict(cls, dct: Dict):
+        dct['_settings'] = deserialise_pydantic(dct['_settings'])
+
+        inps = dct.pop('inputs')
+
+        return cls(
+            **inps,
+            **dct
+        )
 
     def run(self, dry=False, verbose=True, basepath=None) -> Union[bool, Exception]:
         """Run the relative free energy calculation.
