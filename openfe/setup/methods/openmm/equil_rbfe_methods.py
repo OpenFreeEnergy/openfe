@@ -505,6 +505,8 @@ class RelativeLigandTransform(gufe.Protocol):
 
     def _to_dict(self):
         def serialise_unit(thing):
+            # this gets called when a thing can't get jsonified by pydantic
+            # for now only unit.Quantity fall foul of this requirement
             if not isinstance(thing, unit.Quantity):
                 raise TypeError
             return '__Quantity__' + str(thing)
@@ -512,33 +514,18 @@ class RelativeLigandTransform(gufe.Protocol):
 
     @classmethod
     def _from_dict(cls, dct: Dict):
-        def undo_mash(dct):
-            for k, v in dct.items():
+        def undo_mash(d):
+            for k, v in d.items():
                 if isinstance(v, str) and v.startswith('__Quantity__'):
-                    dct[k] = unit.Quantity(v[12:])  # 12==strlen ^^
+                    d[k] = unit.Quantity(v[12:])  # 12==strlen ^^
                 elif isinstance(v, dict):
-                    dct[k] = undo_mash(v)
-            return dct
+                    d[k] = undo_mash(v)
+            return d
 
         raw = json.loads(dct['settings'])
         raw = undo_mash(raw)
 
-        # for some reason this particular settings dict is being problematic...
-        i = IntegratorSettings()
-
-        sett = RelativeLigandTransformSettings(
-            system_settings=SystemSettings(**raw['system_settings']),
-            topology_settings=TopologySettings(**raw['topology_settings']),
-            alchemical_settings=AlchemicalSettings(**raw['alchemical_settings']),
-            #integrator_settings=i,
-            integrator_settings=IntegratorSettings(**raw['integrator_settings']),
-            barostat_settings=BarostatSettings(**raw['barostat_settings']),
-            sampler_settings=SamplerSettings(**raw['sampler_settings']),
-            simulation_settings=SimulationSettings(**raw['simulation_settings']),
-            solvent_padding=raw['solvent_padding'],
-        )
-
-        return cls(sett)
+        return cls(settings=RelativeLigandTransformSettings(**raw))
 
     @classmethod
     def _default_settings(cls) -> RelativeLigandTransformSettings:
