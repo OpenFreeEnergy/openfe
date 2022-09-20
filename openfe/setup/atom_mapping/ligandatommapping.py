@@ -1,17 +1,17 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gufe
+from gufe.tokenization import GufeTokenizable
 import json
 from typing import Any, Dict, List, Optional
 import numpy as np
 from numpy.typing import NDArray
-from openff.toolkit.utils.serialization import Serializable
 
 from openfe.setup import SmallMoleculeComponent
 from openfe.utils.visualization import draw_mapping
 
 
-class LigandAtomMapping(gufe.Mapping, Serializable):
+class LigandAtomMapping(GufeTokenizable):
     """Simple container with the mapping between two Molecules
 
     Attributes
@@ -45,13 +45,16 @@ class LigandAtomMapping(gufe.Mapping, Serializable):
 
         self._annotations = annotations
 
+    @classmethod
+    def _defaults(self):
+        return {}
+
     @property
     def annotations(self):
         # return a copy (including copy of nested)
         return json.loads(json.dumps(self._annotations))
 
-    def to_dict(self):
-        """Serialize to dict"""
+    def _to_dict(self):
         return {
             # openff serialization doesn't go deep, so stringify at this level
             'molA': json.dumps(self.molA.to_dict(), sort_keys=True),
@@ -61,7 +64,7 @@ class LigandAtomMapping(gufe.Mapping, Serializable):
         }
 
     @classmethod
-    def from_dict(cls, d: dict):
+    def _from_dict(cls, d: dict):
         """Deserialize from dict"""
         # the mapping dict gets mangled sometimes
         mapping = d['molA_to_molB']
