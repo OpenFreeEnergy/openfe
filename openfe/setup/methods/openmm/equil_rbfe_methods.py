@@ -834,12 +834,12 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                                            pdbfile._openmm_pos)
             stateA_modeller.add(
                 stateA_openff_ligand.to_topology().to_openmm(),
-                stateA_openff_ligand.conformers[0],
+                to_openmm(stateA_openff_ligand.conformers[0]),
             )
         else:
             stateA_modeller = app.Modeller(
                 stateA_openff_ligand.to_topology().to_openmm(),
-                stateA_openff_ligand.conformers[0],
+                to_openmm(stateA_openff_ligand.conformers[0]),
             )
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with
