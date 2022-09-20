@@ -325,18 +325,27 @@ class IntegratorSettings(BaseModel):
                       "n_restart_atttempts, constraint_tolerance must be "
                       "positive")
             raise ValueError(errmsg)
+        return v
 
     @validator('temperature')
     def is_temperature(cls, v):
         if not v.is_compatible_with(unit.kelvin):
             raise ValueError("Must be temperature value, e.g. use unit.kelvin")
+        return v
 
-    @validator('collision_rate')
+    @validator('timestep')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
-            errmsg = "timestep and collision_rate must be in time units"
-            raise ValueError(errmsg)
+            raise ValueError("timestep must be in time units "
+                             "(i.e. picoseconds)")
+        return v
+
+    @validator('collision_rate')
+    def must_be_inverse_time(cls, v):
+        if not v.is_compatible_with(1 / unit.picosecond):
+            raise ValueError("collision_rate must be in inverse time "
+                             "(i.e. 1/picoseconds)")
         return v
 
 
@@ -521,7 +530,8 @@ class RelativeLigandTransform(gufe.Protocol):
             system_settings=SystemSettings(**raw['system_settings']),
             topology_settings=TopologySettings(**raw['topology_settings']),
             alchemical_settings=AlchemicalSettings(**raw['alchemical_settings']),
-            integrator_settings=i,
+            #integrator_settings=i,
+            integrator_settings=IntegratorSettings(**raw['integrator_settings']),
             barostat_settings=BarostatSettings(**raw['barostat_settings']),
             sampler_settings=SamplerSettings(**raw['sampler_settings']),
             simulation_settings=SimulationSettings(**raw['simulation_settings']),
