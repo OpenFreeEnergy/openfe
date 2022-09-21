@@ -77,6 +77,9 @@ class LigandAtomMapping(GufeTokenizable):
             annotations=json.loads(d['annotations'])
         )
 
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
     def __hash__(self):
         return hash((
             hash(self.molA), hash(self.molB),
