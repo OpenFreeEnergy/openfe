@@ -15,7 +15,6 @@ dependencies:
   - coverage
   - openff-toolkit
   - openff-units>=0.1.6
-  - openmmforcefields
   - click
   - openeye-toolkits
   - typing-extensions
@@ -24,4 +23,5 @@ dependencies:
   - perses
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://https://github.com/openmm/openmmforcefields@main
     - plugcli
