@@ -25,7 +25,7 @@ import json
 import numpy as np
 import openmm
 from openff.units import unit
-from openff.units.openmm import to_openmm
+from openff.units.openmm import to_openmm, ensure_quantity
 import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
@@ -834,12 +834,12 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                                            pdbfile._openmm_pos)
             stateA_modeller.add(
                 stateA_openff_ligand.to_topology().to_openmm(),
-                to_openmm(stateA_openff_ligand.conformers[0]),
+                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
             )
         else:
             stateA_modeller = app.Modeller(
                 stateA_openff_ligand.to_topology().to_openmm(),
-                to_openmm(stateA_openff_ligand.conformers[0]),
+                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
             )
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with
