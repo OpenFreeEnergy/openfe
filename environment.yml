@@ -23,5 +23,5 @@ dependencies:
   - perses
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://https://github.com/openmm/openmmforcefields@main
+    - git+https://github.com/openmm/openmmforcefields@main
     - plugcli
