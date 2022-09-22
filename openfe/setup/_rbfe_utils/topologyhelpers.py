@@ -15,11 +15,17 @@ def combined_topology(topology1, topology2, exclude_chains=None):
     """
     Create a new topology combining these two topologies.
 
+    The box information from the *first* topology will be copied over
+
     Parameters
     ----------
     topology1 : openmm.app.Topology
     topology2 : openmm.app.Topology
-    exlcude_chains : Iterable[openmm.app.topology.Chain]
+    exclude_chains : Iterable[openmm.app.topology.Chain]
+
+    Returns
+    -------
+    new : openmm.app.Topology
     """
     if exclude_chains is None:
         exclude_chains = []
@@ -30,7 +36,9 @@ def combined_topology(topology1, topology2, exclude_chains=None):
     chains = (chain for chain in itertools.chain(topology1.chains(),
                                                  topology2.chains())
               if chain not in exclude_chains)
-    excluded_atoms = set.union(set(chain.atoms) for chain in exclude_chains)
+    excluded_atoms = set(itertools.chain.from_iterable(
+        c.atoms() for c in exclude_chains)
+    )
 
     # add new copies of selected chains, residues, and atoms; keep mapping
     # of old atoms to new for adding bonds later
@@ -55,7 +63,7 @@ def combined_topology(topology1, topology2, exclude_chains=None):
 
     keep_bonds = (bond for bond in itertools.chain(topology1.bonds(),
                                                    topology2.bonds())
-                  if not (atoms_for_bond(bond) & removed_atoms))
+                  if not (atoms_for_bond(bond) & excluded_atoms))
 
     # add bonds to topology
     for bond in keep_bonds:
@@ -64,97 +72,10 @@ def combined_topology(topology1, topology2, exclude_chains=None):
                     bond.type,
                     bond.order)
 
-    return top
-
-
-def _append_topology(destination_topology, source_topology,
-                     exclude_residue_name=None):
-    """
-    Originally from Perses.
-
-    Add the source OpenMM Topology to the destination Topology.
-
-    Parameters
-    ----------
-    destination_topology : openmm.app.Topology
-        The Topology to which the contents of `source_topology` are to be
-        added.
-    source_topology : openmm.app.Topology
-        The Topology to be added.
-    exclude_residue_name : str, optional
-        Any residues matching this name are excluded.
-
-    Notes
-    -----
-    * Does not copy over periodic box vectors
-    """
-    if exclude_residue_name is None:
-        # something with 3 characters that is never a residue name
-        exclude_residue_name = "   "
-
-    new_atoms = {}
-    for chain in source_topology.chains():
-        new_chain = destination_topology.addChain(chain.id)
-        for residue in chain.residues():
-            # TODO: should we use complete residue names?
-            if (residue.name[:3] == exclude_residue_name[:3]):
-                continue
-            new_residue = destination_topology.addResidue(residue.name,
-                                                          new_chain,
-                                                          residue.id)
-            for atom in residue.atoms():
-                new_atom = destination_topology.addAtom(atom.name,
-                                                        atom.element,
-                                                        new_residue, atom.id)
-                new_atoms[atom] = new_atom
-    for bond in source_topology.bonds():
-        if ((bond[0].residue.name[:3] == exclude_residue_name[:3]) or
-                (bond[1].residue.name[:3] == exclude_residue_name[:3])):
-            continue
-        order = bond.order
-        destination_topology.addBond(new_atoms[bond[0]], new_atoms[bond[1]],
-                                     order=order)
-
-
-def append_new_topology_item(old_topology, new_topology,
-                             exclude_residue_name=None):
-    """
-    Create a "new" topology by appending the contents of ``new_topology`` to
-    the ``old_topology``.
-
-    Optionally exclude a given from ``old_topology`` on building.
-
-    Parameters
-    ----------
-    old_topology : openmm.app.Topology
-        Old topology to which the ``new_topology`` contents will be appended
-        to.
-    new_topology : openmm.app.Topology
-        New topology item to be appended to ``old_topology``.
-    exclude_residue_name : str, optional
-        Name of residue in ``old_topology`` to be excluded in building the
-        appended topology.
-
-    Returns
-    -------
-    appended_topology : openmm.app.Topology
-        Topology containing the combined old and new topology items, excluding
-        any residues which were defined in ``exclude_residue_name``.
-    """
-    # Create an empty topology
-    appended_topology = app.Topology()
-
-    # Append old topology to new topology, excluding residue as required
-    _append_topology(appended_topology, old_topology, exclude_residue_name)
-
-    # Now we append the contents of the new topology
-    _append_topology(appended_topology, new_topology)
-
     # Copy over the box vectors
-    appended_topology.setPeriodicBoxVectors(
-        old_topology.getPeriodicBoxVectors())
+    top.setPeriodicBoxVectors(topology1.getPeriodicBoxVectors())
 
-    return appended_topology
+    return top
 
 
 def _get_indices(topology, residue_name):

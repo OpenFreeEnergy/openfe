@@ -827,20 +827,25 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 smirnoff_stateB.generator)
 
         # 3. Model state A
+        stateA_ligand_topology = stateA_openff_ligand.to_topology().to_openmm()
         if 'protein' in stateA.components:
             pdbfile = stateA['protein']
             # TODO: Update to use new gufe protein
             stateA_modeller = app.Modeller(pdbfile._openmm_top, # forgive me
                                            pdbfile._openmm_pos)
             stateA_modeller.add(
-                stateA_openff_ligand.to_topology().to_openmm(),
+                stateA_ligand_topology,
                 ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
             )
         else:
             stateA_modeller = app.Modeller(
-                stateA_openff_ligand.to_topology().to_openmm(),
+                stateA_ligand_topology,
                 ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
             )
+        # make note of which chain id(s) the ligand is,
+        # we'll need this to swap it out later
+        stateA_ligand_nchains = stateA_ligand_topology.getNumChains()
+        stateA_ligand_chain_id = stateA_modeller.topology.getNumChains()
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with
         # `solvent_padding` from the solute to the edges of the box
@@ -908,10 +913,12 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         # 6.  Create OpenMM system + topology + positions for "B" system
         #  a. stateB topology from stateA (replace out the ligands)
-        stateB_topology = _rbfe_utils.topologyhelpers.append_new_topology_item(
+        stateB_topology = _rbfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             stateB_openff_ligand.to_topology().to_openmm(),
-            exclude_residue_name=stateA_openff_ligand.name,
+            # as we kept track as we added, we can slice the ligand out
+            # this isn't at the end because of solvents
+            exclude_chains=list(stateA_topology.chains())[stateA_ligand_chain_id - stateA_ligand_nchains:stateA_ligand_chain_id]
         )
 
         #  b. Create the system

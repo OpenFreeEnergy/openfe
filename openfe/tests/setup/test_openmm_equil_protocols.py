@@ -3,6 +3,9 @@
 import gufe
 import pytest
 from openff.units import unit
+from openff.units.openmm import ensure_quantity
+
+from openmm import app
 
 from openfe import setup
 from openfe.setup.methods import openmm
@@ -75,6 +78,31 @@ def benzene_to_toluene_mapping(benzene_modifications):
     molB = benzene_modifications['toluene']
 
     return next(mapper.suggest_mappings(molA, molB))
+
+
+def test_append_topology(benzene_complex_system, toluene_complex_system):
+    mod = app.Modeller(
+        benzene_complex_system['protein']._openmm_top,
+        benzene_complex_system['protein']._openmm_pos,
+    )
+    lig1 = benzene_complex_system['ligand'].to_openff()
+    mod.add(
+        lig1.to_topology().to_openmm(),
+        ensure_quantity(lig1.conformers[0], 'openmm'),
+    )
+
+    top1 = mod.topology
+
+    assert len(list(top1.atoms())) == 2625
+
+    lig2 = toluene_complex_system['ligand'].to_openff()
+
+    top2 = _rbfe_utils.topologyhelpers.combined_topology(
+        top1, lig2.to_topology().to_openmm(),
+        exclude_chains=list(top1.chains())[-1:],
+    )
+
+    assert len(list(top2.atoms())) == 2625 + 3  # added methyl
 
 
 def test_create_default_settings():
