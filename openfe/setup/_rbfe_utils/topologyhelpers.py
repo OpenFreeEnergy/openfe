@@ -5,9 +5,66 @@
 # LICENSE: MIT
 
 import warnings
+import itertools
 from copy import deepcopy
 import numpy as np
 from openmm import app, unit
+
+
+def combined_topology(topology1, topology2, exclude_chains=None):
+    """
+    Create a new topology combining these two topologies.
+
+    Parameters
+    ----------
+    topology1 : openmm.app.Topology
+    topology2 : openmm.app.Topology
+    exlcude_chains : Iterable[openmm.app.topology.Chain]
+    """
+    if exclude_chains is None:
+        exclude_chains = []
+
+    top = app.Topology()
+    # I couldn't resist bringing in itertools.chain, with so much chain
+    # going on here
+    chains = (chain for chain in itertools.chain(topology1.chains(),
+                                                 topology2.chains())
+              if chain not in exclude_chains)
+    excluded_atoms = set.union(set(chain.atoms) for chain in exclude_chains)
+
+    # add new copies of selected chains, residues, and atoms; keep mapping
+    # of old atoms to new for adding bonds later
+    old_to_new_atom_map = {}
+    for chain_id, chain in enumerate(chains):
+        # TODO: is chain ID int or str? I recall it being int in MDTraj....
+        new_chain = top.addChain(chain_id)
+        for residue in chain.residues():
+            new_res = top.addResidue(residue.name,
+                                     new_chain,
+                                     residue.id)
+            for atom in residue.atoms():
+                new_atom = top.addAtom(atom.name,
+                                       atom.element,
+                                       new_res,
+                                       atom.id)
+                old_to_new_atom_map[atom] = new_atom
+
+    # figure out which bonds to keep: drop any that involve removed atoms
+    def atoms_for_bond(bond):
+        return {bond.atom1, bond.atom2}
+
+    keep_bonds = (bond for bond in itertools.chain(topology1.bonds(),
+                                                   topology2.bonds())
+                  if not (atoms_for_bond(bond) & removed_atoms))
+
+    # add bonds to topology
+    for bond in keep_bonds:
+        top.addBond(old_to_new_atom_map[bond.atom1],
+                    old_to_new_atom_map[bond.atom2],
+                    bond.type,
+                    bond.order)
+
+    return top
 
 
 def _append_topology(destination_topology, source_topology,
