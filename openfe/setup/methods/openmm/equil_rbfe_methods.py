@@ -955,8 +955,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         #  d. Finally get the positions
         stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
-            old_positions=stateA_positions,
-            insert_positions=stateB_openff_ligand.conformers[0],
+            old_positions=ensure_quantity(stateA_positions, 'openmm'),
+            insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
             shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
             tolerance=settings.alchemical_settings.atom_overlap_tolerance
         )
