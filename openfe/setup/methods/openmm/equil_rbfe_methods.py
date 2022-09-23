@@ -440,6 +440,7 @@ class RelativeLigandTransformSettings(BaseModel):
     def _gufe_tokenize(self):
         return serialise_pydantic(self)
 
+
 def serialise_pydantic(settings: RelativeLigandTransformSettings):
     def serialise_unit(thing):
         # this gets called when a thing can't get jsonified by pydantic
@@ -448,6 +449,7 @@ def serialise_pydantic(settings: RelativeLigandTransformSettings):
             raise TypeError
         return '__Quantity__' + str(thing)
     return settings.json(encoder=serialise_unit)
+
 
 def deserialise_pydantic(raw: str) -> RelativeLigandTransformSettings:
     def undo_mash(d):
@@ -462,6 +464,15 @@ def deserialise_pydantic(raw: str) -> RelativeLigandTransformSettings:
     dct = undo_mash(dct)
 
     return RelativeLigandTransformSettings(**dct)
+
+
+def _get_resname(off_mol) -> str:
+    # behaviour changed between 0.10 and 0.11
+    omm_top = off_mol.to_topology().to_openmm()
+    names = [r.name for r in omm_top.residues()]
+    if len(names) > 1:
+        raise ValueError("We assume single residue")
+    return names[0]
 
 
 class RelativeLigandTransformResult(gufe.ProtocolResult):
@@ -935,8 +946,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
             mapping.molA_to_molB,
-            stateA_system, stateA_topology, stateA_openff_ligand.name,
-            stateB_system, stateB_topology, stateB_openff_ligand.name,
+            stateA_system, stateA_topology, _get_resname(stateA_openff_ligand),
+            stateB_system, stateB_topology, _get_resname(stateB_openff_ligand),
             # These are non-optional settings for this method
             fix_constraints=True,
         )
