@@ -27,7 +27,7 @@ def quickrun(transformation):
 
     print(f"dG = {estimate} ± {uncertainty}\n")
     print("Additional information:")
-    for result in result.protocol_unit_results:
+    for result in prot_result.protocol_unit_results:
         print(f"{result.name}:")
         print(result.outputs)
 
