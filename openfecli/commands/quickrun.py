@@ -16,18 +16,23 @@ def quickrun(transformation):
     """
     import gufe
     from gufe.protocols.protocoldag import execute
+    print("Loading file...")
     dct = json.load(transformation)
     trans = gufe.Transformation.from_dict(dct)
+    print("Planning the campaign...")
     dag = trans.create()
+    print("Running the campaign...")
     dagresult = execute(dag)
+    print("Done! Analyzing the results....")
 
     prot_result = trans.protocol.gather([dagresult])
     estimate = prot_result.get_estimate()
     uncertainty = prot_result.get_uncertainty()
 
-    print(f"dG = {estimate} ± {uncertainty}\n")
+
+    print(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
     print("Additional information:")
-    for result in prot_result.protocol_unit_results:
+    for result in dagresult.protocol_unit_results:
         print(f"{result.name}:")
         print(result.outputs)
 
