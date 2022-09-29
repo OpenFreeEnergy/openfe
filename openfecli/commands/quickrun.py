@@ -8,22 +8,25 @@ import json
 
 @click.command(
     'quickrun',
-    short_help="Run an edge from a saved DAG file"
+    short_help="Run a given transformation, saved as a JSON file"
 )
-@click.argument('dagfile', type=click.File(mode='r'))
-@click.option('-o', '--outfile', type=click.File(mode='w'))
-def quickrun(dagfile, outfile):
-    """Run (in serial) the DAG associated with a given edge.
+@click.argument('transformation', type=click.File(mode='r'))
+def quickrun(transformation):
+    """Run (in serial) the given transformation.
     """
-    from gufe.protocols.protocoldag import execute, ProtocolDAG
-    dct = json.load(dagfile)
-    dag = ProtocolDAG.from_dict(dct)
-    result = execute(dag)
+    import gufe
+    from gufe.protocols.protocoldag import execute
+    dct = json.load(transformation)
+    trans = gufe.Transformation.from_dict(dct)
+    dag = trans.create()
+    dagresult = execute(dag)
 
-    # currently pathlib.Path can't be serialized
-    # outfile.write(json.dumps(result.to_dict()))
+    prot_result = trans.protocol.gather([dagresult])
+    estimate = prot_result.get_estimate()
+    uncertainty = prot_result.get_uncertainty()
 
-    # remove these once we can serialize things
+    print(f"dG = {estimate} ± {uncertainty}\n")
+    print("Additional information:")
     for result in result.protocol_unit_results:
         print(f"{result.name}:")
         print(result.outputs)
