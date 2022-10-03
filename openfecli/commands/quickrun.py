@@ -10,9 +10,18 @@ import json
     'quickrun',
     short_help="Run a given transformation, saved as a JSON file"
 )
-@click.argument('transformation', type=click.File(mode='r'))
+@click.argument('transformation', type=click.File(mode='r'),
+                required=True)
 def quickrun(transformation):
-    """Run (in serial) the given transformation.
+    """Run the transformation (edge) in the given JSON file in serial.
+
+    To save a transformation as JSON, use the following Python recipe (after
+    creating the transformation):
+
+    \b
+        import json
+        with open(filename, 'w') as f:
+            json.dump(transformation.to_dict(), f)
     """
     import gufe
     from gufe.protocols.protocoldag import execute
