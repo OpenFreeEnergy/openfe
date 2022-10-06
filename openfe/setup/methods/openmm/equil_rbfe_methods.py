@@ -840,10 +840,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # 3. Model state A
         stateA_ligand_topology = stateA_openff_ligand.to_topology().to_openmm()
         if 'protein' in stateA.components:
-            pdbfile = stateA['protein']
-            # TODO: Update to use new gufe protein
-            stateA_modeller = app.Modeller(pdbfile._openmm_top, # forgive me
-                                           pdbfile._openmm_pos)
+            pdbfile: gufe.ProteinComponent = stateA['protein']
+            stateA_modeller = app.Modeller(pdbfile.to_openmm_topology(),
+                                           pdbfile.to_openmm_positions())
             stateA_modeller.add(
                 stateA_ligand_topology,
                 ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
