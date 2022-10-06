@@ -505,30 +505,39 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         * Check this holds up completely for SAMS.
         """
         dGs = []
-        weights = []
+        #weights = []
 
         for analyzer in self._analyzers:
+            # this returns:
+            # (matrix of) estimated free energy difference
+            # (matrix of) estimated statistical uncertainty (one S.D.)
             dG, _ = analyzer.get_free_energy()
             dG = (dG[0, -1] * analyzer.kT).in_units_of(
                 omm_unit.kilocalories_per_mole)
 
             # hack to get simulation length in uncorrelated samples
-            weight = analyzer._get_equilibration_data()[2]
+            #weight = analyzer._get_equilibration_data()[2]
 
             dGs.append(dG)
-            weights.append(weight)
+            #weights.append(weight)
 
-        return np.average(dGs, weights=weights)
+        return np.average(dGs)  #, weights=weights)
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
-        # https: // en.wikipedia.org / wiki / Inverse - variance_weighting ?
-        raise NotImplementedError()
-        _, error = self._analyzer.get_free_energy()
-        error = (error[0, -1] * self._analyzer.kT).in_units_of(
-            omm_unit.kilocalories_per_mole)
+        dGs = []
 
-        return error
+        for analyzer in self._analyzers:
+            # this returns:
+            # (matrix of) estimated free energy difference
+            # (matrix of) estimated statistical uncertainty (one S.D.)
+            dG, _ = analyzer.get_free_energy()
+            dG = (dG[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole)
+
+            dGs.append(dG)
+
+        return np.std(dGs)
 
     def get_rate_of_convergence(self):
         return 0
@@ -590,7 +599,7 @@ class RelativeLigandTransform(gufe.Protocol):
         if mapping is None:
             raise ValueError("`mapping` is required for this Protocol")
         if extend_from:
-            raise NotImplementedError
+            raise NotImplementedError("Can't extend simulations yet")
 
         # our DAG has no dependencies, so just list units
         units = [RelativeLigandTransformUnit(stateA=stateA, stateB=stateB, ligandmapping=mapping,
