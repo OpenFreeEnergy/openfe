@@ -1062,8 +1062,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         )
 
         # 12. Create sampler
-        # TODO: leave the if/elif branch for now, eventually we need to split
-        # this protocol up
         sampler_settings = settings.sampler_settings
         
         if sampler_settings.sampler_method.lower() == "repex":
