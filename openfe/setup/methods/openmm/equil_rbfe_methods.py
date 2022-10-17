@@ -1025,10 +1025,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            basepath / settings.simulation_settings.output_filename,
+            storage=basepath / settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=settings.simulation_settings.checkpoint_interval.m,
-            # TODO: How are checkpoints used?  This is optional, so what does it default to?
             checkpoint_storage=settings.simulation_settings.checkpoint_storage,
         )
 
@@ -1127,9 +1126,14 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
+            nc = basepath / settings.simulation_settings.output_filename
+            chk = settings.simulation_settings.checkpoint_storage
+            if chk is None:
+                chk = nc.removesuffix('.nc') + '_checkpoint.nc'
+
             return {
-                'nc': basepath / settings.simulation_settings.output_filename,
-                'last_checkpoint': basepath / settings.simulation_settings.checkpoint_storage,
+                'nc': nc,
+                'last_checkpoint': chk,
             }
         else:
             # clean up the reporter file
