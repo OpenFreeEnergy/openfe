@@ -36,6 +36,7 @@ from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 import pathlib
 from typing import Any, Iterable
 import openmmtools
+import uuid
 
 from openfe.setup import (
     ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
@@ -749,7 +750,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             **dct
         )
 
-    def run(self, dry=False, verbose=True, basepath=None) -> Union[bool, Exception]:
+    def run(self, dry=False, verbose=True, basepath=None) -> dict[str, Any]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -767,8 +768,8 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        bool
-          True if everything went well.
+        dict
+          outputs created in the basepath directory
 
         Raises
         ------
@@ -1126,25 +1127,32 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
-            return True
+            return {
+                'nc': basepath / settings.simulation_settings.output_filename,
+                'last_checkpoint': basepath / settings.simulation_settings.checkpoint_storage,
+            }
         else:
             # clean up the reporter file
             fn = settings.simulation_settings.output_filename
             os.remove(fn)
-            return True
+            return {}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
+        # create directory for *this* unit within the context of the *DAG*
+        # stops output files mashing into each other within a DAG
+        myid = uuid.uuid4()
+        mypath = os.path.join(ctx.shared, str(myid))
+        mypath.mkdir(parents=True, exist_ok=False)
+
         try:
-            self.run(basepath=ctx.shared)
+            outputs = self.run(basepath=mypath)
         except Exception as e:
             raise e
         else:
-            # TODO: Metadata here too?
             return {
                 'repeat_id': self.repeat_id,
                 'generation': self.generation,
-                'nc': os.path.join(ctx.shared,
-                                   self._inputs['settings'].simulation_settings.output_filename),
+                **outputs
             }
