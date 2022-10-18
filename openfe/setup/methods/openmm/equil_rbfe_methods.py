@@ -378,9 +378,8 @@ class SimulationSettings(BaseModel):
     checkpoint_interval : int * unit.timestep
       Frequency to write the checkpoint file. Default 50 * unit.timestep
     checkpoint_storage : str
-      Optional separate filename for the checkpoint file. Note, this should
-      not be a full path, just a filename. If None, the checkpoint will be
-      written to the same file as output_filename. Default None.
+      Separate filename for the checkpoint file. Note, this should
+      not be a full path, just a filename. Default 'rbfe_checkpoint.nc'
     """
     class Config:
         arbitrary_types_allowed = True
@@ -394,7 +393,7 @@ class SimulationSettings(BaseModel):
     output_indices = 'all'
     keep_ncfile: bool = False
     checkpoint_interval = 50 * unit.timestep
-    checkpoint_storage: Optional[str] = None
+    checkpoint_storage = 'rbfe_checkpoint.nc'
 
     @validator('equilibration_length', 'production_length')
     def is_time(cls, v):
@@ -1125,10 +1124,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
             nc = basepath / settings.simulation_settings.output_filename
-            chk = settings.simulation_settings.checkpoint_storage
-            if chk is None:
-                chk = nc.removesuffix('.nc') + '_checkpoint.nc'
-
+            chk = basepath / settings.simulation_settings.checkpoint_storage
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
@@ -1145,16 +1141,13 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # create directory for *this* unit within the context of the *DAG*
         # stops output files mashing into each other within a DAG
         myid = uuid.uuid4()
-        mypath = os.path.join(ctx.shared, str(myid))
+        mypath = pathlib.Path(os.path.join(ctx.shared, str(myid)))
         mypath.mkdir(parents=True, exist_ok=False)
 
-        try:
-            outputs = self.run(basepath=mypath)
-        except Exception as e:
-            raise e
-        else:
-            return {
-                'repeat_id': self.repeat_id,
-                'generation': self.generation,
-                **outputs
-            }
+        outputs = self.run(basepath=mypath)
+
+        return {
+            'repeat_id': self.repeat_id,
+            'generation': self.generation,
+            **outputs
+        }
