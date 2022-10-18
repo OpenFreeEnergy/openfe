@@ -70,7 +70,7 @@ class TestLigandAtomMappingSerialization:
     def test_file_roundtrip(self, benzene_phenol_mapping, tmpdir):
         with tmpdir.as_cwd():
             with open('tmpfile.json', 'w') as f:
-                f.write(benzene_phenol_mapping.to_json())
+                f.write(json.dumps(benzene_phenol_mapping.to_dict()))
 
             with open('tmpfile.json', 'r') as f:
                 d = json.load(f)

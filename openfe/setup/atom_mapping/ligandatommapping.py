@@ -1,8 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import gufe
-from gufe.tokenization import GufeTokenizable
 import json
+import gufe
 from typing import Any, Dict, List, Optional
 import numpy as np
 from numpy.typing import NDArray
@@ -11,7 +10,7 @@ from openfe.setup import SmallMoleculeComponent
 from openfe.utils.visualization import draw_mapping
 
 
-class LigandAtomMapping(GufeTokenizable):
+class LigandAtomMapping(gufe.AtomMapping):
     """Simple container with the mapping between two Molecules
 
     Attributes
@@ -35,8 +34,7 @@ class LigandAtomMapping(GufeTokenizable):
         molA_to_molB: Dict[int, int],
         annotations: Optional[Dict[str, Any]] = None,
     ):
-        self.molA = molA
-        self.molB = molB
+        super().__init__(molA, molB)
         self.molA_to_molB = molA_to_molB
 
         if annotations is None:
@@ -49,16 +47,42 @@ class LigandAtomMapping(GufeTokenizable):
     def _defaults(self):
         return {}
 
+    def _defaults(self):
+        return {}
+
+    @property
+    def molA(self):
+        return self.componentA
+
+    @property
+    def molB(self):
+        return self.componentB
+
+    def componentA_to_componentB(self):
+        return self.molA_to_molB
+
+    def componentB_to_componentA(self):
+        return {v: k for k, v in self.molA_to_molB}
+
+    def componentA_unique(self):
+        return (i for i in range(self.componentA.to_rdkit().GetNumAtoms())
+                if i not in self.molA_to_molB)
+
+    def componentB_unique(self):
+        return (i for i in range(self.componentB.to_rdkit().GetNumAtoms())
+                if i not in self.molA_to_molB.values())
+
     @property
     def annotations(self):
         # return a copy (including copy of nested)
         return json.loads(json.dumps(self._annotations))
 
     def _to_dict(self):
+        """Serialize to dict"""
         return {
             # openff serialization doesn't go deep, so stringify at this level
-            'molA': json.dumps(self.molA.to_dict(), sort_keys=True),
-            'molB': json.dumps(self.molB.to_dict(), sort_keys=True),
+            'molA': json.dumps(self.componentA.to_dict(), sort_keys=True),
+            'molB': json.dumps(self.componentB.to_dict(), sort_keys=True),
             'molA_to_molB': self.molA_to_molB,
             'annotations': json.dumps(self.annotations),
         }
@@ -76,24 +100,6 @@ class LigandAtomMapping(GufeTokenizable):
             molA_to_molB=fixed,
             annotations=json.loads(d['annotations'])
         )
-
-    def to_json(self):
-        return json.dumps(self.to_dict())
-
-    def __hash__(self):
-        return hash((
-            hash(self.molA), hash(self.molB),
-            tuple(self.molA_to_molB.items()),
-            json.dumps(self.annotations, sort_keys=True),
-        ))
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return (self.molA == other.molA
-                and self.molB == other.molB
-                and self.molA_to_molB == other.molA_to_molB
-                and self._annotations == other.annotations)
 
     def __repr__(self):
         return (f"{self.__class__.__name__}(molA={self.molA!r}, "
