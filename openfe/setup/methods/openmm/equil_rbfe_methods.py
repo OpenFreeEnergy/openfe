@@ -540,7 +540,7 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         return np.std(dGs)
 
     def get_rate_of_convergence(self):
-        return 0
+        raise NotImplementedError
 
 
 class RelativeLigandTransform(gufe.Protocol):
