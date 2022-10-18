@@ -373,8 +373,6 @@ class SimulationSettings(BaseModel):
     output_indices : str
       Selection string for which part of the system to write coordinates for.
       Default 'all'.
-    keep_ncfile: bool
-      If to keep the entire timeseries of energies, default "False"
     checkpoint_interval : int * unit.timestep
       Frequency to write the checkpoint file. Default 50 * unit.timestep
     checkpoint_storage : str
@@ -391,7 +389,6 @@ class SimulationSettings(BaseModel):
     # reporter settings
     output_filename = 'rbfe.nc'
     output_indices = 'all'
-    keep_ncfile: bool = False
     checkpoint_interval = 50 * unit.timestep
     checkpoint_storage = 'rbfe_checkpoint.nc'
 
