@@ -601,11 +601,15 @@ class RelativeLigandTransform(gufe.Protocol):
         if extend_from:
             raise NotImplementedError("Can't extend simulations yet")
 
+        Aname = stateA['ligand'].name
+        Bname = stateB['ligand'].name
         # our DAG has no dependencies, so just list units
-        units = [RelativeLigandTransformUnit(stateA=stateA, stateB=stateB, ligandmapping=mapping,
-                                             settings=self.settings,
-                                             generation=0, repeat_id=i)
-                 for i in range(self.settings.sampler_settings.n_repeats)]
+        units = [RelativeLigandTransformUnit(
+            stateA=stateA, stateB=stateB, ligandmapping=mapping,
+            settings=self.settings,
+            generation=0, repeat_id=i,
+            name=f'{Aname} {Bname} repeat {i} generation 0')
+            for i in range(self.settings.sampler_settings.n_repeats)]
 
         return units
 
