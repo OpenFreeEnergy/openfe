@@ -47,9 +47,6 @@ class LigandAtomMapping(gufe.AtomMapping):
     def _defaults(self):
         return {}
 
-    def _defaults(self):
-        return {}
-
     @property
     def molA(self):
         return self.componentA
