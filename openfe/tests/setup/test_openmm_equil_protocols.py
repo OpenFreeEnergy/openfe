@@ -82,8 +82,8 @@ def benzene_to_toluene_mapping(benzene_modifications):
 
 def test_append_topology(benzene_complex_system, toluene_complex_system):
     mod = app.Modeller(
-        benzene_complex_system['protein']._openmm_top,
-        benzene_complex_system['protein']._openmm_pos,
+        benzene_complex_system['protein'].to_openmm_topology(),
+        benzene_complex_system['protein'].to_openmm_positions(),
     )
     lig1 = benzene_complex_system['ligand'].to_openff()
     mod.add(
@@ -156,7 +156,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        assert unit.run(dry=True)
+        assert unit.run(dry=True) == {}
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -178,7 +178,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     unit = list(dag.protocol_units)[0]
     # Returns True if everything is OK
     with tmpdir.as_cwd():
-        assert unit.run(dry=True)
+        assert unit.run(dry=True) == {}
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -200,7 +200,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     unit = list(dag.protocol_units)[0]
     # Returns True if everything is OK
     with tmpdir.as_cwd():
-        assert unit.run(dry=True)
+        assert unit.run(dry=True) == {}
 
 
 def test_lambda_schedule_default():
@@ -350,7 +350,7 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
                           benzene_to_toluene_mapping):
     # hack one protein to be labelled differently
     prot = toluene_complex_system['protein']
-    alt_prot = setup.ProteinComponent(prot._openmm_top, prot._openmm_pos,
+    alt_prot = setup.ProteinComponent(prot.to_rdkit(),
                                       name='Mickey Mouse')
     alt_toluene_complex_system = setup.ChemicalSystem(
                  {'ligand': toluene_complex_system['ligand'],
