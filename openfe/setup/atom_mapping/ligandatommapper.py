@@ -5,11 +5,12 @@ from typing import Iterable, Dict
 
 from openfe.setup import SmallMoleculeComponent
 from .ligandatommapping import LigandAtomMapping
+import gufe
 
 from openfe.utils.errors import ABSTRACT_ERROR_STRING
 
 
-class LigandAtomMapper:
+class LigandAtomMapper(gufe.AtomMapper):
     """Suggests AtomMappings for a pair of :class:`SmallMoleculeComponent`s.
 
     Subclasses will typically implement the ``_mappings_generator`` method,

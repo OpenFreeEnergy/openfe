@@ -19,10 +19,13 @@ from __future__ import annotations
 import os
 import logging
 
+from collections import defaultdict
+import gufe
+import json
 import numpy as np
 import openmm
 from openff.units import unit
-from openff.units.openmm import to_openmm
+from openff.units.openmm import to_openmm, ensure_quantity
 import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
@@ -30,13 +33,14 @@ from typing import Dict, List, Union, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
+import pathlib
+from typing import Any, Iterable
 import openmmtools
+import uuid
 
 from openfe.setup import (
-    ChemicalSystem, SmallMoleculeComponent, SolventComponent,
+    ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
 )
-from openfe.setup.atom_mapping import LigandAtomMapping
-from openfe.setup.methods import FEMethod
 from openfe.setup import _rbfe_utils
 
 logger = logging.getLogger(__name__)
@@ -193,6 +197,8 @@ class SamplerSettings(BaseModel):
     online_analysis_minimum_iterations : float
       Set number of iterations which must pass before online analysis is
       carried out. Default 50.
+    n_repeats : int
+      number of independent repeats to run.  Default 3
     flatness_criteria : str
       SAMS only. Method for assessing when to switch to asymptomatically
       optimal scheme.
@@ -221,6 +227,7 @@ class SamplerSettings(BaseModel):
     online_analysis_interval: Optional[int] = None
     online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
     online_analysis_minimum_iterations = 50
+    n_repeats: int = 3
     flatness_criteria = 'logZ-flatness'
     gamma0 = 1.0
     n_replicas = 11
@@ -319,18 +326,27 @@ class IntegratorSettings(BaseModel):
                       "n_restart_atttempts, constraint_tolerance must be "
                       "positive")
             raise ValueError(errmsg)
+        return v
 
     @validator('temperature')
     def is_temperature(cls, v):
         if not v.is_compatible_with(unit.kelvin):
             raise ValueError("Must be temperature value, e.g. use unit.kelvin")
+        return v
 
-    @validator('timestep', 'collision_rate')
+    @validator('timestep')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
-            errmsg = "timestep and collision_rate must be in time units"
-            raise ValueError(errmsg)
+            raise ValueError("timestep must be in time units "
+                             "(i.e. picoseconds)")
+        return v
+
+    @validator('collision_rate')
+    def must_be_inverse_time(cls, v):
+        if not v.is_compatible_with(1 / unit.picosecond):
+            raise ValueError("collision_rate must be in inverse time "
+                             "(i.e. 1/picoseconds)")
         return v
 
 
@@ -360,9 +376,8 @@ class SimulationSettings(BaseModel):
     checkpoint_interval : int * unit.timestep
       Frequency to write the checkpoint file. Default 50 * unit.timestep
     checkpoint_storage : str
-      Optional separate filename for the checkpoint file. Note, this should
-      not be a full path, just a filename. If None, the checkpoint will be
-      written to the same file as output_filename. Default None.
+      Separate filename for the checkpoint file. Note, this should
+      not be a full path, just a filename. Default 'rbfe_checkpoint.nc'
     """
     class Config:
         arbitrary_types_allowed = True
@@ -375,7 +390,7 @@ class SimulationSettings(BaseModel):
     output_filename = 'rbfe.nc'
     output_indices = 'all'
     checkpoint_interval = 50 * unit.timestep
-    checkpoint_storage: Optional[str] = None
+    checkpoint_storage = 'rbfe_checkpoint.nc'
 
     @validator('equilibration_length', 'production_length')
     def is_time(cls, v):
@@ -419,16 +434,61 @@ class RelativeLigandTransformSettings(BaseModel):
     # solvent model?
     solvent_padding = 1.2 * unit.nanometer
 
+    def _gufe_tokenize(self):
+        return serialise_pydantic(self)
 
-class RelativeLigandTransformResults:
+
+def serialise_pydantic(settings: RelativeLigandTransformSettings):
+    def serialise_unit(thing):
+        # this gets called when a thing can't get jsonified by pydantic
+        # for now only unit.Quantity fall foul of this requirement
+        if not isinstance(thing, unit.Quantity):
+            raise TypeError
+        return '__Quantity__' + str(thing)
+    return settings.json(encoder=serialise_unit)
+
+
+def deserialise_pydantic(raw: str) -> RelativeLigandTransformSettings:
+    def undo_mash(d):
+        for k, v in d.items():
+            if isinstance(v, str) and v.startswith('__Quantity__'):
+                d[k] = unit.Quantity(v[12:])  # 12==strlen ^^
+            elif isinstance(v, dict):
+                d[k] = undo_mash(v)
+        return d
+
+    dct = json.loads(raw)
+    dct = undo_mash(dct)
+
+    return RelativeLigandTransformSettings(**dct)
+
+
+def _get_resname(off_mol) -> str:
+    # behaviour changed between 0.10 and 0.11
+    omm_top = off_mol.to_topology().to_openmm()
+    names = [r.name for r in omm_top.residues()]
+    if len(names) > 1:
+        raise ValueError("We assume single residue")
+    return names[0]
+
+
+class RelativeLigandTransformResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeLigandTransform"""
-    def __init__(self, settings: RelativeLigandTransformSettings):
-        self._parent_settings = settings
-        fn = self._parent_settings.simulation_settings.output_filename
-        self._reporter = multistate.MultiStateReporter(fn)
-        self._analyzer = multistate.MultiStateSamplerAnalyzer(self._reporter)
+    def __init__(self, **data):
+        super().__init__(**data)
+        # TODO: Detect when we have extensions and stitch these together?
+        if any(len(files) > 2 for files in self.data['nc_files']):
+            raise NotImplementedError("Can't stitch together results yet")
 
-    def dG(self):
+        self._analyzers = []
+        for f in self.data['nc_files']:
+            nc = f[0]
+            reporter = multistate.MultiStateReporter(nc)
+            analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
+
+            self._analyzers.append(analyzer)
+
+    def get_estimate(self):
         """Free energy difference of this transformation
 
         Returns
@@ -441,104 +501,60 @@ class RelativeLigandTransformResults:
         ----
         * Check this holds up completely for SAMS.
         """
-        dG, _ = self._analyzer.get_free_energy()
-        dG = (dG[0, -1] * self._analyzer.kT).in_units_of(
-            omm_unit.kilocalories_per_mole)
+        dGs = []
+        #weights = []
 
-        return dG
+        for analyzer in self._analyzers:
+            # this returns:
+            # (matrix of) estimated free energy difference
+            # (matrix of) estimated statistical uncertainty (one S.D.)
+            dG, _ = analyzer.get_free_energy()
+            dG = (dG[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole)
 
-    def dG_error(self):
+            # hack to get simulation length in uncorrelated samples
+            #weight = analyzer._get_equilibration_data()[2]
+
+            dGs.append(dG)
+            #weights.append(weight)
+
+        return np.average(dGs)  #, weights=weights)
+
+    def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
-        _, error = self._analyzer.get_free_energy()
-        error = (error[0, -1] * self._analyzer.kT).in_units_of(
-            omm_unit.kilocalories_per_mole)
+        dGs = []
 
-        return error
+        for analyzer in self._analyzers:
+            # this returns:
+            # (matrix of) estimated free energy difference
+            # (matrix of) estimated statistical uncertainty (one S.D.)
+            dG, _ = analyzer.get_free_energy()
+            dG = (dG[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole)
+
+            dGs.append(dG)
+
+        return np.std(dGs)
+
+    def get_rate_of_convergence(self):
+        raise NotImplementedError
 
 
-class RelativeLigandTransform(FEMethod):
-    """Calculates the relative free energy of an alchemical ligand transformation.
+class RelativeLigandTransform(gufe.Protocol):
+    _results_cls = RelativeLigandTransformResult
 
-    """
-    _stateA: ChemicalSystem
-    _stateB: ChemicalSystem
-    _mapping: LigandAtomMapping
-    _settings: RelativeLigandTransformSettings
-    _is_complex: bool
+    def __init__(self, settings: RelativeLigandTransformSettings):
+        super().__init__(settings)
 
-    def __init__(self,
-                 stateA: ChemicalSystem,
-                 stateB: ChemicalSystem,
-                 ligandmapping: LigandAtomMapping,
-                 settings: RelativeLigandTransformSettings,
-                 ):
-        """
-        Parameters
-        ----------
-        stateA, stateB : ChemicalSystem
-          the two ligand SmallMoleculeComponents to transform between.  The
-          transformation will go from ligandA to ligandB.
-        ligandmapping : LigandAtomMapping
-          the mapping of atoms between the two ligand components
-        settings : RelativeLigandTransformSettings
-          the settings for the Method.  This can be constructed using the
-          get_default_settings classmethod to give a starting point that
-          can be updated to suit.
-
-        Notes
-        -----
-        The mapping used must not involve any elemental changes.  A check for
-        this is done on class creation.
-        """
-        self._stateA = stateA
-        self._stateB = stateB
-        self._mapping = ligandmapping
-        self._settings = settings
-
-        # Checks on the inputs!
-        # check that both states have solvent and ligand
-        for state, label in [(stateA, 'A'), (stateB, 'B')]:
-            if 'solvent' not in state.components:
-                nonbond = self._settings.system_settings.nonbonded_method
-                if nonbond != 'nocutoff':
-                    errmsg = f"{nonbond} cannot be used for vacuum transform"
-                    raise ValueError(errmsg)
-            if 'ligand' not in state.components:
-                raise ValueError(f"Missing ligand in state {label}")
-        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
-        if nproteins == 1:  # only one state has a protein defined
-            raise ValueError("Only one state had a protein component")
-        elif nproteins == 2:
-            if stateA['protein'] != stateB['protein']:
-                raise ValueError("Proteins in each state aren't compatible")
-        self._is_complex = nproteins == 2
-
-        # check that both states have same solvent
-        # TODO: defined box compatibility check
-        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
-        if 'solvent' in stateA.components:
-            if not stateA['solvent'] == stateB['solvent']:
-                raise ValueError("Solvents aren't identical between states")
-        # check that the mapping refers to the two ligand components
-        if stateA['ligand'] != ligandmapping.molA:
-            raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != ligandmapping.molB:
-            raise ValueError("Ligand in state B doesn't match mapping")
-        # check that the mapping doesn't involve element changes
-        # this is currently a requirement of the method
-        molA = ligandmapping.molA.to_rdkit()
-        molB = ligandmapping.molB.to_rdkit()
-        for i, j in ligandmapping.molA_to_molB.items():
-            atomA = molA.GetAtomWithIdx(i)
-            atomB = molB.GetAtomWithIdx(j)
-            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                raise ValueError(
-                    f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+    def _to_dict(self):
+        return {'settings': serialise_pydantic(self.settings)}
 
     @classmethod
-    def get_default_settings(cls) -> RelativeLigandTransformSettings:
+    def _from_dict(cls, dct: Dict):
+        return cls(settings=deserialise_pydantic(dct['settings']))
+
+    @classmethod
+    def _default_settings(cls) -> RelativeLigandTransformSettings:
         """A dictionary of initial settings for this creating this Protocol
 
         These settings are intended as a suitable starting point for creating
@@ -569,26 +585,173 @@ class RelativeLigandTransform(FEMethod):
             )
         )
 
-    def to_dict(self) -> dict:
-        """Serialize to dict representation"""
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: LigandAtomMapping = None,
+        extend_from: Optional[gufe.ProtocolDAGResult] = None,
+    ) -> list[gufe.ProtocolUnit]:
+        # TODO: Extensions?
+        if mapping is None:
+            raise ValueError("`mapping` is required for this Protocol")
+        if extend_from:
+            raise NotImplementedError("Can't extend simulations yet")
+
+        # Checks on the inputs!
+        # 1) check that both states have solvent and ligand
+        for state, label in [(stateA, 'A'), (stateB, 'B')]:
+            if 'solvent' not in state.components:
+                nonbond = self.settings.system_settings.nonbonded_method
+                if nonbond != 'nocutoff':
+                    errmsg = f"{nonbond} cannot be used for vacuum transform"
+                    raise ValueError(errmsg)
+            if 'ligand' not in state.components:
+                raise ValueError(f"Missing ligand in state {label}")
+        # 1b) check xnor have Protein component
+        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
+        if nproteins == 1:  # only one state has a protein defined
+            raise ValueError("Only one state had a protein component")
+        elif nproteins == 2:
+            if stateA['protein'] != stateB['protein']:
+                raise ValueError("Proteins in each state aren't compatible")
+
+        # 2) check that both states have same solvent
+        # TODO: defined box compatibility check
+        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
+        if 'solvent' in stateA.components:
+            if not stateA['solvent'] == stateB['solvent']:
+                raise ValueError("Solvents aren't identical between states")
+        # check that the mapping refers to the two ligand components
+        if stateA['ligand'] != mapping.molA:
+            raise ValueError("Ligand in state A doesn't match mapping")
+        if stateB['ligand'] != mapping.molB:
+            raise ValueError("Ligand in state B doesn't match mapping")
+        # 3) check that the mapping doesn't involve element changes
+        # this is currently a requirement of the method
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+        for i, j in mapping.molA_to_molB.items():
+            atomA = molA.GetAtomWithIdx(i)
+            atomB = molB.GetAtomWithIdx(j)
+            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
+                raise ValueError(
+                    f"Element change in mapping between atoms "
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+
+        # actually create and return Units
+        Aname = stateA['ligand'].name
+        Bname = stateB['ligand'].name
+        # our DAG has no dependencies, so just list units
+        units = [RelativeLigandTransformUnit(
+            stateA=stateA, stateB=stateB, ligandmapping=mapping,
+            settings=self.settings,
+            generation=0, repeat_id=i,
+            name=f'{Aname} {Bname} repeat {i} generation 0')
+            for i in range(self.settings.sampler_settings.n_repeats)]
+
+        return units
+
+    def _gather(
+        self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
+    ) -> Dict[str, Any]:
+        # result units will have a repeat_id and generation
+        # first group according to repeat_id
+        repeats = defaultdict(list)
+        for d in protocol_dag_results:
+            for pu in d.protocol_unit_results:
+                rep = pu.outputs['repeat_id']
+                gen = pu.outputs['generation']
+
+                repeats[rep].append((gen, pu.outputs['nc']))
+        data = []
+        for rep in sorted(repeats.items()):
+            # then sort within a repeat according to generation
+            nc_files = [ncpath for gen, ncpath in sorted(rep)]
+            data.append(nc_files)
+
         return {
-            'stateA': self._stateA.to_dict(),
-            'stateB': self._stateB.to_dict(),
-            'mapping': self._mapping.to_dict(),
-            'settings': dict(self._settings),
+            'nc_files': data,
+        }
+
+
+class RelativeLigandTransformUnit(gufe.ProtocolUnit):
+    """Calculates the relative free energy of an alchemical ligand transformation.
+
+    """
+    _stateA: ChemicalSystem
+    _stateB: ChemicalSystem
+    _mapping: LigandAtomMapping
+    _settings: RelativeLigandTransformSettings
+    generation: int
+    repeat_id: int
+    name: str
+
+    def __init__(self, *,
+                 stateA: ChemicalSystem,
+                 stateB: ChemicalSystem,
+                 ligandmapping: LigandAtomMapping,
+                 settings: RelativeLigandTransformSettings,
+                 name: Optional[str] = None,
+                 generation: int = 0,
+                 repeat_id: int = 0,
+                 ):
+        """
+        Parameters
+        ----------
+        stateA, stateB : ChemicalSystem
+          the two ligand SmallMoleculeComponents to transform between.  The
+          transformation will go from ligandA to ligandB.
+        ligandmapping : LigandAtomMapping
+          the mapping of atoms between the two ligand components
+        settings : RelativeLigandTransformSettings
+          the settings for the Method.  This can be constructed using the
+          get_default_settings classmethod to give a starting point that
+          can be updated to suit.
+        name : str, optional
+          human-readable identifier for this Unit
+        repeat_id : int, optional
+          identifier for which repeat (aka replica/clone) this Unit is,
+          default 0
+        generation : int, optional
+          counter for how many times this repeat has been extended, default 0
+
+        Notes
+        -----
+        The mapping used must not involve any elemental changes.  A check for
+        this is done on class creation.
+        """
+        super().__init__(
+            name=name,
+            stateA=stateA,
+            stateB=stateB,
+            mapping=ligandmapping,
+            settings=settings,
+        )
+        self.repeat_id = repeat_id
+        self.generation = generation
+
+    def _to_dict(self):
+        return {
+            'inputs': self.inputs,
+            'generation': self.generation,
+            'repeat_id': self.repeat_id,
+            'name': self.name,
         }
 
     @classmethod
-    def from_dict(cls, d: dict):
-        """Deserialize from a dict representation"""
+    def _from_dict(cls, dct: Dict):
+        dct['_settings'] = deserialise_pydantic(dct['_settings'])
+
+        inps = dct.pop('inputs')
+
         return cls(
-            stateA=ChemicalSystem.from_dict(d['stateA']),
-            stateB=ChemicalSystem.from_dict(d['stateB']),
-            ligandmapping=LigandAtomMapping.from_dict(d['mapping']),
-            settings=RelativeLigandTransformSettings(**d['settings']),
+            **inps,
+            **dct
         )
 
-    def run(self, dry=False, verbose=True) -> bool:
+    def run(self, dry=False, verbose=True, basepath=None) -> dict[str, Any]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -601,22 +764,36 @@ class RelativeLigandTransform(FEMethod):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
+        basepath : Pathlike, optional
+          where to run the calculation, defaults to current working directory
 
         Returns
         -------
-        bool
-          True if everything went well.
+        dict
+          outputs created in the basepath directory
+
+        Raises
+        ------
+        error
+          exception if anything failed
         """
         if verbose:
             logger.info("creating hybrid system")
+        if basepath is None:
+            # use cwd
+            basepath = pathlib.Path('.')
 
         # 0. General setup and settings dependency resolution step
 
         # a. check equilibration and production are divisible by n_steps
+        settings = self._inputs['settings']
+        stateA = self._inputs['stateA']
+        stateB = self._inputs['stateB']
+        mapping = self._inputs['mapping']
 
-        sim_settings = self._settings.simulation_settings
-        timestep = self._settings.integrator_settings.timestep
-        mc_steps = self._settings.integrator_settings.n_steps.m
+        sim_settings = settings.simulation_settings
+        timestep = settings.integrator_settings.timestep
+        mc_steps = settings.integrator_settings.n_steps.m
 
         equil_time = sim_settings.equilibration_length.to('femtosecond')
         equil_steps = round(equil_time / timestep)
@@ -638,24 +815,24 @@ class RelativeLigandTransform(FEMethod):
             raise ValueError(errmsg)
 
         # b. get the openff objects for the ligands
-        stateA_openff_ligand = self._stateA['ligand'].to_openff()
-        stateB_openff_ligand = self._stateB['ligand'].to_openff()
+        stateA_openff_ligand = stateA['ligand'].to_openff()
+        stateB_openff_ligand = stateB['ligand'].to_openff()
 
         #  1. Get smirnoff template generators
         smirnoff_stateA = SMIRNOFFTemplateGenerator(
-            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            forcefield=settings.topology_settings.forcefield['ligand'],
             molecules=[stateA_openff_ligand],
         )
 
         smirnoff_stateB = SMIRNOFFTemplateGenerator(
-            forcefield=self._settings.topology_settings.forcefield['ligand'],
+            forcefield=settings.topology_settings.forcefield['ligand'],
             molecules=[stateB_openff_ligand],
         )
 
         # 2. Create forece fields and register them
         #  a. state A
         omm_forcefield_stateA = app.ForceField(
-            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+            *[ff for (comp, ff) in settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
 
@@ -664,40 +841,44 @@ class RelativeLigandTransform(FEMethod):
 
         #  b. state B
         omm_forcefield_stateB = app.ForceField(
-            *[ff for (comp, ff) in self._settings.topology_settings.forcefield.items()
+            *[ff for (comp, ff) in settings.topology_settings.forcefield.items()
               if not comp == 'ligand']
         )
 
         omm_forcefield_stateB.registerTemplateGenerator(
                 smirnoff_stateB.generator)
 
-
         # 3. Model state A
-        if 'protein' in self._stateA.components:
-            pdbfile = self._stateA['protein']
-            stateA_modeller = app.Modeller(pdbfile._openmm_top, # forgive me
-                                           pdbfile._openmm_pos)
+        stateA_ligand_topology = stateA_openff_ligand.to_topology().to_openmm()
+        if 'protein' in stateA.components:
+            pdbfile: gufe.ProteinComponent = stateA['protein']
+            stateA_modeller = app.Modeller(pdbfile.to_openmm_topology(),
+                                           pdbfile.to_openmm_positions())
             stateA_modeller.add(
-                stateA_openff_ligand.to_topology().to_openmm(),
-                stateA_openff_ligand.conformers[0],
+                stateA_ligand_topology,
+                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
             )
         else:
             stateA_modeller = app.Modeller(
-                stateA_openff_ligand.to_topology().to_openmm(),
-                stateA_openff_ligand.conformers[0],
+                stateA_ligand_topology,
+                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
             )
+        # make note of which chain id(s) the ligand is,
+        # we'll need this to swap it out later
+        stateA_ligand_nchains = stateA_ligand_topology.getNumChains()
+        stateA_ligand_chain_id = stateA_modeller.topology.getNumChains()
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with
         # `solvent_padding` from the solute to the edges of the box
-        if 'solvent' in self._stateA.components:
-            conc = self._stateA['solvent'].ion_concentration
-            pos = self._stateA['solvent'].positive_ion
-            neg = self._stateA['solvent'].negative_ion
+        if 'solvent' in stateA.components:
+            conc = stateA['solvent'].ion_concentration
+            pos = stateA['solvent'].positive_ion
+            neg = stateA['solvent'].negative_ion
 
             stateA_modeller.addSolvent(
                 omm_forcefield_stateA,
-                model=self._settings.topology_settings.solvent_model,
-                padding=to_openmm(self._settings.solvent_padding),
+                model=settings.topology_settings.solvent_model,
+                padding=to_openmm(settings.solvent_padding),
                 positiveIon=pos, negativeIon=neg,
                 ionicStrength=to_openmm(conc),
             )
@@ -710,7 +891,7 @@ class RelativeLigandTransform(FEMethod):
             'cutoffnonperiodic': app.CutoffNonPeriodic,
             'cutoffperiodic': app.CutoffPeriodic,
             'ewald': app.Ewald
-        }[self._settings.system_settings.nonbonded_method.lower()]
+        }[settings.system_settings.nonbonded_method.lower()]
 
         #  b. Get the constraint method
         constraints = {
@@ -719,17 +900,17 @@ class RelativeLigandTransform(FEMethod):
             'allbonds': app.AllBonds,
             'hangles': app.HAngles
             # vvv can be None so string it
-        }[str(self._settings.system_settings.constraints).lower()]
+        }[str(settings.system_settings.constraints).lower()]
 
         #  c. create the stateA System
         stateA_system = omm_forcefield_stateA.createSystem(
             stateA_modeller.topology,
             nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
+            nonbondedCutoff=to_openmm(settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
-            rigidWater=self._settings.system_settings.rigid_water,
-            hydrogenMass=self._settings.system_settings.hydrogen_mass,
-            removeCMMotion=self._settings.system_settings.remove_com,
+            rigidWater=settings.system_settings.rigid_water,
+            hydrogenMass=settings.system_settings.hydrogen_mass,
+            removeCMMotion=settings.system_settings.remove_com,
         )
 
         #  d. crate stateA topology
@@ -753,28 +934,30 @@ class RelativeLigandTransform(FEMethod):
 
         # 6.  Create OpenMM system + topology + positions for "B" system
         #  a. stateB topology from stateA (replace out the ligands)
-        stateB_topology = _rbfe_utils.topologyhelpers.append_new_topology_item(
+        stateB_topology = _rbfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             stateB_openff_ligand.to_topology().to_openmm(),
-            exclude_residue_name=stateA_openff_ligand.name,
+            # as we kept track as we added, we can slice the ligand out
+            # this isn't at the end because of solvents
+            exclude_chains=list(stateA_topology.chains())[stateA_ligand_chain_id - stateA_ligand_nchains:stateA_ligand_chain_id]
         )
 
         #  b. Create the system
         stateB_system = omm_forcefield_stateB.createSystem(
             stateB_topology,
             nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(self._settings.system_settings.nonbonded_cutoff),
+            nonbondedCutoff=to_openmm(settings.system_settings.nonbonded_cutoff),
             constraints=constraints,
-            rigidWater=self._settings.system_settings.rigid_water,
-            hydrogenMass=self._settings.system_settings.hydrogen_mass,
-            removeCMMotion=self._settings.system_settings.remove_com,
+            rigidWater=settings.system_settings.rigid_water,
+            hydrogenMass=settings.system_settings.hydrogen_mass,
+            removeCMMotion=settings.system_settings.remove_com,
         )
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
-            self._mapping.molA_to_molB,
-            stateA_system, stateA_topology, stateA_openff_ligand.name,
-            stateB_system, stateB_topology, stateB_openff_ligand.name,
+            mapping.molA_to_molB,
+            stateA_system, stateA_topology, _get_resname(stateA_openff_ligand),
+            stateB_system, stateB_topology, _get_resname(stateB_openff_ligand),
             # These are non-optional settings for this method
             fix_constraints=True,
         )
@@ -782,15 +965,15 @@ class RelativeLigandTransform(FEMethod):
         #  d. Finally get the positions
         stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
-            old_positions=stateA_positions,
-            insert_positions=stateB_openff_ligand.conformers[0],
+            old_positions=ensure_quantity(stateA_positions, 'openmm'),
+            insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
             shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
-            tolerance=self._settings.alchemical_settings.atom_overlap_tolerance
+            tolerance=settings.alchemical_settings.atom_overlap_tolerance
         )
 
         # 7. Create the hybrid topology
         #  a. Get alchemical settings
-        alchem_settings = self._settings.alchemical_settings
+        alchem_settings = settings.alchemical_settings
 
         #  b. Create the hybrid topology factory
         hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
@@ -810,12 +993,12 @@ class RelativeLigandTransform(FEMethod):
         )
 
         #  c. Add a barostat to the hybrid system
-        if 'solvent' in self._stateA.components:
+        if 'solvent' in stateA.components:
             hybrid_factory.hybrid_system.addForce(
                 openmm.MonteCarloBarostat(
-                    self._settings.barostat_settings.pressure.to(unit.bar).m,
-                    self._settings.integrator_settings.temperature.m,
-                    self._settings.barostat_settings.frequency.m,
+                    settings.barostat_settings.pressure.to(unit.bar).m,
+                    settings.integrator_settings.temperature.m,
+                    settings.barostat_settings.frequency.m,
                 )
             )
 
@@ -828,7 +1011,7 @@ class RelativeLigandTransform(FEMethod):
         )
 
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
-        n_replicas = self._settings.sampler_settings.n_replicas
+        n_replicas = settings.sampler_settings.n_replicas
         if n_replicas != len(lambdas.lambda_schedule):
             errmsg = (f"Number of replicas {n_replicas} "
                       f"does not equal the number of lambda windows "
@@ -838,20 +1021,20 @@ class RelativeLigandTransform(FEMethod):
         # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
         selection_indices = hybrid_factory.hybrid_topology.select(
-                self._settings.simulation_settings.output_indices
+                settings.simulation_settings.output_indices
         )
 
         #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            self._settings.simulation_settings.output_filename,
+            storage=basepath / settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=self._settings.simulation_settings.checkpoint_interval.m,
-            checkpoint_storage=self._settings.simulation_settings.checkpoint_storage,
+            checkpoint_interval=settings.simulation_settings.checkpoint_interval.m,
+            checkpoint_storage=settings.simulation_settings.checkpoint_storage,
         )
 
         # 10. Get platform and context caches
         platform = _rbfe_utils.compute.get_openmm_platform(
-            self._settings.engine_settings.compute_platform
+            settings.engine_settings.compute_platform
         )
 
         #  a. Create context caches (energy + sampler)
@@ -866,7 +1049,7 @@ class RelativeLigandTransform(FEMethod):
 
         # 11. Set the integrator
         #  a. get integrator settings
-        integrator_settings = self._settings.integrator_settings
+        integrator_settings = settings.integrator_settings
 
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
@@ -880,9 +1063,7 @@ class RelativeLigandTransform(FEMethod):
         )
 
         # 12. Create sampler
-        # TODO: leave the if/elif branch for now, eventually we need to split
-        # this protocol up
-        sampler_settings = self._settings.sampler_settings
+        sampler_settings = settings.sampler_settings
         
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rbfe_utils.multistate.HybridRepexSampler(
@@ -918,7 +1099,7 @@ class RelativeLigandTransform(FEMethod):
             reporter=reporter,
             platform=platform,
             lambda_protocol=lambdas,
-            temperature=to_openmm(self._settings.integrator_settings.temperature),
+            temperature=to_openmm(settings.integrator_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
         )
 
@@ -930,7 +1111,7 @@ class RelativeLigandTransform(FEMethod):
             if verbose:
                 logger.info("minimizing systems")
 
-            sampler.minimize(max_iterations=self._settings.simulation_settings.minimization_steps)
+            sampler.minimize(max_iterations=settings.simulation_settings.minimization_steps)
 
             # equilibrate
             if verbose:
@@ -944,28 +1125,31 @@ class RelativeLigandTransform(FEMethod):
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
-            return True
+            nc = basepath / settings.simulation_settings.output_filename
+            chk = basepath / settings.simulation_settings.checkpoint_storage
+            return {
+                'nc': nc,
+                'last_checkpoint': chk,
+            }
         else:
             # clean up the reporter file
-            fn = self._settings.simulation_settings.output_filename
+            fn = settings.simulation_settings.output_filename
             os.remove(fn)
-            return True
+            return {}
 
-    def is_complete(self) -> bool:
-        results_file = self._settings.simulation_settings.output_filename
+    def _execute(
+        self, ctx: gufe.Context, **kwargs,
+    ) -> dict[str, Any]:
+        # create directory for *this* unit within the context of the *DAG*
+        # stops output files mashing into each other within a DAG
+        myid = uuid.uuid4()
+        mypath = pathlib.Path(os.path.join(ctx.shared, str(myid)))
+        mypath.mkdir(parents=True, exist_ok=False)
 
-        # TODO: Can improve upon this by checking expected length of the
-        #       nc archive?
-        return os.path.exists(results_file)
+        outputs = self.run(basepath=mypath)
 
-    def get_results(self) -> RelativeLigandTransformResults:
-        """Return payload created by this workload
-
-        Raises
-        ------
-        ValueError
-          if the results do not exist yet
-        """
-        if not self.is_complete():
-            raise ValueError("Results have not been generated")
-        return RelativeLigandTransformResults(self._settings)
+        return {
+            'repeat_id': self.repeat_id,
+            'generation': self.generation,
+            **outputs
+        }
