@@ -598,6 +598,49 @@ class RelativeLigandTransform(gufe.Protocol):
         if extend_from:
             raise NotImplementedError("Can't extend simulations yet")
 
+        # Checks on the inputs!
+        # 1) check that both states have solvent and ligand
+        for state, label in [(stateA, 'A'), (stateB, 'B')]:
+            if 'solvent' not in state.components:
+                nonbond = self.settings.system_settings.nonbonded_method
+                if nonbond != 'nocutoff':
+                    errmsg = f"{nonbond} cannot be used for vacuum transform"
+                    raise ValueError(errmsg)
+            if 'ligand' not in state.components:
+                raise ValueError(f"Missing ligand in state {label}")
+        # 1b) check xnor have Protein component
+        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
+        if nproteins == 1:  # only one state has a protein defined
+            raise ValueError("Only one state had a protein component")
+        elif nproteins == 2:
+            if stateA['protein'] != stateB['protein']:
+                raise ValueError("Proteins in each state aren't compatible")
+
+        # 2) check that both states have same solvent
+        # TODO: defined box compatibility check
+        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
+        if 'solvent' in stateA.components:
+            if not stateA['solvent'] == stateB['solvent']:
+                raise ValueError("Solvents aren't identical between states")
+        # check that the mapping refers to the two ligand components
+        if stateA['ligand'] != mapping.molA:
+            raise ValueError("Ligand in state A doesn't match mapping")
+        if stateB['ligand'] != mapping.molB:
+            raise ValueError("Ligand in state B doesn't match mapping")
+        # 3) check that the mapping doesn't involve element changes
+        # this is currently a requirement of the method
+        molA = mapping.molA.to_rdkit()
+        molB = mapping.molB.to_rdkit()
+        for i, j in mapping.molA_to_molB.items():
+            atomA = molA.GetAtomWithIdx(i)
+            atomB = molB.GetAtomWithIdx(j)
+            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
+                raise ValueError(
+                    f"Element change in mapping between atoms "
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+
+        # actually create and return Units
         Aname = stateA['ligand'].name
         Bname = stateB['ligand'].name
         # our DAG has no dependencies, so just list units
@@ -688,48 +731,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         )
         self.repeat_id = repeat_id
         self.generation = generation
-
-        # TODO: Can probably put these pre flight checks into Protocol._create() ?
-        # Checks on the inputs!
-        # check that both states have solvent and ligand
-        for state, label in [(stateA, 'A'), (stateB, 'B')]:
-            if 'solvent' not in state.components:
-                nonbond = settings.system_settings.nonbonded_method
-                if nonbond != 'nocutoff':
-                    errmsg = f"{nonbond} cannot be used for vacuum transform"
-                    raise ValueError(errmsg)
-            if 'ligand' not in state.components:
-                raise ValueError(f"Missing ligand in state {label}")
-        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
-        if nproteins == 1:  # only one state has a protein defined
-            raise ValueError("Only one state had a protein component")
-        elif nproteins == 2:
-            if stateA['protein'] != stateB['protein']:
-                raise ValueError("Proteins in each state aren't compatible")
-
-        # check that both states have same solvent
-        # TODO: defined box compatibility check
-        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
-        if 'solvent' in stateA.components:
-            if not stateA['solvent'] == stateB['solvent']:
-                raise ValueError("Solvents aren't identical between states")
-        # check that the mapping refers to the two ligand components
-        if stateA['ligand'] != ligandmapping.molA:
-            raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != ligandmapping.molB:
-            raise ValueError("Ligand in state B doesn't match mapping")
-        # check that the mapping doesn't involve element changes
-        # this is currently a requirement of the method
-        molA = ligandmapping.molA.to_rdkit()
-        molB = ligandmapping.molB.to_rdkit()
-        for i, j in ligandmapping.molA_to_molB.items():
-            atomA = molA.GetAtomWithIdx(i)
-            atomB = molB.GetAtomWithIdx(j)
-            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                raise ValueError(
-                    f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
 
     def _to_dict(self):
         return {
