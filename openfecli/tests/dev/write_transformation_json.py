@@ -6,9 +6,9 @@ the old file can't be read.
 
 USAGE:
 
-    python write_transformation_json.py > transformation.json
+    python write_transformation_json.py > ../data/transformation.json
 
-Run from within this directory.
+(Assuming you run from within this directory.)
 """
 
 import gufe
