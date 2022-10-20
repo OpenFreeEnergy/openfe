@@ -4,5 +4,5 @@
 from .equil_rbfe_methods import (
     RelativeLigandTransform,
     RelativeLigandTransformSettings,
-    RelativeLigandTransformResults,
+    RelativeLigandTransformResult,
 )
