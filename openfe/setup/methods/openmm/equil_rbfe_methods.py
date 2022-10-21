@@ -541,7 +541,7 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
 
 
 class RelativeLigandTransform(gufe.Protocol):
-    _results_cls = RelativeLigandTransformResult
+    results_cls = RelativeLigandTransformResult
 
     def __init__(self, settings: RelativeLigandTransformSettings):
         super().__init__(settings)
