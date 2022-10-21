@@ -1135,6 +1135,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 'last_checkpoint': chk,
             }
         else:
+            # close reporter when you're done, prevent file handle clashes
+            sampler._reporter.close()
+
             # clean up the reporter file
             fns = [basepath / settings.simulation_settings.output_filename,
                    basepath / settings.simulation_settings.checkpoint_storage]
