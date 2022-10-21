@@ -1029,7 +1029,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             storage=basepath / settings.simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=settings.simulation_settings.checkpoint_interval.m,
-            checkpoint_storage=settings.simulation_settings.checkpoint_storage,
+            checkpoint_storage=basepath / settings.simulation_settings.checkpoint_storage,
         )
 
         # 10. Get platform and context caches
@@ -1133,8 +1133,10 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             }
         else:
             # clean up the reporter file
-            fn = settings.simulation_settings.output_filename
-            os.remove(fn)
+            fns = [basepath / settings.simulation_settings.output_filename,
+                   basepath / settings.simulation_settings.checkpoint_storage]
+            for fn in fns:
+                os.remove(fn)
             return {}
 
     def _execute(
