@@ -27,7 +27,8 @@ jobs:
       matrix:
         os: ['ubuntu', 'macos']
         python-version:
-          - 3.9
+          - "3.9"
+          - "3.10"
         old_offtk: [true, false]
 
     env:
