@@ -1124,6 +1124,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 logger.info("running production phase")
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+            
+            # close reporter when you're done
+            sampler._reporter.close()
 
             nc = basepath / settings.simulation_settings.output_filename
             chk = basepath / settings.simulation_settings.checkpoint_storage
