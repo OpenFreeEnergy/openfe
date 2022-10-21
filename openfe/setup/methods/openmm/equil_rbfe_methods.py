@@ -1137,7 +1137,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                    basepath / settings.simulation_settings.checkpoint_storage]
             for fn in fns:
                 os.remove(fn)
-            return True
+            return {}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
