@@ -517,8 +517,10 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
 
             dGs.append(dG)
             #weights.append(weight)
+            
+        avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
 
-        return np.average(dGs)  #, weights=weights)
+        return avg_val * dGs[0].unit
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
@@ -533,8 +535,10 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
                 omm_unit.kilocalories_per_mole)
 
             dGs.append(dG)
+        
+        std_val = np.std([i.value_in_unit(dGs[0].unit) for i in dGs])
 
-        return np.std(dGs)
+        return std_val * dGs[0].unit
 
     def get_rate_of_convergence(self):
         raise NotImplementedError
