@@ -477,13 +477,16 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
-        if any(len(files) > 2 for files in self.data['nc_files']):
+        if any(len(files['nc_paths']) > 2 for files in self.data['nc_files']):
             raise NotImplementedError("Can't stitch together results yet")
 
         self._analyzers = []
         for f in self.data['nc_files']:
-            nc = f[0]
-            reporter = multistate.MultiStateReporter(nc)
+            nc = f['nc_paths'][0]
+            chk = f['checkpoint_paths'][0]
+            reporter = multistate.MultiStateReporter(
+                           storage=nc,
+                           checkpoint_storage=chk)
             analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
 
             self._analyzers.append(analyzer)
@@ -668,12 +671,16 @@ class RelativeLigandTransform(gufe.Protocol):
                 rep = pu.outputs['repeat_id']
                 gen = pu.outputs['generation']
 
-                repeats[rep].append((gen, pu.outputs['nc']))
+                repeats[rep].append((
+                    gen, pu.outputs['nc'],
+                    pu.outputs['last_checkpoint']))
         data = []
         for rep in sorted(repeats.items()):
             # then sort within a repeat according to generation
-            nc_files = [ncpath for gen, ncpath in sorted(rep[1])]
-            data.append(nc_files)
+            nc_paths = [ncpath for gen, ncpath, nc_check in sorted(rep[1])]
+            chk_files = [nc_check for gen, ncpath, nc_check in sorted(rep[1])]
+            data.append({'nc_paths': nc_paths,
+                         'checkpoint_paths': chk_files})
 
         return {
             'nc_files': data,
