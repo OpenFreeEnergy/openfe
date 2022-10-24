@@ -12,10 +12,12 @@ USAGE:
 """
 
 import gufe
+import openfe
 import json
 
 from gufe.tests.conftest import benzene_modifications
 from gufe.tests.test_protocol import DummyProtocol
+from gufe.tokenization import JSON_HANDLER
 
 benzene_modifications = benzene_modifications.__pytest_wrapped__.obj()
 
@@ -30,14 +32,11 @@ solv_dict = {'solvent': solvent}
 solv_benz = gufe.ChemicalSystem(dict(**benz_dict, **solv_dict))
 solv_tol = gufe.ChemicalSystem(dict(**tol_dict, **solv_dict))
 
-mapping = None
-# waiting on AtomMapping being gufe tokenizable
-# mapper = openfe.setup.LomapAtomMapper()
-# mapping = list(mapper.suggest_mappings(benzene, toluene))[0]
+mapper = openfe.setup.LomapAtomMapper()
+mapping = list(mapper.suggest_mappings(benzene, toluene))[0]
 
 protocol = DummyProtocol()
 
 transformation = gufe.Transformation(solv_benz, solv_tol, protocol, mapping)
 
-# TODO: update to handle our encoder
-print(json.dumps(transformation.to_dict()))
+print(json.dumps(transformation.to_dict(), cls=JSON_HANDLER.encoder))
