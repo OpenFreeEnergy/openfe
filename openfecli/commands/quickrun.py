@@ -3,6 +3,7 @@
 
 import click
 from openfecli import OFECommandPlugin
+from openfecli.parameters.output import ensure_file_does_not_exist
 from openfecli.utils import write
 import json
 import pathlib
@@ -24,8 +25,10 @@ import pathlib
 )
 @click.option(
     'output', '-o', default=None,
-    type=click.File(mode='w'),
-    help="output file (JSON) for results"
+    type=click.Path(dir_okay=False, file_okay=True, writable=True,
+                    path_type=pathlib.Path),
+    help="output file (JSON format) for the final results",
+    callback=ensure_file_does_not_exist,
 )
 def quickrun(transformation, directory, output):
     """Run the transformation (edge) in the given JSON file in serial.
@@ -56,7 +59,7 @@ def quickrun(transformation, directory, output):
     uncertainty = prot_result.get_uncertainty()
 
     if output:
-        with output as outf:
+        with open(output, mode='w') as outf:
             json.dump(prot_result.to_dict(), outf, cls=JSON_HANDLER.encoder)
 
 
