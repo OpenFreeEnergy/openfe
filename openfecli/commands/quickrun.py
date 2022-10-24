@@ -38,8 +38,9 @@ def quickrun(transformation, directory, output):
 
     \b
         import json
+        from gufe.tokenization import JSON_HANDLER
         with open(filename, 'w') as f:
-            json.dump(transformation.to_dict(), f)
+            json.dump(transformation.to_dict(), f, cls=JSON_HANDLER.encoder)
     """
     import gufe
     from gufe.protocols.protocoldag import execute
