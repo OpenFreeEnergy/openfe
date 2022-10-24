@@ -1135,6 +1135,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 logger.info("running production phase")
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+            
+            # close reporter when you're done
+            reporter.close()
 
             nc = basepath / settings.simulation_settings.output_filename
             chk = basepath / settings.simulation_settings.checkpoint_storage
@@ -1143,6 +1146,9 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 'last_checkpoint': chk,
             }
         else:
+            # close reporter when you're done, prevent file handle clashes
+            reporter.close()
+
             # clean up the reporter file
             fns = [basepath / settings.simulation_settings.output_filename,
                    basepath / settings.simulation_settings.checkpoint_storage]
