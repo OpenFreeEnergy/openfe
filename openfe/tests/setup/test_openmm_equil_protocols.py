@@ -2,6 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gufe
 import pytest
+from unittest import mock
+import numpy as np
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
 
@@ -392,3 +394,59 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
             stateA=sys1, stateB=sys2,
             mapping=mapping,
         )
+
+
+@pytest.fixture
+def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapping):
+    settings = openmm.RelativeLigandTransform.default_settings()
+
+    protocol = openmm.RelativeLigandTransform(
+        settings=settings,
+    )
+
+    return protocol.create(
+        stateA=benzene_system, stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+
+
+def test_unit_tagging(solvent_protocol_dag):
+    # test that executing the Units includes correct generation and repeat info
+    units = solvent_protocol_dag.protocol_units
+
+    with mock.patch('openfe.setup.methods.openmm.equil_rbfe_methods.RelativeLigandTransformUnit.run',
+                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
+        results = []
+        for u in units:
+            ret = u.execute(shared='.')
+            results.append(ret)
+
+    repeats = set()
+    for ret in results:
+        assert isinstance(ret, gufe.ProtocolUnitResult)
+        assert ret.outputs['generation'] == 0
+        repeats.add(ret.outputs['repeat_id'])
+    assert repeats == {0, 1, 2}
+
+
+def test_gather(solvent_protocol_dag):
+    # check .gather behaves as expected
+    with mock.patch('openfe.setup.methods.openmm.equil_rbfe_methods.RelativeLigandTransformUnit.run',
+                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
+        dagres = gufe.protocols.execute(solvent_protocol_dag)
+
+    prot = openmm.RelativeLigandTransform(
+        settings=openmm.RelativeLigandTransform.default_settings()
+    )
+
+    with mock.patch('openfe.setup.methods.openmm.equil_rbfe_methods.multistate') as m:
+        res = prot.gather([dagres])
+
+        # check we created the expected number of Reporters and Analyzers
+        assert m.MultiStateReporter.call_count == 3
+        m.MultiStateReporter.assert_called_with(
+            storage='file.nc', checkpoint_storage='chk.nc',
+        )
+        assert m.MultiStateSamplerAnalyzer.call_count == 3
+
+    assert isinstance(res, openmm.RelativeLigandTransformResult)
