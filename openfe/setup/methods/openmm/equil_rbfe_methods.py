@@ -666,9 +666,9 @@ class RelativeLigandTransform(gufe.Protocol):
 
                 repeats[rep].append((gen, pu.outputs['nc']))
         data = []
-        for rep in sorted(repeats.values()):
+        for rep in sorted(repeats.items()):
             # then sort within a repeat according to generation
-            nc_files = [ncpath for gen, ncpath in sorted(rep)]
+            nc_files = [ncpath for gen, ncpath in sorted(rep[1])]
             data.append(nc_files)
 
         return {
