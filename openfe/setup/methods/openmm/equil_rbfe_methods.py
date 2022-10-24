@@ -1126,7 +1126,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
             
             # close reporter when you're done
-            sampler._reporter.close()
+            reporter.close()
 
             nc = basepath / settings.simulation_settings.output_filename
             chk = basepath / settings.simulation_settings.checkpoint_storage
@@ -1136,7 +1136,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             }
         else:
             # close reporter when you're done, prevent file handle clashes
-            sampler._reporter.close()
+            reporter.close()
 
             # clean up the reporter file
             fns = [basepath / settings.simulation_settings.output_filename,
