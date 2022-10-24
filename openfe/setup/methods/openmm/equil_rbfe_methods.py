@@ -477,13 +477,16 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
-        if any(len(files) > 2 for files in self.data['nc_files']):
+        if any(len(files['nc_paths']) > 2 for files in self.data['nc_files']):
             raise NotImplementedError("Can't stitch together results yet")
 
         self._analyzers = []
         for f in self.data['nc_files']:
-            nc = f[0]
-            reporter = multistate.MultiStateReporter(nc)
+            nc = f['nc_paths'][0]
+            chk = f['checkpoint_paths'][0]
+            reporter = multistate.MultiStateReporter(
+                           storage=nc,
+                           checkpoint_storage=chk)
             analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
 
             self._analyzers.append(analyzer)
@@ -517,8 +520,10 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
 
             dGs.append(dG)
             #weights.append(weight)
+            
+        avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
 
-        return np.average(dGs)  #, weights=weights)
+        return avg_val * dGs[0].unit
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
@@ -533,8 +538,10 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
                 omm_unit.kilocalories_per_mole)
 
             dGs.append(dG)
+        
+        std_val = np.std([i.value_in_unit(dGs[0].unit) for i in dGs])
 
-        return np.std(dGs)
+        return std_val * dGs[0].unit
 
     def get_rate_of_convergence(self):
         raise NotImplementedError
@@ -664,12 +671,16 @@ class RelativeLigandTransform(gufe.Protocol):
                 rep = pu.outputs['repeat_id']
                 gen = pu.outputs['generation']
 
-                repeats[rep].append((gen, pu.outputs['nc']))
+                repeats[rep].append((
+                    gen, pu.outputs['nc'],
+                    pu.outputs['last_checkpoint']))
         data = []
         for rep in sorted(repeats.items()):
             # then sort within a repeat according to generation
-            nc_files = [ncpath for gen, ncpath in sorted(rep)]
-            data.append(nc_files)
+            nc_paths = [ncpath for gen, ncpath, nc_check in sorted(rep[1])]
+            chk_files = [nc_check for gen, ncpath, nc_check in sorted(rep[1])]
+            data.append({'nc_paths': nc_paths,
+                         'checkpoint_paths': chk_files})
 
         return {
             'nc_files': data,
