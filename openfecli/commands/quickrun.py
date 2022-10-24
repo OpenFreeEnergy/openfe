@@ -60,7 +60,12 @@ def quickrun(transformation, directory, output):
 
     if output:
         with open(output, mode='w') as outf:
-            json.dump(prot_result.to_dict(), outf, cls=JSON_HANDLER.encoder)
+            out_dict = {
+                'estimate': estimate,
+                'uncertainty': uncertainty,
+                'result': prot_result.to_dict()
+            }
+            json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
 
     write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")

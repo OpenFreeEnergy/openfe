@@ -2,6 +2,7 @@ import pytest
 import click
 import importlib
 import pathlib
+import json
 from click.testing import CliRunner
 
 from openfecli.commands.quickrun import quickrun
@@ -14,6 +15,7 @@ def json_file():
         json_file = str(f)
 
     return json_file
+
 
 @pytest.mark.parametrize('extra_args', [
     {},
@@ -31,7 +33,12 @@ def test_quickrun(extra_args, json_file):
 
         if outfile := extra_args.get('-o'):
             assert pathlib.Path(outfile).exists()
+            with open(outfile, mode='r') as outf:
+                dct = json.load(outf)
 
+            assert set(dct) == {'estimate', 'uncertainty', 'result'}
+
+        # TODO: need a protocol that drops files to actually do this!
         # if directory := extra_args.get('-d'):
         #     dirpath = pathlib.Path(directory)
         #     assert dirpath.exists()
@@ -46,7 +53,3 @@ def test_quickrun_output_file_exists(json_file):
         result = runner.invoke(quickrun, [json_file, '-o', 'foo.json'])
         assert result.exit_code == 2  # usage error
         assert "File 'foo.json' already exists." in result.output
-
-
-def test_quickrun_output_dir_missing():
-    pytest.skip()
