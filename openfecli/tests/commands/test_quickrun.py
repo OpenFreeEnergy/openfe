@@ -6,6 +6,7 @@ import json
 from click.testing import CliRunner
 
 from openfecli.commands.quickrun import quickrun
+from gufe.tokenization import JSON_HANDLER
 
 
 @pytest.fixture
@@ -34,7 +35,7 @@ def test_quickrun(extra_args, json_file):
         if outfile := extra_args.get('-o'):
             assert pathlib.Path(outfile).exists()
             with open(outfile, mode='r') as outf:
-                dct = json.load(outf)
+                dct = json.load(outf, cls=JSON_HANDLER.decoder)
 
             assert set(dct) == {'estimate', 'uncertainty', 'result'}
 

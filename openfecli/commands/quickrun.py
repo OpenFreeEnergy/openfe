@@ -47,7 +47,7 @@ def quickrun(transformation, directory, output):
     from gufe.tokenization import JSON_HANDLER
 
     write("Loading file...")
-    dct = json.load(transformation)
+    dct = json.load(transformation, cls=JSON_HANDLER.decoder)
     trans = gufe.Transformation.from_dict(dct)
     write("Planning simulations for this edge...")
     dag = trans.create()
