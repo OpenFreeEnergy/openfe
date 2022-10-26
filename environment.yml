@@ -15,6 +15,7 @@ dependencies:
   - coverage
   - openff-toolkit
   - openff-units>=0.1.6
+  - pint==0.19.2
   - click
   - openeye-toolkits
   - typing-extensions
