@@ -84,5 +84,5 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           file: coverage.xml
-          fail_ci_if_error: True
+          fail_ci_if_error: False
           verbose: True
