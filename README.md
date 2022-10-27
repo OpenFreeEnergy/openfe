@@ -2,21 +2,25 @@
 [![build](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml/badge.svg)](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml)
 [![coverage](https://codecov.io/gh/OpenFreeEnergy/openfe/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenFreeEnergy/openfe)
 
-# The Open Free Energy library
+# `openfe` - A Python package for executing alchemical free energy calculations.
 
-Alchemical free energy calculations for the masses.
+The `openfe` package is the flagship project of [Open Free Energy](https://openfree.energy),
+a pre competitive consortium aiming to provide robust, permissively licensed open source tools for molecular simulation in the drug discovery field.
 
-See our [website](https://openfree.energy/) for more information.
+Using `openfe` you can easily plan and execute alchemical free energy calculations.
 
-# License
+See our [website](https://openfree.energy/) for more information,
+or [try for yourself](https://try.openfree.energy) from the comfort of your browser.
+
+## License
 
 This library is made available under the [MIT](https://opensource.org/licenses/MIT) open source license.
 
-# Important note
+## Important note
 
 This is pre-alpha work, it should not be considered ready for production and API changes are expected at any time without prior warning.
 
-# Install
+## Install
 
 Dependencies can be installed via conda through:
 
@@ -30,10 +34,10 @@ The openfe library can be installed via:
 python -m pip install --no-deps .
 ```
 
-# Authors
+## Authors
 
 The OpenFE development team.
 
-# Acknowledgements
+## Acknowledgements
 
 OpenFE is an [Open Molecular Software Foundation](https://omsf.io/) hosted project.
