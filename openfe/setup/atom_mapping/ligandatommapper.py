@@ -32,7 +32,7 @@ class LigandAtomMapper(gufe.AtomMapper):
         Returns
         -------
         Iterable[dict[int, int]] :
-            an iterable over proposed mappings from molA to molB
+            an iterable over proposed mappings from componentA to componentB
         """
         raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
             cls=self.__class__.__name__,
