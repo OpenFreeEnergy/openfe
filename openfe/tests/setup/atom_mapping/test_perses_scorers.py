@@ -55,9 +55,9 @@ def test_perses_regression(gufe_atom_mapping_matrix):
         (i, j), ligand_atom_mapping = x
         # Build Perses Mapping:
         perses_atom_mapping = AtomMapping(
-            old_mol=ligand_atom_mapping.molA.to_openff(),
-            new_mol=ligand_atom_mapping.molB.to_openff(),
-            old_to_new_atom_map=ligand_atom_mapping.molA_to_molB
+            old_mol=ligand_atom_mapping.componentA.to_openff(),
+            new_mol=ligand_atom_mapping.componentB.to_openff(),
+            old_to_new_atom_map=ligand_atom_mapping.componentA_to_componentB
         )
         # score Perses Mapping - Perses Style
         matrix[i, j] = matrix[j, i] = AtomMapper(

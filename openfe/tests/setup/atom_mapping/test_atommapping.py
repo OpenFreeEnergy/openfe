@@ -1,3 +1,4 @@
+import openfe.setup
 import pytest
 import pathlib
 import json
@@ -8,21 +9,49 @@ from openfe.setup.atom_mapping import LigandAtomMapping
 
 @pytest.fixture
 def annotated_simple_mapping(simple_mapping):
-    mapping = LigandAtomMapping(simple_mapping.molA,
-                                simple_mapping.molB,
-                                simple_mapping.molA_to_molB,
+    mapping = LigandAtomMapping(simple_mapping.componentA,
+                                simple_mapping.componentB,
+                                simple_mapping.componentA_to_componentB,
                                 annotations={'foo': 'bar'})
     return mapping
 
 
 def test_atommapping_usage(simple_mapping):
-    assert simple_mapping.molA_to_molB[1] == 1
-    assert simple_mapping.molA_to_molB.get(2, None) is None
+    assert simple_mapping.componentA_to_componentB[1] == 1
+    assert simple_mapping.componentA_to_componentB.get(2, None) is None
     assert simple_mapping.annotations == {}
 
     with pytest.raises(KeyError):
-        simple_mapping.molA_to_molB[3]
+        simple_mapping.componentA_to_componentB[3]
 
+def test_mapping_inversion(benzene_phenol_mapping):
+    assert benzene_phenol_mapping.componentB_to_componentA == {
+        0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 11: 11,
+        12: 10
+    }
+
+def test_uniques(atom_mapping_basic_test_files):
+    mapping = openfe.setup.LigandAtomMapping(
+        componentA=atom_mapping_basic_test_files['methylcyclohexane'],
+        componentB=atom_mapping_basic_test_files['toluene'],
+        componentA_to_componentB={
+            0: 6, 1: 7, 2: 8, 3: 9, 4: 10, 5: 11, 6: 12
+        }
+    )
+
+    assert list(mapping.componentA_unique) == [7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                               16, 17, 18, 19, 20]
+    assert list(mapping.componentB_unique) == [0, 1, 2, 3, 4, 5, 13, 14]
+
+
+def test_modification(benzene_phenol_mapping):
+    # check that we get a copy of the mapping and we can't modify
+    AtoB = benzene_phenol_mapping.componentA_to_componentB
+    before = len(AtoB)
+
+    AtoB.pop(10)
+
+    assert len(benzene_phenol_mapping.componentA_to_componentB) == before
 
 def test_atommapping_hash(simple_mapping, other_mapping):
     # these two mappings map the same molecules, but with a different mapping
@@ -49,10 +78,10 @@ class TestLigandAtomMappingSerialization:
         d = benzene_phenol_mapping.to_dict()
 
         assert isinstance(d, dict)
-        assert 'molA' in d
-        assert 'molB' in d
+        assert 'componentA' in d
+        assert 'componentB' in d
         assert 'annotations' in d
-        assert isinstance(d['molA'], str)
+        assert isinstance(d['componentA'], str)
 
     def test_deserialize_roundtrip(self, benzene_phenol_mapping,
                                    benzene_anisole_mapping):

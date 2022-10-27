@@ -115,8 +115,8 @@ class TestNetwork:
         assert set(mappings) == set(network_container.edges)
         # ensure LigandAtomMapping stored in nx edge is consistent with nx edge
         for mol1, mol2, atommapping in graph.edges.data('object'):
-            assert atommapping.molA == mol1
-            assert atommapping.molB == mol2
+            assert atommapping.componentA == mol1
+            assert atommapping.componentB == mol2
 
     def test_graph_annotations(self, mols, std_edges):
         mol1, mol2, mol3 = mols
