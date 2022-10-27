@@ -39,9 +39,9 @@ def gufe_atom_mapping_matrix(lomap_basic_test_files_dir,
         nm1 = dbmols[i].getName()[:-5]
         nm2 = dbmols[j].getName()[:-5]
         ligand_atom_mappings[(i, j)] = LigandAtomMapping(
-            molA=atom_mapping_basic_test_files[nm1],
-            molB=atom_mapping_basic_test_files[nm2],
-            molA_to_molB=val)
+            componentA=atom_mapping_basic_test_files[nm1],
+            componentB=atom_mapping_basic_test_files[nm2],
+            componentA_to_componentB=val)
 
     return ligand_atom_mappings
 

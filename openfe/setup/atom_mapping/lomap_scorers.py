@@ -23,8 +23,8 @@ DEFAULT_ANS_DIFFICULTY = {
 
 
 def ecr_score(mapping: LigandAtomMapping):
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
 
     return 1 - _dbmol.ecr(molA, molB)
 
@@ -43,9 +43,9 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
 
     This is turned into a score by simply returning (1-mcsr)
     """
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     n1 = molA.GetNumHeavyAtoms()
     n2 = molB.GetNumHeavyAtoms()
@@ -69,9 +69,9 @@ def mncar_score(mapping: LigandAtomMapping, ths: int = 4):
     ths : int
       the minimum number of atoms to share
     """
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     n1 = molA.GetNumHeavyAtoms()
     n2 = molB.GetNumHeavyAtoms()
@@ -117,9 +117,9 @@ def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
     -------
     score : float
     """
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     if difficulty is None:
         difficulty = DEFAULT_ANS_DIFFICULTY
@@ -173,9 +173,9 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15):
     -------
     score : float
     """
-    mol1 = mapping.molA.to_rdkit()
-    mol2 = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    mol1 = mapping.componentA.to_rdkit()
+    mol2 = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     nmismatch = 0
     for i, j in molA_to_molB.items():
@@ -208,9 +208,9 @@ def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4):
 
     Returns (1 - math.exp(- beta)) if this happens, else 0
     """
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     def has_sulfonamide(mol):
         return mol.HasSubstructMatch(Chem.MolFromSmarts('S(=O)(=O)N'))
@@ -247,9 +247,9 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
 
     Returns 1 if this happens, else 0
     """
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     def creates_heterocyle(mol):
         # these patterns are lifted from lomap2 repo
@@ -308,9 +308,9 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
     -------
     score : float
     """
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     ringbreak = False
     for i, j in molA_to_molB.items():
@@ -340,9 +340,9 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
 
 def transmuting_ring_sizes_score(mapping: LigandAtomMapping):
     """Checks if mapping alters a ring size"""
-    molA = mapping.molA.to_rdkit()
-    molB = mapping.molB.to_rdkit()
-    molA_to_molB = mapping.molA_to_molB
+    molA = mapping.componentA.to_rdkit()
+    molB = mapping.componentB.to_rdkit()
+    molA_to_molB = mapping.componentA_to_componentB
 
     def gen_ringdict(mol):
         # maps atom idx to ring sizes

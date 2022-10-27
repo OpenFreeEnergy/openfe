@@ -300,9 +300,10 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
 def test_mapping_mismatch_A(benzene_system, toluene_system,
                             benzene_modifications):
     # the atom mapping doesn't refer to the ligands in the systems
-    mapping = setup.LigandAtomMapping(molA=benzene_system.components['ligand'],
-                                      molB=benzene_modifications['phenol'],
-                                      molA_to_molB=dict())
+    mapping = setup.LigandAtomMapping(
+        componentA=benzene_system.components['ligand'],
+        componentB=benzene_modifications['phenol'],
+        componentA_to_componentB=dict())
 
     p = openmm.RelativeLigandTransform(
         settings=openmm.RelativeLigandTransform.default_settings(),
@@ -318,9 +319,10 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
 
 def test_mapping_mismatch_B(benzene_system, toluene_system,
                             benzene_modifications):
-    mapping = setup.LigandAtomMapping(molA=benzene_modifications['phenol'],
-                                      molB=toluene_system.components['ligand'],
-                                      molA_to_molB=dict())
+    mapping = setup.LigandAtomMapping(
+        componentA=benzene_modifications['phenol'],
+        componentB=toluene_system.components['ligand'],
+        componentA_to_componentB=dict())
 
     p = openmm.RelativeLigandTransform(
         settings=openmm.RelativeLigandTransform.default_settings(),

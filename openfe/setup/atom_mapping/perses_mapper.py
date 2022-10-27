@@ -50,7 +50,7 @@ class PersesAtomMapper(LigandAtomMapper):
         self.use_positions = use_positions
         self.coordinate_tolerance = coordinate_tolerance
 
-    def _mappings_generator(self, molA, molB):
+    def _mappings_generator(self, componentA, componentB):
         # Construct Perses Mapper
         _atom_mapper = AtomMapper(
             use_positions=self.use_positions,
@@ -60,7 +60,7 @@ class PersesAtomMapper(LigandAtomMapper):
         # Try generating a mapping
         try:
             _atom_mappings = _atom_mapper.get_all_mappings(
-                    old_mol=molA.to_openff(), new_mol=molB.to_openff())
+                    old_mol=componentA.to_openff(), new_mol=componentB.to_openff())
         except InvalidMappingException:
             return
 
