@@ -17,10 +17,10 @@ dependencies:
  #- openff-units==0.1.8
   - pint<0.20.0
   - click
- #- openeye-toolkits
+  - openeye-toolkits
   - typing-extensions
   - lomap2>=2.1.0
- #- openmmtools
+  - openmmtools
  #- openmmforcefields>=0.11.2
  #- perses
   - pip:
