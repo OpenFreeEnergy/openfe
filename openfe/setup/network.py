@@ -32,7 +32,7 @@ class Network:
             nodes = []
 
         self._edges = frozenset(edges)
-        edge_nodes = set.union(*[{edge.molA, edge.molB} for edge in edges])
+        edge_nodes = set.union(*[{edge.componentA, edge.componentB} for edge in edges])
         self._nodes = frozenset(edge_nodes) | frozenset(nodes)
         self._graph = None
 
@@ -44,7 +44,7 @@ class Network:
             for node in self._nodes:
                 graph.add_node(node)
             for edge in self._edges:
-                graph.add_edge(edge.molA, edge.molB, object=edge,
+                graph.add_edge(edge.componentA, edge.componentB, object=edge,
                                **edge.annotations)
 
             self._graph = nx.freeze(graph)
@@ -80,9 +80,9 @@ class Network:
 
         edge_data = sorted([
             (
-                mol_to_label[edge.molA],
-                mol_to_label[edge.molB],
-                json.dumps(list(edge.molA_to_molB.items()))
+                mol_to_label[edge.componentA],
+                mol_to_label[edge.componentB],
+                json.dumps(list(edge.componentA_to_componentB.items()))
             )
             for edge in self.edges
         ])
@@ -109,9 +109,9 @@ class Network:
                         for node, d in graph.nodes(data='moldict')}
 
         edges = [
-            LigandAtomMapping(molA=label_to_mol[node1],
-                              molB=label_to_mol[node2],
-                              molA_to_molB=dict(json.loads(mapping)))
+            LigandAtomMapping(componentA=label_to_mol[node1],
+                              componentB=label_to_mol[node2],
+                              componentA_to_componentB=dict(json.loads(mapping)))
             for node1, node2, mapping in graph.edges(data='mapping')
         ]
 

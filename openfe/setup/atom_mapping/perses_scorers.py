@@ -65,14 +65,14 @@ def default_perses_scorer(mapping: LigandAtomMapping,
         float
     """
     score = AtomMapper(use_positions=use_positions).score_mapping(
-        AtomMapping(old_mol=mapping.molA.to_openff(),
-                    new_mol=mapping.molB.to_openff(),
-                    old_to_new_atom_map=mapping.molA_to_molB))
+        AtomMapping(old_mol=mapping.componentA.to_openff(),
+                    new_mol=mapping.componentB.to_openff(),
+                    old_to_new_atom_map=mapping.componentA_to_componentB))
 
     # normalize
     if (normalize):
-        oeyMolA = mapping.molA.to_openeye()
-        oeyMolB = mapping.molB.to_openeye()
+        oeyMolA = mapping.componentA.to_openeye()
+        oeyMolB = mapping.componentB.to_openeye()
         if (use_positions):
             raise NotImplementedError("normalizing using positions is "
                                       "not currently implemented")

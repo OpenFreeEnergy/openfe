@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import json
 import gufe
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 import numpy as np
 from numpy.typing import NDArray
 
@@ -13,29 +13,29 @@ from openfe.utils.visualization import draw_mapping
 class LigandAtomMapping(gufe.AtomMapping):
     """Simple container with the mapping between two Molecules
 
-    Attributes
-    ----------
-    molA, molB : SmallMoleculeComponent
-      the two Molecules in the mapping
-    molA_to_molB : dict
-      maps the index of an atom in either molecule **A** or **B** to the other.
-      If this atom has no corresponding atom, None is returned.
-    annotations : Dict[str, Any]
-      Mapping of annotation identifier to annotation data. Annotations may
-      contain arbitrary JSON-serializable data. Annotation identifiers
-      starting with ``ofe-`` may have special meaning in other parts of
-      OpenFE. ``score`` is a reserved annotation identifier.
     """
-
     def __init__(
         self,
-        molA: SmallMoleculeComponent,
-        molB: SmallMoleculeComponent,
-        molA_to_molB: Dict[int, int],
-        annotations: Optional[Dict[str, Any]] = None,
+        componentA: SmallMoleculeComponent,
+        componentB: SmallMoleculeComponent,
+        componentA_to_componentB: dict[int, int],
+        annotations: Optional[dict[str, Any]] = None,
     ):
-        super().__init__(molA, molB)
-        self.molA_to_molB = molA_to_molB
+        """
+        Parameters
+        ----------
+        componentA, componentB : SmallMoleculeComponent
+          the ligand molecules on either end of the mapping
+        componentA_to_componentB : dict[int, int]
+          correspondence of indices of atoms between the two ligands
+        annotations : dict[str, Any]
+          Mapping of annotation identifier to annotation data. Annotations may
+          contain arbitrary JSON-serializable data. Annotation identifiers
+          starting with ``ofe-`` may have special meaning in other parts of
+          OpenFE. ``score`` is a reserved annotation identifier.
+        """
+        super().__init__(componentA, componentB)
+        self._compA_to_compB = componentA_to_componentB
 
         if annotations is None:
             # TODO: this should be a frozen dict
@@ -48,26 +48,22 @@ class LigandAtomMapping(gufe.AtomMapping):
         return {}
 
     @property
-    def molA(self):
-        return self.componentA
+    def componentA_to_componentB(self) -> dict[int, int]:
+        return dict(self._compA_to_compB)
 
     @property
-    def molB(self):
-        return self.componentB
+    def componentB_to_componentA(self) -> dict[int, int]:
+        return {v: k for k, v in self._compA_to_compB.items()}
 
-    def componentA_to_componentB(self):
-        return self.molA_to_molB
-
-    def componentB_to_componentA(self):
-        return {v: k for k, v in self.molA_to_molB}
-
+    @property
     def componentA_unique(self):
         return (i for i in range(self.componentA.to_rdkit().GetNumAtoms())
-                if i not in self.molA_to_molB)
+                if i not in self._compA_to_compB)
 
+    @property
     def componentB_unique(self):
         return (i for i in range(self.componentB.to_rdkit().GetNumAtoms())
-                if i not in self.molA_to_molB.values())
+                if i not in self._compA_to_compB.values())
 
     @property
     def annotations(self):
@@ -78,9 +74,9 @@ class LigandAtomMapping(gufe.AtomMapping):
         """Serialize to dict"""
         return {
             # openff serialization doesn't go deep, so stringify at this level
-            'molA': json.dumps(self.componentA.to_dict(), sort_keys=True),
-            'molB': json.dumps(self.componentB.to_dict(), sort_keys=True),
-            'molA_to_molB': self.molA_to_molB,
+            'componentA': json.dumps(self.componentA.to_dict(), sort_keys=True),
+            'componentB': json.dumps(self.componentB.to_dict(), sort_keys=True),
+            'componentA_to_componentB': self._compA_to_compB,
             'annotations': json.dumps(self.annotations),
         }
 
@@ -88,19 +84,22 @@ class LigandAtomMapping(gufe.AtomMapping):
     def _from_dict(cls, d: dict):
         """Deserialize from dict"""
         # the mapping dict gets mangled sometimes
-        mapping = d['molA_to_molB']
+        mapping = d['componentA_to_componentB']
         fixed = {int(k): int(v) for k, v in mapping.items()}
 
         return cls(
-            molA=SmallMoleculeComponent.from_dict(json.loads(d['molA'])),
-            molB=SmallMoleculeComponent.from_dict(json.loads(d['molB'])),
-            molA_to_molB=fixed,
+            componentA=SmallMoleculeComponent.from_dict(
+                json.loads(d['componentA'])),
+            componentB=SmallMoleculeComponent.from_dict(
+                json.loads(d['componentB'])),
+            componentA_to_componentB=fixed,
             annotations=json.loads(d['annotations'])
         )
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(molA={self.molA!r}, "
-                f"molB={self.molB!r}, molA_to_molB={self.molA_to_molB!r}, "
+        return (f"{self.__class__.__name__}(componentA={self.componentA!r}, "
+                f"componentB={self.componentB!r}, "
+                "componentA_to_componentB={self._compA_to_compB!r}, "
                 f"annotations={self.annotations!r})")
 
     def _ipython_display_(self, d2d=None):  # pragma: no-cover
@@ -120,9 +119,9 @@ class LigandAtomMapping(gufe.AtomMapping):
         """
         from IPython.display import Image, display
 
-        return display(Image(draw_mapping(self.molA_to_molB,
-                                          self.molA.to_rdkit(),
-                                          self.molB.to_rdkit(), d2d)))
+        return display(Image(draw_mapping(self._compA_to_compB,
+                                          self.componentA.to_rdkit(),
+                                          self.componentB.to_rdkit(), d2d)))
 
     def draw_to_file(self, fname: str, d2d=None):
         """
@@ -138,40 +137,40 @@ class LigandAtomMapping(gufe.AtomMapping):
         fname : str
             Name of file to save atom map
         """
-        data = draw_mapping(self.molA_to_molB, self.molA.to_rdkit(),
-                            self.molB.to_rdkit(), d2d)
+        data = draw_mapping(self._compA_to_compB, self.componentA.to_rdkit(),
+                            self.componentB.to_rdkit(), d2d)
         if type(data) == bytes:
             mode = "wb"
         else:
             mode = "w"
 
         with open(fname, mode) as f:
-            f.write(draw_mapping(self.molA_to_molB, self.molA.to_rdkit(),
-                                 self.molB.to_rdkit(), d2d))
+            f.write(draw_mapping(self._compA_to_compB, self.componentA.to_rdkit(),
+                                 self.componentB.to_rdkit(), d2d))
 
-    def with_annotations(self, annotations: Dict[str, Any]):
+    def with_annotations(self, annotations: dict[str, Any]):
         """Create an new mapping based on this one with extra annotations.
 
         Parameters
         ----------
-        annotations : Dict[str, Any]
+        annotations : dict[str, Any]
             Annotation update for this mapping. New annotation keys will be
             added to the annotations dict; existing keys will be replaced by
             the data provided here.
         """
         return self.__class__(
-            molA=self.molA,
-            molB=self.molB,
-            molA_to_molB=self.molA_to_molB,
+            componentA=self.componentA,
+            componentB=self.componentB,
+            componentA_to_componentB=self._compA_to_compB,
             annotations=dict(**self.annotations, **annotations)
         )
 
     def get_distances(self) -> NDArray[np.float64]:
         """Return the distances between pairs of atoms in the mapping"""
         dists = []
-        molA = self.molA.to_rdkit().GetConformer()
-        molB = self.molB.to_rdkit().GetConformer()
-        for i, j in self.molA_to_molB.items():
+        molA = self.componentA.to_rdkit().GetConformer()
+        molB = self.componentB.to_rdkit().GetConformer()
+        for i, j in self._compA_to_compB.items():
             dA = molA.GetAtomPosition(i)
             dB = molB.GetAtomPosition(j)
             dists.append(dA.Distance(dB))

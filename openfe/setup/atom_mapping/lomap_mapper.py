@@ -41,9 +41,9 @@ class LomapAtomMapper(LigandAtomMapper):
         self.max3d = max3d
         self.element_change = element_change
 
-    def _mappings_generator(self, molA, molB):
+    def _mappings_generator(self, componentA, componentB):
         try:
-            mcs = lomap_mcs.MCS(molA.to_rdkit(), molB.to_rdkit(),
+            mcs = lomap_mcs.MCS(componentA.to_rdkit(), componentB.to_rdkit(),
                                 time=self.time,
                                 threed=self.threed, max3d=self.max3d,
                                 element_change=self.element_change)
