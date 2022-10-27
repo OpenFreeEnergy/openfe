@@ -1,3 +1,4 @@
+import openfe.setup
 import pytest
 import pathlib
 import json
@@ -23,6 +24,33 @@ def test_atommapping_usage(simple_mapping):
     with pytest.raises(KeyError):
         simple_mapping.molA_to_molB[3]
 
+def test_mapping_inversion(benzene_phenol_mapping):
+    assert benzene_phenol_mapping.molB_to_molA == {0: 0, 1: 1, 2: 2, 3: 3,
+                                                   4: 4, 5: 5, 6: 6, 7: 7,
+                                                   8: 8, 9: 9, 11: 11, 12: 10}
+
+def test_uniques(atom_mapping_basic_test_files):
+    mapping = openfe.setup.LigandAtomMapping(
+        molA=atom_mapping_basic_test_files['methylcyclohexane'],
+        molB=atom_mapping_basic_test_files['toluene'],
+        molA_to_molB={
+            0: 6, 1: 7, 2: 8, 3: 9, 4: 10, 5: 11, 6: 12
+        }
+    )
+
+    assert list(mapping.componentA_unique) == [7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                               16, 17, 18, 19, 20]
+    assert list(mapping.componentB_unique) == [0, 1, 2, 3, 4, 5, 13, 14]
+
+
+def test_modification(benzene_phenol_mapping):
+    # check that we get a copy of the mapping and we can't modify
+    AtoB = benzene_phenol_mapping.molA_to_molB
+    before = len(AtoB)
+
+    AtoB.pop(10)
+
+    assert len(benzene_phenol_mapping.molA_to_molB) == before
 
 def test_atommapping_hash(simple_mapping, other_mapping):
     # these two mappings map the same molecules, but with a different mapping

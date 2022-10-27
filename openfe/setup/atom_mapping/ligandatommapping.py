@@ -57,15 +57,19 @@ class LigandAtomMapping(gufe.AtomMapping):
 
     @property
     def componentA_to_componentB(self):
-        return self._molA_to_molB
+        return dict(self._molA_to_molB)
 
-    molA_to_molB = componentA_to_componentB
+    @property
+    def molA_to_molB(self) -> dict[int, int]:
+        return dict(self._molA_to_molB)
 
     @property
     def componentB_to_componentA(self):
         return {v: k for k, v in self._molA_to_molB.items()}
 
-    molB_to_molA = componentB_to_componentA
+    @property
+    def molB_to_molA(self) -> dict[int, int]:
+        return self.componentB_to_componentA
 
     @property
     def componentA_unique(self):
