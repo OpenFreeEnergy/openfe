@@ -24,7 +24,7 @@ class TestAtomMapper:
             def __init__(self, mappings):
                 self.mappings = mappings
 
-            def _mappings_generator(self, molA, molB):
+            def _mappings_generator(self, componentA, componentB):
                 for mapping in self.mappings:
                     yield mapping.componentA_to_componentB
 
