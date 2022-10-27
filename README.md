@@ -1,3 +1,4 @@
+[![Logo](https://img.shields.io/badge/OSMF-OpenFreeEnergy-%23002f4a)
 [![build](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml/badge.svg)](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml)
 [![coverage](https://codecov.io/gh/OpenFreeEnergy/openfe/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenFreeEnergy/openfe)
 
