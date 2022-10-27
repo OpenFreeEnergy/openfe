@@ -88,13 +88,13 @@ class AtomMappingEdge(Edge):
         # figure out which node is to the left and which to the right
         xs = [node.xy[0] for node in self.node_artists]
         if xs[0] <= xs[1]:
-            left = mapping.molA
-            right = mapping.molB
+            left = mapping.componentA
+            right = mapping.componentB
             left_to_right = mapping.componentA_to_componentB
             right_to_left = mapping.componentB_to_componentA
         else:
-            left = mapping.molB
-            right = mapping.molA
+            left = mapping.componentB
+            right = mapping.componentA
             left_to_right = mapping.componentB_to_componentA
             right_to_left = mapping.componentA_to_componentB
 

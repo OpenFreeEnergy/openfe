@@ -22,7 +22,7 @@ def test_simple(atom_mapping_basic_test_files):
     mapping = next(mapping_gen)
     assert isinstance(mapping, openfe.setup.atom_mapping.LigandAtomMapping)
     # maps (CH3) off methyl and (6C + 5H) on ring
-    assert len(mapping.molA_to_molB) == 15
+    assert len(mapping.componentA_to_componentB) == 15
 
 
 def test_distances(atom_mapping_basic_test_files):
@@ -35,8 +35,8 @@ def test_distances(atom_mapping_basic_test_files):
 
     dists = mapping.get_distances()
 
-    assert len(dists) == len(mapping.molA_to_molB)
-    i, j = next(iter(mapping.molA_to_molB.items()))
+    assert len(dists) == len(mapping.componentA_to_componentB)
+    i, j = next(iter(mapping.componentA_to_componentB.items()))
     ref_d = mol1.to_rdkit().GetConformer().GetAtomPosition(i).Distance(
         mol2.to_rdkit().GetConformer().GetAtomPosition(j)
     )

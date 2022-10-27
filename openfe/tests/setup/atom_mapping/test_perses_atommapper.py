@@ -23,7 +23,7 @@ def test_simple(atom_mapping_basic_test_files):
     mapping = next(mapping_gen)
     assert isinstance(mapping, LigandAtomMapping)
     # maps (CH3) off methyl and (6C + 5H) on ring
-    assert len(mapping.molA_to_molB) == 4
+    assert len(mapping.componentA_to_componentB) == 4
 
 
 @pytest.mark.xfail(USING_NEW_OFF, reason="Perses #1108")

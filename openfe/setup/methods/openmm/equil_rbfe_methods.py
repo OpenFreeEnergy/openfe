@@ -630,15 +630,15 @@ class RelativeLigandTransform(gufe.Protocol):
             if not stateA['solvent'] == stateB['solvent']:
                 raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
-        if stateA['ligand'] != mapping.molA:
+        if stateA['ligand'] != mapping.componentA:
             raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != mapping.molB:
+        if stateB['ligand'] != mapping.componentB:
             raise ValueError("Ligand in state B doesn't match mapping")
         # 3) check that the mapping doesn't involve element changes
         # this is currently a requirement of the method
-        molA = mapping.molA.to_rdkit()
-        molB = mapping.molB.to_rdkit()
-        for i, j in mapping.molA_to_molB.items():
+        molA = mapping.componentA.to_rdkit()
+        molB = mapping.componentB.to_rdkit()
+        for i, j in mapping.componentA_to_componentB.items():
             atomA = molA.GetAtomWithIdx(i)
             atomB = molB.GetAtomWithIdx(j)
             if atomA.GetAtomicNum() != atomB.GetAtomicNum():
@@ -966,7 +966,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
-            mapping.molA_to_molB,
+            mapping.componentA_to_componentB,
             stateA_system, stateA_topology, _get_resname(stateA_openff_ligand),
             stateB_system, stateB_topology, _get_resname(stateB_openff_ligand),
             # These are non-optional settings for this method
