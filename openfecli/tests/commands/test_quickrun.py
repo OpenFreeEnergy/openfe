@@ -54,3 +54,19 @@ def test_quickrun_output_file_exists(json_file):
         result = runner.invoke(quickrun, [json_file, '-o', 'foo.json'])
         assert result.exit_code == 2  # usage error
         assert "File 'foo.json' already exists." in result.output
+
+
+def test_quickrun_unit_error():
+    with importlib.resources.path('openfecli.tests.data',
+                                  'bad_transformation.json') as f:
+        json_file = str(f)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(quickrun, [json_file, '-o', 'foo.json'])
+        assert result.exit_code == 1
+        assert pathlib.Path("foo.json").exists()
+        # TODO: I'm still not happy with this... failure result does not see
+        # to be stored in JSON
+        # not sure whether that means we should always be storing all
+        # protocol dag results maybe?

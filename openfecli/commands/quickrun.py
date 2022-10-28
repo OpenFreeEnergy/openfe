@@ -41,17 +41,17 @@ def quickrun(transformation, directory, output):
     from gufe.tokenization import JSON_HANDLER
 
     write("Loading file...")
-    # TODO: change this to `Transformation.load(transformation)`
-    dct = json.load(transformation, cls=JSON_HANDLER.decoder)
-    trans = gufe.Transformation.from_dict(dct)
+    trans = Transformation.load(transformation)
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Running the simulations...")
     dagresult = execute(dag, shared=directory)
     write("Done! Analyzing the results....")
+    prot_result = trans.protocol.gather([dagresult])
+
+    # breakpoint()
 
     if dagresult.ok():
-        prot_result = trans.protocol.gather([dagresult])
         estimate = prot_result.get_estimate()
         uncertainty = prot_result.get_uncertainty()
     else:
@@ -75,9 +75,11 @@ def quickrun(transformation, directory, output):
     if not dagresult.ok():
         # there can be only one, MacCleod
         failure = dagresult.protocol_unit_failures[-1]
-        raise RuntimeError("A protocol unit failed with the error message:\n"
-                           f"{failure.exception}\n"
-                           "Details provided in output.")
+        raise click.ClickException(
+            "A protocol unit failed with the error message:\n"
+            f"{failure.exception[0]}: {failure.exception[1][0]}\n"
+            "Details provided in output."
+        )
 
 
 PLUGIN = OFECommandPlugin(

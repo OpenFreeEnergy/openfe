@@ -6,7 +6,7 @@ the old file can't be read.
 
 USAGE:
 
-    python write_transformation_json.py > ../data/transformation.json
+    python write_transformation_json.py ../data/
 
 (Assuming you run from within this directory.)
 """
@@ -14,10 +14,19 @@ USAGE:
 import gufe
 import openfe
 import json
+import argparse
+import pathlib
 
 from gufe.tests.conftest import benzene_modifications
-from gufe.tests.test_protocol import DummyProtocol
+from gufe.tests.test_protocol import DummyProtocol, BrokenProtocol
 from gufe.tokenization import JSON_HANDLER
+
+parser = argparse.ArgumentParser()
+parser.add_argument('directory')
+opts = parser.parse_args()
+directory = pathlib.Path(opts.directory)
+if not directory.exists() and directory.is_dir():
+    raise ValueError(f"Bad parameter for direcetory: {directory}")
 
 benzene_modifications = benzene_modifications.__pytest_wrapped__.obj()
 
@@ -38,5 +47,9 @@ mapping = list(mapper.suggest_mappings(benzene, toluene))[0]
 protocol = DummyProtocol()
 
 transformation = gufe.Transformation(solv_benz, solv_tol, protocol, mapping)
+bad_protocol = BrokenProtocol()
+bad_transformation = gufe.Transformation(solv_benz, solv_tol,
+                                         bad_protocol, mapping)
 
-print(json.dumps(transformation.to_dict(), cls=JSON_HANDLER.encoder))
+transformation.dump(directory / "transformation.json")
+bad_transformation.dump(directory / "bad_transformation.json")
