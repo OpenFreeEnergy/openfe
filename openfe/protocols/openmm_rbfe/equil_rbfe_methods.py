@@ -26,7 +26,6 @@ import numpy as np
 import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
-import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
 from typing import Dict, List, Union, Optional
@@ -39,9 +38,10 @@ import openmmtools
 import uuid
 
 from openfe.setup import (
-    ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
+    ChemicalSystem, LigandAtomMapping,
 )
-from openfe.setup import _rbfe_utils
+
+from . import _rbfe_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -945,7 +945,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
 
         # 6.  Create OpenMM system + topology + positions for "B" system
         #  a. stateB topology from stateA (replace out the ligands)
-        stateB_topology = _rbfe_utils.topologyhelpers.combined_topology(
+        stateB_topology = openfe.protocols.openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             stateB_openff_ligand.to_topology().to_openmm(),
             # as we kept track as we added, we can slice the ligand out
@@ -965,7 +965,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         )
 
         #  c. Define correspondence mappings between the two systems
-        ligand_mappings = _rbfe_utils.topologyhelpers.get_system_mappings(
+        ligand_mappings = openfe.protocols.openmm_rbfe._rbfe_utils.topologyhelpers.get_system_mappings(
             mapping.componentA_to_componentB,
             stateA_system, stateA_topology, _get_resname(stateA_openff_ligand),
             stateB_system, stateB_topology, _get_resname(stateB_openff_ligand),
@@ -974,7 +974,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         )
 
         #  d. Finally get the positions
-        stateB_positions = _rbfe_utils.topologyhelpers.set_and_check_new_positions(
+        stateB_positions = openfe.protocols.openmm_rbfe._rbfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
             insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
@@ -987,7 +987,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         alchem_settings = settings.alchemical_settings
 
         #  b. Create the hybrid topology factory
-        hybrid_factory = _rbfe_utils.relative.HybridTopologyFactory(
+        hybrid_factory = openfe.protocols.openmm_rbfe._rbfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
             old_to_new_atom_map=ligand_mappings['old_to_new_atom_map'],
@@ -1016,7 +1016,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         # 8. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
-        lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+        lambdas = openfe.protocols.openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(
             functions=alchem_settings.lambda_functions,
             windows=alchem_settings.lambda_windows
         )
@@ -1044,7 +1044,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         )
 
         # 10. Get platform and context caches
-        platform = _rbfe_utils.compute.get_openmm_platform(
+        platform = openfe.protocols.openmm_rbfe._rbfe_utils.compute.get_openmm_platform(
             settings.engine_settings.compute_platform
         )
 
@@ -1077,7 +1077,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         sampler_settings = settings.sampler_settings
         
         if sampler_settings.sampler_method.lower() == "repex":
-            sampler = _rbfe_utils.multistate.HybridRepexSampler(
+            sampler = openfe.protocols.openmm_rbfe._rbfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
@@ -1085,7 +1085,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
             )
         elif sampler_settings.sampler_method.lower() == "sams":
-            sampler = _rbfe_utils.multistate.HybridSAMSSampler(
+            sampler = openfe.protocols.openmm_rbfe._rbfe_utils.multistate.HybridSAMSSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
@@ -1094,7 +1094,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                 gamma0=sampler_settings.gamma0,
             )
         elif sampler_settings.sampler_method.lower() == 'independent':
-            sampler = _rbfe_utils.multistate.HybridMultiStateSampler(
+            sampler = openfe.protocols.openmm_rbfe._rbfe_utils.multistate.HybridMultiStateSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
