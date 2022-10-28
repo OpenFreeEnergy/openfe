@@ -27,8 +27,12 @@ jobs:
       matrix:
         os: ['ubuntu', 'macos']
         python-version:
-          - 3.9
+          - "3.9"
+          - "3.10"
         old_offtk: [true, false]
+        exclude:
+          - os: 'macos'
+            python-version: '3.10'
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
