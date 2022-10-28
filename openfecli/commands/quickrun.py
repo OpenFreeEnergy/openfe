@@ -33,20 +33,15 @@ import pathlib
 def quickrun(transformation, directory, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
-    To save a transformation as JSON, use the following Python recipe (after
-    creating the transformation):
-
-    \b
-        import json
-        from gufe.tokenization import JSON_HANDLER
-        with open(filename, 'w') as f:
-            json.dump(transformation.to_dict(), f, cls=JSON_HANDLER.encoder)
+    To save a transformation as JSON, create the transformation and then
+    save it with transformation.dump(filename).
     """
     import gufe
     from gufe.protocols.protocoldag import execute
     from gufe.tokenization import JSON_HANDLER
 
     write("Loading file...")
+    # TODO: change this to `Transformation.load(transformation)`
     dct = json.load(transformation, cls=JSON_HANDLER.decoder)
     trans = gufe.Transformation.from_dict(dct)
     write("Planning simulations for this edge...")
@@ -55,9 +50,12 @@ def quickrun(transformation, directory, output):
     dagresult = execute(dag, shared=directory)
     write("Done! Analyzing the results....")
 
-    prot_result = trans.protocol.gather([dagresult])
-    estimate = prot_result.get_estimate()
-    uncertainty = prot_result.get_uncertainty()
+    if dag_result.ok():
+        prot_result = trans.protocol.gather([dagresult])
+        estimate = prot_result.get_estimate()
+        uncertainty = prot_result.get_uncertainty()
+    else:
+        estimate = uncertainty = None  # for output file
 
     if output:
         with open(output, mode='w') as outf:
@@ -68,12 +66,18 @@ def quickrun(transformation, directory, output):
             }
             json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-
     write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
     write("Additional information:")
     for result in dagresult.protocol_unit_results:
         write(f"{result.name}:")
         write(result.outputs)
+
+    if not dag_result.ok():
+        # there can be only one, MacCleod
+        failure = dag_result.protocol_unit_failures[-1]
+        raise RuntimeError("A protocol unit failed with the error message:\n"
+                           f"{failure.exception}\n"
+                           "Details provided in output.")
 
 
 PLUGIN = OFECommandPlugin(
