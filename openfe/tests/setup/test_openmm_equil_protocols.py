@@ -97,7 +97,7 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
 
     lig2 = toluene_complex_system['ligand'].to_openff()
 
-    top2 = openfe.protocols.openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
+    top2 = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
         top1, lig2.to_topology().to_openmm(),
         exclude_chains=list(top1.chains())[-1:],
     )
@@ -151,7 +151,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
 
@@ -173,7 +173,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
     # Returns True if everything is OK
@@ -195,7 +195,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     dag = protocol.create(
         stateA=benzene_complex_system,
         stateB=toluene_complex_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
     # Returns True if everything is OK
@@ -204,13 +204,13 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
 
 
 def test_lambda_schedule_default():
-    lambdas = openfe.protocols.openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
+    lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
     assert len(lambdas.lambda_schedule) == 10
 
 
 @pytest.mark.parametrize('windows', [11, 6, 9000])
 def test_lambda_schedule(windows):
-    lambdas = openfe.protocols.openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(
+    lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(
             functions='default', windows=windows)
     assert len(lambdas.lambda_schedule) == windows
 
@@ -236,7 +236,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
             dag = p.create(
                 stateA=benzene_vacuum_system,
                 stateB=toluene_vacuum_system,
-                mapping=benzene_to_toluene_mapping,
+                mapping={'ligand': benzene_to_toluene_mapping},
             )
             unit = list(dag.protocol_units)[0]
             unit.run(dry=True)
@@ -254,7 +254,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -271,7 +271,7 @@ def test_vaccuum_PME_error(benzene_system, benzene_modifications,
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -291,7 +291,7 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -311,7 +311,7 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping=mapping,
+            mapping={'ligand': mapping},
         )
 
 
@@ -330,7 +330,7 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping=mapping,
+            mapping={'ligand': mapping},
         )
 
 
@@ -344,7 +344,7 @@ def test_complex_mismatch(benzene_system, toluene_complex_system,
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -367,7 +367,7 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
         _ = p.create(
             stateA=benzene_complex_system,
             stateB=alt_toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -392,7 +392,7 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
     with pytest.raises(ValueError, match="Element change"):
         _ = p.create(
             stateA=sys1, stateB=sys2,
-            mapping=mapping,
+            mapping={'ligand': mapping},
         )
 
 
@@ -406,7 +406,7 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
 
     return protocol.create(
         stateA=benzene_system, stateB=toluene_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
 
 
