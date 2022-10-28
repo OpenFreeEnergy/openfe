@@ -1,3 +1,5 @@
+.. _cli_quickrun:
+
 ``quickrun`` command
 ====================
 
