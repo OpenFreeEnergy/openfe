@@ -99,7 +99,7 @@ class LigandAtomMapping(gufe.AtomMapping):
     def __repr__(self):
         return (f"{self.__class__.__name__}(componentA={self.componentA!r}, "
                 f"componentB={self.componentB!r}, "
-                "componentA_to_componentB={self._compA_to_compB!r}, "
+                f"componentA_to_componentB={self._compA_to_compB!r}, "
                 f"annotations={self.annotations!r})")
 
     def _ipython_display_(self, d2d=None):  # pragma: no-cover
