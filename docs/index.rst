@@ -12,6 +12,7 @@ Welcome to OpenFE's documentation!
 
    setup
    api
+   cli/index
 
 Indices and tables
 ==================
