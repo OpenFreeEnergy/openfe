@@ -348,6 +348,20 @@ def test_complex_mismatch(benzene_system, toluene_complex_system,
         )
 
 
+def test_badly_specified_mapping(benzene_system, toluene_system,
+                                 benzene_to_toluene_mapping):
+    # mapping dict requires 'ligand' key
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
+    )
+    with pytest.raises(ValueError):
+        _ = p.create(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            mapping={'solvent': benzene_to_toluene_mapping}
+        )
+
+
 def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
                           benzene_to_toluene_mapping):
     # hack one protein to be labelled differently
