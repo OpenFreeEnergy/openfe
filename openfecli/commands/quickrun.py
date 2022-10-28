@@ -50,7 +50,7 @@ def quickrun(transformation, directory, output):
     dagresult = execute(dag, shared=directory)
     write("Done! Analyzing the results....")
 
-    if dag_result.ok():
+    if dagresult.ok():
         prot_result = trans.protocol.gather([dagresult])
         estimate = prot_result.get_estimate()
         uncertainty = prot_result.get_uncertainty()
@@ -72,9 +72,9 @@ def quickrun(transformation, directory, output):
         write(f"{result.name}:")
         write(result.outputs)
 
-    if not dag_result.ok():
+    if not dagresult.ok():
         # there can be only one, MacCleod
-        failure = dag_result.protocol_unit_failures[-1]
+        failure = dagresult.protocol_unit_failures[-1]
         raise RuntimeError("A protocol unit failed with the error message:\n"
                            f"{failure.exception}\n"
                            "Details provided in output.")
