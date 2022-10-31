@@ -23,6 +23,9 @@ dependencies:
   - openmmtools
   - openmmforcefields>=0.11.2
   - perses
+  # docs
+  - myst-parser
+  - sphinx-click
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
     - plugcli
