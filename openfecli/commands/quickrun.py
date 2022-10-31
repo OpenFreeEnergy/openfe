@@ -5,8 +5,16 @@ import click
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
 from openfecli.utils import write
+from gufe.transformations import Transformation
 import json
 import pathlib
+
+
+def _format_exception(exception) -> str:
+    """Takes the exception as stored by Gufe and reformats it.
+    """
+    return f"{exception[0]}: {exception[1][0]}"
+
 
 
 @click.command(
@@ -57,13 +65,18 @@ def quickrun(transformation, directory, output):
     else:
         estimate = uncertainty = None  # for output file
 
+    out_dict = {
+        'estimate': estimate,
+        'uncertainty': uncertainty,
+        'protocol_result': prot_result.to_dict(),
+        'unit_results': {
+            unit.key: unit.to_keyed_dict()
+            for unit in dagresult.protocol_unit_results
+        }
+    }
+
     if output:
         with open(output, mode='w') as outf:
-            out_dict = {
-                'estimate': estimate,
-                'uncertainty': uncertainty,
-                'result': prot_result.to_dict()
-            }
             json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
     write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
@@ -72,12 +85,14 @@ def quickrun(transformation, directory, output):
         write(f"{result.name}:")
         write(result.outputs)
 
+    write("")
+
     if not dagresult.ok():
         # there can be only one, MacCleod
         failure = dagresult.protocol_unit_failures[-1]
         raise click.ClickException(
-            "A protocol unit failed with the error message:\n"
-            f"{failure.exception[0]}: {failure.exception[1][0]}\n"
+            f"The protocol unit '{failure.name}' failed with the error "
+            f"message:\n{_format_exception(failure.exception)}\n\n"
             "Details provided in output."
         )
 
