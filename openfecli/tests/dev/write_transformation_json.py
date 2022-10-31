@@ -26,7 +26,7 @@ parser.add_argument('directory')
 opts = parser.parse_args()
 directory = pathlib.Path(opts.directory)
 if not directory.exists() and directory.is_dir():
-    raise ValueError(f"Bad parameter for direcetory: {directory}")
+    raise ValueError(f"Bad parameter for directory: {directory}")
 
 benzene_modifications = benzene_modifications.__pytest_wrapped__.obj()
 
