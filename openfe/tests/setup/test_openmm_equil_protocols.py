@@ -3,15 +3,13 @@
 import gufe
 import pytest
 from unittest import mock
-import numpy as np
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
 
 from openmm import app
 
 from openfe import setup
-from openfe.setup.methods import openmm
-from openfe.setup import _rbfe_utils
+from openfe.protocols import openmm_rbfe
 
 
 @pytest.fixture
@@ -99,7 +97,7 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
 
     lig2 = toluene_complex_system['ligand'].to_openff()
 
-    top2 = _rbfe_utils.topologyhelpers.combined_topology(
+    top2 = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
         top1, lig2.to_topology().to_openmm(),
         exclude_chains=list(top1.chains())[-1:],
     )
@@ -108,28 +106,28 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
 
 
 def test_create_default_settings():
-    settings = openmm.RelativeLigandTransform.default_settings()
+    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
 
     assert settings
 
 
 def test_create_default_protocol():
     # this is roughly how it should be created
-    protocol = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    protocol = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
 
     assert protocol
 
 
 def test_serialize_protocol():
-    protocol = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    protocol = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
 
     ser = protocol.to_dict()
 
-    ret = openmm.RelativeLigandTransform.from_dict(ser)
+    ret = openmm_rbfe.RelativeLigandTransform.from_dict(ser)
 
     assert protocol == ret
 
@@ -140,12 +138,12 @@ def test_serialize_protocol():
 def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, method, tmpdir):
 
-    vac_settings = openmm.RelativeLigandTransform.default_settings()
+    vac_settings = openmm_rbfe.RelativeLigandTransform.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
     vac_settings.sampler_settings.sampler_method = method
     vac_settings.sampler_settings.n_repeats = 1
 
-    protocol = openmm.RelativeLigandTransform(
+    protocol = openmm_rbfe.RelativeLigandTransform(
             settings=vac_settings,
     )
 
@@ -153,7 +151,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=toluene_vacuum_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
 
@@ -165,17 +163,17 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
-    settings = openmm.RelativeLigandTransform.default_settings()
+    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
     settings.sampler_settings.sampler_method = method
     settings.sampler_settings.n_repeats = 1
 
-    protocol = openmm.RelativeLigandTransform(
+    protocol = openmm_rbfe.RelativeLigandTransform(
             settings=settings,
     )
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
     # Returns True if everything is OK
@@ -187,17 +185,17 @@ def test_dry_run_ligand(benzene_system, toluene_system,
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
-    settings = openmm.RelativeLigandTransform.default_settings()
+    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
     settings.sampler_settings.sampler_method = method
     settings.sampler_settings.n_repeats = 1
 
-    protocol = openmm.RelativeLigandTransform(
+    protocol = openmm_rbfe.RelativeLigandTransform(
             settings=settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
         stateB=toluene_complex_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
     # Returns True if everything is OK
@@ -206,13 +204,13 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
 
 
 def test_lambda_schedule_default():
-    lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
+    lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
     assert len(lambdas.lambda_schedule) == 10
 
 
 @pytest.mark.parametrize('windows', [11, 6, 9000])
 def test_lambda_schedule(windows):
-    lambdas = _rbfe_utils.lambdaprotocol.LambdaProtocol(
+    lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(
             functions='default', windows=windows)
     assert len(lambdas.lambda_schedule) == windows
 
@@ -222,7 +220,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
                                   benzene_to_toluene_mapping, tmpdir):
     # For PR #125 we pin such that the number of lambda windows
     # equals the numbers of replicas used - TODO: remove limitation
-    settings = openmm.RelativeLigandTransform.default_settings()
+    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
     # default lambda windows is 11
     settings.sampler_settings.n_replicas = 13
     settings.system_settings.nonbonded_method = 'nocutoff'
@@ -232,13 +230,13 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
 
     with tmpdir.as_cwd():
         with pytest.raises(ValueError, match=errmsg):
-            p = openmm.RelativeLigandTransform(
+            p = openmm_rbfe.RelativeLigandTransform(
                     settings=settings,
             )
             dag = p.create(
                 stateA=benzene_vacuum_system,
                 stateB=toluene_vacuum_system,
-                mapping=benzene_to_toluene_mapping,
+                mapping={'ligand': benzene_to_toluene_mapping},
             )
             unit = list(dag.protocol_units)[0]
             unit.run(dry=True)
@@ -248,15 +246,15 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
     # state B doesn't have a ligand component
     stateB = setup.ChemicalSystem({'solvent': setup.SolventComponent()})
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
 
     with pytest.raises(ValueError, match='Missing ligand in state B'):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -265,15 +263,15 @@ def test_vaccuum_PME_error(benzene_system, benzene_modifications,
     # state B doesn't have a solvent component (i.e. its vacuum)
     stateB = setup.ChemicalSystem({'ligand': benzene_modifications['toluene']})
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     errmsg = "PME cannot be used for vacuum transform"
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -286,14 +284,14 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
              positive_ion='K', negative_ion='Cl')}
     )
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     with pytest.raises(ValueError, match="Solvents aren't identical"):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -305,15 +303,15 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
         componentB=benzene_modifications['phenol'],
         componentA_to_componentB=dict())
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     with pytest.raises(ValueError,
                        match="Ligand in state B doesn't match mapping"):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping=mapping,
+            mapping={'ligand': mapping},
         )
 
 
@@ -324,29 +322,43 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
         componentB=toluene_system.components['ligand'],
         componentA_to_componentB=dict())
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     with pytest.raises(ValueError,
                        match="Ligand in state A doesn't match mapping"):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping=mapping,
+            mapping={'ligand': mapping},
         )
 
 
 def test_complex_mismatch(benzene_system, toluene_complex_system,
                           benzene_to_toluene_mapping):
     # only one complex
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     with pytest.raises(ValueError):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
+        )
+
+
+def test_badly_specified_mapping(benzene_system, toluene_system,
+                                 benzene_to_toluene_mapping):
+    # mapping dict requires 'ligand' key
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
+    )
+    with pytest.raises(ValueError):
+        _ = p.create(
+            stateA=benzene_system,
+            stateB=toluene_system,
+            mapping={'solvent': benzene_to_toluene_mapping}
         )
 
 
@@ -362,14 +374,14 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
                   'protein': alt_prot}
     )
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     with pytest.raises(ValueError):
         _ = p.create(
             stateA=benzene_complex_system,
             stateB=alt_toluene_complex_system,
-            mapping=benzene_to_toluene_mapping,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 
@@ -388,27 +400,27 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
         {'ligand': l2, 'solvent': setup.SolventComponent()},
     )
 
-    p = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings(),
+    p = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
     )
     with pytest.raises(ValueError, match="Element change"):
         _ = p.create(
             stateA=sys1, stateB=sys2,
-            mapping=mapping,
+            mapping={'ligand': mapping},
         )
 
 
 @pytest.fixture
 def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapping):
-    settings = openmm.RelativeLigandTransform.default_settings()
+    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
 
-    protocol = openmm.RelativeLigandTransform(
+    protocol = openmm_rbfe.RelativeLigandTransform(
         settings=settings,
     )
 
     return protocol.create(
         stateA=benzene_system, stateB=toluene_system,
-        mapping=benzene_to_toluene_mapping,
+        mapping={'ligand': benzene_to_toluene_mapping},
     )
 
 
@@ -416,7 +428,7 @@ def test_unit_tagging(solvent_protocol_dag):
     # test that executing the Units includes correct generation and repeat info
     units = solvent_protocol_dag.protocol_units
 
-    with mock.patch('openfe.setup.methods.openmm.equil_rbfe_methods.RelativeLigandTransformUnit.run',
+    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandTransformUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
         for u in units:
@@ -433,15 +445,15 @@ def test_unit_tagging(solvent_protocol_dag):
 
 def test_gather(solvent_protocol_dag):
     # check .gather behaves as expected
-    with mock.patch('openfe.setup.methods.openmm.equil_rbfe_methods.RelativeLigandTransformUnit.run',
+    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandTransformUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         dagres = gufe.protocols.execute(solvent_protocol_dag)
 
-    prot = openmm.RelativeLigandTransform(
-        settings=openmm.RelativeLigandTransform.default_settings()
+    prot = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings()
     )
 
-    with mock.patch('openfe.setup.methods.openmm.equil_rbfe_methods.multistate') as m:
+    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.multistate') as m:
         res = prot.gather([dagres])
 
         # check we created the expected number of Reporters and Analyzers
@@ -451,4 +463,4 @@ def test_gather(solvent_protocol_dag):
         )
         assert m.MultiStateSamplerAnalyzer.call_count == 3
 
-    assert isinstance(res, openmm.RelativeLigandTransformResult)
+    assert isinstance(res, openmm_rbfe.RelativeLigandTransformResult)

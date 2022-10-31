@@ -12,6 +12,7 @@ Welcome to OpenFE's documentation!
 
    installation
    setup
+   dumping_transformation
    api
    cli/index
 
