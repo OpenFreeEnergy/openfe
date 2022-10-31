@@ -23,11 +23,14 @@ already-opened file object. For example:
     transformation.dump("mytransformation.json")
 
 Be aware this this is not designed to be space-efficient. That is, if you
-have the same object in memory used in two location (for example, the same
-``ProteinComponent`` in both ``ChemicalSystems``, then 
+have the same object in memory used in two locations (for example, the same
+``ProteinComponent`` is in both ``ChemicalSystems``), then there will be a
+copy for each. This is particularly problematic if you are running an entire
+network of calculations; in that case, dumping transformation by
+transformation is not the most efficient way to prepare your simulations.
 
-This can be reloaded into memory with the :meth:`.Transformation.load`
-method:
+When you do dump a single transformation, it can be reloaded into memory
+with the :meth:`.Transformation.load` method:
 
 .. code::
 
