@@ -68,10 +68,7 @@ jobs:
       - name: "Test imports"
         run: |
           # if we add more to this, consider changing to for + env vars
-          python -Ic "import openfe.setup"
-          python -Ic "import openfe.orchestration"
-          python -Ic "import openfe.simulation"
-          python -Ic "import openfe.analysis"
+          python -Ic "import openfe"
 
       - name: "Environment Information"
         run: |
