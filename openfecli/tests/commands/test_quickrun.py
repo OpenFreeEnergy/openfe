@@ -37,7 +37,8 @@ def test_quickrun(extra_args, json_file):
             with open(outfile, mode='r') as outf:
                 dct = json.load(outf, cls=JSON_HANDLER.decoder)
 
-            assert set(dct) == {'estimate', 'uncertainty', 'result'}
+            assert set(dct) == {'estimate', 'uncertainty',
+                                'protocol_result', 'unit_results'}
 
         # TODO: need a protocol that drops files to actually do this!
         # if directory := extra_args.get('-d'):
