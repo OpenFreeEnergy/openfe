@@ -26,7 +26,6 @@ import numpy as np
 import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
-import openmmtools
 from openmmtools import multistate
 from pydantic import BaseModel, validator
 from typing import Dict, List, Union, Optional
@@ -39,9 +38,10 @@ import openmmtools
 import uuid
 
 from openfe.setup import (
-    ChemicalSystem, LigandAtomMapping, SmallMoleculeComponent, SolventComponent,
+    ChemicalSystem, LigandAtomMapping,
 )
-from openfe.setup import _rbfe_utils
+
+from . import _rbfe_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -596,12 +596,14 @@ class RelativeLigandTransform(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: LigandAtomMapping = None,
+        mapping: dict[str, gufe.ComponentMapping] = None,
         extend_from: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
         if mapping is None:
             raise ValueError("`mapping` is required for this Protocol")
+        if 'ligand' not in mapping:
+            raise ValueError("'ligand' must be specified in `mapping` dict")
         if extend_from:
             raise NotImplementedError("Can't extend simulations yet")
 
@@ -630,15 +632,16 @@ class RelativeLigandTransform(gufe.Protocol):
             if not stateA['solvent'] == stateB['solvent']:
                 raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
-        if stateA['ligand'] != mapping.componentA:
+        ligandmapping : LigandAtomMapping = mapping['ligand']
+        if stateA['ligand'] != ligandmapping.componentA:
             raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != mapping.componentB:
+        if stateB['ligand'] != ligandmapping.componentB:
             raise ValueError("Ligand in state B doesn't match mapping")
         # 3) check that the mapping doesn't involve element changes
         # this is currently a requirement of the method
-        molA = mapping.componentA.to_rdkit()
-        molB = mapping.componentB.to_rdkit()
-        for i, j in mapping.componentA_to_componentB.items():
+        molA = ligandmapping.componentA.to_rdkit()
+        molB = ligandmapping.componentB.to_rdkit()
+        for i, j in ligandmapping.componentA_to_componentB.items():
             atomA = molA.GetAtomWithIdx(i)
             atomB = molB.GetAtomWithIdx(j)
             if atomA.GetAtomicNum() != atomB.GetAtomicNum():
@@ -652,7 +655,7 @@ class RelativeLigandTransform(gufe.Protocol):
         Bname = stateB['ligand'].name
         # our DAG has no dependencies, so just list units
         units = [RelativeLigandTransformUnit(
-            stateA=stateA, stateB=stateB, ligandmapping=mapping,
+            stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
             generation=0, repeat_id=i,
             name=f'{Aname} {Bname} repeat {i} generation 0')
