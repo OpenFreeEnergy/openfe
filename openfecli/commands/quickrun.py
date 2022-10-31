@@ -59,8 +59,6 @@ def quickrun(transformation, directory, output):
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
-    # breakpoint()
-
     if dagresult.ok():
         estimate = prot_result.get_estimate()
         uncertainty = prot_result.get_uncertainty()
