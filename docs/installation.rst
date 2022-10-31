@@ -12,7 +12,7 @@ Installing ``openfe``
 ---------------------
 
 When you install ``openfe`` through any of the methods described below, you
-will install both the core library and the command line interface.
+will install both the core library and the command line interface (CLI). 
 
 Installation with ``conda`` (recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -23,15 +23,17 @@ OpenMM and ambertools, which are needed by ``openfe``.
 Conda can be installed either with the `full Anaconda distribution
 <https://www.anaconda.com/products/individual>`_, or with
 the `smaller-footprint miniconda
-<https://docs.conda.io/en/latest/miniconda.html>`_. We also recommend
-`mamba
-<https://mamba.readthedocs.io/en/latest/installation.html#installation>`_ as
-a more perfomant variant of ``conda``.
+<https://docs.conda.io/en/latest/miniconda.html>`_.
 
 You can get ``openfe`` from the ``conda-forge`` channel. To install the most
-recent release, use the command ::
+recent release in its own environment, use the commands ::
 
-  $ conda install -c conda-forge openfe
+  $ conda create -n openfe -c conda-forge openfe
+  $ conda activate openfe
+
+That creates a separate environment for ``openfe`` that won't interfere with
+other things you have installed. You will need to activate the ``openfe``
+environment before using it in a new shell.
 
 With that, you should be ready to use ``openfe``!
 
@@ -84,7 +86,7 @@ optional packages.
 * **perses tools**: To use perses, you need to install perses and OpenEye,
   and you need a valid OpenEye license. To install both packages, use::
 
-    $ conda install -c conda-forge -c openeye perses openeye
+    $ conda install -c conda-forge -c openeye perses openeye-toolkits
 
 Testing your installation
 -------------------------
@@ -97,7 +99,8 @@ start to troubleshooting any installation problems. The test suite requires
 
 Then you can run the test suite (from any directory) with the command::
 
-  $ py.test --pyargs openfe openfecli
+  $ pytest --pyargs openfe openfecli
 
-The test suite contains several hundred individual tests. All should
-complete with status either passed, skipped, or xfailed (expected fail).
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
