@@ -2,6 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import pathlib
+import logging
+import logging.config
 
 import click
 from plugcli.cli import CLI, CONTEXT_SETTINGS
@@ -34,11 +36,13 @@ the OpenFE Python library.
 @click.command(cls=OpenFECLI, name="openfe", help=_MAIN_HELP,
                context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=openfecli.__version__)
-def main():
-    # currently empty: we can add options at the openfe level (as opposed to
-    # subcommands) by adding click options here. Subcommand runs after this
-    # is the processed.
-    pass
+@click.option('--log', type=click.Path(exists=True, readable=True),
+              help="logging configuration file")
+def main(log):
+    # Subcommand runs after this is processed.
+    # set logging if provided
+    if log:
+        logging.config.fileConfig(log, disable_existing_loggers=False)
 
 
 if __name__ == "__main__":  # -no-cov- (useful in debugging)
