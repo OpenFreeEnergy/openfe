@@ -9,15 +9,19 @@ from plugcli.plugin_management import FilePluginLoader
 
 import openfecli
 
-from .plugins import OFECommandPlugin
+from openfecli.plugins import OFECommandPlugin
 
 
 class OpenFECLI(CLI):
     COMMAND_SECTIONS = ["Setup", "Simulation", "Orchestration", "Analysis"]
 
-    def get_installed_plugins(self):
+    def get_loaders(self):
         commands = str(pathlib.Path(__file__).parent.resolve() / "commands")
         loader = FilePluginLoader(commands, OFECommandPlugin)
+        return [loader]
+
+    def get_installed_plugins(self):
+        loader = self.get_loaders()[0]
         return list(loader())
 
 

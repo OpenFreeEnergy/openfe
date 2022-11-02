@@ -114,7 +114,7 @@ def test_atommapping_print_dict_main(capsys, mols):
                     mock.Mock(return_value=mapping)):
         atommapping_print_dict_main(mapper, molA, molB)
         captured = capsys.readouterr()
-        assert captured.out == str(mapping.molA_to_molB) + "\n"
+        assert captured.out == str(mapping.componentA_to_componentB) + "\n"
 
 
 def test_atommapping_visualize_main(mols, tmpdir):

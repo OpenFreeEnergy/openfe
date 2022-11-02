@@ -20,6 +20,7 @@ from .ligandatommapper import LigandAtomMapper
 class PersesAtomMapper(LigandAtomMapper):
     allow_ring_breaking: bool
     preserve_chirality: bool
+    use_positions: bool
 
     @requires_package("perses")
     def __init__(self, allow_ring_breaking: bool = True,
@@ -36,7 +37,7 @@ class PersesAtomMapper(LigandAtomMapper):
             this option checks if on only full cycles of the molecules shall
             be mapped, default: False
         preserve_chirality: bool, optional
-             if mappings must strictly preserve chirality, default: True
+            if mappings must strictly preserve chirality, default: True
         use_positions: bool, optional
             this option defines, if the
         coordinate_tolerance: float, optional
@@ -49,25 +50,30 @@ class PersesAtomMapper(LigandAtomMapper):
         self.use_positions = use_positions
         self.coordinate_tolerance = coordinate_tolerance
 
-    def _mappings_generator(self, molA, molB):
+    def _mappings_generator(self, componentA, componentB):
+        # Construct Perses Mapper
         _atom_mapper = AtomMapper(
             use_positions=self.use_positions,
             coordinate_tolerance=self.coordinate_tolerance,
             allow_ring_breaking=self.allow_ring_breaking)
 
-        # Type of mapping
+        # Try generating a mapping
         try:
             _atom_mappings = _atom_mapper.get_all_mappings(
-                    old_mol=molA.to_openff(), new_mol=molB.to_openff())
+                    old_mol=componentA.to_openff(), new_mol=componentB.to_openff())
         except InvalidMappingException:
-            _atom_mappings = []
+            return
+
+        # Catch empty mappings here
+        if _atom_mappings is None:
+            return
 
         # Post processing
-        if (self.preserve_chirality):
-            [x.preserve_chirality() for x in _atom_mappings]
+        if self.preserve_chirality:
+            for x in _atom_mappings:
+                x.preserve_chirality()
 
-        if(len(_atom_mappings) > 0):
-            mapping_dict = map(lambda x: x.old_to_new_atom_map, _atom_mappings)
-        else:
-            mapping_dict = []
+        # Translate mapping objects
+        mapping_dict = (x.old_to_new_atom_map for x in _atom_mappings)
+
         yield from mapping_dict

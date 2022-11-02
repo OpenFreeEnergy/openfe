@@ -5,6 +5,7 @@ import string
 import pytest
 from importlib import resources
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from openmm.app import PDBFile
 
 import gufe
@@ -13,9 +14,15 @@ from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LigandAtomMapping
 
 
+def mol_from_smiles(smiles: str) -> Chem.Mol:
+    m = Chem.MolFromSmiles(smiles)
+    AllChem.Compute2DCoords(m)
+
+    return m
+
 @pytest.fixture(scope='session')
 def ethane():
-    return SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    return SmallMoleculeComponent(mol_from_smiles('CC'))
 
 
 @pytest.fixture(scope='session')
@@ -26,10 +33,10 @@ def simple_mapping():
 
     C C
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
+    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
-    m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 1: 1})
+    m = LigandAtomMapping(molA, molB, componentA_to_componentB={0: 0, 1: 1})
 
     return m
 
@@ -42,10 +49,10 @@ def other_mapping():
 
     C   C
     """
-    molA = SmallMoleculeComponent(Chem.MolFromSmiles('CCO'))
-    molB = SmallMoleculeComponent(Chem.MolFromSmiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
+    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
-    m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 2: 1})
+    m = LigandAtomMapping(molA, molB, componentA_to_componentB={0: 0, 2: 1})
 
     return m
 
@@ -105,8 +112,7 @@ def serialization_template():
     def inner(filename):
         loc = "openfe.tests.data.serialization"
         tmpl = importlib.resources.read_text(loc, filename)
-        return tmpl.format(GUFE_VERSION=gufe.__version__,
-                           OFE_VERSION=openfe.__version__)
+        return tmpl.replace('{OFE_VERSION}', openfe.__version__)
 
     return inner
 
@@ -152,6 +158,6 @@ def benzene_anisole_mapping(benzene_transforms, benzene_maps):
 @pytest.fixture(scope='session')
 def T4_protein_component():
     with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
-        comp = gufe.ProteinComponent.from_pdbfile(str(fn), name="T4_protein")
+        comp = gufe.ProteinComponent.from_pdb_file(str(fn), name="T4_protein")
 
     return comp

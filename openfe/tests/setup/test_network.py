@@ -8,6 +8,8 @@ from rdkit import Chem
 
 from networkx import NetworkXError
 
+from .conftest import mol_from_smiles
+
 
 class _NetworkTestContainer(NamedTuple):
     """Container to facilitate network testing"""
@@ -20,9 +22,9 @@ class _NetworkTestContainer(NamedTuple):
 
 @pytest.fixture
 def mols():
-    mol1 = SmallMoleculeComponent(Chem.MolFromSmiles("CCO"))
-    mol2 = SmallMoleculeComponent(Chem.MolFromSmiles("CC"))
-    mol3 = SmallMoleculeComponent(Chem.MolFromSmiles("CO"))
+    mol1 = SmallMoleculeComponent(mol_from_smiles("CCO"))
+    mol2 = SmallMoleculeComponent(mol_from_smiles("CC"))
+    mol3 = SmallMoleculeComponent(mol_from_smiles("CO"))
     return mol1, mol2, mol3
 
 
@@ -66,7 +68,7 @@ def doubled_edge_network(mols, std_edges):
 @pytest.fixture
 def singleton_node_network(mols, std_edges):
     """Network with nodes not included in any edges"""
-    extra_mol = SmallMoleculeComponent(Chem.MolFromSmiles("CCC"))
+    extra_mol = SmallMoleculeComponent(mol_from_smiles("CCC"))
     all_mols = list(mols) + [extra_mol]
     return _NetworkTestContainer(
         network=Network(edges=std_edges, nodes=all_mols),
@@ -113,8 +115,8 @@ class TestNetwork:
         assert set(mappings) == set(network_container.edges)
         # ensure LigandAtomMapping stored in nx edge is consistent with nx edge
         for mol1, mol2, atommapping in graph.edges.data('object'):
-            assert atommapping.molA == mol1
-            assert atommapping.molB == mol2
+            assert atommapping.componentA == mol1
+            assert atommapping.componentB == mol2
 
     def test_graph_annotations(self, mols, std_edges):
         mol1, mol2, mol3 = mols
@@ -127,7 +129,7 @@ class TestNetwork:
         # The NetworkX graph that comes from that ``.graph`` property should
         # be immutable.
         graph = network_container.network.graph
-        mol = SmallMoleculeComponent(Chem.MolFromSmiles("CCCC"))
+        mol = SmallMoleculeComponent(mol_from_smiles("CCCC"))
         mol_CC = mols[1]
         edge = LigandAtomMapping(mol, mol_CC, {1: 0, 2: 1})
         with pytest.raises(NetworkXError, match="Frozen graph"):
@@ -152,7 +154,7 @@ class TestNetwork:
     def test_enlarge_graph_add_nodes(self, simple_network):
         # New nodes added via ``enlarge_graph`` should exist in the newly
         # created network
-        new_mol = SmallMoleculeComponent(Chem.MolFromSmiles("CCCC"))
+        new_mol = SmallMoleculeComponent(mol_from_smiles("CCCC"))
         network = simple_network.network
         new_network = network.enlarge_graph(nodes=[new_mol])
         assert new_network is not network
@@ -177,7 +179,7 @@ class TestNetwork:
     def test_enlarge_graph_add_edges_new_nodes(self, mols, simple_network):
         # New nodes included implicitly by edges added in ``enlarge_graph``
         # should exist in the newly created network
-        new_mol = SmallMoleculeComponent(Chem.MolFromSmiles("CCCC"))
+        new_mol = SmallMoleculeComponent(mol_from_smiles("CCCC"))
         mol_CC = mols[1]
         extra_edge = LigandAtomMapping(new_mol, mol_CC, {1: 0, 2: 1})
         network = simple_network.network
@@ -193,7 +195,7 @@ class TestNetwork:
     def test_enlarge_graph_add_duplicate_node(self, simple_network):
         # Adding a duplicate of an existing node should create a new network
         # with the same edges and nodes as the previous one.
-        duplicate = SmallMoleculeComponent(Chem.MolFromSmiles("CC"))
+        duplicate = SmallMoleculeComponent(mol_from_smiles("CC"))
         network = simple_network.network
 
         existing = network.nodes

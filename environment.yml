@@ -13,15 +13,18 @@ dependencies:
   - pytest-cov
   - pydantic
   - coverage
-  - openff-toolkit
-  - openff-units>=0.1.6
-  - openmmforcefields
+  - openff-toolkit==0.11
+  - openff-units==0.1.8
   - click
   - openeye-toolkits
   - typing-extensions
   - lomap2>=2.1.0
   - openmmtools
+  - openmmforcefields>=0.11.2
   - perses
+  # docs
+  - myst-parser
+  - sphinx-click
+  - gufe==0.4
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
     - plugcli

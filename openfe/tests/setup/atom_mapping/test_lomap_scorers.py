@@ -13,6 +13,8 @@ import pytest
 from rdkit import Chem
 from rdkit.Chem.AllChem import Compute2DCoords
 
+from .conftest import mol_from_smiles
+
 
 @pytest.fixture()
 def toluene_to_cyclohexane(atom_mapping_basic_test_files):
@@ -21,7 +23,7 @@ def toluene_to_cyclohexane(atom_mapping_basic_test_files):
     mapping = [(0, 0), (1, 1), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2)]
 
     return LigandAtomMapping(tolu, meth,
-                             molA_to_molB=dict(mapping))
+                             componentA_to_componentB=dict(mapping))
 
 
 @pytest.fixture()
@@ -31,7 +33,7 @@ def toluene_to_methylnaphthalene(atom_mapping_basic_test_files):
     mapping = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 8), (5, 9), (6, 10)]
 
     return LigandAtomMapping(tolu, naph,
-                             molA_to_molB=dict(mapping))
+                             componentA_to_componentB=dict(mapping))
 
 
 @pytest.fixture()
@@ -44,7 +46,7 @@ def toluene_to_heptane(atom_mapping_basic_test_files):
     mapping = [(6, 0)]
 
     return LigandAtomMapping(tolu, hept,
-                             molA_to_molB=dict(mapping))
+                             componentA_to_componentB=dict(mapping))
 
 
 @pytest.fixture()
@@ -54,7 +56,7 @@ def methylnaphthalene_to_naphthol(atom_mapping_basic_test_files):
     mapping = [(0, 0), (1, 1), (2, 10), (3, 9), (4, 8), (5, 7), (6, 6), (7, 5),
                (8, 4), (9, 3), (10, 2)]
 
-    return LigandAtomMapping(m1, m2, molA_to_molB=dict(mapping))
+    return LigandAtomMapping(m1, m2, componentA_to_componentB=dict(mapping))
 
 
 def test_mcsr_zero(toluene_to_cyclohexane):
@@ -118,7 +120,7 @@ class TestSulfonamideRule:
     @staticmethod
     @pytest.fixture
     def ethylbenzene():
-        m = Chem.AddHs(Chem.MolFromSmiles('c1ccccc1CCC'))
+        m = Chem.AddHs(mol_from_smiles('c1ccccc1CCC'))
 
         return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
 
@@ -126,7 +128,7 @@ class TestSulfonamideRule:
     @pytest.fixture
     def sulfonamide():
         # technically 3-phenylbutane-1-sulfonamide
-        m = Chem.AddHs(Chem.MolFromSmiles('c1ccccc1C(C)CCS(=O)(=O)N'))
+        m = Chem.AddHs(mol_from_smiles('c1ccccc1C(C)CCS(=O)(=O)N'))
 
         return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
 
@@ -145,9 +147,9 @@ class TestSulfonamideRule:
         # the sulfonamide score to try and forbid this
 
         mapping = LigandAtomMapping(
-            molA=sulfonamide,
-            molB=ethylbenzene,
-            molA_to_molB=from_sulf_mapping,
+            componentA=sulfonamide,
+            componentB=ethylbenzene,
+            componentA_to_componentB=from_sulf_mapping,
         )
         expected = 1 - math.exp(-1 * 0.4)
         assert lomap_scorers.sulfonamides_score(mapping) == expected
@@ -158,9 +160,9 @@ class TestSulfonamideRule:
         AtoB = {v: k for k, v in from_sulf_mapping.items()}
 
         # this is the standard output from lomap_scorers
-        mapping = LigandAtomMapping(molA=ethylbenzene,
-                                    molB=sulfonamide,
-                                    molA_to_molB=AtoB)
+        mapping = LigandAtomMapping(componentA=ethylbenzene,
+                                    componentB=sulfonamide,
+                                    componentA_to_componentB=AtoB)
 
         expected = 1 - math.exp(-1 * 0.4)
         assert lomap_scorers.sulfonamides_score(mapping) == expected
@@ -179,8 +181,8 @@ class TestSulfonamideRule:
 ])
 def test_heterocycle_score(base, other, name, hit):
     # base -> other transform, if *hit* a forbidden heterocycle is created
-    r1 = Chem.AddHs(Chem.MolFromSmiles(base))
-    r2 = Chem.AddHs(Chem.MolFromSmiles(other))
+    r1 = Chem.AddHs(mol_from_smiles(base))
+    r2 = Chem.AddHs(mol_from_smiles(other))
     # add 2d coords to stop Lomap crashing for now
     for r in [r1, r2]:
         Compute2DCoords(r)

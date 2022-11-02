@@ -12,7 +12,9 @@ pytest.importorskip('perses')
 pytest.importorskip('openeye')
 from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
+from gufe.components.smallmoleculecomponent import USING_OLD_OFF
 
+@pytest.mark.xfail(not USING_OLD_OFF, reason='perses #1108')
 def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
     # now run the openfe equivalent with the same ligand atom _mappings
     scorer = perses_scorers.default_perses_scorer
@@ -31,6 +33,7 @@ def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
             msg="OpenFE norm value larger than 1 or smaller than 0")
 
 
+@pytest.mark.xfail(not USING_OLD_OFF, reason='perses #1108')
 def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
     scorer = perses_scorers.default_perses_scorer
 
@@ -43,6 +46,7 @@ def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
             normalize=True)
 
 
+@pytest.mark.xfail(not USING_OLD_OFF, reason='perses #1108')
 def test_perses_regression(gufe_atom_mapping_matrix):
     # This is the way how perses does scoring
     molecule_row = np.max(list(gufe_atom_mapping_matrix.keys()))+1
@@ -51,9 +55,9 @@ def test_perses_regression(gufe_atom_mapping_matrix):
         (i, j), ligand_atom_mapping = x
         # Build Perses Mapping:
         perses_atom_mapping = AtomMapping(
-            old_mol=ligand_atom_mapping.molA.to_openff(),
-            new_mol=ligand_atom_mapping.molB.to_openff(),
-            old_to_new_atom_map=ligand_atom_mapping.molA_to_molB
+            old_mol=ligand_atom_mapping.componentA.to_openff(),
+            new_mol=ligand_atom_mapping.componentB.to_openff(),
+            old_to_new_atom_map=ligand_atom_mapping.componentA_to_componentB
         )
         # score Perses Mapping - Perses Style
         matrix[i, j] = matrix[j, i] = AtomMapper(

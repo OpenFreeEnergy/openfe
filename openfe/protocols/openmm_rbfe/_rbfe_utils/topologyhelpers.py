@@ -5,99 +5,77 @@
 # LICENSE: MIT
 
 import warnings
+import itertools
 from copy import deepcopy
 import numpy as np
 from openmm import app, unit
 
 
-def _append_topology(destination_topology, source_topology,
-                     exclude_residue_name=None):
+def combined_topology(topology1, topology2, exclude_chains=None):
     """
-    Originally from Perses.
+    Create a new topology combining these two topologies.
 
-    Add the source OpenMM Topology to the destination Topology.
+    The box information from the *first* topology will be copied over
 
     Parameters
     ----------
-    destination_topology : openmm.app.Topology
-        The Topology to which the contents of `source_topology` are to be
-        added.
-    source_topology : openmm.app.Topology
-        The Topology to be added.
-    exclude_residue_name : str, optional
-        Any residues matching this name are excluded.
-
-    Notes
-    -----
-    * Does not copy over periodic box vectors
-    """
-    if exclude_residue_name is None:
-        # something with 3 characters that is never a residue name
-        exclude_residue_name = "   "
-
-    new_atoms = {}
-    for chain in source_topology.chains():
-        new_chain = destination_topology.addChain(chain.id)
-        for residue in chain.residues():
-            # TODO: should we use complete residue names?
-            if (residue.name[:3] == exclude_residue_name[:3]):
-                continue
-            new_residue = destination_topology.addResidue(residue.name,
-                                                          new_chain,
-                                                          residue.id)
-            for atom in residue.atoms():
-                new_atom = destination_topology.addAtom(atom.name,
-                                                        atom.element,
-                                                        new_residue, atom.id)
-                new_atoms[atom] = new_atom
-    for bond in source_topology.bonds():
-        if ((bond[0].residue.name[:3] == exclude_residue_name[:3]) or
-                (bond[1].residue.name[:3] == exclude_residue_name[:3])):
-            continue
-        order = bond.order
-        destination_topology.addBond(new_atoms[bond[0]], new_atoms[bond[1]],
-                                     order=order)
-
-
-def append_new_topology_item(old_topology, new_topology,
-                             exclude_residue_name=None):
-    """
-    Create a "new" topology by appending the contents of ``new_topology`` to
-    the ``old_topology``.
-
-    Optionally exclude a given from ``old_topology`` on building.
-
-    Parameters
-    ----------
-    old_topology : openmm.app.Topology
-        Old topology to which the ``new_topology`` contents will be appended
-        to.
-    new_topology : openmm.app.Topology
-        New topology item to be appended to ``old_topology``.
-    exclude_residue_name : str, optional
-        Name of residue in ``old_topology`` to be excluded in building the
-        appended topology.
+    topology1 : openmm.app.Topology
+    topology2 : openmm.app.Topology
+    exclude_chains : Iterable[openmm.app.topology.Chain]
 
     Returns
     -------
-    appended_topology : openmm.app.Topology
-        Topology containing the combined old and new topology items, excluding
-        any residues which were defined in ``exclude_residue_name``.
+    new : openmm.app.Topology
     """
-    # Create an empty topology
-    appended_topology = app.Topology()
+    if exclude_chains is None:
+        exclude_chains = []
 
-    # Append old topology to new topology, excluding residue as required
-    _append_topology(appended_topology, old_topology, exclude_residue_name)
+    top = app.Topology()
+    # I couldn't resist bringing in itertools.chain, with so much chain
+    # going on here
+    chains = (chain for chain in itertools.chain(topology1.chains(),
+                                                 topology2.chains())
+              if chain not in exclude_chains)
+    excluded_atoms = set(itertools.chain.from_iterable(
+        c.atoms() for c in exclude_chains)
+    )
 
-    # Now we append the contents of the new topology
-    _append_topology(appended_topology, new_topology)
+    # add new copies of selected chains, residues, and atoms; keep mapping
+    # of old atoms to new for adding bonds later
+    old_to_new_atom_map = {}
+    for chain_id, chain in enumerate(chains):
+        # TODO: is chain ID int or str? I recall it being int in MDTraj....
+        new_chain = top.addChain(chain_id)
+        for residue in chain.residues():
+            new_res = top.addResidue(residue.name,
+                                     new_chain,
+                                     residue.id)
+            for atom in residue.atoms():
+                new_atom = top.addAtom(atom.name,
+                                       atom.element,
+                                       new_res,
+                                       atom.id)
+                old_to_new_atom_map[atom] = new_atom
+
+    # figure out which bonds to keep: drop any that involve removed atoms
+    def atoms_for_bond(bond):
+        return {bond.atom1, bond.atom2}
+
+    keep_bonds = (bond for bond in itertools.chain(topology1.bonds(),
+                                                   topology2.bonds())
+                  if not (atoms_for_bond(bond) & excluded_atoms))
+
+    # add bonds to topology
+    for bond in keep_bonds:
+        top.addBond(old_to_new_atom_map[bond.atom1],
+                    old_to_new_atom_map[bond.atom2],
+                    bond.type,
+                    bond.order)
 
     # Copy over the box vectors
-    appended_topology.setPeriodicBoxVectors(
-        old_topology.getPeriodicBoxVectors())
+    top.setPeriodicBoxVectors(topology1.getPeriodicBoxVectors())
 
-    return appended_topology
+    return top
 
 
 def _get_indices(topology, residue_name):
@@ -335,7 +313,7 @@ def get_system_mappings(old_to_new_atom_map,
 
 def set_and_check_new_positions(mapping, old_topology, new_topology,
                                 old_positions, insert_positions,
-                                shift_insert=None, tolerance=1e-5):
+                                shift_insert=None, tolerance=0.5):
     """
     Utility to create new positions given a mapping, the old positions and
     the positions of the molecule being inserted, defined by `insert_positions.

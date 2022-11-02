@@ -3,11 +3,14 @@
 
 from typing import Dict, Tuple
 
+from rdkit import Chem
+from openfe.setup import SmallMoleculeComponent
 import lomap
-
 import pytest
 
 from openfe.setup import LigandAtomMapping
+
+from ..conftest import mol_from_smiles
 
 
 def _translate_lomap_mapping(atom_mapping_str: str) -> Dict[int, int]:
@@ -36,8 +39,23 @@ def gufe_atom_mapping_matrix(lomap_basic_test_files_dir,
         nm1 = dbmols[i].getName()[:-5]
         nm2 = dbmols[j].getName()[:-5]
         ligand_atom_mappings[(i, j)] = LigandAtomMapping(
-            molA=atom_mapping_basic_test_files[nm1],
-            molB=atom_mapping_basic_test_files[nm2],
-            molA_to_molB=val)
+            componentA=atom_mapping_basic_test_files[nm1],
+            componentB=atom_mapping_basic_test_files[nm2],
+            componentA_to_componentB=val)
 
     return ligand_atom_mappings
+
+
+@pytest.fixture()
+def mol_pair_to_shock_perses_mapper() -> Tuple[SmallMoleculeComponent,
+                                               SmallMoleculeComponent]:
+    """
+    This pair of Molecules leads to an empty Atom mapping in
+    Perses Mapper with certain settings.
+
+    Returns:
+        Tuple[SmallMoleculeComponent]: two molecule objs for the test
+    """
+    molA = SmallMoleculeComponent(mol_from_smiles('c1ccccc1'), 'benzene')
+    molB = SmallMoleculeComponent(mol_from_smiles('C1CCCCC1'), 'cyclohexane')
+    return molA, molB

@@ -10,8 +10,11 @@ Welcome to OpenFE's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   installation
    setup
+   dumping_transformation
    api
+   cli/index
 
 Indices and tables
 ==================

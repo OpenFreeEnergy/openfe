@@ -6,6 +6,7 @@ import networkx as nx
 
 import openfe.setup
 
+from .conftest import mol_from_smiles
 
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
     def _mappings_generator(self, molA, molB):
@@ -37,7 +38,7 @@ def test_radial_graph(atom_mapping_basic_test_files, toluene_vs_others):
     ligands_in_network = {mol.name for mol in network.nodes}
     assert ligands_in_network == set(atom_mapping_basic_test_files.keys())
     # check that every edge has the central ligand within
-    assert all((central_ligand_name in {mapping.molA.name, mapping.molB.name})
+    assert all((central_ligand_name in {mapping.componentA.name, mapping.componentB.name})
                for mapping in network.edges)
 
 
@@ -45,7 +46,7 @@ def test_radial_graph_with_scorer(toluene_vs_others):
     toluene, others = toluene_vs_others
 
     def scorer(mapping):
-        return 1.0 / len(mapping.molA_to_molB)
+        return 1.0 / len(mapping.componentA_to_componentB)
 
     network = openfe.setup.ligand_network_planning.generate_radial_network(
         ligands=others,
@@ -56,9 +57,9 @@ def test_radial_graph_with_scorer(toluene_vs_others):
     assert len(network.edges) == len(others)
 
     for edge in network.edges:
-        assert len(edge.molA_to_molB) > 1  # we didn't take the bad mapper
+        assert len(edge.componentA_to_componentB) > 1  # we didn't take the bad mapper
         assert 'score' in edge.annotations
-        assert edge.annotations['score'] == 1.0 / len(edge.molA_to_molB)
+        assert edge.annotations['score'] == 1.0 / len(edge.componentA_to_componentB)
 
 
 def test_radial_graph_multiple_mappers_no_scorer(toluene_vs_others):
@@ -73,11 +74,11 @@ def test_radial_graph_multiple_mappers_no_scorer(toluene_vs_others):
     assert len(network.edges) == len(others)
 
     for edge in network.edges:
-        assert edge.molA_to_molB == {0: 0}
+        assert edge.componentA_to_componentB == {0: 0}
 
 
 def test_radial_network_failure(atom_mapping_basic_test_files):
-    nigel = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles('N'))
+    nigel = openfe.setup.SmallMoleculeComponent(mol_from_smiles('N'))
 
     with pytest.raises(ValueError, match='No mapping found for'):
         network = openfe.setup.ligand_network_planning.generate_radial_network(
@@ -93,7 +94,7 @@ def test_minimal_spanning_graph(toluene_vs_others):
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
 
     def scorer(mapping):
-        return 1.0 / len(mapping.molA_to_molB)
+        return 1.0 / len(mapping.componentA_to_componentB)
 
     network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
         ligands=others + [toluene],
@@ -103,11 +104,11 @@ def test_minimal_spanning_graph(toluene_vs_others):
 
     assert len(network.nodes) == len(others) + 1
     for edge in network.edges:
-        assert edge.molA_to_molB != {0: 0}  # lomap should find something
+        assert edge.componentA_to_componentB != {0: 0}  # lomap should find something
 
     found_pairs = set()
     for edge in network.edges:
-        pair = frozenset([edge.molA, edge.molB])
+        pair = frozenset([edge.componentA, edge.componentB])
         assert pair not in found_pairs
         found_pairs.add(pair)
 
@@ -116,10 +117,10 @@ def test_minimal_spanning_graph(toluene_vs_others):
 
 def test_minimal_spanning_graph_unreachable(toluene_vs_others):
     toluene, others = toluene_vs_others
-    nimrod = openfe.setup.SmallMoleculeComponent(Chem.MolFromSmiles("N"))
+    nimrod = openfe.setup.SmallMoleculeComponent(mol_from_smiles("N"))
 
     def scorer(mapping):
-        return 1.0 / len(mapping.molA_to_molB)
+        return 1.0 / len(mapping.componentA_to_componentB)
 
     with pytest.raises(RuntimeError, match="Unable to create edges"):
         network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
