@@ -774,22 +774,22 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
           Do a dry run of the calculation, creating all necessary hybrid
           system components (topology, system, sampler, etc...) but without
           running the simulation.
-
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
         basepath : Pathlike, optional
-          where to run the calculation, defaults to current working directory
+          Where to run the calculation, defaults to current working directory
 
         Returns
         -------
         dict
-          outputs created in the basepath directory
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
 
         Raises
         ------
         error
-          exception if anything failed
+          Exception if anything failed
         """
         if verbose:
             logger.info("creating hybrid system")
@@ -1157,7 +1157,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                    basepath / settings.simulation_settings.checkpoint_storage]
             for fn in fns:
                 os.remove(fn)
-            return {}
+            return {'debug': {'sampler': sampler}}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,

@@ -7,6 +7,7 @@ from openff.units import unit
 from openff.units.openmm import ensure_quantity
 
 from openmm import app
+from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 from openfe import setup
 from openfe.protocols import openmm_rbfe
@@ -156,7 +157,8 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        assert unit.run(dry=True) == {}
+        assert isinstance(unit.run(dry=True)['debug']['sampler'],
+                          MultiStateSampler)
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -176,9 +178,11 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
-    # Returns True if everything is OK
+
     with tmpdir.as_cwd():
-        assert unit.run(dry=True) == {}
+        # Returns debug objects if everything is OK
+        assert isinstance(unit.run(dry=True)['debug']['sampler'],
+                          MultiStateSampler)
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -198,9 +202,11 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
     unit = list(dag.protocol_units)[0]
-    # Returns True if everything is OK
+
     with tmpdir.as_cwd():
-        assert unit.run(dry=True) == {}
+        # Returns debug contents if everything is OK
+        assert isinstance(unit.run(dry=True)['debug']['sampler'],
+                          MultiStateSampler)
 
 
 def test_lambda_schedule_default():
@@ -427,7 +433,6 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
 def test_unit_tagging(solvent_protocol_dag, tmpdir):
     # test that executing the Units includes correct generation and repeat info
     units = solvent_protocol_dag.protocol_units
-
     with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandTransformUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
