@@ -424,7 +424,7 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
     )
 
 
-def test_unit_tagging(solvent_protocol_dag):
+def test_unit_tagging(solvent_protocol_dag, tmpdir):
     # test that executing the Units includes correct generation and repeat info
     units = solvent_protocol_dag.protocol_units
 
@@ -432,7 +432,7 @@ def test_unit_tagging(solvent_protocol_dag):
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
         for u in units:
-            ret = u.execute(shared='.')
+            ret = u.execute(shared=tmpdir)
             results.append(ret)
 
     repeats = set()
