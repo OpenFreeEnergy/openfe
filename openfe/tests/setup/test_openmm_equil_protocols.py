@@ -149,14 +149,14 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     )
 
     # create DAG from protocol and take first (and only) work unit from within
-    with tmpdir.as_cwd():
-        dag = protocol.create(
-            stateA=benzene_vacuum_system,
-            stateB=toluene_vacuum_system,
-            mapping={'ligand': benzene_to_toluene_mapping},
-        )
-        unit = list(dag.protocol_units)[0]
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
 
+    with tmpdir.as_cwd():
         assert isinstance(unit.run(dry=True)['debug']['sampler'],
                           MultiStateSampler)
 
@@ -172,13 +172,14 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     protocol = openmm_rbfe.RelativeLigandTransform(
             settings=settings,
     )
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
     with tmpdir.as_cwd():
-        dag = protocol.create(
-            stateA=benzene_system,
-            stateB=toluene_system,
-            mapping={'ligand': benzene_to_toluene_mapping},
-        )
-        unit = list(dag.protocol_units)[0]
         # Returns debug objects if everything is OK
         assert isinstance(unit.run(dry=True)['debug']['sampler'],
                           MultiStateSampler)
@@ -195,13 +196,14 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     protocol = openmm_rbfe.RelativeLigandTransform(
             settings=settings,
     )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
     with tmpdir.as_cwd():
-        dag = protocol.create(
-            stateA=benzene_complex_system,
-            stateB=toluene_complex_system,
-            mapping={'ligand': benzene_to_toluene_mapping},
-        )
-        unit = list(dag.protocol_units)[0]
         # Returns debug contents if everything is OK
         assert isinstance(unit.run(dry=True)['debug']['sampler'],
                           MultiStateSampler)
@@ -438,33 +440,32 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
             ret = u.execute(shared=tmpdir)
             results.append(ret)
 
-        repeats = set()
-        for ret in results:
-            assert isinstance(ret, gufe.ProtocolUnitResult)
-            assert ret.outputs['generation'] == 0
-            repeats.add(ret.outputs['repeat_id'])
-        assert repeats == {0, 1, 2}
+    repeats = set()
+    for ret in results:
+        assert isinstance(ret, gufe.ProtocolUnitResult)
+        assert ret.outputs['generation'] == 0
+        repeats.add(ret.outputs['repeat_id'])
+    assert repeats == {0, 1, 2}
 
 
-def test_gather(solvent_protocol_dag, tmpdir):
+def test_gather(solvent_protocol_dag):
     # check .gather behaves as expected
-    with tmpdir.as_cwd():
-        with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandTransformUnit.run',
-                        return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
-            dagres = gufe.protocols.execute(solvent_protocol_dag)
+    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandTransformUnit.run',
+                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
+        dagres = gufe.protocols.execute(solvent_protocol_dag)
 
-        prot = openmm_rbfe.RelativeLigandTransform(
-            settings=openmm_rbfe.RelativeLigandTransform.default_settings()
+    prot = openmm_rbfe.RelativeLigandTransform(
+        settings=openmm_rbfe.RelativeLigandTransform.default_settings()
+    )
+
+    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.multistate') as m:
+        res = prot.gather([dagres])
+
+        # check we created the expected number of Reporters and Analyzers
+        assert m.MultiStateReporter.call_count == 3
+        m.MultiStateReporter.assert_called_with(
+            storage='file.nc', checkpoint_storage='chk.nc',
         )
+        assert m.MultiStateSamplerAnalyzer.call_count == 3
 
-        with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.multistate') as m:
-            res = prot.gather([dagres])
-
-            # check we created the expected number of Reporters and Analyzers
-            assert m.MultiStateReporter.call_count == 3
-            m.MultiStateReporter.assert_called_with(
-                storage='file.nc', checkpoint_storage='chk.nc',
-            )
-            assert m.MultiStateSamplerAnalyzer.call_count == 3
-
-        assert isinstance(res, openmm_rbfe.RelativeLigandTransformResult)
+    assert isinstance(res, openmm_rbfe.RelativeLigandTransformResult)
