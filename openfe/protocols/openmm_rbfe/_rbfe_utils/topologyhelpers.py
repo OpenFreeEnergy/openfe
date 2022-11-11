@@ -155,7 +155,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
             new_constraints[atom2] = length
 
     to_del = []
-    for new_index, old_index in old_to_new_atom_map.items():
+    for old_index, new_index in old_to_new_atom_map.items():
         # Constraints exist for both end atom states
         # TODO: check if we should be not allowing a fully dropped constraint
         if (new_index in new_constraints.keys() and
