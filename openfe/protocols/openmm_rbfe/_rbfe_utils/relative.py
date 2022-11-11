@@ -1425,7 +1425,7 @@ class HybridTopologyFactory:
 
             # If all atoms are in the core, we'll need to find the
             # corresponding parameters in the old system and interpolate
-            if hybrid_index_set.intersection(self._atom_classes['unique_old_atoms']) != set():
+            if hybrid_index_set.intersection(self._atom_classes['unique_old_atoms']):
                 # Then it goes to a standard force...
                 self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
                     hybrid_index_list[0], hybrid_index_list[1],
@@ -1455,7 +1455,7 @@ class HybridTopologyFactory:
                 self._new_to_hybrid_map[new_index] for new_index in torsion_parameters[:4]]
             hybrid_index_set = set(hybrid_index_list)
 
-            if hybrid_index_set.intersection(self._atom_classes['unique_new_atoms']) !=set():
+            if hybrid_index_set.intersection(self._atom_classes['unique_new_atoms']):
                 # Then it goes to the custom torsion force (scaled to zero)
                 self._hybrid_system_forces['unique_atom_torsion_force'].addTorsion(
                     hybrid_index_list[0], hybrid_index_list[1],
