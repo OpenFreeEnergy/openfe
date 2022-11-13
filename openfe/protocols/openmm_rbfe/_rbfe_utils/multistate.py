@@ -8,6 +8,7 @@ See here for the license: https://github.com/choderalab/perses/blob/main/LICENSE
 
 import copy
 import warnings
+import logging
 import numpy as np
 import openmm
 from openmm import unit
@@ -15,8 +16,11 @@ from openmmtools.multistate import replicaexchange, sams, multistatesampler
 from openmmtools import cache
 from openmmtools.states import (CompoundThermodynamicState,
                                 SamplerState, ThermodynamicState)
+from openmmtools.integrators import FIREMinimizationIntegrator
 from .lambdaprotocol import RelativeAlchemicalState
-#from perses.dispersed.feptasks import minimize
+
+
+logger = logging.getLogger(__name__)
 
 
 class HybridCompatibilityMixin(object):
@@ -62,8 +66,6 @@ class HybridCompatibilityMixin(object):
             lambda_protocol.
         """
         n_states = len(lambda_protocol.lambda_schedule)
-        # TODO - remove this and move it to our own MD tasks
-        # from perses.dispersed import feptasks
 
         hybrid_system = self._factory.hybrid_system
 
@@ -115,8 +117,6 @@ class HybridCompatibilityMixin(object):
             # with relaxed positions
             context, context_integrator = context_cache.get_context(
                                              compound_thermostate_copy)
-            # TODO: move to our own MD tasks
-            #minimize(compound_thermostate_copy, sampler_state)
             sampler_state_list.append(copy.deepcopy(sampler_state))
 
         # making sure number of sampler states equals n_replicas
@@ -191,17 +191,22 @@ class HybridCompatibilityMixin(object):
         # Compute the final energy of the system for logging.
         final_energy = thermodynamic_state.reduced_potential(sampler_state)
 
-        # If energy > 0 kT, attempt to use L-BFGS minimizer
-        if final_energy > 0:
-            logger.debug(f'Positive final FIRE minimizer energy {final_energy}; falling back to L-BFGS')
+        # If energy > 0 kT and on a GPU device attempt to use CPU L-BFGS minimizer
+        if final_energy > 0 and context.getPlatform().getName() in ['CUDA', 'OpenCL']:
+            logger.debug(f'Positive final FIRE minimizer energy {final_energy}; falling back to CPU L-BFGS')
             sampler_state.apply_to_context(context)
+            print(type(cache.global_context_cache))
+            integrator = openmm.VerletIntegrator(1.0)
+            cpu_platform = openmm.Platform.getPlatformByName('CPU')
+            context = thermodynamic_state.create_context(integrator, cpu_platform)
+            sampler_state.apply_to_context(context, ignore_velocities=True)
             openmm.LocalEnergyMinimizer.minimize(context, tolerance, max_iterations)
 
             # Get the minimized positions
             sampler_state.update_from_context(context)
 
             # Get the final energy
-            sampler_state.update_from_context(context)
+            final_energy = thermodynamic_state.reduced_potential(sampler_state)
 
         logger.debug('Replica {}/{}: final energy {:8.3f}kT'.format(
             replica_id + 1, self.n_replicas, final_energy))
