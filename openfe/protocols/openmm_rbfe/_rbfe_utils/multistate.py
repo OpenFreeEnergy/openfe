@@ -196,17 +196,22 @@ class HybridCompatibilityMixin(object):
         # Compute the final energy of the system for logging.
         final_energy = thermodynamic_state.reduced_potential(sampler_state)
 
-        # If energy > 0 kT, attempt to use L-BFGS minimizer
-        if final_energy > 0:
-            logger.debug(f'Positive final FIRE minimizer energy {final_energy}; falling back to L-BFGS')
+        # If energy > 0 kT and on a GPU device attempt to use CPU L-BFGS minimizer
+        if final_energy > 0 and context.getPlatform().getName() in ['CUDA', 'OpenCL']:
+            logger.debug(f'Positive final FIRE minimizer energy {final_energy}; falling back to CPU L-BFGS')
             sampler_state.apply_to_context(context)
+            print(type(cache.global_context_cache))
+            integrator = openmm.VerletIntegrator(1.0)
+            cpu_platform = openmm.Platform.getPlatformByName('CPU')
+            context = thermodynamic_state.create_context(integrator, cpu_platform)
+            sampler_state.apply_to_context(context, ignore_velocities=True)
             openmm.LocalEnergyMinimizer.minimize(context, tolerance, max_iterations)
 
             # Get the minimized positions
             sampler_state.update_from_context(context)
 
             # Get the final energy
-            sampler_state.update_from_context(context)
+            final_energy = thermodynamic_state.reduced_potential(sampler_state)
 
         logger.debug('Replica {}/{}: final energy {:8.3f}kT'.format(
             replica_id + 1, self.n_replicas, final_energy))
