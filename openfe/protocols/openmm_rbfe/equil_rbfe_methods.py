@@ -65,9 +65,6 @@ class SystemSettings(BaseModel):
     hydrogen_mass : float
         How much mass to repartition to hydrogen. Default None, no
         repartitioning will occur.
-    virtual_imaging_bonds : bool
-        Add virtual bonds between the protein & ligand and the protein
-        chains to ensure components are imaged together. Default True.
     """
     class Config:
         arbitrary_types_allowed = True
@@ -78,7 +75,6 @@ class SystemSettings(BaseModel):
     rigid_water = True
     remove_com = True  # Probably want False here
     hydrogen_mass: Union[float, None] = None
-    virtual_imaging_bonds = True
 
 
 class TopologySettings(BaseModel):
@@ -999,7 +995,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
             flatten_torsions=alchem_settings.flatten_torsions,
-            impose_virtual_bonds=settings.system_settings.virtual_imaging_bonds,
         )
 
         #  c. Add a barostat to the hybrid system
