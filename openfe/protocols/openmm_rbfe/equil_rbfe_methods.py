@@ -937,11 +937,10 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
         #  e. get stateA positions
         stateA_positions = stateA_modeller.getPositions()
         ## canonicalize positions (tuples to np.array)
-        shift = np.array([0,0,0]) * openmm.unit.nanometer
-        stateA_positions = stateA_positions + shift
-        #stateA_positions = omm_unit.Quantity(
-        #    value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
-        #    unit = openmm.unit.nanometers)
+        stateA_positions = omm_unit.Quantity(
+            value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
+            unit = openmm.unit.nanometers
+        )
 
         # 6.  Create OpenMM system + topology + positions for "B" system
         #  a. stateB topology from stateA (replace out the ligands)
