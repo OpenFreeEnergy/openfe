@@ -195,7 +195,6 @@ class HybridCompatibilityMixin(object):
         if final_energy > 0 and context.getPlatform().getName() in ['CUDA', 'OpenCL']:
             logger.debug(f'Positive final FIRE minimizer energy {final_energy}; falling back to CPU L-BFGS')
             sampler_state.apply_to_context(context)
-            print(type(cache.global_context_cache))
             integrator = openmm.VerletIntegrator(1.0)
             cpu_platform = openmm.Platform.getPlatformByName('CPU')
             context = thermodynamic_state.create_context(integrator, cpu_platform)
