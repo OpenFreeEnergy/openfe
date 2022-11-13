@@ -335,9 +335,6 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     insert_positions : simtk.unit.Quantity
         Positions of the alchemically changing molecule in the "new" alchemical
         state.
-    shift_insert : np.ndarray (3,)
-        Amount to shift `insert_positions` by in the x,y,z direction in
-        Angstrom. Default None.
     tolerance : float
         Maximum allowed deviation along any dimension (x,y,z) in mapped atoms
         between the "old" and "new" positions. Default 0.5.
@@ -358,8 +355,6 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     new_pos_array[new_idxs, :] = old_pos_array[old_idxs, :]
     # copy over the new alchemical molecule positions
     new_pos_array[new_mol_idxs, :] = add_pos_array
-    if shift_insert is not None:
-        new_pos_array[new_mol_idxs, :] += shift_insert
 
     # loop through all mapped atoms and make sure we don't deviate by more than
     # tolerance - not super necessary, but it's a nice sanity check that should

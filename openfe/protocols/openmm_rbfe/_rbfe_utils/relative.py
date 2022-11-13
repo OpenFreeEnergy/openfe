@@ -92,6 +92,7 @@ class HybridTopologyFactory:
                  softcore_sigma_Q=1.0,
                  interpolate_old_and_new_14s=False,
                  flatten_torsions=False,
+                 impose_virtual_bonds=True,
                  **kwargs):
         """
         Initialize the Hybrid topology factory.
@@ -140,6 +141,9 @@ class HybridTopologyFactory:
             If True, torsion terms involving `unique_new_atoms` will be
             scaled such that at lambda=0,1, the torsion term is turned off/on
             respectively. The opposite is true for `unique_old_atoms`.
+        impose_virtual_bonds : bool, default True
+            If True, adds a virtual bond between non-contiguous protein and
+            ligand components to ensure that they are imaged together.
         """
 
         # Assign system positions and force
@@ -248,6 +252,10 @@ class HybridTopologyFactory:
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
         logger.info("DONE")
+
+        # Add virtual bonds to ensure system is imaged together
+        if impose_virtual_bonds:
+            self._impose_virtual_bonds()
 
     @staticmethod
     def _check_bounds(value, varname, minmax=(0, 1)):
@@ -2178,6 +2186,86 @@ class HybridTopologyFactory:
                         [chargeProd_new, sigma_new, epsilon_new*0.0,
                          sigma_new, epsilon_new, 0, 1]
                     )
+
+    def _impose_virtual_bonds(self):
+        """
+        Add a virtual bond between protein subunits and ligand(s) to ensure
+        that everything is imaged together.
+
+        TODO
+        ----
+        * Eventually this needs to be moved to a "restraint" class, even
+          though this is a zero bond force.
+        * Move away from proteins and also set this for non-protein hosts
+        """
+        core_atoms = [int(idx) for idx in self._atom_classes['core_atoms']]
+        heavy_atoms = [int(idx) for idx in self._hybrid_topology.select('mass > 1.5')]
+        core_heavy_atoms = [int(idx) for idx in set(core_atoms).intersection(set(heavy_atoms))]
+
+        # get protein CA atoms
+        protein_atoms = [int(idx) for idx in self._hybrid_topology.select('protein and name CA')]
+
+        if len(core_heavy_atoms) == 0 or len(protein_atoms) == 0:
+            # nothing to see here, return
+            logger.info("no core or protein atoms - no virt bond added")
+            return
+
+        if len(set(core_atoms).intersection(set(protein_atoms))) != 0:
+            # core atoms are in the protein, return
+            logger.info("all core atoms are in protein - no virt bond added")
+            return
+
+        cutoff = 1.2  # 1.2 A
+        trajectory = mdt.Trajectory([self.hybrid_positions / unit.nanometers],
+                                    topology=self._hybrid_topology)
+        matches = mdt.compute_neighbors(trajectory, cutoff, core_heavy_atoms,
+                                        haystack_indices=protein_atoms,
+                                        periodic=True)
+
+        protein_atoms = set()
+
+        for match in matches:
+            for index in match:
+                protein_atoms.add(int(index))
+
+        protein_atoms = [int(idx) for idx in protein_atoms]
+
+        if not protein_atoms:
+            raise ValueError("no matching atoms for virtual bond")
+
+        # Add virtual bond between a core and protein atom to ensure they are
+        # periodically replicated together
+        bondforce = openmm.CustomBondForce('0')
+        bondforce.addBond(core_heavy_atoms[0], protein_atoms[0], [])
+        lmsg = (f"Adding virt bond between {core_heavy_atoms[0]} "
+                f"and {protein_atoms[0]}")
+        logger.info(lmsg)
+        self._hybrid_system.addForce(bondforce)
+
+        # Extract protein and molecule chains and indices before adding solvent
+        mdtop = trajectory.top
+        protein_atom_indices = mdtop.select('protein and (mass > 1)')
+        molecule_atom_indices = mdtop.select(
+            '(not protein) and (not water) and (mass > 1)')
+        protein_chainids = list(set(
+            [atom.residue.chain.index for atom in mdtop.atoms
+             if atom.index in protein_atom_indices]))
+        n_protein_chains = len(protein_chainids)
+        protein_chain_atom_indices = dict()
+
+        for chainid in protein_chainids:
+            protein_chain_atom_indices[chainid] = mdtop.select(f'protein and chainid {chainid}')
+
+        # Add virtual bond between protein chains so they are imaged together
+        if (n_protein_chains > 1):
+            chainid = protein_chainids[0]
+            iatom = protein_chain_atom_indices[chainid][0]
+            for chainid in protein_chainids[1:]:
+                jatom = protein_chain_atom_indices[chainid][0]
+                lmsg = (f"Adding inter-chain virt bond between atoms {iatom} "
+                        f"and {jatom}")
+                logger.info(lmsg)
+                bondforce.addBond(int(iatom), int(jatom), [])
 
     def _compute_hybrid_positions(self):
         """

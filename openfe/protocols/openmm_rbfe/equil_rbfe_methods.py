@@ -65,6 +65,9 @@ class SystemSettings(BaseModel):
     hydrogen_mass : float
         How much mass to repartition to hydrogen. Default None, no
         repartitioning will occur.
+    virtual_imaging_bonds : bool
+        Add virtual bonds between the protein & ligand and the protein
+        chains to ensure components are imaged together. Default True.
     """
     class Config:
         arbitrary_types_allowed = True
@@ -75,6 +78,7 @@ class SystemSettings(BaseModel):
     rigid_water = True
     remove_com = True  # Probably want False here
     hydrogen_mass: Union[float, None] = None
+    virtual_imaging_bonds = True
 
 
 class TopologySettings(BaseModel):
@@ -927,24 +931,17 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             removeCMMotion=settings.system_settings.remove_com,
         )
 
-        #  d. crate stateA topology
+        #  d. create stateA topology
         stateA_topology = stateA_modeller.getTopology()
 
-        def get_center_offset(omm_system):
-            """Helper function to get the centering offset for a cubic box.
-
-            TODO
-            ----
-            * Deal with non-cubic boxes
-            """
-            # Cubic so we can safely assume the boxes are the same length
-            edge_length = omm_system.getDefaultPeriodicBoxVectors()[0][0]
-            edge_nm = edge_length.value_in_unit(omm_unit.nanometer) / 2
-            return np.array([edge_nm, edge_nm, edge_nm]) * omm_unit.nanometer
-
-        #  e. Center the positions in the middle of the box by shifting by offset
-        center_offset = get_center_offset(stateA_system)
-        stateA_positions = stateA_modeller.getPositions() + center_offset
+        #  e. get stateA positions
+        stateA_positions = stateA_modeller.getPositions()
+        ## canonicalize positions (tuples to np.array)
+        shift = np.array([0,0,0]) * openmm.unit.nanometer
+        stateA_positions = stateA_positions + shift
+        #stateA_positions = omm_unit.Quantity(
+        #    value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
+        #    unit = openmm.unit.nanometers)
 
         # 6.  Create OpenMM system + topology + positions for "B" system
         #  a. stateB topology from stateA (replace out the ligands)
@@ -981,7 +978,6 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
             insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
-            shift_insert=center_offset.value_in_unit(omm_unit.angstrom),
             tolerance=settings.alchemical_settings.atom_overlap_tolerance
         )
 
@@ -1004,6 +1000,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
             softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
             flatten_torsions=alchem_settings.flatten_torsions,
+            impose_virtual_bonds=settings.system_settings.virtual_imaging_bonds,
         )
 
         #  c. Add a barostat to the hybrid system

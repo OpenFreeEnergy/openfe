@@ -16,6 +16,7 @@ from openmmtools import cache
 from openmmtools.states import (CompoundThermodynamicState,
                                 SamplerState, ThermodynamicState)
 from .lambdaprotocol import RelativeAlchemicalState
+#from perses.dispersed.feptasks import minimize
 
 
 class HybridCompatibilityMixin(object):
@@ -115,8 +116,7 @@ class HybridCompatibilityMixin(object):
             context, context_integrator = context_cache.get_context(
                                              compound_thermostate_copy)
             # TODO: move to our own MD tasks
-            # feptasks.minimize(compound_thermodynamic_state_copy,
-            #                   sampler_state)
+            #minimize(compound_thermostate_copy, sampler_state)
             sampler_state_list.append(copy.deepcopy(sampler_state))
 
         # making sure number of sampler states equals n_replicas
