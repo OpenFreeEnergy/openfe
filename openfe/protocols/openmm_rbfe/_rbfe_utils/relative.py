@@ -76,8 +76,6 @@ class HybridTopologyFactory:
     * Document how positions for hybrid system are constructed.
     * Allow support for annealing in omitted terms.
     * Implement omitted terms (this was not available in the original class).
-    * Add impose_virtual_bonds when/if we add RMSD restraints
-      (see: https://github.com/choderalab/perses/pull/748).
 
     """
 
@@ -250,7 +248,6 @@ class HybridTopologyFactory:
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
         logger.info("DONE")
-
 
     @staticmethod
     def _check_bounds(value, varname, minmax=(0, 1)):
@@ -2181,7 +2178,6 @@ class HybridTopologyFactory:
                         [chargeProd_new, sigma_new, epsilon_new*0.0,
                          sigma_new, epsilon_new, 0, 1]
                     )
-
 
     def _compute_hybrid_positions(self):
         """
