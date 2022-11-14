@@ -3,7 +3,7 @@
 from __future__ import annotations
 import json
 
-from typing import FrozenSet, Iterable
+from typing import FrozenSet, Iterable, Optional
 
 from openfe.setup import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LigandAtomMapping
@@ -26,7 +26,7 @@ class Network:
     def __init__(
         self,
         edges: Iterable[LigandAtomMapping],
-        nodes: Iterable[SmallMoleculeComponent] = None
+        nodes: Optional[Iterable[SmallMoleculeComponent]] = None
     ):
         if nodes is None:
             nodes = []

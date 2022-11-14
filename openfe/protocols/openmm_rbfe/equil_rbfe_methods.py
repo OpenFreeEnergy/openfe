@@ -596,7 +596,7 @@ class RelativeLigandTransform(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: dict[str, gufe.ComponentMapping] = None,
+        mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
         extend_from: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
