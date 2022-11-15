@@ -11,6 +11,8 @@ from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 from openfe import setup
 from openfe.protocols import openmm_rbfe
+from openmmforcefields.generators import SMIRNOFFTemplateGenerator
+from openff.units.openmm import ensure_quantity
 
 
 @pytest.fixture
@@ -469,3 +471,82 @@ def test_gather(solvent_protocol_dag):
         assert m.MultiStateSamplerAnalyzer.call_count == 3
 
     assert isinstance(res, openmm_rbfe.RelativeLigandTransformResult)
+
+
+def test_remove_constraints(benzene_modifications):
+    # check that mappings are correctly corrected to avoid changes in
+    # constraint length
+    # use a phenol->toluene transform to test
+    ligA = benzene_modifications['phenol']
+    ligB = benzene_modifications['toluene']
+
+    mapping = setup.LigandAtomMapping(
+        componentA=ligA,
+        componentB=ligB,
+        # this is default lomap
+        # importantly the H in -OH maps to one of the -CH3
+        # this constraint will change length
+        componentA_to_componentB={0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9, 6: 10,
+                                  7: 11, 8: 12, 9: 13, 10: 1, 11: 14, 12: 2},
+    )
+    omm_forcefield_A = app.ForceField('tip3p.xml')
+    smirnoff_A = SMIRNOFFTemplateGenerator(
+        forcefield='openff-2.0.0.offxml',
+        molecules=[ligA.to_openff()],
+    )
+    omm_forcefield_A.registerTemplateGenerator(smirnoff_A.generator)
+
+    omm_forcefield_B = app.ForceField('tip3p.xml')
+    smirnoff_B = SMIRNOFFTemplateGenerator(
+        forcefield='openff-2.0.0.offxml',
+        molecules=[ligB.to_openff()],
+    )
+    omm_forcefield_B.registerTemplateGenerator(smirnoff_B.generator)
+
+    stateA_modeller = app.Modeller(
+        ligA.to_openff().to_topology().to_openmm(),
+        ensure_quantity(ligA.to_openff().conformers[0], 'openmm')
+    )
+    stateA_topology = stateA_modeller.getTopology()
+    stateA_system = omm_forcefield_A.createSystem(
+        stateA_topology,
+        nonbondedMethod=app.CutoffNonPeriodic,
+        nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
+        constraints=app.HBonds,  # constraints,
+        rigidWater=True,
+        hydrogenMass=None,
+        removeCMMotion=True,
+    )
+
+    stateB_topology = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
+        stateA_topology,
+        ligB.to_openff().to_topology().to_openmm(),
+        exclude_chains=list(stateA_topology.chains())
+    )
+    # since we're doing a swap of the only molecule, this is equivalent:
+    #stateB_topology = app.Modeller(
+    #    sysB['ligand'].to_openff().to_topology().to_openmm(),
+    #    ensure_quantity(sysB['ligand'].to_openff().conformers[0], 'openmm')
+    #)
+
+    stateB_system = omm_forcefield_B.createSystem(
+        stateB_topology,
+        nonbondedMethod=app.CutoffNonPeriodic,
+        nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
+        constraints=app.HBonds,  # constraints,
+        rigidWater=True,
+        hydrogenMass=None,
+        removeCMMotion=True,
+    )
+
+    ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+        mapping.componentA_to_componentB,
+        stateA_system, stateA_topology,
+        stateB_system, stateB_topology,
+    )
+
+    # all of this just to check that an entry was removed from the mapping
+    # sanity check
+    assert 10 in mapping.componentA_to_componentB
+    # the removed constraint
+    assert 10 not in ret
