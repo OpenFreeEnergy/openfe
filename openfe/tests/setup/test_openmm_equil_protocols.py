@@ -539,6 +539,8 @@ def test_remove_constraints(benzene_modifications):
         removeCMMotion=True,
     )
 
+    # this normally requires global indices, however as ligandA/B is only thing
+    # in system, this mapping is still correct
     ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
         mapping.componentA_to_componentB,
         stateA_system, stateA_topology,
@@ -550,3 +552,5 @@ def test_remove_constraints(benzene_modifications):
     assert 10 in mapping.componentA_to_componentB
     # the removed constraint
     assert 10 not in ret
+    # but only one constraint should be removed
+    assert len(ret) == len(mapping.componentA_to_componentB) - 1
