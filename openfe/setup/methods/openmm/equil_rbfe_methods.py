@@ -36,7 +36,7 @@ from openfe.setup import (
     ChemicalSystem, SmallMoleculeComponent, SolventComponent,
 )
 from openfe.setup.atom_mapping import LigandAtomMapping
-from openfe.setup.methods import FEMethod
+from ..base import FEMethod
 from openfe.setup import _rbfe_utils
 
 logger = logging.getLogger(__name__)

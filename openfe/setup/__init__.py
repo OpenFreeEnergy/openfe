@@ -12,7 +12,7 @@ from gufe import (
 from .atom_mapping import (LigandAtomMapping,
                            LomapAtomMapper, lomap_scorers,
                            PersesAtomMapper, perses_scorers,
-                           RDFMCSMapper,
+                           WallyMapper,
                            )
 
 from .network import Network
