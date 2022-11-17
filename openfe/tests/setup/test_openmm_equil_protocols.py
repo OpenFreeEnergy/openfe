@@ -473,84 +473,141 @@ def test_gather(solvent_protocol_dag):
     assert isinstance(res, openmm_rbfe.RelativeLigandTransformResult)
 
 
-def test_remove_constraints(benzene_modifications):
-    # check that mappings are correctly corrected to avoid changes in
-    # constraint length
-    # use a phenol->toluene transform to test
-    ligA = benzene_modifications['phenol']
-    ligB = benzene_modifications['toluene']
+class TestConstraintRemoval:
+    @staticmethod
+    def make_systems(ligA: setup.SmallMoleculeComponent,
+                     ligB: setup.SmallMoleculeComponent):
+        """Make vacuum system for each, return Topology and System for each"""
+        omm_forcefield_A = app.ForceField('tip3p.xml')
+        smirnoff_A = SMIRNOFFTemplateGenerator(
+            forcefield='openff-2.0.0.offxml',
+            molecules=[ligA.to_openff()],
+        )
+        omm_forcefield_A.registerTemplateGenerator(smirnoff_A.generator)
 
-    mapping = setup.LigandAtomMapping(
-        componentA=ligA,
-        componentB=ligB,
-        # this is default lomap
-        # importantly the H in -OH maps to one of the -CH3
-        # this constraint will change length
-        componentA_to_componentB={0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9, 6: 10,
-                                  7: 11, 8: 12, 9: 13, 10: 1, 11: 14, 12: 2},
-    )
-    omm_forcefield_A = app.ForceField('tip3p.xml')
-    smirnoff_A = SMIRNOFFTemplateGenerator(
-        forcefield='openff-2.0.0.offxml',
-        molecules=[ligA.to_openff()],
-    )
-    omm_forcefield_A.registerTemplateGenerator(smirnoff_A.generator)
+        omm_forcefield_B = app.ForceField('tip3p.xml')
+        smirnoff_B = SMIRNOFFTemplateGenerator(
+            forcefield='openff-2.0.0.offxml',
+            molecules=[ligB.to_openff()],
+        )
+        omm_forcefield_B.registerTemplateGenerator(smirnoff_B.generator)
 
-    omm_forcefield_B = app.ForceField('tip3p.xml')
-    smirnoff_B = SMIRNOFFTemplateGenerator(
-        forcefield='openff-2.0.0.offxml',
-        molecules=[ligB.to_openff()],
-    )
-    omm_forcefield_B.registerTemplateGenerator(smirnoff_B.generator)
+        stateA_modeller = app.Modeller(
+            ligA.to_openff().to_topology().to_openmm(),
+            ensure_quantity(ligA.to_openff().conformers[0], 'openmm')
+        )
+        stateA_topology = stateA_modeller.getTopology()
+        stateA_system = omm_forcefield_A.createSystem(
+            stateA_topology,
+            nonbondedMethod=app.CutoffNonPeriodic,
+            nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
+            constraints=app.HBonds,  # constraints,
+            rigidWater=True,
+            hydrogenMass=None,
+            removeCMMotion=True,
+        )
 
-    stateA_modeller = app.Modeller(
-        ligA.to_openff().to_topology().to_openmm(),
-        ensure_quantity(ligA.to_openff().conformers[0], 'openmm')
-    )
-    stateA_topology = stateA_modeller.getTopology()
-    stateA_system = omm_forcefield_A.createSystem(
-        stateA_topology,
-        nonbondedMethod=app.CutoffNonPeriodic,
-        nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
-        constraints=app.HBonds,  # constraints,
-        rigidWater=True,
-        hydrogenMass=None,
-        removeCMMotion=True,
-    )
+        stateB_topology = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
+            stateA_topology,
+            ligB.to_openff().to_topology().to_openmm(),
+            exclude_chains=list(stateA_topology.chains())
+        )
+        # since we're doing a swap of the only molecule, this is equivalent:
+        # stateB_topology = app.Modeller(
+        #    sysB['ligand'].to_openff().to_topology().to_openmm(),
+        #    ensure_quantity(sysB['ligand'].to_openff().conformers[0], 'openmm')
+        # )
 
-    stateB_topology = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
-        stateA_topology,
-        ligB.to_openff().to_topology().to_openmm(),
-        exclude_chains=list(stateA_topology.chains())
-    )
-    # since we're doing a swap of the only molecule, this is equivalent:
-    #stateB_topology = app.Modeller(
-    #    sysB['ligand'].to_openff().to_topology().to_openmm(),
-    #    ensure_quantity(sysB['ligand'].to_openff().conformers[0], 'openmm')
-    #)
+        stateB_system = omm_forcefield_B.createSystem(
+            stateB_topology,
+            nonbondedMethod=app.CutoffNonPeriodic,
+            nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
+            constraints=app.HBonds,  # constraints,
+            rigidWater=True,
+            hydrogenMass=None,
+            removeCMMotion=True,
+        )
 
-    stateB_system = omm_forcefield_B.createSystem(
-        stateB_topology,
-        nonbondedMethod=app.CutoffNonPeriodic,
-        nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
-        constraints=app.HBonds,  # constraints,
-        rigidWater=True,
-        hydrogenMass=None,
-        removeCMMotion=True,
-    )
+        return stateA_topology, stateA_system, stateB_topology, stateB_system
 
-    # this normally requires global indices, however as ligandA/B is only thing
-    # in system, this mapping is still correct
-    ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
-        mapping.componentA_to_componentB,
-        stateA_system, stateA_topology,
-        stateB_system, stateB_topology,
-    )
+    def test_remove_constraints_lengthchange(self, benzene_modifications):
+        # check that mappings are correctly corrected to avoid changes in
+        # constraint length
+        # use a phenol->toluene transform to test
+        ligA = benzene_modifications['phenol']
+        ligB = benzene_modifications['toluene']
 
-    # all of this just to check that an entry was removed from the mapping
-    # sanity check
-    assert 10 in mapping.componentA_to_componentB
-    # the removed constraint
-    assert 10 not in ret
-    # but only one constraint should be removed
-    assert len(ret) == len(mapping.componentA_to_componentB) - 1
+        mapping = setup.LigandAtomMapping(
+            componentA=ligA,
+            componentB=ligB,
+            # this is default lomap
+            # importantly the H in -OH maps to one of the -CH3
+            # this constraint will change length
+            componentA_to_componentB={0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9, 6: 10,
+                                      7: 11, 8: 12, 9: 13, 10: 1, 11: 14, 12: 2},
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+
+        # this normally requires global indices, however as ligandA/B is only thing
+        # in system, this mapping is still correct
+        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+            mapping.componentA_to_componentB,
+            stateA_system, stateA_topology,
+            stateB_system, stateB_topology,
+        )
+
+        # all of this just to check that an entry was removed from the mapping
+        # sanity check
+        assert 10 in mapping.componentA_to_componentB
+        # the removed constraint
+        assert 10 not in ret
+        # but only one constraint should be removed
+        assert len(ret) == len(mapping.componentA_to_componentB) - 1
+
+    def test_constraint_to_harmonic(self, benzene_modifications):
+        ligA = benzene_modifications['benzene']
+        ligB = benzene_modifications['toluene']
+
+        # this maps a -H to a -C, so the constraint on -H turns into a C-C bond
+        # H constraint is A(4, 10) and C-C is B(8, 2)
+        mapping = setup.LigandAtomMapping(
+            componentA=ligA, componentB=ligB,
+            componentA_to_componentB={0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9,
+                                      6: 10, 7: 11, 8: 12, 9: 13, 10: 2, 11: 14}
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+
+        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+            mapping.componentA_to_componentB,
+            stateA_system, stateA_topology,
+            stateB_system, stateB_topology,
+        )
+
+        assert 10 not in ret
+        assert len(ret) == len(mapping.componentA_to_componentB) - 1
+
+    def test_constraint_to_harmonic_reversed(self, benzene_modifications):
+        # same as previous test, but ligands are swapped
+        # this follows a slightly different code path
+        ligA = benzene_modifications['toluene']
+        ligB = benzene_modifications['benzene']
+
+        mapping = {0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9,
+                   6: 10, 7: 11, 8: 12, 9: 13, 10: 2, 11: 14}
+        mapping = setup.LigandAtomMapping(
+            componentA=ligA, componentB=ligB,
+            componentA_to_componentB={v: k for k, v in mapping.items()}
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+
+        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+            mapping.componentA_to_componentB,
+            stateA_system, stateA_topology,
+            stateB_system, stateB_topology,
+        )
+
+        assert 2 not in ret
+        assert len(ret) == len(mapping.componentA_to_componentB) - 1
