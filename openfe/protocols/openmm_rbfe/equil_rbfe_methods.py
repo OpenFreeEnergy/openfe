@@ -670,18 +670,23 @@ class RelativeLigandTransform(gufe.Protocol):
         # first group according to repeat_id
         repeats = defaultdict(list)
         for d in protocol_dag_results:
-            for pu in d.protocol_unit_results:
-                rep = pu.outputs['repeat_id']
-                gen = pu.outputs['generation']
+            if(len(d.protocol_unit_success)>0):
+                for pu in d.protocol_unit_success:
+                    rep = pu.outputs['repeat_id']
+                    gen = pu.outputs['generation']
 
-                repeats[rep].append((
-                    gen, pu.outputs['nc'],
-                    pu.outputs['last_checkpoint']))
+                    repeats[rep].append((
+                        gen, pu.outputs['nc'],
+                        pu.outputs['last_checkpoint']))
+            else:
+                raise ValueError("No repeat was finished successfully!")
+                
+                
         data = []
-        for rep in sorted(repeats.items()):
+        for replicate_id, replicate_data in sorted(repeats.items()):
             # then sort within a repeat according to generation
-            nc_paths = [ncpath for gen, ncpath, nc_check in sorted(rep[1])]
-            chk_files = [nc_check for gen, ncpath, nc_check in sorted(rep[1])]
+            nc_paths = [ncpath for gen, ncpath, nc_check in sorted(replicate_data)]
+            chk_files = [nc_check for gen, ncpath, nc_check in sorted(replicate_data)]
             data.append({'nc_paths': nc_paths,
                          'checkpoint_paths': chk_files})
 
