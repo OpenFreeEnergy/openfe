@@ -133,40 +133,6 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     * Very slow, needs refactoring
     * Can we drop having topologies as inputs here?
     """
-    def get_the_H(A, B, C, D, oldH, newH) -> int:
-        """
-        one of A, B, C, D is a hydrogen, we must figure out which
-        its like a very bad sequel to knives out
-
-        these indices are from a mapping such that:
-          A->C, B->D
-
-        if A==H-> return A
-        elif B==H -> return B
-        elif C==H -> return A (to remove A->C from map)
-        elif D==H -> return B (to remove B->D from map)
-
-        Parameters
-        ----------
-        A, B, C, D: int
-        oldH, newH: set[int]
-
-        Returns
-        -------
-        H: int
-          the index of the hydrogen (or atom that maps to hydrogen)
-        """
-        if A in oldH:
-            return A
-        elif B in oldH:
-            return B
-        elif C in newH:
-            return A
-        elif D in newH:
-            return B
-        else:
-            raise ValueError("Fatal: couldn't find H in constraint")
-
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 
     h_elem = app.Element.getByAtomicNumber(1)
@@ -179,47 +145,32 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     for idx in range(old_system.getNumConstraints()):
         atom1, atom2, length = old_system.getConstraintParameters(idx)
 
-        if atom1 in old_to_new_atom_map and atom2 in old_to_new_atom_map:
-            old_constraints[atom1, atom2] = length
+        if atom1 in old_H_atoms:
+            old_constraints[atom1] = length
+        elif atom2 in old_H_atoms:
+            old_constraints[atom2] = length
 
     new_constraints = dict()
     for idx in range(new_system.getNumConstraints()):
         atom1, atom2, length = new_system.getConstraintParameters(idx)
 
-        if atom1 in old_to_new_atom_map.values() and atom2 in old_to_new_atom_map.values():
-            new_constraints[atom1, atom2] = length
+        if atom1 in new_H_atoms:
+            new_constraints[atom1] = length
+        elif atom2 in new_H_atoms:
+            new_constraints[atom2] = length
 
     # there are two reasons constraints would invalidate a mapping entry
-    # 1) length of constraint changed
-    # 2) constraint removed (to harmonic bond)
+    # 1) length of constraint changed (but both constrained)
+    # 2) constraint removed to harmonic bond (only one constrained)
     to_del = []
-    for (i, j), l_old in old_constraints.items():
-        # grab corresponding indices in new system
-        x, y = old_to_new_atom_map[i], old_to_new_atom_map[j]
-
-        try:
-            l_new = new_constraints.pop((x, y))
-        except KeyError:
-            try:
-                l_new = new_constraints.pop((y, x))
-            except KeyError:
-                # type 2) constraint doesn't exist in new system, so remove
-                to_del.append(get_the_H(i, j, x, y, old_H_atoms, new_H_atoms))
-                continue
-        if l_old != l_new:
-            # assume hydrogen bond, so H in both end of mapping
-            # type 1) if length changes, remove the H atom from mapping
-            to_del.append(i if i in old_H_atoms else j)
-
-    # iterate over new_constraints (we were .popping items out)
-    # (if any left these are type 2))
-    if new_constraints:
-        new_to_old = {v: k for k, v in old_to_new_atom_map.items()}
-
-        for x, y in new_constraints:
-            i, j = new_to_old[x], new_to_old[y]
-
-            to_del.append(get_the_H(i, j, x, y, old_H_atoms, new_H_atoms))
+    for a, b in old_to_new_atom_map.items():
+        if a in old_constraints and b in new_constraints:
+            # both constrained, check lengths
+            if old_constraints[a] != new_constraints[b]:
+                to_del.append(a)
+        elif (a in old_constraints) ^ (b in new_constraints):
+            # one constrained, constraint is changed to harmonic
+            to_del.append(a)
 
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
