@@ -611,3 +611,34 @@ class TestConstraintRemoval:
 
         assert 2 not in ret
         assert len(ret) == len(mapping.componentA_to_componentB) - 1
+
+    @pytest.mark.parametrize('reverse', [False, True])
+    def test_constraint_to_harmonic_nitrile(self, benzene_modifications,
+                                            reverse):
+        # same as previous test, but ligands are swapped
+        # this follows a slightly different code path
+        ligA = benzene_modifications['toluene']
+        ligB = benzene_modifications['benzonitrile']
+
+        if reverse:
+            ligA, ligB = ligB, ligA
+
+        mapping = {0: 0, 2: 1, 4: 2, 5: 3, 6: 4, 7: 5, 8: 6, 9: 7, 10: 8,
+                   11: 9, 12: 10, 13: 11, 14: 12}
+        if reverse:
+            mapping = {v: k for k, v in mapping.items()}
+        mapping = setup.LigandAtomMapping(
+            componentA=ligA, componentB=ligB,
+            componentA_to_componentB=mapping,
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+
+        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+            mapping.componentA_to_componentB,
+            stateA_system, stateA_topology,
+            stateB_system, stateB_topology,
+        )
+
+        assert 0 not in ret
+        assert len(ret) == len(mapping.componentA_to_componentB) - 1
