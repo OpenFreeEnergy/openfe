@@ -530,12 +530,24 @@ class TestConstraintRemoval:
 
         return stateA_topology, stateA_system, stateB_topology, stateB_system
 
-    def test_remove_constraints_lengthchange(self, benzene_modifications):
+    @pytest.mark.parametrize('reverse', [False, True])
+    def test_remove_constraints_lengthchange(self, benzene_modifications,
+                                             reverse):
         # check that mappings are correctly corrected to avoid changes in
         # constraint length
         # use a phenol->toluene transform to test
         ligA = benzene_modifications['phenol']
         ligB = benzene_modifications['toluene']
+
+        mapping = {0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9, 6: 10,
+                   7: 11, 8: 12, 9: 13, 10: 1, 11: 14, 12: 2}
+
+        expected = 10  # this should get removed from mapping
+
+        if reverse:
+            ligA, ligB = ligB, ligA
+            expected = mapping[expected]
+            mapping = {v: k for k, v in mapping.items()}
 
         mapping = setup.LigandAtomMapping(
             componentA=ligA,
@@ -543,8 +555,7 @@ class TestConstraintRemoval:
             # this is default lomap
             # importantly the H in -OH maps to one of the -CH3
             # this constraint will change length
-            componentA_to_componentB={0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9, 6: 10,
-                                      7: 11, 8: 12, 9: 13, 10: 1, 11: 14, 12: 2},
+            componentA_to_componentB=mapping,
         )
 
         stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
@@ -558,23 +569,28 @@ class TestConstraintRemoval:
         )
 
         # all of this just to check that an entry was removed from the mapping
-        # sanity check
-        assert 10 in mapping.componentA_to_componentB
         # the removed constraint
-        assert 10 not in ret
+        assert expected not in ret
         # but only one constraint should be removed
         assert len(ret) == len(mapping.componentA_to_componentB) - 1
 
-    def test_constraint_to_harmonic(self, benzene_modifications):
+    @pytest.mark.parametrize('reverse', [False, True])
+    def test_constraint_to_harmonic(self, benzene_modifications, reverse):
         ligA = benzene_modifications['benzene']
         ligB = benzene_modifications['toluene']
+        expected = 10
+        mapping = {0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9,
+                   6: 10, 7: 11, 8: 12, 9: 13, 10: 2, 11: 14}
+        if reverse:
+            ligA, ligB = ligB, ligA
+            expected = mapping[expected]
+            mapping = {v: k for k, v in mapping.items()}
 
         # this maps a -H to a -C, so the constraint on -H turns into a C-C bond
         # H constraint is A(4, 10) and C-C is B(8, 2)
         mapping = setup.LigandAtomMapping(
             componentA=ligA, componentB=ligB,
-            componentA_to_componentB={0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9,
-                                      6: 10, 7: 11, 8: 12, 9: 13, 10: 2, 11: 14}
+            componentA_to_componentB=mapping
         )
 
         stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
@@ -585,31 +601,7 @@ class TestConstraintRemoval:
             stateB_system, stateB_topology,
         )
 
-        assert 10 not in ret
-        assert len(ret) == len(mapping.componentA_to_componentB) - 1
-
-    def test_constraint_to_harmonic_reversed(self, benzene_modifications):
-        # same as previous test, but ligands are swapped
-        # this follows a slightly different code path
-        ligA = benzene_modifications['toluene']
-        ligB = benzene_modifications['benzene']
-
-        mapping = {0: 4, 1: 5, 2: 6, 3: 7, 4: 8, 5: 9,
-                   6: 10, 7: 11, 8: 12, 9: 13, 10: 2, 11: 14}
-        mapping = setup.LigandAtomMapping(
-            componentA=ligA, componentB=ligB,
-            componentA_to_componentB={v: k for k, v in mapping.items()}
-        )
-
-        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
-
-        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
-            mapping.componentA_to_componentB,
-            stateA_system, stateA_topology,
-            stateB_system, stateB_topology,
-        )
-
-        assert 2 not in ret
+        assert expected not in ret
         assert len(ret) == len(mapping.componentA_to_componentB) - 1
 
     @pytest.mark.parametrize('reverse', [False, True])
