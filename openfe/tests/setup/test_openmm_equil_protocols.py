@@ -476,7 +476,8 @@ def test_gather(solvent_protocol_dag):
 class TestConstraintRemoval:
     @staticmethod
     def make_systems(ligA: setup.SmallMoleculeComponent,
-                     ligB: setup.SmallMoleculeComponent):
+                     ligB: setup.SmallMoleculeComponent,
+                     constraints):
         """Make vacuum system for each, return Topology and System for each"""
         omm_forcefield_A = app.ForceField('tip3p.xml')
         smirnoff_A = SMIRNOFFTemplateGenerator(
@@ -501,7 +502,7 @@ class TestConstraintRemoval:
             stateA_topology,
             nonbondedMethod=app.CutoffNonPeriodic,
             nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
-            constraints=app.HBonds,  # constraints,
+            constraints=constraints,
             rigidWater=True,
             hydrogenMass=None,
             removeCMMotion=True,
@@ -522,7 +523,7 @@ class TestConstraintRemoval:
             stateB_topology,
             nonbondedMethod=app.CutoffNonPeriodic,
             nonbondedCutoff=ensure_quantity(1.1 * unit.nm, 'openmm'),
-            constraints=app.HBonds,  # constraints,
+            constraints=constraints,
             rigidWater=True,
             hydrogenMass=None,
             removeCMMotion=True,
@@ -558,7 +559,8 @@ class TestConstraintRemoval:
             componentA_to_componentB=mapping,
         )
 
-        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
+            ligA, ligB, constraints=app.HBonds)
 
         # this normally requires global indices, however as ligandA/B is only thing
         # in system, this mapping is still correct
@@ -593,7 +595,8 @@ class TestConstraintRemoval:
             componentA_to_componentB=mapping
         )
 
-        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
+            ligA, ligB, constraints=app.HBonds)
 
         ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
             mapping.componentA_to_componentB,
@@ -624,7 +627,8 @@ class TestConstraintRemoval:
             componentA_to_componentB=mapping,
         )
 
-        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(ligA, ligB)
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
+            ligA, ligB, constraints=app.HBonds)
 
         ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
             mapping.componentA_to_componentB,
@@ -634,3 +638,40 @@ class TestConstraintRemoval:
 
         assert 0 not in ret
         assert len(ret) == len(mapping.componentA_to_componentB) - 1
+
+    @pytest.mark.parametrize('reverse', [False, True])
+    def test_non_H_constraint_fail(self, benzene_modifications, reverse):
+        # here we specify app.AllBonds constraints
+        # in this transform, the C-C[#N] to C-C[=O] constraint changes length
+        # indices A(8, 2) to B(6, 1)
+        # there's no Hydrogen involved so we can't trivially figure out the
+        # best atom to remove from mapping
+        # (but it would be 2 [& 1] in this case..)
+        ligA = benzene_modifications['toluene']
+        ligB = benzene_modifications['benzonitrile']
+
+        mapping = {0: 0, 2: 1, 4: 2, 5: 3, 6: 4, 7: 5, 8: 6, 9: 7, 10: 8,
+                   11: 9, 12: 10, 13: 11, 14: 12}
+
+        if reverse:
+            ligA, ligB = ligB, ligA
+            mapping = {v: k for k, v in mapping.items()}
+
+        mapping = setup.LigandAtomMapping(
+            componentA=ligA, componentB=ligB,
+            componentA_to_componentB=mapping,
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
+            ligA, ligB, constraints=app.AllBonds)
+
+        with pytest.raises(ValueError, match='resolve constraint') as e:
+            _ = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+                mapping.componentA_to_componentB,
+                stateA_system, stateA_topology,
+                stateB_system, stateB_topology,
+            )
+        if not reverse:
+            assert 'A: 2-8 B: 1-6' in str(e)
+        else:
+            assert 'A: 1-6 B: 2-8' in str(e)

@@ -148,16 +148,13 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
 
         Returns either i or j (whichever is H) to remove from mapping
         """
-        if i in old_H_atoms:
+        if i in old_H_atoms or x in new_H_atoms:
             return i
-        elif j in old_H_atoms:
-            return j
-        elif x in new_H_atoms:
-            return i
-        elif y in new_H_atoms:
+        elif j in old_H_atoms or y in new_H_atoms:
             return j
         else:
-            raise ValueError("Couldn't resolve constraint demapping")
+            raise ValueError(f"Couldn't resolve constraint demapping for atoms"
+                             f" A: {i}-{j} B: {x}-{y}")
 
     old_constraints: dict[[int, int], float] = dict()
     for idx in range(old_system.getNumConstraints()):
