@@ -141,36 +141,69 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     new_H_atoms = {i for i, atom in enumerate(new_topology.atoms())
                    if atom.element == h_elem and i in old_to_new_atom_map.values()}
 
-    old_constraints = dict()
+    def pick_H(i, j, x, y) -> int:
+        """Identify which atom to remove to resolve constraint violation
+
+        i maps to x, j maps to y
+
+        Returns either i or j (whichever is H) to remove from mapping
+        """
+        if i in old_H_atoms:
+            return i
+        elif j in old_H_atoms:
+            return j
+        elif x in new_H_atoms:
+            return i
+        elif y in new_H_atoms:
+            return j
+        else:
+            raise ValueError("Couldn't resolve constraint demapping")
+
+    old_constraints: dict[[int, int], float] = dict()
     for idx in range(old_system.getNumConstraints()):
         atom1, atom2, length = old_system.getConstraintParameters(idx)
 
-        if atom1 in old_H_atoms:
-            old_constraints[atom1] = length
-        elif atom2 in old_H_atoms:
-            old_constraints[atom2] = length
+        if atom1 in old_to_new_atom_map and atom2 in old_to_new_atom_map:
+            old_constraints[atom1, atom2] = length
 
     new_constraints = dict()
     for idx in range(new_system.getNumConstraints()):
         atom1, atom2, length = new_system.getConstraintParameters(idx)
 
-        if atom1 in new_H_atoms:
-            new_constraints[atom1] = length
-        elif atom2 in new_H_atoms:
-            new_constraints[atom2] = length
+        if (atom1 in old_to_new_atom_map.values() and
+                atom2 in old_to_new_atom_map.values()):
+            new_constraints[atom1, atom2] = length
 
     # there are two reasons constraints would invalidate a mapping entry
     # 1) length of constraint changed (but both constrained)
     # 2) constraint removed to harmonic bond (only one constrained)
     to_del = []
-    for a, b in old_to_new_atom_map.items():
-        if a in old_constraints and b in new_constraints:
-            # both constrained, check lengths
-            if old_constraints[a] != new_constraints[b]:
-                to_del.append(a)
-        elif (a in old_constraints) ^ (b in new_constraints):
-            # one constrained, constraint is changed to harmonic
-            to_del.append(a)
+    for (i, j), l_old in old_constraints.items():
+        x, y = old_to_new_atom_map[i], old_to_new_atom_map[j]
+
+        try:
+            l_new = new_constraints.pop((x, y))
+        except KeyError:
+            try:
+                l_new = new_constraints.pop((y, x))
+            except KeyError:
+                # type 2) constraint doesn't exist in new system
+                to_del.append(pick_H(i, j, x, y))
+                continue
+
+        # type 1) constraint length changed
+        if l_old != l_new:
+            to_del.append(pick_H(i, j, x, y))
+
+    # iterate over new_constraints (we were .popping items out)
+    # (if any left these are type 2))
+    if new_constraints:
+        new_to_old = {v: k for k, v in old_to_new_atom_map.items()}
+
+        for x, y in new_constraints:
+            i, j = new_to_old[x], new_to_old[y]
+
+            to_del.append(pick_H(i, j, x, y))
 
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
