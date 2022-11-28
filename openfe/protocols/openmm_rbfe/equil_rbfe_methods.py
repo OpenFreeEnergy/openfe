@@ -670,18 +670,17 @@ class RelativeLigandTransform(gufe.Protocol):
         # first group according to repeat_id
         repeats = defaultdict(list)
         for d in protocol_dag_results:
-            if(len(d.protocol_unit_success)>0):
-                for pu in d.protocol_unit_success:
-                    rep = pu.outputs['repeat_id']
-                    gen = pu.outputs['generation']
+            pu: gufe.ProtocolUnitResult
+            for pu in d.protocol_unit_results:
+                if not pu.ok():
+                    continue
+                rep = pu.outputs['repeat_id']
+                gen = pu.outputs['generation']
 
-                    repeats[rep].append((
-                        gen, pu.outputs['nc'],
-                        pu.outputs['last_checkpoint']))
-            else:
-                raise ValueError("No repeat was finished successfully!")
-                
-                
+                repeats[rep].append((
+                    gen, pu.outputs['nc'],
+                    pu.outputs['last_checkpoint']))
+
         data = []
         for replicate_id, replicate_data in sorted(repeats.items()):
             # then sort within a repeat according to generation
