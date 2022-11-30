@@ -5,8 +5,10 @@ import pytest
 from unittest import mock
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
+from importlib import resources
+import xml.etree.ElementTree as ET
 
-from openmm import app
+from openmm import app, XmlSerializer
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 from openfe import setup
@@ -675,3 +677,75 @@ class TestConstraintRemoval:
             assert 'A: 2-8 B: 1-6' in str(e)
         else:
             assert 'A: 1-6 B: 2-8' in str(e)
+
+
+@pytest.fixture(scope='session')
+def tyk2_xml() -> ET.ElementTree:
+    with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_23.sdf') as f:
+        lig23 = setup.SmallMoleculeComponent.from_sdf_file(str(f))
+    with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_55.sdf') as f:
+        lig55 = setup.SmallMoleculeComponent.from_sdf_file(str(f))
+
+    mapping = setup.LigandAtomMapping(
+        componentA=lig23, componentB=lig55,
+        # perses mapper output
+        componentA_to_componentB={0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6,
+                                  7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12,
+                                  13: 13, 14: 14, 15: 15, 16: 16, 17: 17,
+                                  18: 18, 23: 19, 26: 20, 27: 21, 28: 22,
+                                  29: 23, 30: 24, 31: 25, 32: 26, 33: 27}
+    )
+
+    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
+    settings.topology_settings.forcefield = {'ligand': 'openff-2.0.0.offxml'}
+    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.system_settings.hydrogen_mass = 3.0
+    settings.sampler_settings.n_repeats = 1
+
+    protocol = openmm_rbfe.RelativeLigandTransform(settings)
+
+    dag = protocol.create(
+        stateA=setup.ChemicalSystem({'ligand': lig23}),
+        stateB=setup.ChemicalSystem({'ligand': lig55}),
+        mapping={'ligand': mapping},
+    )
+    pu = list(dag.protocol_units)[0]
+
+    dryrun = pu.run(dry=True)
+
+    system = dryrun['debug']['sampler']._hybrid_factory.hybrid_system
+
+    return ET.fromstring(XmlSerializer.serialize(system))
+
+
+@pytest.fixture(scope='session')
+def tyk2_reference_xml() -> ET.ElementTree:
+    with resources.path('openfe.tests.data.openmm_rbfe', 'reference.xml') as f:
+        with open(f, 'r') as i:
+            xmldata = i.read()
+    return ET.fromstring(xmldata)
+
+class TestTyk2XmlRegression:
+    """Generates Hybrid system XML and performs regression test"""
+    @staticmethod
+    def test_particles(tyk2_xml, tyk2_reference_xml):
+        # < Particle mass = "10.018727" / >
+        particles = tyk2_xml.find('Particles')
+        assert particles
+
+        ref_particles = tyk2_reference_xml.find('Particles')
+
+        for a, b in zip(particles, ref_particles):
+            assert float(a.get('mass')) == pytest.approx(float(b.get('mass')))
+
+    @staticmethod
+    def test_constraints(tyk2_xml, tyk2_reference_xml):
+        # <Constraint d=".1085358495916" p1="12" p2="31"/>
+        constraints = tyk2_xml.find('Constraints')
+        assert constraints
+
+        ref_constraints = tyk2_reference_xml.find('Constraints')
+        for a, b in zip(constraints, ref_constraints):
+            assert a.get('p1') == b.get('p1')
+            assert a.get('p2') == b.get('p2')
+            assert float(a.get('d')) == pytest.approx(float(b.get('d')))
