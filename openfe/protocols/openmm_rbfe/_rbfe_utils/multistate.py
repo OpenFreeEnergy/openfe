@@ -143,6 +143,79 @@ class HybridCompatibilityMixin(object):
             self.create(thermodynamic_states=thermodynamic_state_list,
                         sampler_states=sampler_state_list, storage=reporter)
 
+    def _minimize_replica(self, replica_id, tolerance, max_iterations):
+        """Minimize the specified replica.
+        """
+
+        # Retrieve thermodynamic and sampler states.
+        thermodynamic_state_id = self._replica_thermodynamic_states[replica_id]
+        thermodynamic_state = self._thermodynamic_states[thermodynamic_state_id]
+        sampler_state = self._sampler_states[replica_id]
+
+        # Use the FIRE minimizer
+        integrator = FIREMinimizationIntegrator(tolerance=tolerance)
+
+        # Get context and bound integrator from energy_context_cache
+        context, integrator = self.energy_context_cache.get_context(thermodynamic_state, integrator)
+        # inform of platform used in current context
+        logger.debug(f"{type(integrator).__name__}: Minimize using {context.getPlatform().getName()} platform.")
+
+        # Set initial positions and box vectors.
+        sampler_state.apply_to_context(context)
+
+        # Compute the initial energy of the system for logging.
+        initial_energy = thermodynamic_state.reduced_potential(context)
+        logger.debug('Replica {}/{}: initial energy {:8.3f}kT'.format(
+            replica_id + 1, self.n_replicas, initial_energy))
+
+        # Minimize energy.
+        try:
+            if max_iterations == 0:
+                logger.debug('Using FIRE: tolerance {} minimizing to convergence'.format(tolerance))
+                while integrator.getGlobalVariableByName('converged') < 1:
+                    integrator.step(50)
+            else:
+                logger.debug('Using FIRE: tolerance {} max_iterations {}'.format(tolerance, max_iterations))
+                integrator.step(max_iterations)
+        except Exception as e:
+            if str(e) == 'Particle coordinate is nan':
+                logger.debug('NaN encountered in FIRE minimizer; falling back to L-BFGS after resetting positions')
+                sampler_state.apply_to_context(context)
+                openmm.LocalEnergyMinimizer.minimize(context, tolerance, max_iterations)
+            else:
+                raise e
+
+        # Get the minimized positions.
+        sampler_state.update_from_context(context)
+
+        # Compute the final energy of the system for logging.
+        final_energy = thermodynamic_state.reduced_potential(sampler_state)
+
+        # If energy > 0 kT and on a GPU device attempt to use CPU L-BFGS minimizer
+        if final_energy > 0 and context.getPlatform().getName() in ['CUDA', 'OpenCL']:
+            logger.debug(f'Positive final FIRE minimizer energy {final_energy}; falling back to CPU L-BFGS')
+            sampler_state.apply_to_context(context)
+            integrator = openmm.VerletIntegrator(1.0)
+            cpu_platform = openmm.Platform.getPlatformByName('CPU')
+            context = thermodynamic_state.create_context(integrator, cpu_platform)
+            sampler_state.apply_to_context(context, ignore_velocities=True)
+            openmm.LocalEnergyMinimizer.minimize(context, tolerance, max_iterations)
+
+            # Get the minimized positions
+            sampler_state.update_from_context(context)
+
+            # Get the final energy
+            final_energy = thermodynamic_state.reduced_potential(sampler_state)
+
+        logger.debug('Replica {}/{}: final energy {:8.3f}kT'.format(
+            replica_id + 1, self.n_replicas, final_energy))
+
+        # Clean up the integrator
+        del context
+
+        # Return minimized positions.
+        return sampler_state.positions
+
 
 class HybridRepexSampler(HybridCompatibilityMixin,
                          replicaexchange.ReplicaExchangeSampler):
