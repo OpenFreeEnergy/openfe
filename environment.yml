@@ -14,7 +14,7 @@ dependencies:
   - pydantic
   - coverage
   - openff-toolkit==0.11
-  - openff-units==0.1.8
+  - openff-units>=0.2.0
   - click
   - openeye-toolkits
   - typing-extensions
@@ -25,6 +25,6 @@ dependencies:
   # docs
   - myst-parser
   - sphinx-click
-  - gufe==0.4
+  - gufe==0.5
   - pip:
     - plugcli
