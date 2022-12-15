@@ -1,13 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
-from gufe.components.smallmoleculecomponent import _old_OFF
 from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 
 pytest.importorskip('perses')
 pytest.importorskip('openeye')
 
-USING_NEW_OFF = not _old_OFF()
+USING_NEW_OFF = True  # by default we are now
 
 
 @pytest.mark.xfail(USING_NEW_OFF, reason="Perses #1108")
