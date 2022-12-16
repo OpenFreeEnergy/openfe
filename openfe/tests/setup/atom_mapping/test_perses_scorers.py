@@ -12,7 +12,8 @@ pytest.importorskip('perses')
 pytest.importorskip('openeye')
 from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
-from gufe.components.smallmoleculecomponent import USING_OLD_OFF
+USING_OLD_OFF = False
+
 
 @pytest.mark.xfail(not USING_OLD_OFF, reason='perses #1108')
 def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
