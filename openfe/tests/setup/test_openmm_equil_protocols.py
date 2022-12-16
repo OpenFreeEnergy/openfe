@@ -452,11 +452,12 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     assert repeats == {0, 1, 2}
 
 
-def test_gather(solvent_protocol_dag):
+def test_gather(solvent_protocol_dag, tmpdir):
     # check .gather behaves as expected
     with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandTransformUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
-        dagres = gufe.protocols.execute_DAG(solvent_protocol_dag)
+        dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
+                                            shared=tmpdir)
 
     prot = openmm_rbfe.RelativeLigandTransform(
         settings=openmm_rbfe.RelativeLigandTransform.default_settings()
