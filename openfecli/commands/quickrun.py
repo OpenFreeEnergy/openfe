@@ -5,7 +5,6 @@ import click
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
 from openfecli.utils import write
-from gufe.transformations import Transformation
 import json
 import pathlib
 
@@ -45,7 +44,7 @@ def quickrun(transformation, directory, output):
     save it with transformation.dump(filename).
     """
     import gufe
-    from gufe.protocols.protocoldag import execute
+    from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
 
     write("Loading file...")
@@ -55,7 +54,7 @@ def quickrun(transformation, directory, output):
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Running the simulations...")
-    dagresult = execute(dag, shared=directory)
+    dagresult = execute_DAG(dag, shared=directory, raise_error=False)
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
