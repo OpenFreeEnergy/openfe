@@ -134,10 +134,10 @@ class TestAtomMappingEdge:
 
 
 class TestLigandNode:
-    def setup(self):
+    def setup_method(self):
         self.fig, self.ax = plt.subplots()
 
-    def teardown(self):
+    def teardown_method(self):
         plt.close(self.fig)
 
     def test_register_artist(self, default_node):
