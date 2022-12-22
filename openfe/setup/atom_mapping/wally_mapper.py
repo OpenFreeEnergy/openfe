@@ -121,7 +121,8 @@ def get_geom_Mapping(molA:SmallMoleculeComponent, molB:SmallMoleculeComponent, m
 
 import numpy as np
 
-def numpy_map(molA:SmallMoleculeComponent, molB:SmallMoleculeComponent, max_d:float = 0.95)->LigandAtomMapping:
+# MST
+def mst_map(molA:SmallMoleculeComponent, molB:SmallMoleculeComponent, max_d:float = 0.95)->LigandAtomMapping:
     """
     This function is a numpy graph based implementation to build up an Atom Mapping purely on 3D criteria.
 
@@ -151,7 +152,7 @@ def numpy_map(molA:SmallMoleculeComponent, molB:SmallMoleculeComponent, max_d:fl
     #distance matrix:  - full graph
     edges = []
     for i, atomPosA in enumerate(aA):
-        atomPos_distances =np.vstack([eukli(atomPosA, aB), np.full(num_bAtoms, i), np.arange(num_bAtoms)]).T  
+        atomPos_distances = np.vstack([eukli(atomPosA, aB), np.full(num_bAtoms, i), np.arange(num_bAtoms)]).T  
         edges.extend(atomPos_distances)
         
     edges = np.array(edges)
@@ -167,6 +168,90 @@ def numpy_map(molA:SmallMoleculeComponent, molB:SmallMoleculeComponent, max_d:fl
     
     return LigandAtomMapping(molA, molB, mapping)
 
+## Linear Sum Assignment
+from collections import OrderedDict
+from scipy.optimize import linear_sum_assignment
+
+#get 
+def _get_connected_sets(mol:Chem.Mol, to_be_searched:List[int])->List[Set[int]]:
+    #Get connected atoms
+    connected_sets = []
+    for aid in to_be_searched:
+        a = mol.GetAtomWithIdx(int(aid))
+        bond_atoms = [b.GetOtherAtomIdx(aid) for b in a.GetBonds()]
+        set_of_connected_atoms = set([aid]+bond_atoms)
+        
+        for i, g in enumerate(connected_sets):
+            if(len(g.intersection(set_of_connected_atoms))>0):
+                connected_sets[i] = connected_sets[i].union(set_of_connected_atoms)
+                break
+        else:
+            connected_sets.append(set_of_connected_atoms)
+
+    #sort connected atom sets by size
+    connected_sets = sorted(connected_sets, key=lambda x: len(x), reverse=True)
+    return connected_sets
+
+def _get_maximal_mapping_set_overlap(sets_a:set, sets_b:set, mapping:Dict[int,int], verbose:bool=False)->Tuple[Tuple[int, int], dict]:
+    #Calculate overlaps
+    max_set_combi={}
+    for ida, set_a in enumerate(sets_a):
+        mapped_set_a = {mapping[a] for a in set_a}
+        for idb, set_b in enumerate(sets_b):
+            set_intersection_size = len(mapped_set_a.intersection(set_b))
+            if(set_intersection_size):
+                max_set_combi[(ida, idb)] = {'overlap_count': set_intersection_size, 
+                                            "set_a_size": len(set_a), 
+                                            "set_b_size": len(set_b)}
+
+    #sort overlap by size
+    max_set_keys = OrderedDict(sorted(max_set_combi.items(), key=lambda x: x[1]['overlap_count'], reverse=True))
+    if(verbose): print(max_set_keys)
+
+    set_a_id, set_b_id, set_overlap_desc = max_set_keys.popitem()
+    return set_a_id, set_b_id, set_overlap_desc
+
+def linSumAlgorithm_map(molA, molB, max_d:float = 0.95)->LigandAtomMapping:
+    
+    mA = molA._rdkit
+    mB = molB._rdkit
+
+    aA = mA.GetConformer().GetPositions()
+    aB = mB.GetConformer().GetPositions()
+
+    #distance matrix:  - full graph
+    eukli = lambda x, y: np.sqrt(np.sum(np.square(y-x), axis=1))
+
+    distance_matrix = []
+    for i, atomPosA in enumerate(aA):
+        atomPos_distances = eukli(atomPosA, aB)
+        distance_matrix.append(atomPos_distances)
+    distance_matrix = np.array(distance_matrix)
+
+    # solve atom mappings  (TODO: Filter by max distance)
+    row_ind, col_ind = linear_sum_assignment(distance_matrix)
+    mapping = dict(zip(row_ind, col_ind))
+    #mapping = filter(lambda x:[])
+
+    # get connected sets from mappings
+    to_be_searched = list(map(int, mapping.keys()))
+    sets_a = _get_connected_sets(mA, to_be_searched)
+
+    to_be_searched = list(map(int, mapping.values()))
+    sets_b = _get_connected_sets(mB, to_be_searched)
+
+    # get maximally overlapping largest sets
+    ((max_set_a_id, max_set_b_id),max_set) = _get_maximal_mapping_set_overlap(sets_a, sets_b, mapping)
+
+    # filter for only mapped atoms
+    found_mapping = {}
+    if(max_set["set_a_size"]> max_set["set_b_size"]):
+        found_mapping = {a:mapping[a] for a in sets_a[max_set_a_id] if(a in mapping)}
+    else:
+        r_mapping = {v:k for k,v in mapping.items()}
+        found_mapping = {r_mapping[b]:b for b in sets_b[max_set_b_id] if(b in r_mapping)}
+
+    return LigandAtomMapping(molA, molB, found_mapping)
 
 
 # Enums:
