@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - openeye
 dependencies:
-  - numpy
+  - numpy<1.24
   - networkx
   - rdkit
   - pip
