@@ -27,14 +27,15 @@ import logging
 
 from collections import defaultdict
 import gufe
+from gufe.protocols import ProtocolDAG, ProtocolDAGResult
 import json
 import numpy as np
 import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmtools import multistate
-from openmmtools.states import (ThermodynamicState,
-                                create_thermodyanmic_state_protocol,)
+from openmmtools.states import (ThermodynamicState, SamplerState,
+                                create_thermodynamic_state_protocol,)
 from openmmtools.alchemy import (AlchemicalRegion, AbsoluteAlchemicalFactory,
                                  AlchemicalState,)
 from pydantic import BaseModel, validator
@@ -146,7 +147,7 @@ class OpenMMEngineSettings(BaseModel):
 
 class SamplerSettings(BaseModel):
     """Settings for the Equilibrium sampler, currently supporting either
-    HybridSAMSSampler or HybridRepexSampler.
+    SAMSSampler or ReplicaExchangeSampler.
 
     Attributes
     ----------
@@ -602,6 +603,43 @@ class AbsoluteTransform(gufe.Protocol):
 
         return units
 
+    def create(
+        self,
+        chem_system: ChemicalSystem,
+        extend_from: Optional[ProtocolDAGResult] = None,
+        name: Optional[str] = None,
+    ) -> ProtocolDAG:
+        """Prepare a `ProtocolDAG` with all information required for execution.
+        A `ProtocolDAG` is composed of `ProtocolUnit`s, with dependencies
+        established between them. These form a directed, acyclic graph,
+        and each `ProtocolUnit` can be executed once its dependencies have
+        completed.
+        A `ProtocolDAG` can be passed to a `Scheduler` for execution on its
+        resources. A `ProtocolDAGResult` can be retrieved from the `Scheduler`
+        upon completion of all `ProtocolUnit`s in the `ProtocolDAG`.
+        Parameters
+        ----------
+        chem_system : ChemicalSystem
+            The starting `ChemicalSystem` for the transformation.
+        extend_from : Optional[ProtocolDAGResult]
+            If provided, then the `ProtocolDAG` produced will start from the
+            end state of the given `ProtocolDAGResult`. This allows for
+            extension from a previously-run `ProtocolDAG`.
+        name : Optional[str]
+            A user supplied identifier for the resulting DAG
+        Returns
+        -------
+        ProtocolDAG
+            A directed, acyclic graph that can be executed by a `Scheduler`.
+        """
+        return ProtocolDAG(
+            name=name,
+            protocol_units=self._create(
+                chem_system=chem_system,
+                extend_from=extend_from,
+            ),
+        )
+
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> Dict[str, Any]:
@@ -732,7 +770,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
 
         # a. check equilibration and production are divisible by n_steps
         settings = self._inputs['settings']
-        chem_system = self._inputs['system']
+        chem_system = self._inputs['chem_system']
 
         sim_settings = settings.simulation_settings
         timestep = settings.integrator_settings.timestep
@@ -776,23 +814,23 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
                 smirnoff_system.generator)
 
         # 3. Model state A
-        system_topology = openff_ligand.to_topology().to_openmm()
+        ligand_topology = openff_ligand.to_topology().to_openmm()
         if 'protein' in chem_system.components:
             pdbfile: gufe.ProteinComponent = chem_system['protein']
             system_modeller = app.Modeller(pdbfile.to_openmm_topology(),
                                            pdbfile.to_openmm_positions())
             system_modeller.add(
-                system_topology,
+                ligand_topology,
                 ensure_quantity(openff_ligand.conformers[0], 'openmm'),
             )
         else:
             system_modeller = app.Modeller(
-                system_topology,
-                ensure_quantity(sopenff_ligand.conformers[0], 'openmm'),
+                ligand_topology,
+                ensure_quantity(openff_ligand.conformers[0], 'openmm'),
             )
         # make note of which chain id(s) the ligand is,
         # we'll need this to chemically modify it later
-        ligand_nchains = system_topology.getNumChains()
+        ligand_nchains = ligand_topology.getNumChains()
         ligand_chain_id = system_modeller.topology.getNumChains()
 
         # 4. Solvate the complex in a `concentration` mM cubic water box with
@@ -843,7 +881,13 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         #  d. create stateA topology
         system_topology = system_modeller.getTopology()
 
-        #  e. get stateA positions
+        #  e. get ligand indices
+        lig_chain = list(system_topology.chains())[ligand_chain_id - ligand_nchains:ligand_chain_id]
+        assert len(lig_chain) == 1
+        lig_atoms = list(lig_chain[0].atoms())
+        lig_indices = [at.index for at in lig_atoms]
+
+        #  f. get stateA positions
         system_positions = system_modeller.getPositions()
         ## canonicalize positions (tuples to np.array)
         system_positions = omm_unit.Quantity(
@@ -896,7 +940,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         # 8. Create alchemical system
         ## TODO add support for all the variants here
         alchemical_region = AlchemicalRegion(
-                alchemical_atoms=openff_ligand.n_atoms
+                alchemical_atoms=lig_indices
         )
         alchemical_factory = AbsoluteAlchemicalFactory()
         alchemical_system = alchemical_factory.create_alchemical_system(
@@ -909,11 +953,11 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         ##       temperature & pressure (pressure sure that's the case)
         lambdas = dict()
         n_elec = int(alchem_settings.lambda_windows / 2)
-        n_vdw = alchem_settings.lambda_windows - n_elec
-        lambdas['lambda_electrostatic'] = np.concatenate(
+        n_vdw = alchem_settings.lambda_windows - n_elec + 1
+        lambdas['lambda_electrostatics'] = np.concatenate(
                 [np.linspace(1, 0, n_elec), np.linspace(0, 0, n_vdw)[1:]]
         )
-        lambdas['lambda_steric'] = np.concatenate(
+        lambdas['lambda_sterics'] = np.concatenate(
                 [np.linspace(1, 1, n_elec), np.linspace(1, 0, n_vdw)[1:]]
         )
 
@@ -921,17 +965,21 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         #### TODO: undo for SAMS
         n_replicas = settings.sampler_settings.n_replicas
 
-        if n_replicas != (len(lambdas['lambda_steric'])):
+        if n_replicas != (len(lambdas['lambda_sterics'])):
             errmsg = (f"Number of replicas {n_replicas} "
-                      f"does not equal the number of lambda windows "
-                      f"{len(lambdas.lambda_schedule)}")
+                      "does not equal the number of lambda windows ")
             raise ValueError(errmsg)
 
         # 10. Create compound states
         alchemical_state = AlchemicalState.from_system(alchemical_system)
+        constants = dict()
+        constants['temperature'] = to_openmm(settings.integrator_settings.temperature)
+        if 'solvent' in chem_system.components:
+            constants['pressure'] = to_openmm(settings.barostat_settings.pressure)
         cmp_states = create_thermodynamic_state_protocol(
                 alchemical_system,
                 protocol=lambdas,
+                constants=constants,
                 composable_states=[alchemical_state],
         )
 
@@ -995,7 +1043,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         sampler_settings = settings.sampler_settings
         
         if sampler_settings.sampler_method.lower() == "repex":
-            sampler = multistate.RepexSampler(
+            sampler = multistate.ReplicaExchangeSampler(
                 mcmc_moves=integrator,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
                 online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
