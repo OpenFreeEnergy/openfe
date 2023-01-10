@@ -939,6 +939,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
 
         # 8. Create alchemical system
         ## TODO add support for all the variants here
+        ## TODO: check that adding indices this way works
         alchemical_region = AlchemicalRegion(
                 alchemical_atoms=lig_indices
         )

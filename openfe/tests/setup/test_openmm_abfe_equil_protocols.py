@@ -126,81 +126,70 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, method, tmpdir):
                           MultiStateSampler)
 
 
-#@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
-#def test_dry_run_ligand(benzene_system, toluene_system,
-#                        benzene_to_toluene_mapping, method, tmpdir):
-#    # this might be a bit time consuming
-#    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
-#    settings.sampler_settings.sampler_method = method
-#    settings.sampler_settings.n_repeats = 1
-#
-#    protocol = openmm_rbfe.RelativeLigandTransform(
-#            settings=settings,
-#    )
-#    dag = protocol.create(
-#        stateA=benzene_system,
-#        stateB=toluene_system,
-#        mapping={'ligand': benzene_to_toluene_mapping},
-#    )
-#    unit = list(dag.protocol_units)[0]
-#
-#    with tmpdir.as_cwd():
-#        # Returns debug objects if everything is OK
-#        assert isinstance(unit.run(dry=True)['debug']['sampler'],
-#                          MultiStateSampler)
-#
-#
-#@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
-#def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
-#                         benzene_to_toluene_mapping, method, tmpdir):
-#    # this will be very time consuming
-#    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
-#    settings.sampler_settings.sampler_method = method
-#    settings.sampler_settings.n_repeats = 1
-#
-#    protocol = openmm_rbfe.RelativeLigandTransform(
-#            settings=settings,
-#    )
-#    dag = protocol.create(
-#        stateA=benzene_complex_system,
-#        stateB=toluene_complex_system,
-#        mapping={'ligand': benzene_to_toluene_mapping},
-#    )
-#    unit = list(dag.protocol_units)[0]
-#
-#    with tmpdir.as_cwd():
-#        # Returns debug contents if everything is OK
-#        assert isinstance(unit.run(dry=True)['debug']['sampler'],
-#                          MultiStateSampler)
-#
-#
-#def test_n_replicas_not_n_windows(benzene_vacuum_system,
-#                                  toluene_vacuum_system,
-#                                  benzene_to_toluene_mapping, tmpdir):
-#    # For PR #125 we pin such that the number of lambda windows
-#    # equals the numbers of replicas used - TODO: remove limitation
-#    settings = openmm_rbfe.RelativeLigandTransform.default_settings()
-#    # default lambda windows is 11
-#    settings.sampler_settings.n_replicas = 13
-#    settings.system_settings.nonbonded_method = 'nocutoff'
-#
-#    errmsg = ("Number of replicas 13 does not equal the number of "
-#              "lambda windows 11")
-#
-#    with tmpdir.as_cwd():
-#        with pytest.raises(ValueError, match=errmsg):
-#            p = openmm_rbfe.RelativeLigandTransform(
-#                    settings=settings,
-#            )
-#            dag = p.create(
-#                stateA=benzene_vacuum_system,
-#                stateB=toluene_vacuum_system,
-#                mapping={'ligand': benzene_to_toluene_mapping},
-#            )
-#            unit = list(dag.protocol_units)[0]
-#            unit.run(dry=True)
-#
-#
+@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
+def test_dry_run_ligand(benzene_system, method, tmpdir):
+    # this might be a bit time consuming
+    settings = openmm_abfe.AbsoluteTransform.default_settings()
+    settings.sampler_settings.sampler_method = method
+    settings.sampler_settings.n_repeats = 1
+
+    protocol = openmm_abfe.AbsoluteTransform(
+            settings=settings,
+    )
+    dag = protocol.create(
+        chem_system=benzene_system,
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        # Returns debug objects if everything is OK
+        assert isinstance(unit.run(dry=True)['debug']['sampler'],
+                          MultiStateSampler)
+
+
+@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
+def test_dry_run_complex(benzene_complex_system, method, tmpdir):
+    # this will be very time consuming
+    settings = openmm_abfe.AbsoluteTransform.default_settings()
+    settings.sampler_settings.sampler_method = method
+    settings.sampler_settings.n_repeats = 1
+
+    protocol = openmm_abfe.AbsoluteTransform(
+            settings=settings,
+    )
+    dag = protocol.create(
+        chem_system=benzene_complex_system,
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        # Returns debug contents if everything is OK
+        assert isinstance(unit.run(dry=True)['debug']['sampler'],
+                          MultiStateSampler)
+
+
+def test_n_replicas_not_n_windows(benzene_vacuum_system, tmpdir):
+    # For PR #125 we pin such that the number of lambda windows
+    # equals the numbers of replicas used - TODO: remove limitation
+    settings = openmm_abfe.AbsoluteTransform.default_settings()
+    # default lambda windows is 24
+    settings.sampler_settings.n_replicas = 13
+    settings.system_settings.nonbonded_method = 'nocutoff'
+
+    errmsg = "Number of replicas 13 does not equal"
+
+    with tmpdir.as_cwd():
+        with pytest.raises(ValueError, match=errmsg):
+            p = openmm_abfe.AbsoluteTransform(
+                    settings=settings,
+            )
+            dag = p.create(
+                chem_system=benzene_vacuum_system,
+            )
+            unit = list(dag.protocol_units)[0]
+            unit.run(dry=True)
+
+
 #def test_vaccuum_PME_error(benzene_system, benzene_modifications,
 #                           benzene_to_toluene_mapping):
 #    # state B doesn't have a solvent component (i.e. its vacuum)
