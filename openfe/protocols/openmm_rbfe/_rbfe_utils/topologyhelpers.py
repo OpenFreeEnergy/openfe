@@ -5,99 +5,80 @@
 # LICENSE: MIT
 
 import warnings
+import itertools
 from copy import deepcopy
 import numpy as np
 from openmm import app, unit
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-def _append_topology(destination_topology, source_topology,
-                     exclude_residue_name=None):
+def combined_topology(topology1, topology2, exclude_chains=None):
     """
-    Originally from Perses.
+    Create a new topology combining these two topologies.
 
-    Add the source OpenMM Topology to the destination Topology.
+    The box information from the *first* topology will be copied over
 
     Parameters
     ----------
-    destination_topology : openmm.app.Topology
-        The Topology to which the contents of `source_topology` are to be
-        added.
-    source_topology : openmm.app.Topology
-        The Topology to be added.
-    exclude_residue_name : str, optional
-        Any residues matching this name are excluded.
-
-    Notes
-    -----
-    * Does not copy over periodic box vectors
-    """
-    if exclude_residue_name is None:
-        # something with 3 characters that is never a residue name
-        exclude_residue_name = "   "
-
-    new_atoms = {}
-    for chain in source_topology.chains():
-        new_chain = destination_topology.addChain(chain.id)
-        for residue in chain.residues():
-            # TODO: should we use complete residue names?
-            if (residue.name[:3] == exclude_residue_name[:3]):
-                continue
-            new_residue = destination_topology.addResidue(residue.name,
-                                                          new_chain,
-                                                          residue.id)
-            for atom in residue.atoms():
-                new_atom = destination_topology.addAtom(atom.name,
-                                                        atom.element,
-                                                        new_residue, atom.id)
-                new_atoms[atom] = new_atom
-    for bond in source_topology.bonds():
-        if ((bond[0].residue.name[:3] == exclude_residue_name[:3]) or
-                (bond[1].residue.name[:3] == exclude_residue_name[:3])):
-            continue
-        order = bond.order
-        destination_topology.addBond(new_atoms[bond[0]], new_atoms[bond[1]],
-                                     order=order)
-
-
-def append_new_topology_item(old_topology, new_topology,
-                             exclude_residue_name=None):
-    """
-    Create a "new" topology by appending the contents of ``new_topology`` to
-    the ``old_topology``.
-
-    Optionally exclude a given from ``old_topology`` on building.
-
-    Parameters
-    ----------
-    old_topology : openmm.app.Topology
-        Old topology to which the ``new_topology`` contents will be appended
-        to.
-    new_topology : openmm.app.Topology
-        New topology item to be appended to ``old_topology``.
-    exclude_residue_name : str, optional
-        Name of residue in ``old_topology`` to be excluded in building the
-        appended topology.
+    topology1 : openmm.app.Topology
+    topology2 : openmm.app.Topology
+    exclude_chains : Iterable[openmm.app.topology.Chain]
 
     Returns
     -------
-    appended_topology : openmm.app.Topology
-        Topology containing the combined old and new topology items, excluding
-        any residues which were defined in ``exclude_residue_name``.
+    new : openmm.app.Topology
     """
-    # Create an empty topology
-    appended_topology = app.Topology()
+    if exclude_chains is None:
+        exclude_chains = []
 
-    # Append old topology to new topology, excluding residue as required
-    _append_topology(appended_topology, old_topology, exclude_residue_name)
+    top = app.Topology()
+    # I couldn't resist bringing in itertools.chain, with so much chain
+    # going on here
+    chains = (chain for chain in itertools.chain(topology1.chains(),
+                                                 topology2.chains())
+              if chain not in exclude_chains)
+    excluded_atoms = set(itertools.chain.from_iterable(
+        c.atoms() for c in exclude_chains)
+    )
 
-    # Now we append the contents of the new topology
-    _append_topology(appended_topology, new_topology)
+    # add new copies of selected chains, residues, and atoms; keep mapping
+    # of old atoms to new for adding bonds later
+    old_to_new_atom_map = {}
+    for chain_id, chain in enumerate(chains):
+        # TODO: is chain ID int or str? I recall it being int in MDTraj....
+        new_chain = top.addChain(chain_id)
+        for residue in chain.residues():
+            new_res = top.addResidue(residue.name,
+                                     new_chain,
+                                     residue.id)
+            for atom in residue.atoms():
+                new_atom = top.addAtom(atom.name,
+                                       atom.element,
+                                       new_res,
+                                       atom.id)
+                old_to_new_atom_map[atom] = new_atom
+
+    # figure out which bonds to keep: drop any that involve removed atoms
+    def atoms_for_bond(bond):
+        return {bond.atom1, bond.atom2}
+
+    keep_bonds = (bond for bond in itertools.chain(topology1.bonds(),
+                                                   topology2.bonds())
+                  if not (atoms_for_bond(bond) & excluded_atoms))
+
+    # add bonds to topology
+    for bond in keep_bonds:
+        top.addBond(old_to_new_atom_map[bond.atom1],
+                    old_to_new_atom_map[bond.atom2],
+                    bond.type,
+                    bond.order)
 
     # Copy over the box vectors
-    appended_topology.setPeriodicBoxVectors(
-        old_topology.getPeriodicBoxVectors())
+    top.setPeriodicBoxVectors(topology1.getPeriodicBoxVectors())
 
-    return appended_topology
+    return top
 
 
 def _get_indices(topology, residue_name):
@@ -155,36 +136,71 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 
     h_elem = app.Element.getByAtomicNumber(1)
-    old_hydrogens = {
-        at.index for at in old_topology.atoms() if at.element == h_elem}
-    new_hydrogens = {
-        at.index for at in new_topology.atoms() if at.element == h_elem}
+    old_H_atoms = {i for i, atom in enumerate(old_topology.atoms())
+                   if atom.element == h_elem and i in old_to_new_atom_map}
+    new_H_atoms = {i for i, atom in enumerate(new_topology.atoms())
+                   if atom.element == h_elem and i in old_to_new_atom_map.values()}
 
-    old_constraints = {}
+    def pick_H(i, j, x, y) -> int:
+        """Identify which atom to remove to resolve constraint violation
+
+        i maps to x, j maps to y
+
+        Returns either i or j (whichever is H) to remove from mapping
+        """
+        if i in old_H_atoms or x in new_H_atoms:
+            return i
+        elif j in old_H_atoms or y in new_H_atoms:
+            return j
+        else:
+            raise ValueError(f"Couldn't resolve constraint demapping for atoms"
+                             f" A: {i}-{j} B: {x}-{y}")
+
+    old_constraints: dict[[int, int], float] = dict()
     for idx in range(old_system.getNumConstraints()):
         atom1, atom2, length = old_system.getConstraintParameters(idx)
-        if atom1 in old_hydrogens:
-            old_constraints[atom1] = length
-        if atom2 in old_hydrogens:
-            old_constraints[atom2] = length
 
-    new_constraints = {}
+        if atom1 in old_to_new_atom_map and atom2 in old_to_new_atom_map:
+            old_constraints[atom1, atom2] = length
+
+    new_constraints = dict()
     for idx in range(new_system.getNumConstraints()):
         atom1, atom2, length = new_system.getConstraintParameters(idx)
-        if atom1 in new_hydrogens:
-            new_constraints[atom1] = length
-        if atom2 in new_hydrogens:
-            new_constraints[atom2] = length
 
+        if (atom1 in old_to_new_atom_map.values() and
+                atom2 in old_to_new_atom_map.values()):
+            new_constraints[atom1, atom2] = length
+
+    # there are two reasons constraints would invalidate a mapping entry
+    # 1) length of constraint changed (but both constrained)
+    # 2) constraint removed to harmonic bond (only one constrained)
     to_del = []
-    for new_index, old_index in old_to_new_atom_map.items():
-        # Constraints exist for both end atom states
-        # TODO: check if we should be not allowing a fully dropped constraint
-        if (new_index in new_constraints.keys() and
-                old_index in old_constraints.keys()):
-            # Check that the length of the constraints hasn't changed
-            if not old_constraints[old_index] == new_constraints[new_index]:
-                to_del.append(old_index)
+    for (i, j), l_old in old_constraints.items():
+        x, y = old_to_new_atom_map[i], old_to_new_atom_map[j]
+
+        try:
+            l_new = new_constraints.pop((x, y))
+        except KeyError:
+            try:
+                l_new = new_constraints.pop((y, x))
+            except KeyError:
+                # type 2) constraint doesn't exist in new system
+                to_del.append(pick_H(i, j, x, y))
+                continue
+
+        # type 1) constraint length changed
+        if l_old != l_new:
+            to_del.append(pick_H(i, j, x, y))
+
+    # iterate over new_constraints (we were .popping items out)
+    # (if any left these are type 2))
+    if new_constraints:
+        new_to_old = {v: k for k, v in old_to_new_atom_map.items()}
+
+        for x, y in new_constraints:
+            i, j = new_to_old[x], new_to_old[y]
+
+            to_del.append(pick_H(i, j, x, y))
 
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
@@ -335,7 +351,7 @@ def get_system_mappings(old_to_new_atom_map,
 
 def set_and_check_new_positions(mapping, old_topology, new_topology,
                                 old_positions, insert_positions,
-                                shift_insert=None, tolerance=0.5):
+                                tolerance=0.5):
     """
     Utility to create new positions given a mapping, the old positions and
     the positions of the molecule being inserted, defined by `insert_positions.
@@ -357,9 +373,6 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     insert_positions : simtk.unit.Quantity
         Positions of the alchemically changing molecule in the "new" alchemical
         state.
-    shift_insert : np.ndarray (3,)
-        Amount to shift `insert_positions` by in the x,y,z direction in
-        Angstrom. Default None.
     tolerance : float
         Maximum allowed deviation along any dimension (x,y,z) in mapped atoms
         between the "old" and "new" positions. Default 0.5.
@@ -380,8 +393,6 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     new_pos_array[new_idxs, :] = old_pos_array[old_idxs, :]
     # copy over the new alchemical molecule positions
     new_pos_array[new_mol_idxs, :] = add_pos_array
-    if shift_insert is not None:
-        new_pos_array[new_mol_idxs, :] += shift_insert
 
     # loop through all mapped atoms and make sure we don't deviate by more than
     # tolerance - not super necessary, but it's a nice sanity check that should

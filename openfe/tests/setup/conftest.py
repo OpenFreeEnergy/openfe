@@ -36,7 +36,7 @@ def simple_mapping():
     molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
     molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
-    m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 1: 1})
+    m = LigandAtomMapping(molA, molB, componentA_to_componentB={0: 0, 1: 1})
 
     return m
 
@@ -52,7 +52,7 @@ def other_mapping():
     molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
     molB = SmallMoleculeComponent(mol_from_smiles('CC'))
 
-    m = LigandAtomMapping(molA, molB, molA_to_molB={0: 0, 2: 1})
+    m = LigandAtomMapping(molA, molB, componentA_to_componentB={0: 0, 2: 1})
 
     return m
 
@@ -158,6 +158,6 @@ def benzene_anisole_mapping(benzene_transforms, benzene_maps):
 @pytest.fixture(scope='session')
 def T4_protein_component():
     with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
-        comp = gufe.ProteinComponent.from_pdbfile(str(fn), name="T4_protein")
+        comp = gufe.ProteinComponent.from_pdb_file(str(fn), name="T4_protein")
 
     return comp

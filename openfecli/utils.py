@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import importlib
+import click
 
 
 def import_thing(import_string: str):
@@ -29,3 +30,13 @@ def import_thing(import_string: str):
         mod = splitted[0]
         result = importlib.import_module(mod)
     return result
+
+
+def write(string: str):
+    """
+
+    This is abstracted so that we can change output mechanism here and it
+    will automatically update in all commands.
+    """
+    click.echo(string)
+

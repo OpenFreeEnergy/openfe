@@ -8,14 +8,20 @@ See here for the license: https://github.com/choderalab/perses/blob/main/LICENSE
 
 import copy
 import warnings
+import logging
 import numpy as np
 import openmm
 from openmm import unit
 from openmmtools.multistate import replicaexchange, sams, multistatesampler
 from openmmtools import cache
+import openmmtools.states as states
 from openmmtools.states import (CompoundThermodynamicState,
                                 SamplerState, ThermodynamicState)
+from openmmtools.integrators import FIREMinimizationIntegrator
 from .lambdaprotocol import RelativeAlchemicalState
+
+
+logger = logging.getLogger(__name__)
 
 
 class HybridCompatibilityMixin(object):
@@ -30,7 +36,7 @@ class HybridCompatibilityMixin(object):
 
     def setup(self, reporter, platform, lambda_protocol,
               temperature=298.15 * unit.kelvin, n_replicas=None,
-              endstates=True):
+              endstates=True, minimization_steps=100):
         """
         Setup MultistateSampler based on the input lambda protocol and number
         of replicas.
@@ -53,6 +59,8 @@ class HybridCompatibilityMixin(object):
         endstates : bool
             Whether or not to generate unsampled endstates (i.e. dispersion
             correction).
+        minimization_steps : int
+            Number of steps to minimize states.
 
         Attributes
         ----------
@@ -61,8 +69,6 @@ class HybridCompatibilityMixin(object):
             lambda_protocol.
         """
         n_states = len(lambda_protocol.lambda_schedule)
-        # TODO - remove this and move it to our own MD tasks
-        # from perses.dispersed import feptasks
 
         hybrid_system = self._factory.hybrid_system
 
@@ -114,9 +120,8 @@ class HybridCompatibilityMixin(object):
             # with relaxed positions
             context, context_integrator = context_cache.get_context(
                                              compound_thermostate_copy)
-            # TODO: move to our own MD tasks
-            # feptasks.minimize(compound_thermodynamic_state_copy,
-            #                   sampler_state)
+            minimize(compound_thermostate_copy, sampler_state,
+                     max_iterations=minimization_steps)
             sampler_state_list.append(copy.deepcopy(sampler_state))
 
         # making sure number of sampler states equals n_replicas
@@ -254,3 +259,38 @@ def create_endstates(first_thermostate, last_thermostate):
             dispersion_system, temperature=endstate.temperature))
 
     return unsampled_endstates
+
+
+def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: states.SamplerState,
+             max_iterations: int=100) -> states.SamplerState:
+    """
+    Adapted from perses.dispersed.feptasks.minimize
+
+    Minimize the given system and state, up to a maximum number of steps.
+    This does not return a copy of the samplerstate; it is an update-in-place.
+
+    Parameters
+    ----------
+    thermodynamic_state : openmmtools.states.ThermodynamicState
+        The state at which the system could be minimized
+    sampler_state : openmmtools.states.SamplerState
+        The starting state at which to minimize the system.
+    max_iterations : int, optional, default 100
+        The maximum number of minimization steps. Default is 100.
+
+    Returns
+    -------
+    sampler_state : openmmtools.states.SamplerState
+        The posititions and accompanying state following minimization
+    """
+    integrator = openmm.VerletIntegrator(1.0) #we won't take any steps, so use a simple integrator
+    context, integrator = cache.global_context_cache.get_context(
+        thermodynamic_state, integrator
+    )
+    sampler_state.apply_to_context(
+        context, ignore_velocities=True
+    )
+    openmm.LocalEnergyMinimizer.minimize(
+        context, maxIterations=max_iterations
+    )
+    sampler_state.update_from_context(context)

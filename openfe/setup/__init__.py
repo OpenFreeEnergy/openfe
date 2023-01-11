@@ -7,6 +7,7 @@ from gufe import (
     ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
+    Transformation,
 )
 
 from .atom_mapping import (LigandAtomMapping,
@@ -18,4 +19,3 @@ from .atom_mapping import (LigandAtomMapping,
 from .network import Network
 from . import ligand_network_planning
 
-from . import methods

@@ -27,7 +27,11 @@ jobs:
       matrix:
         os: ['ubuntu', 'macos']
         python-version:
-          - 3.9
+          - "3.9"
+          - "3.10"
+        exclude:
+          - os: 'macos'
+            python-version: '3.10'
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -58,10 +62,7 @@ jobs:
       - name: "Test imports"
         run: |
           # if we add more to this, consider changing to for + env vars
-          python -Ic "import openfe.setup"
-          python -Ic "import openfe.orchestration"
-          python -Ic "import openfe.simulation"
-          python -Ic "import openfe.analysis"
+          python -Ic "import openfe"
 
       - name: "Environment Information"
         run: |
@@ -75,8 +76,9 @@ jobs:
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
                 && github.event != 'schedule' }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
-          fail_ci_if_error: True
+          fail_ci_if_error: False
           verbose: True
