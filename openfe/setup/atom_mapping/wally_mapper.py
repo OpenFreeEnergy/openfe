@@ -1,21 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from enum import Enum
 import itertools
+import numpy as np
+import networkx as nx
+from enum import Enum
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
 
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
-from . import LigandAtomMapping, LigandAtomMapper
 from .. import SmallMoleculeComponent
+from . import LigandAtomMapping, LigandAtomMapper
 
 ############# NEW IMPLEMENTATION IDEA for pure 3D mapping
-
-import numpy as np
-import networkx as nx
-from openfe.setup import LigandAtomMapping
 
 #Working with graphs:
 eukli = lambda x, y: np.sqrt(np.sum(np.square(y-x)))
