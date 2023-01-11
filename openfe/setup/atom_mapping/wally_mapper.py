@@ -171,20 +171,24 @@ from collections import OrderedDict
 from scipy.optimize import linear_sum_assignment
 
 #get 
-def _get_connected_sets(mol:Chem.Mol, to_be_searched:List[int])->List[Set[int]]:
+def _get_connected_subsets(mol:Chem.Mol, to_be_searched:List[int])->List[Set[int]]:
     #Get connected atoms
     connected_sets = []
     for aid in to_be_searched:
         a = mol.GetAtomWithIdx(int(aid))
         bond_atoms = [b.GetOtherAtomIdx(aid) for b in a.GetBonds()]
         set_of_connected_atoms = set([aid]+bond_atoms)
+        searched_set_of_connected_atoms  = set(filter(lambda x: x in to_be_searched, set_of_connected_atoms))
+        
+        if(len(searched_set_of_connected_atoms)==1):
+            continue
         
         for i, g in enumerate(connected_sets):
-            if(len(g.intersection(set_of_connected_atoms))>0):
-                connected_sets[i] = connected_sets[i].union(set_of_connected_atoms)
+            if(len(g.intersection(searched_set_of_connected_atoms))>0):
+                connected_sets[i] = connected_sets[i].union(searched_set_of_connected_atoms)
                 break
         else:
-            connected_sets.append(set_of_connected_atoms)
+            connected_sets.append(searched_set_of_connected_atoms)
 
     #sort connected atom sets by size
     connected_sets = sorted(connected_sets, key=lambda x: len(x), reverse=True)
@@ -206,11 +210,11 @@ def _get_maximal_mapping_set_overlap(sets_a:set, sets_b:set, mapping:Dict[int,in
     max_set_keys = OrderedDict(sorted(max_set_combi.items(), key=lambda x: x[1]['overlap_count'], reverse=True))
     if(verbose): print(max_set_keys)
 
-    set_a_id, set_b_id, set_overlap_desc = max_set_keys.popitem()
-    return set_a_id, set_b_id, set_overlap_desc
+    set_a_id, set_b_id = max_set_keys.popitem()
+    return set_a_id, set_b_id
 
-def linSumAlgorithm_map(molA, molB, max_d:float = 0.95)->LigandAtomMapping:
-    
+def linSumAlgorithm_map(molA, molB, max_d:float = 0.95, verbose:bool=True)->LigandAtomMapping:
+
     mA = molA._rdkit
     mB = molB._rdkit
 
@@ -225,31 +229,49 @@ def linSumAlgorithm_map(molA, molB, max_d:float = 0.95)->LigandAtomMapping:
         atomPos_distances = eukli(atomPosA, aB)
         distance_matrix.append(atomPos_distances)
     distance_matrix = np.array(distance_matrix)
+    #how to make max_d a thing
+    distance_matrix=np.array(np.ma.where(distance_matrix<max_d, distance_matrix, np.inf))
 
-    # solve atom mappings  (TODO: Filter by max distance)
-    row_ind, col_ind = linear_sum_assignment(distance_matrix)
-    mapping = dict(zip(row_ind, col_ind))
-    #mapping = filter(lambda x:[])
+    clipped_distance_matrix = []
+    mapped_rows = {}
+    for row_id, row in enumerate(distance_matrix):
+        if(any([np.isfinite(y) for y in row])):
+            mapped_rows[len(mapped_rows)] = row_id
+            clipped_distance_matrix.append(row)
+        else:
+            continue
+    clipped_distance_matrix = np.array(clipped_distance_matrix)
+
+    if(verbose): print("Mapped rows: ", mapped_rows)
+    # solve atom mappings
+    row_ind, col_ind = linear_sum_assignment(clipped_distance_matrix)
+    mapped_row_inds = list(map(lambda x: int(mapped_rows[x]), row_ind)) # map back to original row ids
+    col_ind = list(map(int, col_ind))
+    mapping = dict(zip(mapped_row_inds, col_ind))
 
     # get connected sets from mappings
-    to_be_searched = list(map(int, mapping.keys()))
-    sets_a = _get_connected_sets(mA, to_be_searched)
+    sets_a = _get_connected_subsets(mA, mapping.keys())
 
-    to_be_searched = list(map(int, mapping.values()))
-    sets_b = _get_connected_sets(mB, to_be_searched)
+    sets_b = _get_connected_subsets(mB, mapping.values())
 
+    if(verbose): print("Found connected sets: ", sets_a, sets_b, mapping, row_ind)
     # get maximally overlapping largest sets
     ((max_set_a_id, max_set_b_id),max_set) = _get_maximal_mapping_set_overlap(sets_a, sets_b, mapping)
 
     # filter for only mapped atoms
     found_mapping = {}
     if(max_set["set_a_size"]> max_set["set_b_size"]):
-        found_mapping = {a:mapping[a] for a in sets_a[max_set_a_id] if(a in mapping)}
+        print("b")
+        found_mapping = {int(a):int(mapping[a]) for a in sets_a[max_set_a_id] if(a in mapping)}
     else:
+        print("a")
         r_mapping = {v:k for k,v in mapping.items()}
-        found_mapping = {r_mapping[b]:b for b in sets_b[max_set_b_id] if(b in r_mapping)}
+        found_mapping = {int(r_mapping[b]):int(b) for b in sets_b[max_set_b_id] if(b in r_mapping)}
 
-    return LigandAtomMapping(molA, molB, found_mapping)
+    if(verbose): print("Final Mapping", found_mapping)
+    mapping = LigandAtomMapping(molA, molB, found_mapping)
+
+    return mapping
 
 
 # Enums:

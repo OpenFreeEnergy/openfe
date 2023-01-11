@@ -6,9 +6,9 @@ from typing import Any, Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from openfe.setup import SmallMoleculeComponent
-from openfe.utils.visualization import draw_mapping
-
+from ...setup import SmallMoleculeComponent
+from ...utils.visualization import draw_mapping
+from ...utils.visualization_3D import draw_mapping_structure
 
 class LigandAtomMapping(gufe.AtomMapping):
     """Simple container with the mapping between two Molecules
@@ -147,6 +147,11 @@ class LigandAtomMapping(gufe.AtomMapping):
         with open(fname, mode) as f:
             f.write(draw_mapping(self._compA_to_compB, self.componentA.to_rdkit(),
                                  self.componentB.to_rdkit(), d2d))
+            
+    def show_structures(self):
+        view = draw_mapping_structure(self)
+        return view
+
 
     def with_annotations(self, annotations: dict[str, Any]):
         """Create an new mapping based on this one with extra annotations.
