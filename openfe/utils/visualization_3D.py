@@ -9,7 +9,7 @@ from matplotlib.colors import rgb2hex
 #from openfe.setup.atom_mapping import LigandAtomMapping
 
 
-def draw_mapping_structure(edge, spheres: bool=True,
+def draw_mapping_structure(edge, spheres: bool=True, labels:bool=True,
                  style: str='stick',
                  shift: Tuple[float, float, float]=np.array([10, 0, 0])):
     """
@@ -68,6 +68,9 @@ def draw_mapping_structure(edge, spheres: bool=True,
     if spheres:
         add_spheres(view, molA, molB, edge.componentA_to_componentB)
 
+    if labels:
+        view.addPropertyLabels("index",{'not':{'resn':['molA_overlay', 'molA_overlay']}},{'fontColor':'black', 'font': 'sans-serif', 'fontSize': '10', 'showBackground':'false','alignment':'center'})
+
     #middle fig
     overlay_mblock1 = Chem.MolToMolBlock(translate(molA, 1*shift))
     overlay_mblock2 = Chem.MolToMolBlock(translate(molB, -1*shift))
@@ -76,5 +79,6 @@ def draw_mapping_structure(edge, spheres: bool=True,
     view.addModel(overlay_mblock2, 'molB_overlay')
     
     view.setStyle({style:{}})
+
     view.zoomTo()
     return view
