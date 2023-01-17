@@ -271,15 +271,24 @@ def _get_full_distance_matrix(
     distance_matrix = np.array(distance_matrix)
     return distance_matrix
 
-def _mask_atoms(mol, mol_pos, map_hydrogens:bool=False, masked_atoms=[])->Tuple[Dict, List]:
+def _mask_atoms(mol, mol_pos, masked_atoms: list[int], map_hydrogens:bool=False) -> tuple[dict, list]:
+    """Pull positions of certain atoms from molecule
+
+    mask denotes which atoms are *excluded*
+    """
     pos = []
-    masked_atomMapping = {}
-    for atom in mol.GetAtoms():
-        atom_id = atom.GetIdx()
-        print(atom_id, masked_atoms,atom_id not in masked_atoms)
-        if ((map_hydrogens or atom.GetSymbol() != "H") and atom_id not in masked_atoms):
-            masked_atomMapping[len(masked_atomMapping)]=atom_id
-            pos.append(mol_pos[atom_id])
+    masked_atomMapping: dict[int, int] = {}
+    for atom_id, atom in enumerate(mol.GetAtoms()):
+        print(atom_id, masked_atoms, atom_id not in masked_atoms)
+
+        if atom_id in masked_atoms:
+            continue
+        if atom.GetAtomicNum() == 1 and not map_hydrogens:
+            continue
+
+        masked_atomMapping[len(masked_atomMapping)]=atom_id
+        pos.append(mol_pos[atom_id])
+
     pos = np.array(pos)
     
     return masked_atomMapping, pos
@@ -352,6 +361,29 @@ def linSumAlgorithm_map(molA: SmallMoleculeComponent, molB: SmallMoleculeCompone
                         pre_mapped_atoms={},
                         map_hydrogens: bool = False, verbose: bool = False
 ) -> LigandAtomMapping:
+    """
+
+    A geometry first mapper.  Creates a distance matrix between atoms in the
+    two molecules, then performs a linear sum assignment on this.
+
+    Parameters
+    ----------
+    molA, molB: SmallMoleculeComponent
+    max_d: float
+      max distance between mapped atoms to allow
+    masked_atoms_molA, masked_atoms_molB: list[int]
+      atoms to exclude from appearing in the mapping
+    pre_mapped_atoms: dict[int, int]
+      a starting point for the mapping.  these pairs are forced to be included
+      in the resulting mapping
+    map_hydrogens: bool
+      default False
+    verbose: bool
+
+    Returns
+    -------
+
+    """
     
     molA_rdkit = Chem.Mol(molA._rdkit)
     molB_rdkit = Chem.Mol(molB._rdkit)
