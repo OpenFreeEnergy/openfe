@@ -69,11 +69,11 @@ def benzene_phenol_mapping(benzene_transforms, maps):
     return mapping, mol1, mol2
 
 
-@pytest.mark.parametrize('molname, atoms, elems, bonds', [
-    ['phenol', {10, }, {12, }, {10, 12}],
-    ['anisole', {0, 1, 3, 4}, {2, }, {0, 1, 2, 3, 13}]
+@pytest.mark.parametrize('molname, atoms, elems, bond_changes, bond_deletions', [
+    ['phenol', {10, }, {12, }, {10, }, {12, }],
+    ['anisole', {0, 1, 3, 4}, {2, }, {13, }, {0, 1, 2, 3}]
 ])
-def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
+def test_benzene_to_phenol_uniques(molname, atoms, elems, bond_changes, bond_deletions,
                                    benzene_transforms, maps):
     mol1 = benzene_transforms['benzene']
     mol2 = benzene_transforms[molname]
@@ -89,7 +89,7 @@ def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
     # H->O
     assert uniques['elements'] == {10, }
     # One bond involved
-    assert uniques['bonds'] == {10, }
+    assert uniques['bond_changes'] == {10, }
 
     # invert and check the molB uniques
     inv_map = {v: k for k, v in mapping.items()}
@@ -99,7 +99,8 @@ def test_benzene_to_phenol_uniques(molname, atoms, elems, bonds,
 
     assert uniques['atoms'] == atoms
     assert uniques['elements'] == elems
-    assert uniques['bonds'] == bonds
+    assert uniques['bond_changes'] == bond_changes
+    assert uniques['bond_deletions'] == bond_deletions
 
 
 @mock.patch("openfe.utils.visualization._draw_molecules", autospec=True)
