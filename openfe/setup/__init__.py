@@ -13,7 +13,7 @@ from gufe import (
 from .atom_mapping import (LigandAtomMapping,
                            LomapAtomMapper, lomap_scorers,
                            PersesAtomMapper, perses_scorers,
-                           WallyMapper,
+                           WallyMapper_geometry,
                            )
 
 from .network import Network
