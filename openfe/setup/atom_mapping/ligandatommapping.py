@@ -148,8 +148,8 @@ class LigandAtomMapping(gufe.AtomMapping):
             f.write(draw_mapping(self._compA_to_compB, self.componentA.to_rdkit(),
                                  self.componentB.to_rdkit(), d2d))
             
-    def show_structures(self):
-        view = draw_mapping_structure(self)
+    def show_structures(self, show_atomIDs:bool=True):
+        view = draw_mapping_structure(self, show_atomIDs=show_atomIDs)
         return view
 
 
