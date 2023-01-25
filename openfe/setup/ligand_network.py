@@ -41,9 +41,11 @@ class LigandNetwork:
         """NetworkX graph for this network"""
         if self._graph is None:
             graph = nx.MultiDiGraph()
-            for node in self._nodes:
+            # set iterator order depends on PYTHONHASHSEED, sorting ensures
+            # reproducibility
+            for node in sorted(self._nodes):
                 graph.add_node(node)
-            for edge in self._edges:
+            for edge in sorted(self._edges):
                 graph.add_edge(edge.componentA, edge.componentB, object=edge,
                                **edge.annotations)
 
