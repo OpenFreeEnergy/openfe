@@ -30,7 +30,6 @@ eukli = calculate_edge_weight = lambda x, y: np.sqrt(np.sum(np.square(y - x), ax
 ############# NEW IMPLEMENTATION IDEA for pure 3D mapping
 
 
-
 # Working with graphs:
 def _build_graph(molA: Chem.Mol, molB: Chem.Mol, max_d: float = 0.95) -> nx.Graph:
     """
@@ -424,13 +423,22 @@ class WallyMapper_geometry(LigandAtomMapper):
         molB_rdkit = Chem.Mol(molB)
         molA_pos = molA_rdkit.GetConformer().GetPositions()
         molB_pos = molB_rdkit.GetConformer().GetPositions()
+        masked_atoms_molA = copy.deepcopy(masked_atoms_molA)
+        masked_atoms_molB = copy.deepcopy(masked_atoms_molB)
+
 
         if len(pre_mapped_atoms) > 0:
             masked_atoms_molA.extend(pre_mapped_atoms.keys())
             masked_atoms_molB.extend(pre_mapped_atoms.values())
 
         log.debug("Positions lengths: " + str(len(molA_pos)) + " " + str(len(molB_pos)))
-        log.debug("Positions: " + "\t".join(map(str, [molA_pos, molB_pos])))
+        log.debug("Positions: \n" + "\n\t".join(map(str, [molA_pos, molB_pos])))
+        log.debug("masked_atoms_molA: "+ str(masked_atoms_molA))
+        log.debug("masked_atoms_molB: "+ str(masked_atoms_molB))
+        log.debug("pre_mapped_atoms: "+ str(pre_mapped_atoms))
+        log.debug("map_hydrogens: "+ str(map_hydrogens))
+
+        log.info("Masking Atoms")
 
         molA_masked_atomMapping, molA_pos = cls._mask_atoms(
             mol=molA_rdkit,
@@ -444,20 +452,27 @@ class WallyMapper_geometry(LigandAtomMapper):
             masked_atoms=masked_atoms_molB,
             map_hydrogens=map_hydrogens,
         )
+        
         log.debug(
-            "Remove Masks" + "\t".join(map(str, [molA_masked_atomMapping, molB_masked_atomMapping]))
+            "Remove Masked Atoms: \n"
+            + "\n\t".join(
+                map(str, [molA_masked_atomMapping, molB_masked_atomMapping]))
+                + "\n"
+                + "\n\t".join(map(str, [molA_pos, molB_pos]))
         )
         log.debug(
-            "Masked Positions lengths: " + "\t".join(map(str, [len(molA_pos), len(molB_pos)]))
+            "filtered Masked Positions lengths: " + "\t".join(map(str, [len(molA_pos), len(molB_pos)]))
         )
 
         if len(molA_pos) == 0 or len(molB_pos) == 0:  # TODO: check if this is correct
+            log.warning("no mappable Atoms were found!")
             return pre_mapped_atoms
 
         # Calculate mapping
+        log.info("Build Distance Matrix")
         # distance matrix:  - full graph
         distance_matrix = cls._get_full_distance_matrix(molA_pos, molB_pos)
-        log.debug("Distance Matrix: " + str(distance_matrix))
+        log.debug("Distance Matrix: \n" + str(distance_matrix))
 
         # Mask distance matrix with max_d
         # np.inf is considererd as not possible in lsa implementation - therefore use a high value
@@ -465,9 +480,10 @@ class WallyMapper_geometry(LigandAtomMapper):
         masked_dmatrix = np.array(
             np.ma.where(distance_matrix < max_d, distance_matrix, mask_dist_val)
         )
-        log.debug("masked Distance Matrix: " + str(max_d) + "\t" + str(masked_dmatrix))
+        log.debug("masked Distance Matrix: " + str(max_d) + "\n\t" + str(masked_dmatrix))
 
         # solve atom mappings
+        log.info("Calculate Mapping")
         row_ind, col_ind = linear_sum_assignment(masked_dmatrix)
         raw_mapping = list(zip(map(int, row_ind), map(int, col_ind)))
         log.debug("Raw Mapping: " + str(raw_mapping))
@@ -477,6 +493,7 @@ class WallyMapper_geometry(LigandAtomMapper):
         log.debug("Distance filtered Mapping: " + str(mapping))
 
         if len(mapping) == 0:  # TODO: check if this is correct
+            log.warning("no mapping could be found!")
             return pre_mapped_atoms
 
         # reverse any prior masking:
@@ -489,6 +506,7 @@ class WallyMapper_geometry(LigandAtomMapper):
         log.debug("reverse Masking Mapping: " + str(mapping))
 
         # Reduce mapping to maximally overlapping two connected sets
+        log.info("Find Maximal overlapping connected sets of mapped atoms")
         mapping = cls._filter_mapping_for_max_overlapping_connected_atom_set(
             moleculeA=molA_rdkit, moleculeB=molB_rdkit, atom_mapping=mapping
         )
@@ -531,17 +549,25 @@ class WallyMapper_geometry(LigandAtomMapper):
         """
         pre_mapped_atoms = copy.deepcopy(pre_mapped_atoms)
 
+        log.info("#################################")
+        log.info("Map Heavy Atoms ")
+        log.info("#################################")
+
         mapping = self.linSumAlgorithm_map(
             molA._rdkit,
             molB._rdkit,
             max_d=self.atom_max_distance,
-            masked_atoms_molA=masked_atoms_molA,
-            masked_atoms_molB=masked_atoms_molB,
+            masked_atoms_molA=[],
+            masked_atoms_molB=[],
             pre_mapped_atoms=pre_mapped_atoms,
             map_hydrogens=False,
         )
 
         if self.atom_map_hydrogens:
+            log.info("#################################")
+            log.info("Map Hydrogen Atoms: ")
+            log.info("#################################")
+
             pre_mapped_atoms.update(mapping)
 
             mapping = self.linSumAlgorithm_map(
