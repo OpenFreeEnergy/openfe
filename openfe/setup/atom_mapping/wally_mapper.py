@@ -142,6 +142,11 @@ class mapping_algorithm(Enum):
 
 # TODO: full Cycle Mapping option
 # TODO: Hydrogens Only on Hydrogens?
+# TODO: Connnected Set bug
+# TODO: OpenFE Package  (Wally depends on Gufe->Wally->OpenFE) - dependency in OpenFE / place import in __init__
+# TODO: @Richard Checks up and downs in saturated rings
+# TODO: PLB examples check it out / HIF2A
+
 class WallyMapper_geometry(LigandAtomMapper):
     atom_max_distance: float
     atom_ring_matches_ring: bool
