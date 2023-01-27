@@ -16,7 +16,7 @@ def draw_mapping_on_3Dstructure(
     spheres: bool = True,
     show_atomIDs: bool = False,
     style: str = "stick",
-    shift: Tuple[float, float, float] = np.array([10, 0, 0]),
+    shift: Tuple[float, float, float] = (10, 0, 0),
 ) -> py3Dmol.view:
     """
     Render relative transformation edge in 3D using py3Dmol.
@@ -40,6 +40,7 @@ def draw_mapping_on_3Dstructure(
     view : py3Dmol.view
         View of the system containing both molecules in the edge.
     """
+    shift = np.array(shift)
 
     def translate(mol, shift):
         conf = mol.GetConformer()
