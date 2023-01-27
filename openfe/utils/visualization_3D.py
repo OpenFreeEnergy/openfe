@@ -10,7 +10,7 @@ from matplotlib.colors import rgb2hex
 
 from gufe.mapping import AtomMapping
 
-
+ 
 def draw_mapping_on_3Dstructure(
     edge: AtomMapping,
     spheres: bool = True,
@@ -18,6 +18,7 @@ def draw_mapping_on_3Dstructure(
     style: str = "stick",
     shift: Tuple[float, float, float] = (10, 0, 0),
 ) -> py3Dmol.view:
+
     """
     Render relative transformation edge in 3D using py3Dmol.
 
