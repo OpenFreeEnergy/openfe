@@ -1,6 +1,7 @@
 import py3Dmol
 import numpy as np
-from typing import Tuple
+from numpy.typing import NDArray
+from typing import Tuple, Union, Optional
 
 
 from rdkit import Chem
@@ -10,13 +11,38 @@ from matplotlib.colors import rgb2hex
 
 from gufe.mapping import AtomMapping
 
- 
+
+def _get_max_dist_in_x(atom_mapping: AtomMapping) -> float:
+    """helper function
+        find the correct mol shift, so no overlap happens in vis
+
+    Returns
+    -------
+    float
+        maximal size of mol in x dimension
+    """
+    posA = atom_mapping.componentA.to_rdkit().GetConformer().GetPositions()
+    posB = atom_mapping.componentB.to_rdkit().GetConformer().GetPositions()
+    max_d = []
+
+    for pos in [posA, posB]:
+        d = np.zeros(shape=(len(pos), len(pos)))
+        for i, pA in enumerate(pos):
+            for j, pB in enumerate(pos[i:], start=i):
+                d[i, j] = (pB - pA)[0]
+
+        max_d.append(np.max(d))
+
+    estm = float(np.round(max(max_d), 1))
+    return estm if (estm > 5) else 5
+
+
 def draw_mapping_on_3Dstructure(
     edge: AtomMapping,
-    spheres: bool = True,
-    show_atomIDs: bool = False,
-    style: str = "stick",
-    shift: Tuple[float, float, float] = (10, 0, 0),
+    spheres: Optional[bool] = True,
+    show_atomIDs: Optional[bool] = False,
+    style: Optional[str] = "stick",
+    shift: Optional[Union[None, Tuple[float, float, float], NDArray[np.float64]]] = None,
 ) -> py3Dmol.view:
 
     """
@@ -34,14 +60,19 @@ def draw_mapping_on_3Dstructure(
         Style in which to represent the molecules in py3Dmol.
     shift : Tuple of floats
         Amount to shift molB by in order to visualise the two ligands.
-        By default molB is shifted by 10 A in the z direction.
+        If None, the default shift will be estimated as the largest
+        intraMol distance of both mols.
 
     Returns
     -------
     view : py3Dmol.view
         View of the system containing both molecules in the edge.
     """
-    shift = np.array(shift)
+
+    if shift is None:
+        shift = np.array([_get_max_dist_in_x(edge) * 1.5, 0, 0])
+    else:
+        shift = np.array(shift)
 
     def translate(mol, shift):
         conf = mol.GetConformer()
