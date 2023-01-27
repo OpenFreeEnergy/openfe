@@ -1,16 +1,21 @@
-import py3Dmol
 import numpy as np
 from numpy.typing import NDArray
 from typing import Tuple, Union, Optional
-
 
 from rdkit import Chem
 from rdkit.Geometry.rdGeometry import Point3D
 from matplotlib import pyplot as plt
 from matplotlib.colors import rgb2hex
 
+try:
+    import py3Dmol
+except ImportError:
+    pass    # Don't throw  error, will happen later
+
+
 from gufe.mapping import AtomMapping
 
+from openfe.utils import requires_package
 
 def _get_max_dist_in_x(atom_mapping: AtomMapping) -> float:
     """helper function
@@ -36,7 +41,7 @@ def _get_max_dist_in_x(atom_mapping: AtomMapping) -> float:
     estm = float(np.round(max(max_d), 1))
     return estm if (estm > 5) else 5
 
-
+@requires_package("py3Dmol")
 def draw_mapping_on_3Dstructure(
     edge: AtomMapping,
     spheres: Optional[bool] = True,
