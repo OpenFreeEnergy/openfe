@@ -25,6 +25,7 @@ dependencies:
   # docs
   - myst-parser
   - sphinx-click
-  - gufe==0.5
+  # - gufe==0.5
   - pip:
     - plugcli
+    - git+https://github.com/OpenFreeEnergy/gufe@main
