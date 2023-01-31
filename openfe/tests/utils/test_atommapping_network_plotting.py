@@ -1,17 +1,38 @@
+import inspect
 import pytest
 from unittest import mock
 from matplotlib import pyplot as plt
 import matplotlib.figure
 
 from openfe.utils.atommapping_network_plotting import (
-    AtomMappingEdge, AtomMappingNetworkDrawing, plot_atommapping_network,
+    AtomMappingNetworkDrawing, plot_atommapping_network,
     LigandNode
 )
 
 from openfe.tests.utils.test_network_plotting import mock_event
-from openfe.tests.utils.test_visualization import bound_args
 
-from openfe.utils.network_plotting import Node
+
+def bound_args(func, args, kwargs):
+    """Return a dictionary mapping parameter name to value.
+
+    Parameters
+    ----------
+    func : Callable
+        this must be inspectable; mocks will require a spec
+    args : List
+        args list
+    kwargs : Dict
+        kwargs Dict
+
+    Returns
+    -------
+    Dict[str, Any] :
+        mapping of string name of function parameter to the value it would
+        be bound to
+    """
+    sig = inspect.Signature.from_callable(func)
+    bound = sig.bind(*args, **kwargs)
+    return bound.arguments
 
 
 @pytest.fixture

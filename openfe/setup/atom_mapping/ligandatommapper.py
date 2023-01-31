@@ -4,7 +4,7 @@
 from typing import Iterable
 
 from openfe.setup import SmallMoleculeComponent
-from .ligandatommapping import LigandAtomMapping
+from . import LigandAtomMapping
 import gufe
 
 from openfe.utils.errors import ABSTRACT_ERROR_STRING
