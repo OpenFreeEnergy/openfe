@@ -6,7 +6,9 @@ from rdkit import Chem
 from typing import Dict, Tuple
 
 from openfe.utils.network_plotting import GraphDrawing, Node, Edge
-from openfe.utils.visualization import draw_one_molecule_mapping
+from gufe.visualization.mapping_visualization import (
+    draw_one_molecule_mapping,
+)
 from openfe.utils.custom_typing import MPL_MouseEvent
 from openfe.setup import SmallMoleculeComponent, Network
 

@@ -6,7 +6,7 @@ from lomap import mcs as lomap_mcs
 import math
 from rdkit import Chem
 
-from .ligandatommapping import LigandAtomMapping
+from . import LigandAtomMapping
 
 DEFAULT_ANS_DIFFICULTY = {
     # H to element - not sure this has any effect currently
