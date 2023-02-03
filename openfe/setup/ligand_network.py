@@ -13,7 +13,7 @@ import openfe
 import networkx as nx
 
 
-class Network:
+class LigandNetwork:
     """A directed graph connecting many ligands according to their atom mapping
 
     Parameters
@@ -147,7 +147,7 @@ class Network:
         """
         return cls._from_serializable_graph(nx.parse_graphml(graphml_str))
 
-    def enlarge_graph(self, *, edges=None, nodes=None) -> Network:
+    def enlarge_graph(self, *, edges=None, nodes=None) -> LigandNetwork:
         """
         Create a new network with the given edges and nodes added
 
@@ -169,12 +169,12 @@ class Network:
         if nodes is None:
             nodes = set([])
 
-        return Network(self.edges | set(edges), self.nodes | set(nodes))
+        return LigandNetwork(self.edges | set(edges), self.nodes | set(nodes))
 
-    def annotate_node(self, node, annotation) -> Network:
+    def annotate_node(self, node, annotation) -> LigandNetwork:
         """Return a new network with the additional node annotation"""
         raise NotImplementedError("Waiting on annotations")
 
-    def annotate_edge(self, edge, annotation) -> Network:
+    def annotate_edge(self, edge, annotation) -> LigandNetwork:
         """Return a new network with the additional edge annotation"""
         raise NotImplementedError("Waiting on annotations")
