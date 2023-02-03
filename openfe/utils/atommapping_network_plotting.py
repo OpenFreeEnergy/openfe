@@ -10,7 +10,7 @@ from gufe.visualization.mapping_visualization import (
     draw_one_molecule_mapping,
 )
 from openfe.utils.custom_typing import MPL_MouseEvent
-from openfe.setup import SmallMoleculeComponent, Network
+from openfe.setup import SmallMoleculeComponent, LigandNetwork
 
 
 class AtomMappingEdge(Edge):
@@ -158,7 +158,7 @@ class AtomMappingNetworkDrawing(GraphDrawing):
     EdgeCls = AtomMappingEdge
 
 
-def plot_atommapping_network(network: Network):
+def plot_atommapping_network(network: LigandNetwork):
     """Convenience method for plotting the atom mapping network
 
     Parameters
@@ -181,6 +181,6 @@ if __name__ == "__main__":
     with open(sys.argv[1], mode='r') as f:
         graphml = f.read()
 
-    network = openfe.setup.Network.from_graphml(graphml)
+    network = openfe.setup.LigandNetwork.from_graphml(graphml)
     fig = plot_atommapping_network(network)
     matplotlib.pyplot.show()
