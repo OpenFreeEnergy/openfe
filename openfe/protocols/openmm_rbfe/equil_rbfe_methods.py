@@ -37,7 +37,7 @@ from typing import Any, Iterable
 import openmmtools
 import uuid
 
-from openfe.setup import (
+from gufe import (
     ChemicalSystem, LigandAtomMapping,
 )
 

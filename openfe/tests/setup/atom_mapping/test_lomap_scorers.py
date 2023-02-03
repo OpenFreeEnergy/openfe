@@ -41,7 +41,7 @@ def toluene_to_heptane(atom_mapping_basic_test_files):
     tolu = atom_mapping_basic_test_files['toluene']
     hept = Chem.MolFromSmiles('CCCCCCC')
     Chem.rdDepictor.Compute2DCoords(hept)
-    hept = openfe.setup.SmallMoleculeComponent(hept)
+    hept = openfe.SmallMoleculeComponent(hept)
 
     mapping = [(6, 0)]
 
@@ -122,7 +122,7 @@ class TestSulfonamideRule:
     def ethylbenzene():
         m = Chem.AddHs(mol_from_smiles('c1ccccc1CCC'))
 
-        return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
+        return openfe.SmallMoleculeComponent.from_rdkit(m)
 
     @staticmethod
     @pytest.fixture
@@ -130,7 +130,7 @@ class TestSulfonamideRule:
         # technically 3-phenylbutane-1-sulfonamide
         m = Chem.AddHs(mol_from_smiles('c1ccccc1C(C)CCS(=O)(=O)N'))
 
-        return openfe.setup.SmallMoleculeComponent.from_rdkit(m)
+        return openfe.SmallMoleculeComponent.from_rdkit(m)
 
     @staticmethod
     @pytest.fixture
@@ -186,8 +186,8 @@ def test_heterocycle_score(base, other, name, hit):
     # add 2d coords to stop Lomap crashing for now
     for r in [r1, r2]:
         Compute2DCoords(r)
-    m1 = openfe.setup.SmallMoleculeComponent.from_rdkit(r1)
-    m2 = openfe.setup.SmallMoleculeComponent.from_rdkit(r2)
+    m1 = openfe.SmallMoleculeComponent.from_rdkit(r1)
+    m2 = openfe.SmallMoleculeComponent.from_rdkit(r2)
 
     mapper = openfe.setup.atom_mapping.LomapAtomMapper(threed=False)
     mapping = next(mapper.suggest_mappings(m1, m2))

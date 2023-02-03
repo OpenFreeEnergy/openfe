@@ -10,7 +10,7 @@ from openmm.app import PDBFile
 
 import gufe
 import openfe
-from openfe.setup import SmallMoleculeComponent
+from gufe import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LigandAtomMapping
 
 
