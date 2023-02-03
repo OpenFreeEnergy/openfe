@@ -2,5 +2,4 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from . import custom_typing
-from . import errors
 from .optional_imports import requires_package

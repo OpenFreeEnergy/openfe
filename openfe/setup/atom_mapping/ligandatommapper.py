@@ -1,13 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
+import abc
 from typing import Iterable
 
 from gufe import SmallMoleculeComponent
 from . import LigandAtomMapping
 import gufe
-
-from openfe.utils.errors import ABSTRACT_ERROR_STRING
 
 
 class LigandAtomMapper(gufe.AtomMapper):
@@ -17,6 +15,7 @@ class LigandAtomMapper(gufe.AtomMapper):
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
 
+    @abc.abstractmethod
     def _mappings_generator(self,
                             componentA: SmallMoleculeComponent,
                             componentB: SmallMoleculeComponent
@@ -34,10 +33,7 @@ class LigandAtomMapper(gufe.AtomMapper):
         Iterable[dict[int, int]] :
             an iterable over proposed mappings from componentA to componentB
         """
-        raise NotImplementedError(ABSTRACT_ERROR_STRING.format(
-            cls=self.__class__.__name__,
-            func='_mappings_generator'
-        ))
+        ...
 
     def suggest_mappings(self, componentA: SmallMoleculeComponent,
                          componentB: SmallMoleculeComponent
