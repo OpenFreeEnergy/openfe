@@ -6,7 +6,8 @@ import itertools
 
 import networkx as nx
 
-from openfe.setup import LigandNetwork, SmallMoleculeComponent
+from gufe import SmallMoleculeComponent
+from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapper, LigandAtomMapping
 
 

@@ -4,13 +4,13 @@ import gufe
 import pytest
 from unittest import mock
 from openff.units import unit
-from openff.units.openmm import ensure_quantity
 from importlib import resources
 import xml.etree.ElementTree as ET
 
 from openmm import app, XmlSerializer
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
+import openfe
 from openfe import setup
 from openfe.protocols import openmm_rbfe
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -19,16 +19,16 @@ from openff.units.openmm import ensure_quantity
 
 @pytest.fixture
 def benzene_vacuum_system(benzene_modifications):
-    return setup.ChemicalSystem(
+    return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['benzene']},
     )
 
 
 @pytest.fixture
 def benzene_system(benzene_modifications):
-    return setup.ChemicalSystem(
+    return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
-         'solvent': setup.SolventComponent(
+         'solvent': openfe.SolventComponent(
              positive_ion='Na', negative_ion='Cl',
              ion_concentration=0.15 * unit.molar)
         },
@@ -37,9 +37,9 @@ def benzene_system(benzene_modifications):
 
 @pytest.fixture
 def benzene_complex_system(benzene_modifications, T4_protein_component):
-    return setup.ChemicalSystem(
+    return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
-         'solvent': setup.SolventComponent(
+         'solvent': openfe.SolventComponent(
              positive_ion='Na', negative_ion='Cl',
              ion_concentration=0.15 * unit.molar),
          'protein': T4_protein_component,}
@@ -48,16 +48,16 @@ def benzene_complex_system(benzene_modifications, T4_protein_component):
 
 @pytest.fixture
 def toluene_vacuum_system(benzene_modifications):
-    return setup.ChemicalSystem(
+    return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene']},
     )
 
 
 @pytest.fixture
 def toluene_system(benzene_modifications):
-    return setup.ChemicalSystem(
+    return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
-         'solvent': setup.SolventComponent(
+         'solvent': openfe.SolventComponent(
              positive_ion='Na', negative_ion='Cl',
              ion_concentration=0.15 * unit.molar),
         },
@@ -66,9 +66,9 @@ def toluene_system(benzene_modifications):
 
 @pytest.fixture
 def toluene_complex_system(benzene_modifications, T4_protein_component):
-    return setup.ChemicalSystem(
+    return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
-         'solvent': setup.SolventComponent(
+         'solvent': openfe.SolventComponent(
              positive_ion='Na', negative_ion='Cl',
              ion_concentration=0.15 * unit.molar),
          'protein': T4_protein_component,}
@@ -254,7 +254,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
     # state B doesn't have a ligand component
-    stateB = setup.ChemicalSystem({'solvent': setup.SolventComponent()})
+    stateB = openfe.ChemicalSystem({'solvent': openfe.SolventComponent()})
 
     p = openmm_rbfe.RelativeLigandTransform(
         settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
@@ -271,7 +271,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
 def test_vaccuum_PME_error(benzene_system, benzene_modifications,
                            benzene_to_toluene_mapping):
     # state B doesn't have a solvent component (i.e. its vacuum)
-    stateB = setup.ChemicalSystem({'ligand': benzene_modifications['toluene']})
+    stateB = openfe.ChemicalSystem({'ligand': benzene_modifications['toluene']})
 
     p = openmm_rbfe.RelativeLigandTransform(
         settings=openmm_rbfe.RelativeLigandTransform.default_settings(),
@@ -288,9 +288,9 @@ def test_vaccuum_PME_error(benzene_system, benzene_modifications,
 def test_incompatible_solvent(benzene_system, benzene_modifications,
                               benzene_to_toluene_mapping):
     # the solvents are different
-    stateB = setup.ChemicalSystem(
+    stateB = openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
-         'solvent': setup.SolventComponent(
+         'solvent': openfe.SolventComponent(
              positive_ion='K', negative_ion='Cl')}
     )
 
@@ -376,9 +376,9 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
                           benzene_to_toluene_mapping):
     # hack one protein to be labelled differently
     prot = toluene_complex_system['protein']
-    alt_prot = setup.ProteinComponent(prot.to_rdkit(),
-                                      name='Mickey Mouse')
-    alt_toluene_complex_system = setup.ChemicalSystem(
+    alt_prot = openfe.ProteinComponent(prot.to_rdkit(),
+                                       name='Mickey Mouse')
+    alt_toluene_complex_system = openfe.ChemicalSystem(
                  {'ligand': toluene_complex_system['ligand'],
                   'solvent': toluene_complex_system['solvent'],
                   'protein': alt_prot}
@@ -403,11 +403,11 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
     mapper = setup.LomapAtomMapper()
     mapping = next(mapper.suggest_mappings(l1, l2))
 
-    sys1 = setup.ChemicalSystem(
-        {'ligand': l1, 'solvent': setup.SolventComponent()},
+    sys1 = openfe.ChemicalSystem(
+        {'ligand': l1, 'solvent': openfe.SolventComponent()},
     )
-    sys2 = setup.ChemicalSystem(
-        {'ligand': l2, 'solvent': setup.SolventComponent()},
+    sys2 = openfe.ChemicalSystem(
+        {'ligand': l2, 'solvent': openfe.SolventComponent()},
     )
 
     p = openmm_rbfe.RelativeLigandTransform(
@@ -478,8 +478,8 @@ def test_gather(solvent_protocol_dag, tmpdir):
 
 class TestConstraintRemoval:
     @staticmethod
-    def make_systems(ligA: setup.SmallMoleculeComponent,
-                     ligB: setup.SmallMoleculeComponent,
+    def make_systems(ligA: openfe.SmallMoleculeComponent,
+                     ligB: openfe.SmallMoleculeComponent,
                      constraints):
         """Make vacuum system for each, return Topology and System for each"""
         omm_forcefield_A = app.ForceField('tip3p.xml')
@@ -683,9 +683,9 @@ class TestConstraintRemoval:
 @pytest.fixture(scope='session')
 def tyk2_xml():
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_23.sdf') as f:
-        lig23 = setup.SmallMoleculeComponent.from_sdf_file(str(f))
+        lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_55.sdf') as f:
-        lig55 = setup.SmallMoleculeComponent.from_sdf_file(str(f))
+        lig55 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
 
     mapping = setup.LigandAtomMapping(
         componentA=lig23, componentB=lig55,
@@ -706,8 +706,8 @@ def tyk2_xml():
     protocol = openmm_rbfe.RelativeLigandTransform(settings)
 
     dag = protocol.create(
-        stateA=setup.ChemicalSystem({'ligand': lig23}),
-        stateB=setup.ChemicalSystem({'ligand': lig55}),
+        stateA=openfe.ChemicalSystem({'ligand': lig23}),
+        stateB=openfe.ChemicalSystem({'ligand': lig55}),
         mapping={'ligand': mapping},
     )
     pu = list(dag.protocol_units)[0]
@@ -725,6 +725,7 @@ def tyk2_reference_xml():
         with open(f, 'r') as i:
             xmldata = i.read()
     return ET.fromstring(xmldata)
+
 
 class TestTyk2XmlRegression:
     """Generates Hybrid system XML and performs regression test"""

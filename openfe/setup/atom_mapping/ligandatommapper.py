@@ -3,7 +3,7 @@
 
 from typing import Iterable
 
-from openfe.setup import SmallMoleculeComponent
+from gufe import SmallMoleculeComponent
 from . import LigandAtomMapping
 import gufe
 

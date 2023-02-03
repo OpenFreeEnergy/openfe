@@ -1,7 +1,7 @@
 from typing import Iterable, NamedTuple
 import pytest
 
-from openfe.setup import SmallMoleculeComponent, LigandNetwork
+from openfe import SmallMoleculeComponent, LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
 
 from rdkit import Chem
