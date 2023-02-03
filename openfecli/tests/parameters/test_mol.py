@@ -6,7 +6,7 @@ import click
 
 import openfe
 from openfecli.parameters.mol import get_molecule
-from openfe.setup import SmallMoleculeComponent
+from openfe import SmallMoleculeComponent
 
 
 def test_get_molecule_smiles():
