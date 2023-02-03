@@ -409,7 +409,7 @@ class SimulationSettings(BaseModel):
         return v
 
 
-class RelativeLigandTransformSettings(BaseModel):
+class RelativeLigandProtocolSettings(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -438,7 +438,7 @@ class RelativeLigandTransformSettings(BaseModel):
         return serialise_pydantic(self)
 
 
-def serialise_pydantic(settings: RelativeLigandTransformSettings):
+def serialise_pydantic(settings: RelativeLigandProtocolSettings):
     def serialise_unit(thing):
         # this gets called when a thing can't get jsonified by pydantic
         # for now only unit.Quantity fall foul of this requirement
@@ -448,7 +448,7 @@ def serialise_pydantic(settings: RelativeLigandTransformSettings):
     return settings.json(encoder=serialise_unit)
 
 
-def deserialise_pydantic(raw: str) -> RelativeLigandTransformSettings:
+def deserialise_pydantic(raw: str) -> RelativeLigandProtocolSettings:
     def undo_mash(d):
         for k, v in d.items():
             if isinstance(v, str) and v.startswith('__Quantity__'):
@@ -460,7 +460,7 @@ def deserialise_pydantic(raw: str) -> RelativeLigandTransformSettings:
     dct = json.loads(raw)
     dct = undo_mash(dct)
 
-    return RelativeLigandTransformSettings(**dct)
+    return RelativeLigandProtocolSettings(**dct)
 
 
 def _get_resname(off_mol) -> str:
@@ -472,8 +472,8 @@ def _get_resname(off_mol) -> str:
     return names[0]
 
 
-class RelativeLigandTransformResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a RelativeLigandTransform"""
+class RelativeLigandProtocolResult(gufe.ProtocolResult):
+    """Dict-like container for the output of a RelativeLigandProtocol"""
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
@@ -547,10 +547,10 @@ class RelativeLigandTransformResult(gufe.ProtocolResult):
         raise NotImplementedError
 
 
-class RelativeLigandTransform(gufe.Protocol):
-    result_cls = RelativeLigandTransformResult
+class RelativeLigandProtocol(gufe.Protocol):
+    result_cls = RelativeLigandProtocolResult
 
-    def __init__(self, settings: RelativeLigandTransformSettings):
+    def __init__(self, settings: RelativeLigandProtocolSettings):
         super().__init__(settings)
 
     def _to_dict(self):
@@ -561,7 +561,7 @@ class RelativeLigandTransform(gufe.Protocol):
         return cls(settings=deserialise_pydantic(dct['settings']))
 
     @classmethod
-    def _default_settings(cls) -> RelativeLigandTransformSettings:
+    def _default_settings(cls) -> RelativeLigandProtocolSettings:
         """A dictionary of initial settings for this creating this Protocol
 
         These settings are intended as a suitable starting point for creating
@@ -570,10 +570,10 @@ class RelativeLigandTransform(gufe.Protocol):
 
         Returns
         -------
-        RelativeLigandTransformSettings
+        RelativeLigandProtocolSettings
           a set of default settings
         """
-        return RelativeLigandTransformSettings(
+        return RelativeLigandProtocolSettings(
             system_settings=SystemSettings(
                 constraints='HBonds'
             ),
@@ -654,7 +654,7 @@ class RelativeLigandTransform(gufe.Protocol):
         Aname = stateA['ligand'].name
         Bname = stateB['ligand'].name
         # our DAG has no dependencies, so just list units
-        units = [RelativeLigandTransformUnit(
+        units = [RelativeLigandProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
             generation=0, repeat_id=i,
@@ -694,14 +694,14 @@ class RelativeLigandTransform(gufe.Protocol):
         }
 
 
-class RelativeLigandTransformUnit(gufe.ProtocolUnit):
+class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
     """Calculates the relative free energy of an alchemical ligand transformation.
 
     """
     _stateA: ChemicalSystem
     _stateB: ChemicalSystem
     _mapping: LigandAtomMapping
-    _settings: RelativeLigandTransformSettings
+    _settings: RelativeLigandProtocolSettings
     generation: int
     repeat_id: int
     name: str
@@ -710,7 +710,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
-                 settings: RelativeLigandTransformSettings,
+                 settings: RelativeLigandProtocolSettings,
                  name: Optional[str] = None,
                  generation: int = 0,
                  repeat_id: int = 0,
@@ -723,7 +723,7 @@ class RelativeLigandTransformUnit(gufe.ProtocolUnit):
           transformation will go from ligandA to ligandB.
         ligandmapping : LigandAtomMapping
           the mapping of atoms between the two ligand components
-        settings : RelativeLigandTransformSettings
+        settings : RelativeLigandProtocolSettings
           the settings for the Method.  This can be constructed using the
           get_default_settings classmethod to give a starting point that
           can be updated to suit.
