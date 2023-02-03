@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable, Callable, List
+from typing import Iterable, Callable
 import itertools
 
 import networkx as nx
@@ -74,10 +74,10 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
     return LigandNetwork(edges)
 
 
-def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
-                           mappers: Iterable[LigandAtomMapper],
-                           scorer: Callable[[LigandAtomMapping], float]):
-    """Plan a Network which connects all ligands with minimal cost
+def generate_minimal_spanning_network(ligands: Iterable[SmallMoleculeComponent],
+                                      mappers: Iterable[LigandAtomMapper],
+                                      scorer: Callable[[LigandAtomMapping], float]):
+    """Plan a Network which connects all ligands with minimal total score
 
     Parameters
     ----------
