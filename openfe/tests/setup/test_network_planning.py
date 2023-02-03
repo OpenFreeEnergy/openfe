@@ -22,7 +22,7 @@ def toluene_vs_others(atom_mapping_basic_test_files):
     return toluene, others
 
 
-def test_radial_graph(atom_mapping_basic_test_files, toluene_vs_others):
+def test_radial_network(atom_mapping_basic_test_files, toluene_vs_others):
     toluene, others = toluene_vs_others
     central_ligand_name = 'toluene'
     mapper = openfe.setup.atom_mapping.LomapAtomMapper()
@@ -42,7 +42,7 @@ def test_radial_graph(atom_mapping_basic_test_files, toluene_vs_others):
                for mapping in network.edges)
 
 
-def test_radial_graph_with_scorer(toluene_vs_others):
+def test_radial_network_with_scorer(toluene_vs_others):
     toluene, others = toluene_vs_others
 
     def scorer(mapping):
@@ -62,7 +62,7 @@ def test_radial_graph_with_scorer(toluene_vs_others):
         assert edge.annotations['score'] == 1.0 / len(edge.componentA_to_componentB)
 
 
-def test_radial_graph_multiple_mappers_no_scorer(toluene_vs_others):
+def test_radial_network_multiple_mappers_no_scorer(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
     # in this one, we should always take the bad mapper
@@ -89,14 +89,14 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
         )
 
 
-def test_minimal_spanning_graph(toluene_vs_others):
+def test_minimal_spanning_network(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
 
     def scorer(mapping):
         return 1.0 / len(mapping.componentA_to_componentB)
 
-    network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
+    network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
         ligands=others + [toluene],
         mappers=mappers,
         scorer=scorer
@@ -115,7 +115,7 @@ def test_minimal_spanning_graph(toluene_vs_others):
     assert nx.is_connected(nx.MultiGraph(network.graph))
 
 
-def test_minimal_spanning_graph_unreachable(toluene_vs_others):
+def test_minimal_spanning_network_unreachable(toluene_vs_others):
     toluene, others = toluene_vs_others
     nimrod = openfe.setup.SmallMoleculeComponent(mol_from_smiles("N"))
 
@@ -123,7 +123,7 @@ def test_minimal_spanning_graph_unreachable(toluene_vs_others):
         return 1.0 / len(mapping.componentA_to_componentB)
 
     with pytest.raises(RuntimeError, match="Unable to create edges"):
-        network = openfe.setup.ligand_network_planning.minimal_spanning_graph(
+        network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
             ligands=others + [toluene, nimrod],
             mappers=[openfe.setup.atom_mapping.LomapAtomMapper()],
             scorer=scorer
