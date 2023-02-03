@@ -1,13 +1,12 @@
 from typing import Iterable, Dict
 
-from wally import wally_atom_mapper
-from wally.wally_mapper import wally_mapping_algorithm
+from kartograf.atom_mapping.geom_mapping import geom_mapping
 
 from .ligandatommapper import LigandAtomMapper
 from ...setup import SmallMoleculeComponent
 
 
-class WallyAtomMapper(LigandAtomMapper, wally_atom_mapper):
+class GeomAtomMapper(LigandAtomMapper, geom_mapping):
     """This is a Interface for wally to seperate the imports/dependencies.
     """
     def _mappings_generator(
