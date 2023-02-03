@@ -1,0 +1,1 @@
+from .easyCampaign import plan_easy_campaign
