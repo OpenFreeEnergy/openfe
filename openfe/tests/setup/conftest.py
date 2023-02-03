@@ -1,17 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import importlib
-import string
 import pytest
 from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from openmm.app import PDBFile
 
 import gufe
 import openfe
-from gufe import SmallMoleculeComponent
-from openfe.setup.atom_mapping import LigandAtomMapping
+from gufe import SmallMoleculeComponent, LigandAtomMapping
 
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:

@@ -10,7 +10,7 @@ from gufe.visualization.mapping_visualization import (
     draw_one_molecule_mapping,
 )
 from openfe.utils.custom_typing import MPL_MouseEvent
-from openfe.setup import SmallMoleculeComponent, LigandNetwork
+from openfe import SmallMoleculeComponent, LigandNetwork
 
 
 class AtomMappingEdge(Edge):
