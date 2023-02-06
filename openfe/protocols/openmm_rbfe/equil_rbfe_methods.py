@@ -597,14 +597,14 @@ class RelativeLigandTransform(gufe.Protocol):
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
         mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
-        extend_from: Optional[gufe.ProtocolDAGResult] = None,
+        extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
         if mapping is None:
             raise ValueError("`mapping` is required for this Protocol")
         if 'ligand' not in mapping:
             raise ValueError("'ligand' must be specified in `mapping` dict")
-        if extend_from:
+        if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
         # Checks on the inputs!
