@@ -66,12 +66,12 @@ def make_mock_graph(fig=None):
 
 
 class TestNode:
-    def setup(self):
+    def setup_method(self):
         self.node = Node("B", 0.5, 0.0)
         self.fig, self.ax = plt.subplots()
         self.node.register_artist(self.ax)
 
-    def teardown(self):
+    def teardown_method(self):
         plt.close(self.fig)
 
     def test_register_artist(self):
@@ -208,7 +208,7 @@ class TestNode:
 
 
 class TestEdge:
-    def setup(self):
+    def setup_method(self):
         self.nodes = [Node("A", 0.0, 0.0), Node("B", 0.5, 0.0)]
         self.data = {"data": "values"}
         self.edge = Edge(*self.nodes, self.data)
@@ -217,7 +217,7 @@ class TestEdge:
         self.ax.set_ylim(-1, 1)
         self.edge.register_artist(self.ax)
 
-    def teardown(self):
+    def teardown_method(self):
         plt.close(self.fig)
 
     def test_register_artist(self):
@@ -291,7 +291,7 @@ class TestEdge:
 
 
 class TestEventHandler:
-    def setup(self):
+    def setup_method(self):
         self.fig, self.ax = plt.subplots()
         self.event_handler = EventHandler(graph=make_mock_graph(self.fig))
         graph = self.event_handler.graph
@@ -304,7 +304,7 @@ class TestEventHandler:
             "miss": (None, []),
         }
 
-    def teardown(self):
+    def teardown_method(self):
         plt.close(self.fig)
 
     def _mock_for_connections(self):
@@ -496,7 +496,7 @@ class TestEventHandler:
 
 
 class TestGraphDrawing:
-    def setup(self):
+    def setup_method(self):
         self.nx_graph = nx.MultiDiGraph()
         self.nx_graph.add_edges_from([
             ("A", "B", {'data': "AB"}),
