@@ -108,7 +108,7 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
 
 
 @requires_package("py3Dmol")
-def draw_mapping_on_3Dstructure(
+def show_3D_mapping(
     mapping: AtomMapping,
     spheres: Optional[bool] = True,
     show_atomIDs: Optional[bool] = False,

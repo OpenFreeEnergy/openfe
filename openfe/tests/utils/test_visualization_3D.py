@@ -1,6 +1,6 @@
 import pytest
 from openfe.setup import LigandAtomMapping
-from openfe.utils.visualization_3D import draw_mapping_on_3Dstructure
+from openfe.utils.visualization_3D import show_3D_mapping
 
 
 @pytest.fixture(scope="module")
@@ -20,8 +20,8 @@ def benzene_phenol_mapping(benzene_transforms, maps):
     return LigandAtomMapping(mol1, mol2, mapping)
 
 
-def test_draw_mapping_on_3Dstructure(benzene_phenol_mapping):
+def test_show_3D_mapping(benzene_phenol_mapping):
     """
     smoke test just checking if nothing goes horribly wrong
     """
-    draw_mapping_on_3Dstructure(edge=benzene_phenol_mapping)
+    show_3D_mapping(mapping=benzene_phenol_mapping)
