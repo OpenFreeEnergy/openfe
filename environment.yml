@@ -29,3 +29,5 @@ dependencies:
   - pip:
     - plugcli
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/mikemhenry/openff-models.git@support_nested_models
+    
