@@ -3,6 +3,9 @@ from openfe.setup import LigandAtomMapping
 from openfe.utils.visualization_3D import show_3D_mapping
 
 
+pytest.importorskip('py3Dmol')
+
+
 @pytest.fixture(scope="module")
 def maps():
     MAPS = {
