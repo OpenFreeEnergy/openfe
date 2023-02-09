@@ -13,8 +13,8 @@ dependencies:
   - pytest-cov
   - pydantic
   - coverage
-  - openff-toolkit==0.11.2
-  - openff-units==0.1.8
+  - openff-toolkit>=0.12.0
+  - openff-units
   - click
   - openeye-toolkits
   - typing-extensions
