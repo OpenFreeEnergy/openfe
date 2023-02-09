@@ -14,7 +14,7 @@ class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
         yield {0: 0}
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def toluene_vs_others(atom_mapping_basic_test_files):
     central_ligand_name = 'toluene'
     others = [v for (k, v) in atom_mapping_basic_test_files.items()
@@ -90,7 +90,8 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
         )
 
 
-def test_minimal_spanning_network(toluene_vs_others):
+@pytest.fixture(scope='session')
+def minimal_spanning_network(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
 
@@ -102,18 +103,42 @@ def test_minimal_spanning_network(toluene_vs_others):
         mappers=mappers,
         scorer=scorer
     )
+    return network
 
-    assert len(network.nodes) == len(others) + 1
-    for edge in network.edges:
+
+def test_minimal_spanning_network(minimal_spanning_network, toluene_vs_others):
+    tol, others = toluene_vs_others
+    assert len(minimal_spanning_network.nodes) == len(others) + 1
+    for edge in minimal_spanning_network.edges:
         assert edge.componentA_to_componentB != {0: 0}  # lomap should find something
 
+
+def test_minimal_spanning_network_connectedness(minimal_spanning_network):
     found_pairs = set()
-    for edge in network.edges:
+    for edge in minimal_spanning_network.edges:
         pair = frozenset([edge.componentA, edge.componentB])
         assert pair not in found_pairs
         found_pairs.add(pair)
 
-    assert nx.is_connected(nx.MultiGraph(network.graph))
+    assert nx.is_connected(nx.MultiGraph(minimal_spanning_network.graph))
+
+
+def test_minimal_spanning_network_regression(minimal_spanning_network):
+    # issue #244, this was previously giving non-reproducible (yet valid)
+    # networks when scores were tied.
+    edge_ids = sorted(
+        (edge.componentA.name, edge.componentB.name)
+        for edge in minimal_spanning_network.edges
+    )
+    ref = sorted([('1,3,7-trimethylnaphthalene', '2-naftanol'),
+           ('1,3,7-trimethylnaphthalene', 'methylcyclohexane'),
+           ('1,3,7-trimethylnaphthalene', '2-methylnaphthalene'),
+           ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
+           ('1,3,7-trimethylnaphthalene', 'toluene'),
+           ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+           ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene')])
+
+    assert edge_ids == ref
 
 
 def test_minimal_spanning_network_unreachable(toluene_vs_others):
