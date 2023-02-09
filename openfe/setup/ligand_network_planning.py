@@ -6,7 +6,8 @@ import itertools
 
 import networkx as nx
 
-from openfe.setup import Network, SmallMoleculeComponent
+from gufe import SmallMoleculeComponent
+from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapper, LigandAtomMapping
 
 
@@ -39,7 +40,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
 
     Returns
     -------
-    network : Network
+    network : LigandNetwork
       will have an edge between each ligand and the central ligand, with the
       mapping being the best possible mapping found using the supplied atom
       mappers.
@@ -94,9 +95,9 @@ def maximal_network(
     return network
 
 
-def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
-                           mappers: Iterable[LigandAtomMapper],
-                           scorer: Callable[[LigandAtomMapping], float]):
+def generate_minimal_spanning_network(ligands: Iterable[SmallMoleculeComponent],
+                                      mappers: Iterable[LigandAtomMapper],
+                                      scorer: Callable[[LigandAtomMapping], float]):
     """Plan a Network which connects all ligands with minimal cost
 
     Parameters
@@ -110,7 +111,17 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
     """
-    network = maximal_network(ligands, mappers, scorer)
+    nodes = list(ligands)
+
+    # First create a network with all the proposed mappings (scored)
+    mapping_generator = itertools.chain.from_iterable(
+        mapper.suggest_mappings(molA, molB)
+        for molA, molB in itertools.combinations(nodes, 2)
+        for mapper in mappers
+    )
+    mappings = [mapping.with_annotations({'score': scorer(mapping)})
+                for mapping in mapping_generator]
+    network = LigandNetwork(mappings, nodes=nodes)
 
     # Next analyze that network to create minimal spanning network. Because
     # we carry the original (directed) LigandAtomMapping, we don't lose
@@ -118,8 +129,8 @@ def minimal_spanning_graph(ligands: Iterable[SmallMoleculeComponent],
     min_edges = nx.minimum_spanning_edges(nx.MultiGraph(network.graph),
                                           weight='score')
     min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
-    min_network = Network(min_mappings)
-    missing_nodes = set(network.nodes) - set(min_network.nodes)
+    min_network = LigandNetwork(min_mappings)
+    missing_nodes = set(nodes) - set(min_network.nodes)
     if missing_nodes:
         raise RuntimeError("Unable to create edges to some nodes: "
                            + str(list(missing_nodes)))

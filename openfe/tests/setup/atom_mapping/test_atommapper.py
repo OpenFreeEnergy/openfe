@@ -9,9 +9,8 @@ class TestAtomMapper:
         # tries to directly user the abstract class
         molA = simple_mapping.componentA
         molB = simple_mapping.componentB
-        mapper = LigandAtomMapper()
-        match_re = "'LigandAtomMapper'.*abstract.*_mappings_generator"
-        with pytest.raises(NotImplementedError, match=match_re):
+        with pytest.raises(TypeError):
+            mapper = LigandAtomMapper()
             list(mapper.suggest_mappings(molA, molB))
 
     def test_concrete_mapper(self, simple_mapping, other_mapping):

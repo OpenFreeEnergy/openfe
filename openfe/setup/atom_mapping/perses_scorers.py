@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass    # Don't throw  error, will happen later
 
-from .ligandatommapping import LigandAtomMapping
+from . import LigandAtomMapping
 
 
 # Helpfer Function / reducing code amount
