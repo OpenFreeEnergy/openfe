@@ -150,15 +150,17 @@ def show_3D_mapping(
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
 
-    mblock1 = Chem.MolToMolBlock(_translate(molA, -1 * shift))
-    mblock2 = Chem.MolToMolBlock(_translate(molB, shift))
+    # 0 * shift is the centrepoint
+    # shift either side of the mapping +- a shift to clear the centre view
+    lmol = _translate(molA, -1 * shift)
+    rmol = _translate(molB, +1 * shift)
 
     view = py3Dmol.view(width=600, height=600)
-    view.addModel(mblock1, "molA")
-    view.addModel(mblock2, "molB")
+    view.addModel(Chem.MolToMolBlock(lmol), "molA")
+    view.addModel(Chem.MolToMolBlock(rmol), "molB")
 
     if spheres:
-        _add_spheres(view, molA, molB, mapping.componentA_to_componentB)
+        _add_spheres(view, lmol, rmol, mapping.componentA_to_componentB)
 
     if show_atomIDs:
         view.addPropertyLabels(
@@ -174,11 +176,8 @@ def show_3D_mapping(
         )
 
     # middle fig
-    overlay_mblock1 = Chem.MolToMolBlock(_translate(molA, 1 * shift))
-    overlay_mblock2 = Chem.MolToMolBlock(_translate(molB, -1 * shift))
-
-    view.addModel(overlay_mblock1, "molA_overlay")
-    view.addModel(overlay_mblock2, "molB_overlay")
+    view.addModel(Chem.MolToMolBlock(molA), "molA_overlay")
+    view.addModel(Chem.MolToMolBlock(molB), "molB_overlay")
 
     view.setStyle({style: {}})
 
