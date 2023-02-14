@@ -14,6 +14,7 @@ environment.yml                 @IAlibay
 setup.*                         @dwhswenson
 devtools/*                      @mikemhenry
 versioneer.py                   @mikemhenry
+CODEOWNERS                      @dwhswenson
 
 # docs
 docs/*                          @dwhswenson
