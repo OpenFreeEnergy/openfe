@@ -6,7 +6,9 @@ from importlib import resources
 
 from openfe import SmallMoleculeComponent
 
-from openfe.tests.setup.test_network import mols, std_edges, simple_network
+from openfe.tests.setup.test_ligand_network import (
+    mols, std_edges, simple_network
+)
 
 
 @pytest.fixture(scope='session')
