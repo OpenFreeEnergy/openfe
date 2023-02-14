@@ -1,0 +1,55 @@
+# In general, when adding a file, use the pattern:
+#       openfe/**/path/to/*file.py
+# This way the pattern matches both openfe/path/to/file.py and
+# openfe/tests/path/to/test_file.py
+
+# generic code infrastructure
+.coveragerc                     @dwhswenson
+.git*                           @dwhswenson
+CITATION.cff                    @mikemhenry
+LICENSE                         @richardjgowers
+MANIFEST.in                     @mikemhenry
+README.md                       @richardjgowers
+environment.yml                 @IAlibay
+setup.*                         @dwhswenson
+devtools/*                      @mikemhenry
+versioneer.py                   @mikemhenry
+
+# docs
+docs/*                          @dwhswenson
+readthedocs.yml                 @dwhswenson
+
+# API
+openfe/**/__init__.py           @richardjgowers
+
+# analysis
+
+# orchestration
+
+# protocols
+openfe/protocols/openm_rbfe/__init__.py                 @richardjgowers
+openfe/**/protocols/openmm_rbfe/*equil_rbfe_methods.py  @richardjgowers
+openfe/**/protocols/openmm_rbfe/_rbfe_utils/*           @IAlibay
+
+# I think this file need to be moved/renamed
+openfe/tests/setup/test_openmm_equil_protocols.py       @richardjgowers
+
+# setup
+openfe/**/setup/atom_mapping/*ligandatommapper.py       @dwhswenson
+openfe/**/setup/atom_mapping/*lomap*        @richardjgowers
+openfe/**/setup/atom_mapping/*perses*       @riesben
+openfe/**/setup/*ligand_network*            @dwhswenson
+
+# testing-specific stuff
+openfe/tests/data/*             @richardjgowers
+openfe/tests/dev/*              @dwhswenson
+openfe/tests/**/conftest.py     @richardjgowers
+
+# utils
+openfe/**/utils/*network_plotting.py        @dwhswenson
+openfe/**/utils/*visualization_3D.py        @riesben
+openfe/**/utils/*custom_typing.py           @dwhswenson
+openfe/**/utils/*optional_imports.py        @riesben
+
+# CLI
+openfecli/*                     @dwhswenson
