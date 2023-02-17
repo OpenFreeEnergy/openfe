@@ -1,6 +1,6 @@
 import pytest
 from openfe.setup import LigandAtomMapping
-from openfe.utils.visualization_3D import show_3D_mapping, show_ComponentCoords
+from openfe.utils.visualization_3D import show_3D_mapping, show_component_coords
 
 
 pytest.importorskip('py3Dmol')
@@ -23,18 +23,18 @@ def benzene_phenol_mapping(benzene_transforms, maps):
     return LigandAtomMapping(mol1, mol2, mapping)
 
 
-def test_show_ComponentCoords_give_iterable(benzene_transforms):
+def test_show_component_coords_give_iterable(benzene_transforms):
     """
     smoke test just checking if nothing goes horribly wrong
     """
     components = [benzene_transforms["benzene"], benzene_transforms["phenol"]]
-    show_ComponentCoords(components)
+    show_component_coords(components)
 
-def test_show_ComponentCoords_give_component(benzene_transforms):
+def test_show_component_coords_give_component(benzene_transforms):
     """
     smoke test just checking if nothing goes horribly wrong
     """
-    show_ComponentCoords(benzene_transforms["benzene"])
+    show_component_coords(benzene_transforms["benzene"])
 
 
 def test_show_3D_mapping(benzene_phenol_mapping):
