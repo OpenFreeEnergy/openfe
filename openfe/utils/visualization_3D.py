@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass    # Don't throw  error, will happen later
 
-
+from gufe import Component
 from gufe.mapping import AtomMapping
 
 from openfe.utils import requires_package
@@ -106,6 +106,39 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
             }
         )
 
+@requires_package("py3Dmol")
+def show_ComponentCoords(mols: Union[Component, Iterable[Component]],
+                     style: Optional[str] ="stick",
+                     ) -> py3Dmol.view:
+    """this function can be used to visualize multiple component coordinates in one view.
+    It helps to understand how the components are aligned in the system to each other.
+
+    Parameters
+    ----------
+    mols : Union[Component, Iterable[Component]]
+        collection of components
+    style : Optional[str], optional
+        py3Dmol style, by default "stick"
+
+    Returns
+    -------
+    py3Dmol.view
+        view containing all component coordinates
+    """
+
+    if(isinstance(mols, Component)):
+        mols = [mols]
+        
+    view = py3Dmol.view(width=600, height=600)
+    
+    for component in mols:
+        mol = component.to_rdkit()
+        view.addModel(Chem.MolToMolBlock(mol))
+        
+    view.setStyle({style: {}})
+
+    view.zoomTo()
+    return view
 
 @requires_package("py3Dmol")
 def show_3D_mapping(
