@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass    # Don't throw  error, will happen later
 
-from gufe import Component
+from gufe import ExplicitMoleculeComponent
 from gufe.mapping import AtomMapping
 
 from openfe.utils import requires_package
@@ -108,32 +108,35 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
 
 
 @requires_package("py3Dmol")
-def show_ComponentCoords(mols: Union[Component, Iterable[Component]],
+def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
                      style: Optional[str] ="stick",
+                     shift: Optional[Tuple[float, float, float]] = None,
                      ) -> py3Dmol.view:
     """this function can be used to visualize multiple component coordinates in one view.
     It helps to understand how the components are aligned in the system to each other.
 
     Parameters
     ----------
-    mols : Union[Component, Iterable[Component]]
+    mols : Iterable[ExplicitMoleculeComponent]
         collection of components
     style : Optional[str], optional
         py3Dmol style, by default "stick"
-
+    shift : Tuple of floats, optional
+        Amount to i*shift each mols_i in order to allow inspection of them in heavy overlap cases.
+        
     Returns
     -------
     py3Dmol.view
         view containing all component coordinates
     """
-
-    if(isinstance(mols, Component)):
-        mols = [mols]
         
     view = py3Dmol.view(width=600, height=600)
     
     for component in mols:
-        mol = component.to_rdkit()
+        mol = Chem.Mol(component.to_rdkit())
+        if(shift is not None):
+            mol = _translate(mol, i * np.array(shift))
+
         view.addModel(Chem.MolToMolBlock(mol))
         
     view.setStyle({style: {}})
