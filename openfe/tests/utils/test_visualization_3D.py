@@ -22,6 +22,7 @@ def benzene_phenol_mapping(benzene_transforms, maps):
     mapping = maps["phenol"]
     return LigandAtomMapping(mol1, mol2, mapping)
 
+
 def test_show_ComponentCoords_give_iterable(benzene_transforms):
     """
     smoke test just checking if nothing goes horribly wrong
