@@ -12,8 +12,8 @@ try:
 except ImportError:
     pass    # Don't throw  error, will happen later
 
-from gufe import ExplicitMoleculeComponent
 from gufe.mapping import AtomMapping
+from gufe.components.explicitmoleculecomponent import ExplicitMoleculeComponent
 
 from openfe.utils import requires_package
 
@@ -135,7 +135,8 @@ def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
     for i, component in enumerate(mols):
         mol = Chem.Mol(component.to_rdkit())
         if(shift is not None):
-            mol = _translate(mol, Tuple(i * np.array(shift)))
+            tmp_shift = np.array(shift, dtype=np.float64)*i
+            mol = _translate(mol, tmp_shift)
 
         view.addModel(Chem.MolToMolBlock(mol))
         

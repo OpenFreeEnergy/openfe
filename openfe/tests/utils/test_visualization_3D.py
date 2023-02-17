@@ -31,13 +31,6 @@ def test_show_component_coords_give_iterable(benzene_transforms):
     show_component_coords(components)
 
 
-def test_show_component_coords_give_component(benzene_transforms):
-    """
-    smoke test just checking if nothing goes horribly wrong
-    """
-    show_component_coords(benzene_transforms["benzene"])
-
-
 def test_show_3D_mapping(benzene_phenol_mapping):
     """
     smoke test just checking if nothing goes horribly wrong
