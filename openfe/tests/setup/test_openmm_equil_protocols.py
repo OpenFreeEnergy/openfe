@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import json
 import gufe
 import pytest
 from unittest import mock
@@ -8,6 +9,7 @@ from importlib import resources
 import xml.etree.ElementTree as ET
 
 from openmm import app, XmlSerializer
+from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe
@@ -751,3 +753,20 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+def test_custom_openmm_unit_codec():
+    # the Protocol spits out openmm unit quantities, check that these can
+    # roundtrip through json using gufe's JSON_HANDLER
+    val = 10.0 * omm_unit.kilocalorie_per_mole
+
+    d = {'value': val}
+
+    serialised = json.dumps(d, cls=gufe.tokenization.JSON_HANDLER.encoder)
+
+    assert isinstance(serialised, str)
+
+    d2 = json.loads(serialised, cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+    assert isinstance(d2, dict)
+    assert d2['value'] == val

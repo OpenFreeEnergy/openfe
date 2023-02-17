@@ -21,11 +21,14 @@ import logging
 
 from collections import defaultdict
 import gufe
+from gufe import custom_codecs, tokenization
 import json
 import numpy as np
 import openmm
 from openff.units import unit
-from openff.units.openmm import to_openmm, ensure_quantity
+from openff.units.openmm import (
+    to_openmm, ensure_quantity, openmm_unit_to_string, string_to_openmm_unit,
+)
 from openmmtools import multistate
 from pydantic import BaseModel, validator
 from typing import Dict, List, Union, Optional
@@ -45,6 +48,17 @@ from . import _rbfe_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+OMM_UNIT_CODEC = gufe.custom_codecs.JSONCodec(
+    cls=omm_unit.Quantity,
+    to_dict=lambda x: {'value': x._value,
+                       'unit': openmm_unit_to_string(x.unit),
+                       ':is_custom:': True},
+    from_dict=lambda x: omm_unit.Quantity(x['value'],
+                                          string_to_openmm_unit(x['unit'])),
+)
+tokenization.JSON_HANDLER.add_codec(OMM_UNIT_CODEC)
 
 
 class SystemSettings(BaseModel):
