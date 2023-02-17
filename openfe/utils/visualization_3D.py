@@ -106,6 +106,7 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
             }
         )
 
+
 @requires_package("py3Dmol")
 def show_ComponentCoords(mols: Union[Component, Iterable[Component]],
                      style: Optional[str] ="stick",
