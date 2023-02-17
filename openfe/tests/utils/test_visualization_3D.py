@@ -35,6 +35,7 @@ def test_show_ComponentCoords_give_component(benzene_transforms):
     """
     show_ComponentCoords(benzene_transforms["benzene"])
 
+
 def test_show_3D_mapping(benzene_phenol_mapping):
     """
     smoke test just checking if nothing goes horribly wrong
