@@ -9,6 +9,6 @@ from .atom_mapping import (LigandAtomMapping,
                            GeomAtomMapper)
 
 from gufe import LigandNetwork
-from . import ligand_network_planning
+from .networks import ligand_network_planning
 
 from .alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner
