@@ -132,7 +132,7 @@ def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
         
     view = py3Dmol.view(width=600, height=600)
     
-    for , component in enumerate(mols):
+    for i, component in enumerate(mols):
         mol = Chem.Mol(component.to_rdkit())
         if(shift is not None):
             mol = _translate(mol, i * np.array(shift))
