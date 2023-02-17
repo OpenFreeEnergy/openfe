@@ -135,7 +135,7 @@ def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
     for i, component in enumerate(mols):
         mol = Chem.Mol(component.to_rdkit())
         if(shift is not None):
-            mol = _translate(mol, i * np.array(shift))
+            mol = _translate(mol, Tuple(i * np.array(shift)))
 
         view.addModel(Chem.MolToMolBlock(mol))
         
