@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from typing import Tuple, Union, Optional, Dict
+from typing import Tuple, Union, Optional, Dict, Iterable
 
 from rdkit import Chem
 from rdkit.Geometry.rdGeometry import Point3D
@@ -132,7 +132,7 @@ def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
         
     view = py3Dmol.view(width=600, height=600)
     
-    for component in mols:
+    for , component in enumerate(mols):
         mol = Chem.Mol(component.to_rdkit())
         if(shift is not None):
             mol = _translate(mol, i * np.array(shift))
