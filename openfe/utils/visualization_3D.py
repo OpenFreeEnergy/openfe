@@ -141,6 +141,7 @@ def show_ComponentCoords(mols: Union[Component, Iterable[Component]],
     view.zoomTo()
     return view
 
+
 @requires_package("py3Dmol")
 def show_3D_mapping(
     mapping: AtomMapping,
