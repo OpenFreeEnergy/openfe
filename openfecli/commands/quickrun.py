@@ -64,6 +64,11 @@ def quickrun(transformation, directory, output):
     else:
         estimate = uncertainty = None  # for output file
 
+    # TODO: remove this ugly hack on next release
+    #       strip out Settings objects in each unit_result inputs dict
+    for _, dd in out_dict['unit_results'].items():
+        dd['inputs'].pop('settings')
+
     out_dict = {
         'estimate': estimate,
         'uncertainty': uncertainty,
