@@ -5,8 +5,10 @@ from typing import Callable
 
 from openfe.utils import requires_package
 
+from ...utils.silence_root_logging import silence_root_logging
 try:
-    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+    with silence_root_logging():
+        from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 except ImportError:
     pass    # Don't throw  error, will happen later
 
