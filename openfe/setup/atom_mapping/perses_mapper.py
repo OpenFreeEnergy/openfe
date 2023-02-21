@@ -9,8 +9,12 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 from openmm import unit
 from openfe.utils import requires_package
 
+from ...utils.silence_root_logging import silence_root_logging
 try:
-    from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
+    with silence_root_logging():
+        from perses.rjmc.atom_mapping import (
+            AtomMapper, InvalidMappingException
+        )
 except ImportError:
     pass    # Don't throw  error, will happen later
 

@@ -1,4 +1,5 @@
 import contextlib
+import logging
 
 @contextlib.contextmanager
 def silence_root_logging():
@@ -7,8 +8,7 @@ def silence_root_logging():
     a.k.a, "Why are you using basicConfig during import -- or in library
     code at all?"
     """
-    import logging
-    root = logger.getLogger()
+    root = logging.getLogger()
     old_handlers = root.handlers
     for handler in old_handlers:
         root.removeHandler(handler)
