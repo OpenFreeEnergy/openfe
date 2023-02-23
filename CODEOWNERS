@@ -28,9 +28,8 @@ openfe/**/__init__.py           @richardjgowers
 # orchestration
 
 # protocols
-openfe/protocols/openm_rbfe/__init__.py                 @richardjgowers
-openfe/**/protocols/openmm_rbfe/*equil_rbfe_methods.py  @richardjgowers
-openfe/**/protocols/openmm_rbfe/_rbfe_utils/*           @IAlibay
+openfe/protocols/openm_rbfe/__init__.py                 @richardjgowers @IAlibay
+openfe/**/protocols/openmm_rbfe/*                       @richardjgowers @IAlibay
 
 # I think this file need to be moved/renamed
 openfe/tests/setup/test_openmm_equil_protocols.py       @richardjgowers
