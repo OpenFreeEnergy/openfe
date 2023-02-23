@@ -650,7 +650,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
-                 settings: settings.Settings,
+                 settings: settings.RelativeLigandProtocolSettings,
                  generation: int,
                  repeat_id: int,
                  name: Optional[str] = None,
