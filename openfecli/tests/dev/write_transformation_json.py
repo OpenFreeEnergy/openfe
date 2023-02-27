@@ -44,10 +44,10 @@ solv_tol = gufe.ChemicalSystem(dict(**tol_dict, **solv_dict))
 mapper = openfe.setup.LomapAtomMapper()
 mapping = list(mapper.suggest_mappings(benzene, toluene))[0]
 
-protocol = DummyProtocol()
+protocol = DummyProtocol(settings=DummyProtocol.default_settings())
 
 transformation = gufe.Transformation(solv_benz, solv_tol, protocol, mapping)
-bad_protocol = BrokenProtocol()
+bad_protocol = BrokenProtocol(settings=BrokenProtocol.default_settings())
 bad_transformation = gufe.Transformation(solv_benz, solv_tol,
                                          bad_protocol, mapping)
 
