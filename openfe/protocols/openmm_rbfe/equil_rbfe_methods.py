@@ -523,7 +523,7 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
             
         avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
 
-        return avg_val * dGs[0].unit
+        return ensure_quantity(avg_val * dGs[0].unit, 'openff')
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value"""
@@ -541,7 +541,7 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
         
         std_val = np.std([i.value_in_unit(dGs[0].unit) for i in dGs])
 
-        return std_val * dGs[0].unit
+        return ensure_quantity(std_val * dGs[0].unit, 'openff')
 
     def get_rate_of_convergence(self):
         raise NotImplementedError
