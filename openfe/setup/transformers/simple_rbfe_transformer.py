@@ -1,3 +1,6 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+
 from typing import FrozenSet, Dict
 
 from _abstract_transformer import _abstract_transformer
