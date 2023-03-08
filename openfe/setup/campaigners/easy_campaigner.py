@@ -20,16 +20,6 @@ from .building_blocks import load_files, build_transformations_from_edges
     This is a draft!
 """
 
-class rbfe_campaing(_abstract_campaigner):
-
-    def __init__(self, mapper:AtomMapper=LomapAtomMapper,
-                       mapping_scorers:Iterable[Callable]=[default_lomap_score],
-                       networker:Callable=minimal_spanning_graph):
-
-        super().__init__(mapper=mapper, mapping_scorers=mapping_scorers,
-                         networker=networker, protocol=RelativeLigandTransform)
-
-
 
 class easy_campaigner(_abstract_campaigner):
 
@@ -67,3 +57,14 @@ class easy_campaigner(_abstract_campaigner):
                                                            protocol=self.protocol)
 
         return alchemical_network
+
+class rbfe_campainger(easy_campaigner):
+
+    def __init__(self, mapper:AtomMapper=LomapAtomMapper,
+                       mapping_scorers:Iterable[Callable]=[default_lomap_score],
+                       networker:Callable=minimal_spanning_graph):
+
+        super().__init__(mapper=mapper, mapping_scorers=mapping_scorers,
+                         networker=networker, protocol=RelativeLigandTransform)
+
+
