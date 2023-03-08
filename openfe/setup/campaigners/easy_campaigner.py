@@ -3,31 +3,39 @@
 
 from typing import Iterable, Callable
 
-from rdkit import Chem
+from gufe import Protocol, AlchemicalNetwork, LigandAtomMapping
+from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent
 
-from gufe import Protocol, AlchemicalNetwork
+from openfe.setup import Network as LigandNetwork
+
 from gufe.mapping.atom_mapper import AtomMapper
 
 from ._abstract_campaigner import _abstract_campaigner
-from .. import LomapAtomMapper, Transformation
+
+from .. import LomapAtomMapper
 from ..atom_mapping.lomap_scorers import default_lomap_score
 from ..ligand_network_planning import minimal_spanning_graph
+from ..transformers.simple_rbfe_transformer import simple_rbfe_transformer
 from ...protocols.openmm_rbfe.equil_rbfe_methods import RelativeLigandTransform
-
-from .building_blocks import load_files, build_transformations_from_edges
+from ..chem_sys_generators.rbfe_system_generators import rbfe_system_generator
 
 """
     This is a draft!
 """
 
+protocol_generator = {
+    RelativeLigandTransform: rbfe_system_generator
+}
 
-class easy_campaigner(_abstract_campaigner):
+}
+
+class relative_campaigner(_abstract_campaigner):
 
     def __init__(self,
-                 mapper: AtomMapper = LomapAtomMapper,
+                 mapper: AtomMapper = LomapAtomMapper(),
                  mapping_scorers: Iterable[Callable] = [default_lomap_score],
                  networker: Callable = minimal_spanning_graph,
-                 protocol:Protocol =RelativeLigandTransform) -> AlchemicalNetwork:
+                 protocol: Protocol = RelativeLigandTransform()) -> AlchemicalNetwork:
         """
         a simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
 
@@ -42,29 +50,48 @@ class easy_campaigner(_abstract_campaigner):
         self.mapping_scorers = mapping_scorers
         self.networker = networker
         self.protocol = protocol
-
-    def __call__(self, small_components, receptor_component):
-        # components might be given differently!
-
-        #throw into Networker
-        self.network = self.networker(ligands=small_components,
-                            mappers=[self.mapper],
-                            mapping_scorers=self.mapping_scorers)
+        self.generator_type = protocol_generator[protocol.__class__]
 
 
-        #build transformations
-        alchemical_network = build_transformations_from_edges(paths=self.network.edges, protein_component=receptor_component,
-                                                           protocol=self.protocol)
+class easy_rbfe_campainger(relative_campaigner):
+    mappings: LigandAtomMapping
+    ligand_network: LigandNetwork
+    alchemical_network: AlchemicalNetwork
 
-        return alchemical_network
-
-class rbfe_campainger(easy_campaigner):
-
-    def __init__(self, mapper:AtomMapper=LomapAtomMapper,
-                       mapping_scorers:Iterable[Callable]=[default_lomap_score],
-                       networker:Callable=minimal_spanning_graph):
-
+    def __init__(self, mapper: AtomMapper = LomapAtomMapper,
+                 mapping_scorers: Iterable[Callable] = [default_lomap_score],
+                 networker: Callable = minimal_spanning_graph):
         super().__init__(mapper=mapper, mapping_scorers=mapping_scorers,
                          networker=networker, protocol=RelativeLigandTransform)
 
+    def __call__(self, ligands:SmallMoleculeComponent , solvent: SolventComponent = None, receptor: ProteinComponent = None,):
+        # components might be given differently!
 
+        # throw into Networker
+        # TODO: decompose networker here into the nice helpers below
+        self.ligand_network = self.networker(ligands=ligands,
+                                             mappers=[self.mapper],
+                                             mapping_scorers=self.mapping_scorers)
+
+        # Prepare system generation
+        self.chemical_system_generator = self.generator_type(solvent=solvent,
+                                                             protein=receptor)
+
+        # build transformations
+        self.transformer = simple_rbfe_transformer(protocol=self.protocol,
+                                                   system_generator=self.chemical_system_generator)
+        self.alchemical_network = self.transformer(alchemical_network_edges=self.ligand_network.edges)
+
+        return self.alchemical_network
+
+    def _generate_all_mappings(self):
+        raise NotImplementedError()
+
+    def _score_all_mappings(self):
+        raise NotImplementedError()
+
+    def _plan_network(self):
+        raise NotImplementedError()
+
+    def _generate_alchemical_network(self):
+        raise NotImplementedError()
