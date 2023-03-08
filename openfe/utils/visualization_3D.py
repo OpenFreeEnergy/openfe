@@ -108,12 +108,16 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
 
 
 @requires_package("py3Dmol")
-def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
+def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
                      style: Optional[str] ="stick",
                      shift: Optional[Tuple[float, float, float]] = None,
+                     view: py3Dmol.view = None
                      ) -> py3Dmol.view:
-    """this function can be used to visualize multiple component coordinates in one view.
+    """visualize multiple component coordinates in one interactive view.
     It helps to understand how the components are aligned in the system to each other.
+
+    py3Dmol is an optional dependency, it can be installed with:
+        pip install py3Dmol
 
     Parameters
     ----------
@@ -123,14 +127,17 @@ def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
         py3Dmol style, by default "stick"
     shift : Tuple of floats, optional
         Amount to i*shift each mols_i in order to allow inspection of them in heavy overlap cases.
+    view : py3Dmol, optional
+        Allows to pass an already existing view, by default None
         
     Returns
     -------
     py3Dmol.view
         view containing all component coordinates
     """
-        
-    view = py3Dmol.view(width=600, height=600)
+
+    if(view is None):
+        view = py3Dmol.view(width=600, height=600)
     
     for i, component in enumerate(mols):
         mol = Chem.Mol(component.to_rdkit())
@@ -147,7 +154,7 @@ def show_component_coords(mols: Iterable[ExplicitMoleculeComponent],
 
 
 @requires_package("py3Dmol")
-def show_3D_mapping(
+def view_mapping_3d(
     mapping: AtomMapping,
     spheres: Optional[bool] = True,
     show_atomIDs: Optional[bool] = False,
@@ -159,6 +166,9 @@ def show_3D_mapping(
     Render relative transformation edge in 3D using py3Dmol.
 
     By default matching atoms will be annotated using colored spheres.
+
+    py3Dmol is an optional dependency, it can be installed with:
+        pip install py3Dmol
 
     Parameters
     ----------
