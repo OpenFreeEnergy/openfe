@@ -64,7 +64,7 @@ class easy_rbfe_campainger(relative_campaigner):
         super().__init__(mapper=mapper, mapping_scorers=mapping_scorers,
                          networker=networker, protocol=RelativeLigandTransform)
 
-    def __call__(self, ligands:SmallMoleculeComponent , solvent: SolventComponent = None, receptor: ProteinComponent = None,):
+    def __call__(self, ligands:Iterable[SmallMoleculeComponent], solvent: SolventComponent = None, receptor: ProteinComponent = None,):
         # components might be given differently!
 
         # throw into Networker

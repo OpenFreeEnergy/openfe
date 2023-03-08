@@ -1,1 +1,1 @@
-from .easy_campaigner import plan_easy_campaign
+from .easy_campaigner import easy_rbfe_campainger

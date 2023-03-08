@@ -1,3 +1,6 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+
 from _abstract_chem_sys_generator import _abstract_chem_sys_generator
 
 from typing import Iterable
