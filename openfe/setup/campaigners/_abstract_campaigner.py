@@ -10,5 +10,8 @@ class _abstract_campaigner():
     def __call__(self, components: Iterable[Component]) -> AlchemicalNetwork:
         raise NotImplementedError()
 
+
+class _abstract_dynamic_campaigner(_abstract_campaigner):
+
     def _update(self, alchemical_network: AlchemicalNetwork) -> AlchemicalNetwork:
         raise NotImplementedError()
