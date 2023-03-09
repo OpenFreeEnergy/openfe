@@ -17,7 +17,7 @@ from openfecli.parameters import MOL, MAPPER, OUTPUT_FILE_AND_EXT
 from openfecli.parameters.output import ensure_file_does_not_exist
 
 @click.command(
-    'plan_rbfe',
+    'plan_rbfe_campaign',
     short_help="Run a planning session, saved as a JSON file"
 )
 @click.argument('in_ligand_sdf_dir', type=click.File(mode='r'),
@@ -60,10 +60,10 @@ def plan_rbfe_campaign(ligand_sdf_dir:str, receptor_pdb:str, out_json_path:str):
     mapping_scorers = [default_lomap_score]
     networker = minimal_spanning_graph
 
-    from openfe.setup.campaigners.easy_campaigner import easy_rbfe_campainger
-    campaigner = easy_rbfe_campainger(mapper=mapper,
-                                      mapping_scorers=mapping_scorers,
-                                      networker=networker)
+    from openfe.setup.campaigners.easy_campaigner import rbfe_campaigner
+    campaigner = rbfe_campaigner(mapper=mapper,
+                                 mapping_scorers=mapping_scorers,
+                                 networker=networker)
     alchemical_network = campaigner(ligands=small_molecules, solvent=solvent, receptor=protein)
 
     an_dict = alchemical_network.to_dict()

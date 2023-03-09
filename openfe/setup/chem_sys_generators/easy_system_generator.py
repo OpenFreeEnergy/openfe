@@ -7,7 +7,7 @@ from typing import Iterable
 from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent, ChemicalSystem
 
 
-class rbfe_system_generator(_abstract_chem_sys_generator):
+class chem_system_generator(_abstract_chem_sys_generator):
 
     def __init__(self, solvent: SolventComponent = None, protein: ProteinComponent = None, do_vacuum: bool = False):
         self.solvent = solvent

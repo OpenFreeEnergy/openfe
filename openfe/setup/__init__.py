@@ -16,4 +16,4 @@ from .atom_mapping import (LigandAtomMapping,
 
 from .network import Network
 from . import ligand_network_planning
-from .campaigners import easy_rbfe_campainger
+from .campaigners import rbfe_campaigner
