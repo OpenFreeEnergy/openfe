@@ -311,7 +311,7 @@ class IntegratorSettings(BaseModel):
 
     timestep = 2 * unit.femtosecond
     temperature = 298.15 * unit.kelvin
-    collision_rate = 1 / unit.picosecond
+    collision_rate = 1.0 / unit.picosecond
     n_steps = 1000 * unit.timestep
     reassign_velocities = True
     splitting = "V R O R V"
