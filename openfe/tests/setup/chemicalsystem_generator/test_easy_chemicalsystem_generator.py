@@ -5,7 +5,7 @@ import pytest
 
 from gufe import ChemicalSystem
 from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import (
-    Easy_chemicalsystem_generator,
+    EasyChemicalSystemGenerator,
 )
 
 
@@ -15,23 +15,23 @@ from gufe import SolventComponent
 
 def test_easy_chemical_system_generator_init(T4_protein_component):
 
-    chemSys_generator = Easy_chemicalsystem_generator(do_vacuum=True)
-    chemSys_generator = Easy_chemicalsystem_generator(solvent=SolventComponent())
-    chemSys_generator = Easy_chemicalsystem_generator(
+    chemSys_generator = EasyChemicalSystemGenerator(do_vacuum=True)
+    chemSys_generator = EasyChemicalSystemGenerator(solvent=SolventComponent())
+    chemSys_generator = EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component
     )
-    chemSys_generator = Easy_chemicalsystem_generator(
+    chemSys_generator = EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component, do_vacuum=True
     )
 
     try:
-        chemSys_generator = Easy_chemicalsystem_generator()
+        chemSys_generator = EasyChemicalSystemGenerator()
     except ValueError:
         pass
 
 
 def test_build_vacuum_chemical_system(ethane):
-    chemSys_generator = Easy_chemicalsystem_generator(do_vacuum=True)
+    chemSys_generator = EasyChemicalSystemGenerator(do_vacuum=True)
     chemSys = next(chemSys_generator(ethane))
 
     assert chemSys is not None
@@ -39,7 +39,7 @@ def test_build_vacuum_chemical_system(ethane):
 
 
 def test_build_solvent_chemical_system(ethane):
-    chemSys_generator = Easy_chemicalsystem_generator(solvent=SolventComponent())
+    chemSys_generator = EasyChemicalSystemGenerator(solvent=SolventComponent())
     chemSys = next(chemSys_generator(ethane))
 
     assert chemSys is not None
@@ -47,7 +47,7 @@ def test_build_solvent_chemical_system(ethane):
 
 
 def test_build_hydr_scenario_chemical_systems(ethane):
-    chemSys_generator = Easy_chemicalsystem_generator(
+    chemSys_generator = EasyChemicalSystemGenerator(
         do_vacuum=True, solvent=SolventComponent()
     )
     chemSys_gen = chemSys_generator(ethane)
@@ -58,7 +58,7 @@ def test_build_hydr_scenario_chemical_systems(ethane):
 
 
 def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
-    chemSys_generator = Easy_chemicalsystem_generator(
+    chemSys_generator = EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component
     )
     chemSys_gen = chemSys_generator(ethane)
@@ -69,7 +69,7 @@ def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
 
 
 def test_build_hbinding_scenario_chemical_systems(ethane, T4_protein_component):
-    chemSys_generator = Easy_chemicalsystem_generator(
+    chemSys_generator = EasyChemicalSystemGenerator(
         do_vacuum=True, solvent=SolventComponent(), protein=T4_protein_component
     )
     chemSys_gen = chemSys_generator(ethane)
