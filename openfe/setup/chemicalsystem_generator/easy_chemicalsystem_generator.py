@@ -1,13 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .abstract_chemicalsystem_generator import Abstract_ChemicalSystem_generator
+from .abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator
 
 from typing import Iterable
 from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent, ChemicalSystem
 
 
-class Easy_chemicalsystem_generator(Abstract_ChemicalSystem_generator):
+class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
 
     def __init__(self, solvent: SolventComponent = None, protein: ProteinComponent = None, do_vacuum: bool = False):
         self.solvent = solvent
