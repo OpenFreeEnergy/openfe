@@ -1053,7 +1053,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             reporter=reporter,
             platform=platform,
             lambda_protocol=lambdas,
-            temperature=to_openmm(settings.protocol_settings.integrator_settings.temperature),
+            temperature=to_openmm(settings.thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
         )
 
