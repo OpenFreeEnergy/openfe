@@ -755,11 +755,12 @@ class TestTyk2XmlRegression:
 
 
 class TestRelativeLigandTransform(GufeTokenizableTestsMixin):
-    cls = openmm_rbfe.RelativeLigandTransform
-    key = "RelativeLigandTransform-30b2198af7ecb6f6a0eda9affa5feea9"
+    cls = openmm_rbfe.RelativeLigandProtocol
+    key = "RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504"
+    repr = "<RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504>"
 
     @pytest.fixture
     def instance(self):
-        settings = openmm_rbfe.RelativeLigandTransform.default_settings()
-        return openmm_rbfe.RelativeLigandTransform(settings)
+        settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+        return openmm_rbfe.RelativeLigandProtocol(settings)
 
