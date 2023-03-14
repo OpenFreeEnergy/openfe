@@ -1,14 +1,13 @@
 from typing import Iterable, NamedTuple
 import pytest
 
-from openfe import SmallMoleculeComponent, LigandNetwork
-from openfe.setup.atom_mapping import LigandAtomMapping
+from openfe import SmallMoleculeComponent, LigandNetwork, LigandAtomMapping
 
 from rdkit import Chem
 
 from networkx import NetworkXError
 
-from .conftest import mol_from_smiles
+from ..conftest import mol_from_smiles
 
 
 class _NetworkTestContainer(NamedTuple):
