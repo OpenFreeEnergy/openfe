@@ -1,3 +1,5 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
 from typing import Iterable, Dict
 
 from gufe import SmallMoleculeComponent
@@ -7,7 +9,7 @@ from .ligandatommapper import LigandAtomMapper
 
 
 class KartografAtomMapper(LigandAtomMapper, kartograf_atom_mapper):
-    """This is a Interface for wally to seperate the imports/dependencies.
+    """This is a Interface for Kartograf to seperate the imports/dependencies.
     """
     def _mappings_generator(
         self,
