@@ -7,4 +7,4 @@ from gufe import ChemicalSystem
 
 class AbstractChemicalSystemGenerator:
     def __call__(self, *args, **kwargs) -> Iterable[ChemicalSystem]:
-        return NotImplementedError()
+        raise NotImplementedError()
