@@ -9,5 +9,5 @@ from gufe import Component, AlchemicalNetwork
 class AbstractAlchemicalNetworkPlanner(abc.ABC):
 
     @abc.abstractmethod
-    def __call__(self, components: Iterable[Component]) -> AlchemicalNetwork:
+    def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
         raise NotImplementedError()
