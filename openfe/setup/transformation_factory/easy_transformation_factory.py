@@ -13,10 +13,11 @@ from gufe import (
 from gufe import Transformation
 
 from .abstract_transformation_factory import AbstractTransformerFactory
+from ..chemicalsystem_generator.abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator
 
 
 class AbstractEasyTransformationFactory(AbstractTransformerFactory):
-    def __init__(self, protocol: Protocol, chemical_system_generator: callable):
+    def __init__(self, protocol: Protocol, chemical_system_generator: AbstractChemicalSystemGenerator):
         self.protocol = protocol
         self.chemical_system_generator = chemical_system_generator
 

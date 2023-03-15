@@ -27,8 +27,6 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             raise ValueError("you need to provide any transformation possibility")
 
     def __call__(self, component: SmallMoleculeComponent) -> Iterable[ChemicalSystem]:
-        chemical_systems = []
-
         if self.do_vacuum:
             chem_sys = ChemicalSystem(
                 components={"compA": component}, name=component.name + "_vacuum"
@@ -52,5 +50,3 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 components=components, name=component.name + "_receptor"
             )
             yield chem_sys
-
-        return chemical_systems

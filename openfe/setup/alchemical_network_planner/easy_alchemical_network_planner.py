@@ -46,7 +46,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner):
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
-    ) -> AlchemicalNetwork:
+    ):
         """
         a simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
 
@@ -63,19 +63,6 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner):
         self.protocol = protocol
         self.generator_type = protocol_generator[protocol.__class__]
 
-    # make clases below use these functions!
-    def _generate_all_mappings(self):
-        raise NotImplementedError()
-
-    def _score_all_mappings(self):
-        raise NotImplementedError()
-
-    def _plan_network(self):
-        raise NotImplementedError()
-
-    def _generate_alchemical_network(self):
-        raise NotImplementedError()
-
 
 class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
@@ -88,7 +75,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
             mapper=mapper,
             mapping_scorers=mapping_scorers,
             networker=networker,
-            protocol=RelativeLigandProtocol(RelativeLigandProtocol._default_settings()),
+            protocol=RelativeLigandProtocol(RelativeLigandProtocol._default_settings()), #Todo: this default is currently a bit hacky
         )
 
     def __call__(
