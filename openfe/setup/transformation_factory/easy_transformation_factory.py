@@ -13,11 +13,17 @@ from gufe import (
 from gufe import Transformation
 
 from .abstract_transformation_factory import AbstractTransformerFactory
-from ..chemicalsystem_generator.abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator
+from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
+    AbstractChemicalSystemGenerator,
+)
 
 
 class AbstractEasyTransformationFactory(AbstractTransformerFactory):
-    def __init__(self, protocol: Protocol, chemical_system_generator: AbstractChemicalSystemGenerator):
+    def __init__(
+        self,
+        protocol: Protocol,
+        chemical_system_generator: AbstractChemicalSystemGenerator,
+    ):
         self.protocol = protocol
         self.chemical_system_generator = chemical_system_generator
 
@@ -28,6 +34,13 @@ class RFETransformationFactory(AbstractEasyTransformationFactory):
     """
 
     def __call__(
+        self, alchemical_network_edges: FrozenSet[LigandAtomMapping], name="approach"
+    ) -> AlchemicalNetwork:
+        return self._build_alchemical_network(
+            alchemical_network_edges=alchemical_network_edges, name=name
+        )
+
+    def _build_alchemical_network(
         self, alchemical_network_edges: FrozenSet[LigandAtomMapping], name="approach"
     ) -> AlchemicalNetwork:
         name = name
