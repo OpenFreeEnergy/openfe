@@ -46,7 +46,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         self,
         mapper: AtomMapper = LomapAtomMapper(),
         mapping_scorer: Callable = default_lomap_score,
-        networker: Callable = generate_minimal_spanning_network,
+        ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
@@ -59,12 +59,12 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         ----------
         mapper
         mapping_scorer
-        networker
+        ligand_network_planner
         protocol
         """
         self._mapper = mapper
         self._mapping_scorer = mapping_scorer
-        self._ligand_network_planner = networker
+        self._ligand_network_planner = ligand_network_planner
         self._protocol = protocol
         self._generator_type = PROTOCOL_GENERATOR[protocol.__class__]
 
