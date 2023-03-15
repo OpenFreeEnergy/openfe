@@ -1,1 +1,0 @@
-from .easy_campaigner import rbfe_campaigner
