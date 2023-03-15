@@ -25,8 +25,8 @@ def test_easy_transformation_factory_init():
     protocol = RelativeLigandProtocol(def_settings)
     system_generator = EasyChemicalSystemGenerator(do_vacuum=True, solvent=SolventComponent())
     
-    trans_factory = AbstractEasyTransformationFactory(protocol=protocol,
-                                                      chemical_system_generator=system_generator)
+    trans_factory = RFETransformationFactory(protocol=protocol,
+                                                  chemical_system_generator=system_generator)
 
 def test_easy_transformation_factory_call_rhfe(minimal_spanning_network):
     def_settings = RelativeLigandProtocol._default_settings()
