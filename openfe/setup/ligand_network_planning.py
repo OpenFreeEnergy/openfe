@@ -81,16 +81,39 @@ def generate_maximal_network(
     scorer: Optional[Callable[[LigandAtomMapper], float]] = None,
     # allow_disconnected=True
 ):
+    """Create a network with all possible proposed mappings.
+
+    This will attempt to create (and optionally score) all possible mappings
+    ($N(N-1)/2$ for each mapper given). This is typically used as the
+    starting point for other network generators (which then optimize based
+    on the scores) or to debug atom mappers (to see which mappings the
+    mapper fails to generate).
+
+
+    Parameters
+    ----------
+    ligands : Iterable[SmallMoleculeComponent]
+      the ligands to include in the LigandNetwork
+    mappers : Iterable[LigandAtomMapper]
+      the AtomMappers to use to propose mappings.  At least 1 required,
+      but many can be given, in which case all will be tried to find the
+      lowest score edges
+    scorer : Scoring function
+      any callable which takes a LigandAtomMapping and returns a float
+     """
     nodes = list(ligands)
 
-    # First create a network with all the proposed mappings (scored)
     mapping_generator = itertools.chain.from_iterable(
         mapper.suggest_mappings(molA, molB)
         for molA, molB in itertools.combinations(nodes, 2)
         for mapper in mappers
     )
-    mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                for mapping in mapping_generator]
+    if scorer:
+        mappings = [mapping.with_annotations({'score': scorer(mapping)})
+                    for mapping in mapping_generator]
+    else:
+        mappings = list(mapping_generator)
+
     network = LigandNetwork(mappings, nodes=nodes)
     return network
 
