@@ -16,6 +16,7 @@ from ..ligand_network import LigandNetwork
 from ..atom_mapping.lomap_scorers import default_lomap_score
 from ..ligand_network_planning import generate_minimal_spanning_network
 from ..transformation_factory import RFETransformationFactory
+from ..chemicalsystem_generator.abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator
 from ..chemicalsystem_generator import EasyChemicalSystemGenerator
 from ...protocols.openmm_rbfe.equil_rbfe_methods import RelativeLigandProtocol
 
@@ -34,10 +35,10 @@ PROTOCOL_GENERATOR = {
 
 
 class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC):
-    mappings: LigandAtomMapping
-    ligand_network: LigandNetwork
-    alchemical_network: AlchemicalNetwork
 
+    '''
+        magics
+    '''
     def __init__(
         self,
         mapper: AtomMapper = LomapAtomMapper(),
@@ -50,6 +51,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         """
         a simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
 
+        pattern: immutable
         Parameters
         ----------
         mapper
@@ -57,95 +59,137 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         networker
         protocol
         """
-        self.mapper = mapper
-        self.mapping_scorers = mapping_scorers
-        self.networker = networker
-        self.protocol = protocol
-        self.generator_type = PROTOCOL_GENERATOR[protocol.__class__]
+        self._mapper = mapper
+        self._mapping_scorer = mapping_scorers
+        self._ligand_network_planner = networker
+        self._protocol = protocol
+        self._generator_type = PROTOCOL_GENERATOR[protocol.__class__]
+
+        # Result props:
+        self._mappings=None
+        self._ligand_network=None
+        self._chemical_system_generator = None
+        self._alchemical_network=None
+
+    # TODO: Maybe abc.abstractmethod
+    def __call__(self, *args, **kwargs ) -> AlchemicalNetwork:
+        return self._build_alchemical_network( *args, **kwargs)
+
+    '''
+        Properties:
+        TODO: Consider how to implement these
+    '''
+
+    @property
+    def mapper(self) -> AtomMapper:
+        return self._mapper
+
+    @property
+    def mapper_scorer(self) -> Callable:
+        return self._mapping_scorer
+
+    @property
+    def ligand_network_planner(self) -> Callable:
+        return self._ligand_network_planner
+
+    @property
+    def mappings(self)->LigandAtomMapping:
+        return self._mappings # TODO: not doable at the moment! Need it!
+
+    @property
+    def ligand_network(self) -> LigandNetwork:
+        return self._ligand_network
+
+    @property
+    def alchemical_network(self) -> AlchemicalNetwork:
+        return self._alchemical_network
+
+    @property
+    def chemical_system_generator(self) -> AbstractChemicalSystemGenerator:
+        return self._chemical_system_generator
+
+
+    '''
+        private funcs
+    '''
+    def _construct_ligand_network(self, ligands: Iterable[SmallMoleculeComponent])-> LigandNetwork:
+        ligand_network = self._ligand_network_planner(
+            ligands=ligands, mappers=[self.mapper], scorer=self.mapping_scorer
+        )
+
+        return ligand_network
+
+    def _build_transformations(self, ligand_network_edges, protocol, chemical_system_generator)->alchemical_network:
+        self.transformer = RFETransformationFactory(
+            protocol=protocol,
+            chemical_system_generator=chemical_system_generator,
+        )
+        alchemical_network = self.transformer(
+            alchemical_network_edges=ligand_network_edges
+        )
+        return alchemical_network
+
+    @abc.abstractmethod
+    def _build_chemicalsystem_generator(self, *args, **kwargs)->AbstractChemicalSystemGenerator:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def _build_alchemical_network(
+        self, *args, **kwargs
+    ) -> AlchemicalNetwork:
+        raise NotImplementedError()
 
 
 class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
-    def __init__(
-        self,
-        mapper: AtomMapper = LomapAtomMapper(),
-        mapping_scorers: Callable = default_lomap_score,
-        networker: Callable = generate_minimal_spanning_network,
-    ):
-        super().__init__(
-            mapper=mapper,
-            mapping_scorers=mapping_scorers,
-            networker=networker,
-            protocol=RelativeLigandProtocol(RelativeLigandProtocol._default_settings()), #Todo: this default is currently a bit hacky
-        )
 
-    def __call__(
+    def _build_chemicalsystem_generator(self, solvent) ->AbstractChemicalSystemGenerator:
+        return self._generator_type(solvent=solvent, do_vacuum=True)
+
+    @abc.abstractmethod
+    def _build_alchemical_network(
         self,
         ligands: Iterable[SmallMoleculeComponent],
         solvent: SolventComponent = None,
     ) -> AlchemicalNetwork:
         # components might be given differently!
-
         # throw into ligand_network_planning
-        self.ligand_network = self.networker(
-            ligands=ligands, mappers=[self.mapper], scorer=self.mapping_scorers
-        )
+        self._ligand_network = self._construct_ligand_network(ligands)
 
         # Prepare system generation
-        self.chemical_system_generator = self.generator_type(
-            solvent=solvent, do_vacuum=True
-        )
+        self._chemical_system_generator = self._build_chemicalsystem_generator(solvent)
 
-        # build transformations
-        self.transformer = RFETransformationFactory(
-            protocol=self.protocol,
-            chemical_system_generator=self.chemical_system_generator,
-        )
-        self.alchemical_network = self.transformer(
-            alchemical_network_edges=self.ligand_network.edges
-        )
+        # Build transformations
+        self._alchemical_network = self._build_transformations(ligand_network_edges=self.ligand_network, protocol=self._protocol,
+                                                               chemical_system_generator=self.chemical_system_generator)
 
-        return self.alchemical_network
+        return self._alchemical_network
+
 
 
 class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
-    def __init__(
-        self,
-        mapper: AtomMapper = LomapAtomMapper(),
-        mapping_scorers: Callable = default_lomap_score,
-        networker: Callable = generate_minimal_spanning_network,
-    ):
-        super().__init__(
-            mapper=mapper,
-            mapping_scorers=mapping_scorers,
-            networker=networker,
-            protocol=RelativeLigandProtocol(RelativeLigandProtocol._default_settings()),
+    def _build_chemicalsystem_generator(self, solvent: SolventComponent, protein: ProteinComponent) ->AbstractChemicalSystemGenerator:
+        chemical_system_generator = self._generator_type(
+            solvent=solvent,
+            protein=protein
         )
+        return chemical_system_generator
 
-    def __call__(
+    @abc.abstractmethod
+    def _build_alchemical_network(
         self,
         ligands: Iterable[SmallMoleculeComponent],
         solvent: SolventComponent = None,
         receptor: ProteinComponent = None,
-    ):
+    ) -> AlchemicalNetwork:
         # components might be given differently!
-
-        # throw into Networker
-        self.ligand_network = self.networker(
-            ligands=ligands, mappers=[self.mapper], scorer=self.mapping_scorers
-        )
+        # throw into ligand_network_planning
+        self._ligand_network = self._construct_ligand_network(ligands)
 
         # Prepare system generation
-        self.chemical_system_generator = self.generator_type(
-            solvent=solvent, protein=receptor
-        )
+        self._chemical_system_generator = self._build_chemicalsystem_generator(solvent=solvent, protein=receptor)
 
-        # build transformations
-        self.transformer = RFETransformationFactory(
-            protocol=self.protocol,
-            chemical_system_generator=self.chemical_system_generator,
-        )
-        self.alchemical_network = self.transformer(
-            alchemical_network_edges=self.ligand_network.edges
-        )
+        # Build transformations
+        self._alchemical_network = self._build_transformations(ligand_network_edges=self.ligand_network, protocol=self._protocol,
+                                                               chemical_system_generator=self.chemical_system_generator)
 
-        return self.alchemical_network
+        return self._alchemical_network
