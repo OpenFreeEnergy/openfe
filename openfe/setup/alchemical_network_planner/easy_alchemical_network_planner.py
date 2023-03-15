@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
+import abc
 from typing import Iterable, Callable
 
 from gufe import Protocol, AlchemicalNetwork, LigandAtomMapping
@@ -23,7 +23,7 @@ from ...protocols.openmm_rbfe.equil_rbfe_methods import RelativeLigandProtocol
     This is a draft!
 """
 # TODO: move/or find better structure for protocol_generator combintations!
-protocol_generator = {
+PROTOCOL_GENERATOR = {
     RelativeLigandProtocol: EasyChemicalSystemGenerator,
 }
 
@@ -33,7 +33,7 @@ protocol_generator = {
 """
 
 
-class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner):
+class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC):
     mappings: LigandAtomMapping
     ligand_network: LigandNetwork
     alchemical_network: AlchemicalNetwork
@@ -61,7 +61,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner):
         self.mapping_scorers = mapping_scorers
         self.networker = networker
         self.protocol = protocol
-        self.generator_type = protocol_generator[protocol.__class__]
+        self.generator_type = PROTOCOL_GENERATOR[protocol.__class__]
 
 
 class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
@@ -85,8 +85,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     ) -> AlchemicalNetwork:
         # components might be given differently!
 
-        # throw into Networker
-        # TODO: decompose networker here into the nice helpers above
+        # throw into ligand_network_planning
         self.ligand_network = self.networker(
             ligands=ligands, mappers=[self.mapper], scorer=self.mapping_scorers
         )
