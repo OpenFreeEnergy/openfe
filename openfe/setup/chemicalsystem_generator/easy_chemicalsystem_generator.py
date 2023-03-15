@@ -14,11 +14,13 @@ from gufe import (
 
 # Todo: connect to protocols - use this for labels?
 class RFEChemicalSystemComponentLabels(str, Enum):
-    PROTEIN = 'protein'
-    LIGAND = 'ligand'
-    SOLVENT= "sovlent"
+    PROTEIN = "protein"
+    LIGAND = "ligand"
+    SOLVENT = "sovlent"
 
-component_labels =RFEChemicalSystemComponentLabels
+
+component_labels = RFEChemicalSystemComponentLabels  # TODO: ugly
+
 
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
     def __init__(
@@ -35,23 +37,33 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             raise ValueError("you need to provide any transformation possibility")
 
     def __call__(self, component: SmallMoleculeComponent) -> Iterable[ChemicalSystem]:
+        return self._generate_systems(component=component)
+
+    def _generate_systems(
+        self, component: SmallMoleculeComponent
+    ) -> Iterable[ChemicalSystem]:
         if self.do_vacuum:
             chem_sys = ChemicalSystem(
-                components={component_labels.LIGAND: component}, name=component.name + "_vacuum"
+                components={component_labels.LIGAND: component},
+                name=component.name + "_vacuum",
             )
             yield chem_sys
 
         if self.solvent is not None:
             chem_sys = ChemicalSystem(
-                components={component_labels.LIGAND: component, component_labels.SOLVENT: self.solvent},
+                components={
+                    component_labels.LIGAND: component,
+                    component_labels.SOLVENT: self.solvent,
+                },
                 name=component.name + "_solvent",
             )
             yield chem_sys
 
-        print(self.protein)
-
         if self.protein is not None:
-            components = {component_labels.LIGAND: component, component_labels.PROTEIN: self.protein}
+            components = {
+                component_labels.LIGAND: component,
+                component_labels.PROTEIN: self.protein,
+            }
             if self.solvent is not None:
                 components.update({component_labels.SOLVENT: self.solvent})
             chem_sys = ChemicalSystem(
