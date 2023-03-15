@@ -645,22 +645,15 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
     """Calculates the relative free energy of an alchemical ligand transformation.
 
     """
-    _stateA: ChemicalSystem
-    _stateB: ChemicalSystem
-    _mapping: LigandAtomMapping
-    _settings: settings.Settings
-    generation: int
-    repeat_id: int
-    name: str
 
     def __init__(self, *,
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
                  settings: settings.Settings,
+                 generation: int,
+                 repeat_id: int,
                  name: Optional[str] = None,
-                 generation: int = 0,
-                 repeat_id: int = 0,
                  ):
         """
         Parameters
@@ -674,13 +667,12 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
           the settings for the Method.  This can be constructed using the
           get_default_settings classmethod to give a starting point that
           can be updated to suit.
+        repeat_id : int
+          identifier for which repeat (aka replica/clone) this Unit is
+        generation : int
+          counter for how many times this repeat has been extended
         name : str, optional
           human-readable identifier for this Unit
-        repeat_id : int, optional
-          identifier for which repeat (aka replica/clone) this Unit is,
-          default 0
-        generation : int, optional
-          counter for how many times this repeat has been extended, default 0
 
         Notes
         -----
@@ -691,29 +683,10 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             name=name,
             stateA=stateA,
             stateB=stateB,
-            mapping=ligandmapping,
+            ligandmapping=ligandmapping,
             settings=settings,
-        )
-        self.repeat_id = repeat_id
-        self.generation = generation
-
-    def _to_dict(self):
-        return {
-            'inputs': self.inputs,
-            'generation': self.generation,
-            'repeat_id': self.repeat_id,
-            'name': self.name,
-        }
-
-    @classmethod
-    def _from_dict(cls, dct: Dict):
-        dct['_settings'] = deserialise_pydantic(dct['_settings'])
-
-        inps = dct.pop('inputs')
-
-        return cls(
-            **inps,
-            **dct
+            repeat_id=repeat_id,
+            generation=generation
         )
 
     def run(self, dry=False, verbose=True, basepath=None) -> dict[str, Any]:
@@ -754,7 +727,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         settings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
-        mapping = self._inputs['mapping']
+        mapping = self._inputs['ligandmapping']
 
         alchem_settings = settings.protocol_settings.alchemical_settings
         system_settings = settings.protocol_settings.system_settings
@@ -1105,7 +1078,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         outputs = self.run(basepath=ctx.shared)
 
         return {
-            'repeat_id': self.repeat_id,
-            'generation': self.generation,
+            'repeat_id': self.inputs['repeat_id'],
+            'generation': self.inputs['generation'],
             **outputs
         }
