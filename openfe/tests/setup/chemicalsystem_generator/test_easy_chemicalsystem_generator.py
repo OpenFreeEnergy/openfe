@@ -45,6 +45,13 @@ def test_build_solvent_chemical_system(ethane):
     assert chemSys is not None
     assert isinstance(chemSys, ChemicalSystem)
 
+def test_build_protein_chemical_system(ethane, T4_protein_component):
+    chemSys_generator = EasyChemicalSystemGenerator(protein=T4_protein_component)
+    chemSys = next(chemSys_generator(ethane))
+
+    assert chemSys is not None
+    assert isinstance(chemSys, ChemicalSystem)
+
 
 def test_build_hydr_scenario_chemical_systems(ethane):
     chemSys_generator = EasyChemicalSystemGenerator(

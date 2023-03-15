@@ -4,7 +4,7 @@
 from gufe import AlchemicalNetwork
 
 
-class _abstract_transformer():
+class AbstractTransformerFactory():
     """
         This class type is thought to be the part that transforms identified edges/transformations for chemical systems of an FE-campaign to an Alchemical
         Network.
