@@ -17,8 +17,10 @@ from openfecli.parameters import MOL, PROTEIN, MAPPER, OUTPUT_FILE_AND_EXT
 
 
 @click.command(
-    'plan_rbfe_campaign',
-    short_help="Run a planning session, saved as a JSON file"
+    "plan_rbfe_campaign", short_help="Run a planning session, saved as a JSON file"
+)
+@MOL.parameter(
+    multiple=True, required=True, help=MOL.kwargs["help"] + " Any number of sdf paths."
 )
 @PROTEIN.parameter(
     multiple=False, required=True, default=None, help=MOL.kwargs["help"]
