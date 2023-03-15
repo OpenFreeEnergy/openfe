@@ -72,5 +72,5 @@ def plan_rbfe_campaign(mol:str, receptor_pdb_path:str, output:str, mapper:str):
 PLUGIN = OFECommandPlugin(
     command=plan_rbfe_campaign,
     section="Setup",
-    requires_ofe=(0, 3)
+    requires_ofe=(0, 0, 1)
 )
