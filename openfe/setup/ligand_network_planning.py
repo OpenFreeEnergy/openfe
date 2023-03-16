@@ -84,10 +84,12 @@ def generate_maximal_network(
     """Create a network with all possible proposed mappings.
 
     This will attempt to create (and optionally score) all possible mappings
-    ($N(N-1)/2$ for each mapper given). This is typically used as the
-    starting point for other network generators (which then optimize based
-    on the scores) or to debug atom mappers (to see which mappings the
-    mapper fails to generate).
+    (up to $N(N-1)/2$ for each mapper given). There may be fewer actual
+    mappings that this because, when a mapper cannot return a mapping for a
+    given pair, there is simply no suggested mapping for that pair.
+    This network is typically used as the starting point for other network
+    generators (which then optimize based on the scores) or to debug atom
+    mappers (to see which mappings the mapper fails to generate).
 
 
     Parameters
@@ -100,7 +102,7 @@ def generate_maximal_network(
       lowest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-     """
+    """
     nodes = list(ligands)
 
     mapping_generator = itertools.chain.from_iterable(
