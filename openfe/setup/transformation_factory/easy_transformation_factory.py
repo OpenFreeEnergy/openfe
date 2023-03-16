@@ -57,6 +57,15 @@ class RFETransformationFactory(AbstractEasyTransformationFactory):
                     name + "_" + stateA_env.name + "_" + stateB_env.name
                 )
 
+                #Todo: Another dirty hack!
+                if("vacuum" in transformation_name):
+                    protocol_settings = self.protocol._default_settings()
+                    protocol_settings.system_settings.nonbonded_method = "nocutoff"
+                    self.protocol = self.protocol.__class__(settings=protocol_settings)
+                else:
+                    protocol_settings = self.protocol._default_settings()
+                    self.protocol = self.protocol.__class__(settings=protocol_settings)
+
                 edges.append(
                     Transformation(
                         stateA=stateA_env,
