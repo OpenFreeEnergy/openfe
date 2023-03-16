@@ -23,11 +23,11 @@ def _format_exception(exception) -> str:
 @click.argument('transformation', type=click.File(mode='r'),
                 required=True)
 @click.option(
-    'directory', '-d', default=None,
+    '--work-dir', '-d', default=None,
     type=click.Path(dir_okay=True, file_okay=False, writable=True,
                     path_type=pathlib.Path),
     help=(
-        "directory to store files in (defaults to temporary directory)"
+        "directory to store files in (defaults to current directory)"
     ),
 )
 @click.option(
@@ -37,15 +37,19 @@ def _format_exception(exception) -> str:
     help="output file (JSON format) for the final results",
     callback=ensure_file_does_not_exist,
 )
-def quickrun(transformation, directory, output):
+def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
     To save a transformation as JSON, create the transformation and then
     save it with transformation.dump(filename).
     """
     import gufe
+    import os
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
+
+    if work_dir is None:
+        work_dir = pathlib.Path(os.getcwd())
 
     write("Loading file...")
     # TODO: change this to `Transformation.load(transformation)`
@@ -54,7 +58,7 @@ def quickrun(transformation, directory, output):
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Running the simulations...")
-    dagresult = execute_DAG(dag, shared=directory, raise_error=False)
+    dagresult = execute_DAG(dag, shared=work_dir, raise_error=False)
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
