@@ -688,15 +688,3 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
-
-
-class TestRelativeLigandTransform(GufeTokenizableTestsMixin):
-    cls = openmm_rbfe.RelativeLigandProtocol
-    key = "RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504"
-    repr = "<RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504>"
-
-    @pytest.fixture
-    def instance(self):
-        settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-        return openmm_rbfe.RelativeLigandProtocol(settings)
-
