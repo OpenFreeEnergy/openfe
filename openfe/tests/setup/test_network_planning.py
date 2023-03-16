@@ -130,14 +130,17 @@ def test_minimal_spanning_network_regression(minimal_spanning_network):
         (edge.componentA.name, edge.componentB.name)
         for edge in minimal_spanning_network.edges
     )
-    ref = sorted([('1,3,7-trimethylnaphthalene', '2-naftanol'),
-           ('1,3,7-trimethylnaphthalene', 'methylcyclohexane'),
-           ('1,3,7-trimethylnaphthalene', '2-methylnaphthalene'),
-           ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
-           ('1,3,7-trimethylnaphthalene', 'toluene'),
-           ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
-           ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene')])
+    ref = sorted([
+        ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
+        ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-methylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-naftanol'),
+        ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
+        ('2,6-dimethylnaphthalene', 'toluene'),
+    ])
 
+    assert len(edge_ids) == len(ref)
     assert edge_ids == ref
 
 

@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gufe
+from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
 from unittest import mock
 from openff.units import unit
@@ -751,3 +752,15 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+class TestRelativeLigandTransform(GufeTokenizableTestsMixin):
+    cls = openmm_rbfe.RelativeLigandProtocol
+    key = "RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504"
+    repr = "<RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504>"
+
+    @pytest.fixture
+    def instance(self):
+        settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+        return openmm_rbfe.RelativeLigandProtocol(settings)
+

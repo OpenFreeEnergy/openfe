@@ -200,19 +200,12 @@ class TestNetwork:
 
         existing = network.nodes
         assert duplicate in existing  # matches by ==
-        for mol in existing:
-            # the duplicate is, in fact, not the same object in memory
-            assert mol is not duplicate
 
         new_network = network.enlarge_graph(nodes=[duplicate])
         assert len(new_network.nodes) == len(network.nodes)
         assert set(new_network.nodes) == set(network.nodes)
         assert len(new_network.edges) == len(network.edges)
         assert set(new_network.edges) == set(network.edges)
-
-        for mol in new_network.nodes:
-            # not sure is this needs to be formally required
-            assert mol is not duplicate
 
     def test_enlarge_graph_add_duplicate_edge(self, mols, simple_network):
         # Adding a duplicate of an existing edge should create a new network
@@ -223,9 +216,7 @@ class TestNetwork:
 
         existing = network.edges
         assert duplicate in existing  # matches by ==
-        for edge in existing:
-            # duplicate is not the same object in memory
-            assert duplicate is not edge
+        assert any(duplicate is edge for edge in existing)  # one edge *is* the duplicate
 
         new_network = network.enlarge_graph(edges=[duplicate])
         assert len(new_network.nodes) == len(network.nodes)
@@ -233,9 +224,6 @@ class TestNetwork:
         assert len(new_network.edges) == len(network.edges)
         assert set(new_network.edges) == set(network.edges)
 
-        for edge in new_network.edges:
-            # not sure is this needs to be formally required
-            assert edge is not duplicate
 
     def test_serialization_cycle(self, simple_network):
         network = simple_network.network
