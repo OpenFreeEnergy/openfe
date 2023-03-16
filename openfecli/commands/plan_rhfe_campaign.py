@@ -3,7 +3,7 @@
 
 
 """
-Here I want to build the cmd tool for easy campaigner with RBFE. The output should be runnable with quickrun directly!
+Here I want to build the cmd tool for easy campaigner with RHFE. The output should be runnable with quickrun directly!
     So user experience would be:
         easy_campaign -l sdf_dir -p receptor.pdb -> Alchem network
         quickrun -i alchem_network
@@ -16,25 +16,64 @@ import click
 from typing import List
 from openfecli.utils import write
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_FILE_AND_EXT
+from openfecli.parameters import MOL_DIR, MAPPER, OUTPUT_DIR
 
 # Todo: Make Params exchangeable - Lomap, Kartograf, etc.
 
+def plan_rhfe_network_main(
+    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
+):
+    from openfe.setup.alchemical_network_planner.easy_alchemical_network_planner import (
+        RHFEAlchemicalNetworkPlanner,
+    )
+
+    campaigner = RHFEAlchemicalNetworkPlanner(
+        mapper=mapper,
+        mapping_scorer=mapping_scorer,
+        ligand_network_planner=ligand_network_planner,
+    )
+    alchemical_network = campaigner(
+        ligands=small_molecules, solvent=solvent
+    )
+    return alchemical_network
+
+def plan_rhfe_network_output(alchemical_network, output):
+    #Todo: this is an uggly peace of output code. it does not recognize overwriting! fix!
+    an_dict = alchemical_network.to_dict()
+
+    folder_path = output
+    print(folder_path)
+    base_name= os.path.basename(folder_path)
+
+    if not os.path.isdir(folder_path):
+        os.mkdir(folder_path)
+
+    json.dump(an_dict, open(folder_path + "/" + base_name + ".json" , "w"))
+    write("\t\t- " + base_name + ".json")
+
+    transformation_dir = folder_path+"/transformations"
+    if not os.path.isdir(transformation_dir):
+        os.mkdir(transformation_dir)
+    write("\t\t- " + transformation_dir)
+
+    for transformation in alchemical_network.edges:
+        out_path = transformation_dir+"/"+base_name+"_"+transformation.name+".json"
+        transformation.dump(out_path)
+        write("\t\t\t- " + base_name + "_" + transformation.name + ".json")
+
+
 @click.command(
-    "plan-rbfe-network", short_help="Run a planning session, saved as a JSON file"
+    "plan-rhfe-network", short_help="Run a planning session for relative hydration free energies, saved as a JSON file"
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
 )
-@PROTEIN.parameter(
-    multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
-)
-@OUTPUT_FILE_AND_EXT.parameter(
-    help=OUTPUT_FILE_AND_EXT.kwargs["help"] + " (JSON format)",
-    default="alchemicalNetwork.json"
+@OUTPUT_DIR.parameter(
+    help=OUTPUT_DIR.kwargs["help"] + " ",
+    default="alchemicalNetwork"
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
-def plan_rbfe_network(mol_dir: List[str], protein: str, output: str, mapper: str):
+def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
 
     # INPUT
     write("Parsing in Files: ")
@@ -42,9 +81,6 @@ def plan_rbfe_network(mol_dir: List[str], protein: str, output: str, mapper: str
 
     small_molecules = MOL_DIR.get(mol_dir)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
-
-    protein = PROTEIN.get(protein)
-    write("\t\tProtein: " + str(protein))
 
     from gufe import SolventComponent
     solvent = SolventComponent()
@@ -72,65 +108,23 @@ def plan_rbfe_network(mol_dir: List[str], protein: str, output: str, mapper: str
 
     # DO
     write("Planning RBFE-Campaign:")
-    alchemical_network = plan_rbfe_campaign_main(
+    alchemical_network = plan_rhfe_network_main(
         mapper=mapper_obj,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
-        protein=protein,
     )
     write("\tDone")
     write("")
 
     # OUTPUT
     write("Output:")
-    write("\tSaving to: " + str(os.path.abspath(output.name.replace(".json", "")))) #Todo: remove replace
-    plan_rbfe_campaign_output(alchemical_network=alchemical_network, output=output)
+    write("\tSaving to: " + output_dir) #Todo: remove replace
+    plan_rhfe_network_output(alchemical_network=alchemical_network, output=OUTPUT_DIR.get(output_dir))
 
-
-def plan_rbfe_campaign_main(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent, protein
-):
-    from openfe.setup.alchemical_network_planner.easy_alchemical_network_planner import (
-        RBFEAlchemicalNetworkPlanner,
-    )
-
-    campaigner = RBFEAlchemicalNetworkPlanner(
-        mapper=mapper,
-        mapping_scorer=mapping_scorer,
-        ligand_network_planner=ligand_network_planner,
-    )
-    alchemical_network = campaigner(
-        ligands=small_molecules, solvent=solvent, receptor=protein
-    )
-    return alchemical_network
-
-def plan_rbfe_campaign_output(alchemical_network, output):
-    #Todo: this is an uggly peace of output code. it does not recognize overwriting! fix!
-    an_dict = alchemical_network.to_dict()
-    file, ext = OUTPUT_FILE_AND_EXT.get(output)  # check ext.
-
-    folder_path = file.name.replace("."+ext, "")
-    base_name= os.path.basename(folder_path)
-
-    if not os.path.isdir(folder_path):
-        os.mkdir(folder_path)
-
-    json.dump(an_dict, open(folder_path + "/" + base_name + "." + ext, "w"))
-    write("\t\t- " + base_name + "." + ext)
-
-    transformation_dir = folder_path+"/transformations"
-    if not os.path.isdir(transformation_dir):
-        os.mkdir(transformation_dir)
-    write("\t\t- " + transformation_dir)
-
-    for transformation in alchemical_network.edges:
-        out_path = transformation_dir+"/"+base_name+"_"+transformation.name+".json"
-        transformation.dump(out_path)
-        write("\t\t\t- " + base_name + "_" + transformation.name + ".json")
 
 
 PLUGIN = OFECommandPlugin(
-    command=plan_rbfe_network, section="Setup", requires_ofe=(0, 3)
+    command=plan_rhfe_network, section="Setup", requires_ofe=(0, 3)
 )
