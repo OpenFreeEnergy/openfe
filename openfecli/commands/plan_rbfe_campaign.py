@@ -10,34 +10,40 @@ Here I want to build the cmd tool for easy campaigner with RBFE. The output shou
 
 """
 import json
+import os.path
+
 import click
+from typing import List
 from openfecli.utils import write
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL, PROTEIN, MAPPER, OUTPUT_FILE_AND_EXT
+from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_FILE_AND_EXT
 
+# Todo: Make Params exchangeable - Lomap, Kartograf, etc.
 
 @click.command(
-    "plan-rbfe-campaign", short_help="Run a planning session, saved as a JSON file"
+    "plan-rbfe-network", short_help="Run a planning session, saved as a JSON file"
 )
-@MOL.parameter(
-    multiple=True, required=True, help=MOL.kwargs["help"] + " Any number of sdf paths."
+@MOL_DIR.parameter(
+    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
 )
 @PROTEIN.parameter(
-    multiple=False, required=True, default=None, help=MOL.kwargs["help"]
+    multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
 )
 @OUTPUT_FILE_AND_EXT.parameter(
-    help=OUTPUT_FILE_AND_EXT.kwargs["help"] + " (JSON format)"
+    help=OUTPUT_FILE_AND_EXT.kwargs["help"] + " (JSON format)",
+    default="alchemicalNetwork.json"
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
-def plan_rbfe_campaign(mol: str, receptor_pdb_path: str, output: str, mapper: str):
+def plan_rbfe_network(mol_dir: List[str], protein: str, output: str, mapper: str):
 
+    # INPUT
     write("Parsing in Files: ")
     write("\tGot input: ")
 
-    small_molecules = [MOL.get(m) for m in mol]
+    small_molecules = MOL_DIR.get(mol_dir)
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
-    protein = PROTEIN.get(receptor_pdb_path)
+    protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
 
     from gufe import SolventComponent
@@ -57,27 +63,30 @@ def plan_rbfe_campaign(mol: str, receptor_pdb_path: str, output: str, mapper: st
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network,
+        generate_minimal_spanning_network
     )  # write nice parameter
 
     ligand_network_planner = generate_minimal_spanning_network
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 
+    # DO
     write("Planning RBFE-Campaign:")
     alchemical_network = plan_rbfe_campaign_main(
-        mapper=mapper,
+        mapper=mapper_obj,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
         protein=protein,
     )
+    write("\tDone")
+    write("")
 
-    write("Saving to: " + str(output))
-    an_dict = alchemical_network.to_dict()
-    file, ext = OUTPUT_FILE_AND_EXT.get(output)  # check ext.
-    json.dump(an_dict, open(file + "." + ext, "w"))
+    # OUTPUT
+    write("Output:")
+    write("\tSaving to: " + str(os.path.abspath(output.name.replace(".json", "")))) #Todo: remove replace
+    plan_rbfe_campaign_output(alchemical_network=alchemical_network, output=output)
 
 
 def plan_rbfe_campaign_main(
@@ -97,7 +106,31 @@ def plan_rbfe_campaign_main(
     )
     return alchemical_network
 
+def plan_rbfe_campaign_output(alchemical_network, output):
+    #Todo: this is an uggly peace of output code. it does not recognize overwriting! fix!
+    an_dict = alchemical_network.to_dict()
+    file, ext = OUTPUT_FILE_AND_EXT.get(output)  # check ext.
+
+    folder_path = file.name.replace("."+ext, "")
+    base_name= os.path.basename(folder_path)
+
+    if not os.path.isdir(folder_path):
+        os.mkdir(folder_path)
+
+    json.dump(an_dict, open(folder_path + "/" + base_name + "." + ext, "w"))
+    write("\t\t- " + base_name + "." + ext)
+
+    transformation_dir = folder_path+"/transformations"
+    if not os.path.isdir(transformation_dir):
+        os.mkdir(transformation_dir)
+    write("\t\t- " + transformation_dir)
+
+    for transformation in alchemical_network.edges:
+        out_path = transformation_dir+"/"+base_name+"_"+transformation.name+".json"
+        transformation.dump(out_path)
+        write("\t\t\t- " + base_name + "_" + transformation.name + ".json")
+
 
 PLUGIN = OFECommandPlugin(
-    command=plan_rbfe_campaign, section="Setup", requires_ofe=(0, 3)
+    command=plan_rbfe_network, section="Setup", requires_ofe=(0, 3)
 )
