@@ -53,7 +53,6 @@ class RFETransformationFactory(AbstractEasyTransformationFactory):
                 self.chemical_system_generator(edge.componentA),
                 self.chemical_system_generator(edge.componentB),
             ):
-                print(stateA_env)
                 transformation_name = (
                     name + "_" + stateA_env.name + "_" + stateB_env.name
                 )
@@ -62,7 +61,7 @@ class RFETransformationFactory(AbstractEasyTransformationFactory):
                     Transformation(
                         stateA=stateA_env,
                         stateB=stateB_env,
-                        mapping=edge,
+                        mapping={"ligand": edge}, #Todo: dirty hack!
                         name=transformation_name,
                         protocol=self.protocol,
                     )
