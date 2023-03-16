@@ -16,7 +16,7 @@ from gufe import (
 class RFEChemicalSystemComponentLabels(str, Enum):
     PROTEIN = "protein"
     LIGAND = "ligand"
-    SOLVENT = "sovlent"
+    SOLVENT = "solvent"
 
 
 component_labels = RFEChemicalSystemComponentLabels  # TODO: ugly
