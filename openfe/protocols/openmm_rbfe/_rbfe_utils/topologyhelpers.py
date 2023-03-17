@@ -356,9 +356,9 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     Utility to create new positions given a mapping, the old positions and
     the positions of the molecule being inserted, defined by `insert_positions.
 
-    This will also check that the RMS distance between the core atoms of the
-    old and new atoms do not differ by more than the amount specified by
-    `rms_tolerance`.
+    This will also softly check that the RMS distance between the core atoms
+    of the old and new atoms do not differ by more than the amount specified
+    by `tolerance`.
 
     Parameters
     ----------
@@ -397,7 +397,8 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     # loop through all mapped atoms and make sure we don't deviate by more than
     # tolerance - not super necessary, but it's a nice sanity check
     for key, val in mapping['old_to_new_atom_map'].items():
-        if np.any((new_pos_array[val] - old_pos_array[key]) > tolerance):
+        if np.any(
+            np.abs(new_pos_array[val] - old_pos_array[key]) > tolerance):
             wmsg = f"mapping {key} : {val} deviates by more than {tolerance}"
             warnings.warn(wmsg)
             logging.warning(wmsg)
