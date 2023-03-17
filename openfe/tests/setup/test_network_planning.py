@@ -90,6 +90,47 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
         )
 
 
+@pytest.mark.parametrize('with_scorer', [True, False])
+@pytest.mark.parametrize('extra_mapper', [True, False])
+def test_generate_maximal_network(toluene_vs_others, with_scorer,
+                                  extra_mapper):
+    toluene, others = toluene_vs_others
+    if extra_mapper:
+        mappers = [BadMapper()]
+    else:
+        mappers = []
+
+    mappers += [openfe.setup.atom_mapping.LomapAtomMapper()]
+
+    def scoring_func(mapping):
+        return 1.0 / len(mapping.componentA_to_componentB)
+
+    scorer = scoring_func if with_scorer else None
+
+    network = openfe.setup.ligand_network_planning.generate_maximal_network(
+        ligands=others + [toluene],
+        mappers=mappers,
+        scorer=scorer
+    )
+
+    assert len(network.nodes) == len(others) + 1
+
+    if extra_mapper:
+        edge_count = len(others) * (len(others) + 1)
+    else:
+        edge_count = len(others) * (len(others) + 1) / 2
+
+    assert len(network.edges) == edge_count
+
+    if scorer:
+        for edge in network.edges:
+            score = edge.annotations['score']
+            assert score == 1.0 / len(edge.componentA_to_componentB)
+    else:
+        for edge in network.edges:
+            assert 'score' not in edge.annotations
+
+
 @pytest.fixture(scope='session')
 def minimal_spanning_network(toluene_vs_others):
     toluene, others = toluene_vs_others

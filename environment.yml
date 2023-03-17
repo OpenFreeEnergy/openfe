@@ -24,6 +24,7 @@ dependencies:
   - perses
   - py3dmol
   - plugcli
+  - libnetcdf<4.9
   # docs
   - myst-parser
   - sphinx-click
