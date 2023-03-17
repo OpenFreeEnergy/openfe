@@ -27,6 +27,7 @@ import logging
 
 from collections import defaultdict
 import gufe
+from gufe.components import Component
 from gufe.protocols import ProtocolDAG, ProtocolDAGResult
 import json
 import numpy as np
@@ -477,7 +478,6 @@ class AbsoluteTransformResult(gufe.ProtocolResult):
         * Check this holds up completely for SAMS.
         """
         dGs = []
-        #weights = []
 
         for analyzer in self._analyzers:
             # this returns:
@@ -487,11 +487,7 @@ class AbsoluteTransformResult(gufe.ProtocolResult):
             dG = (dG[0, -1] * analyzer.kT).in_units_of(
                 omm_unit.kilocalories_per_mole)
 
-            # hack to get simulation length in uncorrelated samples
-            #weight = analyzer._get_equilibration_data()[2]
-
             dGs.append(dG)
-            #weights.append(weight)
             
         avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
 
@@ -572,18 +568,50 @@ class AbsoluteTransform(gufe.Protocol):
             )
         )
 
+    def _get_alchemical_components(
+            stateA, stateB) -> dict[str, List(Component)]:
+        """
+        Checks equality of ChemicalSystem components across both states and
+        identify which components do not match.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+          The chemical system of end state A.
+        stateB : ChemicalSystem
+          The chemical system of end staate B.
+
+        Returns
+        -------
+        alchemical_components : Dictionary
+            Dictionary containing a list of alchemical components for each
+            state.
+        """
+        matched_keys = {}
+        alchemical_components = {'stateA': [], 'stateB': {}}
+
+        for keyA, valA in stateA.components.items():
+            for keyB, valB in stateB.component.items():
+                if valA.to_dict() == valB.to_dict():
+                    matched_keys[keyA] = keyB
+                    break
+
+        for state in ['A', 'B']:
+            for 
+
     def _create(
         self,
-        chem_system: ChemicalSystem,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: Optional[dict[str, gufe.ComponentMapping]] = None
         extend_from: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
-        # TODO: Extensions?
         if extend_from:
             raise NotImplementedError("Can't extend simulations yet")
 
         # Checks on the inputs!
         # 1) check that both states have solvent and ligand
-        if 'solvent' not in chem_system.components:
+        if 'solvent' not in stateA.components:
             nonbond = self.settings.system_settings.nonbonded_method
             if nonbond != 'nocutoff':
                 errmsg = f"{nonbond} cannot be used for vacuum transform"
@@ -602,43 +630,6 @@ class AbsoluteTransform(gufe.Protocol):
             for i in range(self.settings.sampler_settings.n_repeats)]
 
         return units
-
-    def create(
-        self,
-        chem_system: ChemicalSystem,
-        extend_from: Optional[ProtocolDAGResult] = None,
-        name: Optional[str] = None,
-    ) -> ProtocolDAG:
-        """Prepare a `ProtocolDAG` with all information required for execution.
-        A `ProtocolDAG` is composed of `ProtocolUnit`s, with dependencies
-        established between them. These form a directed, acyclic graph,
-        and each `ProtocolUnit` can be executed once its dependencies have
-        completed.
-        A `ProtocolDAG` can be passed to a `Scheduler` for execution on its
-        resources. A `ProtocolDAGResult` can be retrieved from the `Scheduler`
-        upon completion of all `ProtocolUnit`s in the `ProtocolDAG`.
-        Parameters
-        ----------
-        chem_system : ChemicalSystem
-            The starting `ChemicalSystem` for the transformation.
-        extend_from : Optional[ProtocolDAGResult]
-            If provided, then the `ProtocolDAG` produced will start from the
-            end state of the given `ProtocolDAGResult`. This allows for
-            extension from a previously-run `ProtocolDAG`.
-        name : Optional[str]
-            A user supplied identifier for the resulting DAG
-        Returns
-        -------
-        ProtocolDAG
-            A directed, acyclic graph that can be executed by a `Scheduler`.
-        """
-        return ProtocolDAG(
-            name=name,
-            protocol_units=self._create(
-                chem_system=chem_system,
-                extend_from=extend_from,
-            ),
-        )
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
