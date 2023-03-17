@@ -13,8 +13,8 @@ dependencies:
   - pytest-cov
   - pydantic
   - coverage
-  - openff-toolkit==0.11.2
-  - openff-units==0.1.8
+  - openff-toolkit>=0.12.0
+  - openff-units
   - click
   - openeye-toolkits
   - typing-extensions
@@ -22,9 +22,14 @@ dependencies:
   - openmmtools
   - openmmforcefields>=0.11.2
   - perses
+  - py3dmol
+  - plugcli
+  - libnetcdf<4.9
   # docs
   - myst-parser
   - sphinx-click
-  - gufe==0.5
+  # - gufe==0.5
   - pip:
-    - plugcli
+    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/mikemhenry/openff-models.git@support_nested_models
+    

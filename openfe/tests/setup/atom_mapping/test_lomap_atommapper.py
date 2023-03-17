@@ -4,7 +4,7 @@ import pytest
 from rdkit import Chem
 
 import openfe
-from openfe.setup import SmallMoleculeComponent
+from gufe import SmallMoleculeComponent
 from openfe.setup.atom_mapping import LomapAtomMapper
 
 from .conftest import mol_from_smiles

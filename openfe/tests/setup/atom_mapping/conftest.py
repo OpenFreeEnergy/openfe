@@ -4,7 +4,7 @@
 from typing import Dict, Tuple
 
 from rdkit import Chem
-from openfe.setup import SmallMoleculeComponent
+from gufe import SmallMoleculeComponent
 import lomap
 import pytest
 

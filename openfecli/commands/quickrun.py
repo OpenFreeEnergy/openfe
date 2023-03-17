@@ -73,6 +73,11 @@ def quickrun(transformation, directory, output):
             for unit in dagresult.protocol_unit_results
         }
     }
+    # TODO: remove this ugly hack on next release
+    #       strip out Settings objects in each unit_result inputs dict
+    for _, dd in out_dict['unit_results'].items():
+        if 'inputs' in dd:
+            dd['inputs'].pop('settings')
 
     if output:
         with open(output, mode='w') as outf:

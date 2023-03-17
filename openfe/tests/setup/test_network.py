@@ -1,7 +1,7 @@
 from typing import Iterable, NamedTuple
 import pytest
 
-from openfe.setup import SmallMoleculeComponent, Network
+from openfe import SmallMoleculeComponent, LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
 
 from rdkit import Chem
@@ -13,7 +13,7 @@ from .conftest import mol_from_smiles
 
 class _NetworkTestContainer(NamedTuple):
     """Container to facilitate network testing"""
-    network: Network
+    network: LigandNetwork
     nodes: Iterable[SmallMoleculeComponent]
     edges: Iterable[LigandAtomMapping]
     n_nodes: int
@@ -40,7 +40,7 @@ def std_edges(mols):
 @pytest.fixture
 def simple_network(mols, std_edges):
     """Network with no edges duplicated and all nodes in edges"""
-    network = Network(std_edges)
+    network = LigandNetwork(std_edges)
     return _NetworkTestContainer(
         network=network,
         nodes=mols,
@@ -57,7 +57,7 @@ def doubled_edge_network(mols, std_edges):
     extra_edge = LigandAtomMapping(mol1, mol3, {0: 0, 1: 1})
     edges = list(std_edges) + [extra_edge]
     return _NetworkTestContainer(
-        network=Network(edges),
+        network=LigandNetwork(edges),
         nodes=mols,
         edges=edges,
         n_nodes=3,
@@ -71,7 +71,7 @@ def singleton_node_network(mols, std_edges):
     extra_mol = SmallMoleculeComponent(mol_from_smiles("CCC"))
     all_mols = list(mols) + [extra_mol]
     return _NetworkTestContainer(
-        network=Network(edges=std_edges, nodes=all_mols),
+        network=LigandNetwork(edges=std_edges, nodes=all_mols),
         nodes=all_mols,
         edges=std_edges,
         n_nodes=4,
@@ -122,7 +122,7 @@ class TestNetwork:
         mol1, mol2, mol3 = mols
         edge12, edge23, edge13 = std_edges
         annotated = edge12.with_annotations({'foo': 'bar'})
-        network = Network([annotated, edge23, edge13])
+        network = LigandNetwork([annotated, edge23, edge13])
         assert network.graph[mol1][mol2][0]['foo'] == 'bar'
 
     def test_graph_immutability(self, mols, network_container):
@@ -200,19 +200,12 @@ class TestNetwork:
 
         existing = network.nodes
         assert duplicate in existing  # matches by ==
-        for mol in existing:
-            # the duplicate is, in fact, not the same object in memory
-            assert mol is not duplicate
 
         new_network = network.enlarge_graph(nodes=[duplicate])
         assert len(new_network.nodes) == len(network.nodes)
         assert set(new_network.nodes) == set(network.nodes)
         assert len(new_network.edges) == len(network.edges)
         assert set(new_network.edges) == set(network.edges)
-
-        for mol in new_network.nodes:
-            # not sure is this needs to be formally required
-            assert mol is not duplicate
 
     def test_enlarge_graph_add_duplicate_edge(self, mols, simple_network):
         # Adding a duplicate of an existing edge should create a new network
@@ -223,9 +216,7 @@ class TestNetwork:
 
         existing = network.edges
         assert duplicate in existing  # matches by ==
-        for edge in existing:
-            # duplicate is not the same object in memory
-            assert duplicate is not edge
+        assert any(duplicate is edge for edge in existing)  # one edge *is* the duplicate
 
         new_network = network.enlarge_graph(edges=[duplicate])
         assert len(new_network.nodes) == len(network.nodes)
@@ -233,14 +224,11 @@ class TestNetwork:
         assert len(new_network.edges) == len(network.edges)
         assert set(new_network.edges) == set(network.edges)
 
-        for edge in new_network.edges:
-            # not sure is this needs to be formally required
-            assert edge is not duplicate
 
     def test_serialization_cycle(self, simple_network):
         network = simple_network.network
         serialized = network.to_graphml()
-        deserialized = Network.from_graphml(serialized)
+        deserialized = LigandNetwork.from_graphml(serialized)
         reserialized = deserialized.to_graphml()
         assert serialized == reserialized
         assert network == deserialized
@@ -251,4 +239,4 @@ class TestNetwork:
 
     def test_from_graphml(self, simple_network, serialization_template):
         contents = serialization_template("network_template.graphml")
-        assert Network.from_graphml(contents) == simple_network.network
+        assert LigandNetwork.from_graphml(contents) == simple_network.network

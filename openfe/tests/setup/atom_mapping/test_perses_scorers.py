@@ -10,7 +10,9 @@ from openfe.setup import perses_scorers
 
 pytest.importorskip('perses')
 pytest.importorskip('openeye')
-from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+from ....utils.silence_root_logging import silence_root_logging
+with silence_root_logging():
+    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
 USING_OLD_OFF = False
 

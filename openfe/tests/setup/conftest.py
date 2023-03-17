@@ -1,17 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import importlib
-import string
 import pytest
 from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from openmm.app import PDBFile
 
 import gufe
 import openfe
-from openfe.setup import SmallMoleculeComponent
-from openfe.setup.atom_mapping import LigandAtomMapping
+from gufe import SmallMoleculeComponent, LigandAtomMapping
 
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:
@@ -127,32 +124,6 @@ def benzene_transforms():
         for mol in supplier:
             mols[mol.GetProp('_Name')] = SmallMoleculeComponent(mol)
     return mols
-
-
-@pytest.fixture(scope='session')
-def benzene_maps():
-    MAPS = {
-        'phenol': {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6,
-                   7: 7, 8: 8, 9: 9, 10: 12, 11: 11},
-        'anisole': {0: 5, 1: 6, 2: 7, 3: 8, 4: 9, 5: 10,
-                    6: 11, 7: 12, 8: 13, 9: 14, 10: 2, 11: 15}}
-    return MAPS
-
-
-@pytest.fixture(scope='session')
-def benzene_phenol_mapping(benzene_transforms, benzene_maps):
-    molA = SmallMoleculeComponent(benzene_transforms['benzene'].to_rdkit())
-    molB = SmallMoleculeComponent(benzene_transforms['phenol'].to_rdkit())
-    m = LigandAtomMapping(molA, molB, benzene_maps['phenol'])
-    return m
-
-
-@pytest.fixture(scope='session')
-def benzene_anisole_mapping(benzene_transforms, benzene_maps):
-    molA = SmallMoleculeComponent(benzene_transforms['benzene'].to_rdkit())
-    molB = SmallMoleculeComponent(benzene_transforms['anisole'].to_rdkit())
-    m = LigandAtomMapping(molA, molB, benzene_maps['anisole'])
-    return m
 
 
 @pytest.fixture(scope='session')

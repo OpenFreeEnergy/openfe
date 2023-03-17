@@ -4,8 +4,8 @@
 from . import _rbfe_utils
 
 from .equil_rbfe_methods import (
-    RelativeLigandTransform,
-    RelativeLigandTransformSettings,
-    RelativeLigandTransformResult,
-    RelativeLigandTransformUnit,
+    RelativeLigandProtocol,
+    RelativeLigandProtocolSettings,
+    RelativeLigandProtocolResult,
+    RelativeLigandProtocolUnit,
 )
