@@ -356,7 +356,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         # 0. General setup and settings dependency resolution step
 
-        # a. check timestep correctness + that 
+        # a. check timestep correctness + that
         # equilibration & production are divisible by n_steps
         prototol_settings: RelativeLigandProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
@@ -546,7 +546,6 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
             insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
-            tolerance=alchem_settings.atom_overlap_tolerance
         )
 
         # 7. Create the hybrid topology

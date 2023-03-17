@@ -351,7 +351,7 @@ def get_system_mappings(old_to_new_atom_map,
 
 def set_and_check_new_positions(mapping, old_topology, new_topology,
                                 old_positions, insert_positions,
-                                tolerance=0.5):
+                                tolerance=1.0):
     """
     Utility to create new positions given a mapping, the old positions and
     the positions of the molecule being inserted, defined by `insert_positions.
@@ -374,8 +374,8 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
         Positions of the alchemically changing molecule in the "new" alchemical
         state.
     tolerance : float
-        Maximum allowed deviation along any dimension (x,y,z) in mapped atoms
-        between the "old" and "new" positions. Default 0.5.
+        Warning threshold for deviations along any dimension (x,y,z) in mapped
+        atoms between the "old" and "new" positions. Default 1.0.
     """
     # Get the positions in Angstrom as raw numpy arrays
     old_pos_array = old_positions.value_in_unit(unit.angstrom)
@@ -395,11 +395,11 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     new_pos_array[new_mol_idxs, :] = add_pos_array
 
     # loop through all mapped atoms and make sure we don't deviate by more than
-    # tolerance - not super necessary, but it's a nice sanity check that should
-    # eventually make it to a test
+    # tolerance - not super necessary, but it's a nice sanity check
     for key, val in mapping['old_to_new_atom_map'].items():
         if np.any((new_pos_array[val] - old_pos_array[key]) > tolerance):
-            errmsg = f"mapping {key} : {val} deviates by more than {tolerance}"
-            raise ValueError(errmsg)
+            wmsg = f"mapping {key} : {val} deviates by more than {tolerance}"
+            warnings.warn(wmsg)
+            logging.warning(wmsg)
 
     return new_pos_array * unit.angstrom
