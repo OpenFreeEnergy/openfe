@@ -7,6 +7,5 @@ from .atom_mapping import (LigandAtomMapping,
                            PersesAtomMapper, perses_scorers)
 
 from .ligand_network import LigandNetwork
-from . import ligand_network_planning
-
+from .ligand_network_planner import radial_network_planner, minimal_spanning_network
 from .alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner
