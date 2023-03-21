@@ -14,7 +14,9 @@ from .abstract_alchemical_network_planner import AbstractAlchemicalNetworkPlanne
 from .. import LomapAtomMapper
 from ..ligand_network import LigandNetwork
 from ..atom_mapping.lomap_scorers import default_lomap_score
-from ..ligand_network_planning import generate_minimal_spanning_network
+from ..ligand_network_planner.abstract_network_planner import AbstractNetworkPlanner
+from ..ligand_network_planner import MinimalSpanningNetworkPlanner
+
 from ..transformation_factory import RFETransformationFactory
 from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
     AbstractChemicalSystemGenerator,
@@ -44,9 +46,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
 
     def __init__(
         self,
-        mapper: AtomMapper = LomapAtomMapper(),
-        mapping_scorer: Callable = default_lomap_score,
-        ligand_network_planner: Callable = generate_minimal_spanning_network,
+        ligand_network_planner: AbstractNetworkPlanner = MinimalSpanningNetworkPlanner(mappers=[LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
@@ -62,8 +62,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         ligand_network_planner
         protocol
         """
-        self._mapper = mapper
-        self._mapping_scorer = mapping_scorer
+
         self._ligand_network_planner = ligand_network_planner
         self._protocol = protocol
         self._generator_type = PROTOCOL_GENERATOR[protocol.__class__]
@@ -85,11 +84,11 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
 
     @property
     def mapper(self) -> AtomMapper:
-        return self._mapper
+        return self.ligand_network_planner.mappers
 
     @property
     def mapping_scorer(self) -> Callable:
-        return self._mapping_scorer
+        return self.ligand_network_planner.scorer
 
     @property
     def ligand_network_planner(self) -> Callable:
@@ -97,7 +96,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
 
     @property
     def mappings(self) -> Union[None, List[LigandAtomMapping]]:
-        return self._mappings  # TODO: not doable at the moment! Need it!
+        return self._ligand_network_planner.mappings  # TODO: not doable at the moment! Need it!
 
     @property
     def ligand_network(self) -> Union[None, LigandNetwork]:

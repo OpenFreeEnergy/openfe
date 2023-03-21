@@ -27,10 +27,9 @@ def plan_rbfe_network_main(
         RBFEAlchemicalNetworkPlanner,
     )
 
+    ligand_network_planner_obj = ligand_network_planner(mappers=[mapper], scorer=mapping_scorer)
     campaigner = RBFEAlchemicalNetworkPlanner(
-        mapper=mapper,
-        mapping_scorer=mapping_scorer,
-        ligand_network_planner=ligand_network_planner,
+        ligand_network_planner=ligand_network_planner_obj,
     )
     alchemical_network = campaigner(
         ligands=small_molecules, solvent=solvent, receptor=protein
@@ -104,11 +103,11 @@ def plan_rbfe_network(mol_dir: List[str], protein: str, output_dir: str, mapper:
     mapping_scorer = default_lomap_score
     write("\tMapping Scorer: " + str(mapping_scorer))
 
-    from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network
+    from openfe.setup.ligand_network_planner import (
+        MinimalSpanningNetworkPlanner
     )  # write nice parameter
 
-    ligand_network_planner = generate_minimal_spanning_network
+    ligand_network_planner = MinimalSpanningNetworkPlanner()
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 

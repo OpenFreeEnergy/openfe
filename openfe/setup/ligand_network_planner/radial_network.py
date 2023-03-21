@@ -4,33 +4,34 @@ import math
 from typing import Iterable, Callable
 import itertools
 
-from .abstract_network_planner import AbstractNetworkPlanner
+from .abstract_network_planner import AbstractRelativeLigandNetworkPlanner
 
 from gufe import SmallMoleculeComponent
 from openfe.setup import LigandNetwork
-from openfe.setup.atom_mapping import LigandAtomMapper, LigandAtomMapping
+from openfe.setup.atom_mapping import LigandAtomMapper
 
 
-class RadialNetworkPlanner(AbstractNetworkPlanner):
-
-    def __init__(self, mappers: Iterable[LigandAtomMapper], scorer=None):
+class RadialNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
+    def __init__(self, mappers: Iterable[LigandAtomMapper], mapping_scorer=None):
         """
 
         Parameters
         ----------
         mappers : iterable of LigandAtomMappers
           mappers to use, at least 1 required
-        scorer : scoring function, optional
+        mapping_scorer : scoring function, optional
           a callable which returns a float for any LigandAtomMapping.  Used to
           assign scores to potential mappings, higher scores indicate worse
           mappings.
         """
-        self.mappers = mappers
-        self.scorer = scorer
+        self._mappers = mappers
+        self._mapping_scorer = mapping_scorer
 
-
-    def __call__(self, ligands: Iterable[SmallMoleculeComponent],
-                        central_ligand: SmallMoleculeComponent)->LigandNetwork:
+    def __call__(
+        self,
+        ligands: Iterable[SmallMoleculeComponent],
+        central_ligand: SmallMoleculeComponent,
+    ) -> LigandNetwork:
         """Generate a radial network with all ligands connected to a central node
 
         Also known as hub and spoke or star-map, this plans a Network where
@@ -60,20 +61,21 @@ class RadialNetworkPlanner(AbstractNetworkPlanner):
         """
 
         edges = []
-
+        self._mappings = []
         for ligand in ligands:
             best_score = math.inf
             best_mapping = None
 
             for mapping in itertools.chain.from_iterable(
-                    mapper.suggest_mappings(central_ligand, ligand)
-                    for mapper in self.mappers
+                mapper.suggest_mappings(central_ligand, ligand)
+                for mapper in self._mappers
             ):
-                if not self.scorer:
+                self._mappings.append(mapping)
+                if not self._mapping_scorer:
                     best_mapping = mapping
                     break
 
-                score = self.scorer(mapping)
+                score = self._mapping_scorer(mapping)
                 mapping = mapping.with_annotations({"score": score})
 
                 if score < best_score:

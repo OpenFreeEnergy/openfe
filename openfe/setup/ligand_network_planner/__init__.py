@@ -1,2 +1,3 @@
-from .minimal_spanning_network import MinimalSpanningNetworkPlan
-from .radial_network_planner import RadialNetworkPlanner
+from .minimal_spanning_network import MinimalSpanningNetworkPlanner
+from .radial_network import RadialNetworkPlanner
+from .maximal_spanning_network import MaximalNetworkPlanner
