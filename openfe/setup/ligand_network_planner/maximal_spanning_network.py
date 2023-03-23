@@ -59,7 +59,7 @@ class MaximalNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
             for molA, molB in itertools.combinations(nodes, 2)
             for mapper in self._mappers
         )
-        if self._mapping_scorer:
+        if self._mapping_scorer is not None:
             self._mappings = [
                 mapping.with_annotations({"score": self._mapping_scorer(mapping)})
                 for mapping in mapping_generator

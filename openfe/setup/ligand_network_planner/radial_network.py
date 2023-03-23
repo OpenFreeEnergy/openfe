@@ -71,7 +71,7 @@ class RadialNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
                 for mapper in self._mappers
             ):
                 self._mappings.append(mapping)
-                if not self._mapping_scorer:
+                if self._mapping_scorer is None:
                     best_mapping = mapping
                     break
 

@@ -1,20 +1,20 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
-from typing import Iterable, Callable, Union, Optional, List
+from typing import Iterable, Callable, Union, List
 
 from gufe import Protocol, AlchemicalNetwork, LigandAtomMapping
 from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent
 
 
-from gufe.mapping.atom_mapper import AtomMapper
+from gufe.mapping.atom_mapper import AtomMapper, AtomMapping
 
 from .abstract_alchemical_network_planner import AbstractAlchemicalNetworkPlanner
 
 from .. import LomapAtomMapper
 from ..ligand_network import LigandNetwork
 from ..atom_mapping.lomap_scorers import default_lomap_score
-from ..ligand_network_planner.abstract_network_planner import AbstractNetworkPlanner
+from ..ligand_network_planner.abstract_network_planner import AbstractRelativeLigandNetworkPlanner
 from ..ligand_network_planner import MinimalSpanningNetworkPlanner
 
 from ..transformation_factory import RFETransformationFactory
@@ -46,7 +46,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
 
     def __init__(
         self,
-        ligand_network_planner: AbstractNetworkPlanner = MinimalSpanningNetworkPlanner(mappers=[LomapAtomMapper()], mapping_scorer=default_lomap_score),
+        ligand_network_planner: AbstractRelativeLigandNetworkPlanner = MinimalSpanningNetworkPlanner(mappers=[LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
@@ -83,19 +83,19 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     """
 
     @property
-    def mapper(self) -> AtomMapper:
+    def mapper(self) -> Iterable[AtomMapper]:
         return self.ligand_network_planner.mappers
 
     @property
     def mapping_scorer(self) -> Callable:
-        return self.ligand_network_planner.scorer
+        return self.ligand_network_planner.mapping_scorer
 
     @property
-    def ligand_network_planner(self) -> Callable:
+    def ligand_network_planner(self) -> AbstractRelativeLigandNetworkPlanner:
         return self._ligand_network_planner
 
     @property
-    def mappings(self) -> Union[None, List[LigandAtomMapping]]:
+    def mappings(self) -> List[AtomMapping]:
         return self._ligand_network_planner.mappings  # TODO: not doable at the moment! Need it!
 
     @property
@@ -118,7 +118,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         self, ligands: Iterable[SmallMoleculeComponent]
     ) -> LigandNetwork:
         ligand_network = self._ligand_network_planner(
-            ligands=ligands, mappers=[self.mapper], scorer=self.mapping_scorer
+            ligands=ligands
         )
 
         return ligand_network
