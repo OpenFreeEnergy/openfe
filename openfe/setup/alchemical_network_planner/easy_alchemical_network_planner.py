@@ -36,7 +36,6 @@ PROTOCOL_GENERATOR = {
     easy relative campaigner
 """
 
-LigandAtomMapper._no_element_changes = True # TODO: Remove as soon as possible!
 
 class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC):
 
@@ -64,6 +63,8 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         ligand_network_planner
         protocol
         """
+        mapper._no_element_changes = True # TODO: Remove as soon as possible!
+
         self._mapper = mapper
         self._mapping_scorer = mapping_scorer
         self._ligand_network_planner = ligand_network_planner
