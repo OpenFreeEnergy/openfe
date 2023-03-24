@@ -22,6 +22,26 @@ from openfecli.parameters import MOL_DIR, MAPPER, OUTPUT_DIR
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
 ):
+    """Utiiity method to plan a relative hydration free energy network.
+
+    Parameters
+    ----------
+    mapper : LigandAtomMapper
+        the mapper to use to generate the mapping
+    mapping_scorer : Callable
+        scorer, that evaluates the generated mappings
+    ligand_network_planner : Callable
+        function building the network from the ligands, mappers and mapping_scorer
+    small_molecules : Iterable[SmallMoleculeComponent]
+        molecules of the system
+    solvent : SolventComponent
+        Solvent component used for solvation
+
+    Returns
+    -------
+    AlchemicalNetwork
+        Alchemical network with protocol for executing simulations.
+    """
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner,
     )
@@ -31,14 +51,13 @@ def plan_rhfe_network_main(
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
     )
-    alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent
-    )
-    
+    alchemical_network = network_planner(ligands=small_molecules, solvent=solvent)
+
     return alchemical_network
 
+
 def plan_rhfe_network_output(alchemical_network, output):
-    #Todo: this is an uggly peace of output code. it does not recognize overwriting! fix!
+    # Todo: this is an uggly peace of output code. it does not recognize overwriting! fix!
     an_dict = alchemical_network.to_dict()
 
     folder_path = output
@@ -47,32 +66,35 @@ def plan_rhfe_network_output(alchemical_network, output):
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
 
-    json.dump(an_dict, open(folder_path + "/" + base_name + ".json" , "w"))
+    json.dump(an_dict, open(folder_path + "/" + base_name + ".json", "w"))
     write("\t\t- " + base_name + ".json")
 
-    transformation_dir = folder_path+"/transformations"
+    transformation_dir = folder_path + "/transformations"
     if not os.path.isdir(transformation_dir):
         os.mkdir(transformation_dir)
     write("\t\t- " + transformation_dir)
 
     for transformation in alchemical_network.edges:
-        out_path = transformation_dir+"/"+base_name+"_"+transformation.name+".json"
+        out_path = (
+            transformation_dir + "/" + base_name + "_" + transformation.name + ".json"
+        )
         transformation.dump(out_path)
         write("\t\t\t- " + base_name + "_" + transformation.name + ".json")
 
 
 @click.command(
-    "plan-rhfe-network", short_help="Run a planning session for relative hydration free energies, saved as a JSON file"
+    "plan-rhfe-network",
+    short_help="Run a planning session for relative hydration free energies, saved as a JSON file",
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
 )
-@OUTPUT_DIR.parameter(
-    help=OUTPUT_DIR.kwargs["help"] + " ",
-    default="alchemicalNetwork"
-)
+@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
 def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
+    """
+        this command line tool allows relative hydration free energy calculations to be planned and returns an alchemical network as a directory.
+    """
 
     # INPUT
     write("Parsing in Files: ")
@@ -82,6 +104,7 @@ def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
     write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     from gufe import SolventComponent
+
     solvent = SolventComponent()
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -98,7 +121,7 @@ def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network
+        generate_minimal_spanning_network,
     )  # TODO: write nice parameter
 
     ligand_network_planner = generate_minimal_spanning_network
@@ -119,9 +142,10 @@ def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
 
     # OUTPUT
     write("Output:")
-    write("\tSaving to: " + output_dir) #Todo: remove replace
-    plan_rhfe_network_output(alchemical_network=alchemical_network, output=OUTPUT_DIR.get(output_dir))
-
+    write("\tSaving to: " + output_dir)  # Todo: remove replace
+    plan_rhfe_network_output(
+        alchemical_network=alchemical_network, output=OUTPUT_DIR.get(output_dir)
+    )
 
 
 PLUGIN = OFECommandPlugin(

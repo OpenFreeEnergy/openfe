@@ -35,7 +35,7 @@ get_molecule = MultiStrategyGetter(
 
 PROTEIN = Option(
     "-p", "--protein",
-    help=("ProteinComponent. Can be provided as an PDB file or as a PDBx/mmCIF file. "
+    help=("ProteinComponent. Can be provided as an PDB or as a PDBx/mmCIF file. "
           " string."),
     getter=get_molecule
 )
