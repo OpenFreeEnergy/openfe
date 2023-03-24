@@ -15,7 +15,7 @@ def ensure_file_does_not_exist(ctx, param, value):
 
 
 OUTPUT_DIR = Option(
-    "-od", "--output_dir",
+    "-o", "--output-dir",
     help="output_dir",
     getter=get_dir,
     type=click.Path(file_okay=False, resolve_path=True),
