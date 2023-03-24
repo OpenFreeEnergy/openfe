@@ -45,7 +45,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     def __init__(
         self,
         name : str = "easy_rfe_calculation",
-        mapper: LigandAtomMapper = LomapAtomMapper(),
+        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
@@ -63,10 +63,14 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         ligand_network_planner
         protocol
         """
-        mapper._no_element_changes = True # TODO: Remove as soon as possible!
-
+        
+        # TODO: Remove as soon as element Changes are possible. - START
+        for mapper in mappers:
+            mapper._no_element_changes = True
+        # TODO: Remove as soon as element Changes are possible. - END
+        
         self.name = name
-        self._mapper = mapper
+        self._mappers = mappers
         self._mapping_scorer = mapping_scorer
         self._ligand_network_planner = ligand_network_planner
         self._protocol = protocol
@@ -83,8 +87,8 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     """
 
     @property
-    def mapper(self) -> LigandAtomMapper:
-        return self._mapper
+    def mappers(self) -> Iterable[LigandAtomMapper]:
+        return self._mappers
 
     @property
     def mapping_scorer(self) -> Callable:
@@ -110,7 +114,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         self, ligands: Iterable[SmallMoleculeComponent]
     ) -> LigandNetwork:
         ligand_network = self._ligand_network_planner(
-            ligands=ligands, mappers=[self.mapper], scorer=self.mapping_scorer
+            ligands=ligands, mappers=self.mappers, scorer=self.mapping_scorer
         )
 
         return ligand_network
@@ -172,14 +176,14 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
     self,
     name : str = "easy_rhfe",
-    mapper: LigandAtomMapper = LomapAtomMapper(),
+    mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
     mapping_scorer: Callable = default_lomap_score,
     ligand_network_planner: Callable = generate_minimal_spanning_network,
     protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
     ):
-            super().__init__(name=name, mapper=mapper, mapping_scorer=mapping_scorer, ligand_network_planner=ligand_network_planner, protocol=protocol)
+            super().__init__(name=name, mappers=mappers, mapping_scorer=mapping_scorer, ligand_network_planner=ligand_network_planner, protocol=protocol)
             
     def _build_chemicalsystem_generator(
         self, solvent
@@ -213,14 +217,14 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name : str = "easy_rbfe",
-        mapper: LigandAtomMapper = LomapAtomMapper(),
+        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
                 RelativeLigandProtocol._default_settings()
             ),
     ):
-            super().__init__(name=name, mapper=mapper, mapping_scorer=mapping_scorer, ligand_network_planner=ligand_network_planner, protocol=protocol)
+            super().__init__(name=name, mappers=mappers, mapping_scorer=mapping_scorer, ligand_network_planner=ligand_network_planner, protocol=protocol)
             
             
     def _build_chemicalsystem_generator(
