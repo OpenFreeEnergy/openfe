@@ -70,8 +70,7 @@ class LigandAtomMapper(gufe.AtomMapper):
                         filtered_map_dct[i]= j
 
                 if(len(filtered_map_dct) == 0):
-                    yield LigandAtomMapping(componentA, componentB, {})
-                    #raise ValueError("Could not map ligands - Element Changes are not allowed currently.")
+                    raise ValueError("Could not map ligands - Element Changes are not allowed currently.")
                 
                 map_dct = filtered_map_dct
             #TODO: this is a temporary Code snippet - avoids element changes - END
