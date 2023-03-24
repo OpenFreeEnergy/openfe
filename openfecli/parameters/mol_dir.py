@@ -3,7 +3,6 @@
 import glob
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
-#Todo: not sure if this is the best solution discuss
 def _load_molecule_from_sdf(user_input, context):
     sdfs = glob.glob(user_input+"/*.sdf")
     if len(sdfs) == 0:  # this silences some stderr spam
@@ -45,7 +44,7 @@ get_molecule = MultiStrategyGetter(
 )
 
 MOL_DIR = Option(
-    "-md", "--mol_dir",
+    "-m", "--mol-dir",
     help=("SmallMoleculeComponents from a folder. Folder needs to contain SDF/MOL2 files"
           " string."),
     getter=get_molecule
