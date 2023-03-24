@@ -24,7 +24,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         self.do_vacuum = do_vacuum
 
         if solvent is None and protein is None and not do_vacuum:
-            raise ValueError("you need to provide any transformation possibility")
+            raise ValueError("you need to provide any system generation information in the constructor")
 
     def __call__(self, component: SmallMoleculeComponent) -> Iterable[ChemicalSystem]:
         return self._generate_systems(component=component)
