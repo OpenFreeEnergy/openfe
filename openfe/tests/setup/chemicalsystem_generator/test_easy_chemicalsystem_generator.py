@@ -16,18 +16,19 @@ from gufe import SolventComponent
 def test_easy_chemical_system_generator_init(T4_protein_component):
 
     chemSys_generator = EasyChemicalSystemGenerator(do_vacuum=True)
+    
     chemSys_generator = EasyChemicalSystemGenerator(solvent=SolventComponent())
+    
     chemSys_generator = EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component
     )
+    
     chemSys_generator = EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component, do_vacuum=True
     )
 
-    try:
+    with pytest.raises(ValueError, match='"you need to provide any system generation information in the constructor"'):        
         chemSys_generator = EasyChemicalSystemGenerator()
-    except ValueError:
-        pass
 
 
 def test_build_vacuum_chemical_system(ethane):
