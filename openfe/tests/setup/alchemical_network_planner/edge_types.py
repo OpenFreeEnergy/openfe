@@ -1,18 +1,12 @@
-from openfe.setup.chemicalsystem_generator import RFEComponentLabels
+from ..chemicalsystem_generator.component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
 
-
-# Boolean Test logic lambdas:
-ligandC_in_state = lambda s: RFEComponentLabels.LIGAND in s.components
-solventC_in_state = lambda s: RFEComponentLabels.SOLVENT in s.components
-proteinC_in_state = lambda s: RFEComponentLabels.PROTEIN in s.components
-
-both_states_proteinC_edge = lambda e: proteinC_in_state(e.stateA) and proteinC_in_state(
+both_states_proteinC_edge = lambda e: proteinC_in_chem_sys(e.stateA) and proteinC_in_chem_sys(
     e.stateB
 )
-both_states_solventC_edge = lambda e: solventC_in_state(e.stateA) and solventC_in_state(
+both_states_solventC_edge = lambda e: solventC_in_chem_sys(e.stateA) and solventC_in_chem_sys(
     e.stateB
 )
-both_states_ligandC_edge = lambda e: ligandC_in_state(e.stateA) and ligandC_in_state(
+both_states_ligandC_edge = lambda e: ligandC_in_chem_sys(e.stateA) and ligandC_in_chem_sys(
     e.stateB
 )
 
