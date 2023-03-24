@@ -13,7 +13,7 @@ from .. import LomapAtomMapper
 from ..ligand_network import LigandNetwork
 from ..atom_mapping.ligandatommapper import LigandAtomMapper
 from ..atom_mapping.lomap_scorers import default_lomap_score
-from ..ligand_network_planning import generate_minimal_spanning_network
+from ..ligand_network_planner import MinimalSpanningNetworkPlanner
 from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
     AbstractChemicalSystemGenerator,
 )
@@ -47,9 +47,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     def __init__(
         self,
         name: str = "easy_rfe_calculation",
-        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
-        mapping_scorer: Callable = default_lomap_score,
-        ligand_network_planner: Callable = generate_minimal_spanning_network,
+        ligand_network_planner: Callable = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
@@ -71,13 +69,11 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         """
 
         # TODO: Remove as soon as element Changes are possible. - START
-        for mapper in mappers:
+        for mapper in ligand_network_planner.mappers:
             mapper._no_element_changes = True
         # TODO: Remove as soon as element Changes are possible. - END
 
         self.name = name
-        self._mappers = mappers
-        self._mapping_scorer = mapping_scorer
         self._ligand_network_planner = ligand_network_planner
         self._protocol = protocol
         self._chemical_system_generator_type = PROTOCOL_GENERATOR[protocol.__class__]
@@ -92,11 +88,11 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
 
     @property
     def mappers(self) -> Iterable[LigandAtomMapper]:
-        return self._mappers
+        return self._ligand_network_planner.mappers
 
     @property
     def mapping_scorer(self) -> Callable:
-        return self._mapping_scorer
+        return self._ligand_network_planner.mapping_scorer
 
     @property
     def ligand_network_planner(self) -> Callable:
@@ -118,7 +114,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         self, ligands: Iterable[SmallMoleculeComponent]
     ) -> LigandNetwork:
         ligand_network = self._ligand_network_planner(
-            ligands=ligands, mappers=self.mappers, scorer=self.mapping_scorer
+            ligands=ligands
         )
 
         return ligand_network
@@ -199,17 +195,13 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name: str = "easy_rhfe",
-        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
-        mapping_scorer: Callable = default_lomap_score,
-        ligand_network_planner: Callable = generate_minimal_spanning_network,
+        ligand_network_planner: Callable = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
     ):
         super().__init__(
             name=name,
-            mappers=mappers,
-            mapping_scorer=mapping_scorer,
             ligand_network_planner=ligand_network_planner,
             protocol=protocol,
         )
@@ -280,17 +272,13 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name: str = "easy_rbfe",
-        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
-        mapping_scorer: Callable = default_lomap_score,
-        ligand_network_planner: Callable = generate_minimal_spanning_network,
+        ligand_network_planner: Callable = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
     ):
         super().__init__(
             name=name,
-            mappers=mappers,
-            mapping_scorer=mapping_scorer,
             ligand_network_planner=ligand_network_planner,
             protocol=protocol,
         )
