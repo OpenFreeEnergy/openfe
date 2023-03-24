@@ -14,6 +14,9 @@ class RFEComponentLabels(str, Enum):
 
 
 class AbstractChemicalSystemGenerator(abc.ABC):
+    """
+        this abstract class defines the interface for the chemical system generators.
+    """
     @abc.abstractmethod
     def __call__(self, *args, **kwargs) -> Iterable[ChemicalSystem]:
         raise NotImplementedError()
