@@ -1,8 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator
-from enum import Enum
+from .abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator, RFEComponentLabels
 from typing import Iterable
 
 from gufe import (
@@ -11,15 +10,6 @@ from gufe import (
     SolventComponent,
     ChemicalSystem,
 )
-
-# Todo: connect to protocols - use this for labels?
-class RFEChemicalSystemComponentLabels(str, Enum):
-    PROTEIN = "protein"
-    LIGAND = "ligand"
-    SOLVENT = "solvent"
-
-
-component_labels = RFEChemicalSystemComponentLabels  # TODO: ugly
 
 
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
@@ -44,7 +34,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
     ) -> Iterable[ChemicalSystem]:
         if self.do_vacuum:
             chem_sys = ChemicalSystem(
-                components={component_labels.LIGAND: component},
+                components={RFEComponentLabels.LIGAND: component},
                 name=component.name + "_vacuum",
             )
             yield chem_sys
@@ -52,8 +42,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         if self.solvent is not None:
             chem_sys = ChemicalSystem(
                 components={
-                    component_labels.LIGAND: component,
-                    component_labels.SOLVENT: self.solvent,
+                    RFEComponentLabels.LIGAND: component,
+                    RFEComponentLabels.SOLVENT: self.solvent,
                 },
                 name=component.name + "_solvent",
             )
@@ -61,11 +51,11 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
 
         if self.protein is not None:
             components = {
-                component_labels.LIGAND: component,
-                component_labels.PROTEIN: self.protein,
+                RFEComponentLabels.LIGAND: component,
+                RFEComponentLabels.PROTEIN: self.protein,
             }
             if self.solvent is not None:
-                components.update({component_labels.SOLVENT: self.solvent})
+                components.update({RFEComponentLabels.SOLVENT: self.solvent})
             chem_sys = ChemicalSystem(
                 components=components, name=component.name + "_receptor"
             )
