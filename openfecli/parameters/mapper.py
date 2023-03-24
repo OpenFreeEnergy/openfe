@@ -28,5 +28,5 @@ MAPPER = Option(
     getter=get_atommapper,
     help=("Atom mapper; can either be a name in the openfe.setup namespace "
           "or a custom fully-qualified name.\n"
-          "In the openfe.setup namespace currently following options are possible:\n\t-"+"\n\t-".join([m for m in vars(setup) if "Mapper" in m]))
+          "In the openfe.setup namespace currently following options are possible: "+", ".join([m for m in vars(setup) if "Mapper" in m]))
 )
