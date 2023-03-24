@@ -7,8 +7,6 @@ from gufe import Protocol, AlchemicalNetwork, LigandAtomMapping, Transformation
 from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent
 
 
-from gufe.mapping.atom_mapper import AtomMapper
-
 from .abstract_alchemical_network_planner import AbstractAlchemicalNetworkPlanner
 
 from .. import LomapAtomMapper
@@ -23,9 +21,6 @@ from ..chemicalsystem_generator import EasyChemicalSystemGenerator, RFEComponent
 from ...protocols.openmm_rbfe.equil_rbfe_methods import RelativeLigandProtocol
 
 
-"""
-    This is a draft!
-"""
 # TODO: move/or find better structure for protocol_generator combintations!
 PROTOCOL_GENERATOR = {
     RelativeLigandProtocol: EasyChemicalSystemGenerator,
@@ -50,7 +45,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     def __init__(
         self,
         name : str = "easy_rfe_calculation",
-        mapper: AtomMapper = LomapAtomMapper(),
+        mapper: LigandAtomMapper = LomapAtomMapper(),
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
@@ -88,7 +83,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     """
 
     @property
-    def mapper(self) -> AtomMapper:
+    def mapper(self) -> LigandAtomMapper:
         return self._mapper
 
     @property
@@ -177,7 +172,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
     self,
     name : str = "easy_rhfe",
-    mapper: AtomMapper = LomapAtomMapper(),
+    mapper: LigandAtomMapper = LomapAtomMapper(),
     mapping_scorer: Callable = default_lomap_score,
     ligand_network_planner: Callable = generate_minimal_spanning_network,
     protocol: Protocol = RelativeLigandProtocol(
@@ -218,7 +213,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name : str = "easy_rbfe",
-        mapper: AtomMapper = LomapAtomMapper(),
+        mapper: LigandAtomMapper = LomapAtomMapper(),
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
