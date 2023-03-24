@@ -42,7 +42,7 @@ def plan_rhfe_network_output(alchemical_network, output):
     an_dict = alchemical_network.to_dict()
 
     folder_path = output
-    base_name= os.path.basename(folder_path)
+    base_name = os.path.basename(folder_path)
 
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
