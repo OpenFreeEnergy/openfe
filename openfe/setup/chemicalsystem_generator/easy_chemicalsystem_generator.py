@@ -13,12 +13,31 @@ from gufe import (
 
 
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
+
     def __init__(
         self,
         solvent: SolventComponent = None,
         protein: ProteinComponent = None,
         do_vacuum: bool = False,
     ):
+        """this Class is a easy generator class, for generating chemical systems with a focus on a given smallMoleculeComponent.
+        depending on which parameters are given, the following systems will be generated in order:
+            vacuum -> solvent -> protein
+
+        Parameters
+        ----------
+        solvent : SolventComponent, optional
+            if a SolventComponent is given, solvated chemical systems will be generated, by default None
+        protein : ProteinComponent, optional
+            if a ProteinComponent is given, complex chemical systems will be generated, by default None
+        do_vacuum : bool, optional
+            if true a chemical system in vacuum is returned, by default False
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
         self.solvent = solvent
         self.protein = protein
         self.do_vacuum = do_vacuum
@@ -32,6 +51,25 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
     def _generate_systems(
         self, component: SmallMoleculeComponent
     ) -> Iterable[ChemicalSystem]:
+        """generate systems, around the given SmallMoleculeComponent
+
+        Parameters
+        ----------
+        component : SmallMoleculeComponent
+            the molecule for the system generation
+
+        Returns
+        -------
+        Iterable[ChemicalSystem]
+            generator for systems with the given environments
+
+        Yields
+        ------
+        Iterator[Iterable[ChemicalSystem]]
+            generator for systems with the given environments
+
+        """        
+        
         if self.do_vacuum:
             chem_sys = ChemicalSystem(
                 components={RFEComponentLabels.LIGAND: component},
@@ -60,3 +98,5 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 components=components, name=component.name + "_receptor"
             )
             yield chem_sys
+            
+        return
