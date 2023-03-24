@@ -1,9 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import glob
+from rdkit import Chem
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
-def _load_molecule_from_sdf(user_input, context):
+def _load_molecules_from_sdf(user_input, context):
     sdfs = glob.glob(user_input+"/*.sdf")
     if len(sdfs) == 0:  # this silences some stderr spam
         return NOT_PARSED
@@ -17,28 +18,26 @@ def _load_molecule_from_sdf(user_input, context):
             return NOT_PARSED
     return mols
 
-
-def _load_molecule_from_mol2(user_input, context):
-    sdfs = glob.glob(user_input+"/*.mol2")
-    if len(sdfs) == 0:  # this silences some stderr spam
+def _load_molecules_from_mol2(user_input, context):
+    mol2s = glob.glob(user_input+"/*.mol2")
+    if len(mol2s) == 0:  # this silences some stderr spam
         return NOT_PARSED
 
-    from rdkit import Chem
     from openfe import SmallMoleculeComponent
     mols = []
-    for sdf in sdfs:
+    for mol2 in mol2s:
         try:
-            m = Chem.MolFromMol2File(user_input)
-            mols.append(SmallMoleculeComponent(m))  #Todo: name prop?
+            rdmol = Chem.MolFromMol2File(mol2, removeHs=False)
+            mols.append(SmallMoleculeComponent(rdkit=rdmol))
         except ValueError:  # any exception should try other strategies
             return NOT_PARSED
     return mols
 
 
-get_molecule = MultiStrategyGetter(
+get_molecules = MultiStrategyGetter(
     strategies=[
-        _load_molecule_from_sdf,
-        _load_molecule_from_mol2,
+        _load_molecules_from_sdf,
+        _load_molecules_from_mol2
     ],
     error_message="Unable to generate a molecule from '{user_input}'."
 )
@@ -47,5 +46,5 @@ MOL_DIR = Option(
     "-m", "--mol-dir",
     help=("SmallMoleculeComponents from a folder. Folder needs to contain SDF/MOL2 files"
           " string."),
-    getter=get_molecule
+    getter=get_molecules
 )
