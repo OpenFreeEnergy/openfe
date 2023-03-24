@@ -17,7 +17,7 @@ def test_rbfe_alchemical_network_planner_init():
     
 def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_protein_component):
     alchem_planner = RBFEAlchemicalNetworkPlanner()
-    alchem_network = alchem_planner(ligands=atom_mapping_basic_test_files.values(), solvent=SolventComponent(), receptor=T4_protein_component)
+    alchem_network = alchem_planner(ligands=atom_mapping_basic_test_files.values(), solvent=SolventComponent(), protein=T4_protein_component)
     
 def test_rhfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_protein_component):
     alchem_planner = RHFEAlchemicalNetworkPlanner()
