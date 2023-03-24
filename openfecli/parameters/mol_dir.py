@@ -5,7 +5,7 @@ from rdkit import Chem
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
 def _load_molecules_from_sdf(user_input, context):
-    sdfs = glob.glob(user_input+"/*.sdf")
+    sdfs = list(sorted(glob.glob(user_input+"/*.sdf")))
     if len(sdfs) == 0:  # this silences some stderr spam
         return NOT_PARSED
 
@@ -19,7 +19,7 @@ def _load_molecules_from_sdf(user_input, context):
     return mols
 
 def _load_molecules_from_mol2(user_input, context):
-    mol2s = glob.glob(user_input+"/*.mol2")
+    mol2s = list(sorted(glob.glob(user_input+"/*.mol2")))
     if len(mol2s) == 0:  # this silences some stderr spam
         return NOT_PARSED
 
