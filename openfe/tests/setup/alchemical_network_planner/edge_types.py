@@ -11,17 +11,17 @@ both_states_ligandC_edge = lambda e: ligandC_in_chem_sys(e.stateA) and ligandC_i
 )
 
 r_vacuum_edge = (
-    lambda e: both_states_ligandC_edge
+    lambda e: both_states_ligandC_edge(e)
     and not both_states_solventC_edge(e)
     and not both_states_proteinC_edge(e)
 )
 r_solvent_edge = (
-    lambda e: both_states_ligandC_edge
+    lambda e: both_states_ligandC_edge(e)
     and both_states_solventC_edge(e)
     and not both_states_proteinC_edge(e)
 )
 r_complex_edge = (
-    lambda e: both_states_ligandC_edge
+    lambda e: both_states_ligandC_edge(e)
     and both_states_solventC_edge(e)
     and both_states_proteinC_edge(e)
 )
