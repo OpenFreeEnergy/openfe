@@ -62,8 +62,6 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, mapper_args):
         smoke test
     """
     args = mol_dir_args + protein_args + mapper_args
-    expected_output = (f"{mol_dir_args[1]}\n{protein_args[1]}\n"
-                       f"{mapper_args[1]}\n")
     
     patch_base = "openfecli.commands.plan_rbfe_network."
     args += ["-o", "tmp_network"]
