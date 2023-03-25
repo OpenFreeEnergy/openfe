@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Union
 import itertools
 
 import networkx as nx
@@ -14,14 +14,14 @@ from openfe.setup.atom_mapping import LigandAtomMapper, LigandAtomMapping
 
 
 class MinimalSpanningNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
-    def __init__(self, mappers: Iterable[LigandAtomMapper], mapping_scorer=None):
+    def __init__(self, mappers: Iterable[LigandAtomMapper], mapping_scorer:Callable):
         """
 
         Parameters
         ----------
         mappers : iterable of LigandAtomMappers
           mappers to use, at least 1 required
-        mapping_scorer : scoring function, optional
+        mapping_scorer : Union[None, Callable], optional
           a callable which returns a float for any LigandAtomMapping.  Used to
           assign scores to potential mappings, higher scores indicate worse
           mappings.
@@ -40,7 +40,9 @@ class MinimalSpanningNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
         """
 
         nodes = list(ligands)
-
+        if(self._mapping_scorer is None):
+            raise ValueError("A mapping scorer must be provided to use this network planner")
+        
         # First create a network with all the proposed mappings (scored)
         mapping_generator = itertools.chain.from_iterable(
             mapper.suggest_mappings(molA, molB)

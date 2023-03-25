@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Union
 import itertools
 
 from .abstract_network_planner import AbstractRelativeLigandNetworkPlanner
@@ -12,14 +12,14 @@ from openfe.setup.atom_mapping import LigandAtomMapper
 
 
 class RadialNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
-    def __init__(self, mappers: Iterable[LigandAtomMapper], mapping_scorer=None):
+    def __init__(self, mappers: Iterable[LigandAtomMapper], mapping_scorer:Callable):
         """
 
         Parameters
         ----------
         mappers : iterable of LigandAtomMappers
           mappers to use, at least 1 required
-        mapping_scorer : scoring function, optional
+        mapping_scorer : Union[None, Callable], optional
           a callable which returns a float for any LigandAtomMapping.  Used to
           assign scores to potential mappings, higher scores indicate worse
           mappings.

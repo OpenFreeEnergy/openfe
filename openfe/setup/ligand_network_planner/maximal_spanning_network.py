@@ -1,4 +1,4 @@
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Union
 import itertools
 
 import networkx as nx
@@ -14,7 +14,7 @@ class MaximalNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
     def __init__(
         self,
         mappers: Iterable[LigandAtomMapper],
-        mapping_scorer=None,
+        mapping_scorer:Union[None, Callable]=None,
         # allow_disconnected=True
     ):
         """
@@ -23,7 +23,7 @@ class MaximalNetworkPlanner(AbstractRelativeLigandNetworkPlanner):
         ----------
         mappers : iterable of LigandAtomMappers
           mappers to use, at least 1 required
-        mapping_scorer : scoring function, optional
+        mapping_scorer : Union[None, Callable]n, optional
           a callable which returns a float for any LigandAtomMapping.  Used to
           assign scores to potential mappings, higher scores indicate worse
           mappings.

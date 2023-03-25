@@ -13,6 +13,7 @@ from .. import LomapAtomMapper
 from ..ligand_network import LigandNetwork
 from ..atom_mapping.ligandatommapper import LigandAtomMapper
 from ..atom_mapping.lomap_scorers import default_lomap_score
+from ..ligand_network_planner.abstract_network_planner import AbstractRelativeLigandNetworkPlanner
 from ..ligand_network_planner import MinimalSpanningNetworkPlanner
 from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
     AbstractChemicalSystemGenerator,
@@ -47,7 +48,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     def __init__(
         self,
         name: str = "easy_rfe_calculation",
-        ligand_network_planner: Callable = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
+        ligand_network_planner: AbstractRelativeLigandNetworkPlanner = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
@@ -91,7 +92,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         return self._ligand_network_planner.mappers
 
     @property
-    def mapping_scorer(self) -> Callable:
+    def mapping_scorer(self) -> Union[None, Callable]:
         return self._ligand_network_planner.mapping_scorer
 
     @property
@@ -195,7 +196,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name: str = "easy_rhfe",
-        ligand_network_planner: Callable = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
+        ligand_network_planner: AbstractRelativeLigandNetworkPlanner = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
@@ -272,7 +273,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name: str = "easy_rbfe",
-        ligand_network_planner: Callable = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
+        ligand_network_planner: AbstractRelativeLigandNetworkPlanner = MinimalSpanningNetworkPlanner(mappers= [LomapAtomMapper()], mapping_scorer=default_lomap_score),
         protocol: Protocol = RelativeLigandProtocol(
             RelativeLigandProtocol._default_settings()
         ),
