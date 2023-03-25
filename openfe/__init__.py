@@ -15,7 +15,7 @@ from .setup import (
     lomap_scorers,
     PersesAtomMapper,
     perses_scorers,
-    ligand_network_planning,
+    ligand_network_planner,
     LigandNetwork,
 )
 from . import orchestration

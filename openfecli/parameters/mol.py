@@ -57,7 +57,7 @@ get_molecule = MultiStrategyGetter(
 )
 
 MOL = Option(
-    "--mol",
+    "-m", "--mol",
     help=("SmallMoleculeComponent. Can be provided as an SDF file or as a SMILES "
           " string."),
     getter=get_molecule
