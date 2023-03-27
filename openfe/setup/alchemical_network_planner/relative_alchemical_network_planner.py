@@ -1,13 +1,21 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
-from typing import Iterable, Callable, Union, List, Type
+from typing import Iterable, Callable, Type
 
-from gufe import Protocol, AlchemicalNetwork, LigandAtomMapping, Transformation
+from gufe import (
+    Protocol,
+    AlchemicalNetwork,
+    LigandAtomMapping,
+    Transformation,
+    ChemicalSystem,
+)
 from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent
 
 
-from .abstract_alchemical_network_planner import AbstractAlchemicalNetworkPlanner
+from .abstract_alchemical_network_planner import (
+    AbstractAlchemicalNetworkPlanner,
+)
 
 from .. import LomapAtomMapper
 from ..ligand_network import LigandNetwork
@@ -17,7 +25,10 @@ from ..ligand_network_planning import generate_minimal_spanning_network
 from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
     AbstractChemicalSystemGenerator,
 )
-from ..chemicalsystem_generator import EasyChemicalSystemGenerator, RFEComponentLabels
+from ..chemicalsystem_generator import (
+    EasyChemicalSystemGenerator,
+    RFEComponentLabels,
+)
 from ...protocols.openmm_rbfe.equil_rbfe_methods import RelativeLigandProtocol
 
 
@@ -32,7 +43,9 @@ PROTOCOL_GENERATOR = {
 """
 
 
-class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC):
+class RelativeAlchemicalNetworkPlanner(
+    AbstractAlchemicalNetworkPlanner, abc.ABC
+):
 
     """
     magics
@@ -80,7 +93,9 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         self._mapping_scorer = mapping_scorer
         self._ligand_network_planner = ligand_network_planner
         self._protocol = protocol
-        self._chemical_system_generator_type = PROTOCOL_GENERATOR[protocol.__class__]
+        self._chemical_system_generator_type = PROTOCOL_GENERATOR[
+            protocol.__class__
+        ]
 
     @abc.abstractmethod
     def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
@@ -107,7 +122,9 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         return self._protocol
 
     @property
-    def chemical_system_generator_type(self) -> Type[AbstractChemicalSystemGenerator]:
+    def chemical_system_generator_type(
+        self,
+    ) -> Type[AbstractChemicalSystemGenerator]:
         return self._chemical_system_generator_type
 
     """
@@ -145,44 +162,90 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
         AlchemicalNetwork
             knows all transformations and their states that need to be simulated.
         """
-        edges = []
-        nodes = []
+        transformation_edges = []
+        end_state_nodes = []
 
-        for edge in ligand_network_edges:
-
+        for ligand_mapping_edge in ligand_network_edges:
             for stateA_env, stateB_env in zip(
-                self._chemical_system_generator(edge.componentA),
-                self._chemical_system_generator(edge.componentB),
+                chemical_system_generator(ligand_mapping_edge.componentA),
+                chemical_system_generator(ligand_mapping_edge.componentB),
             ):
-                transformation_name = (
-                    self.name + "_" + stateA_env.name + "_" + stateB_env.name
+                transformation_edge = self._build_transformation(
+                    ligand_mapping_edge=ligand_mapping_edge,
+                    stateA=stateA_env,
+                    stateB=stateB_env,
+                    transformation_protocol=protocol,
                 )
 
-                # Todo: Another dirty hack!
-                protocol_settings = self.transformation_protocol.settings
+                transformation_edges.append(transformation_edge)
+                end_state_nodes.extend([stateA_env, stateB_env])
 
-                if "vacuum" in transformation_name:
-                    protocol_settings.system_settings.nonbonded_method = "nocutoff"
+        # Todo: make the code here more stable in future: Name doubling check
+        all_transformation_labels = list(
+            map(lambda x: x.name, transformation_edges)
+        )
 
-                protocol_settings.alchemical_settings.atom_overlap_tolerance = 100  # Todo: Hack to avoid protocol erros -  remove after fix was merged:  github PR #274
+        if len(all_transformation_labels) != len(
+            set(all_transformation_labels)
+        ):
+            raise ValueError(
+                "There where multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
+                + str(len(all_transformation_labels))
+                + "\nunique: "
+                + str(len(set(all_transformation_labels)))
+                + "\ngot: \n\t"
+                + "\n\t".join(all_transformation_labels)
+            )
 
-                self.protocol = self.transformation_protocol.__class__(
-                    settings=protocol_settings
-                )
-
-                edges.append(
-                    Transformation(
-                        stateA=stateA_env,
-                        stateB=stateB_env,
-                        mapping={RFEComponentLabels.LIGAND: edge},  # Todo: dirty hack!
-                        name=transformation_name,
-                        protocol=self.transformation_protocol,
-                    )
-                )
-                nodes.extend([stateA_env, stateB_env])
-
-        alchemical_network = AlchemicalNetwork(nodes=nodes, edges=edges, name=self.name)
+        alchemical_network = AlchemicalNetwork(
+            nodes=end_state_nodes, edges=transformation_edges, name=self.name
+        )
         return alchemical_network
+
+    def _build_transformation(
+        self,
+        ligand_mapping_edge: LigandAtomMapping,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        transformation_protocol: Protocol,
+    ) -> Transformation:
+        """
+            This function is the core of building transformations. it builds a transformation with the given protocol.
+
+        Parameters
+        ----------
+        ligand_mapping_edge: LigandAtomMapping
+        stateA: ChemicalSystem
+        stateB: ChemicalSystem
+
+        Returns
+        -------
+        Transformation
+
+        """
+        transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
+
+        # Todo: Another dirty hack! - START
+        protocol_settings = transformation_protocol.settings
+
+        if "vacuum" in transformation_name:
+            protocol_settings.system_settings.nonbonded_method = "nocutoff"
+
+        protocol_settings.alchemical_settings.atom_overlap_tolerance = 100  # Todo: Hack to avoid protocol errors -  remove after fix was merged:
+        # github PR #274
+        # Todo: Another dirty hack! - END
+
+        transformation_protocol = transformation_protocol.__class__(
+            settings=protocol_settings
+        )
+
+        return Transformation(
+            stateA=stateA,
+            stateB=stateB,
+            mapping={RFEComponentLabels.LIGAND: ligand_mapping_edge},
+            name=transformation_name,
+            protocol=transformation_protocol,
+        )
 
     @abc.abstractmethod
     def _build_chemicalsystem_generator(
@@ -238,7 +301,9 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def _build_chemicalsystem_generator(
         self, solvent
     ) -> AbstractChemicalSystemGenerator:
-        return self._chemical_system_generator_type(solvent=solvent, do_vacuum=True)
+        return self._chemical_system_generator_type(
+            solvent=solvent, do_vacuum=True
+        )
 
     def _build_alchemical_network(
         self,
@@ -264,7 +329,9 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         self._ligand_network = self._construct_ligand_network(ligands)
 
         # Prepare system generation
-        self._chemical_system_generator = self._build_chemicalsystem_generator(solvent)
+        self._chemical_system_generator = self._build_chemicalsystem_generator(
+            solvent
+        )
 
         # Build transformations
         self._alchemical_network = self._build_transformations(

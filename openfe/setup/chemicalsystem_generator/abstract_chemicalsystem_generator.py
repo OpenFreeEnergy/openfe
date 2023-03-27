@@ -7,6 +7,7 @@ from typing import Iterable
 from gufe import ChemicalSystem
 
 # Todo: connect to protocols - use this for labels?
+
 class RFEComponentLabels(str, Enum):
     PROTEIN = "protein"
     LIGAND = "ligand"
@@ -15,8 +16,9 @@ class RFEComponentLabels(str, Enum):
 
 class AbstractChemicalSystemGenerator(abc.ABC):
     """
-        this abstract class defines the interface for the chemical system generators.
+    this abstract class defines the interface for the chemical system generators.
     """
+
     @abc.abstractmethod
     def __call__(self, *args, **kwargs) -> Iterable[ChemicalSystem]:
         raise NotImplementedError()
