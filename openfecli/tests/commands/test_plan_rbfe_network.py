@@ -5,7 +5,7 @@ import importlib
 import os
 from click.testing import CliRunner
 
-from openfecli.commands.plan_rbfe_network import (
+from openfecli.commands.alchemical_network_planners.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
 )
@@ -23,7 +23,9 @@ def mol_dir_args():
 
 @pytest.fixture
 def protein_args():
-    with importlib.resources.path("openfe.tests.data", "181l_only.pdb") as file_path:
+    with importlib.resources.path(
+        "openfe.tests.data", "181l_only.pdb"
+    ) as file_path:
         return ["--protein", file_path]
 
 
@@ -33,7 +35,12 @@ def mapper_args():
 
 
 def print_test_with_file(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent, protein
+    mapper,
+    mapping_scorer,
+    ligand_network_planner,
+    small_molecules,
+    solvent,
+    protein,
 ):
     print(mapper)
     print(mapping_scorer)
@@ -45,8 +52,16 @@ def print_test_with_file(
 
 def test_plan_rbfe_network_main():
     import os, glob
-    from gufe import ProteinComponent, SmallMoleculeComponent, SolventComponent
-    from openfe.setup import LomapAtomMapper, lomap_scorers, ligand_network_planning
+    from gufe import (
+        ProteinComponent,
+        SmallMoleculeComponent,
+        SolventComponent,
+    )
+    from openfe.setup import (
+        LomapAtomMapper,
+        lomap_scorers,
+        ligand_network_planning,
+    )
 
     with importlib.resources.path(
         "openfe.tests.data.openmm_rbfe", "__init__.py"
@@ -55,7 +70,9 @@ def test_plan_rbfe_network_main():
             SmallMoleculeComponent.from_sdf_file(f)
             for f in glob.glob(os.path.dirname(file_path) + "/*.sdf")
         ]
-    with importlib.resources.path("openfe.tests.data", "181l_only.pdb") as file_path:
+    with importlib.resources.path(
+        "openfe.tests.data", "181l_only.pdb"
+    ) as file_path:
         protein_compontent = ProteinComponent.from_pdb_file(
             os.path.dirname(file_path) + "/181l_only.pdb"
         )
@@ -77,8 +94,19 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, mapper_args):
     smoke test
     """
     args = mol_dir_args + protein_args + mapper_args
+    expected_output = [
+        "RBFE-NETWORK PLANNER",
+        "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
+        "Protein: ProteinComponent(name=)",
+        "Solvent: SolventComponent(name=O, Na+, Cl-)",
+        "- tmp_network.json",
+        "- tmp_network_easy_rbfe_ligand_23_solvent_ligand_55_solvent.json",
+        "- tmp_network_easy_rbfe_ligand_23_receptor_ligand_55_receptor.json",
+    ]
 
-    patch_base = "openfecli.commands.plan_rbfe_network."
+    patch_base = (
+        "openfecli.commands.alchemical_network_planners.plan_rbfe_network."
+    )
     args += ["-o", "tmp_network"]
 
     patch_loc = patch_base + "plan_rbfe_network"
@@ -90,3 +118,9 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, mapper_args):
             result = runner.invoke(plan_rbfe_network, args)
             print(result.output)
             assert result.exit_code == 0
+            assert all(
+                [
+                    expected_line in result.output
+                    for expected_line in expected_output
+                ]
+            )

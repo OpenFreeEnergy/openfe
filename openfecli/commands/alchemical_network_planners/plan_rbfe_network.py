@@ -13,10 +13,16 @@ from typing import List
 from openfecli.utils import write
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
+from openfecli.commands.alchemical_network_planners.utils import plan_alchemical_network_output
 
 
 def plan_rbfe_network_main(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent, protein
+    mapper,
+    mapping_scorer,
+    ligand_network_planner,
+    small_molecules,
+    solvent,
+    protein,
 ):
     """Utiiity method to plan a relative binding free energy network.
 
@@ -57,35 +63,9 @@ def plan_rbfe_network_main(
     return alchemical_network
 
 
-def plan_rbfe_network_output(alchemical_network, output):
-    # Todo: this is an uggly peace of output code. it does not recognize overwriting! fix
-    an_dict = alchemical_network.to_dict()
-
-    folder_path = output
-    base_name = os.path.basename(folder_path)
-
-    if not os.path.isdir(folder_path):
-        os.mkdir(folder_path)
-
-    json.dump(an_dict, open(folder_path + "/" + base_name + ".json", "w"))
-    write("\t\t- " + base_name + ".json")
-
-    transformation_dir = folder_path + "/transformations"
-    if not os.path.isdir(transformation_dir):
-        os.mkdir(transformation_dir)
-    write("\t\t- " + transformation_dir)
-
-    for transformation in alchemical_network.edges:
-        out_path = (
-            transformation_dir + "/" + base_name + "_" + transformation.name + ".json"
-        )
-        transformation.dump(out_path)
-        write("\t\t\t- " + base_name + "_" + transformation.name + ".json")
-
-
 @click.command(
     "plan-rbfe-campaign",
-    short_help="Run a planning session for relative binding free energies, saved as a JSON file",
+    short_help="Run a planning session for relative binding free energies, saved in a dir with multiple JSON files (future: will be one JSON file)",
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
@@ -93,23 +73,41 @@ def plan_rbfe_network_output(alchemical_network, output):
 @PROTEIN.parameter(
     multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
 )
-@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")
+@OUTPUT_DIR.parameter(
+    help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
+    default="alchemicalNetwork",
+)
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
-def plan_rbfe_network(mol_dir: List[str], protein: str, output_dir: str, mapper: str):
+def plan_rbfe_network(
+    mol_dir: List[str], protein: str, output_dir: str, mapper: str
+):
     """
-        this command line tool allows relative binding free energy calculations to be planned and returns an alchemical network as a directory.
+    this command line tool allows relative binding free energy calculations to be planned and returns an alchemical network as a directory.
     """
+    from gufe import SolventComponent
+    from openfe.setup.atom_mapping.lomap_scorers import (
+        default_lomap_score,
+    )
+    from openfe.setup.ligand_network_planning import (
+        generate_minimal_spanning_network,
+    )
+
     # INPUT
+    write("RBFE-NETWORK PLANNER")
+    write("______________________")
+    write("")
+
     write("Parsing in Files: ")
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(mol_dir)
-    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
+    write(
+        "\t\tSmall Molecules: "
+        + " ".join([str(sm) for sm in small_molecules])
+    )
 
     protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
-
-    from gufe import SolventComponent
 
     solvent = SolventComponent()
     write("\t\tSolvent: " + str(solvent))
@@ -119,17 +117,11 @@ def plan_rbfe_network(mol_dir: List[str], protein: str, output_dir: str, mapper:
     mapper_obj = MAPPER.get(mapper)()
     write("\tMapper: " + str(mapper_obj))
 
-    from openfe.setup.atom_mapping.lomap_scorers import (
-        default_lomap_score,
-    )  # TODO:  write nice parameter
-
+    # TODO:  write nice parameter
     mapping_scorer = default_lomap_score
     write("\tMapping Scorer: " + str(mapping_scorer))
 
-    from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network,
-    )  # TODO:  write nice parameter
-
+    # TODO:  write nice parameter
     ligand_network_planner = generate_minimal_spanning_network
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
@@ -150,8 +142,9 @@ def plan_rbfe_network(mol_dir: List[str], protein: str, output_dir: str, mapper:
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + str(output_dir))
-    plan_rbfe_network_output(
-        alchemical_network=alchemical_network, output=OUTPUT_DIR.get(output_dir)
+    plan_alchemical_network_output(
+        alchemical_network=alchemical_network,
+        folder_path=OUTPUT_DIR.get(output_dir),
     )
 
 
