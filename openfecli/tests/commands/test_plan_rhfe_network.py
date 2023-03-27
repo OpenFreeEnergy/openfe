@@ -5,7 +5,7 @@ import importlib
 import os
 from click.testing import CliRunner
 
-from openfecli.commands.alchemical_network_planners.plan_rhfe_network import (
+from openfecli.commands.plan_rhfe_network import (
     plan_rhfe_network,
     plan_rhfe_network_main,
 )
