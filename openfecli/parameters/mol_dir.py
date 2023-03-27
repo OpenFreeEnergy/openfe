@@ -4,12 +4,14 @@ import glob
 from rdkit import Chem
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
+
 def _load_molecules_from_sdf(user_input, context):
-    sdfs = list(sorted(glob.glob(user_input+"/*.sdf")))
+    sdfs = list(sorted(glob.glob(user_input + "/*.sdf")))
     if len(sdfs) == 0:  # this silences some stderr spam
         return NOT_PARSED
 
     from openfe import SmallMoleculeComponent
+
     mols = []
     for sdf in sdfs:
         try:
@@ -18,12 +20,14 @@ def _load_molecules_from_sdf(user_input, context):
             return NOT_PARSED
     return mols
 
+
 def _load_molecules_from_mol2(user_input, context):
-    mol2s = list(sorted(glob.glob(user_input+"/*.mol2")))
+    mol2s = list(sorted(glob.glob(user_input + "/*.mol2")))
     if len(mol2s) == 0:  # this silences some stderr spam
         return NOT_PARSED
 
     from openfe import SmallMoleculeComponent
+
     mols = []
     for mol2 in mol2s:
         try:
@@ -35,16 +39,16 @@ def _load_molecules_from_mol2(user_input, context):
 
 
 get_molecules = MultiStrategyGetter(
-    strategies=[
-        _load_molecules_from_sdf,
-        _load_molecules_from_mol2
-    ],
-    error_message="Unable to generate a molecule from '{user_input}'."
+    strategies=[_load_molecules_from_sdf, _load_molecules_from_mol2],
+    error_message="Unable to generate a molecule from '{user_input}'.",
 )
 
 MOL_DIR = Option(
-    "-m", "--mol-dir",
-    help=("SmallMoleculeComponents from a folder. Folder needs to contain SDF/MOL2 files"
-          " string."),
-    getter=get_molecules
+    "-m",
+    "--mol-dir",
+    help=(
+        "SmallMoleculeComponents from a folder. Folder needs to contain SDF/MOL2 files"
+        " string."
+    ),
+    getter=get_molecules,
 )

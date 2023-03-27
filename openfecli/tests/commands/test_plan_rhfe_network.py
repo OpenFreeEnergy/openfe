@@ -5,7 +5,7 @@ import importlib
 import os
 from click.testing import CliRunner
 
-from openfecli.commands.plan_rhfe_network import (
+from openfecli.commands.alchemical_network_planners.plan_rhfe_network import (
     plan_rhfe_network,
     plan_rhfe_network_main,
 )
@@ -39,7 +39,11 @@ def print_test_with_file(
 def test_plan_rhfe_network_main():
     import os, glob
     from gufe import SmallMoleculeComponent, SolventComponent
-    from openfe.setup import LomapAtomMapper, lomap_scorers, ligand_network_planning
+    from openfe.setup import (
+        LomapAtomMapper,
+        lomap_scorers,
+        ligand_network_planning,
+    )
 
     with importlib.resources.path(
         "openfe.tests.data.openmm_rbfe", "__init__.py"
@@ -65,8 +69,18 @@ def test_plan_rhfe_network(mol_dir_args, mapper_args):
     smoke test
     """
     args = mol_dir_args + mapper_args
+    expected_output = [
+        "RHFE-NETWORK PLANNER",
+        "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
+        "Solvent: SolventComponent(name=O, Na+, Cl-)",
+        "- tmp_network.json",
+        "- tmp_network_easy_rhfe_ligand_23_solvent_ligand_55_solvent.json",
+        "- tmp_network_easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json",
+    ]
 
-    patch_base = "openfecli.commands.plan_rhfe_network."
+    patch_base = (
+        "openfecli.commands.alchemical_network_planners.plan_rhfe_network."
+    )
     args += ["-o", "tmp_network"]
 
     patch_loc = patch_base + "plan_rhfe_network"
@@ -78,3 +92,9 @@ def test_plan_rhfe_network(mol_dir_args, mapper_args):
             result = runner.invoke(plan_rhfe_network, args)
             print(result.output)
             assert result.exit_code == 0
+            assert all(
+                [
+                    expected_line in result.output
+                    for expected_line in expected_output
+                ]
+            )
