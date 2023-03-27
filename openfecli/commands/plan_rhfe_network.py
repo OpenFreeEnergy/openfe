@@ -22,7 +22,7 @@ from openfecli.parameters import MOL_DIR, MAPPER, OUTPUT_DIR
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
 ):
-    """Utiiity method to plan a relative hydration free energy network.
+    """Utility method to plan a relative hydration free energy network.
 
     Parameters
     ----------
