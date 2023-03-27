@@ -27,7 +27,7 @@ def test_easy_chemical_system_generator_init(T4_protein_component):
         solvent=SolventComponent(), protein=T4_protein_component, do_vacuum=True
     )
 
-    with pytest.raises(ValueError, match='you need to provide any system generation information in the constructor'):        
+    with pytest.raises(ValueError, match='Chemical system generator is unable to generate any chemical systems with neither protein nor solvent nor do_vacuum'):
         chem_sys_generator = EasyChemicalSystemGenerator()
 
 

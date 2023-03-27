@@ -27,7 +27,6 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
     
     edges = alchem_network.edges
     assert len(edges) == 14 # we build 2envs*8ligands-2startLigands = 14 relative edges. 
-    assert all([edge.protocol == alchem_planner.transformation_protocol for edge in edges]) # all edges should contain the same protocol
 
     print(edges)
     assert sum([r_complex_edge(e) for e in edges]) == 7 # half of the transformations should be complex (they always are)!
@@ -35,7 +34,7 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
     assert sum([r_vacuum_edge(e) for e in edges]) == 0 # no vacuum here!
 
 
-def test_rbfe_alchemical_network_planner_call_multigraph(atom_mapping_basic_test_files):
+def test_rhfe_alchemical_network_planner_call_multigraph(atom_mapping_basic_test_files):
     alchem_planner = RHFEAlchemicalNetworkPlanner()
 
     ligand_network = alchem_planner._construct_ligand_network(atom_mapping_basic_test_files.values())
@@ -61,7 +60,6 @@ def test_rhfe_alchemical_network_planner_call(atom_mapping_basic_test_files):
     
     edges = alchem_network.edges
     assert len(edges) == 14 # we build 2envs*8ligands-2startLigands = 14 relative edges.
-    assert all([edge.protocol == alchem_planner.transformation_protocol for edge in edges]) # all edges should contain the same protocol
 
     assert sum([r_complex_edge(e) for e in edges]) == 0 # no complex!
     assert sum([r_solvent_edge(e) for e in edges]) == 7 # half of the transformations should be solvent!

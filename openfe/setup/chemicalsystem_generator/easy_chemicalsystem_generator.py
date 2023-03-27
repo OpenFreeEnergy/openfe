@@ -46,7 +46,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
 
         if solvent is None and protein is None and not do_vacuum:
             raise ValueError(
-                "Unable to generate any chemical systems with neither protein nor solvent nor do_vacuum"
+                "Chemical system generator is unable to generate any chemical systems with neither protein nor solvent nor do_vacuum"
             )
 
     def __call__(
