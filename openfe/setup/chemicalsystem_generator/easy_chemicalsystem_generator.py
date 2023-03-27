@@ -1,7 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator, RFEComponentLabels
+from .abstract_chemicalsystem_generator import (
+    AbstractChemicalSystemGenerator,
+    RFEComponentLabels,
+)
 from typing import Iterable
 
 from gufe import (
@@ -13,7 +16,6 @@ from gufe import (
 
 
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
-
     def __init__(
         self,
         solvent: SolventComponent = None,
@@ -43,9 +45,13 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         self.do_vacuum = do_vacuum
 
         if solvent is None and protein is None and not do_vacuum:
-            raise ValueError("you need to provide any system generation information in the constructor")
+            raise ValueError(
+                "Unable to generate any chemical systems with neither protein nor solvent nor do_vacuum"
+            )
 
-    def __call__(self, component: SmallMoleculeComponent) -> Iterable[ChemicalSystem]:
+    def __call__(
+        self, component: SmallMoleculeComponent
+    ) -> Iterable[ChemicalSystem]:
         return self._generate_systems(component=component)
 
     def _generate_systems(
@@ -68,8 +74,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         Iterator[Iterable[ChemicalSystem]]
             generator for systems with the given environments
 
-        """        
-        
+        """
+
         if self.do_vacuum:
             chem_sys = ChemicalSystem(
                 components={RFEComponentLabels.LIGAND: component},
@@ -98,5 +104,5 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 components=components, name=component.name + "_receptor"
             )
             yield chem_sys
-            
+
         return

@@ -1,6 +1,16 @@
+from gufe import ChemicalSystem
+
 from openfe.setup.chemicalsystem_generator import RFEComponentLabels
 
+
 # Boolean Test logic lambdas:
-ligandC_in_chem_sys = lambda s: RFEComponentLabels.LIGAND in s.components
-solventC_in_chem_sys = lambda s: RFEComponentLabels.SOLVENT in s.components
-proteinC_in_chem_sys = lambda s: RFEComponentLabels.PROTEIN in s.components
+def ligandC_in_chem_sys(chemical_system: ChemicalSystem) -> bool:
+    return RFEComponentLabels.LIGAND in chemical_system.components
+
+
+def solventC_in_chem_sys(chemical_system: ChemicalSystem) -> bool:
+    return RFEComponentLabels.SOLVENT in chemical_system.components
+
+
+def proteinC_in_chem_sys(chemical_system: ChemicalSystem) -> bool:
+    return RFEComponentLabels.PROTEIN in chemical_system.components

@@ -3,4 +3,4 @@
 
 
 from .abstract_chemicalsystem_generator import RFEComponentLabels
-from .easy_chemicalsystem_generator import EasyChemicalSystemGenerator 
+from .easy_chemicalsystem_generator import EasyChemicalSystemGenerator
