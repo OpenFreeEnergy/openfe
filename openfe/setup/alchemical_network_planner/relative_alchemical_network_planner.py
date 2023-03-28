@@ -330,7 +330,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
 
         # Prepare system generation
         self._chemical_system_generator = self._build_chemicalsystem_generator(
-            solvent
+            solvent=solvent
         )
 
         # Build transformations
