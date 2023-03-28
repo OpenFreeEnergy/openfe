@@ -79,7 +79,7 @@ def test_plan_rhfe_network(mol_dir_args, mapper_args):
     ]
 
     patch_base = (
-        "openfecli.commands.alchemical_network_planners.plan_rhfe_network."
+        "openfecli.commands.plan_rhfe_network."
     )
     args += ["-o", "tmp_network"]
 
