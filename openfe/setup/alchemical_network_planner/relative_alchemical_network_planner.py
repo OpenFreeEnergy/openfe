@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
+import copy
 from typing import Iterable, Callable, Type
 
 from gufe import (
@@ -226,11 +227,9 @@ class RelativeAlchemicalNetworkPlanner(
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
         # Todo: Another dirty hack! - START
-        protocol_settings = transformation_protocol.default_settings()
+        protocol_settings = copy.deepcopy(transformation_protocol.settings)
         if "vacuum" in transformation_name:
             protocol_settings.system_settings.nonbonded_method = "nocutoff"
-        else:
-            protocol_settings.system_settings.nonbonded_method = "PME"
 
         protocol_settings.alchemical_settings.atom_overlap_tolerance = 100  # Todo: Hack to avoid protocol errors -  remove after fix was merged:
         # github PR #274
