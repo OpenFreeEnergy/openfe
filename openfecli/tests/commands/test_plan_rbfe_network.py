@@ -105,7 +105,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, mapper_args):
     ]
 
     patch_base = (
-        "openfecli.commands.alchemical_network_planners.plan_rbfe_network."
+        "openfecli.commands.plan_rbfe_network."
     )
     args += ["-o", "tmp_network"]
 
