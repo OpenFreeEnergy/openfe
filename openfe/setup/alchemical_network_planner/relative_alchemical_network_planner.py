@@ -226,10 +226,11 @@ class RelativeAlchemicalNetworkPlanner(
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
         # Todo: Another dirty hack! - START
-        protocol_settings = transformation_protocol.settings
-
+        protocol_settings = transformation_protocol.default_settings()
         if "vacuum" in transformation_name:
             protocol_settings.system_settings.nonbonded_method = "nocutoff"
+        else:
+            protocol_settings.system_settings.nonbonded_method = "PME"
 
         protocol_settings.alchemical_settings.atom_overlap_tolerance = 100  # Todo: Hack to avoid protocol errors -  remove after fix was merged:
         # github PR #274
