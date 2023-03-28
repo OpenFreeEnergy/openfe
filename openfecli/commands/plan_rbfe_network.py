@@ -11,7 +11,7 @@ from typing import List
 from openfecli.utils import write
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
-from openfecli.commands.plan_alchemical_networks_utils import plan_alchemical_network_output
+from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
 def plan_rbfe_network_main(
