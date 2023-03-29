@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import os
+
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
@@ -77,9 +79,9 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, method, tmpdir):
 
     vac_settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    vac_settings.protocol_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.protocol_settings.sampler_settings.sampler_method = method
-    vac_settings.protocol_settings.sampler_settings.n_repeats = 1
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.sampler_settings.sampler_method = method
+    vac_settings.sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=vac_settings,
@@ -103,8 +105,8 @@ def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.protocol_settings.sampler_settings.sampler_method = method
-    settings.protocol_settings.sampler_settings.n_repeats = 1
+    settings.sampler_settings.sampler_method = method
+    settings.sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=settings,
@@ -127,8 +129,8 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.protocol_settings.sampler_settings.sampler_method = method
-    settings.protocol_settings.sampler_settings.n_repeats = 1
+    settings.sampler_settings.sampler_method = method
+    settings.sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=settings,
@@ -165,8 +167,8 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
     # equals the numbers of replicas used - TODO: remove limitation
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
     # default lambda windows is 11
-    settings.protocol_settings.sampler_settings.n_replicas = 13
-    settings.protocol_settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.sampler_settings.n_replicas = 13
+    settings.system_settings.nonbonded_method = 'nocutoff'
 
     errmsg = ("Number of replicas 13 does not equal the number of "
               "lambda windows 11")
@@ -616,7 +618,7 @@ class TestConstraintRemoval:
 
 
 @pytest.fixture(scope='session')
-def tyk2_xml(tmpdir_factory):
+def tyk2_xml(tmp_path_factory):
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_23.sdf') as f:
         lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_55.sdf') as f:
@@ -632,11 +634,11 @@ def tyk2_xml(tmpdir_factory):
                                   29: 23, 30: 24, 31: 25, 32: 26, 33: 27}
     )
 
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.protocol_settings.topology_settings.forcefield = {'ligand': 'openff-2.0.0.offxml'}
-    settings.protocol_settings.system_settings.nonbonded_method = 'nocutoff'
-    settings.protocol_settings.system_settings.hydrogen_mass = 3.0
-    settings.protocol_settings.sampler_settings.n_repeats = 1
+    settings: openmm_rbfe.RelativeLigandProtocolSettings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings.topology_settings.forcefield = {'ligand': 'openff-2.0.0.offxml'}
+    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.system_settings.hydrogen_mass = 3.0
+    settings.sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(settings)
 
@@ -647,7 +649,7 @@ def tyk2_xml(tmpdir_factory):
     )
     pu = list(dag.protocol_units)[0]
 
-    tmp = tmpdir_factory.mktemp('xml_reg')
+    tmp = tmp_path_factory.mktemp('xml_reg')
 
     dryrun = pu.run(dry=True, basepath=tmp)
 

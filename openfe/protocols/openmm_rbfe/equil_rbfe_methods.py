@@ -28,7 +28,7 @@ import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmtools import multistate
-from pydantic import BaseModel, validator
+from pydantic import validator
 from typing import Dict, List, Union, Optional
 from openmm import app
 from openmm import unit as omm_unit
@@ -386,7 +386,7 @@ class SimulationSettings(settings.SettingsBaseModel):
         return v
 
 
-class RelativeLigandProtocolSettings(settings.ProtocolSettings):
+class RelativeLigandProtocolSettings(settings.Settings):
     class Config:
         arbitrary_types_allowed = True
 
@@ -498,9 +498,10 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
 
 class RelativeLigandProtocol(gufe.Protocol):
     result_cls = RelativeLigandProtocolResult
+    _settings: RelativeLigandProtocolSettings
 
     @classmethod
-    def _default_settings(cls) -> settings.Settings:
+    def _default_settings(cls):
         """A dictionary of initial settings for this creating this Protocol
 
         These settings are intended as a suitable starting point for creating
@@ -512,30 +513,27 @@ class RelativeLigandProtocol(gufe.Protocol):
         Settings
           a set of default settings
         """
-        return settings.Settings(
-            settings_version=1,
+        return RelativeLigandProtocolSettings(
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            protocol_settings=RelativeLigandProtocolSettings(
-                system_settings=SystemSettings(
-                    constraints='HBonds'
-                ),
-                topology_settings=TopologySettings(
-                    forcefield={'protein': 'amber99sb.xml',
-                                'ligand': 'openff-2.0.0.offxml',
-                                'solvent': 'tip3p.xml'},
-                ),
-                alchemical_settings=AlchemicalSettings(),
-                sampler_settings=SamplerSettings(),
-                barostat_settings=BarostatSettings(),
-                integrator_settings=IntegratorSettings(),
-                simulation_settings=SimulationSettings(
-                    equilibration_length=2.0 * unit.nanosecond,
-                    production_length=5.0 * unit.nanosecond,
-                )
+            system_settings=SystemSettings(
+                constraints='HBonds'
+            ),
+            topology_settings=TopologySettings(
+                forcefield={'protein': 'amber99sb.xml',
+                            'ligand': 'openff-2.0.0.offxml',
+                            'solvent': 'tip3p.xml'},
+            ),
+            alchemical_settings=AlchemicalSettings(),
+            sampler_settings=SamplerSettings(),
+            barostat_settings=BarostatSettings(),
+            integrator_settings=IntegratorSettings(),
+            simulation_settings=SimulationSettings(
+                equilibration_length=2.0 * unit.nanosecond,
+                production_length=5.0 * unit.nanosecond,
             )
         )
 
@@ -558,7 +556,7 @@ class RelativeLigandProtocol(gufe.Protocol):
         # 1) check that both states have solvent and ligand
         for state, label in [(stateA, 'A'), (stateB, 'B')]:
             if 'solvent' not in state.components:
-                nonbond = self.settings.protocol_settings.system_settings.nonbonded_method
+                nonbond = self.settings.system_settings.nonbonded_method
                 if nonbond != 'nocutoff':
                     errmsg = f"{nonbond} cannot be used for vacuum transform"
                     raise ValueError(errmsg)
@@ -606,7 +604,7 @@ class RelativeLigandProtocol(gufe.Protocol):
             settings=self.settings,
             generation=0, repeat_id=i,
             name=f'{Aname} {Bname} repeat {i} generation 0')
-            for i in range(self.settings.protocol_settings.sampler_settings.n_repeats)]
+            for i in range(self.settings.sampler_settings.n_repeats)]
 
         return units
 
@@ -724,18 +722,18 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         # 0. General setup and settings dependency resolution step
 
         # a. check equilibration and production are divisible by n_steps
-        settings = self._inputs['settings']
+        prototol_settings: RelativeLigandProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
 
-        alchem_settings = settings.protocol_settings.alchemical_settings
-        system_settings = settings.protocol_settings.system_settings
-        topology_settings = settings.protocol_settings.topology_settings
-        sampler_settings = settings.protocol_settings.sampler_settings
-        sim_settings = settings.protocol_settings.simulation_settings
-        timestep = settings.protocol_settings.integrator_settings.timestep
-        mc_steps = settings.protocol_settings.integrator_settings.n_steps.m
+        alchem_settings: AlchemicalSettings = prototol_settings.alchemical_settings
+        system_settings: SystemSettings = prototol_settings.system_settings
+        topology_settings: TopologySettings = prototol_settings.topology_settings
+        sampler_settings: SamplerSettings = prototol_settings.sampler_settings
+        sim_settings: SimulationSettings = prototol_settings.simulation_settings
+        timestep = prototol_settings.integrator_settings.timestep
+        mc_steps = prototol_settings.integrator_settings.n_steps.m
 
         equil_time = sim_settings.equilibration_length.to('femtosecond')
         equil_steps = round(equil_time / timestep)
@@ -820,7 +818,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             stateA_modeller.addSolvent(
                 omm_forcefield_stateA,
                 model=topology_settings.solvent_model,
-                padding=to_openmm(settings.protocol_settings.solvent_padding),
+                padding=to_openmm(prototol_settings.solvent_padding),
                 positiveIon=pos, negativeIon=neg,
                 ionicStrength=to_openmm(conc),
             )
@@ -863,7 +861,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         ## canonicalize positions (tuples to np.array)
         stateA_positions = omm_unit.Quantity(
             value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
-            unit = openmm.unit.nanometers
+            unit=openmm.unit.nanometers
         )
 
         # 6.  Create OpenMM system + topology + positions for "B" system
@@ -925,9 +923,9 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         if 'solvent' in stateA.components:
             hybrid_factory.hybrid_system.addForce(
                 openmm.MonteCarloBarostat(
-                    settings.thermo_settings.pressure.to(unit.bar).m,
-                    settings.thermo_settings.temperature.m,
-                    settings.protocol_settings.barostat_settings.frequency.m,
+                    prototol_settings.thermo_settings.pressure.to(unit.bar).m,
+                    prototol_settings.thermo_settings.temperature.m,
+                    prototol_settings.barostat_settings.frequency.m,
                 )
             )
 
@@ -963,7 +961,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         # 10. Get platform and context caches
         platform = _rbfe_utils.compute.get_openmm_platform(
-            settings.protocol_settings.engine_settings.compute_platform
+            prototol_settings.engine_settings.compute_platform
         )
 
         #  a. Create context caches (energy + sampler)
@@ -978,7 +976,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         # 11. Set the integrator
         #  a. get integrator settings
-        integrator_settings = settings.protocol_settings.integrator_settings
+        integrator_settings = prototol_settings.integrator_settings
 
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
@@ -1026,7 +1024,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             reporter=reporter,
             platform=platform,
             lambda_protocol=lambdas,
-            temperature=to_openmm(settings.thermo_settings.temperature),
+            temperature=to_openmm(prototol_settings.thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
         )
 
