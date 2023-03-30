@@ -12,7 +12,7 @@ def get_dir(user_input, context):
 OUTPUT_DIR = Option(
     "-o",
     "--output-dir",
-    help="output_dir",
+    help="Path to the output directory. ",
     getter=get_dir,
     type=click.Path(file_okay=False, resolve_path=True),
 )
