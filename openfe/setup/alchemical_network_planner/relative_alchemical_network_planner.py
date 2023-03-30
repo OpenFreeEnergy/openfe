@@ -39,11 +39,6 @@ PROTOCOL_GENERATOR = {
 }
 
 
-"""
-    easy relative campaigner
-"""
-
-
 class RelativeAlchemicalNetworkPlanner(
     AbstractAlchemicalNetworkPlanner, abc.ABC
 ):
@@ -65,7 +60,7 @@ class RelativeAlchemicalNetworkPlanner(
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
-            RelativeLigandProtocol._default_settings()
+            RelativeLigandProtocol.default_settings()
         ),
     ):
         """a simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
@@ -102,10 +97,6 @@ class RelativeAlchemicalNetworkPlanner(
     def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
         return self._build_alchemical_network(*args, **kwargs)
 
-    """
-        Properties:
-    """
-
     @property
     def mappers(self) -> Iterable[LigandAtomMapper]:
         return self._mappers
@@ -127,10 +118,6 @@ class RelativeAlchemicalNetworkPlanner(
         self,
     ) -> Type[AbstractChemicalSystemGenerator]:
         return self._chemical_system_generator_type
-
-    """
-        private funcs
-    """
 
     def _construct_ligand_network(
         self, ligands: Iterable[SmallMoleculeComponent]
