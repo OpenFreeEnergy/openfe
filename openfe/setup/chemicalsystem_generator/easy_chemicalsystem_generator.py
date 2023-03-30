@@ -22,7 +22,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         protein: ProteinComponent = None,
         do_vacuum: bool = False,
     ):
-        """this Class is a easy generator class, for generating chemical systems with a focus on a given smallMoleculeComponent.
+        """This class is a easy generator class, for generating chemical systems with a focus on a given SmallMoleculeComponent.
         depending on which parameters are given, the following systems will be generated in order:
             vacuum -> solvent -> protein
 
