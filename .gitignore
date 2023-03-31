@@ -160,4 +160,4 @@ cython_debug/
 *.swp
 
 # versioningit
-openfe/_version.py
+openfecli/_version.py

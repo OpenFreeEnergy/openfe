@@ -9,7 +9,6 @@ build-backend = "setuptools.build_meta"
 name = "openfe"
 description = ""
 readme = "README.md"
-long-description-type = "text/markdown"
 authors = [{name = "The OpenFE developers", email = "openfe@omsf.io"}]
 license = {text = "MIT"}
 classifiers = [
@@ -52,13 +51,6 @@ find = {namespaces = false}
 [tool.setuptools.package-data]
 openfe = ['"./openfe/tests/data/lomap_basic/toluene.mol2"']
 
-[tool.versioneer]
-vcs = "git"
-style = "pep440-post"
-versionfile_source = "openfecli/_version.py"
-versionfile_build = "openfecli/_version.py"
-tag_prefix = "''"
-
 [tool.mypy]
 files = ["openfe"]
 ignore_missing_imports = true
@@ -92,4 +84,4 @@ match = ["*"]
 default-tag = "0.0.0"
 
 [tool.versioningit.write]
-file = "openfe/_version.py"
+file = "openfecli/_version.py"
