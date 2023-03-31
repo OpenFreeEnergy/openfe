@@ -41,4 +41,4 @@ jobs:
           mamba list
 
       - name: "Lint with mypy"
-        run: mypy openfe
+        run: mypy 
