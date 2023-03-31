@@ -57,7 +57,7 @@ jobs:
           python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
 
       - name: "Install"
-        run: python setup.py develop --no-deps
+        run: python -m pip install --no-deps -e .
 
       - name: "Test imports"
         run: |
