@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+from openff.units import unit as offunit
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 
@@ -68,12 +69,21 @@ def test_create_default_settings():
     ['CutoffNonPeriodic', True],
     ['CutoffPeriodic', True],
 ])
-def test_settings_nonbonded(method, fail, default_settings):
+def test_systemsettings_nonbonded(method, fail, default_settings):
     if fail:
         with pytest.raises(ValueError, match="Only PME"):
             default_settings.system_settings.nonbonded_method = method
     else:
         default_settings.system_settings.nonbonded_method = method
+
+
+@pytest.mark.parametrize('val, match', [
+    [-1.0 * offunit.nanometer, 'must be a positive'],
+    [2.5 * offunit.picoseconds, 'distance units'],
+])
+def test_systemsettings_cutoff_errors(val, match, default_settings):
+    with pytest.raises(ValueError, match=match):
+        default_settings.system_settings.nonbonded_cutoff = val
 
 
 def test_create_default_protocol():

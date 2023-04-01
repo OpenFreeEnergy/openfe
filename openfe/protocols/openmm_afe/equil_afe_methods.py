@@ -195,7 +195,9 @@ class AbsoluteTransformProtocol(gufe.Protocol):
             state.
         """
         matched_components = {}
-        alchemical_components = {'stateA': [], 'stateB': []}
+        alchemical_components: Dict[str, List[Any]] = {
+            'stateA': [], 'stateB': []
+        }
 
         for keyA, valA in stateA.components.items():
             for keyB, valB in stateB.components.items():
