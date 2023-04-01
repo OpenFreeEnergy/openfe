@@ -176,7 +176,7 @@ class AbsoluteTransformProtocol(gufe.Protocol):
     @staticmethod
     def _get_alchemical_components(
             stateA: ChemicalSystem,
-            stateB: ChemicalSystem) -> Dict[str, List(Component)]:
+            stateB: ChemicalSystem) -> Dict[str, List[Component]]:
         """
         Checks equality of ChemicalSystem components across both states and
         identify which components do not match.
@@ -195,7 +195,7 @@ class AbsoluteTransformProtocol(gufe.Protocol):
             state.
         """
         matched_components = {}
-        alchemical_components = {'stateA': [], 'stateB': {}}
+        alchemical_components = {'stateA': [], 'stateB': []}
 
         for keyA, valA in stateA.components.items():
             for keyB, valB in stateB.components.items():
