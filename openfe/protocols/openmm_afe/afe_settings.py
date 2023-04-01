@@ -108,7 +108,7 @@ class AlchemicalSettings(settings.SettingsBaseModel):
 
     @validator('lambda_elec_windows', 'lambda_vdw_windows')
     def must_be_positive(cls, v):
-        if v < 0:
+        if v <= 0:
             errmsg = ("Number of lambda steps must be positive ")
             raise ValueError(errmsg)
         return v
@@ -163,7 +163,7 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     ``online_analysis_target_error``. If set, will write a yaml file with
     real time analysis data. Default `None`.
     """
-    online_analysis_target_error = 0.1 * unit.boltzmann_constant * unit.kelvin
+    online_analysis_target_error = 0.05 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
     is at or below this value, the simulation will be considered complete.
