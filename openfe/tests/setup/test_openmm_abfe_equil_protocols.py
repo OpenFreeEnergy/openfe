@@ -126,6 +126,79 @@ def test_incorrect_window_settings(val, default_settings):
         alchem_settings.lambda_vdw_windows = val['vdw']
 
 
+@pytest.mark.parametrize('val, fail', [
+    ['LOGZ-FLATNESS', False],
+    ['MiniMum-VisiTs', False],
+    ['histogram-flatness', False],
+    ['roundrobin', True],
+    ['parsnips', True]
+])
+def test_supported_flatness_settings(val, fail, default_settings):
+    if fail:
+        with pytest.raises(ValueError, match="following flatness"):
+            default_settings.alchemsampler_settings.flatness_criteria = val
+    else:
+        default_settings.alchemsampler_settings.flatness_criteria = val
+
+
+@pytest.mark.parametrize('var, val', [
+    ['online_analysis_target_error',
+     -0.05 * offunit.boltzmann_constant * offunit.kelvin],
+    ['n_repeats', -1],
+    ['n_repeats', 0],
+    ['online_analysis_minimum_iterations', -2],
+    ['gamma0', -2],
+    ['n_replicas', -2],
+    ['n_replicas', 0]
+])
+def test_nonnegative_alchem_settings(var, val, default_settings):
+    alchem_settings = default_settings.alchemsampler_settings
+    with pytest.raises(ValueError, match="positive values"):
+        setattr(alchem_settings, var, val)
+
+
+@pytest.mark.parametrize('val, fail', [
+    ['REPEX', False],
+    ['SaMs', False],
+    ['independent', False],
+    ['noneq', True],
+    ['AWH', True]
+])
+def test_supported_sampler(val, fail, default_settings):
+    if fail:
+        with pytest.raises(ValueError, match="sampler_method values"):
+            default_settings.alchemsampler_settings.sampler_method = val
+    else:
+        default_settings.alchemsampler_settings.sampler_method = val
+
+
+@pytest.mark.parametrize('var, val', [
+    ['collision_rate', -1 / offunit.picosecond],
+    ['n_restart_attempts', -2],
+    ['timestep', 0 * offunit.femtosecond],
+    ['timestep', -2 * offunit.femtosecond],
+    ['n_steps', 0 * offunit.timestep],
+    ['n_steps', -1 * offunit.timestep],
+    ['constraint_tolerance', -2e-06],
+    ['constraint_tolerance', 0]
+])
+def test_nonnegative_integrator_settings(var, val, default_settings):
+    int_settings = default_settings.integrator_settings
+    with pytest.raises(ValueError, match="positive values"):
+        setattr(int_settings, var, val)
+
+
+def test_timestep_is_not_time(default_settings):
+    with pytest.raises(ValueError, match="time units"):
+        default_settings.integrator_settings.timestep = 1 * offunit.nanometer
+
+
+def test_collision_is_not_inverse_time(default_settings):
+    with pytest.raises(ValueError, match="inverse time"):
+        int_settings = default_settings.integrator_settings
+        int_settings.collision_rate = 1 * offunit.picosecond
+
+
 def test_create_default_protocol():
     # this is roughly how it should be created
     protocol = openmm_afe.AbsoluteTransformProtocol(

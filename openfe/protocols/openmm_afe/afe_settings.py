@@ -168,7 +168,7 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     Target error for the online analysis measured in kT. Once the free energy
     is at or below this value, the simulation will be considered complete.
     """
-    online_analysis_minimum_iterations = 50
+    online_analysis_minimum_iterations = 100
     """
     Number of iterations which must pass before online analysis is
     carried out. Default 50.
@@ -211,12 +211,19 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
+    @validator('n_repeats', 'n_replicas')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = "n_repeats and n_replicas must be positive values"
+            raise ValueError(errmsg)
+        return v
+
     @validator('online_analysis_target_error', 'n_repeats',
                'online_analysis_minimum_iterations', 'gamma0', 'n_replicas')
-    def must_be_positive(cls, v):
+    def must_be_zero_or_positive(cls, v):
         if v < 0:
             errmsg = ("Online analysis target error, minimum iteration "
-                      "and SAMS gamm0 must be 0 or positive values")
+                      "and SAMS gamm0 must be 0 or positive values.")
             raise ValueError(errmsg)
         return v
 
@@ -259,13 +266,19 @@ class IntegratorSettings(settings.SettingsBaseModel):
     Default 25 * unit.timestep.
     """
 
-    @validator('timestep', 'collision_rate', 'n_steps',
-               'n_restart_attempts', 'constraint_tolerance')
+    @validator('collision_rate', 'n_restart_attempts')
+    def must_be_positive_or_zero(cls, v):
+        if v < 0:
+            errmsg = ("collision_rate, and n_restart_attempts must be "
+                      "zero or positive values")
+            raise ValueError(errmsg)
+        return v
+
+    @validator('timestep', 'n_steps', 'constraint_tolerance')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("timestep, temperature, collision_rate, n_steps, "
-                      "n_restart_atttempts, constraint_tolerance must be "
-                      "positive")
+            errmsg = ("timestep, n_steps, constraint_tolerance "
+                      "must be positive values")
             raise ValueError(errmsg)
         return v
 
