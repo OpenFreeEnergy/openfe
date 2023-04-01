@@ -51,9 +51,29 @@ def benzene_complex_system(benzene_modifications, T4_protein_component):
     )
 
 
+@pytest.fixture()
+def default_settings():
+    return openmm_afe.AbsoluteTransformProtocol.default_settings()
+
+
 def test_create_default_settings():
     settings = openmm_afe.AbsoluteTransformProtocol.default_settings()
     assert settings
+
+
+@pytest.mark.parametrize('method, fail', [
+    ['Pme', False],
+    ['noCutoff', False],
+    ['Ewald', True],
+    ['CutoffNonPeriodic', True],
+    ['CutoffPeriodic', True],
+])
+def test_settings_nonbonded(method, fail, default_settings):
+    if fail:
+        with pytest.raises(ValueError, match="Only PME"):
+            default_settings.system_settings.nonbonded_method = method
+    else:
+        default_settings.system_settings.nonbonded_method = method
 
 
 def test_create_default_protocol():
