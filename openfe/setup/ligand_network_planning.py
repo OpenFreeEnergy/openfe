@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable, Callable
+from typing import Iterable, Callable, List, Optional
 import itertools
 
 import networkx as nx
@@ -16,7 +16,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
                             mappers: Iterable[LigandAtomMapper], scorer=None):
     """Generate a radial network with all ligands connected to a central node
 
-    Also known as hub and spoke or star-map, this plans a Network where
+    Also known as hub and spoke or star-map, this plans a LigandNetwork where
     all ligands are connected via a central ligand.
 
     Parameters
@@ -75,15 +75,27 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
     return LigandNetwork(edges)
 
 
-def generate_minimal_spanning_network(ligands: Iterable[SmallMoleculeComponent],
-                                      mappers: Iterable[LigandAtomMapper],
-                                      scorer: Callable[[LigandAtomMapping], float]):
-    """Plan a Network which connects all ligands with minimal total score
+def generate_maximal_network(
+    ligands: Iterable[SmallMoleculeComponent],
+    mappers: Iterable[LigandAtomMapper],
+    scorer: Optional[Callable[[LigandAtomMapper], float]] = None,
+    # allow_disconnected=True
+):
+    """Create a network with all possible proposed mappings.
+
+    This will attempt to create (and optionally score) all possible mappings
+    (up to $N(N-1)/2$ for each mapper given). There may be fewer actual
+    mappings that this because, when a mapper cannot return a mapping for a
+    given pair, there is simply no suggested mapping for that pair.
+    This network is typically used as the starting point for other network
+    generators (which then optimize based on the scores) or to debug atom
+    mappers (to see which mappings the mapper fails to generate).
+
 
     Parameters
     ----------
     ligands : Iterable[SmallMoleculeComponent]
-      the ligands to include in the Network
+      the ligands to include in the LigandNetwork
     mappers : Iterable[LigandAtomMapper]
       the AtomMappers to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the
@@ -93,15 +105,41 @@ def generate_minimal_spanning_network(ligands: Iterable[SmallMoleculeComponent],
     """
     nodes = list(ligands)
 
-    # First create a network with all the proposed mappings (scored)
     mapping_generator = itertools.chain.from_iterable(
         mapper.suggest_mappings(molA, molB)
         for molA, molB in itertools.combinations(nodes, 2)
         for mapper in mappers
     )
-    mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                for mapping in mapping_generator]
+    if scorer:
+        mappings = [mapping.with_annotations({'score': scorer(mapping)})
+                    for mapping in mapping_generator]
+    else:
+        mappings = list(mapping_generator)
+
     network = LigandNetwork(mappings, nodes=nodes)
+    return network
+
+
+def generate_minimal_spanning_network(
+    ligands: Iterable[SmallMoleculeComponent],
+    mappers: Iterable[LigandAtomMapper],
+    scorer: Callable[[LigandAtomMapping], float]
+):
+    """Plan a LigandNetwork which connects all ligands with minimal cost
+
+    Parameters
+    ----------
+    ligands : Iterable[SmallMoleculeComponent]
+      the ligands to include in the LigandNetwork
+    mappers : Iterable[LigandAtomMapper]
+      the AtomMappers to use to propose mappings.  At least 1 required,
+      but many can be given, in which case all will be tried to find the
+      lowest score edges
+    scorer : Scoring function
+      any callable which takes a LigandAtomMapping and returns a float
+    """
+    # First create a network with all the proposed mappings (scored)
+    network = generate_maximal_network(ligands, mappers, scorer)
 
     # Next analyze that network to create minimal spanning network. Because
     # we carry the original (directed) LigandAtomMapping, we don't lose
@@ -110,7 +148,7 @@ def generate_minimal_spanning_network(ligands: Iterable[SmallMoleculeComponent],
                                           weight='score')
     min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
     min_network = LigandNetwork(min_mappings)
-    missing_nodes = set(nodes) - set(min_network.nodes)
+    missing_nodes = set(network.nodes) - set(min_network.nodes)
     if missing_nodes:
         raise RuntimeError("Unable to create edges to some nodes: "
                            + str(list(missing_nodes)))
