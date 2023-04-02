@@ -1,7 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+from unittest import mock
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+import gufe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 
@@ -49,6 +51,14 @@ def benzene_complex_system(benzene_modifications, T4_protein_component):
          'solvent': SolventComponent(),
          'protein': T4_protein_component, }
     )
+
+
+@pytest.fixture
+def vacuum_protocol_dag(benzene_vacuum_system, vacuum_system):
+    settings = openmm_afe.AbsoluteTransformProtocol.default_settings()
+    protocol = openmm_afe.AbsoluteTransformProtocol(settings=settings)
+    return protocol.create(stateA=benzene_vacuum_system, stateB=vacuum_system,
+                           mapping=None)
 
 
 def test_create_default_protocol():
@@ -143,6 +153,50 @@ def test_dry_run_complex(benzene_complex_system, protein_system,
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
 
+
+def test_unit_tagging(vacuum_protocol_dag, tmpdir):
+    units = vacuum_protocol_dag.protocol_units
+    with mock.patch('openfe.protocols.openmm_afe.equil_afe_methods.AbsoluteTransformUnit.run',
+                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}):
+        results = []
+        for u in units:
+            ret = u.execute(shared=tmpdir)
+            results.append(ret)
+
+    repeats = set()
+    for ret in results:
+        assert isinstance(ret, gufe.ProtocolUnitResult)
+        assert ret.outputs['generation'] == 0
+        repeats.add(ret.outputs['repeat_id'])
+    assert repeats == {0, 1, 2}
+
+
+def test_gather(vacuum_protocol_dag, tmpdir):
+    base_import = 'openfe.protocols.openmm_afe.equil_afe_methods.'
+    with mock.patch(f"{base_import}AbsoluteTransformUnit.run",
+                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}):
+        dagres = gufe.protocols.execute_DAG(vacuum_protocol_dag, shared=tmpdir)
+
+    prot = openmm_afe.AbsoluteTransformProtocol(
+            settings=openmm_afe.AbsoluteTransformProtocol.default_settings(),
+    )
+
+    with mock.patch(f"{base_import}multistate") as m:
+        res = prot.gather([dagres])
+
+        # check we created the expected number of Reporters and Analyzers
+        assert m.MultiStateReporter.call_count == 3
+        m.MultiStateReporter.assert_called_with(
+                storage='file.nc', checkpoint_storage='chck.nc',
+        )
+        assert m.MultiStateSamplerAnalyzer.call_count == 3
+
+    assert isinstance(res, openmm_afe.AbsoluteTransformProtocolResult)
+
+
+# TODO:
+# - test lambdas
+# - 
 
 #def test_n_replicas_not_n_windows(benzene_vacuum_system, tmpdir):
 #    # For PR #125 we pin such that the number of lambda windows

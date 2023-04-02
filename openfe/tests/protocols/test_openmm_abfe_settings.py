@@ -1,3 +1,5 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 from openff.units import unit as offunit
 from openfe.protocols import openmm_afe
