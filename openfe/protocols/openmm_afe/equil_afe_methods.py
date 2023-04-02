@@ -299,7 +299,7 @@ class AbsoluteTransformProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: extensions
-        if extends:
+        if extends:  # pragma: no-cover
             raise NotImplementedError("Can't extend simulations yet")
 
         # Checks on the inputs!
