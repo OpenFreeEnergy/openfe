@@ -944,6 +944,8 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         # 9. Create sampler
         sampler_settings = settings.alchemsampler_settings
 
+        # Select the right sampler
+        # Note: doesn't need else, settings already validates choices
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = multistate.ReplicaExchangeSampler(
                 mcmc_moves=integrator,
@@ -966,8 +968,6 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
                 online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
                 online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
             )
-        else:
-            raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
 
         sampler.create(
                 thermodynamic_states=cmp_states,
@@ -1031,7 +1031,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         outputs = self.run(basepath=mypath)
 
         return {
-            'repeat_id': self.repeat_id,
-            'generation': self.generation,
+            'repeat_id': self._inputs['repeat_id'],
+            'generation': self._inputs['generation'],
             **outputs
         }

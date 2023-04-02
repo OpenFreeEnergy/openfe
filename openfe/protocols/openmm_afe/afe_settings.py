@@ -163,12 +163,12 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     ``online_analysis_target_error``. If set, will write a yaml file with
     real time analysis data. Default `None`.
     """
-    online_analysis_target_error = 0.05 * unit.boltzmann_constant * unit.kelvin
+    online_analysis_target_error = 0.005 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
     is at or below this value, the simulation will be considered complete.
     """
-    online_analysis_minimum_iterations = 100
+    online_analysis_minimum_iterations = 1000
     """
     Number of iterations which must pass before online analysis is
     carried out. Default 50.
