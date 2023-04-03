@@ -42,16 +42,7 @@ PROTOCOL_GENERATOR = {
 class RelativeAlchemicalNetworkPlanner(
     AbstractAlchemicalNetworkPlanner, abc.ABC
 ):
-
-    """
-    magics
-    """
-
     _chemical_system_generator: AbstractChemicalSystemGenerator
-
-    """
-        public funcs
-    """
 
     def __init__(
         self,
