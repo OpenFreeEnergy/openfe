@@ -54,7 +54,7 @@ class RelativeAlchemicalNetworkPlanner(
             RelativeLigandProtocol.default_settings()
         ),
     ):
-        """a simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
+        """A simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
 
         Parameters
         ----------
@@ -125,14 +125,14 @@ class RelativeAlchemicalNetworkPlanner(
         protocol: Protocol,
         chemical_system_generator: AbstractChemicalSystemGenerator,
     ) -> AlchemicalNetwork:
-        """construct alchemical network by building transformations from ligand network and adding the given protocol to each transformation.
+        """Construct alchemical network by building transformations from ligand network and adding the given protocol to each transformation.
 
         Parameters
         ----------
         ligand_network_edges : Iterable[LigandAtomMapping]
             result from the ligand network planner connecting all Ligands, planning the transformations.
         protocol : Protocol
-            fe simulation protocol for each transformation.
+            simulation protocol for each transformation.
         chemical_system_generator : AbstractChemicalSystemGenerator
             generator, constructing all required chemical systems for each transformation.
 
