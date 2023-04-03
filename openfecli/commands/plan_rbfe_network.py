@@ -63,7 +63,7 @@ def plan_rbfe_network_main(
 
 @click.command(
     "plan-rbfe-network",
-    short_help="Run a planning session for relative binding free energies, saved in a dir with multiple JSON files (future: will be one JSON file)",
+    short_help="Run a planning session for relative binding free energies, saved in a dir with multiple JSON files",
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
