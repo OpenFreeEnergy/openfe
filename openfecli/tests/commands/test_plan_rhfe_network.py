@@ -74,8 +74,8 @@ def test_plan_rhfe_network(mol_dir_args, mapper_args):
         "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
-        "- tmp_network_easy_rhfe_ligand_23_solvent_ligand_55_solvent.json",
-        "- tmp_network_easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json",
+        "- vacuum/tmp_network_easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json",
+        "- solvent/tmp_network_easy_rhfe_ligand_23_solvent_ligand_55_solvent.json",
     ]
 
     patch_base = (
