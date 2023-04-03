@@ -3,6 +3,7 @@
 import pytest
 from unittest import mock
 from openmmtools.multistate.multistatesampler import MultiStateSampler
+from openff.units import unit as offunit
 import gufe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
@@ -79,6 +80,141 @@ def test_serialize_protocol():
     assert protocol == ret
 
 
+def test_get_alchemical_components(benzene_modifications,
+                                   T4_protein_component):
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'toluene': benzene_modifications['toluene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(neutralize=False)
+    })
+
+    stateB = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'phenol': benzene_modifications['phenol'],
+        'solvent': SolventComponent(),
+    })
+
+    func = openmm_afe.AbsoluteTransformProtocol._get_alchemical_components
+
+    comps = func(stateA, stateB)
+
+    assert len(comps['stateA']) == 3
+    assert len(comps['stateB']) == 2
+    
+    for i in ['toluene', 'protein', 'solvent']:
+        assert i in comps['stateA']
+
+    for i in ['phenol', 'solvent']:
+        assert i in comps['stateB']
+
+
+def test_validate_alchem_comps_stateB():
+
+    func = openmm_afe.AbsoluteTransformProtocol._validate_alchemical_components
+
+    stateA = ChemicalSystem({})
+    alchem_comps = {'stateA': [], 'stateB': ['foo', 'bar']}
+    with pytest.raises(ValueError, match="Components appearing in state B"):
+        func(stateA, alchem_comps)
+
+
+@pytest.mark.parametrize('key', ['protein', 'solvent'])
+def test_validate_alchem_comps_non_small(key, T4_protein_component):
+
+    func = openmm_afe.AbsoluteTransformProtocol._validate_alchemical_components
+
+    stateA = ChemicalSystem({
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    alchem_comps = {'stateA': [key,], 'stateB': []}
+    with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
+        func(stateA, alchem_comps)
+
+
+def test_validate_solvent_vacuum():
+
+    state = ChemicalSystem({'solvent': SolventComponent()})
+
+    func = openmm_afe.AbsoluteTransformProtocol._validate_solvent
+
+    with pytest.raises(ValueError, match="cannot be used for solvent"):
+        func(state, 'NoCutoff')
+
+
+def test_validate_solvent_double_solvent():
+
+    state = ChemicalSystem({
+        'solvent': SolventComponent(),
+        'solvent-two': SolventComponent(neutralize=False)
+    })
+
+    func = openmm_afe.AbsoluteTransformProtocol._validate_solvent
+
+    with pytest.raises(ValueError, match="only one is supported"):
+        func(state, 'pme')
+
+
+def test_parse_components_expected(T4_protein_component,
+                                   benzene_modifications):
+
+    func = openmm_afe.AbsoluteTransformUnit._parse_components
+
+    chem = ChemicalSystem({
+        'protein': T4_protein_component,
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent(),
+        'toluene': benzene_modifications['toluene'],
+        'phenol': benzene_modifications['phenol'],
+    })
+
+    solvent_comp, protein_comp, off_small_mols = func(chem)
+
+    assert len(off_small_mols.keys()) == 3
+    assert protein_comp == T4_protein_component
+    assert solvent_comp == SolventComponent()
+
+    for i in ['benzene', 'toluene', 'phenol']:
+        off_small_mols[i] == benzene_modifications[i].to_openff()
+
+
+def test_parse_components_multi_protein(T4_protein_component):
+
+    func = openmm_afe.AbsoluteTransformUnit._parse_components
+
+    chem = ChemicalSystem({
+        'protein': T4_protein_component,
+        'protien2': T4_protein_component,  # should this even be allowed?
+    })
+
+    with pytest.raises(ValueError, match="Multiple proteins"):
+        func(chem)
+
+
+def test_simstep_return():
+
+    func = openmm_afe.AbsoluteTransformUnit._get_sim_steps
+
+    steps = func(time=250000 * offunit.femtoseconds,
+                 timestep=4 * offunit.femtoseconds,
+                 mc_steps=250)
+
+    # check the number of steps for a 250 ps simulations
+    assert steps == 62500
+
+
+def test_simstep_undivisible_mcsteps():
+
+    func = openmm_afe.AbsoluteTransformProtocol._get_sim_steps
+
+    with pytest.raises(ValueError, match="divisible by the number"):
+        func(time=780 * offunit.femtoseconds,
+             timestep=4 * offunit.femtoseconds,
+             mc_steps=100)
+
+
 @pytest.mark.parametrize('method', [
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
@@ -152,6 +288,35 @@ def test_dry_run_complex(benzene_complex_system, protein_system,
         sampler = unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
+
+
+def test_nreplicas_lambda_mismatch(benzene_vacuum_system,
+                                   vacuum_system, tmpdir):
+    """
+    For now, should trigger failure if there are not as many replicas
+    as there are summed lambda windows.
+    """
+    settings = openmm_afe.AbsoluteTransformProtocol.default_settings()
+    settings.alchemsampler_settings.n_replicas = 12
+    settings.alchemical_settings.lambda_elec_windows = 12
+    settings.alchemical_settings.lambda_vdw_windows = 12
+
+    protocol = openmm_afe.AbsoluteTransformProtocol(
+            settings=settings,
+    )
+
+    dag = protocol.create(
+            stateA=benzene_vacuum_system,
+            stateB=vacuum_system,
+            mapping=None,
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        errmsg = ("Number of replicas 12 does not equal the "
+                  "number of lambda windows")
+        with pytest.raises(ValueError, match=errmsg):
+            unit.run(dry=True)
 
 
 def test_unit_tagging(vacuum_protocol_dag, tmpdir):

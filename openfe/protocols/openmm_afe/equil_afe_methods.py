@@ -4,10 +4,27 @@
 
 This module implements the necessary methodology toolking to run calculate an
 absolute free energy transformation using OpenMM tools and one of the
-following methods:
-    - Hamiltonian Replica Exchange
-    - Self-adjusted mixture sampling
-    - Independent window sampling
+following alchemical sampling methods:
+    * Hamiltonian Replica Exchange
+    * Self-adjusted mixture sampling
+    * Independent window sampling
+
+
+
+
+    
+Current limitations
+-------------------
+* Disapearing molecules are only allowed in state A. Support for
+  appearing molecules will be added in due course.
+* Only one protein component is allowed per state. We ask that,
+  users input all molecules intended to use an additive force field
+  in the one ProteinComponent. This will likely change once OpenFF
+  rosemary is released.
+* Only small molecules are allowed to act as alchemical molecules.
+  Alchemically changing protein or solvent components would induce
+  perturbations which are too large to be handled by this Protocol.
+
 
 Acknowledgements
 ----------------
@@ -16,7 +33,10 @@ Acknowledgements
 
 TODO
 ----
-* Add support for restraints
+* Add in all the AlchemicalFactory and AlchemicalRegion kwargs
+  as settings.
+* Allow for a more flexible setting of Lambda regions.
+* Add support for restraints.
 * Improve this docstring by adding an example use case.
 
 """
@@ -131,7 +151,7 @@ class AbsoluteTransformProtocolResult(gufe.ProtocolResult):
 
         return std_val * dGs[0].unit
 
-    def get_rate_of_convergence(self):
+    def get_rate_of_convergence(self):  # pragma: no-cover
         raise NotImplementedError
 
 
@@ -282,7 +302,7 @@ class AbsoluteTransformProtocol(gufe.Protocol):
         for component in state.components.values():
             if isinstance(component, SolventComponent):
                 if nonbonded_method.lower() == "nocutoff":
-                    errmsg = (f"{nonbonded_method} cannot be used for vacuum "
+                    errmsg = (f"{nonbonded_method} cannot be used for solvent "
                               "transformation")
                     raise ValueError(errmsg)
                 solvents += 1
@@ -502,7 +522,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
                       f"timesteps between MC moves {mc_steps}")
             ValueError(errmsg)
 
-        return steps
+        return steps.m
 
     ModellerReturn = Tuple[app.Modeller, Dict[str, npt.NDArray]]
 
@@ -778,11 +798,13 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
             'nonbondedCutoff': nonbonded_cutoff,
         }
 
+        # Currently the else is a dead branch, we will want to investigate the
+        # possibility of using CutoffNonPeriodic at some point though (for RF)
         if nonbonded_method is not app.CutoffNonPeriodic:
             nonperiodic_kwargs = {
                 'nonbondedMethod': app.NoCutoff,
             }
-        else:
+        else:  # pragma: no-cover
             nonperiodic_kwargs = periodic_kwargs
 
         system_generator = SystemGenerator(
@@ -991,13 +1013,13 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
             if verbose:
                 logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
+            sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
             # production
             if verbose:
                 logger.info("running production phase")
 
-            sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+            sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
             # close reporter when you're done
             reporter.close()
