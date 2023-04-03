@@ -5,6 +5,6 @@ API docs
 
 .. autoclass:: openfe.LigandAtomMapping
 
-.. autoclass:: openfe.Network
+.. autoclass:: openfe.LigandNetwork
 
-.. autoclass:: openfe.LigandAtomMapper
+.. autoclass:: openfe.setup.atom_mapping.LigandAtomMapper
