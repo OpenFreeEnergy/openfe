@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Equilibrium AFE Protocol using OpenMM + OpenMMTools
+r"""OpenMM Equilibrium AFE Protocol
+===================================
 
 This module implements the necessary methodology toolking to run calculate an
 absolute free energy transformation using OpenMM tools and one of the
@@ -10,7 +11,7 @@ following alchemical sampling methods:
     * Independent window sampling
 
 
-
+.. versionadded:: 0.7.0
 
 
 Current limitations
