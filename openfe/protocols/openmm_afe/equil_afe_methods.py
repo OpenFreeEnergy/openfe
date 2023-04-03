@@ -14,6 +14,120 @@ following alchemical sampling methods:
 .. versionadded:: 0.7.0
 
 
+Running a Solvation Free Energy Calculation
+-------------------------------------------
+
+One use case of this Protocol is to carry out absolute solvation free energy
+calculations. This involves capturing the free energy cost associated with
+taking a small molecule from a solvent environment to gas phase.
+
+In practice, because OpenMM currently only allows for charge annhilation when
+using an exact treatment of charges using PME, this ends up requiring two
+transformations. The first is carried out in solvent, where we annhilate the
+charges of the ligand, and then decouple the LJ interactions. The second is
+done in gas phase and involves recharging the ligand.
+
+Here we provide a short overview on how such a thermodynamic cycle would be
+achieved using this protocol.
+
+Assuming we have a ligand of interest contained within an SDF file named
+`ligands.sdf`, we can start by loading it into a SmallMoleculeComponent.
+
+
+.. code-block::
+
+    from gufe import SmallMoleculeComponent
+
+    mol = SmallMoleculeComponent.from_sdf_file('ligand.sdf')
+
+
+With this, we can next create ChemicalSystem objects for the four
+different end states of our thermodynamic cycle.
+
+
+.. code-block::
+
+    from gufe import ChemicalSystem
+
+    # State with a ligand in solvent
+    ligand_solvent = ChemicalSystem({
+        'ligand': mol, 'solvent': SolventComponent()
+    })
+
+    # State with only solvent
+    solvent = ChemicalSystem({'solvent': SolventComponent()})
+
+    # State with only the ligand in gas phase
+    ligand_gas = ChemicalSystem({'ligand': mol})
+
+    # State that is purely gas phase
+    gas = ChemicalSystem({'ligand': mol})
+
+
+Next we generate settings to run both solvent and gas phase transformations.
+Aside form unique file names for the trajectory & checkpoint files, the main
+difference in the settings is that we have to set the nonbonded method to be
+`nocutoff` for gas phase and `pme` (the default) for periodic solvated systems.
+Note: for everything else we use the default settings, howeve rin practice you
+may find that much shorter simulation times may be adequate for gas phase
+simulations.
+
+
+.. code-block::
+
+    solvent_settings = AbsoluteTransformProtocol._default_settings()
+    solvent_settings.simulation_settings.output_filename = "ligand_solvent.nc"
+    solvent_settings.simulation_settings.checkpoint_storage = "ligand_solvent_checkpoint.nc"
+
+    gas_setttings = AbsoluteTransformProtocol._default_settings()
+    gas_settings.simulation_settings.output_filename = "ligand_gas.nc"
+    gas_settings.simulation_settings.checkpoint_storage = "ligand_gas_checkpoint.nc"
+
+    # By default the nonbonded method is PME, this needs to be nocutoff for gas phase
+    gas_settings.system_settings.nonbonded_method = 'nocutoff'
+
+
+With this, we can create protocols and simulation DAGs for each leg of the
+cycle. We pass to create the corresponding chemical end states of each leg
+(e.g. ligand in solvent and pure solvent for the solvent transformation leg)
+We note that no mapping is passed through to the Protocol. The Protocol
+automatically compares the components present in the ChemicalSystems passed to
+stateA and stateB and identifies any components missing either either of the
+end states as undergoing an alchemical transformation.
+
+
+.. code-block::
+
+    solvent_transform = AbsoluteTransformProtocol(settings=solvent_settings)
+    solvent_dag = solvent_transform.create(stateA=ligand_solvent, stateB=solvent, mapping=None)
+    gas_transform = AbsoluteTransformProtocol(settings=gas_settings)
+    gas_dag = solvent_transform.create(stateA=ligand_gas, stateB=gas, mapping=None)
+
+
+Next we execute the transformations. By default, this will simulate 3 repeats
+of both the ligand in solvent and ligand in gas transformations. Note: this
+will take a while to run.
+
+
+.. code-block::
+
+    from gufe.protocols import execute_DAG
+    solvent_data = execute_DAG(solvent_dag, shared='./solvent')
+    gas_data = execute_DAG(gas_dag, shared='./gas')
+
+
+Once completed, we gather the results and then get our estimate as the
+difference between the gas and solvent transformations.
+
+
+.. code-block::
+
+    solvent_results = solvent_transform.gather([solvent_data,])
+    gas_results = gas_transform.gather([gas_data,])
+    dG = gas_results.get_estimate() - solvent_results.get_estimate()
+    print(dG)
+
+
 Current limitations
 -------------------
 * Disapearing molecules are only allowed in state A. Support for
