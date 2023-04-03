@@ -49,7 +49,7 @@ get_molecules = MultiStrategyGetter(
 )
 
 MOL_DIR = Option(
-    "-m",
+    "-M",
     "--mol-dir",
     help=(
         "SmallMoleculeComponents from a folder. Folder needs to contain SDF/MOL2 files"
