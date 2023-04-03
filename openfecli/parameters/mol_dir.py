@@ -15,12 +15,13 @@ def _load_molecules_from_sdf(user_input, context):
 
     from openfe import SmallMoleculeComponent
 
-    mols = []
-    for sdf in sdfs:
-        try:
-            mols.append(SmallMoleculeComponent.from_sdf_file(sdf))
-        except ValueError:  # any exception should try other strategies
-            return NOT_PARSED
+    # each sdf might be multiple molecules, so form generator of rdkit molecules
+    rdkit_mols = itertools.chain.from_iterable(Chem.SDMolSupplier(f) for f in sdfs)
+    try:
+        mols = [SmallMoleculeComponent(r) for r in rdkit_mols]
+    except ValueError:
+        return NOT_PARSED
+
     return mols
 
 
