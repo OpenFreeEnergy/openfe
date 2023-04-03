@@ -244,7 +244,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Protocol = RelativeLigandProtocol(
-            RelativeLigandProtocol._default_settings()
+            RelativeLigandProtocol.default_settings()
         ),
     ):
         super().__init__(
