@@ -27,7 +27,6 @@ dependencies:
   # docs
   - myst-parser
   - sphinx-click
-  # - gufe==0.5
   - pip:
     - autodoc_pydantic
     - git+https://github.com/OpenFreeEnergy/gufe@main
