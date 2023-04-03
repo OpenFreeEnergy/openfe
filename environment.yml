@@ -14,7 +14,7 @@ dependencies:
   - coverage
   - openff-toolkit>=0.12.0
   - openff-units>=0.2.0
-  - openff-modules>=0.4.0
+  - openff-models>=0.4.0
   - click
   - typing-extensions
   - lomap2>=2.1.0
