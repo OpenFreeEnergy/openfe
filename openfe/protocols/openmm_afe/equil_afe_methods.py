@@ -6,9 +6,10 @@
 This module implements the necessary methodology toolking to run calculate an
 absolute free energy transformation using OpenMM tools and one of the
 following alchemical sampling methods:
-    * Hamiltonian Replica Exchange
-    * Self-adjusted mixture sampling
-    * Independent window sampling
+
+* Hamiltonian Replica Exchange
+* Self-adjusted mixture sampling
+* Independent window sampling
 
 
 .. versionadded:: 0.7.0
@@ -143,8 +144,9 @@ Current limitations
 
 Acknowledgements
 ----------------
-* Originally based on a script from hydration.py in
+* Originally based on the hydration.py in
   `espaloma <https://github.com/choderalab/espaloma_charge>`_
+
 
 TODO
 ----
