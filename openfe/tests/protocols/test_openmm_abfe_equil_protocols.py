@@ -207,7 +207,7 @@ def test_simstep_return():
 
 def test_simstep_undivisible_mcsteps():
 
-    func = openmm_afe.AbsoluteTransformProtocol._get_sim_steps
+    func = openmm_afe.AbsoluteTransformUnit._get_sim_steps
 
     with pytest.raises(ValueError, match="divisible by the number"):
         func(time=780 * offunit.femtoseconds,

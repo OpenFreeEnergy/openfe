@@ -12,7 +12,7 @@ following alchemical sampling methods:
 
 
 
-    
+
 Current limitations
 -------------------
 * Disapearing molecules are only allowed in state A. Support for
@@ -514,15 +514,15 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         ValueError
           If the number of steps is not divisible by the number of mc_steps.
         """
-        steps = round(time / timestep)
+        steps = round(time / timestep).m
 
-        if (steps.m % mc_steps) != 0:  # type: ignore
+        if (steps % mc_steps) != 0:  # type: ignore
             errmsg = (f"Simulation time {time} should contain a number of "
                       "steps divisible by the number of integrator "
                       f"timesteps between MC moves {mc_steps}")
-            ValueError(errmsg)
+            raise ValueError(errmsg)
 
-        return steps.m
+        return steps
 
     ModellerReturn = Tuple[app.Modeller, Dict[str, npt.NDArray]]
 
@@ -813,7 +813,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
             forcefield_kwargs=forcefield_kwargs,
             nonperiodic_forcefield_kwargs=nonperiodic_kwargs,
             periodic_forcefield_kwargs=periodic_kwargs,
-            cache=settings.simulation_settings.forcefield_cache,
+            cache=sim_settings.forcefield_cache,
         )
 
         # Add a barostat if necessary note, was broken pre 0.11.2 of openmmff
@@ -922,15 +922,15 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         # a. Get the sub selection of the system to print coords for
         mdt_top = mdt.Topology.from_openmm(system_topology)
         selection_indices = mdt_top.select(
-                settings.simulation_settings.output_indices
+                sim_settings.output_indices
         )
 
         # b. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            storage=basepath / settings.simulation_settings.output_filename,
+            storage=basepath / sim_settings.output_filename,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=settings.simulation_settings.checkpoint_interval.m,
-            checkpoint_storage=basepath / settings.simulation_settings.checkpoint_storage,
+            checkpoint_interval=sim_settings.checkpoint_interval.m,
+            checkpoint_storage=basepath / sim_settings.checkpoint_storage,
         )
 
         # 7. Get platform and context caches
@@ -1006,7 +1006,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
                 logger.info("minimizing systems")
 
             sampler.minimize(
-                max_iterations=settings.simulation_settings.minimization_steps
+                max_iterations=sim_settings.minimization_steps
             )
 
             # equilibrate
@@ -1024,8 +1024,8 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
             # close reporter when you're done
             reporter.close()
 
-            nc = basepath / settings.simulation_settings.output_filename
-            chk = basepath / settings.simulation_settings.checkpoint_storage
+            nc = basepath / sim_settings.output_filename
+            chk = basepath / sim_settings.checkpoint_storage
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
@@ -1035,8 +1035,8 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clean up the reporter file
-            fns = [basepath / settings.simulation_settings.output_filename,
-                   basepath / settings.simulation_settings.checkpoint_storage]
+            fns = [basepath / sim_settings.output_filename,
+                   basepath / sim_settings.checkpoint_storage]
             for fn in fns:
                 os.remove(fn)
             return {'debug': {'sampler': sampler}}
