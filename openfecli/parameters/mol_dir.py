@@ -1,11 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import glob
-from rdkit import Chem
+import itertools
+
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
 
 def _load_molecules_from_sdf(user_input, context):
+    from rdkit import Chem
+
     sdfs = list(sorted(glob.glob(user_input + "/*.sdf")))
     if len(sdfs) == 0:  # this silences some stderr spam
         return NOT_PARSED
@@ -22,6 +25,8 @@ def _load_molecules_from_sdf(user_input, context):
 
 
 def _load_molecules_from_mol2(user_input, context):
+    from rdkit import Chem
+
     mol2s = list(sorted(glob.glob(user_input + "/*.mol2")))
     if len(mol2s) == 0:  # this silences some stderr spam
         return NOT_PARSED
