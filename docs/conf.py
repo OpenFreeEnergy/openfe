@@ -45,7 +45,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 autodoc_mock_imports = ['lomap', 'networkx', 'openeye', 'rdkit', 'pytest',
                         'typing_extensions',
-                        'click', 'plugcli']
+                        'click', 'plugcli', 'numba']
 
 
 # -- Options for HTML output -------------------------------------------------
