@@ -158,6 +158,3 @@ cython_debug/
 
 # vim
 *.swp
-
-# versioningit
-openfecli/_version.py

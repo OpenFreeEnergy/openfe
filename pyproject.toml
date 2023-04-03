@@ -57,7 +57,6 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 omit = [
-    "*/_version.py",
     "*/tests/dev/*py",
 ]
 
@@ -82,6 +81,3 @@ distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 method = "git" 
 match = ["*"]
 default-tag = "0.0.0"
-
-[tool.versioningit.write]
-file = "openfecli/_version.py"
