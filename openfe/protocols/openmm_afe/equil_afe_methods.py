@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-r"""OpenMM Equilibrium AFE Protocol
-===================================
+"""OpenMM Equilibrium AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_afe_methods`
+===========================================================================================
 
 This module implements the necessary methodology toolking to run calculate an
 absolute free energy transformation using OpenMM tools and one of the

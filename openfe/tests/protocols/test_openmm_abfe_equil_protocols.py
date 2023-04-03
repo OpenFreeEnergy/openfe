@@ -357,4 +357,3 @@ def test_gather(vacuum_protocol_dag, tmpdir):
         assert m.MultiStateSamplerAnalyzer.call_count == 3
 
     assert isinstance(res, openmm_afe.AbsoluteTransformProtocolResult)
-
