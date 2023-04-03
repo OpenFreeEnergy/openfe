@@ -33,9 +33,6 @@ jobs:
           - os: 'macos'
             python-version: '3.10'
 
-    env:
-      OE_LICENSE: ${{ github.workspace }}/oe_license.txt
-
     steps:
       - uses: actions/checkout@v3
 
@@ -47,14 +44,6 @@ jobs:
             miniforge-variant: Mambaforge
             environment-file: environment.yml
             activate-environment: openfe
-
-      - name: Decrypt OpenEye license
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        env:
-          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
-        run: |
-          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
-          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
