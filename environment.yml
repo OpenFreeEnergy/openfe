@@ -27,8 +27,6 @@ dependencies:
   # docs
   - myst-parser
   - sphinx-click
-  # - gufe==0.5
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/mikemhenry/openff-models.git@support_nested_models
     - autodoc_pydantic 
+    - git+https://github.com/OpenFreeEnergy/gufe@main
