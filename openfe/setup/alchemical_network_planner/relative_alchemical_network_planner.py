@@ -65,9 +65,9 @@ class RelativeAlchemicalNetworkPlanner(
         mapping_scorer : Callable, optional
             scorer evaluating the quality of the atom mappings, by default default_lomap_score
         ligand_network_planner : Callable, optional
-            network using mapper and smapping_scorer to build up an optimal network, by default generate_minimal_spanning_network
+            network using mapper and mapping_scorer to build up an optimal network, by default generate_minimal_spanning_network
         protocol : Protocol, optional
-            FE-protocol for each transformation (edge of ligand networ) that is required in order to calculate the FE graph, by default RelativeLigandProtocol( RelativeLigandProtocol._default_settings() )
+            FE-protocol for each transformation (edge of ligand network) that is required in order to calculate the FE graph, by default RelativeLigandProtocol( RelativeLigandProtocol._default_settings() )
         """
 
         # TODO: Remove as soon as element Changes are possible. - START
