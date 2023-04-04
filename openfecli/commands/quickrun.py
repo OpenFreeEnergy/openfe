@@ -58,7 +58,11 @@ def quickrun(transformation, work_dir, output):
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Running the simulations...")
-    dagresult = execute_DAG(dag, shared=work_dir, raise_error=False)
+    dagresult = execute_DAG(dag,
+                            shared_basedir=work_dir,
+                            scratch_basedir=work_dir,
+                            keep_shared=True,
+                            raise_error=False)
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
