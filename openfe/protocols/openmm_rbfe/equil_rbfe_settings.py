@@ -50,7 +50,7 @@ class SystemSettings(settings.SettingsBaseModel):
         return v
 
 
-class SolventSettings(settings.SettingsBaseModel):
+class SolvationSettings(settings.SettingsBaseModel):
     """Settings for solvating the system
     NOTE
     ----
@@ -404,7 +404,7 @@ class RelativeLigandProtocolSettings(settings.Settings):
 
     # Things for creating the systems
     system_settings: SystemSettings
-    solvent_settings: SolventSettings
+    solvation_settings: SolvationSettings
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings

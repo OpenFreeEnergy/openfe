@@ -42,7 +42,7 @@ from gufe import (
 
 from .equil_rbfe_settings import (
     RelativeLigandProtocolSettings, SystemSettings,
-    SolventSettings, AlchemicalSettings,
+    SolvationSettings, AlchemicalSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings
 )
@@ -160,7 +160,7 @@ class RelativeLigandProtocol(gufe.Protocol):
                 pressure=1 * unit.bar,
             ),
             system_settings=SystemSettings(),
-            solvent_settings=SolventSettings(),
+            solvation_settings=SolvationSettings(),
             alchemical_settings=AlchemicalSettings(),
             alchemical_sampler_settings=AlchemicalSamplerSettings(),
             engine_settings=OpenMMEngineSettings(),
@@ -356,7 +356,8 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         # 0. General setup and settings dependency resolution step
 
-        # a. check equilibration and production are divisible by n_steps
+        # a. check timestep correctness + that 
+        # equilibration & production are divisible by n_steps
         prototol_settings: RelativeLigandProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
@@ -366,11 +367,18 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         thermo_settings: settings.ThermoSettings = prototol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = prototol_settings.alchemical_settings
         system_settings: SystemSettings = prototol_settings.system_settings
-        solvent_settings: SolventSettings = prototol_settings.solvent_settings
+        solvation_settings: SolvationSettings = prototol_settings.solvation_settings
         sampler_settings: AlchemicalSamplerSettings = prototol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = prototol_settings.simulation_settings
         timestep = prototol_settings.integrator_settings.timestep
         mc_steps = prototol_settings.integrator_settings.n_steps.m
+
+        # is the timestep good for the mass?
+        if forcefield_settings.hydrogen_mass < 3.0:
+            if timestep > 2.0 * unit.femtoseconds:
+                errmsg = (f"timestep {timestep} too large for "
+                          "hydrogen mass {forcefield_settings.hydrogen_mass}")
+                raise ValueError(errmsg)
 
         equil_time = sim_settings.equilibration_length.to('femtosecond')
         equil_steps = round(equil_time / timestep)
@@ -455,8 +463,8 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
             stateA_modeller.addSolvent(
                 omm_forcefield_stateA,
-                model=solvent_settings.solvent_model,
-                padding=to_openmm(solvent_settings.solvent_padding),
+                model=solvation_settings.solvent_model,
+                padding=to_openmm(solvation_settings.solvent_padding),
                 positiveIon=pos, negativeIon=neg,
                 ionicStrength=to_openmm(conc),
             )

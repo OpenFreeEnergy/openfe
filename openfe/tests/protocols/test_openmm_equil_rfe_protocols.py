@@ -161,6 +161,30 @@ def test_lambda_schedule(windows):
     assert len(lambdas.lambda_schedule) == windows
 
 
+def test_hightimestep(benzene_vacuum_system,
+                      toluene_vacuum_system,
+                      benzene_to_toluene_mapping, tmpdir):
+    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings.forcefield_settings.hydrogen_mass = 1.0
+    settings.system_settings.nonbonded_method = 'nocutoff'
+
+    p = openmm_rbfe.RelativeLigandProtocol(
+            settings=settings,
+    )
+
+    dag = p.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    errmsg = "too large for hydrogen mass"
+    with tmpdir.as_cwd():
+        with pytest.raises(ValueError, match=errmsg):
+            unit.run(dry=True)
+
+
 def test_n_replicas_not_n_windows(benzene_vacuum_system,
                                   toluene_vacuum_system,
                                   benzene_to_toluene_mapping, tmpdir):
