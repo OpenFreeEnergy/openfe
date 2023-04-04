@@ -4,11 +4,10 @@
 import click
 import json
 import pathlib
-from datetime import datetime
 
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write
+from openfecli.utils import write, print_duration
 
 
 def _format_exception(exception) -> str:
@@ -39,13 +38,13 @@ def _format_exception(exception) -> str:
     help="output file (JSON format) for the final results",
     callback=ensure_file_does_not_exist,
 )
+@print_duration
 def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
     To save a transformation as JSON, create the transformation and then
     save it with transformation.dump(filename).
     """
-    start_time = datetime.now()
     import gufe
     import os
     from gufe.protocols.protocoldag import execute_DAG
@@ -93,11 +92,7 @@ def quickrun(transformation, work_dir, output):
     with open(output, mode='w') as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-    end_time = datetime.now()
-    duration = end_time-start_time
-
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
-    write("\tDuration: "+str(duration)+"\n")
 
     write("Additional information:")
     for result in dagresult.protocol_unit_results:

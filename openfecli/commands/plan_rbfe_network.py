@@ -7,9 +7,8 @@
 """
 
 import click
-from datetime import datetime
 from typing import List
-from openfecli.utils import write
+from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
@@ -77,6 +76,7 @@ def plan_rbfe_network_main(
     default="alchemicalNetwork",
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
+@print_duration
 def plan_rbfe_network(
     mol_dir: List[str], protein: str, output_dir: str, mapper: str
 ):
@@ -96,8 +96,6 @@ def plan_rbfe_network(
 
     The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
     """
-    start_time = datetime.now()
-
     from gufe import SolventComponent
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
@@ -161,9 +159,6 @@ def plan_rbfe_network(
         folder_path=OUTPUT_DIR.get(output_dir),
     )
 
-    end_time = datetime.now()
-    duration = end_time-start_time
-    write("\tDuration: "+str(duration)+"\n")
 
 PLUGIN = OFECommandPlugin(
     command=plan_rbfe_network, section="Setup", requires_ofe=(0, 3)
