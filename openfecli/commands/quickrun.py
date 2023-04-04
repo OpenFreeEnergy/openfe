@@ -50,6 +50,8 @@ def quickrun(transformation, work_dir, output):
 
     if work_dir is None:
         work_dir = pathlib.Path(os.getcwd())
+    else:
+        work_dir.mkdir(exist_ok=True)
 
     write("Loading file...")
     # TODO: change this to `Transformation.load(transformation)`
