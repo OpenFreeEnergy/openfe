@@ -1117,7 +1117,7 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
         sampler.energy_context_cache = energy_context_cache
         sampler.sampler_context_cache = sampler_context_cache
 
-        if not dry:
+        if not dry:  # pragma: no-cover
             # minimize
             if verbose:
                 logger.info("minimizing systems")
