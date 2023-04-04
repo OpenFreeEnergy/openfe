@@ -22,14 +22,12 @@ import logging
 from collections import defaultdict
 import gufe
 from gufe import settings
-import json
 import numpy as np
 import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmtools import multistate
-from pydantic import validator
-from typing import Dict, List, Union, Optional
+from typing import Dict, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -42,7 +40,12 @@ from gufe import (
     ChemicalSystem, LigandAtomMapping,
 )
 
-from .equil_rbfe_settings import RelativeLigandProtocolSettings
+from .equil_rbfe_settings import (
+    RelativeLigandProtocolSettings, SystemSettings,
+    SolventSettings, AlchemicalSettings,
+    AlchemicalSamplerSettings, OpenMMEngineSettings,
+    IntegratorSettings, SimulationSettings
+)
 from . import _rbfe_utils
 
 logger = logging.getLogger(__name__)
@@ -91,7 +94,7 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
         * Check this holds up completely for SAMS.
         """
         dGs = []
-        #weights = []
+        # weights = []
 
         for analyzer in self._analyzers:
             # this returns:
@@ -102,11 +105,11 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
                 omm_unit.kilocalories_per_mole)
 
             # hack to get simulation length in uncorrelated samples
-            #weight = analyzer._get_equilibration_data()[2]
+            # weight = analyzer._get_equilibration_data()[2]
 
             dGs.append(dG)
-            #weights.append(weight)
-            
+            # weights.append(weight)
+
         avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
 
         return ensure_quantity(avg_val * dGs[0].unit, 'openff')
@@ -124,7 +127,7 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
                 omm_unit.kilocalories_per_mole)
 
             dGs.append(dG)
-        
+
         std_val = np.std([i.value_in_unit(dGs[0].unit) for i in dGs])
 
         return ensure_quantity(std_val * dGs[0].unit, 'openff')
@@ -156,17 +159,11 @@ class RelativeLigandProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            system_settings=SystemSettings(
-                constraints='HBonds'
-            ),
-            topology_settings=TopologySettings(
-                forcefield={'protein': 'amber99sb.xml',
-                            'ligand': 'openff-2.0.0.offxml',
-                            'solvent': 'tip3p.xml'},
-            ),
+            system_settings=SystemSettings(),
+            solvent_settings=SolventSettings(),
             alchemical_settings=AlchemicalSettings(),
-            sampler_settings=SamplerSettings(),
-            barostat_settings=BarostatSettings(),
+            alchemical_sampler_settings=AlchemicalSamplerSettings(),
+            engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettings(
                 equilibration_length=2.0 * unit.nanosecond,
@@ -214,7 +211,7 @@ class RelativeLigandProtocol(gufe.Protocol):
             if not stateA['solvent'] == stateB['solvent']:
                 raise ValueError("Solvents aren't identical between states")
         # check that the mapping refers to the two ligand components
-        ligandmapping : LigandAtomMapping = mapping['ligand']
+        ligandmapping: LigandAtomMapping = mapping['ligand']
         if stateA['ligand'] != ligandmapping.componentA:
             raise ValueError("Ligand in state A doesn't match mapping")
         if stateB['ligand'] != ligandmapping.componentB:
@@ -236,12 +233,13 @@ class RelativeLigandProtocol(gufe.Protocol):
         Aname = stateA['ligand'].name
         Bname = stateB['ligand'].name
         # our DAG has no dependencies, so just list units
+        n_repeats = self.settings.alchemical_sampler_settings.n_repeats
         units = [RelativeLigandProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
             generation=0, repeat_id=i,
             name=f'{Aname} {Bname} repeat {i} generation 0')
-            for i in range(self.settings.sampler_settings.n_repeats)]
+            for i in range(n_repeats)]
 
         return units
 
@@ -277,8 +275,8 @@ class RelativeLigandProtocol(gufe.Protocol):
 
 
 class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
-    """Calculates the relative free energy of an alchemical ligand transformation.
-
+    """
+    Calculates the relative free energy of an alchemical ligand transformation.
     """
 
     def __init__(self, *,
@@ -364,10 +362,12 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
 
+        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = prototol_settings.forcefield_settings
+        thermo_settings: settings.ThermoSettings = prototol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = prototol_settings.alchemical_settings
         system_settings: SystemSettings = prototol_settings.system_settings
-        topology_settings: TopologySettings = prototol_settings.topology_settings
-        sampler_settings: SamplerSettings = prototol_settings.sampler_settings
+        solvent_settings: SolventSettings = prototol_settings.solvent_settings
+        sampler_settings: AlchemicalSamplerSettings = prototol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = prototol_settings.simulation_settings
         timestep = prototol_settings.integrator_settings.timestep
         mc_steps = prototol_settings.integrator_settings.n_steps.m
@@ -395,22 +395,24 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         stateA_openff_ligand = stateA['ligand'].to_openff()
         stateB_openff_ligand = stateB['ligand'].to_openff()
 
+        # temporary hack, will fix in next PR
+        ligand_ff = f"{forcefield_settings.small_molecule_forcefield}.offxml"
+
         #  1. Get smirnoff template generators
         smirnoff_stateA = SMIRNOFFTemplateGenerator(
-            forcefield=topology_settings.forcefield['ligand'],
+            forcefield=ligand_ff,
             molecules=[stateA_openff_ligand],
         )
 
         smirnoff_stateB = SMIRNOFFTemplateGenerator(
-            forcefield=topology_settings.forcefield['ligand'],
+            forcefield=ligand_ff,
             molecules=[stateB_openff_ligand],
         )
 
         # 2. Create forece fields and register them
         #  a. state A
         omm_forcefield_stateA = app.ForceField(
-            *[ff for (comp, ff) in topology_settings.forcefield.items()
-              if not comp == 'ligand']
+            *[ff for ff in forcefield_settings.forcefields]
         )
 
         omm_forcefield_stateA.registerTemplateGenerator(
@@ -418,8 +420,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         #  b. state B
         omm_forcefield_stateB = app.ForceField(
-            *[ff for (comp, ff) in topology_settings.forcefield.items()
-              if not comp == 'ligand']
+            *[ff for ff in forcefield_settings.forcefields]
         )
 
         omm_forcefield_stateB.registerTemplateGenerator(
@@ -454,8 +455,8 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
             stateA_modeller.addSolvent(
                 omm_forcefield_stateA,
-                model=topology_settings.solvent_model,
-                padding=to_openmm(prototol_settings.solvent_padding),
+                model=solvent_settings.solvent_model,
+                padding=to_openmm(solvent_settings.solvent_padding),
                 positiveIon=pos, negativeIon=neg,
                 ionicStrength=to_openmm(conc),
             )
@@ -477,7 +478,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             'allbonds': app.AllBonds,
             'hangles': app.HAngles
             # vvv can be None so string it
-        }[str(system_settings.constraints).lower()]
+        }[str(forcefield_settings.constraints).lower()]
 
         #  c. create the stateA System
         stateA_system = omm_forcefield_stateA.createSystem(
@@ -485,9 +486,9 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             nonbondedMethod=nonbonded_method,
             nonbondedCutoff=to_openmm(system_settings.nonbonded_cutoff),
             constraints=constraints,
-            rigidWater=system_settings.rigid_water,
-            hydrogenMass=system_settings.hydrogen_mass,
-            removeCMMotion=system_settings.remove_com,
+            rigidWater=forcefield_settings.rigid_water,
+            hydrogenMass=forcefield_settings.hydrogen_mass * omm_unit.amu,
+            removeCMMotion=forcefield_settings.remove_com,
         )
 
         #  d. create stateA topology
@@ -495,7 +496,8 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         #  e. get stateA positions
         stateA_positions = stateA_modeller.getPositions()
-        ## canonicalize positions (tuples to np.array)
+        # TODO: fix this using the same approach as the AFE Protocol
+        # canonicalize positions (tuples to np.array)
         stateA_positions = omm_unit.Quantity(
             value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
             unit=openmm.unit.nanometers
@@ -517,9 +519,9 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             nonbondedMethod=nonbonded_method,
             nonbondedCutoff=to_openmm(system_settings.nonbonded_cutoff),
             constraints=constraints,
-            rigidWater=system_settings.rigid_water,
-            hydrogenMass=system_settings.hydrogen_mass,
-            removeCMMotion=system_settings.remove_com,
+            rigidWater=forcefield_settings.rigid_water,
+            hydrogenMass=forcefield_settings.hydrogen_mass * omm_unit.amu,
+            removeCMMotion=forcefield_settings.remove_com,
         )
 
         #  c. Define correspondence mappings between the two systems
@@ -562,7 +564,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
                 openmm.MonteCarloBarostat(
                     prototol_settings.thermo_settings.pressure.to(unit.bar).m,
                     prototol_settings.thermo_settings.temperature.m,
-                    prototol_settings.barostat_settings.frequency.m,
+                    prototol_settings.integrator_settings.barostat_frequency.m,
                 )
             )
 
@@ -668,7 +670,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         sampler.energy_context_cache = energy_context_cache
         sampler.sampler_context_cache = sampler_context_cache
 
-        if not dry:
+        if not dry:  # pragma: no-cover
             # minimize
             if verbose:
                 logger.info("minimizing systems")
@@ -686,7 +688,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
                 logger.info("running production phase")
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
-            
+
             # close reporter when you're done
             reporter.close()
 

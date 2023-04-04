@@ -11,6 +11,7 @@ from importlib import resources
 import xml.etree.ElementTree as ET
 
 from openmm import app, XmlSerializer
+from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe
@@ -80,8 +81,8 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
     vac_settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.sampler_settings.sampler_method = method
-    vac_settings.sampler_settings.n_repeats = 1
+    vac_settings.alchemical_sampler_settings.sampler_method = method
+    vac_settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=vac_settings,
@@ -105,8 +106,8 @@ def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.sampler_settings.sampler_method = method
-    settings.sampler_settings.n_repeats = 1
+    settings.alchemical_sampler_settings.sampler_method = method
+    settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=settings,
@@ -129,8 +130,8 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.sampler_settings.sampler_method = method
-    settings.sampler_settings.n_repeats = 1
+    settings.alchemical_sampler_settings.sampler_method = method
+    settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=settings,
@@ -167,7 +168,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
     # equals the numbers of replicas used - TODO: remove limitation
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
     # default lambda windows is 11
-    settings.sampler_settings.n_replicas = 13
+    settings.alchemical_sampler_settings.n_replicas = 13
     settings.system_settings.nonbonded_method = 'nocutoff'
 
     errmsg = ("Number of replicas 13 does not equal the number of "
@@ -635,10 +636,10 @@ def tyk2_xml(tmp_path_factory):
     )
 
     settings: openmm_rbfe.RelativeLigandProtocolSettings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.topology_settings.forcefield = {'ligand': 'openff-2.0.0.offxml'}
+    settings.forcefield_settings.small_molecule_forcefield = 'openff-2.0.0'
     settings.system_settings.nonbonded_method = 'nocutoff'
-    settings.system_settings.hydrogen_mass = 3.0
-    settings.sampler_settings.n_repeats = 1
+    settings.forcefield_settings.hydrogen_mass = 3.0
+    settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(settings)
 
