@@ -53,6 +53,9 @@ def quickrun(transformation, work_dir, output):
     else:
         work_dir.mkdir(exist_ok=True)
 
+    if output is None:
+        output = transformation.parent / (transformation.stem + '_results.json')
+
     write("Loading file...")
     # TODO: change this to `Transformation.load(transformation)`
     dct = json.load(transformation, cls=JSON_HANDLER.decoder)
@@ -89,9 +92,8 @@ def quickrun(transformation, work_dir, output):
         if 'inputs' in dd:
             dd['inputs'].pop('settings')
 
-    if output:
-        with open(output, mode='w') as outf:
-            json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
+    with open(output, mode='w') as outf:
+        json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
     write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
     write("Additional information:")
