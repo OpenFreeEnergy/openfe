@@ -1157,13 +1157,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        # create directory for *this* unit within the context of the *DAG*
-        # stops output files mashing into each other within a DAG
-        myid = uuid.uuid4()
-        mypath = pathlib.Path(os.path.join(ctx.shared, str(myid)))
-        mypath.mkdir(parents=True, exist_ok=False)
-
-        outputs = self.run(basepath=mypath)
+        outputs = self.run(basepath=ctx.shared)
 
         return {
             'repeat_id': self.repeat_id,
