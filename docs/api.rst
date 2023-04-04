@@ -1,10 +1,10 @@
 API docs
 --------
 
-.. autoclass:: openfe.setup.SmallMoleculeComponent
+.. autoclass:: openfe.SmallMoleculeComponent
 
-.. autoclass:: openfe.setup.LigandAtomMapping
+.. autoclass:: openfe.LigandAtomMapping
 
-.. autoclass:: openfe.setup.Network
+.. autoclass:: openfe.LigandNetwork
 
-.. autoclass:: openfe.setup.LigandAtomMapper
+.. autoclass:: openfe.setup.atom_mapping.LigandAtomMapper
