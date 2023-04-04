@@ -715,7 +715,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         outputs = self.run(basepath=ctx.shared)
 
         return {
-            'repeat_id': self.inputs['repeat_id'],
-            'generation': self.inputs['generation'],
+            'repeat_id': self._inputs['repeat_id'],
+            'generation': self._inputs['generation'],
             **outputs
         }
