@@ -2,11 +2,13 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+import json
+import pathlib
+from datetime import datetime
+
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
 from openfecli.utils import write
-import json
-import pathlib
 
 
 def _format_exception(exception) -> str:
@@ -43,6 +45,7 @@ def quickrun(transformation, work_dir, output):
     To save a transformation as JSON, create the transformation and then
     save it with transformation.dump(filename).
     """
+    start_time = datetime.now()
     import gufe
     import os
     from gufe.protocols.protocoldag import execute_DAG
@@ -90,7 +93,12 @@ def quickrun(transformation, work_dir, output):
     with open(output, mode='w') as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-    write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
+    end_time = datetime.now()
+    duration = end_time-start_time
+
+    write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
+    write("\tDuration: "+str(duration)+"\n")
+
     write("Additional information:")
     for result in dagresult.protocol_unit_results:
         write(f"{result.name}:")
