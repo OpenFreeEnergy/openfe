@@ -214,6 +214,34 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                           MultiStateSampler)
 
 
+def test_dry_run_step_rounding(benzene_vacuum_system, toluene_vacuum_system,
+                               benzene_to_toluene_mapping, tmpdir):
+
+    vac_settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    vac_settings.simulation_settings.equilibration_length = 5 * unit.picoseconds
+    vac_settings.simulation_settings.production_length = 5 * unit.picoseconds
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.sampler_settings.n_repeats = 1
+
+    protocol = openmm_rbfe.RelativeLigandProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        assert isinstance(unit.run(dry=True)['debug']['sampler'],
+                          MultiStateSampler)
+
+
+
+
 def test_lambda_schedule_default():
     lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
     assert len(lambdas.lambda_schedule) == 10
