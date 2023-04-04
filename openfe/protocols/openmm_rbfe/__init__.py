@@ -5,7 +5,10 @@ from . import _rbfe_utils
 
 from .equil_rbfe_methods import (
     RelativeLigandProtocol,
-    RelativeLigandProtocolSettings,
     RelativeLigandProtocolResult,
     RelativeLigandProtocolUnit,
+)
+
+from .equil_rbfe_settings import (
+    RelativeLigandProtocolSettings,
 )
