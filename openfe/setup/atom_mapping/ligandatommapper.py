@@ -14,7 +14,8 @@ class LigandAtomMapper(gufe.AtomMapper):
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
-
+    _no_element_changes: bool = False #TODO: to be removed
+    
     @abc.abstractmethod
     def _mappings_generator(self,
                             componentA: SmallMoleculeComponent,
@@ -56,5 +57,22 @@ class LigandAtomMapper(gufe.AtomMapper):
         # subclasses of this can customize suggest_mappings while always
         # maintaining the consistency that concrete implementations must
         # implement _mappings_generator.
+
         for map_dct in self._mappings_generator(componentA, componentB):
+
+            #TODO: this is a temporary Code snippet - avoids element changes - START
+            if self._no_element_changes:
+                filtered_map_dct = {}
+                for i, j in map_dct.items():
+                    atomA = componentA.to_rdkit().GetAtomWithIdx(i)
+                    atomB = componentB.to_rdkit().GetAtomWithIdx(j)
+                    if atomA.GetAtomicNum() == atomB.GetAtomicNum():
+                        filtered_map_dct[i]= j
+
+                if len(filtered_map_dct) == 0:
+                    raise ValueError("Could not map ligands - Element Changes are not allowed currently.")
+                
+                map_dct = filtered_map_dct
+            #TODO: this is a temporary Code snippet - avoids element changes - END
+
             yield LigandAtomMapping(componentA, componentB, map_dct)
