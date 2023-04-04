@@ -240,8 +240,6 @@ def test_dry_run_step_rounding(benzene_vacuum_system, toluene_vacuum_system,
                           MultiStateSampler)
 
 
-
-
 def test_lambda_schedule_default():
     lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
     assert len(lambdas.lambda_schedule) == 10
