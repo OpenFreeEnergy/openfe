@@ -814,7 +814,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
         mc_steps = settings.integrator_settings.n_steps.m
 
         equil_time = sim_settings.equilibration_length.to('femtosecond')
-        equil_steps = round(equil_time / timestep)
+        equil_steps = int(round(equil_time / timestep).m)
 
         # mypy gets the return type of round wrong, it's a Quantity
         if (equil_steps.m % mc_steps) != 0:  # type: ignore
@@ -824,7 +824,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             raise ValueError(errmsg)
 
         prod_time = sim_settings.production_length.to('femtosecond')
-        prod_steps = round(prod_time / timestep)
+        prod_steps = int(round(prod_time / timestep).m)
 
         if (prod_steps.m % mc_steps) != 0:  # type: ignore
             errmsg = (f"Production time {prod_time} should contain a "
@@ -1126,13 +1126,13 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
             if verbose:
                 logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
+            sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
             # production
             if verbose:
                 logger.info("running production phase")
 
-            sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+            sampler.extend(int(prod_steps / mc_steps))  # type: ignore
             
             # close reporter when you're done
             reporter.close()
