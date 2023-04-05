@@ -47,18 +47,31 @@ def get_type(f):
 def gather(rootdir, output):
     """Gather DAG result jsons of relative calculations and write to single tsv file
 
-    Will walk ROOTDIR recursively and find all results files ending in .json
-    (i.e those produced by the quickrun command).
+    Will walk ROOTDIR recursively and find all results files ending in .json (i.e those produced by the quickrun
+    command).  Each of these is a single leg (e.g. L1-L2 in solvent) of a free energy calculation.
 
-    Paired legs of simulations will be combined to give the DDG values between two ligands
-    in the corresponding phase.
+    Will produce a **tab** separated file with 3 columns;
+    - a description of the measurement (e.g. DDGhyd(A, B) or DGsol(A, B))
+    - the estimated value (in kcal/mol)
+    - the uncertainty on the value (also kcal/mol)
 
-    Will produce a **tab** separated file with 3 columns.  Use output = '-' to stream to
-    stdout.
+    Paired legs of simulations will be combined to give the DDG values between two ligands in the corresponding phase,
+    producing either binding ('DDGbind') or hydration ('DDGhyd') relative free energies.  These will be reported as
+    'DDGbind(B,A)' meaning DGbind(B) - DGbind(A), the difference in free energy of binding for ligand B compared to
+    ligand A.
+
+    Individual leg results will be also be written.  These are reported as either DGvacuum(A,B) DGsolvent(A,B) or
+    DGcomplex(A,B) for the vacuum, solvent or complex free energy of transmuting ligand A to ligand B.
+
+    Use output = '-' to stream to stdout.
     """
     from collections import defaultdict
     import glob
     import numpy as np
+
+    def dp2(v: float) -> str:
+        # turns 0.0012345 -> '0.0012', round() would get this wrong
+        return np.format_float_positional(v, precision=2, trim='0', fractional=False)
 
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + '**/*json', recursive=True)
@@ -79,25 +92,38 @@ def gather(rootdir, output):
 
         legs[names][simtype] = result['estimate'], result['uncertainty']
 
-    # 4 for each ligand pair, write out the DDG
-    output.write('ligand pair\testimate (kcal/mol)\tuncertainty\n')
+    # 4a for each ligand pair, write out the DDG
+    output.write('measurement\testimate (kcal/mol)\tuncertainty\n')
     for ligpair, vals in legs.items():
+        DDGbind = None
+        DDGhyd = None
+        bind_unc = None
+        hyd_unc = None
+
         if 'complex' in vals and 'solvent' in vals:
             DG1_mag, DG1_unc = vals['complex']
             DG2_mag, DG2_unc = vals['solvent']
-        elif 'solvent' in vals and 'vacuum' in vals:
+            # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
+            DDGbind = dp2((DG1_mag - DG2_mag).m)
+            bind_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
+        if 'solvent' in vals and 'vacuum' in vals:
             DG1_mag, DG1_unc = vals['solvent']
             DG2_mag, DG2_unc = vals['vacuum']
-        else:
-            # mismatched legs?
-            continue
+            DDGhyd = dp2((DG1_mag - DG2_mag).m)
+            hyd_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
 
-        # either (DGsolvent - DGvacuum) OR (DGcomplex - DGsolvent)
-        DDG = DG1_mag - DG2_mag
-        unc = round(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))), 4) * DG1_unc.u
+        name = ", ".join(ligpair[::-1])
+        if DDGbind is not None:
+            output.write(f'DDGbind({name})\t{DDGbind}\t+-{bind_unc}\n')
+        if DDGhyd is not None:
+            output.write(f'DDGhyd({name})\t{DDGhyd}\t+-{hyd_unc}\n')
 
-        name = " ".join(ligpair)
-        output.write(f'{name}\t{str(DDG.m)}\t+-{str(unc.m)}\n')
+    # 4b write out each leg
+    for ligpair, vals in legs.items():
+        name = ', '.join(ligpair)
+        for simtype, (m, u) in vals.items():
+            m, u = dp2(m.m), dp2(u.m)
+            output.write(f'DG{simtype}({name})\t{m}\t+-{u}\n')
 
 
 PLUGIN = OFECommandPlugin(
