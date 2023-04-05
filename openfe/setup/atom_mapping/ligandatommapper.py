@@ -9,7 +9,7 @@ import gufe
 
 
 class LigandAtomMapper(gufe.AtomMapper):
-    """Suggests AtomMappings for a pair of :class:`SmallMoleculeComponent`s.
+    """Suggests AtomMappings for a pair of :class:`SmallMoleculeComponent`\s.
 
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
