@@ -63,7 +63,7 @@ def plan_rbfe_network_main(
 
 @click.command(
     "plan-rbfe-network",
-    short_help="Run a planning session for relative binding free energies, saved in a dir with multiple JSON files",
+    short_help="Plan a relative binding free energy network, saved in a dir with multiple JSON files.",
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
@@ -79,9 +79,23 @@ def plan_rbfe_network_main(
 def plan_rbfe_network(
     mol_dir: List[str], protein: str, output_dir: str, mapper: str
 ):
+    """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
+
+    This tool is an easy way to setup a RBFE-Calculation Campaign. 
+    This can be useful for calculating the relative binding free energies of a given set of compounds to a given protein receptor.
+    Plan-rbfe-network finds a reasonable network of transformations and adds the openfe rbfe protocol of year one to the transformations.
+    The output of the command can be used, in order to run the planned transformations with the quickrun tool.
+    For more sophisticated setups, please consider using the python layer of openfe.
+    
+
+    The tool will parse the input and run the rbfe network planner, which executes following steps:
+        1. generate an atom mapping for all possible ligand pairs. (default: Lomap) 
+        2. score all atom mappings. (default: Lomap default score) 
+        3. build network form all atom mapping scores (default: minimal spanning graph) 
+        
+    The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
     """
-    this command line tool allows relative binding free energy calculations to be planned and returns an alchemical network as a directory.
-    """
+
     from gufe import SolventComponent
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
