@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       # More info on options: https://github.com/conda-incubator/setup-miniconda
       - name: Setup Micromamba
