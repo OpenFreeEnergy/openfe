@@ -51,7 +51,7 @@ jobs:
       - name: "Test imports"
         run: |
           # if we add more to this, consider changing to for + env vars
-          python -Ic "import openfe"
+          python -Ic "import openfe; print(openfe.__version__)"
 
       - name: "Environment Information"
         run: |
