@@ -45,19 +45,19 @@ def get_type(f):
                 type=click.File(mode='w'),
                 required=True)
 def gather(rootdir, output):
-    """Gather DAG result jsons of relative calculations and write to single tsv file
+    """Gather simulation result jsons of relative calculations and write to single tsv file
 
     Will walk ROOTDIR recursively and find all results files ending in .json (i.e those produced by the quickrun
-    command).  Each of these is a single leg (e.g. L1-L2 in solvent) of a free energy calculation.
+    command).  Each of these contains the results of a separate leg from a relative free energy thermodynamic cycle.
 
     Will produce a **tab** separated file with 3 columns;
-    - a description of the measurement (e.g. DDGhyd(A, B) or DGsol(A, B))
+    - a description of the measurement, for example DDGhyd(A, B)
     - the estimated value (in kcal/mol)
     - the uncertainty on the value (also kcal/mol)
 
     Paired legs of simulations will be combined to give the DDG values between two ligands in the corresponding phase,
     producing either binding ('DDGbind') or hydration ('DDGhyd') relative free energies.  These will be reported as
-    'DDGbind(B,A)' meaning DGbind(B) - DGbind(A), the difference in free energy of binding for ligand B compared to
+    'DDGbind(B,A)' meaning DGbind(B) - DGbind(A), the difference in free energy of binding for ligand B relative to
     ligand A.
 
     Individual leg results will be also be written.  These are reported as either DGvacuum(A,B) DGsolvent(A,B) or
