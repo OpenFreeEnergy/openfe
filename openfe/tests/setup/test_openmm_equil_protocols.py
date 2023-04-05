@@ -442,7 +442,7 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
         for u in units:
-            ret = u.execute(shared=tmpdir)
+            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
             results.append(ret)
 
     repeats = set()
@@ -458,7 +458,9 @@ def test_gather(solvent_protocol_dag, tmpdir):
     with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandProtocolUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
-                                            shared=tmpdir)
+                                            shared_basedir=tmpdir,
+                                            scratch_basedir=tmpdir,
+                                            keep_shared=True)
 
     prot = openmm_rbfe.RelativeLigandProtocol(
         settings=openmm_rbfe.RelativeLigandProtocol.default_settings()

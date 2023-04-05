@@ -30,4 +30,3 @@ dependencies:
   - pip:
     - autodoc_pydantic
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    
