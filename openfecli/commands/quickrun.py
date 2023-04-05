@@ -46,6 +46,14 @@ def quickrun(transformation, directory, output):
     import gufe
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
+    import tempfile
+
+    if directory is None:
+        tmpdir = tempfile.TemporaryDirectory()
+        directory = pathlib.Path(tmpdir.name)
+    else:
+        tmpdir = None
+        directory.mkdir(exist_ok=True)
 
     write("Loading file...")
     # TODO: change this to `Transformation.load(transformation)`
@@ -54,7 +62,11 @@ def quickrun(transformation, directory, output):
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Running the simulations...")
-    dagresult = execute_DAG(dag, shared=directory, raise_error=False)
+    dagresult = execute_DAG(dag,
+                            shared_basedir=directory,
+                            scratch_basedir=directory,
+                            keep_shared=True,
+                            raise_error=False)
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
@@ -73,6 +85,11 @@ def quickrun(transformation, directory, output):
             for unit in dagresult.protocol_unit_results
         }
     }
+    # TODO: remove this ugly hack on next release
+    #       strip out Settings objects in each unit_result inputs dict
+    for _, dd in out_dict['unit_results'].items():
+        if 'inputs' in dd:
+            dd['inputs'].pop('settings')
 
     if output:
         with open(output, mode='w') as outf:
@@ -85,6 +102,9 @@ def quickrun(transformation, directory, output):
         write(result.outputs)
 
     write("")
+
+    if tmpdir is not None:
+        tmpdir.cleanup()
 
     if not dagresult.ok():
         # there can be only one, MacCleod

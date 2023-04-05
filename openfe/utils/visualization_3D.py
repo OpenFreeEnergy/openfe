@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from typing import Tuple, Union, Optional, Dict
+from typing import Tuple, Union, Optional, Dict, Iterable
 
 from rdkit import Chem
 from rdkit.Geometry.rdGeometry import Point3D
@@ -12,8 +12,8 @@ try:
 except ImportError:
     pass    # Don't throw  error, will happen later
 
-
 from gufe.mapping import AtomMapping
+from gufe.components.explicitmoleculecomponent import ExplicitMoleculeComponent
 
 from openfe.utils import requires_package
 
@@ -108,7 +108,53 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
 
 
 @requires_package("py3Dmol")
-def show_3D_mapping(
+def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
+                     style: Optional[str] ="stick",
+                     shift: Optional[Tuple[float, float, float]] = None,
+                     view: py3Dmol.view = None
+                     ) -> py3Dmol.view:
+    """visualize multiple component coordinates in one interactive view.
+    It helps to understand how the components are aligned in the system to each other.
+
+    py3Dmol is an optional dependency, it can be installed with:
+        pip install py3Dmol
+
+    Parameters
+    ----------
+    mols : Iterable[ExplicitMoleculeComponent]
+        collection of components
+    style : Optional[str], optional
+        py3Dmol style, by default "stick"
+    shift : Tuple of floats, optional
+        Amount to i*shift each mols_i in order to allow inspection of them in heavy overlap cases.
+    view : py3Dmol, optional
+        Allows to pass an already existing view, by default None
+        
+    Returns
+    -------
+    py3Dmol.view
+        view containing all component coordinates
+    """
+
+    if(view is None):
+        view = py3Dmol.view(width=600, height=600)
+    
+    for i, component in enumerate(mols):
+        mol = Chem.Mol(component.to_rdkit())
+        if(shift is not None):
+            tmp_shift = np.array(shift, dtype=np.float64)*i
+            mol = _translate(mol, tmp_shift)
+
+        view.addModel(Chem.MolToMolBlock(mol))
+        
+    view.setStyle({style: {}})
+
+    view.zoomTo()
+    return view
+
+
+@requires_package("py3Dmol")
+def view_mapping_3d(
     mapping: AtomMapping,
     spheres: Optional[bool] = True,
     show_atomIDs: Optional[bool] = False,
@@ -120,6 +166,9 @@ def show_3D_mapping(
     Render relative transformation edge in 3D using py3Dmol.
 
     By default matching atoms will be annotated using colored spheres.
+
+    py3Dmol is an optional dependency, it can be installed with:
+        pip install py3Dmol
 
     Parameters
     ----------

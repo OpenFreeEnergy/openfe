@@ -33,41 +33,30 @@ jobs:
           - os: 'macos'
             python-version: '3.10'
 
-    env:
-      OE_LICENSE: ${{ github.workspace }}/oe_license.txt
-
     steps:
       - uses: actions/checkout@v3
 
-      - uses: conda-incubator/setup-miniconda@v2
+      # More info on options: https://github.com/conda-incubator/setup-miniconda
+      - name: Setup Micromamba
+        uses: mamba-org/provision-with-micromamba@main
         with:
-            auto-update-conda: true
-            use-mamba: true
-            python-version: ${{ matrix.python-version }}
-            miniforge-variant: Mambaforge
-            environment-file: environment.yml
-            activate-environment: openfe
-
-      - name: Decrypt OpenEye license
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        env:
-          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
-        run: |
-          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
-          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
+          environment-file: environment.yml
+          environment-name: openfe
+          extra-specs: |
+            python==${{ matrix.python-version }}
 
       - name: "Install"
-        run: python setup.py develop --no-deps
+        run: python -m pip install --no-deps -e .
 
       - name: "Test imports"
         run: |
           # if we add more to this, consider changing to for + env vars
-          python -Ic "import openfe"
+          python -Ic "import openfe; print(openfe.__version__)"
 
       - name: "Environment Information"
         run: |
-          mamba info -a
-          mamba list
+          micromamba info
+          micromamba list
 
       - name: "Run tests"
         run: |

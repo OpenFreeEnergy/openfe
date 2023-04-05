@@ -2,7 +2,6 @@ name: openfe
 channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
-  - openeye
 dependencies:
   - numpy<1.24
   - networkx
@@ -14,21 +13,20 @@ dependencies:
   - pydantic
   - coverage
   - openff-toolkit>=0.12.0
-  - openff-units
+  - openff-units>=0.2.0
+  - openff-models>=0.0.4
   - click
-  - openeye-toolkits
   - typing-extensions
   - lomap2>=2.1.0
   - openmmtools
   - openmmforcefields>=0.11.2
   - perses
   - py3dmol
+  - plugcli
+  - libnetcdf<4.9
   # docs
   - myst-parser
   - sphinx-click
-  # - gufe==0.5
   - pip:
-    - plugcli
+    - autodoc_pydantic
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/mikemhenry/openff-models.git@support_nested_models
-    

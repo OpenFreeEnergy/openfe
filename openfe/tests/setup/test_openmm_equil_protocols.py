@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gufe
+from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
 from unittest import mock
 from openff.units import unit
@@ -441,7 +442,7 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
         for u in units:
-            ret = u.execute(shared=tmpdir)
+            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
             results.append(ret)
 
     repeats = set()
@@ -457,7 +458,9 @@ def test_gather(solvent_protocol_dag, tmpdir):
     with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandProtocolUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
-                                            shared=tmpdir)
+                                            shared_basedir=tmpdir,
+                                            scratch_basedir=tmpdir,
+                                            keep_shared=True)
 
     prot = openmm_rbfe.RelativeLigandProtocol(
         settings=openmm_rbfe.RelativeLigandProtocol.default_settings()
@@ -681,7 +684,7 @@ class TestConstraintRemoval:
 
 
 @pytest.fixture(scope='session')
-def tyk2_xml():
+def tyk2_xml(tmpdir_factory):
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_23.sdf') as f:
         lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_55.sdf') as f:
@@ -712,7 +715,9 @@ def tyk2_xml():
     )
     pu = list(dag.protocol_units)[0]
 
-    dryrun = pu.run(dry=True)
+    tmp = tmpdir_factory.mktemp('xml_reg')
+
+    dryrun = pu.run(dry=True, basepath=tmp)
 
     system = dryrun['debug']['sampler']._hybrid_factory.hybrid_system
 
@@ -751,3 +756,15 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+class TestRelativeLigandTransform(GufeTokenizableTestsMixin):
+    cls = openmm_rbfe.RelativeLigandProtocol
+    key = "RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504"
+    repr = "<RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504>"
+
+    @pytest.fixture
+    def instance(self):
+        settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+        return openmm_rbfe.RelativeLigandProtocol(settings)
+

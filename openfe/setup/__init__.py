@@ -9,3 +9,4 @@ from .atom_mapping import (LigandAtomMapping,
 from .ligand_network import LigandNetwork
 from . import ligand_network_planning
 
+from .alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner
