@@ -6,7 +6,7 @@ import networkx as nx
 
 import openfe.setup
 
-from .conftest import mol_from_smiles
+from ..conftest import mol_from_smiles
 
 
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
