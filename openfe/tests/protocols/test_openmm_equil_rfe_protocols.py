@@ -99,8 +99,9 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        assert isinstance(unit.run(dry=True)['debug']['sampler'],
-                          MultiStateSampler)
+        sampler = unit.run(dry=True)['debug']['sampler']
+        assert isinstance(sampler, MultiStateSampler)
+        assert not sampler.is_periodic
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -122,9 +123,9 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        # Returns debug objects if everything is OK
-        assert isinstance(unit.run(dry=True)['debug']['sampler'],
-                          MultiStateSampler)
+        sampler = unit.run(dry=True)['debug']['sampler']
+        assert isinstance(sampler, MultiStateSampler)
+        assert sampler.is_periodic
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -146,9 +147,9 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        # Returns debug contents if everything is OK
-        assert isinstance(unit.run(dry=True)['debug']['sampler'],
-                          MultiStateSampler)
+        sampler = unit.run(dry=True)['debug']['sampler']
+        assert isinstance(sampler, MultiStateSampler)
+        assert sampler.is_periodic
 
 
 def test_lambda_schedule_default():
