@@ -39,8 +39,8 @@ class TestRelativeLigandProtocolResult(GufeTokenizableTestsMixin):
 
 class TestRelativeLigandProtocol(GufeTokenizableTestsMixin):
     cls = openmm_rbfe.RelativeLigandProtocol
-    key = "RelativeLigandProtocol-1c8eb6aa916199f6404a5c05e5274a46"
-    repr = "<RelativeLigandProtocol-1c8eb6aa916199f6404a5c05e5274a46>"
+    key = "RelativeLigandProtocol-49573953bc1a31718c59ef874461d4d0"
+    repr = "<RelativeLigandProtocol-49573953bc1a31718c59ef874461d4d0>"
 
     @pytest.fixture()
     def instance(self, protocol):
