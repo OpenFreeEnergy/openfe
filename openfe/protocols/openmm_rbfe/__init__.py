@@ -3,9 +3,13 @@
 
 from . import _rbfe_utils
 
+from .equil_rbfe_settings import (
+    RelativeLigandProtocolSettings,
+)
+
 from .equil_rbfe_methods import (
     RelativeLigandProtocol,
-    RelativeLigandProtocolSettings,
     RelativeLigandProtocolResult,
     RelativeLigandProtocolUnit,
 )
+

@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import os
+
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
@@ -9,6 +11,7 @@ from importlib import resources
 import xml.etree.ElementTree as ET
 
 from openmm import app, XmlSerializer
+from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe
@@ -16,74 +19,6 @@ from openfe import setup
 from openfe.protocols import openmm_rbfe
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
-
-
-@pytest.fixture
-def benzene_vacuum_system(benzene_modifications):
-    return openfe.ChemicalSystem(
-        {'ligand': benzene_modifications['benzene']},
-    )
-
-
-@pytest.fixture
-def benzene_system(benzene_modifications):
-    return openfe.ChemicalSystem(
-        {'ligand': benzene_modifications['benzene'],
-         'solvent': openfe.SolventComponent(
-             positive_ion='Na', negative_ion='Cl',
-             ion_concentration=0.15 * unit.molar)
-        },
-    )
-
-
-@pytest.fixture
-def benzene_complex_system(benzene_modifications, T4_protein_component):
-    return openfe.ChemicalSystem(
-        {'ligand': benzene_modifications['benzene'],
-         'solvent': openfe.SolventComponent(
-             positive_ion='Na', negative_ion='Cl',
-             ion_concentration=0.15 * unit.molar),
-         'protein': T4_protein_component,}
-    )
-
-
-@pytest.fixture
-def toluene_vacuum_system(benzene_modifications):
-    return openfe.ChemicalSystem(
-        {'ligand': benzene_modifications['toluene']},
-    )
-
-
-@pytest.fixture
-def toluene_system(benzene_modifications):
-    return openfe.ChemicalSystem(
-        {'ligand': benzene_modifications['toluene'],
-         'solvent': openfe.SolventComponent(
-             positive_ion='Na', negative_ion='Cl',
-             ion_concentration=0.15 * unit.molar),
-        },
-    )
-
-
-@pytest.fixture
-def toluene_complex_system(benzene_modifications, T4_protein_component):
-    return openfe.ChemicalSystem(
-        {'ligand': benzene_modifications['toluene'],
-         'solvent': openfe.SolventComponent(
-             positive_ion='Na', negative_ion='Cl',
-             ion_concentration=0.15 * unit.molar),
-         'protein': T4_protein_component,}
-    )
-
-
-@pytest.fixture
-def benzene_to_toluene_mapping(benzene_modifications):
-    mapper = setup.LomapAtomMapper(element_change=False)
-
-    molA = benzene_modifications['benzene']
-    molB = benzene_modifications['toluene']
-
-    return next(mapper.suggest_mappings(molA, molB))
 
 
 def test_append_topology(benzene_complex_system, toluene_complex_system):
@@ -146,8 +81,8 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
     vac_settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.sampler_settings.sampler_method = method
-    vac_settings.sampler_settings.n_repeats = 1
+    vac_settings.alchemical_sampler_settings.sampler_method = method
+    vac_settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=vac_settings,
@@ -172,8 +107,8 @@ def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.sampler_settings.sampler_method = method
-    settings.sampler_settings.n_repeats = 1
+    settings.alchemical_sampler_settings.sampler_method = method
+    settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=settings,
@@ -196,8 +131,8 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.sampler_settings.sampler_method = method
-    settings.sampler_settings.n_repeats = 1
+    settings.alchemical_sampler_settings.sampler_method = method
+    settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(
             settings=settings,
@@ -227,6 +162,30 @@ def test_lambda_schedule(windows):
     assert len(lambdas.lambda_schedule) == windows
 
 
+def test_hightimestep(benzene_vacuum_system,
+                      toluene_vacuum_system,
+                      benzene_to_toluene_mapping, tmpdir):
+    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings.forcefield_settings.hydrogen_mass = 1.0
+    settings.system_settings.nonbonded_method = 'nocutoff'
+
+    p = openmm_rbfe.RelativeLigandProtocol(
+            settings=settings,
+    )
+
+    dag = p.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    errmsg = "too large for hydrogen mass"
+    with tmpdir.as_cwd():
+        with pytest.raises(ValueError, match=errmsg):
+            unit.run(dry=True)
+
+
 def test_n_replicas_not_n_windows(benzene_vacuum_system,
                                   toluene_vacuum_system,
                                   benzene_to_toluene_mapping, tmpdir):
@@ -234,7 +193,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
     # equals the numbers of replicas used - TODO: remove limitation
     settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
     # default lambda windows is 11
-    settings.sampler_settings.n_replicas = 13
+    settings.alchemical_sampler_settings.n_replicas = 13
     settings.system_settings.nonbonded_method = 'nocutoff'
 
     errmsg = ("Number of replicas 13 does not equal the number of "
@@ -443,7 +402,7 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
         for u in units:
-            ret = u.execute(shared=tmpdir)
+            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
             results.append(ret)
 
     repeats = set()
@@ -459,7 +418,9 @@ def test_gather(solvent_protocol_dag, tmpdir):
     with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandProtocolUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
-                                            shared=tmpdir)
+                                            shared_basedir=tmpdir,
+                                            scratch_basedir=tmpdir,
+                                            keep_shared=True)
 
     prot = openmm_rbfe.RelativeLigandProtocol(
         settings=openmm_rbfe.RelativeLigandProtocol.default_settings()
@@ -683,7 +644,7 @@ class TestConstraintRemoval:
 
 
 @pytest.fixture(scope='session')
-def tyk2_xml():
+def tyk2_xml(tmp_path_factory):
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_23.sdf') as f:
         lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
     with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_55.sdf') as f:
@@ -699,11 +660,11 @@ def tyk2_xml():
                                   29: 23, 30: 24, 31: 25, 32: 26, 33: 27}
     )
 
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-    settings.topology_settings.forcefield = {'ligand': 'openff-2.0.0.offxml'}
+    settings: openmm_rbfe.RelativeLigandProtocolSettings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings.forcefield_settings.small_molecule_forcefield = 'openff-2.0.0'
     settings.system_settings.nonbonded_method = 'nocutoff'
-    settings.system_settings.hydrogen_mass = 3.0
-    settings.sampler_settings.n_repeats = 1
+    settings.forcefield_settings.hydrogen_mass = 3.0
+    settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rbfe.RelativeLigandProtocol(settings)
 
@@ -714,7 +675,9 @@ def tyk2_xml():
     )
     pu = list(dag.protocol_units)[0]
 
-    dryrun = pu.run(dry=True)
+    tmp = tmp_path_factory.mktemp('xml_reg')
+
+    dryrun = pu.run(dry=True, basepath=tmp)
 
     system = dryrun['debug']['sampler']._hybrid_factory.hybrid_system
 
@@ -753,15 +716,3 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
-
-
-class TestRelativeLigandTransform(GufeTokenizableTestsMixin):
-    cls = openmm_rbfe.RelativeLigandProtocol
-    key = "RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504"
-    repr = "<RelativeLigandProtocol-56a107ace12ff91f21bc207a5d260504>"
-
-    @pytest.fixture
-    def instance(self):
-        settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
-        return openmm_rbfe.RelativeLigandProtocol(settings)
-
