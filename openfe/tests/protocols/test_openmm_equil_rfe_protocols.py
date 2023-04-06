@@ -25,7 +25,7 @@ from openff.units.openmm import ensure_quantity
 
 def test_compute_platform_warn():
     with pytest.warns(UserWarning, match="Non-GPU platform selected: CPU"):
-        openmm_rbfe._rbfe_utils.compute.get_openmm_platform('CPU')
+        openmm_rfe._rfe_utils.compute.get_openmm_platform('CPU')
 
 
 def test_append_topology(benzene_complex_system, toluene_complex_system):
