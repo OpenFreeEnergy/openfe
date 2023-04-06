@@ -30,7 +30,7 @@ from ..chemicalsystem_generator import (
     EasyChemicalSystemGenerator,
     RFEComponentLabels,
 )
-from ...protocols.openmm_rbfe.equil_rbfe_methods import RelativeLigandProtocol
+from ...protocols.openmm_rfe.equil_rfe_methods import RelativeLigandProtocol
 
 
 # TODO: move/or find better structure for protocol_generator combintations!

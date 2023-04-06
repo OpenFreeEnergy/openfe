@@ -16,7 +16,7 @@ from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe
 from openfe import setup
-from openfe.protocols import openmm_rbfe
+from openfe.protocols import openmm_rfe
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
 
@@ -38,7 +38,7 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
 
     lig2 = toluene_complex_system['ligand'].to_openff()
 
-    top2 = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
+    top2 = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
         top1, lig2.to_topology().to_openmm(),
         exclude_chains=list(top1.chains())[-1:],
     )
@@ -47,28 +47,28 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
 
 
 def test_create_default_settings():
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings = openmm_rfe.RelativeLigandProtocol.default_settings()
 
     assert settings
 
 
 def test_create_default_protocol():
     # this is roughly how it should be created
-    protocol = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    protocol = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
 
     assert protocol
 
 
 def test_serialize_protocol():
-    protocol = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    protocol = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
 
     ser = protocol.to_dict()
 
-    ret = openmm_rbfe.RelativeLigandProtocol.from_dict(ser)
+    ret = openmm_rfe.RelativeLigandProtocol.from_dict(ser)
 
     assert protocol == ret
 
@@ -79,12 +79,12 @@ def test_serialize_protocol():
 def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, method, tmpdir):
 
-    vac_settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    vac_settings = openmm_rfe.RelativeLigandProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
     vac_settings.alchemical_sampler_settings.sampler_method = method
     vac_settings.alchemical_sampler_settings.n_repeats = 1
 
-    protocol = openmm_rbfe.RelativeLigandProtocol(
+    protocol = openmm_rfe.RelativeLigandProtocol(
             settings=vac_settings,
     )
 
@@ -105,11 +105,11 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings = openmm_rfe.RelativeLigandProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
 
-    protocol = openmm_rbfe.RelativeLigandProtocol(
+    protocol = openmm_rfe.RelativeLigandProtocol(
             settings=settings,
     )
     dag = protocol.create(
@@ -129,11 +129,11 @@ def test_dry_run_ligand(benzene_system, toluene_system,
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings = openmm_rfe.RelativeLigandProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
 
-    protocol = openmm_rbfe.RelativeLigandProtocol(
+    protocol = openmm_rfe.RelativeLigandProtocol(
             settings=settings,
     )
     dag = protocol.create(
@@ -150,13 +150,13 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
 
 
 def test_lambda_schedule_default():
-    lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
+    lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(functions='default')
     assert len(lambdas.lambda_schedule) == 10
 
 
 @pytest.mark.parametrize('windows', [11, 6, 9000])
 def test_lambda_schedule(windows):
-    lambdas = openmm_rbfe._rbfe_utils.lambdaprotocol.LambdaProtocol(
+    lambdas = openmm_rfe._rfe_utils.lambdaprotocol.LambdaProtocol(
             functions='default', windows=windows)
     assert len(lambdas.lambda_schedule) == windows
 
@@ -164,11 +164,11 @@ def test_lambda_schedule(windows):
 def test_hightimestep(benzene_vacuum_system,
                       toluene_vacuum_system,
                       benzene_to_toluene_mapping, tmpdir):
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings = openmm_rfe.RelativeLigandProtocol.default_settings()
     settings.forcefield_settings.hydrogen_mass = 1.0
     settings.system_settings.nonbonded_method = 'nocutoff'
 
-    p = openmm_rbfe.RelativeLigandProtocol(
+    p = openmm_rfe.RelativeLigandProtocol(
             settings=settings,
     )
 
@@ -190,7 +190,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
                                   benzene_to_toluene_mapping, tmpdir):
     # For PR #125 we pin such that the number of lambda windows
     # equals the numbers of replicas used - TODO: remove limitation
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings = openmm_rfe.RelativeLigandProtocol.default_settings()
     # default lambda windows is 11
     settings.alchemical_sampler_settings.n_replicas = 13
     settings.system_settings.nonbonded_method = 'nocutoff'
@@ -200,7 +200,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
 
     with tmpdir.as_cwd():
         with pytest.raises(ValueError, match=errmsg):
-            p = openmm_rbfe.RelativeLigandProtocol(
+            p = openmm_rfe.RelativeLigandProtocol(
                     settings=settings,
             )
             dag = p.create(
@@ -216,8 +216,8 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
     # state B doesn't have a ligand component
     stateB = openfe.ChemicalSystem({'solvent': openfe.SolventComponent()})
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
 
     with pytest.raises(ValueError, match='Missing ligand in state B'):
@@ -233,8 +233,8 @@ def test_vaccuum_PME_error(benzene_system, benzene_modifications,
     # state B doesn't have a solvent component (i.e. its vacuum)
     stateB = openfe.ChemicalSystem({'ligand': benzene_modifications['toluene']})
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     errmsg = "PME cannot be used for vacuum transform"
     with pytest.raises(ValueError, match=errmsg):
@@ -254,8 +254,8 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
              positive_ion='K', negative_ion='Cl')}
     )
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError, match="Solvents aren't identical"):
         _ = p.create(
@@ -273,8 +273,8 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
         componentB=benzene_modifications['phenol'],
         componentA_to_componentB=dict())
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError,
                        match="Ligand in state B doesn't match mapping"):
@@ -292,8 +292,8 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
         componentB=toluene_system.components['ligand'],
         componentA_to_componentB=dict())
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError,
                        match="Ligand in state A doesn't match mapping"):
@@ -307,8 +307,8 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
 def test_complex_mismatch(benzene_system, toluene_complex_system,
                           benzene_to_toluene_mapping):
     # only one complex
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError):
         _ = p.create(
@@ -321,8 +321,8 @@ def test_complex_mismatch(benzene_system, toluene_complex_system,
 def test_badly_specified_mapping(benzene_system, toluene_system,
                                  benzene_to_toluene_mapping):
     # mapping dict requires 'ligand' key
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError):
         _ = p.create(
@@ -344,8 +344,8 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
                   'protein': alt_prot}
     )
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError):
         _ = p.create(
@@ -370,8 +370,8 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
         {'ligand': l2, 'solvent': openfe.SolventComponent()},
     )
 
-    p = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings(),
+    p = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings(),
     )
     with pytest.raises(ValueError, match="Element change"):
         _ = p.create(
@@ -382,9 +382,9 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
 
 @pytest.fixture
 def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapping):
-    settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings = openmm_rfe.RelativeLigandProtocol.default_settings()
 
-    protocol = openmm_rbfe.RelativeLigandProtocol(
+    protocol = openmm_rfe.RelativeLigandProtocol(
         settings=settings,
     )
 
@@ -397,7 +397,7 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
 def test_unit_tagging(solvent_protocol_dag, tmpdir):
     # test that executing the Units includes correct generation and repeat info
     units = solvent_protocol_dag.protocol_units
-    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandProtocolUnit.run',
+    with mock.patch('openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeLigandProtocolUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
         for u in units:
@@ -414,18 +414,18 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
 
 def test_gather(solvent_protocol_dag, tmpdir):
     # check .gather behaves as expected
-    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.RelativeLigandProtocolUnit.run',
+    with mock.patch('openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeLigandProtocolUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
                                             shared_basedir=tmpdir,
                                             scratch_basedir=tmpdir,
                                             keep_shared=True)
 
-    prot = openmm_rbfe.RelativeLigandProtocol(
-        settings=openmm_rbfe.RelativeLigandProtocol.default_settings()
+    prot = openmm_rfe.RelativeLigandProtocol(
+        settings=openmm_rfe.RelativeLigandProtocol.default_settings()
     )
 
-    with mock.patch('openfe.protocols.openmm_rbfe.equil_rbfe_methods.multistate') as m:
+    with mock.patch('openfe.protocols.openmm_rfe.equil_rfe_methods.multistate') as m:
         res = prot.gather([dagres])
 
         # check we created the expected number of Reporters and Analyzers
@@ -435,7 +435,7 @@ def test_gather(solvent_protocol_dag, tmpdir):
         )
         assert m.MultiStateSamplerAnalyzer.call_count == 3
 
-    assert isinstance(res, openmm_rbfe.RelativeLigandProtocolResult)
+    assert isinstance(res, openmm_rfe.RelativeLigandProtocolResult)
 
 
 class TestConstraintRemoval:
@@ -473,7 +473,7 @@ class TestConstraintRemoval:
             removeCMMotion=True,
         )
 
-        stateB_topology = openmm_rbfe._rbfe_utils.topologyhelpers.combined_topology(
+        stateB_topology = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             ligB.to_openff().to_topology().to_openmm(),
             exclude_chains=list(stateA_topology.chains())
@@ -529,7 +529,7 @@ class TestConstraintRemoval:
 
         # this normally requires global indices, however as ligandA/B is only thing
         # in system, this mapping is still correct
-        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+        ret = openmm_rfe._rfe_utils.topologyhelpers._remove_constraints(
             mapping.componentA_to_componentB,
             stateA_system, stateA_topology,
             stateB_system, stateB_topology,
@@ -563,7 +563,7 @@ class TestConstraintRemoval:
         stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
             ligA, ligB, constraints=app.HBonds)
 
-        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+        ret = openmm_rfe._rfe_utils.topologyhelpers._remove_constraints(
             mapping.componentA_to_componentB,
             stateA_system, stateA_topology,
             stateB_system, stateB_topology,
@@ -595,7 +595,7 @@ class TestConstraintRemoval:
         stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
             ligA, ligB, constraints=app.HBonds)
 
-        ret = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+        ret = openmm_rfe._rfe_utils.topologyhelpers._remove_constraints(
             mapping.componentA_to_componentB,
             stateA_system, stateA_topology,
             stateB_system, stateB_topology,
@@ -631,7 +631,7 @@ class TestConstraintRemoval:
             ligA, ligB, constraints=app.AllBonds)
 
         with pytest.raises(ValueError, match='resolve constraint') as e:
-            _ = openmm_rbfe._rbfe_utils.topologyhelpers._remove_constraints(
+            _ = openmm_rfe._rfe_utils.topologyhelpers._remove_constraints(
                 mapping.componentA_to_componentB,
                 stateA_system, stateA_topology,
                 stateB_system, stateB_topology,
@@ -644,9 +644,9 @@ class TestConstraintRemoval:
 
 @pytest.fixture(scope='session')
 def tyk2_xml(tmp_path_factory):
-    with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_23.sdf') as f:
+    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_23.sdf') as f:
         lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
-    with resources.path('openfe.tests.data.openmm_rbfe', 'ligand_55.sdf') as f:
+    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_55.sdf') as f:
         lig55 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
 
     mapping = setup.LigandAtomMapping(
@@ -659,13 +659,13 @@ def tyk2_xml(tmp_path_factory):
                                   29: 23, 30: 24, 31: 25, 32: 26, 33: 27}
     )
 
-    settings: openmm_rbfe.RelativeLigandProtocolSettings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    settings: openmm_rfe.RelativeLigandProtocolSettings = openmm_rfe.RelativeLigandProtocol.default_settings()
     settings.forcefield_settings.small_molecule_forcefield = 'openff-2.0.0'
     settings.system_settings.nonbonded_method = 'nocutoff'
     settings.forcefield_settings.hydrogen_mass = 3.0
     settings.alchemical_sampler_settings.n_repeats = 1
 
-    protocol = openmm_rbfe.RelativeLigandProtocol(settings)
+    protocol = openmm_rfe.RelativeLigandProtocol(settings)
 
     dag = protocol.create(
         stateA=openfe.ChemicalSystem({'ligand': lig23}),
@@ -685,7 +685,7 @@ def tyk2_xml(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def tyk2_reference_xml():
-    with resources.path('openfe.tests.data.openmm_rbfe', 'reference.xml') as f:
+    with resources.path('openfe.tests.data.openmm_rfe', 'reference.xml') as f:
         with open(f, 'r') as i:
             xmldata = i.read()
     return ET.fromstring(xmldata)

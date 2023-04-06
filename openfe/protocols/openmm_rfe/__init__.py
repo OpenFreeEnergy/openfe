@@ -1,13 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from . import _rbfe_utils
+from . import _rfe_utils
 
-from .equil_rbfe_settings import (
+from .equil_rfe_settings import (
     RelativeLigandProtocolSettings,
 )
 
-from .equil_rbfe_methods import (
+from .equil_rfe_methods import (
     RelativeLigandProtocol,
     RelativeLigandProtocolResult,
     RelativeLigandProtocolUnit,

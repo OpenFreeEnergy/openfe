@@ -14,7 +14,7 @@ from openfecli.commands.plan_rbfe_network import (
 @pytest.fixture
 def mol_dir_args():
     with importlib.resources.path(
-        "openfe.tests.data.openmm_rbfe", "__init__.py"
+        "openfe.tests.data.openmm_rfe", "__init__.py"
     ) as file_path:
         ofe_dir_path = os.path.dirname(file_path)
 
@@ -64,7 +64,7 @@ def test_plan_rbfe_network_main():
     )
 
     with importlib.resources.path(
-        "openfe.tests.data.openmm_rbfe", "__init__.py"
+        "openfe.tests.data.openmm_rfe", "__init__.py"
     ) as file_path:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(f)
