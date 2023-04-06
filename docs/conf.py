@@ -34,6 +34,7 @@ extensions = [
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_toolbox.collapse',
 ]
+myst_enable_extensions = ["colon_fence"]
 
 autoclass_content = 'both'
 
