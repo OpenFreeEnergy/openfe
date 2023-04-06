@@ -14,6 +14,8 @@ from openmm import app, XmlSerializer
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
+from rdkit.Geometry import Point3D
+
 import openfe
 from openfe import setup
 from openfe.protocols import openmm_rbfe
@@ -379,6 +381,33 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
             stateA=sys1, stateB=sys2,
             mapping={'ligand': mapping},
         )
+
+
+def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
+                                benzene_to_toluene_mapping):
+    vac_settings = openmm_rbfe.RelativeLigandProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+
+    protocol = openmm_rbfe.RelativeLigandProtocol(
+            settings=vac_settings,
+    )
+
+    # update atom positions
+    sysA = benzene_vacuum_system
+    conf = sysA['ligand']._rdkit.GetConformer()
+
+    for atm in range(sysA['ligand']._rdkit.GetNumAtoms()):
+        x, y, z = conf.GetAtomPosition(atm)
+        conf.SetAtomPosition(atm, Point3D(x+3, y, z))
+
+    # Specifically check that the first pair throws a warning
+    with pytest.warns(UserWarning, match='0 : 4 deviates'):
+        dag = protocol.create(
+            stateA=sysA, stateB=toluene_vacuum_system,
+            mapping={'ligand': benzene_to_toluene_mapping},
+            )
+        unit = list(dag.protocol_units)[0]
+        unit.run(dry=True)
 
 
 @pytest.fixture
