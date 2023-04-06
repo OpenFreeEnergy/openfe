@@ -4,12 +4,12 @@
 from . import _rfe_utils
 
 from .equil_rfe_settings import (
-    RelativeLigandProtocolSettings,
+    RelativeHybridTopologyProtocolSettings,
 )
 
 from .equil_rfe_methods import (
-    RelativeLigandProtocol,
-    RelativeLigandProtocolResult,
-    RelativeLigandProtocolUnit,
+    RelativeHybridTopologyProtocol,
+    RelativeHybridTopologyProtocolResult,
+    RelativeHybridTopologyProtocolUnit,
 )
 

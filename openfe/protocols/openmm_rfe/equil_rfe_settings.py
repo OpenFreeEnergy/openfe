@@ -393,7 +393,7 @@ class SimulationSettings(settings.SettingsBaseModel):
         return v
 
 
-class RelativeLigandProtocolSettings(settings.Settings):
+class RelativeHybridTopologyProtocolSettings(settings.Settings):
     class Config:
         arbitrary_types_allowed = True
 

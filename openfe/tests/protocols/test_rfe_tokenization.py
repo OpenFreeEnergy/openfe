@@ -7,14 +7,14 @@ import pytest
 
 """
 todo:
-- RelativeLigandProtocolResult
-- RelativeLigandProtocol
-- RelativeLigandProtocolUnit
+- RelativeHybridTopologyProtocolResult
+- RelativeHybridTopologyProtocol
+- RelativeHybridTopologyProtocolUnit
 """
 
 @pytest.fixture
 def protocol():
-    return openmm_rfe.RelativeLigandProtocol(openmm_rfe.RelativeLigandProtocol.default_settings())
+    return openmm_rfe.RelativeHybridTopologyProtocol(openmm_rfe.RelativeHybridTopologyProtocol.default_settings())
 
 
 @pytest.fixture
@@ -27,8 +27,8 @@ def protocol_unit(protocol, benzene_system, toluene_system, benzene_to_toluene_m
 
 
 @pytest.mark.skip
-class TestRelativeLigandProtocolResult(GufeTokenizableTestsMixin):
-    cls = openmm_rfe.RelativeLigandProtocolResult
+class TestRelativeHybridTopologyProtocolResult(GufeTokenizableTestsMixin):
+    cls = openmm_rfe.RelativeHybridTopologyProtocolResult
     repr = ""
     key = ""
 
@@ -37,19 +37,19 @@ class TestRelativeLigandProtocolResult(GufeTokenizableTestsMixin):
         pass
 
 
-class TestRelativeLigandProtocol(GufeTokenizableTestsMixin):
-    cls = openmm_rbfe.RelativeLigandProtocol
-    key = "RelativeLigandProtocol-49573953bc1a31718c59ef874461d4d0"
-    repr = "<RelativeLigandProtocol-49573953bc1a31718c59ef874461d4d0>"
+class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
+    cls = openmm_rfe.RelativeHybridTopologyProtocol
+    key = "RelativeHybridTopologyProtocol-d08dc752745cff33b6e0fdb3f6dc4611"
+    repr = "<RelativeHybridTopologyProtocol-d08dc752745cff33b6e0fdb3f6dc4611>"
 
     @pytest.fixture()
     def instance(self, protocol):
         return protocol
 
 
-class TestRelativeLigandProtocolUnit(GufeTokenizableTestsMixin):
-    cls = openmm_rfe.RelativeLigandProtocolUnit
-    repr = "RelativeLigandProtocolUnit(benzene toluene repeat 2 generation 0)"
+class TestRelativeHybridTopologyProtocolUnit(GufeTokenizableTestsMixin):
+    cls = openmm_rfe.RelativeHybridTopologyProtocolUnit
+    repr = "RelativeHybridTopologyProtocolUnit(benzene toluene repeat 2 generation 0)"
     key = None
 
     @pytest.fixture()

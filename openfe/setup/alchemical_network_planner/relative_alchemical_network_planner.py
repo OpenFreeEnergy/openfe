@@ -30,12 +30,12 @@ from ..chemicalsystem_generator import (
     EasyChemicalSystemGenerator,
     RFEComponentLabels,
 )
-from ...protocols.openmm_rfe.equil_rfe_methods import RelativeLigandProtocol
+from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
 
 
 # TODO: move/or find better structure for protocol_generator combintations!
 PROTOCOL_GENERATOR = {
-    RelativeLigandProtocol: EasyChemicalSystemGenerator,
+    RelativeHybridTopologyProtocol: EasyChemicalSystemGenerator,
 }
 
 
@@ -50,8 +50,8 @@ class RelativeAlchemicalNetworkPlanner(
         mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
-        protocol: Protocol = RelativeLigandProtocol(
-            RelativeLigandProtocol.default_settings()
+        protocol: Protocol = RelativeHybridTopologyProtocol(
+            RelativeHybridTopologyProtocol.default_settings()
         ),
     ):
         """A simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
@@ -67,7 +67,7 @@ class RelativeAlchemicalNetworkPlanner(
         ligand_network_planner : Callable, optional
             network using mapper and mapping_scorer to build up an optimal network, by default generate_minimal_spanning_network
         protocol : Protocol, optional
-            FE-protocol for each transformation (edge of ligand network) that is required in order to calculate the FE graph, by default RelativeLigandProtocol( RelativeLigandProtocol._default_settings() )
+            FE-protocol for each transformation (edge of ligand network) that is required in order to calculate the FE graph, by default RelativeHybridTopologyProtocol( RelativeHybridTopologyProtocol._default_settings() )
         """
 
         # TODO: Remove as soon as element Changes are possible. - START
@@ -239,8 +239,8 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
-        protocol: Protocol = RelativeLigandProtocol(
-            RelativeLigandProtocol.default_settings()
+        protocol: Protocol = RelativeHybridTopologyProtocol(
+            RelativeHybridTopologyProtocol.default_settings()
         ),
     ):
         super().__init__(
@@ -324,8 +324,8 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
-        protocol: Protocol = RelativeLigandProtocol(
-            RelativeLigandProtocol._default_settings()
+        protocol: Protocol = RelativeHybridTopologyProtocol(
+            RelativeHybridTopologyProtocol._default_settings()
         ),
     ):
         super().__init__(

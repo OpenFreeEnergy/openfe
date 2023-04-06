@@ -42,7 +42,7 @@ from gufe import (
 )
 
 from .equil_rfe_settings import (
-    RelativeLigandProtocolSettings, SystemSettings,
+    RelativeHybridTopologyProtocolSettings, SystemSettings,
     SolvationSettings, AlchemicalSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings
@@ -62,8 +62,8 @@ def _get_resname(off_mol) -> str:
     return names[0]
 
 
-class RelativeLigandProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a RelativeLigandProtocol"""
+class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
+    """Dict-like container for the output of a RelativeHybridTopologyProtocol"""
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
@@ -137,9 +137,9 @@ class RelativeLigandProtocolResult(gufe.ProtocolResult):
         raise NotImplementedError
 
 
-class RelativeLigandProtocol(gufe.Protocol):
-    result_cls = RelativeLigandProtocolResult
-    _settings: RelativeLigandProtocolSettings
+class RelativeHybridTopologyProtocol(gufe.Protocol):
+    result_cls = RelativeHybridTopologyProtocolResult
+    _settings: RelativeHybridTopologyProtocolSettings
 
     @classmethod
     def _default_settings(cls):
@@ -154,7 +154,7 @@ class RelativeLigandProtocol(gufe.Protocol):
         Settings
           a set of default settings
         """
-        return RelativeLigandProtocolSettings(
+        return RelativeHybridTopologyProtocolSettings(
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
@@ -235,7 +235,7 @@ class RelativeLigandProtocol(gufe.Protocol):
         Bname = stateB['ligand'].name
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.alchemical_sampler_settings.n_repeats
-        units = [RelativeLigandProtocolUnit(
+        units = [RelativeHybridTopologyProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
             generation=0, repeat_id=i,
@@ -275,7 +275,7 @@ class RelativeLigandProtocol(gufe.Protocol):
         }
 
 
-class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
+class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     """
     Calculates the relative free energy of an alchemical ligand transformation.
     """
@@ -284,7 +284,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
-                 settings: settings.RelativeLigandProtocolSettings,
+                 settings: settings.RelativeHybridTopologyProtocolSettings,
                  generation: int,
                  repeat_id: int,
                  name: Optional[str] = None,
@@ -359,7 +359,7 @@ class RelativeLigandProtocolUnit(gufe.ProtocolUnit):
 
         # a. check timestep correctness + that
         # equilibration & production are divisible by n_steps
-        prototol_settings: RelativeLigandProtocolSettings = self._inputs['settings']
+        prototol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
