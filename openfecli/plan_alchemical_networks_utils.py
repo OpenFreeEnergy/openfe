@@ -35,6 +35,9 @@ def plan_alchemical_network_output(alchemical_network: AlchemicalNetwork, folder
         - complex
           - transformation.json
     """
+    import gufe
+    from gufe import tokenization
+
     an_dict = alchemical_network.to_dict()
 
     base_name = folder_path.name
@@ -42,7 +45,7 @@ def plan_alchemical_network_output(alchemical_network: AlchemicalNetwork, folder
         folder_path.mkdir()
 
     an_json = folder_path / f"{base_name}.json"
-    json.dump(an_dict, an_json.open(mode="w"))
+    json.dump(an_dict, an_json.open(mode="w"), cls=tokenization.JSON_HANDLER.encoder)
     write("\t\t- " + base_name + ".json")
 
     transformation_dir = folder_path / "transformations"
@@ -66,6 +69,7 @@ def plan_alchemical_network_output(alchemical_network: AlchemicalNetwork, folder
 
         write("\t\t\t- " + f"{lig_pair[0].name}_{lig_pair[1].name}/")
 
+        leg: gufe.Transformation
         for leg in v:
             label = deduce_label(leg)
 
