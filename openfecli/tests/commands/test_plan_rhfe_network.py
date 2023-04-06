@@ -61,7 +61,8 @@ def test_plan_rhfe_network_main():
         small_molecules=smallM_components,
         solvent=solvent_component,
     )
-    print(alchemical_network)
+
+    assert alchemical_network
 
 
 def test_plan_rhfe_network(mol_dir_args, mapper_args):
