@@ -11,8 +11,10 @@ Welcome to OpenFE's documentation!
    :caption: Contents:
 
    installation
-   setup
    workflow
+   setup/index
+   execution/index
+   setup
    dumping_transformation
    api
    cli/index
