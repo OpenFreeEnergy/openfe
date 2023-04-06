@@ -1,9 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Equilibrium RBFE Protocol input settings.
+"""Equilibrium Relative Free Energy Protocol input settings.
 
 This module implements the necessary settings necessary to run absolute free
-energies using :class:`openfe.protocols.openmm_rbfe.equil_rbfe_methods.py`
+energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 
 """
 from __future__ import annotations
@@ -393,7 +393,7 @@ class SimulationSettings(settings.SettingsBaseModel):
         return v
 
 
-class RelativeLigandProtocolSettings(settings.Settings):
+class RelativeHybridTopologyProtocolSettings(settings.Settings):
     class Config:
         arbitrary_types_allowed = True
 
