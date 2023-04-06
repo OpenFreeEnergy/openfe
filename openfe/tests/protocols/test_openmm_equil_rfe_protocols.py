@@ -21,6 +21,11 @@ from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
 
 
+def test_compute_platform_warn():
+    with pytest.warns(UserWarning, match="Non-GPU platform selected: CPU"):
+        openmm_rbfe._rbfe_utils.compute.get_openmm_platform('CPU')
+
+
 def test_append_topology(benzene_complex_system, toluene_complex_system):
     mod = app.Modeller(
         benzene_complex_system['protein'].to_openmm_topology(),

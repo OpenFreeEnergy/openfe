@@ -1,4 +1,12 @@
-# A copy of Perses' perses.app.setup_relative_calculation.get_openmm_platform
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+# Adapted Perses' perses.app.setup_relative_calculation.get_openmm_platform
+import warnings
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 def get_openmm_platform(platform_name=None):
     """
@@ -29,8 +37,14 @@ def get_openmm_platform(platform_name=None):
     if name in ['CUDA', 'OpenCL']:
         platform.setPropertyDefaultValue(
                 'Precision', 'mixed')
-    if name in ['CUDA']:
+    if name == 'CUDA':
         platform.setPropertyDefaultValue(
                 'DeterministicForces', 'true')
+
+    if name != 'CUDA':
+        wmsg = (f"Non-GPU platform selected: {name}, this may significantly "
+                "impact simulation performance")
+        warnings.warn(wmsg)
+        logging.warning(wmsg)
 
     return platform
