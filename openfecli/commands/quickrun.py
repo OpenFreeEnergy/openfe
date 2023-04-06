@@ -23,11 +23,11 @@ def _format_exception(exception) -> str:
 @click.argument('transformation', type=click.File(mode='r'),
                 required=True)
 @click.option(
-    'directory', '-d', default=None,
+    '--work-dir', '-d', default=None,
     type=click.Path(dir_okay=True, file_okay=False, writable=True,
                     path_type=pathlib.Path),
     help=(
-        "directory to store files in (defaults to temporary directory)"
+        "directory to store files in (defaults to current directory)"
     ),
 )
 @click.option(
@@ -37,23 +37,21 @@ def _format_exception(exception) -> str:
     help="output file (JSON format) for the final results",
     callback=ensure_file_does_not_exist,
 )
-def quickrun(transformation, directory, output):
+def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
     To save a transformation as JSON, create the transformation and then
     save it with transformation.dump(filename).
     """
     import gufe
+    import os
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
-    import tempfile
 
-    if directory is None:
-        tmpdir = tempfile.TemporaryDirectory()
-        directory = pathlib.Path(tmpdir.name)
+    if work_dir is None:
+        work_dir = pathlib.Path(os.getcwd())
     else:
-        tmpdir = None
-        directory.mkdir(exist_ok=True)
+        work_dir.mkdir(exist_ok=True, parents=True)
 
     write("Loading file...")
     # TODO: change this to `Transformation.load(transformation)`
@@ -63,8 +61,8 @@ def quickrun(transformation, directory, output):
     dag = trans.create()
     write("Running the simulations...")
     dagresult = execute_DAG(dag,
-                            shared_basedir=directory,
-                            scratch_basedir=directory,
+                            shared_basedir=work_dir,
+                            scratch_basedir=work_dir,
                             keep_shared=True,
                             raise_error=False)
     write("Done! Analyzing the results....")
@@ -85,15 +83,12 @@ def quickrun(transformation, directory, output):
             for unit in dagresult.protocol_unit_results
         }
     }
-    # TODO: remove this ugly hack on next release
-    #       strip out Settings objects in each unit_result inputs dict
-    for _, dd in out_dict['unit_results'].items():
-        if 'inputs' in dd:
-            dd['inputs'].pop('settings')
 
-    if output:
-        with open(output, mode='w') as outf:
-            json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
+    if output is None:
+        output = work_dir / (str(trans.key) + '_results.json')
+
+    with open(output, mode='w') as outf:
+        json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
     write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
     write("Additional information:")
@@ -102,9 +97,6 @@ def quickrun(transformation, directory, output):
         write(result.outputs)
 
     write("")
-
-    if tmpdir is not None:
-        tmpdir.cleanup()
 
     if not dagresult.ok():
         # there can be only one, MacCleod
