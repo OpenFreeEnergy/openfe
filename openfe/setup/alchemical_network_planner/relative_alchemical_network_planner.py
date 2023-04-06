@@ -209,10 +209,6 @@ class RelativeAlchemicalNetworkPlanner(
         if "vacuum" in transformation_name:
             protocol_settings.system_settings.nonbonded_method = "nocutoff"
 
-        protocol_settings.alchemical_settings.atom_overlap_tolerance = 100  # Todo: Hack to avoid protocol errors -  remove after fix was merged:
-        # github PR #274
-        # Todo: Another dirty hack! - END
-
         transformation_protocol = transformation_protocol.__class__(
             settings=protocol_settings
         )

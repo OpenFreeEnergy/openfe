@@ -141,11 +141,6 @@ class AlchemicalSettings(settings.SettingsBaseModel):
     endstate the torsion term is turned off/on depending on the state the
     unique atoms belong to. Default False.
     """
-    atom_overlap_tolerance = 0.5
-    """
-    Maximum allowed deviation along any dimension (x,y,z) in mapped atoms
-    between the positions of state A and B. Default 0.5.
-    """
 
 
 class AlchemicalSamplerSettings(settings.SettingsBaseModel):
