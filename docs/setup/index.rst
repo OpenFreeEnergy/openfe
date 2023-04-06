@@ -8,7 +8,7 @@ simulation campaign.
 
 The first thing you will need to do will be to load in your molecules.
 OpenFE can small molecules from anything that RDKit can handle, and can load
-proteins from PDB or PDBx. For details of this, see :ref:`???`.
+proteins from PDB or PDBx. For details of this, see ref:`???`.
 
 The procedure for setting up a simulation depends somewhat on the on the
 type of free energy calculation you are running. See more detailed
@@ -30,7 +30,6 @@ format used by the CLI. See ??? for details on that.
    :hidden:
 
    customizing_ligand_network
-   customizing_alchemical_network
 
 
 This section also contains several how-to documents to solve common issues.

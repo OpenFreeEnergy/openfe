@@ -23,7 +23,7 @@ example, you are likely to make use of HPC or cloud computing resources to
 run the simulation campaign. Because of this, each stage has a certain type
 of output, which is the input to the next stage.
 
-.. figure:: ???
+.. .. figure:: ???
     :alt: Setup -> (AlchemicalNetwork) -> Execution -> (ProtocolResults) -> Gather
 
     The main stages of a free energy calculation in OpenFE, and the intermediates between them.
@@ -46,7 +46,7 @@ gathering results. With the CLI, the Python objects of
 :class:`.AlchemicalNetwork` and :class:`.ProtocolResult` are stored to disk
 in an intermediate representation between the commands.
 
-.. figure:: ???
+.. .. figure:: ???
    :alt: [NetworkPlanner -> AlchemicalNetwork] -> Transformation JSON -> quickrun -> Result JSON -> gather
 
    The CLI workflow, with intermediates. The setup stage uses a network
@@ -73,7 +73,7 @@ from the network planning command with something like this:
 
 .. TODO
 
-Finally, to gather the results of that, use the :ref:`cli_gather`:
+Finally, to gather the results of that, use the ref:`cli_gather`:
 
 .. code:: bash
 
