@@ -30,7 +30,6 @@ author = 'The OpenFE Development Team'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'myst_parser',
     'sphinx_click.ext',
     'sphinxcontrib.autodoc_pydantic',
 ]
@@ -43,9 +42,14 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-autodoc_mock_imports = ['lomap', 'networkx', 'openeye', 'rdkit', 'pytest',
-                        'typing_extensions',
-                        'click', 'plugcli', 'numba']
+autodoc_mock_imports = ['openff.models',
+                        'rdkit',
+                        'matplotlib',
+                        'lomap',
+                        'openmmtools',
+                        'mdtraj',
+                        'openmmforcefields',
+]
 
 
 # -- Options for HTML output -------------------------------------------------
