@@ -1,0 +1,2 @@
+recursive-include openfecli/tests/data/ *
+recursive-include openfe/tests/data/ *
