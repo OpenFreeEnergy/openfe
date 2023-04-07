@@ -6,11 +6,9 @@ These tools
 Atom Mappers
 ------------
 
-.. autoclass:: openfe.LigandAtomMapper
+.. autoclass:: openfe.setup.LomapAtomMapper
 
-.. autoclass:: openfe.LomapAtomMapper
-
-.. autoclass:: openfe.PersesAtomMapper
+.. autoclass:: openfe.setup.PersesAtomMapper
 
 
 Scorers
