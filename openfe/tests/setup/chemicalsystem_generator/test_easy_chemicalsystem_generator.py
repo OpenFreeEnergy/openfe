@@ -9,7 +9,7 @@ from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import 
 )
 
 
-from ..conftest import T4_protein_component
+from ...conftest import T4_protein_component
 from gufe import SolventComponent
 from .component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
 

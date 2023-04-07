@@ -1,6 +1,7 @@
 [![Logo](https://img.shields.io/badge/OSMF-OpenFreeEnergy-%23002f4a)](https://openfree.energy/)
 [![build](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml/badge.svg)](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml)
 [![coverage](https://codecov.io/gh/OpenFreeEnergy/openfe/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenFreeEnergy/openfe)
+[![documentation](https://readthedocs.org/projects/openfe/badge/?version=latest)](https://openfe.readthedocs.io/en/latest/?badge=latest)
 
 # `openfe` - A Python package for executing alchemical free energy calculations.
 

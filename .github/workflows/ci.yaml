@@ -35,6 +35,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       # More info on options: https://github.com/conda-incubator/setup-miniconda
       - name: Setup Micromamba
@@ -64,7 +66,7 @@ jobs:
 
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
-                && github.event != 'schedule' }}
+                && github.event_name != 'schedule' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
