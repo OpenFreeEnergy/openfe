@@ -1,7 +1,7 @@
 .. _workflow:
 
-Calculating Free Energies with OpenFE
-=====================================
+Introduction 
+============
 
 Here we present the workflow for calculating free energies in OpenFE, in the
 broadest strokes possible This workflow is reflected in both the Python API

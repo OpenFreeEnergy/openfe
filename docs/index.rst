@@ -11,11 +11,9 @@ Welcome to OpenFE's documentation!
    :caption: Contents:
 
    installation
-   workflow
-   setup/index
-   execution/index
-   setup
-   dumping_transformation
+   tutorials/index
+   guide/index
+   cookbook/index
    api
    cli/index
 
