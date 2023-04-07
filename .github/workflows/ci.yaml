@@ -44,6 +44,8 @@ jobs:
         with:
           environment-file: environment.yml
           environment-name: openfe
+          cache-env: true
+          cache-downloads: true
           extra-specs: |
             python==${{ matrix.python-version }}
 
