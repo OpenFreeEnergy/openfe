@@ -1,11 +1,12 @@
-.. _workflow:
+.. _guide-introduction:
 
 Introduction 
 ============
 
-Here we present the workflow for calculating free energies in OpenFE, in the
-broadest strokes possible This workflow is reflected in both the Python API
-and in the command line interface, and so we have a section for each.
+Here we present an overview of the workflow for calculating free energies in
+OpenFE, in the broadest strokes possible This workflow is reflected in both
+the Python API and in the command line interface, and so we have a section
+for each.
 
 Workflow overview
 -----------------
@@ -32,10 +33,15 @@ The output of **setup** is an :class:`.AlchemicalNetwork`. This contains all
 the information about what is being simulated (e.g., what ligands) and the
 information about how to perform the simulation (the protocol).
 
-The output of the **executation** stage is the basic results from each edge;
-the ???
+The output of the **executation** stage is the basic results from each edge.
+This can depend of the specific analysis intended, but will either involve a
+:class:`.ProtocolResult` representing the calculated :math:`\Delta G` for
+each edge or the :class:`.ProtocolDAGResult` linked to the data needed to
+calculate that :math:`\Delta G`.
 
-The **gather results** stage ???
+The **gather results** stage takes these results and produces something
+useful to the user. For example, the CLI's ``gather`` command will create a
+table of the :class:`.Delta G` for each leg.
 
 
 CLI Workflow
@@ -58,6 +64,8 @@ The commands used for set up the CLI are:
 * the :ref:`cli_plan-rbfe-network`
 * the :ref:`cli_plan-rhfe-network`
 
+.. TODO: add command example here;
+
 These will save the alchemical network represented as a JSON file for each
 edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the simulation).
 
@@ -75,9 +83,11 @@ from the network planning command with something like this:
 
 Finally, to gather the results of that, use the ref:`cli_gather`:
 
+.. TODO: update command here
+
 .. code:: bash
 
-    $ openfe gather -o 
+    $ openfe gather -o
 
 This will output a tab-separated file with the ligand pair, the 
 
