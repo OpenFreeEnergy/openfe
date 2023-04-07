@@ -23,6 +23,7 @@ dependencies:
   - py3dmol
   - plugcli
   - libnetcdf<4.9
+  # Issues with 11.8 on    lilac
   - cudatoolkit==11.7
   # docs
   - myst-parser
