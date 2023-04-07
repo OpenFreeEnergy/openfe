@@ -14,8 +14,8 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER openfecli /tmp/openfecli
 COPY --chown=$MAMBA_USER:$MAMBA_USER LICENSE MANIFEST.in README.md pyproject.toml /tmp/
 RUN --mount=type=cache,mode=0777,target=/home/mambauser/.mamba/pkgs \ 
     --mount=type=cache,mode=0777,target=/home/mambauser/.cache/pip \
-    micromamba install -y -n base git -f /tmp/env.yaml && \
-    micromamba clean --all --yes
+    --mount=type=cache,mode=0777,target=/opt/conda/pkgs \
+    micromamba install -y -n base git -f /tmp/env.yaml
 
 # Ensure that conda environment is automatically activated
 # https://github.com/mamba-org/micromamba-docker#running-commands-in-dockerfile-within-the-conda-environment
