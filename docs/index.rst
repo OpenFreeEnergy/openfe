@@ -14,7 +14,7 @@ Welcome to OpenFE's documentation!
    tutorials/index
    guide/index
    cookbook/index
-   api
+   api/index
    cli/index
 
 Indices and tables
