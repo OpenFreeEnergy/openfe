@@ -12,7 +12,9 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER production/environment.yml /tmp/env.yaml
 COPY --chown=$MAMBA_USER:$MAMBA_USER openfe /tmp/openfe
 COPY --chown=$MAMBA_USER:$MAMBA_USER openfecli /tmp/openfecli
 COPY --chown=$MAMBA_USER:$MAMBA_USER LICENSE MANIFEST.in README.md pyproject.toml /tmp/
-RUN --mount=type=cache,target=/opt/conda/pkgs/ micromamba install -y -n base git -f /tmp/env.yaml && \
+RUN --mount=type=cache,mode=0777,target=/home/mambauser/.mamba/pkgs \ 
+    --mount=type=cache,mode=0777,target=/home/mambauser/.cache/pip \
+    micromamba install -y -n base git -f /tmp/env.yaml && \
     micromamba clean --all --yes
 
 # Ensure that conda environment is automatically activated
