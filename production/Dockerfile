@@ -9,6 +9,7 @@ LABEL org.opencontainers.image.licenses=MIT
 ENV PYTHONUNBUFFERED=1
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER production/environment.yml /tmp/env.yaml
+COPY --chown=$MAMBA_USER:$MAMBA_USER .git /tmp/.git
 COPY --chown=$MAMBA_USER:$MAMBA_USER openfe /tmp/openfe
 COPY --chown=$MAMBA_USER:$MAMBA_USER openfecli /tmp/openfecli
 COPY --chown=$MAMBA_USER:$MAMBA_USER LICENSE MANIFEST.in README.md pyproject.toml /tmp/
