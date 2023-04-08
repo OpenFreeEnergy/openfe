@@ -94,5 +94,5 @@ jobs:
         # Move far out of the openfe src directory
         working-directory: ../../
         run: |
-          pytest --pyargs openfe.tests
-          pytest --pyargs openfecli.tests
+          pytest -v --pyargs openfe.tests
+          pytest -v --pyargs openfecli.tests
