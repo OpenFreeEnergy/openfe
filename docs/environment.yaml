@@ -1,0 +1,15 @@
+name: openfe-docs
+channels:
+- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
+- https://conda.anaconda.org/conda-forge
+dependencies:
+- openmm
+- openff-units
+- autodoc-pydantic
+- plugcli
+- pydata-sphinx-theme
+- python=3.9
+- sphinx
+- sphinx-click
+- pip:
+  - git+https://github.com/OpenFreeEnergy/gufe@main
