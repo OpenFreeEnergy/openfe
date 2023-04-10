@@ -1,4 +1,4 @@
-.. _plan-rbfe-network_quickrun:
+.. _cli_plan-rbfe-network:
 
 ``plan-rbfe-network`` command
 =============================
