@@ -9,14 +9,11 @@ LABEL org.opencontainers.image.licenses=MIT
 ENV PYTHONUNBUFFERED=1
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER production/environment.yml /tmp/env.yaml
-COPY --chown=$MAMBA_USER:$MAMBA_USER .git /tmp/.git
-COPY --chown=$MAMBA_USER:$MAMBA_USER openfe /tmp/openfe
-COPY --chown=$MAMBA_USER:$MAMBA_USER openfecli /tmp/openfecli
-COPY --chown=$MAMBA_USER:$MAMBA_USER LICENSE MANIFEST.in README.md pyproject.toml /tmp/
+COPY --chown=$MAMBA_USER:$MAMBA_USER dist/*py3-none-any.whl /tmp
 RUN micromamba install -y -n base git -f /tmp/env.yaml && \
     micromamba clean --all --yes
 
 # Ensure that conda environment is automatically activated
 # https://github.com/mamba-org/micromamba-docker#running-commands-in-dockerfile-within-the-conda-environment
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
-RUN python -m pip install --no-deps .
+RUN python -m pip install --no-deps *py3-none-any.whl
