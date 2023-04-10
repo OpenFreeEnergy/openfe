@@ -64,8 +64,8 @@ jobs:
 
       - name: Test image
         run: |
-          docker run --rm ${{ steps.meta.outputs.tags }} openfe --help
-          docker run --rm ${{ steps.meta.outputs.tags }} openfe --version
+          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building openfe --help
+          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building openfe --version
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
