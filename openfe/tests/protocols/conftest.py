@@ -3,6 +3,7 @@
 import pytest
 import openfe
 from openff.units import unit
+from ..conftest import *
 
 
 @pytest.fixture
