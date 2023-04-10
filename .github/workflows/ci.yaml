@@ -44,6 +44,8 @@ jobs:
         with:
           environment-file: environment.yml
           environment-name: openfe
+          cache-env: true
+          cache-downloads: true
           extra-specs: |
             python==${{ matrix.python-version }}
 
@@ -62,11 +64,11 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest -n 2 -v --cov=openfe --cov=openfecli --cov-report=xml
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml
 
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
-                && github.event != 'schedule' }}
+                && github.event_name != 'schedule' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

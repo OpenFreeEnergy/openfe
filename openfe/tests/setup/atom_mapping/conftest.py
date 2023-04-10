@@ -8,9 +8,9 @@ from gufe import SmallMoleculeComponent
 import lomap
 import pytest
 
-from openfe.setup import LigandAtomMapping
+from openfe import LigandAtomMapping
 
-from ..conftest import mol_from_smiles
+from ...conftest import mol_from_smiles
 
 
 def _translate_lomap_mapping(atom_mapping_str: str) -> Dict[int, int]:
