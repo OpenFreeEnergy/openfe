@@ -64,7 +64,7 @@ jobs:
 
       - name: "Run tests"
         env:
-          slow: ${{ fromJSON('{"false":"","true":"--runslow"}')[github.event_name == 'schedule'] }}
+          slow: ${{ fromJSON('{"false":"","true":"--runslow"}')[github.event_name != 'schedule'] }}
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml ${{ env.slow }}
 
