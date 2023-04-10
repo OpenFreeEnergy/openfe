@@ -8,7 +8,7 @@ on:
       - main
   schedule:
     # At 07:00 UTC on Monday and Thursday.
-    - cron: "0 7 * * 1,4"
+    - cron: "0 7 * * *"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -77,6 +77,7 @@ jobs:
           verbose: True
 
   package-tests:
+    #if: ${{ github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     name: "package install tests"
     steps:
@@ -89,12 +90,24 @@ jobs:
           environment-name: openfe
           extra-specs: python==3.10
 
-      - name: "Install"
-        run: python -m pip install .
+      - name: "install extra deps"
+        run: pip install pipx wheel twine readme-renderer
 
-      - name: "Tests"
-        # Move far out of the openfe src directory
-        working-directory: ../../
+      - name: "build sdist"
+        run: pipx run build --sdist --outdir dist
+
+      - name: "check package build"
         run: |
-          pytest -v --pyargs openfe.tests
-          pytest -v --pyargs openfecli.tests
+          dist=$(ls -t1 dist/openfe-*tar.gz | head -n1)
+          test -n "${dist}" || { echo "no distribution found"; exit 1; }
+          twine check $dist
+
+      - name: "install from source dist"
+        working-directory: ./dist
+        run: python -m pip install openfe-*tar.gz
+
+      - name: "run tests"
+        working-directory: ./dist
+        run: |
+          pytest -n auto -v --pyargs openfe.tests
+          pytest -n auto -v --pyargs openfecli.tests
