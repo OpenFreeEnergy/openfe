@@ -38,7 +38,7 @@ jobs:
 
       - name: "Environment Information"
         run: |
-          micromamba info -a
+          micromamba info
           micromamba list
 
       - name: "Lint with mypy"
