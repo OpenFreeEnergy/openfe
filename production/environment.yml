@@ -7,6 +7,7 @@ dependencies:
   - rdkit
   - pip
   - pytest
+  - python==3.9
   - pytest-xdist
   - pydantic
   - openff-toolkit>=0.12.0
