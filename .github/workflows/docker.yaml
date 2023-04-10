@@ -59,12 +59,13 @@ jobs:
           context: .
           file: production/Dockerfile
           load: true
-          tags: ${{ env.TEST_TAG }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Test image
         run: |
-          docker run --rm ${{ steps.meta.outputs.imageid }} openfe --help
-          docker run --rm ${{ steps.meta.outputs.imageid }} openfe --version
+          docker run --rm ${{ steps.meta.outputs.tags }} openfe --help
+          docker run --rm ${{ steps.meta.outputs.tags }} openfe --version
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
