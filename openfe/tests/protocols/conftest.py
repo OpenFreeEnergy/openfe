@@ -3,7 +3,17 @@
 import pytest
 import openfe
 from openff.units import unit
-from ..conftest import *
+
+
+@pytest.fixture(scope='session')
+def benzene_modifications():
+    files = {}
+    with importlib.resources.path('openfe.tests.data',
+                                  'benzene_modifications.sdf') as fn:
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
 
 
 @pytest.fixture
