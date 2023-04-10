@@ -25,10 +25,12 @@ dependencies:
   - libnetcdf<4.9
   # Issues with 11.8 on    lilac
   - cudatoolkit==11.7
+  # build time dep
+  - versioningit
   # docs
   - myst-parser
   - sphinx-click
   - pydata-sphinx-theme
+  - autodoc-pydantic
   - pip:
-    - autodoc_pydantic
     - git+https://github.com/OpenFreeEnergy/gufe@main
