@@ -53,7 +53,20 @@ jobs:
             type=semver,pattern={{version}}
             type=sha
 
-      - name: Build and push Docker image
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: production/Dockerfile
+          load: true
+          tags: ${{ env.TEST_TAG }}
+
+      - name: Test image
+        run: |
+          docker run --rm ${{ env.TEST_TAG }} openfe --help
+          docker run --rm ${{ env.TEST_TAG }} openfe --version
+
+      - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
