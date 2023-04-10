@@ -582,7 +582,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         integrator_settings = protocol_settings.integrator_settings
 
         #  b. create langevin integrator
-        integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
+        integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
             collision_rate=to_openmm(integrator_settings.collision_rate),
             n_steps=integrator_settings.n_steps.m,
