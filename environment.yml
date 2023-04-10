@@ -25,9 +25,9 @@ dependencies:
   - plugcli
   - libnetcdf<4.9
   # docs
-  - autodoc-pydantic
   - myst-parser
   - sphinx-click
   - pydata-sphinx-theme
   - pip:
+    - autodoc_pydantic
     - git+https://github.com/OpenFreeEnergy/gufe@main
