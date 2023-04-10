@@ -5,17 +5,6 @@ import openfe
 from openff.units import unit
 
 
-@pytest.fixture(scope='session')
-def benzene_modifications():
-    files = {}
-    with importlib.resources.path('openfe.tests.data',
-                                  'benzene_modifications.sdf') as fn:
-        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
-        for rdmol in supp:
-            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
-    return files
-
-
 @pytest.fixture
 def benzene_vacuum_system(benzene_modifications):
     return openfe.ChemicalSystem(
