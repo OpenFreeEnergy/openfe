@@ -93,7 +93,7 @@ def atom_mapping_basic_test_files():
     return files
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def benzene_modifications():
     files = {}
     with importlib.resources.path('openfe.tests.data',
