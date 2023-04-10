@@ -8,9 +8,7 @@ dependencies:
   - pip
   - pytest
   - pytest-xdist
-  - pytest-cov
   - pydantic
-  - coverage
   - openff-toolkit>=0.12.0
   - openff-units>=0.2.0
   - openff-models>=0.0.4
@@ -19,7 +17,6 @@ dependencies:
   - lomap2>=2.1.0
   - openmmtools==0.21.5
   - openmmforcefields>=0.11.2
-  - perses==0.10.1
   - py3dmol
   - plugcli
   - libnetcdf<4.9
