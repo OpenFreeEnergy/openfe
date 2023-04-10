@@ -41,9 +41,9 @@ def get_type(f):
                 type=click.Path(dir_okay=True, file_okay=False,
                                          path_type=pathlib.Path),
                 required=True)
-@click.argument('output',
-                type=click.File(mode='w'),
-                required=True)
+@click.option('output', '-o',
+              type=click.File(mode='w'),
+              required=True)
 def gather(rootdir, output):
     """Gather simulation result jsons of relative calculations and write to single tsv file
 
