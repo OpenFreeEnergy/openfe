@@ -2,11 +2,12 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from openfecli import OFECommandPlugin
-from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write
 import json
 import pathlib
+
+from openfecli import OFECommandPlugin
+from openfecli.parameters.output import ensure_file_does_not_exist
+from openfecli.utils import write, print_duration
 
 
 def _format_exception(exception) -> str:
@@ -37,6 +38,7 @@ def _format_exception(exception) -> str:
     help="output file (JSON format) for the final results",
     callback=ensure_file_does_not_exist,
 )
+@print_duration
 def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
@@ -90,7 +92,8 @@ def quickrun(transformation, work_dir, output):
     with open(output, mode='w') as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-    write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
+    write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
+
     write("Additional information:")
     for result in dagresult.protocol_unit_results:
         write(f"{result.name}:")
