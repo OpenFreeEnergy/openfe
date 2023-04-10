@@ -133,7 +133,6 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert sampler.is_periodic
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
