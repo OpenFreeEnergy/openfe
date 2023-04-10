@@ -24,6 +24,7 @@ example, you are likely to make use of HPC or cloud computing resources to
 run the simulation campaign. Because of this, each stage has a certain type
 of output, which is the input to the next stage.
 
+.. TODO: make figure
 .. .. figure:: ???
     :alt: Setup -> (AlchemicalNetwork) -> Execution -> (ProtocolResults) -> Gather
 
@@ -41,7 +42,7 @@ calculate that :math:`\Delta G`.
 
 The **gather results** stage takes these results and produces something
 useful to the user. For example, the CLI's ``gather`` command will create a
-table of the :class:`.Delta G` for each leg.
+table of the :math:`\Delta G` for each leg.
 
 
 CLI Workflow
@@ -52,6 +53,7 @@ gathering results. With the CLI, the Python objects of
 :class:`.AlchemicalNetwork` and :class:`.ProtocolResult` are stored to disk
 in an intermediate representation between the commands.
 
+.. TODO make figure
 .. .. figure:: ???
    :alt: [NetworkPlanner -> AlchemicalNetwork] -> Transformation JSON -> quickrun -> Result JSON -> gather
 
@@ -64,7 +66,7 @@ The commands used for set up the CLI are:
 * the :ref:`cli_plan-rbfe-network`
 * the :ref:`cli_plan-rhfe-network`
 
-.. TODO: add command example here;
+.. TODO add command example here;
 
 These will save the alchemical network represented as a JSON file for each
 edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the simulation).
@@ -79,7 +81,7 @@ In many cases, you will want to create a job script for a queuing system
 (e.g., SLURM) that wraps that command. You can do this for all JSON files
 from the network planning command with something like this:
 
-.. TODO
+.. TODO Link to example here.
 
 Finally, to gather the results of that, use the ref:`cli_gather`:
 
@@ -89,9 +91,11 @@ Finally, to gather the results of that, use the ref:`cli_gather`:
 
     $ openfe gather -o
 
-This will output a tab-separated file with the ligand pair, the 
+This will output a tab-separated file with the ligand pair, the estimated
+:math:`\Delta G` and the uncertainty in that estimate.
 
-
-All stages of this can be easily customized via the Python API. The
-following sections will provide an overview of how customize your
-simulations.
+The CLI provides a very straightforward user experience that works with the
+most simple use cases. For use cases that need more workflow customization,
+the Python API makes it relatively straightforward to define exactly the
+simulation you want to run. The next sections of this user guide will
+illustrate how to customize the behavior to your needs.

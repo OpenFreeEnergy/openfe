@@ -1,10 +1,10 @@
-.. _customizing-rsfe:
+.. _define-rsfe:
 
-Customizing RHFE/RSFE Calculations
-==================================
+Defining RHFE/RSFE Calculations
+===============================
 
 Relative solvation/hydration free energy calculations are very similar to
-:ref:`relative binding free energy calculations <customizing-rbfe>`. The
+:ref:`relative binding free energy calculations <define-rbfe>`. The
 main difference is that there is no protein component.
 
 You can easily set up an :class:`.AlchemicalNetwork` for an RHFE with the
@@ -18,4 +18,4 @@ associated :class:`.AlchemicalNetwork`.
 To customize beyond what the RHFE planner can do, many of the same documents
 that help with customizing RBFE setups are also relevant:
 
-* :ref:`customizing_ligand_network`
+* :ref:`define_ligand_network`

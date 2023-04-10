@@ -16,8 +16,8 @@ instructions can be found under:
 
 .. toctree::
 
-    customizing_rbfe
-    customizing_rsfe
+    define_rbfe
+    define_rsfe
 
 .. toctree (hidden): chemical components and chemical systems
 
@@ -25,13 +25,10 @@ instructions can be found under:
 If you intend to set up your alchemical network using the Python interface,
 but to run it using the CLI, you will want to export the network in the same
 format used by the CLI. See ??? for details on that.
+.. TODO link to docs on outputting the network
 
 .. toctree::
    :hidden:
 
-   customizing_ligand_network
+   define_ligand_network
 
-
-This section also contains several how-to documents to solve common issues.
-
-.. add a toctree here

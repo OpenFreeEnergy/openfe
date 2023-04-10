@@ -1,7 +1,7 @@
-.. _customizing-rbfe:
+.. _define-rbfe:
 
-Customizing RBFE Calculations
-=============================
+Defining RBFE Calculations
+==========================
 
 An :class:`.AlchemicalNetwork` for relative binding free energy calculations
 can be easily created with a :class:`.RBFEAlchemicalNetworkPlanner`.
@@ -19,4 +19,4 @@ three steps:
    :class:`.Protocol`).
 
 Each aspect of this can be performed manually. For details on customizing
-the :class:`.LigandNetwork`, see :ref:`customizing_ligand_network`.
+the :class:`.LigandNetwork`, see :ref:`define_ligand_network`.
