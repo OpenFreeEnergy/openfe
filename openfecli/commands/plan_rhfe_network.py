@@ -13,7 +13,7 @@ Here I want to build the cmd tool for easy campaigner with RHFE. The output shou
 import click
 from typing import List
 
-from openfecli.utils import write
+from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, MAPPER, OUTPUT_DIR
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
@@ -70,6 +70,7 @@ def plan_rhfe_network_main(
     default="alchemicalNetwork",
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
+@print_duration
 def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
     """Plan a relative hydration free energy network, saved in a dir with multiple JSON files.
 
@@ -86,7 +87,6 @@ def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
         
     The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
     """
-
     from gufe import SolventComponent
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,

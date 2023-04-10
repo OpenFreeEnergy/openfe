@@ -1,8 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import importlib
 import click
+import importlib
+import functools
+from typing import Callable
+from datetime import datetime
 
 
 def import_thing(import_string: str):
@@ -39,4 +42,28 @@ def write(string: str):
     will automatically update in all commands.
     """
     click.echo(string)
+
+
+
+
+
+def print_duration(function: Callable) -> Callable:
+    """
+    Helper function to denote that a function should print a duration information.
+    A function decorated with this decorator will print out the execution time of
+    the decorated function.
+
+    """
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        start_time = datetime.now()
+
+        result = function(*args, **kwargs)
+
+        end_time = datetime.now()
+        duration = end_time - start_time
+        write("\tDuration: " + str(duration) + "\n")
+        return result
+
+    return wrapper
 

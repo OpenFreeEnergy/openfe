@@ -5,12 +5,13 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
     Transformation,
+    AlchemicalNetwork,
+    LigandAtomMapping,
 )
 
 from . import utils
 from . import setup
 from .setup import (
-    LigandAtomMapping,
     LomapAtomMapper,
     lomap_scorers,
     PersesAtomMapper,

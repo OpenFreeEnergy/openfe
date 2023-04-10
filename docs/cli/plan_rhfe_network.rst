@@ -1,4 +1,4 @@
-.. _plan-rhfe-network_quickrun:
+.. _cli_plan-rhfe-network:
 
 ``plan-rhfe-network`` command
 =============================
