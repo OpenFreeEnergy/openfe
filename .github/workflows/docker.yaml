@@ -63,8 +63,8 @@ jobs:
 
       - name: Test image
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} openfe --help
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} openfe --version
+          docker run --rm ${{ steps.meta.outputs.imageid }} openfe --help
+          docker run --rm ${{ steps.meta.outputs.imageid }} openfe --version
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
