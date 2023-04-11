@@ -28,6 +28,6 @@ dependencies:
   - myst-parser
   - sphinx-click
   - pydata-sphinx-theme
+  - autodoc-pydantic
   - pip:
-    - autodoc_pydantic
     - git+https://github.com/OpenFreeEnergy/gufe@main
