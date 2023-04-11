@@ -79,7 +79,7 @@ jobs:
         ls toolkit-installer-constructor/build/openfe-*/
         mkdir scratch
         cd scratch
-        echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh -b -p
+        echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh -b
         conda activate $HOME/constructor_install/
         conda info
         conda list
