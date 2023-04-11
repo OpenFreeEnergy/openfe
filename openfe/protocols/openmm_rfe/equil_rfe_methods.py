@@ -436,8 +436,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 smirnoff_stateB.generator)
 
         # 3. Model state A
+        # Note: protein dry run tests are part of the slow tests and don't show
+        # up in coverage reports
         stateA_ligand_topology = stateA_openff_ligand.to_topology().to_openmm()
-        if 'protein' in stateA.components:
+        if 'protein' in stateA.components:  # pragma: no-cover
             pdbfile: gufe.ProteinComponent = stateA['protein']
             stateA_modeller = app.Modeller(pdbfile.to_openmm_topology(),
                                            pdbfile.to_openmm_positions())

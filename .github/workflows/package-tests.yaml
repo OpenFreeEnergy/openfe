@@ -40,6 +40,8 @@ jobs:
 
       - name: "run tests"
         working-directory: ./dist
+        env:
+          OFE_SLOW_TESTS: "true"
         run: |
           pytest -n auto -v --pyargs openfe.tests
           pytest -n auto -v --pyargs openfecli.tests
