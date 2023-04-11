@@ -265,8 +265,8 @@ class IntegratorSettings(settings.SettingsBaseModel):
 
     timestep = 4 * unit.femtosecond
     """Size of the simulation timestep. Default 4 * unit.femtosecond."""
-    collision_rate = 1 / unit.picosecond
-    """Collision frequency. Default 1 / unit.pisecond."""
+    collision_rate = 1.0 / unit.picosecond
+    """Collision frequency. Default 1.0 / unit.pisecond."""
     n_steps = 250 * unit.timestep
     """
     Number of integration timesteps between each time the MCMC move
