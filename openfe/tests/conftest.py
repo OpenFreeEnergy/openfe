@@ -1,5 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import os
 import importlib
 import pytest
 from importlib import resources
