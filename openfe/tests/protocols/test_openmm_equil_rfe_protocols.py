@@ -136,10 +136,10 @@ def test_dry_run_ligand(benzene_system, toluene_system,
 @pytest.mark.slow
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
-                         benzene_to_toluene_mapping, tmpdir):
+                         benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.alchemical_sampler_settings.sampler_method = 'repex'
+    settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
