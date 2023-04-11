@@ -8,7 +8,7 @@ on:
       - main
   schedule:
     # At 07:00 UTC on Monday and Thursday.
-    - cron: "0 7 * * 1,4"
+    - cron: "0 7 * * *"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
