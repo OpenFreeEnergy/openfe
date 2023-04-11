@@ -1,4 +1,4 @@
-name: "CI"
+name: "Package Install Tests"
 on:
   schedule:
     # At 07:00 UTC on Monday and Thursday.
