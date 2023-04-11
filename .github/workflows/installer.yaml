@@ -79,7 +79,7 @@ jobs:
         ls toolkit-installer-constructor/build/openfe-*/
         mkdir scratch
         cd scratch
-        echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh
+        echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh -b -p
         conda activate $HOME/constructor_install/
         conda info
         conda list
@@ -88,10 +88,10 @@ jobs:
         echo $LATEST_TAG
         echo $FOUND_VER
         #TODO fix version on conda-forge release
-        #if [[ $LATEST_TAG != $FOUND_VER ]];
-        #  then echo "Version mismatch"
-        #  exit 1
-        #fi
+        if [[ $LATEST_TAG != $FOUND_VER ]];
+          then echo "Version mismatch"
+          exit 1
+        fi
         # This should work if run directly at release time, but a safer approach would be
         # to `git checkout` the corresponding tag of the release, see PR #577
         pytest -v ../openfe/tests/
