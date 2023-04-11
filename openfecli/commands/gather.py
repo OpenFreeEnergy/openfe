@@ -43,17 +43,12 @@ def get_type(f):
                 required=True)
 @click.option('output', '-o',
               type=click.File(mode='w'),
-              required=True)
+              default='-')
 def gather(rootdir, output):
     """Gather simulation result jsons of relative calculations and write to single tsv file
 
     Will walk ROOTDIR recursively and find all results files ending in .json (i.e those produced by the quickrun
     command).  Each of these contains the results of a separate leg from a relative free energy thermodynamic cycle.
-
-    Will produce a **tab** separated file with 3 columns;
-    - a description of the measurement, for example DDGhyd(A, B)
-    - the estimated value (in kcal/mol)
-    - the uncertainty on the value (also kcal/mol)
 
     Paired legs of simulations will be combined to give the DDG values between two ligands in the corresponding phase,
     producing either binding ('DDGbind') or hydration ('DDGhyd') relative free energies.  These will be reported as
@@ -63,7 +58,13 @@ def gather(rootdir, output):
     Individual leg results will be also be written.  These are reported as either DGvacuum(A,B) DGsolvent(A,B) or
     DGcomplex(A,B) for the vacuum, solvent or complex free energy of transmuting ligand A to ligand B.
 
-    Use output = '-' to stream to stdout.
+    \b
+    Will produce a **tab** separated file with 3 columns:
+    1) a description of the measurement, for example DDGhyd(A, B)
+    2) the estimated value (in kcal/mol)
+    3) the uncertainty on the value (also kcal/mol)
+
+    By default, outputs to stdout, use -o option to choose file.
     """
     from collections import defaultdict
     import glob
