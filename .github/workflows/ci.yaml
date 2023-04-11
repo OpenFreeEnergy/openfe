@@ -65,7 +65,7 @@ jobs:
       - name: "Run tests"
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
-          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'schedule'] }}
+          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name == 'schedule'] }}
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml
 
