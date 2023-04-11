@@ -80,7 +80,7 @@ jobs:
         mkdir scratch
         cd scratch
         echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh -b
-        conda activate $HOME/constructor_install/
+        conda activate base
         conda info
         conda list
         export FOUND_VER=$(python -c "import openfe; print(openfe.__version__)")
