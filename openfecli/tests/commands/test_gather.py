@@ -72,9 +72,7 @@ DGsolvent(lig_4, lig_7)\t-3.3\t+-0.15
 def test_gather(results_dir, ref_gather):
     runner = CliRunner()
 
-    print(glob.glob('res/*'))
-
-    result = runner.invoke(gather, ['res', '-'])
+    result = runner.invoke(gather, ['res', '-o', '-'])
 
     assert result.exit_code == 0
 
