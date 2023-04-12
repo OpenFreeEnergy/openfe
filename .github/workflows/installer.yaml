@@ -6,12 +6,14 @@ on:
     branches:
       - "fix/installer"
 
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
   test:
     name: Building single file installer on ${{ matrix.os }}, Python ${{ matrix.python-version }}
-
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -19,7 +21,10 @@ jobs:
         python-version: [3.9]
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: print version
       run: |
