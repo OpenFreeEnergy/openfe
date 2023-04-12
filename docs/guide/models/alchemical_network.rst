@@ -29,12 +29,14 @@ information for each :class:`.ChemicalSystem`, the :class:`.Transformation`
 also contains a :class:`.Protocol` and, when relevant, atom mapping
 information for alchemical transformations.
 
-A :class:`.ChemicalSystem` is made up of one or more
-:class:`gufe.ChemicalComponent`\ s. Each component represents a conceptual
-part of the total molecular system, e.g., ligand, or protein, or solvent.
-This allows us to easily identify what is changing between two nodes -- for
-example, a RBFE edge for ligand binding should have the same solvent and
-protein components, but different ligand components.
+A :class:`.ChemicalSystem` is made up of one or more ``ChemicalComponent``
+s. Each component represents a conceptual part of the total molecular
+system. A ligand would be represented by a :class:`.SmallMoleculeComponent`.
+A protein would be a :class:`.ProteinComponent`. The solvent is represented
+as a :class:`.SolventComponent`.  This allows us to easily identify what is
+changing between two nodes -- for example, a RBFE edge for ligand binding
+would have the same solvent and protein components, but different ligand
+components.
 
 The :class:`.Protocol` object describes how the simulation should be run.
 This includes choice of algorithm, as well as specific settings for the
