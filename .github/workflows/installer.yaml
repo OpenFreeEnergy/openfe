@@ -29,5 +29,5 @@ jobs:
     - name: print version
       run: |
         LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-        VERSION=${LATEST_TAG=:1}
+        VERSION=${LATEST_TAG:1}
         echo $VERSION
