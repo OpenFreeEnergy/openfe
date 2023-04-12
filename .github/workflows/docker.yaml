@@ -17,6 +17,10 @@ on:
       - '*' # Build on pushes with tags (unless they contain a / )
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash -l {0}
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
