@@ -24,7 +24,7 @@ example, you are likely to make use of HPC or cloud computing resources to
 run the simulation campaign. Because of this, each stage has a certain type
 of output, which is the input to the next stage.
 
-.. TODO: make figure
+.. TODO make figure
 .. .. figure:: ???
     :alt: Setup -> (AlchemicalNetwork) -> Execution -> (ProtocolResults) -> Gather
 
@@ -66,7 +66,11 @@ The commands used for set up the CLI are:
 * the :ref:`cli_plan-rbfe-network`
 * the :ref:`cli_plan-rhfe-network`
 
-.. TODO add command example here;
+For example, you can create an RBFE network using
+
+.. code:: bash
+
+    $ openfe plan-rbfe-network -p protein.pdb -M dir_with_sdfs/
 
 These will save the alchemical network represented as a JSON file for each
 edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the simulation).
@@ -81,15 +85,15 @@ In many cases, you will want to create a job script for a queuing system
 (e.g., SLURM) that wraps that command. You can do this for all JSON files
 from the network planning command with something like this:
 
-.. TODO Link to example here.
+.. TODO Link to example here. I think this is waiting on the CLI example
+   being merged into example notebooks?
 
-Finally, to gather the results of that, use the ref:`cli_gather`:
-
-.. TODO: update command here
+Finally, to gather the results of that, assuming all results (and only
+results) are in the `results/` direcory, use the :ref:`cli_gather`:
 
 .. code:: bash
 
-    $ openfe gather -o
+    $ openfe gather ./results/ -o final_results.tsv
 
 This will output a tab-separated file with the ligand pair, the estimated
 :math:`\Delta G` and the uncertainty in that estimate.
