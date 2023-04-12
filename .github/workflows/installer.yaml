@@ -84,7 +84,7 @@ jobs:
         cd scratch
         echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh -b
         conda env list
-        conda activate base
+        conda activate constructor
         conda info
         conda list
         export FOUND_VER=$(python -c "import openfe; print(openfe.__version__)")
