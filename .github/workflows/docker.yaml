@@ -23,7 +23,7 @@ defaults:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: openfreeenergy/openfe
 
 jobs:
   build-and-push-image:
@@ -75,11 +75,11 @@ jobs:
 
       - name: Test image
         run: |
-          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building openfe --help
-          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building openfe --version
-          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building python -c "import gufe; print(gufe.__version__)"
-          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building pytest --pyargs gufe -v
-          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building pytest --pyargs openfecli --pyargs openfe -v 
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} openfe --help
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} openfe --version
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} python -c "import gufe; print(gufe.__version__)"
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} pytest --pyargs gufe -v
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} pytest --pyargs openfecli --pyargs openfe -v 
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -96,18 +96,18 @@ jobs:
           apptainer-version: 1.1.2
 
       - name: Build Apptainer Image
-        run: singularity build openfe.sif docker-daemon:ghcr.io/openfreeenergy/openfe:feat-add_image_building
+        run: singularity build openfe_${{ github.sha }}.sif docker-daemon:${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Test Apptainer Image
         run: |
           mkdir test_apptainer
           cd test_apptainer
-          singularity run ../openfe.sif --help
-          singularity run ../openfe.sif --version
-          singularity run ../openfe.sif pytest --pyargs openfecli --pyargs openfe -v -n auto 
+          singularity run ../openfe_${{ github.sha }}.sif --help
+          singularity run ../openfe_${{ github.sha }}.sif --version
+          singularity run ../openfe_${{ github.sha }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto 
           cd ../
 
       - uses: actions/upload-artifact@v3
         with:
           name: apptainer-image
-          path: openfe.sif
+          path: openfe_${{ github.sha }}.sif
