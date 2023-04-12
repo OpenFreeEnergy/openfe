@@ -1,0 +1,22 @@
+name: OpenFEforge
+version: {{ environ["VERSION"] }}
+company: OpenFE
+license_file: ../../LICENSE
+
+channels:
+  - conda-forge
+
+write_condarc: True
+keep_pkgs: True
+transmute_file_type: .conda
+
+specs:
+  - python 3.9.*
+  - conda 4.10.1
+  - pip
+  - openfe=={{ environ["VERSION"] }}
+  - gufe=={{ environ["VERSION"] }}
+
+# Added for extra testing
+installer_type: sh
+post_install: test_install.sh  # [unix]
