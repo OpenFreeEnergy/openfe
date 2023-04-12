@@ -11,10 +11,10 @@ Welcome to OpenFE's documentation!
    :caption: Contents:
 
    installation
-   setup
-   dumping_transformation
-   api
-   cli/index
+   tutorials/index
+   guide/index
+   cookbook/index
+   reference/index
 
 Indices and tables
 ==================
