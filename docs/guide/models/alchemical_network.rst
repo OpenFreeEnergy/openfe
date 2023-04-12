@@ -33,7 +33,7 @@ A :class:`.ChemicalSystem` is made up of one or more ``ChemicalComponent``\
 s. Each component represents a conceptual part of the total molecular
 system. A ligand would be represented by a :class:`.SmallMoleculeComponent`.
 A protein would be a :class:`.ProteinComponent`. The solvent to be added is
-represented as a :class:`.SolventComponent`.  This allows us to easily
+represented as a :class:`.SolventComponent`. This allows us to easily
 identify what is changing between two nodes -- for example, a relative
 binding free energy (RBFE) edge for ligand binding would have the same
 solvent and protein components, but different ligand components.
