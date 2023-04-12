@@ -2,6 +2,9 @@ name: Make single-file installers
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "fix/installer"
 
 jobs:
   test:
@@ -80,6 +83,7 @@ jobs:
         mkdir scratch
         cd scratch
         echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh -b
+        conda env list
         conda activate base
         conda info
         conda list
