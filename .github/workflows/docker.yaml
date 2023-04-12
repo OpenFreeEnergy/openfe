@@ -75,7 +75,8 @@ jobs:
           docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building openfe --version
           docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building python -c "import gufe; print(gufe.__version__)"
           docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building pytest --pyargs gufe -v
-          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building pytest --pyargs openfecli --pyargs openfe -v
+          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building pytest --pyargs openfecli -v
+          docker run --rm ghcr.io/openfreeenergy/openfe:feat-add_image_building pytest --pyargs openfe -v
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
