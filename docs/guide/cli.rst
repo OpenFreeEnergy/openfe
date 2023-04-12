@@ -8,9 +8,9 @@ wrappers around some parts of the Python API to make it easier to integrate
 into non-Python workflows.
 
 The ``openfe`` command consists of several subcommands. This is similar to
-tools like ``git``, which has subcommands like ``git clone``, or ``conda``,
+tools like ``gmx``, which has subcommands like ``gmx mdrun``, or ``conda``,
 which has subcommands like ``conda install``. To get a list of the
-subcommands and a brief description of them, use ``openfe --help`` (or
+subcommands and a brief description of them, use ``openfe (or
 ``openfe -h``), which will give:
 
 .. code:: none
