@@ -23,20 +23,20 @@ does not mean that the entire network must be fully connected -- just that
 there are no solitary nodes.
 
 Each :class:`.Transformation` represents everything that is needed to
-calculate the :math:`\Delta G` between the two :class:`.ChemicalSystem`\ s
-that are the nodes for that edge. In addition to containing the
-information for each :class:`.ChemicalSystem`, the :class:`.Transformation`
-also contains a :class:`.Protocol` and, when relevant, atom mapping
-information for alchemical transformations.
+calculate the free energy differences between the two
+:class:`.ChemicalSystem`\ s that are the nodes for that edge. In addition to
+containing the information for each :class:`.ChemicalSystem`, the
+:class:`.Transformation` also contains a :class:`.Protocol` and, when
+relevant, atom mapping information for alchemical transformations.
 
-A :class:`.ChemicalSystem` is made up of one or more ``ChemicalComponent``
+A :class:`.ChemicalSystem` is made up of one or more ``ChemicalComponent``\
 s. Each component represents a conceptual part of the total molecular
 system. A ligand would be represented by a :class:`.SmallMoleculeComponent`.
-A protein would be a :class:`.ProteinComponent`. The solvent is represented
-as a :class:`.SolventComponent`.  This allows us to easily identify what is
-changing between two nodes -- for example, a RBFE edge for ligand binding
-would have the same solvent and protein components, but different ligand
-components.
+A protein would be a :class:`.ProteinComponent`. The solvent to be added is
+represented as a :class:`.SolventComponent`.  This allows us to easily
+identify what is changing between two nodes -- for example, a relative
+binding free energy (RBFE) edge for ligand binding would have the same
+solvent and protein components, but different ligand components.
 
 The :class:`.Protocol` object describes how the simulation should be run.
 This includes choice of algorithm, as well as specific settings for the
