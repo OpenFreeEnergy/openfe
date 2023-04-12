@@ -20,7 +20,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  OFE_DOCKER_BUILD: "true"
 
 jobs:
   build-and-push-image:

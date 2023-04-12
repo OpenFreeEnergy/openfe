@@ -7,6 +7,8 @@ LABEL org.opencontainers.image.licenses=MIT
 # Don't buffer stdout & stderr streams, so if there is a crash no partial buffer output is lost
 # https://docs.python.org/3/using/cmdline.html#cmdoption-u
 ENV PYTHONUNBUFFERED=1
+# We can use this to check if we are in a docker image
+ENV OFE_DOCKER_BUILD=TRUE
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER production/environment.yml /tmp/env.yaml
 COPY --chown=$MAMBA_USER:$MAMBA_USER dist/*py3-none-any.whl /tmp
