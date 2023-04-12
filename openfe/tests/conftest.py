@@ -26,7 +26,7 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     if (config.getoption("--runslow") or
-        os.environ['OFE_SLOW_TESTS'].lower() == 'true'):
+        os.getenv("OFE_SLOW_TESTS", default="false").lower()):
         # --runslow given in cli or OFE_SLOW_TESTS set to True in env vars
         # do not skip slow tests
         return
