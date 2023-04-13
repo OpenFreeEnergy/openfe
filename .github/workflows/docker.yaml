@@ -38,6 +38,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get Latest Version
+        id: latest-version
+        run: |
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          # slice off the v, ie v0.7.2 -> 0.7.2
+          VERSION=${LATEST_TAG:1}
+          echo $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Print Latest Version
+        run: echo ${{ steps.latest-version.outputs.VERSION }}
+
+	  - name: Create fully qualified image registry path
+		id: fqirp
+		run: |
+		  FQIRP=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}
+		  echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
+
+	  - name: Print FQIRP
+        run: echo ${{ steps.fqirp.outputs.FQIRP  }}
+
       - name: Build package
         run: |
           python3 -m pip install --upgrade build
@@ -63,7 +84,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{version}}
             type=sha
-            ${{ github.sha }}
+            ${{ steps.latest-version.outputs.VERSION }}
 
       - name: Build and export to Docker
         uses: docker/build-push-action@v4
@@ -76,11 +97,11 @@ jobs:
 
       - name: Test image
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} openfe --help
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} openfe --version
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} python -c "import gufe; print(gufe.__version__)"
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} pytest --pyargs gufe -v
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} pytest --pyargs openfecli --pyargs openfe -v 
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --help
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(gufe.__version__)"
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfecli --pyargs openfe -v 
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -97,18 +118,18 @@ jobs:
           apptainer-version: 1.1.2
 
       - name: Build Apptainer Image
-        run: singularity build openfe_${{ github.sha }}.sif docker-daemon:${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: singularity build openfe_${{ steps.latest-version.outputs.VERSION }}.sif docker-daemon:${{ steps.fqirp.outputs.FQIRP }}
 
       - name: Test Apptainer Image
         run: |
           mkdir test_apptainer
           cd test_apptainer
-          singularity run ../openfe_${{ github.sha }}.sif --help
-          singularity run ../openfe_${{ github.sha }}.sif --version
-          singularity run ../openfe_${{ github.sha }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto 
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto 
           cd ../
 
       - uses: actions/upload-artifact@v3
         with:
           name: apptainer-image
-          path: openfe_${{ github.sha }}.sif
+          path: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
