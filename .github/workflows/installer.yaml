@@ -45,7 +45,8 @@ jobs:
         channels: conda-forge
         environment-name: constructor-env 
         extra-specs: |
-          python=3.7
+          python=3.10
+          jinja2
           constructor
 
     - name: Create installer
