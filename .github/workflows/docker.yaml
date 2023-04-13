@@ -14,7 +14,7 @@ on:
     branches:
       - "feat/add_image_building"
     tags:
-      - '*' # Build on pushes with tags (unless they contain a / )
+      - '*'  # Build on pushes with tags (unless they contain a / )
   workflow_dispatch:
 
 defaults:
@@ -54,7 +54,7 @@ jobs:
         id: fqirp
         run: |
           FQIRP=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}
-	  echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
+          echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
 
       - name: Print FQIRP
         run: echo ${{ steps.fqirp.outputs.FQIRP  }}
@@ -101,7 +101,7 @@ jobs:
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(gufe.__version__)"
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfecli --pyargs openfe -v 
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfecli --pyargs openfe -v
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -126,7 +126,7 @@ jobs:
           cd test_apptainer
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
-          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto 
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
           cd ../
 
       - uses: actions/upload-artifact@v3
