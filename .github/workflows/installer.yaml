@@ -49,9 +49,7 @@ jobs:
           constructor
 
     - name: Create installer
-      run: |
-        micromamba activate constructor-env
-        ${{ steps.latest-version.outputs.VERSION }} constructor devtools/installer/
+      run: VERSION=${{ steps.latest-version.outputs.VERSION }} constructor devtools/installer/
 
     - uses: actions/upload-artifact@v3
       with:
