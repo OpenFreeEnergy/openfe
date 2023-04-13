@@ -50,13 +50,13 @@ jobs:
       - name: Print Latest Version
         run: echo ${{ steps.latest-version.outputs.VERSION }}
 
-	  - name: Create fully qualified image registry path
-		id: fqirp
-		run: |
-		  FQIRP=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}
-		  echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
+      - name: Create fully qualified image registry path
+        id: fqirp
+        run: |
+          FQIRP=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}
+	  echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
 
-	  - name: Print FQIRP
+      - name: Print FQIRP
         run: echo ${{ steps.fqirp.outputs.FQIRP  }}
 
       - name: Build package
