@@ -11,12 +11,13 @@ keep_pkgs: True
 transmute_file_type: .conda
 
 specs:
-  - python 3.9.*
   - conda
-  - mamba
-  - pip
-  - openfe=={{ environ["VERSION"] }}
   - gufe=={{ environ["VERSION"] }}
+  - mamba
+  - openfe=={{ environ["VERSION"] }}
+  - pip
+  - pytest
+  - python 3.9.*
 
 # Added for extra testing
 installer_type: sh
