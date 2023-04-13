@@ -44,6 +44,8 @@ jobs:
         run: micromamba install openfe pytest -c conda-forge
 
       - name: "Run tests"
+        env:
+          OFE_SLOW_TESTS: "true"
         run: pytest --pyargs openfe openfecli
 
       - name: "WIP"
