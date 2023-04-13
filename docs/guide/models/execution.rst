@@ -5,7 +5,7 @@ Protocols in OpenFE are built on a flexible execution model.
 Result objects are shaped by this model, and therefore some basic
 background on it can be useful when looking into the details of simulation
 results. In general, most users don't need to work with the details of the
-execution model, but the general idas can be useful.
+execution model, but the general ideas can be useful.
 
 .. TODO figure showing an example dag
 
