@@ -3,12 +3,12 @@
 from typing import Iterable, Dict
 
 from gufe import SmallMoleculeComponent
-from kartograf import kartograf_atom_mapper
+from kartograf import KartografAtomMapper
 
 from .ligandatommapper import LigandAtomMapper
 
 
-class KartografAtomMapper(LigandAtomMapper, kartograf_atom_mapper):
+class KartografAtomMapper(LigandAtomMapper, KartografAtomMapper):
     """This is a Interface for Kartograf to seperate the imports/dependencies.
     """
     def _mappings_generator(
