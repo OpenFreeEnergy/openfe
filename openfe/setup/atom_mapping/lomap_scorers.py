@@ -34,7 +34,7 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1):
 
     This rule was originally defined as::
 
-    mcsr = exp( - beta * (n1 + n2 - 2 * n_common))
+        mcsr = exp( - beta * (n1 + n2 - 2 * n_common))
 
     Where n1 and n2 are the number of atoms in each molecule, and n_common
     the number of atoms in the MCS.

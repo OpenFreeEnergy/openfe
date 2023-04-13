@@ -133,6 +133,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert sampler.is_periodic
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
@@ -726,6 +727,7 @@ def tyk2_reference_xml():
     return ET.fromstring(xmldata)
 
 
+@pytest.mark.slow
 class TestTyk2XmlRegression:
     """Generates Hybrid system XML and performs regression test"""
     @staticmethod
