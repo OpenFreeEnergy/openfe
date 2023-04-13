@@ -52,7 +52,15 @@ jobs:
     - name: Create installer
       run: VERSION=${{ steps.latest-version.outputs.VERSION }} constructor devtools/installer/
 
+    - name: Get installer file name
+      id: file-name
+      run: |
+        FILE_NAME=$(find * -type f -name "*.sh")
+        echo $FILE_NAME
+        echo "FILE_NAME=$FILE_NAME" >> $GITHUB_OUTPUT
+
     - uses: actions/upload-artifact@v3
       with:
+        name: ${{ steps.file-name.outputs.FILE_NAME }}
         path: OpenFEforge*
         if-no-files-found: error
