@@ -54,7 +54,7 @@ jobs:
         id: fqirp
         run: |
           FQIRP=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}
-	      echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
+	  echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
 
       - name: Print FQIRP
         run: echo ${{ steps.fqirp.outputs.FQIRP  }}
