@@ -42,8 +42,12 @@ def _format_exception(exception) -> str:
 def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
-    To save a transformation as JSON, create the transformation and then
-    save it with transformation.dump(filename).
+    A transformation can be saved as JSON using from Python using its dump
+    method::
+
+        transformation.dump("filename.json")
+
+    That will save a JSON file suitable to be input for this command.
     """
     import gufe
     import os
