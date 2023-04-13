@@ -30,9 +30,28 @@ jobs:
       id: latest-version
       run: |
         LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+        # slice off the v, ie v0.7.2 -> 0.7.2
         VERSION=${LATEST_TAG:1}
         echo $VERSION
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Print Latest Version
       run: echo ${{ steps.latest-version.outputs.VERSION }}
+
+    - name: Install constructor environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-file: false
+        channels: conda-forge
+        environment-name: constructor-env 
+        extra-specs: |
+          python=3.7
+          constructor
+
+    - name: Create installer
+      run: ${{ steps.latest-version.outputs.VERSION }} constructor devtools/installer/
+
+    - uses: actions/upload-artifact@v3
+      with:
+        path: OpenFEforge*
+        if-no-files-found: error
