@@ -323,7 +323,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             generation=generation
         )
 
-    def run(self, dry=False, verbose=True, basepath=None) -> dict[str, Any]:
+    def run(self, *, dry=False, verbose=True,
+            scratch_basepath=None,
+            shared_basepath=None) -> dict[str, Any]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -335,7 +337,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        basepath : Pathlike, optional
+        scratch_basepath: Pathlike, optional
+          Where to store temporary files, defaults to current working directory
+        shared_basepath : Pathlike, optional
           Where to run the calculation, defaults to current working directory
 
         Returns
@@ -351,9 +355,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         """
         if verbose:
             logger.info("creating hybrid system")
-        if basepath is None:
+        if scratch_basepath is None:
+            scratch_basepath = pathlib.Path('.')
+        if shared_basepath is None:
             # use cwd
-            basepath = pathlib.Path('.')
+            shared_basepath = pathlib.Path('.')
 
         # 0. General setup and settings dependency resolution step
 
@@ -602,10 +608,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            storage=basepath / sim_settings.output_filename,
+            storage=shared_basepath / sim_settings.output_filename,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=sim_settings.checkpoint_interval.m,
-            checkpoint_storage=basepath / sim_settings.checkpoint_storage,
+            checkpoint_storage=shared_basepath / sim_settings.checkpoint_storage,
         )
 
         # 10. Get platform and context caches
@@ -702,8 +708,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # close reporter when you're done
             reporter.close()
 
-            nc = basepath / sim_settings.output_filename
-            chk = basepath / sim_settings.checkpoint_storage
+            nc = shared_basepath / sim_settings.output_filename
+            chk = shared_basepath / sim_settings.checkpoint_storage
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
@@ -713,8 +719,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clean up the reporter file
-            fns = [basepath / sim_settings.output_filename,
-                   basepath / sim_settings.checkpoint_storage]
+            fns = [shared_basepath / sim_settings.output_filename,
+                   shared_basepath / sim_settings.checkpoint_storage]
             for fn in fns:
                 os.remove(fn)
             return {'debug': {'sampler': sampler}}
@@ -722,7 +728,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        outputs = self.run(basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],

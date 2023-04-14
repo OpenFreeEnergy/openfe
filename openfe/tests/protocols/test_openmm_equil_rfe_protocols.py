@@ -712,7 +712,7 @@ def tyk2_xml(tmp_path_factory):
 
     tmp = tmp_path_factory.mktemp('xml_reg')
 
-    dryrun = pu.run(dry=True, basepath=tmp)
+    dryrun = pu.run(dry=True, shared_basepath=tmp)
 
     system = dryrun['debug']['sampler']._hybrid_factory.hybrid_system
 
