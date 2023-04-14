@@ -6,7 +6,7 @@ on:
       - "feat/add_image_building"
   schedule:
     # nightly tests
-    - cron: "0 0 * * *"
+    - cron: "0 7 * * *"
 
   workflow_dispatch:
 
