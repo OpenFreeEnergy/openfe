@@ -71,9 +71,6 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
-        # since we've got no extensions, we can directly take the unit estimates as final
-        self._esimates = [pur_list[0]['estimate'] for pur_list in self.data.values()]
-
     def get_estimate(self):
         """Average free energy difference of this transformation
 
@@ -84,7 +81,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
           a Quantity defined with units.
         """
         # TODO: Check this holds up completely for SAMS.
-        dGs = [pus[0]['estimate'] for pus in self.data.values()]
+        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
@@ -94,7 +91,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value: The std of the estimates of each independent repeat"""
-        dGs = [pus[0]['estimate'] for pus in self.data.values()]
+        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
