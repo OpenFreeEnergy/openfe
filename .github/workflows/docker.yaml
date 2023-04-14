@@ -133,5 +133,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: apptainer-image
+          name: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
           path: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
