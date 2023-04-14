@@ -55,9 +55,17 @@ jobs:
     - name: Get installer file name
       id: file-name
       run: |
-        FILE_NAME=$(find * -type f -name "*.sh")
+        # This should work as long as we don't have any *.sh files in our root dir
+        FILE_NAME=$(find * -maxdepth 0 -type f -name "*.sh")
         echo $FILE_NAME
         echo "FILE_NAME=$FILE_NAME" >> $GITHUB_OUTPUT
+
+    - name: Test installer
+      run: |
+        chmod +x ${{ steps.file-name.outputs.FILE_NAME }}
+        ./${{ steps.file-name.outputs.FILE_NAME }} -b
+        which python
+        OFE_DOCKER_BUILD=TRUE OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
 
     - uses: actions/upload-artifact@v3
       with:
