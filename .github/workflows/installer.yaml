@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - "fix/installer"
+    tags:
+      - '*'  # Build on pushes with tags (unless they contain a / )
 
 defaults:
   run:
