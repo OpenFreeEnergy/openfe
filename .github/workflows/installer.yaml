@@ -14,13 +14,12 @@ defaults:
 
 jobs:
   test:
-    name: Building single file installer on ${{ matrix.os }}, Python ${{ matrix.python-version }}
+    name: Building single file installer on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macOS-latest, ubuntu-latest]
-        python-version: [3.9]
 
     steps:
     - name: Checkout Code
@@ -66,15 +65,7 @@ jobs:
       run: |
         chmod +x ${{ steps.file-name.outputs.FILE_NAME }}
         ./${{ steps.file-name.outputs.FILE_NAME }} -b
-        which -a python
-        which -a conda
-        echo $HOME
-        echo "pwd"
-        pwd
-        echo "export time"
         export PATH="$HOME/openfeforge/bin:$PATH"
-        which -a python
-        which -a conda
         OFE_DOCKER_BUILD=TRUE OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
 
     - uses: actions/upload-artifact@v3
