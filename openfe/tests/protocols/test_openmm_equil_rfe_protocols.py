@@ -461,15 +461,7 @@ def test_gather(solvent_protocol_dag, tmpdir):
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     )
 
-    with mock.patch('openfe.protocols.openmm_rfe.equil_rfe_methods.multistate') as m:
-        res = prot.gather([dagres])
-
-        # check we created the expected number of Reporters and Analyzers
-        assert m.MultiStateReporter.call_count == 3
-        m.MultiStateReporter.assert_called_with(
-            storage='file.nc', checkpoint_storage='chk.nc',
-        )
-        assert m.MultiStateSamplerAnalyzer.call_count == 3
+    res = prot.gather([dagres])
 
     assert isinstance(res, openmm_rfe.RelativeHybridTopologyProtocolResult)
 
@@ -712,7 +704,7 @@ def tyk2_xml(tmp_path_factory):
 
     tmp = tmp_path_factory.mktemp('xml_reg')
 
-    dryrun = pu.run(dry=True, basepath=tmp)
+    dryrun = pu.run(dry=True, shared_basepath=tmp)
 
     system = dryrun['debug']['sampler']._hybrid_factory.hybrid_system
 
