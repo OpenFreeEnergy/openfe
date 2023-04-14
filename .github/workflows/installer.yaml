@@ -66,7 +66,8 @@ jobs:
         ./${{ steps.file-name.outputs.FILE_NAME }} -b
         which -a python
         which -a conda
-        export PATH="/home/runner/openfeforge/bin:$PATH"
+        echo $PREFIX
+        export PATH="$PREFIX/bin:$PATH"
         which -a python
         which -a conda
         OFE_DOCKER_BUILD=TRUE OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
