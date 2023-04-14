@@ -19,5 +19,5 @@ specs:
   - pytest
   - python 3.9.*
 
-# Added for extra testing
+# Not building an .exe for windows or a .pkg for macOS
 installer_type: sh
