@@ -28,7 +28,7 @@ import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmtools import multistate
-from typing import Dict, Optional
+from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -66,72 +66,41 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeHybridTopologyProtocol"""
     def __init__(self, **data):
         super().__init__(**data)
+        # data is mapping of str(repeat_id): list[protocolunitresults]
         # TODO: Detect when we have extensions and stitch these together?
-        if any(len(files['nc_paths']) > 2 for files in self.data['nc_files']):
+        if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
-        self._analyzers = []
-        for f in self.data['nc_files']:
-            nc = f['nc_paths'][0]
-            chk = f['checkpoint_paths'][0]
-            reporter = multistate.MultiStateReporter(
-                           storage=nc,
-                           checkpoint_storage=chk)
-            analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
-
-            self._analyzers.append(analyzer)
+        # since we've got no extensions, we can directly take the unit estimates as final
+        self._esimates = [pur_list[0]['estimate'] for pur_list in self.data.values()]
 
     def get_estimate(self):
-        """Free energy difference of this transformation
+        """Average free energy difference of this transformation
 
         Returns
         -------
         dG : unit.Quantity
           The free energy difference between the first and last states. This is
           a Quantity defined with units.
-
-        TODO
-        ----
-        * Check this holds up completely for SAMS.
         """
-        dGs = []
-        # weights = []
+        # TODO: Check this holds up completely for SAMS.
+        dGs = [pus[0]['estimate'] for pus in self.data.values()]
+        u = dGs[0].u
+        # convert all values to units of the first value, then take average of magnitude
+        # this would avoid a screwy case where each value was in different units
+        vals = [dG.to(u).m for dG in dGs]
 
-        for analyzer in self._analyzers:
-            # this returns:
-            # (matrix of) estimated free energy difference
-            # (matrix of) estimated statistical uncertainty (one S.D.)
-            dG, _ = analyzer.get_free_energy()
-            dG = (dG[0, -1] * analyzer.kT).in_units_of(
-                omm_unit.kilocalories_per_mole)
-
-            # hack to get simulation length in uncorrelated samples
-            # weight = analyzer._get_equilibration_data()[2]
-
-            dGs.append(dG)
-            # weights.append(weight)
-
-        avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
-
-        return ensure_quantity(avg_val * dGs[0].unit, 'openff')
+        return np.average(vals) * u
 
     def get_uncertainty(self):
-        """The uncertainty/error in the dG value"""
-        dGs = []
+        """The uncertainty/error in the dG value: The std of the estimates of each independent repeat"""
+        dGs = [pus[0]['estimate'] for pus in self.data.values()]
+        u = dGs[0].u
+        # convert all values to units of the first value, then take average of magnitude
+        # this would avoid a screwy case where each value was in different units
+        vals = [dG.to(u).m for dG in dGs]
 
-        for analyzer in self._analyzers:
-            # this returns:
-            # (matrix of) estimated free energy difference
-            # (matrix of) estimated statistical uncertainty (one S.D.)
-            dG, _ = analyzer.get_free_energy()
-            dG = (dG[0, -1] * analyzer.kT).in_units_of(
-                omm_unit.kilocalories_per_mole)
-
-            dGs.append(dG)
-
-        std_val = np.std([i.value_in_unit(dGs[0].unit) for i in dGs])
-
-        return ensure_quantity(std_val * dGs[0].unit, 'openff')
+        return np.std(vals) * u
 
     def get_rate_of_convergence(self):
         raise NotImplementedError
@@ -246,33 +215,25 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
-    ) -> Dict[str, Any]:
-        # result units will have a repeat_id and generation
+    ) -> dict[str, Any]:
+        # result units will have a repeat_id and generations within this repeat_id
         # first group according to repeat_id
-        repeats = defaultdict(list)
+        unsorted_repeats = defaultdict(list)
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
                 if not pu.ok():
                     continue
-                rep = pu.outputs['repeat_id']
-                gen = pu.outputs['generation']
 
-                repeats[rep].append((
-                    gen, pu.outputs['nc'],
-                    pu.outputs['last_checkpoint']))
+                unsorted_repeats[pu.outputs['repeat_id']].append(pu)
 
-        data = []
-        for replicate_id, replicate_data in sorted(repeats.items()):
-            # then sort within a repeat according to generation
-            nc_paths = [ncpath for gen, ncpath, nc_check in sorted(replicate_data)]
-            chk_files = [nc_check for gen, ncpath, nc_check in sorted(replicate_data)]
-            data.append({'nc_paths': nc_paths,
-                         'checkpoint_paths': chk_files})
+        # then sort by generation within each repeat_id list
+        repeats: dict[str, list[gufe.ProtocolUnitResult]] = {}
+        for k, v in unsorted_repeats.items():
+            repeats[str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
 
-        return {
-            'nc_files': data,
-        }
+        # returns a dict of repeat_id: sorted list of ProtocolUnitResult
+        return repeats
 
 
 class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
@@ -705,6 +666,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
 
+            # calculate estimate of results from this individual unit
+            ana = multistate.MultiStateSamplerAnalyzer(reporter)
+            est, _ = ana.get_free_energy()
+            est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
+            est = ensure_quantity(est, 'openff')
+
             # close reporter when you're done
             reporter.close()
 
@@ -713,6 +680,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
+                'unit_estimate': est,
             }
         else:
             # close reporter when you're done, prevent file handle clashes
