@@ -45,6 +45,44 @@ Single file installer
 .. TODO: maybe Mike can fill this in? just needs (1) how to download the
    single file installer; (2) how to use the single file installer
 
+Containers
+~~~~~~~~~~
+
+We provide an official docker and apptainer (formally singularity) image.
+The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
+
+  $ docker pull ghcr.io/openfreeenergy/openfe:0.7.1
+
+The apptainer image is pre-built and attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with ``curl`` (or similar tool) ::
+
+  $ curl -LOJ foo
+
+We recommend testing the container to ensure that it can access a GPU (if desired).
+This can be done with the following command ::
+
+  $ singularity run --nv openfe_0.7.1.sif python -m openmm.testInstallation
+  
+  OpenMM Version: 8.0
+  Git Revision: a7800059645f4471f4b91c21e742fe5aa4513cda
+
+  There are 3 Platforms available:
+
+  1 Reference - Successfully computed forces
+  2 CPU - Successfully computed forces
+  3 CUDA - Successfully computed forces
+
+  Median difference in forces between platforms:
+
+  Reference vs. CPU: 6.29328e-06
+  Reference vs. CUDA: 6.7337e-06
+  CPU vs. CUDA: 7.44698e-07
+
+  All differences are within tolerance.
+
+The ``--nv`` flag is required for the apptainer image to access the GPU on the host. 
+Your output may produce different values for the forces, but should list the CUDA platform if everything is working properly. 
+
+
 Developer install
 ~~~~~~~~~~~~~~~~~
 
