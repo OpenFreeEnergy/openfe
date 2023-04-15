@@ -55,7 +55,7 @@ The docker image is tagged with the version of ``openfe`` on the image and can b
 
 The apptainer image is pre-built and attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with ``curl`` (or similar tool) ::
 
-  $ curl -LOJ foo
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.1/openfe_0.7.1.sif
 
 We recommend testing the container to ensure that it can access a GPU (if desired).
 This can be done with the following command ::
