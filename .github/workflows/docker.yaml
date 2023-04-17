@@ -11,8 +11,6 @@ name: Create and publish a Docker image
 
 on:
   push:
-    branches:
-      - "feat/add_image_building"
     tags:
       - '*'  # Build on pushes with tags (unless they contain a / )
   workflow_dispatch:
