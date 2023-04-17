@@ -45,8 +45,8 @@ They are attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.1/OpenFEforge-0.7.1-Linux-x86_64.sh
 
-The single file installer contains all of the dependences required for ``openfe`` and does not require internet access to use.
-Both ``conda`` and ``mamba`` are also available in environment created by the single file installer and can be used to install additional packages.
+The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
+Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
 The installer can be installed in batch mode or interactively  ::
   
   $ chmod +x ./OpenFEforge-0.7.1-Linux-x86_64.sh # Make installer executable
