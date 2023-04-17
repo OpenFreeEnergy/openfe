@@ -3,8 +3,6 @@ name: Make single-file installers
 on:
   workflow_dispatch:
   push:
-    branches:
-      - "fix/installer"
     tags:
       - '*'  # Build on pushes with tags (unless they contain a / )
 
