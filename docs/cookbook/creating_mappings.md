@@ -12,7 +12,8 @@ which are reusable classes.
 These take pairs of {py:class}`openfe.SmallMoleculeComponent` objects and suggests zero
 (in the case that no mapping can be found) or more mappings.
 
-Built in to the ``openfe`` package is the {py:class}`openfe.setup.LomapAtomMapper`
+Built in to the ``openfe`` package are bindings to the [Lomap](https://github.com/OpenFreeEnergy/Lomap) package,
+including the {py:class}`openfe.setup.LomapAtomMapper`
 which uses an MCS approach based on the RDKit.
 This takes various parameters which control how it produces mappings,
 these are viewable through ``help(LomapAtomMapper)``.
