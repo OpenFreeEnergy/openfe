@@ -13,6 +13,8 @@ which has subcommands like ``conda install``. To get a list of the
 subcommands and a brief description of them, use ``openfe (or
 ``openfe -h``), which will give:
 
+.. TODO autogemerate using sphinxcontrib-programoutput
+
 .. code:: none
 
     Usage: openfe [OPTIONS] COMMAND [ARGS]...

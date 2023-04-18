@@ -9,6 +9,8 @@ This section will describe the composition of the achemical network,
 including describing the OpenFE objects that describe chemistry, as well as
 alchemical transformations.
 
+.. TODO provide a written or image based comparison between alchemical and thermodynamic cycles
+
 Like any network, the :class:`.AlchemicalNetwork` can be described in terms
 of nodes and edges between nodes. The nodes are :class:`.ChemicalSystem`\ s,
 which describe the specific molecules involved. The edges are
