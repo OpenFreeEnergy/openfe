@@ -21,6 +21,8 @@ simulation. NB: While independent runs can be created as separate
 ``repeats`` part of the settings for the protocol, which puts the
 independent runs in a single ``ProtocolDAG``.
 
+.. TODO review recommendation for repeats in context of NEQ protocol
+
 There are results objects at each level of this: so the
 :class:`.ProtocolResult` is associated with the :class:`.Protocol`. Just as
 the :class:`.Protocol` may create one or more ``ProtocolDAG``\ s, the
