@@ -61,7 +61,7 @@ in an intermediate representation between the commands.
    planner to generate the network, before saving each transformation as a
    JSON file.
 
-The commands used for set up the CLI are:
+The commands used to generate an :class:`AlchemicalNetwork` using the CLI are:
 
 * the :ref:`cli_plan-rbfe-network`
 * the :ref:`cli_plan-rhfe-network`
