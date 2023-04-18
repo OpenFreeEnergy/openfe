@@ -29,6 +29,6 @@ dependencies:
   - myst-parser
   - pydata-sphinx-theme
   - sphinx-click
-  - sphinx-toolbox
   - pip:
+    - sphinx-toolbox
     - git+https://github.com/OpenFreeEnergy/gufe@main
