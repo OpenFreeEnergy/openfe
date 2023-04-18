@@ -1,9 +1,10 @@
-# Loading your data
+# Loading your data into ChemicalSystems
 
 One of the first tasks you'll likely want to do is loading your various input files.
 In ``openfe`` the entire contents of a simulation volume, for example the ligand, protein and water is referred to
-as the ``ChemicalSystem``.
-A free energy difference is defined as being between two such ``ChemicalSystem`` objects.
+as the {py:class}`openfe.ChemicalSystem`.
+
+A free energy difference is defined as being between two such {py:class}`ChemicalSystem` objects.
 To make expressing free energy calculations easier,
 this ``ChemicalSystem`` is broken down into various ``Component`` objects.
 It is these ``Component`` objects that are then transformed, added or removed when performing a free energy calculation.
@@ -21,11 +22,11 @@ We will walk through how different items can be loaded,
 and then how these are assembled to form ``ChemicalSystem`` objects.
 
 
-## Small molecules
+## Loading small molecules
 
-Small molecules, such as ligands, are handled using the ``openfe.SmallMoleculeComponent`` class.
+Small molecules, such as ligands, are handled using the {py:class}`openfe.SmallMoleculeComponent` class.
 These are lightweight wrappers around RDKit Molecules and can be created directly
-from an rdkit molecule:
+from an RDKit molecule:
 
 ```python
 from rdkit import Chem
@@ -37,10 +38,10 @@ smc = openfe.SmallMoleculeComponent(m, name='')
 ```
 
 :::{caution}
-Remember to include the `removeHs=False` keyword argument so that RDKit does not strip them!
+Remember to include the `removeHs=False` keyword argument so that RDKit does not strip your hydrogens!
 :::
 
-As these types of structures are typically stored inside sdf files, there is a ``from_sdf`` convenience class method:
+As these types of structures are typically stored inside sdf files, there is a ``from_sdf_file`` convenience class method:
 
 ```python
 import openfe
@@ -48,15 +49,15 @@ import openfe
 smc = openfe.SmallMoleculeComponent.from_sdf_file('file.sdf')
 ```
 
-## Proteins
+## Loading proteins
 
-Proteins are handled using an ``openfe.ProteinComponent``.
+Proteins are handled using an {py:class}`openfe.ProteinComponent`.
 Like ``SmallMoleculeComponent``, these are based upon RDKit Molecules,
 however these are expected to have the `MonomerInfo` struct present on all atoms.
 This struct contains the residue and chain information and is essential to apply many popular force fields.
 A "protein" here is considered as the fully modelled entire biological assembly, i.e. all chains and structural waters.
 
-To load a protein, use the ``from_pdb_file`` or ``from_pdbx_file`` classmethod
+To load a protein, use the {py:func}`openfe.ProteinComponent.from_pdb_file` or {py:func}`openfe.ProteinComponent.from_pdbx_file` classmethod
 
 ```python
 import openfe
@@ -65,9 +66,9 @@ p = openfe.ProteinComponent.from_pdb_file('file.pdb')
 ```
 
 
-## Solvents
+## Defining solvents
 
-The bulk solvent phase is defined using a ``openfe.SolventComponent`` object.
+The bulk solvent phase is defined using a {py:class}`openfe.SolventComponent` object.
 Unlike the previously detailed Components, this does not have any explicit molecules or coordinates,
 but instead represents the way that the overall system will be solvated.
 This information is then interpreted inside the ``Protocol`` when solvating the system.
@@ -84,10 +85,32 @@ solv = openfe.SolventComponent(ion_concentation=0.15 * unit.molar)
 
 ## Assembling into ChemicalSystems
 
-dict constructor
+With individual components defined, we can then proceed to assemble combinations of these into
+a description of an entire **system**, called a {py:class}`openfe.ChemicalSystem`.
+The end result of this is a chemical model
+which describes the chemical topology (e.g. bonds, formal charges) and atoms' positions
+but does not describe the force field aspects, and therefore any energetic terms.
 
-Box information
+The input to the `ChemicalSystem` constructor is a dictionary mapping string labels (e.g. 'ligand' or 'protein') to individual Components.
+The nature of these labels must match the labels that a given `Protocol` expects.
+For free energy calculations we often want to describe two systems which feature many similar components
+but differ in one component, which is the subject of the free energy perturbation.
+For example we could define two `ChemicalSystem` objects which we could perform a relative binding free energy calculation between
+as:
 
-This chemical model has positions defined
+```python
+from openfe import ChemicalSystem, ProteinComponent, SmallMoleculeComponent, SolventComponent
 
-This chemical model does not have any force field applied to it!
+# define the solvent environment and protein structure, these are common across both systems
+sol = SolventComponent()
+p = ProteinComponent()
+
+# define the two ligands we are interested in
+m1 = SmallMoleculeComponent()
+m2 = SmallMoleculeComponent()
+
+# construct two systems, these only differ in the ligand input
+cs1 = ChemicalSystem({'ligand': m1, 'solvent': sol, 'protein': p})
+cs2 = ChemicalSystem({'ligand': m2, 'solvent': sol, 'protein': p})
+
+```
