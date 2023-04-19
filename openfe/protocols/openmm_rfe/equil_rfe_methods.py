@@ -21,24 +21,23 @@ import os
 import logging
 
 from collections import defaultdict
-import gufe
-from gufe import settings
 import numpy as np
 import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmtools import multistate
-from typing import Optional
+from typing import Optional, Dict, List
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 import pathlib
 from typing import Any, Iterable
 import openmmtools
-import uuid
 
+import gufe
 from gufe import (
-    ChemicalSystem, LigandAtomMapping,
+    settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
+    SmallMoleculeComponent, ProteinComponent,
 )
 
 from .equil_rfe_settings import (
@@ -60,6 +59,185 @@ def _get_resname(off_mol) -> str:
     if len(names) > 1:
         raise ValueError("We assume single residue")
     return names[0]
+
+
+def _get_alchemical_components(
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+) -> Dict[str, List[Component]]:
+    """
+    Checks the equality between Components of two end state ChemicalSystems
+    and identify which components do not match.
+
+    Parameters
+    ----------
+    stateA : ChemicalSystem
+      The chemical system of end state A.
+    stateB : ChemicalSystem
+      The chemical system of end state B.
+
+    Returns
+    -------
+    alchemical_components : Dict[str, List[Component]]
+      Dictionary containing a list of alchemical components for each state.
+
+    Raises
+    ------
+    ValueError
+      If there are any duplicate components in states A or B.
+    """
+    matched_components = {}
+    alchemical_components: Dict[str, List[Component]] = {
+        'stateA': [], 'stateB': [],
+    }
+
+    for keyA, valA in stateA.components.items():
+        for keyB, valB in stateB.components.items():
+            if valA.to_dict() == valB.to_dict():
+                if valA not in matched_components.keys():
+                    matched_components[valA] = valB
+                else:
+                    # Could be that either we have a duplicate component
+                    # in stateA or in stateB
+                    errmsg = (f"state A components {keyA}: {valA} matches "
+                              "multiple components in stateA or stateB")
+                    raise ValueError(errmsg)
+
+    # populate stateA alchemical components
+    for valA in stateA.components.values():
+        if valA not in matched_components.keys():
+            alchemical_components['stateA'].append(valA)
+
+    # populate stateB alchemical components
+    for valB in stateB.components.values():
+        if valB not in matched_components.values():
+            alchemical_components['stateB'].append(valB)
+
+    return alchemical_components
+
+
+def _validate_alchemical_components(
+        alchemical_components: Dict[str, List[Component]],
+        mapping: Optional[Dict[str, ComponentMapping]],
+):
+    """
+    Checks that the alchemical components are suitable for the RFE protocol.
+
+    Specifically we check:
+      1. That all alchemical components are mapped.
+      2. That all alchemical components are SmallMoleculeComponents.
+      3. That the mappings don't involve element changes in core atoms
+         (note: this is a temporary limitation).
+
+    Parameters
+    ----------
+    alchemical_components : Dictt[str, List[Component]]
+      Dictionary contatining the alchemical components for
+      states A and B.
+    mapping : Dict[str, ComponentMapping]
+      Dictionary of mappings between transforming components.
+
+    Raises
+    ------
+    ValueError
+      * If there are more than one mapping or mapping is None
+      * If there are any unmapped alchemical components.
+      * If there are any alchemical components that are not
+        SmallMoleculeComponents.
+      * Mappings which involve element changes in core atoms.
+    """
+    # Check mapping
+    # For now we only allow for a single mapping, this will likely change
+    if mapping is None or len(mapping.values()) > 1:
+        errmsg = "A single LigandAtomMapping is expected for this Protocol"
+        raise ValueError(errmsg)
+
+    # Check that all alchemical components are mapped & small molecules
+    mapped = {}
+    mapped['stateA'] = [m.componentA for m in mapping.values()]
+    mapped['stateB'] = [m.componentB for m in mapping.values()]
+
+    for idx in ['stateA', 'stateB']:
+        for comp in alchemical_components[idx]:
+            if comp not in mapped[idx]:
+                raise ValueError(f"Unmapped alchemical component {comp}")
+            if not isinstance(comp, SmallMoleculeComponent):
+                errmsg = ("Transformations between non SmallMoleculeComponent "
+                          "species are not currently supported")
+                raise ValueError(errmsg)
+
+    # Validate element changes in mappings
+    for m in mapping.values():
+        molA = m.componentA.to_rdkit()
+        molB = m.componentB.to_rdkit()
+        for i, j in m.componentA_to_componentB.items():
+            atomA = molA.GetAtomWithIdx(i)
+            atomB = molB.GetAtomWithIdx(j)
+            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
+                raise ValueError(
+                    f"Element change in mapping between atoms "
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+
+
+def _validate_solvent(state: ChemicalSystem, nonbonded_method: str):
+    """
+    Checks that the ChemicalSysttem component has the right solvent
+    composition for an input nonbonded_methtod.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to inspect.
+    nonbonded_method : str
+      The nonbonded method to be applied for the simulation.
+
+    Raises
+    ------
+    ValueError
+      * If there are multiple SolventComponents in the ChemicalSystem.
+      * If there is a SolventComponent and the `nonbonded_method` is
+        `nocutoff`.
+      * If the SolventComponent solvent is not water.
+    """
+    solv = [comp for comp in state.values()
+            if isinstance(comp, SmallMoleculeComponent)]
+
+    if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
+        errmsg = (f"{nonbonded_method} cannot be used for solvent "
+                  "transformations")
+        raise ValueError(errmsg)
+
+    if len(solv) > 1:
+        errmsg = "Multiple SolventComponent found, only one is supported"
+        raise ValueError(errmsg)
+
+    if solv[0].smiles != 'O':
+        errmsg = "Non water solvent is not currently supported"
+        raise ValueError(errmsg)
+
+
+def _validate_protein(state: ChemicalSystem):
+    """
+    Checks that the ChemicalSystem's ProteinComponent are suitable for the
+    RFE protocol.
+
+    Parameters
+    ----------
+    state : ChemicalSystem
+      The chemical system to inspect.
+
+    Raises
+    ------
+    ValueError
+      If there are multiple ProteinComponent in the ChemicalSystem.
+    """
+    nprot = sum(1 for comp in state.values()
+                if isinstance(comp, ProteinComponent))
+
+    if nprot > 1:
+        errmsg = "Multiple ProteinComponent found, only one is supported"
+        raise ValueError(errmsg)
 
 
 class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
@@ -146,66 +324,30 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
-        if mapping is None:
-            raise ValueError("`mapping` is required for this Protocol")
-        if 'ligand' not in mapping:
-            raise ValueError("'ligand' must be specified in `mapping` dict")
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Checks on the inputs!
-        # 1) check that both states have solvent and ligand
-        for state, label in [(stateA, 'A'), (stateB, 'B')]:
-            if 'solvent' not in state.components:
-                nonbond = self.settings.system_settings.nonbonded_method
-                if nonbond != 'nocutoff':
-                    errmsg = f"{nonbond} cannot be used for vacuum transform"
-                    raise ValueError(errmsg)
-            if 'ligand' not in state.components:
-                raise ValueError(f"Missing ligand in state {label}")
-        # 1b) check xnor have Protein component
-        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
-        if nproteins == 1:  # only one state has a protein defined
-            raise ValueError("Only one state had a protein component")
-        elif nproteins == 2:
-            if stateA['protein'] != stateB['protein']:
-                raise ValueError("Proteins in each state aren't compatible")
+        # Get alchemical components & validate them
+        alchem_comps = _get_alchemical_components(stateA, stateB)
+        _validate_alchemical_components(alchem_comps, mapping)
 
-        # 2) check that both states have same solvent
-        # TODO: defined box compatibility check
-        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
-        if 'solvent' in stateA.components:
-            if not stateA['solvent'] == stateB['solvent']:
-                raise ValueError("Solvents aren't identical between states")
-        # check that the mapping refers to the two ligand components
-        ligandmapping: LigandAtomMapping = mapping['ligand']
-        if stateA['ligand'] != ligandmapping.componentA:
-            raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != ligandmapping.componentB:
-            raise ValueError("Ligand in state B doesn't match mapping")
-        # 3) check that the mapping doesn't involve element changes
-        # this is currently a requirement of the method
-        molA = ligandmapping.componentA.to_rdkit()
-        molB = ligandmapping.componentB.to_rdkit()
-        for i, j in ligandmapping.componentA_to_componentB.items():
-            atomA = molA.GetAtomWithIdx(i)
-            atomB = molB.GetAtomWithIdx(j)
-            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                raise ValueError(
-                    f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+        # Validate solvent component
+        nonbond = self.settings.system_settings.nonbonded_method
+        _validate_solvent(stateA, nonbond)
+
+        # Validate protein component
+        _validate_protein(stateA)
 
         # actually create and return Units
-        Aname = stateA['ligand'].name
-        Bname = stateB['ligand'].name
+        Anames = ','.join(c.name for c in alchem_comps['stateA'])
+        Bnames = ','.join(c.name for c in alchem_comps['stateB'])
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.alchemical_sampler_settings.n_repeats
         units = [RelativeHybridTopologyProtocolUnit(
-            stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
+            stateA=stateA, stateB=stateB, ligandmapping=mapping.values()[0],
             settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
-            name=f'{Aname} {Bname} repeat {i} generation 0')
+            name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]
 
         return units
