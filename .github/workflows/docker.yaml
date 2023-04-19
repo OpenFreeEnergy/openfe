@@ -105,14 +105,14 @@ jobs:
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfecli --pyargs openfe -v
 
-          #      - name: Push Docker image
-          #        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-          #        with:
-          #          context: .
-          #          file: production/Dockerfile
-          #          push: true
-          #          tags: ${{ steps.meta.outputs.tags }}
-          #          labels: ${{ steps.meta.outputs.labels }}
+      - name: Push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          file: production/Dockerfile
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Setup Apptainer
         uses: eWaterCycle/setup-apptainer@v2
