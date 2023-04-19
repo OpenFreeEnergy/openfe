@@ -129,6 +129,7 @@ jobs:
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
+          echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test_sif
           cd ../
 
