@@ -11,6 +11,8 @@ name: Create and publish a Docker image
 
 on:
   push:
+    branches:
+      - feat/push_apptainer_image_to_ghcr
     tags:
       - '*'  # Build on pushes with tags (unless they contain a / )
   workflow_dispatch:
@@ -127,6 +129,7 @@ jobs:
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
+          singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test_sif
           cd ../
 
       - uses: actions/upload-artifact@v3
