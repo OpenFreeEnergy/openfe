@@ -2,9 +2,6 @@ name: Make single-file installers
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - '*'  # Build on pushes with tags (unless they contain a / )
 
 defaults:
   run:
