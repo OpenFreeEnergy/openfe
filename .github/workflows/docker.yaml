@@ -129,7 +129,7 @@ jobs:
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
-          singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test_sif
+          singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test_sif
           cd ../
 
       - uses: actions/upload-artifact@v3
