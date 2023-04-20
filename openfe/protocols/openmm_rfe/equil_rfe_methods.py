@@ -693,7 +693,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # cautiously clear out the global context cache too
             for context in list(
                     openmmtools.cache.global_context_cache._lru._data.keys()):
-                del cache.global_context_cache._lru._data[context]
+                del openmmtools.cache.global_context_cache._lru._data[context]
 
             del sampler_context_cache, energy_context_cache
             if not dry:
