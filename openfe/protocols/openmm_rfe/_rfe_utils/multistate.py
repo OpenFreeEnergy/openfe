@@ -34,7 +34,7 @@ class HybridCompatibilityMixin(object):
         self._hybrid_factory = hybrid_factory
         super(HybridCompatibilityMixin, self).__init__(*args, **kwargs)
 
-    def setup(self, reporter, platform, lambda_protocol,
+    def setup(self, reporter, lambda_protocol,
               temperature=298.15 * unit.kelvin, n_replicas=None,
               endstates=True, minimization_steps=100):
         """
@@ -45,8 +45,6 @@ class HybridCompatibilityMixin(object):
         ----------
         reporter : OpenMM reporter
             Simulation reporter to attach to each simulation replica.
-        platform : openmm.Platform
-            Platform to perform simulation on.
         lambda_protocol : LambdaProtocol
             The lambda protocol to be used for simulation. Default to a default
             class creation of LambdaProtocol.
@@ -84,8 +82,6 @@ class HybridCompatibilityMixin(object):
         thermodynamic_state_list = []
         sampler_state_list = []
 
-        context_cache = cache.ContextCache(platform)
-
         if n_replicas is None:
             msg = (f"setting number of replicas to number of states: {n_states}")
             warnings.warn(msg)
@@ -118,8 +114,6 @@ class HybridCompatibilityMixin(object):
 
             # now generating a sampler_state for each thermodyanmic state,
             # with relaxed positions
-            context, context_integrator = context_cache.get_context(
-                                             compound_thermostate_copy)
             minimize(compound_thermostate_copy, sampler_state,
                      max_iterations=minimization_steps)
             sampler_state_list.append(copy.deepcopy(sampler_state))
@@ -296,4 +290,8 @@ def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: stat
         )
         sampler_state.update_from_context(context)
     finally:
+        # cautiously clear out the global context cache too
+        for context in list(cache.global_context_cache._lru._data.keys()):
+            del cache.global_context_cache._lru._data[context]
+
         del context, integrator

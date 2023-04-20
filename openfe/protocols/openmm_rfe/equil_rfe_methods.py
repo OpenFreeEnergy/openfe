@@ -572,7 +572,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             checkpoint_storage=shared_basepath / sim_settings.checkpoint_storage,
         )
 
-        # 10. Get platform and context caches
+        # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
             protocol_settings.engine_settings.compute_platform
         )
@@ -580,16 +580,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # 11. Set the integrator
         #  a. get integrator settings
         integrator_settings = protocol_settings.integrator_settings
-
-        #  a. Create context caches (energy + sampler)
-        #     Note: these needs to exist on the compute node
-        energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_live=None, platform=platform,
-        )
-
-        sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_live=None, platform=platform,
-        )
 
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
@@ -635,13 +625,22 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         sampler.setup(
             n_replicas=sampler_settings.n_replicas,
             reporter=reporter,
-            platform=platform,
             lambda_protocol=lambdas,
             temperature=to_openmm(protocol_settings.thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
         )
 
         try:
+            # Create context caches (energy + sampler)
+            #     Note: these needs to exist on the compute node
+            energy_context_cache = openmmtools.cache.ContextCache(
+                capacity=None, time_to_live=None, platform=platform,
+            )
+
+            sampler_context_cache = openmmtools.cache.ContextCache(
+                capacity=None, time_to_live=None, platform=platform,
+            )
+
             sampler.energy_context_cache = energy_context_cache
             sampler.sampler_context_cache = sampler_context_cache
 
@@ -691,9 +690,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 del energy_context_cache._lru._data[context]
             for context in list(sampler_context_cache._lru._data.keys()):
                 del sampler_context_cache._lru._data[context]
+            # cautiously clear out the global context cache too
+            for context in list(
+                    openmmtools.cache.global_context_cache._lru._data.keys()):
+                del cache.global_context_cache._lru._data[context]
 
             del sampler_context_cache, energy_context_cache
-            del integrator, sampler
+            if not dry:
+                del integrator, sampler
 
         if not dry:  # pragma: no-cover
             return {
