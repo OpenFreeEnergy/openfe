@@ -688,9 +688,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # TODO: remove once upstream solution in place: https://github.com/choderalab/openmmtools/pull/690
             # replace with above
             for context in list(energy_context_cache._data.keys()):
-                del self._data[context]
+                del self._lru._data[context]
             for context in list(sampler_context_cache._data.keys()):
-                del self._data[context]
+                del self._lru._data[context]
 
             del sampler_context_cache, energy_context_cache
             del integrator, sampler
