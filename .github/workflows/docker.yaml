@@ -130,10 +130,4 @@ jobs:
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
           echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-          singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test_sif
-          cd ../
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
-          path: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
+          singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}-apptainer
