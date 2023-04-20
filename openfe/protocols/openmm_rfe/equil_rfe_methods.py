@@ -204,7 +204,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         units = [RelativeHybridTopologyProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
-            generation=0, repeat_id=i,
+            generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Aname} {Bname} repeat {i} generation 0')
             for i in range(n_repeats)]
 
