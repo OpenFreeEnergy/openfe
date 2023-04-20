@@ -287,10 +287,13 @@ def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: stat
     context, integrator = cache.global_context_cache.get_context(
         thermodynamic_state, integrator
     )
-    sampler_state.apply_to_context(
-        context, ignore_velocities=True
-    )
-    openmm.LocalEnergyMinimizer.minimize(
-        context, maxIterations=max_iterations
-    )
-    sampler_state.update_from_context(context)
+    try:
+        sampler_state.apply_to_context(
+            context, ignore_velocities=True
+        )
+        openmm.LocalEnergyMinimizer.minimize(
+            context, maxIterations=max_iterations
+        )
+        sampler_state.update_from_context(context)
+    finally:
+        del context, integrator

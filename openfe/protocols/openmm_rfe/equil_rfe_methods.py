@@ -81,7 +81,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
           a Quantity defined with units.
         """
         # TODO: Check this holds up completely for SAMS.
-        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        # this v
+        dGs = []
+        for pus in self.data.values():
+            dGs.extend([pu.outputs['unit_estimate'] for pu in pus])
+
+        # not this v
+        #dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
@@ -91,7 +97,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value: The std of the estimates of each independent repeat"""
-        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        # this v
+        dGs = []
+        for pus in self.data.values():
+            dGs.extend([pu.outputs['unit_estimate'] for pu in pus])
+
+        # not this v
+        #dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
@@ -591,18 +603,19 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             capacity=None, time_to_live=None, platform=platform,
         )
 
-        try:
-            #  b. create langevin integrator
-            integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
-                timestep=to_openmm(integrator_settings.timestep),
-                collision_rate=to_openmm(integrator_settings.collision_rate),
-                n_steps=integrator_settings.n_steps.m,
-                reassign_velocities=integrator_settings.reassign_velocities,
-                n_restart_attempts=integrator_settings.n_restart_attempts,
-                constraint_tolerance=integrator_settings.constraint_tolerance,
-                splitting=integrator_settings.splitting
-            )
+        #  b. create langevin integrator
+        integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
+            timestep=to_openmm(integrator_settings.timestep),
+            collision_rate=to_openmm(integrator_settings.collision_rate),
+            n_steps=integrator_settings.n_steps.m,
+            reassign_velocities=integrator_settings.reassign_velocities,
+            n_restart_attempts=integrator_settings.n_restart_attempts,
+            constraint_tolerance=integrator_settings.constraint_tolerance,
+            splitting=integrator_settings.splitting
+        )
 
+
+        try:
             # 12. Create sampler
             if sampler_settings.sampler_method.lower() == "repex":
                 sampler = _rfe_utils.multistate.HybridRepexSampler(
@@ -670,23 +683,25 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
                 est = ensure_quantity(est, 'openff')
 
-                # close reporter when you're done
-                reporter.close()
-
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
             else:
-                # close reporter when you're done, prevent file handle clashes
-                reporter.close()
-
                 # clean up the reporter file
                 fns = [shared_basepath / sim_settings.output_filename,
                        shared_basepath / sim_settings.checkpoint_storage]
                 for fn in fns:
                     os.remove(fn)
         finally:
+            # close reporter when you're done, prevent file handle clashes
+            reporter.close()
+
+            # clear GPU contexts
             energy_context_cache.empty()
             sampler_context_cache.empty()
+
+            del sampler_context_cache, energy_context_cache
+            del integrator, sampler
+
 
         if not dry:  # pragma: no-cover
             return {
