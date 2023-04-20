@@ -81,7 +81,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
           a Quantity defined with units.
         """
         # TODO: Check this holds up completely for SAMS.
-        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        # this v
+        dGs = []
+        for pus in self.data.values():
+            dGs.extend([pu.outputs['unit_estimate'] for pu in pus])
+
+        # not this v
+        #dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
@@ -91,7 +97,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
     def get_uncertainty(self):
         """The uncertainty/error in the dG value: The std of the estimates of each independent repeat"""
-        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        # this v
+        dGs = []
+        for pus in self.data.values():
+            dGs.extend([pu.outputs['unit_estimate'] for pu in pus])
+
+        # not this v
+        #dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
