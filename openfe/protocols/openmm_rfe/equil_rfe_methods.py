@@ -602,47 +602,46 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             splitting=integrator_settings.splitting
         )
 
-
-        try:
-            # 12. Create sampler
-            if sampler_settings.sampler_method.lower() == "repex":
-                sampler = _rfe_utils.multistate.HybridRepexSampler(
-                    mcmc_moves=integrator,
-                    hybrid_factory=hybrid_factory,
-                    online_analysis_interval=sampler_settings.online_analysis_interval,
-                    online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                    online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
-                )
-            elif sampler_settings.sampler_method.lower() == "sams":
-                sampler = _rfe_utils.multistate.HybridSAMSSampler(
-                    mcmc_moves=integrator,
-                    hybrid_factory=hybrid_factory,
-                    online_analysis_interval=sampler_settings.online_analysis_interval,
-                    online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
-                    flatness_criteria=sampler_settings.flatness_criteria,
-                    gamma0=sampler_settings.gamma0,
-                )
-            elif sampler_settings.sampler_method.lower() == 'independent':
-                sampler = _rfe_utils.multistate.HybridMultiStateSampler(
-                    mcmc_moves=integrator,
-                    hybrid_factory=hybrid_factory,
-                    online_analysis_interval=sampler_settings.online_analysis_interval,
-                    online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                    online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
-                )
-
-            else:
-                raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
-
-            sampler.setup(
-                n_replicas=sampler_settings.n_replicas,
-                reporter=reporter,
-                platform=platform,
-                lambda_protocol=lambdas,
-                temperature=to_openmm(protocol_settings.thermo_settings.temperature),
-                endstates=alchem_settings.unsampled_endstates,
+        # 12. Create sampler
+        if sampler_settings.sampler_method.lower() == "repex":
+            sampler = _rfe_utils.multistate.HybridRepexSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+            )
+        elif sampler_settings.sampler_method.lower() == "sams":
+            sampler = _rfe_utils.multistate.HybridSAMSSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
+                flatness_criteria=sampler_settings.flatness_criteria,
+                gamma0=sampler_settings.gamma0,
+            )
+        elif sampler_settings.sampler_method.lower() == 'independent':
+            sampler = _rfe_utils.multistate.HybridMultiStateSampler(
+                mcmc_moves=integrator,
+                hybrid_factory=hybrid_factory,
+                online_analysis_interval=sampler_settings.online_analysis_interval,
+                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
+                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
             )
 
+        else:
+            raise AttributeError(f"Unknown sampler {sampler_settings.sampler_method}")
+
+        sampler.setup(
+            n_replicas=sampler_settings.n_replicas,
+            reporter=reporter,
+            platform=platform,
+            lambda_protocol=lambdas,
+            temperature=to_openmm(protocol_settings.thermo_settings.temperature),
+            endstates=alchem_settings.unsampled_endstates,
+        )
+
+        try:
             sampler.energy_context_cache = energy_context_cache
             sampler.sampler_context_cache = sampler_context_cache
 
@@ -684,12 +683,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clear GPU contexts
-            energy_context_cache.empty()
-            sampler_context_cache.empty()
+            #energy_context_cache.empty()
+            #sampler_context_cache.empty()
+            # TODO: remove once upstream solution in place: https://github.com/choderalab/openmmtools/pull/690
+            # replace with above
+            for context in list(energy_context_cache._data.keys()):
+                del self._data[context]
+            for context in list(sampler_context_cache._data.keys()):
+                del self._data[context]
 
             del sampler_context_cache, energy_context_cache
             del integrator, sampler
-
 
         if not dry:  # pragma: no-cover
             return {
