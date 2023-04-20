@@ -80,6 +80,35 @@ def test_serialize_protocol():
     assert protocol == ret
 
 
+def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_to_toluene_mapping):
+    # if we create two dags each with 3 repeats, they should give 6 repeat_ids
+    # this allows multiple DAGs in flight for one Transformation that don't clash on gather
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+    dag1 = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    dag2 = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+
+    repeat_ids = set()
+    u: openmm_rfe.RelativeHybridTopologyProtocolUnit
+    for u in dag1.protocol_units:
+        repeat_ids.add(u.inputs['repeat_id'])
+    for u in dag2.protocol_units:
+        repeat_ids.add(u.inputs['repeat_id'])
+
+    assert len(repeat_ids) == 6
+
+
 @pytest.mark.parametrize('method', [
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
@@ -445,7 +474,8 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
         assert isinstance(ret, gufe.ProtocolUnitResult)
         assert ret.outputs['generation'] == 0
         repeats.add(ret.outputs['repeat_id'])
-    assert repeats == {0, 1, 2}
+    # repeats are random ints, so check we got 3 individual numbers
+    assert len(repeats) == 3
 
 
 def test_gather(solvent_protocol_dag, tmpdir):
