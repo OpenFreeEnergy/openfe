@@ -277,11 +277,6 @@ class IntegratorSettings(settings.SettingsBaseModel):
     If True, velocities are reassigned from the Maxwell-Boltzmann
     distribution at the beginning of move. Default False.
     """
-    splitting = "V R O R V"
-    """
-    Sequence of "R", "V", "O" substeps to be carried out at each timestep.
-    Default "V R O R V".
-    """
     n_restart_attempts = 20
     """
     Number of attempts to restart from Context if there are NaNs in the

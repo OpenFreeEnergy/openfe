@@ -589,7 +589,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
-            splitting=integrator_settings.splitting
         )
 
         # 12. Create sampler
