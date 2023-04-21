@@ -429,17 +429,29 @@ def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
 
     # update atom positions
     sysA = benzene_vacuum_system
-    conf = sysA['ligand']._rdkit.GetConformer()
+    rdmol = benzene_vacuum_system['ligand'].to_rdkit()
+    conf = rdmol.GetConformer()
 
-    for atm in range(sysA['ligand']._rdkit.GetNumAtoms()):
+    for atm in range(rdmol.GetNumAtoms()):
         x, y, z = conf.GetAtomPosition(atm)
         conf.SetAtomPosition(atm, Point3D(x+3, y, z))
+
+    new_ligand = openfe.SmallMoleculeComponent.from_rdkit(
+        rdmol, name=benzene_vacuum_system['ligand'].name
+    )
+    components = dict(benzene_vacuum_system.components)
+    components['ligand'] = new_ligand
+    sysA = openfe.ChemicalSystem(components)
+
+    mapping = benzene_to_toluene_mapping.copy_with_replacements(
+        componentA=new_ligand
+    )
 
     # Specifically check that the first pair throws a warning
     with pytest.warns(UserWarning, match='0 : 4 deviates'):
         dag = protocol.create(
             stateA=sysA, stateB=toluene_vacuum_system,
-            mapping={'ligand': benzene_to_toluene_mapping},
+            mapping={'ligand': mapping},
             )
         unit = list(dag.protocol_units)[0]
         unit.run(dry=True)
