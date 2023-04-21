@@ -632,7 +632,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         try:
             # Create context caches (energy + sampler)
-            #     Note: these needs to exist on the compute node
             energy_context_cache = openmmtools.cache.ContextCache(
                 capacity=None, time_to_live=None, platform=platform,
             )
@@ -680,11 +679,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         finally:
             # close reporter when you're done, prevent file handle clashes
             reporter.close()
+            del reporter
+
+            # clean up the analyzer
+            if not dry:
+                ana.clear()
+                del ana
 
             # clear GPU contexts
-            #energy_context_cache.empty()
-            #sampler_context_cache.empty()
-            # TODO: remove once upstream solution in place: https://github.com/choderalab/openmmtools/pull/690
+            # TODO: use cache.empty() calls when openmmtools #690 is resolved
             # replace with above
             for context in list(energy_context_cache._lru._data.keys()):
                 del energy_context_cache._lru._data[context]

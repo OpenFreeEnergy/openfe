@@ -118,6 +118,8 @@ class HybridCompatibilityMixin(object):
                      max_iterations=minimization_steps)
             sampler_state_list.append(copy.deepcopy(sampler_state))
 
+        del compound_thermostate, sampler_state
+
         # making sure number of sampler states equals n_replicas
         if len(sampler_state_list) != n_replicas:
             # picking roughly evenly spaced sampler states
@@ -277,8 +279,11 @@ def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: stat
     sampler_state : openmmtools.states.SamplerState
         The posititions and accompanying state following minimization
     """
-    integrator = openmm.VerletIntegrator(1.0) #we won't take any steps, so use a simple integrator
-    context, integrator = cache.global_context_cache.get_context(
+    # we won't take any steps, so use a simple integrator
+    integrator = openmm.VerletIntegrator(1.0)
+    platform = openmm.Platform.getPlatformByName('CPU')
+    dummy_cache = cache.DummyContextCache(platform=platform)
+    context, integrator = dummy_cache.get_context(
         thermodynamic_state, integrator
     )
     try:
@@ -290,8 +295,4 @@ def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: stat
         )
         sampler_state.update_from_context(context)
     finally:
-        # cautiously clear out the global context cache too
-        for context in list(cache.global_context_cache._lru._data.keys()):
-            del cache.global_context_cache._lru._data[context]
-
-        del context, integrator
+        del context, integrator, dummy_cache
