@@ -3,6 +3,8 @@ FROM mambaorg/micromamba:1.4.1
 LABEL org.opencontainers.image.source=https://github.com/OpenFreeEnergy/openfe
 LABEL org.opencontainers.image.description="A Python package for executing alchemical free energy calculations."
 LABEL org.opencontainers.image.licenses=MIT
+# OpenFE Version we want to build
+ARG VERSION
 
 # Don't buffer stdout & stderr streams, so if there is a crash no partial buffer output is lost
 # https://docs.python.org/3/using/cmdline.html#cmdoption-u
@@ -11,8 +13,7 @@ ENV PYTHONUNBUFFERED=1
 ENV OFE_DOCKER_BUILD=TRUE
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER production/environment.yml /tmp/env.yaml
-COPY --chown=$MAMBA_USER:$MAMBA_USER dist/*py3-none-any.whl /tmp
-RUN micromamba install -y -n base git -f /tmp/env.yaml && \
+RUN micromamba install -y -n base git "openfe==$VERSION" -f /tmp/env.yaml && \
     micromamba clean --all --yes
 
 # Ensure that conda environment is automatically activated

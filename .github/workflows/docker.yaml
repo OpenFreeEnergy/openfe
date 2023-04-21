@@ -61,11 +61,6 @@ jobs:
       - name: Print FQIRP
         run: echo ${{ steps.fqirp.outputs.FQIRP  }}
 
-      - name: Build package at the latest tag
-        run: |
-          python3 -m pip install --upgrade build
-          python3 -m build
-
       - name: Log in to the Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
@@ -96,6 +91,8 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.latest-version.outputs.VERSION }}
 
       - name: Test image
         run: |
@@ -122,7 +119,7 @@ jobs:
       - name: Build Apptainer Image
         run: singularity build openfe_${{ steps.latest-version.outputs.VERSION }}.sif docker-daemon:${{ steps.fqirp.outputs.FQIRP }}
 
-      - name: Test Apptainer Image
+      - name: Test & Push Apptainer Image
         run: |
           mkdir test_apptainer
           cd test_apptainer
