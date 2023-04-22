@@ -3,95 +3,68 @@ name: Make single-file installers
 on:
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
   test:
-    name: Building single file installer on ${{ matrix.os }}, Python ${{ matrix.python-version }}
-
+    name: Building single file installer on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
         os: [macOS-latest, ubuntu-latest]
-        python-version: 3.9
-
-    env:
-      CI_OS: ${{ matrix.os }}
-      PYVER: ${{ matrix.python-version }}
 
     steps:
-    - uses: actions/checkout@v3
-
-    - uses: conda-incubator/setup-miniconda@v2.1.1
+    - name: Checkout Code
+      uses: actions/checkout@v3
       with:
-        python-version: ${{ matrix.python-version }}
-        activate-environment: constructor
-        environment-file: devtools/conda-envs/installer.yaml
-        auto-activate-base: false
+        fetch-depth: 0
 
-    - name: Additional info about the build
-      shell: bash
+    - name: Get Latest Version
+      id: latest-version
       run: |
-        uname -a
-        df -h
-        ulimit -a
-    - name: Environment Information
-      shell: bash -l {0}
-      run: |
-        conda info
-        conda list
-    - name: Prepare and run the constructor
-      shell: bash -l {0}
-      run: |
-        #cd ..
-        # Find the tag of the last release (excluding RCs)
-        # TODO: Make this a variable that can be passed through from trigger and/or allow RC
-        # TODO: not sure why grep is failing to match v0.0.1 here
-        #export LATEST_TAG=$(git ls-remote --tags https://github.com/openfreeEnergy/openfe.git | cut -f2 | grep -E "([0-9]+)\.([0-9]+)\.([0-9]+)$" | sort --version-sort | tail -1 | sed 's/refs\/tags\///')
-        export LATEST_TAG=$(git ls-remote --tags https://github.com/openfreeEnergy/openfe.git | cut -f2 | sort --version-sort | tail -1 | sed 's/refs\/tags\///')
-        echo $LATEST_TAG
-        git clone https://github.com/openfreeEnergy/toolkit-installer-constructor
-        ls -l devtools
-        ls -l devtools/scripts
-        cd toolkit-installer-constructor
-        echo latest tag $LATEST_TAG pyver $PYVER ci os $CI_OS
-        python ../devtools/scripts/build_cookiecutter_json.py $LATEST_TAG $PYVER $CI_OS
-        cp new_cookiecutter.json cookiecutter/cookiecutter.json
-        cat new_cookiecutter.json
-        python run.py
-        pwd
-        ls
-        ls build
-    - name: Upload installer as artifact
-      uses: actions/upload-artifact@v2
+        LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+        # slice off the v, ie v0.7.2 -> 0.7.2
+        VERSION=${LATEST_TAG:1}
+        echo $VERSION
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Print Latest Version
+      run: echo ${{ steps.latest-version.outputs.VERSION }}
+
+    - name: Install constructor environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@main
       with:
-        name: ${{ matrix.os }}_py${{ matrix.python-version }}.sh  
-        path: toolkit-installer-constructor/build/openfe*/openfe*.sh
+        environment-file: false
+        channels: conda-forge
+        environment-name: constructor-env 
+        extra-specs: |
+          python=3.10
+          jinja2
+          constructor
 
-    - name: Install from installer
-      shell: bash -l {0}
+    - name: Create installer
+      run: VERSION=${{ steps.latest-version.outputs.VERSION }} constructor devtools/installer/
+
+    - name: Get installer file name
+      id: file-name
       run: |
-        #cd ..
-        pwd
-        ls
-        ls toolkit-installer-constructor
-        ls toolkit-installer-constructor/build
-        ls toolkit-installer-constructor/build/openfe-*/
-        mkdir scratch
-        cd scratch
-        echo $HOME/constructor_install/ | bash ../toolkit-installer-constructor/build/openfe-*/openfe-*.sh
-        conda activate $HOME/constructor_install/
-        conda info
-        conda list
-        export FOUND_VER=$(python -c "import openfe; print(openfe.__version__)")
-        export LATEST_TAG=$(git ls-remote --tags https://github.com/openfreeEnergy/openfe.git | cut -f2 | grep -v "rc" | tail -1 | sed 's/refs\/tags\///')
-        echo $LATEST_TAG
-        echo $FOUND_VER
-        #TODO fix version on conda-forge release
-        #if [[ $LATEST_TAG != $FOUND_VER ]];
-        #  then echo "Version mismatch"
-        #  exit 1
-        #fi
-        # This should work if run directly at release time, but a safer approach would be
-        # to `git checkout` the corresponding tag of the release, see PR #577
-        pytest -v ../openfe/tests/
+        # This should work as long as we don't have any *.sh files in our root dir
+        FILE_NAME=$(find * -maxdepth 0 -type f -name "*.sh")
+        echo $FILE_NAME
+        echo "FILE_NAME=$FILE_NAME" >> $GITHUB_OUTPUT
+
+    - name: Test installer
+      run: |
+        chmod +x ${{ steps.file-name.outputs.FILE_NAME }}
+        ./${{ steps.file-name.outputs.FILE_NAME }} -b
+        export PATH="$HOME/openfeforge/bin:$PATH"
+        OFE_DOCKER_BUILD=TRUE OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ steps.file-name.outputs.FILE_NAME }}
+        path: OpenFEforge*
+        if-no-files-found: error
