@@ -628,6 +628,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             lambda_protocol=lambdas,
             temperature=to_openmm(protocol_settings.thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
+            minimization_platform=platform.getName(),
         )
 
         try:
