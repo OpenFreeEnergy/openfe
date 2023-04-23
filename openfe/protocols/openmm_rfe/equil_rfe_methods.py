@@ -564,7 +564,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 sim_settings.output_indices
         )
 
-        #  a. Create the multistate reporter & associated analyzer
+        #  a. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
             storage=shared_basepath / sim_settings.output_filename,
             analysis_particle_indices=selection_indices,
@@ -668,9 +668,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 est, _ = ana.get_free_energy()
                 est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
                 est = ensure_quantity(est, 'openff')
-                ana.clear()
-                del ana
-                
+                ana.clear()  # clean up cached values
 
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
@@ -681,7 +679,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 for fn in fns:
                     os.remove(fn)
         finally:
-            # close reporter & analyzer when you're done, prevent file handle clashes
+            # close reporter when you're done, prevent file handle clashes
             reporter.close()
             del reporter
 
