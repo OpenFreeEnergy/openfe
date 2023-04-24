@@ -204,7 +204,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         units = [RelativeHybridTopologyProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
-            generation=0, repeat_id=i,
+            generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Aname} {Bname} repeat {i} generation 0')
             for i in range(n_repeats)]
 
@@ -323,20 +323,20 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # a. check timestep correctness + that
         # equilibration & production are divisible by n_steps
-        prototol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
+        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
 
-        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = prototol_settings.forcefield_settings
-        thermo_settings: settings.ThermoSettings = prototol_settings.thermo_settings
-        alchem_settings: AlchemicalSettings = prototol_settings.alchemical_settings
-        system_settings: SystemSettings = prototol_settings.system_settings
-        solvation_settings: SolvationSettings = prototol_settings.solvation_settings
-        sampler_settings: AlchemicalSamplerSettings = prototol_settings.alchemical_sampler_settings
-        sim_settings: SimulationSettings = prototol_settings.simulation_settings
-        timestep = prototol_settings.integrator_settings.timestep
-        mc_steps = prototol_settings.integrator_settings.n_steps.m
+        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
+        thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
+        alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
+        system_settings: SystemSettings = protocol_settings.system_settings
+        solvation_settings: SolvationSettings = protocol_settings.solvation_settings
+        sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
+        sim_settings: SimulationSettings = protocol_settings.simulation_settings
+        timestep = protocol_settings.integrator_settings.timestep
+        mc_steps = protocol_settings.integrator_settings.n_steps.m
 
         # is the timestep good for the mass?
         if forcefield_settings.hydrogen_mass < 3.0:
@@ -536,9 +536,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if 'solvent' in stateA.components:
             hybrid_factory.hybrid_system.addForce(
                 openmm.MonteCarloBarostat(
-                    prototol_settings.thermo_settings.pressure.to(unit.bar).m,
-                    prototol_settings.thermo_settings.temperature.m,
-                    prototol_settings.integrator_settings.barostat_frequency.m,
+                    protocol_settings.thermo_settings.pressure.to(unit.bar).m,
+                    protocol_settings.thermo_settings.temperature.m,
+                    protocol_settings.integrator_settings.barostat_frequency.m,
                 )
             )
 
@@ -572,24 +572,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             checkpoint_storage=shared_basepath / sim_settings.checkpoint_storage,
         )
 
-        # 10. Get platform and context caches
+        # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
-            prototol_settings.engine_settings.compute_platform
-        )
-
-        #  a. Create context caches (energy + sampler)
-        #     Note: these needs to exist on the compute node
-        energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_live=None, platform=platform,
-        )
-
-        sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_live=None, platform=platform,
+            protocol_settings.engine_settings.compute_platform
         )
 
         # 11. Set the integrator
         #  a. get integrator settings
-        integrator_settings = prototol_settings.integrator_settings
+        integrator_settings = protocol_settings.integrator_settings
 
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
@@ -635,59 +625,88 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         sampler.setup(
             n_replicas=sampler_settings.n_replicas,
             reporter=reporter,
-            platform=platform,
             lambda_protocol=lambdas,
-            temperature=to_openmm(prototol_settings.thermo_settings.temperature),
+            temperature=to_openmm(protocol_settings.thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
+            minimization_platform=platform.getName(),
         )
 
-        sampler.energy_context_cache = energy_context_cache
-        sampler.sampler_context_cache = sampler_context_cache
+        try:
+            # Create context caches (energy + sampler)
+            energy_context_cache = openmmtools.cache.ContextCache(
+                capacity=None, time_to_live=None, platform=platform,
+            )
+
+            sampler_context_cache = openmmtools.cache.ContextCache(
+                capacity=None, time_to_live=None, platform=platform,
+            )
+
+            sampler.energy_context_cache = energy_context_cache
+            sampler.sampler_context_cache = sampler_context_cache
+
+            if not dry:  # pragma: no-cover
+                # minimize
+                if verbose:
+                    logger.info("minimizing systems")
+
+                sampler.minimize(max_iterations=sim_settings.minimization_steps)
+
+                # equilibrate
+                if verbose:
+                    logger.info("equilibrating systems")
+
+                sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
+
+                # production
+                if verbose:
+                    logger.info("running production phase")
+
+                sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+
+                # calculate estimate of results from this individual unit
+                ana = multistate.MultiStateSamplerAnalyzer(reporter)
+                est, _ = ana.get_free_energy()
+                est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
+                est = ensure_quantity(est, 'openff')
+                ana.clear()  # clean up cached values
+
+                nc = shared_basepath / sim_settings.output_filename
+                chk = shared_basepath / sim_settings.checkpoint_storage
+            else:
+                # clean up the reporter file
+                fns = [shared_basepath / sim_settings.output_filename,
+                       shared_basepath / sim_settings.checkpoint_storage]
+                for fn in fns:
+                    os.remove(fn)
+        finally:
+            # close reporter when you're done, prevent file handle clashes
+            reporter.close()
+            del reporter
+
+            # clear GPU contexts
+            # TODO: use cache.empty() calls when openmmtools #690 is resolved
+            # replace with above
+            for context in list(energy_context_cache._lru._data.keys()):
+                del energy_context_cache._lru._data[context]
+            for context in list(sampler_context_cache._lru._data.keys()):
+                del sampler_context_cache._lru._data[context]
+            # cautiously clear out the global context cache too
+            for context in list(
+                    openmmtools.cache.global_context_cache._lru._data.keys()):
+                del openmmtools.cache.global_context_cache._lru._data[context]
+
+            del sampler_context_cache, energy_context_cache
+
+            if not dry:
+                del integrator, sampler
 
         if not dry:  # pragma: no-cover
-            # minimize
-            if verbose:
-                logger.info("minimizing systems")
-
-            sampler.minimize(max_iterations=sim_settings.minimization_steps)
-
-            # equilibrate
-            if verbose:
-                logger.info("equilibrating systems")
-
-            sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
-
-            # production
-            if verbose:
-                logger.info("running production phase")
-
-            sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
-
-            # calculate estimate of results from this individual unit
-            ana = multistate.MultiStateSamplerAnalyzer(reporter)
-            est, _ = ana.get_free_energy()
-            est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
-            est = ensure_quantity(est, 'openff')
-
-            # close reporter when you're done
-            reporter.close()
-
-            nc = shared_basepath / sim_settings.output_filename
-            chk = shared_basepath / sim_settings.checkpoint_storage
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
                 'unit_estimate': est,
             }
         else:
-            # close reporter when you're done, prevent file handle clashes
-            reporter.close()
-
-            # clean up the reporter file
-            fns = [shared_basepath / sim_settings.output_filename,
-                   shared_basepath / sim_settings.checkpoint_storage]
-            for fn in fns:
-                os.remove(fn)
             return {'debug': {'sampler': sampler}}
 
     def _execute(
