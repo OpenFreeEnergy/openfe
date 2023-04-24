@@ -4,6 +4,8 @@ channels:
 dependencies:
   # Issues with 11.8 on    lilac
   - cudatoolkit==11.7
+  - jupyterlab
+  - notebook
   - openfe
   - pip
   - py3dmol
