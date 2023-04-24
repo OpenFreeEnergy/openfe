@@ -89,6 +89,7 @@ jobs:
           context: .
           file: production/Dockerfile
           load: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -110,6 +111,8 @@ jobs:
           push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.latest-version.outputs.VERSION }}
 
       - name: Setup Apptainer
         uses: eWaterCycle/setup-apptainer@v2
