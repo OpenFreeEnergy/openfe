@@ -199,7 +199,6 @@ class TestResultClient(_ResultContainerTest):
                                                 "store_transformation",
                                                 "load_transformation")
 
-    @pytest.mark.skipif(os.getenv("SKIP_SOME_TESTS", default="TRUE").upper() == "TRUE", reason="Test fails in docker image, see issue #342")
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     def test_store_load_network_same_process(self, request, fixture):
         network = request.getfixturevalue(fixture)
@@ -207,7 +206,6 @@ class TestResultClient(_ResultContainerTest):
                                            "store_network",
                                            "load_network")
 
-    @pytest.mark.skipif(os.getenv("SKIP_SOME_TESTS", default="TRUE").upper() == "TRUE", reason="Test fails in docker image, see issue #342")
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     def test_store_load_network_different_process(self, request, fixture):
         network = request.getfixturevalue(fixture)
