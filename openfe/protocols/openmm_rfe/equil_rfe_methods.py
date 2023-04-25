@@ -668,6 +668,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 est, _ = ana.get_free_energy()
                 est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
                 est = ensure_quantity(est, 'openff')
+                ana.clear()  # clean up cached values
 
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
@@ -682,11 +683,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             reporter.close()
             del reporter
 
-            # clean up the analyzer
-            if not dry:
-                ana.clear()
-                del ana
-
             # clear GPU contexts
             # TODO: use cache.empty() calls when openmmtools #690 is resolved
             # replace with above
@@ -700,6 +696,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 del openmmtools.cache.global_context_cache._lru._data[context]
 
             del sampler_context_cache, energy_context_cache
+
             if not dry:
                 del integrator, sampler
 

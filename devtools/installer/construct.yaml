@@ -12,11 +12,13 @@ transmute_file_type: .conda
 
 specs:
   - conda
-  - gufe=={{ environ["VERSION"] }}
+  - jupyterlab
   - mamba
+  - notebook
   - openfe=={{ environ["VERSION"] }}
   - pip
   - pytest
+  - pytest-xdist
   - python 3.9.*
 
 # Not building an .exe for windows or a .pkg for macOS

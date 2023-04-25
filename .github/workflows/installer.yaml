@@ -61,7 +61,7 @@ jobs:
         chmod +x ${{ steps.file-name.outputs.FILE_NAME }}
         ./${{ steps.file-name.outputs.FILE_NAME }} -b
         export PATH="$HOME/openfeforge/bin:$PATH"
-        OFE_DOCKER_BUILD=TRUE OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
+        OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
 
     - uses: actions/upload-artifact@v3
       with:
