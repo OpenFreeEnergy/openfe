@@ -17,7 +17,7 @@ dependencies:
   - openff-models>=0.0.4
   - click
   - typing-extensions
-  - lomap2>=2.1.0
+  - lomap2>=2.3.0
   - openmmtools
   - openmmforcefields>=0.11.2
   - perses
