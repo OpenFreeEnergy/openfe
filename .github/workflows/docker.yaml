@@ -59,11 +59,6 @@ jobs:
       - name: Print FQIRP
         run: echo ${{ steps.fqirp.outputs.FQIRP  }}
 
-      - name: Build package at the latest tag
-        run: |
-          python3 -m pip install --upgrade build
-          python3 -m build
-
       - name: Log in to the Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
@@ -92,8 +87,11 @@ jobs:
           context: .
           file: production/Dockerfile
           load: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.latest-version.outputs.VERSION }}
 
       - name: Test image
         run: |
@@ -111,6 +109,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.latest-version.outputs.VERSION }}
 
       - name: Setup Apptainer
         uses: eWaterCycle/setup-apptainer@v2
@@ -120,16 +120,12 @@ jobs:
       - name: Build Apptainer Image
         run: singularity build openfe_${{ steps.latest-version.outputs.VERSION }}.sif docker-daemon:${{ steps.fqirp.outputs.FQIRP }}
 
-      - name: Test Apptainer Image
+      - name: Test & Push Apptainer Image
         run: |
           mkdir test_apptainer
           cd test_apptainer
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
-          cd ../
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
-          path: openfe_${{ steps.latest-version.outputs.VERSION }}.sif
+          echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
+          singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}-apptainer
