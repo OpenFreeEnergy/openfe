@@ -11,8 +11,6 @@ name: Create and publish a Docker image
 
 on:
   push:
-    branches:
-      - feat/push_apptainer_image_to_ghcr
     tags:
       - '*'  # Build on pushes with tags (unless they contain a / )
   workflow_dispatch:
@@ -108,7 +106,7 @@ jobs:
         with:
           context: .
           file: production/Dockerfile
-          push: false
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
