@@ -26,7 +26,6 @@ dependencies:
   - libnetcdf<4.9
   # docs
   - autodoc-pydantic
-  - myst-parser
   - pydata-sphinx-theme
   - sphinx-click
   - pip:
