@@ -2,6 +2,7 @@ name: Test Docker Image Building
 
 on:
   push:
+    - docker-debug  # TODO: remove after debugging
   schedule:
     # nightly tests
     - cron: "0 7 * * *"

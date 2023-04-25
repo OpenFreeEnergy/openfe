@@ -42,6 +42,13 @@ class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
     key = "RelativeHybridTopologyProtocol-4c9c62f5007d0b64e4c21a99b6658561"
     repr = "<RelativeHybridTopologyProtocol-4c9c62f5007d0b64e4c21a99b6658561>"
 
+    def test_json_dump_protocol(self, protocol):
+        # DEBUG
+        import json
+        from gufe.tokenization import JSON_HANDLER
+        print(json.dumps(protocol.to_keyed_dict(include_defaults=False),
+                         sort_keys=True, cls=JSON_HANDLER.encoder))
+
     @pytest.fixture()
     def instance(self, protocol):
         return protocol
