@@ -6,7 +6,7 @@ This will include various how-to guides.
 .. toctree::
 
     loading_molecules
-    creating_mappings
+    creating_atom_mappings
     dumping_transformation
 
     
