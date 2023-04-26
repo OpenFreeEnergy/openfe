@@ -30,6 +30,7 @@ These are lightweight wrappers around RDKit Molecules and can be created directl
 from an RDKit molecule:
 
 .. code::
+
     from rdkit import Chem
     import openfe
 
@@ -45,6 +46,7 @@ from an RDKit molecule:
 As these types of structures are typically stored inside sdf files, there is a ``from_sdf_file`` convenience class method:
 
 .. code::
+
     import openfe
 
     smc = openfe.SmallMoleculeComponent.from_sdf_file('file.sdf')

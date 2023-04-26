@@ -49,10 +49,6 @@ Keys in this dictionary refer to the indices of atoms in the "A" molecule,
 while the corresponding values refer to indices of atoms in the "B" molecule.
 If a given index does not appear, then it is unmapped.
 
-.. code::
-
-   mapping.componentA_to_componentB
-
 
 .. note::
    Like the Component objects, a Mapping object is immutable once created!
@@ -68,9 +64,14 @@ Similarly, bonds that are deleted are coloured red,
 while bonds that change, either bond order or are between different elements,
 are coloured blue.
 
-IMAGE OF MAPPING
 
-These 2D mappings can be saved to file using the ``LigandAtomMapping.draw_to_file`` function.
+.. image:: img/2d_mapping.png
+   :width: 90%
+   :align: center
+   :alt: Sample output of 2d mapping visualisation
+
+
+These 2D mappings can be saved to file using the :func:`LigandAtomMapping.draw_to_file` function.
 
 With the ``py3dmol`` package installed,
 we can also view the mapping in 3D allowing us to manually inspect the spatial overlap
@@ -87,7 +88,11 @@ The centre view shows both molecules overlaid, allowing the spatial corresponden
    view = visualization_3D.view_mapping_3d(mapping)
 
 
-IMAGE OF 3D VIEW OF SAME MAPPING
+.. image:: img/3d_mapping.png
+   :width: 90%
+   :align: center
+   :alt: Sample output of view_mapping_3d function
+
 
 The cartesian distance between pairs of atom mapping is also available via the :meth:`.get_distances()` method.
 This returns a numpy array.
