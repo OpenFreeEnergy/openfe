@@ -1,3 +1,5 @@
+.. _Loading Molecules:
+
 Loading your data into ChemicalSystems
 ======================================
 
@@ -52,6 +54,12 @@ As these types of structures are typically stored inside sdf files, there is a `
     smc = openfe.SmallMoleculeComponent.from_sdf_file('file.sdf')
 
 
+.. note::
+   The ``from_sdf_file`` method will only read the first molecule in a multi-molecule MolFile.
+   To load multiple molcules, use RDKit's ``Chem.SDMolSupplier`` to iterate over the contents,
+   and create a ``SmallMoleculeComponent`` from each.
+
+
 Loading proteins
 ----------------
 
@@ -59,7 +67,8 @@ Proteins are handled using an :class:`openfe.ProteinComponent`.
 Like ``SmallMoleculeComponent``, these are based upon RDKit Molecules,
 however these are expected to have the `MonomerInfo` struct present on all atoms.
 This struct contains the residue and chain information and is essential to apply many popular force fields.
-A "protein" here is considered as the fully modelled entire biological assembly, i.e. all chains and structural waters.
+A "protein" here is considered as the fully modelled entire biological assembly,
+i.e. all chains and structural waters and ions etc.
 
 To load a protein, use the :func:`openfe.ProteinComponent.from_pdb_file` or :func:`openfe.ProteinComponent.from_pdbx_file` classmethod
 
@@ -78,8 +87,9 @@ Unlike the previously detailed Components, this does not have any explicit molec
 but instead represents the way that the overall system will be solvated.
 This information is then interpreted inside the ``Protocol`` when solvating the system.
 
-By default, this solvent is water.  The positive and negative ion can be defined, as well as the ion concentration
-which must be specified along with the unit.
+By default, this solvent is water with 0.15 M NaCl salt.
+All parameters; the positive and negative ion as well as the ion concentration (which must be specified along with the unit)
+can be freely defined.
 
 .. code::
 

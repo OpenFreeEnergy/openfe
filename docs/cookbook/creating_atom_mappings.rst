@@ -1,9 +1,11 @@
-Creating mappings
-=================
+.. _Creating Atom Mappings:
 
-With your chemical models loaded and defined into two :class:`.ChemicalSystem` objects,
-we can now proceed to defining how components in these systems correspond.
-``Mapping`` objects are used to defined how ``Component`` objects from different systems are related.
+Creating Atom Mappings
+======================
+
+Once your :ref:`data has been loaded<Loading Molecules>`
+we can now proceed to defining how Components in these Systems correspond.
+``Mapping`` objects are used to defined how ``Component`` objects from different :class:`ChemicalSystems` are related.
 This guide will show how this concept applies to the case of a pair of ligands we wish to transform between.
 
 Generating Mappings
@@ -43,7 +45,7 @@ This is how we can create a mapping between two ligands:
 
 The first and second ligand molecules put into the ``suggest_mappings`` method
 are then henceforth referred to as ``componentA`` and ``componentB``.
-The correspondence of atoms in these two components is then given via the `.componentA_to_componentB` attribute,
+The correspondence of atoms in these two components is then given via the ``.componentA_to_componentB`` attribute,
 which returns a dictionary of integers.
 Keys in this dictionary refer to the indices of atoms in the "A" molecule,
 while the corresponding values refer to indices of atoms in the "B" molecule.
