@@ -21,7 +21,11 @@ object joins them together.
 Atom Mappings
 ~~~~~~~~~~~~~
 
+.. autoclass:: openfe.LigandAtomMapper
+           :members:
+
 .. autoclass:: openfe.LigandAtomMapping
+	       :members:
 
 
 Alchemical Simulations
