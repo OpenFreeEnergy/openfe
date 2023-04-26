@@ -18,6 +18,7 @@ from .setup import (
     perses_scorers,
     ligand_network_planning,
     LigandNetwork,
+    LigandAtomMapper,
 )
 from . import orchestration
 from . import analysis
