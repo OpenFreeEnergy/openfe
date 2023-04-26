@@ -3,6 +3,7 @@
 
 
 from .atom_mapping import (LigandAtomMapping,
+                           LigandAtomMapper,
                            LomapAtomMapper, lomap_scorers,
                            PersesAtomMapper, perses_scorers)
 
