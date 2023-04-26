@@ -1,12 +1,12 @@
 Ligand Network Tools
 ====================
 
-These tools 
 
 Atom Mappers
 ------------
 
 .. autoclass:: openfe.setup.LomapAtomMapper
+     :members:
 
 .. autoclass:: openfe.setup.PersesAtomMapper
 
