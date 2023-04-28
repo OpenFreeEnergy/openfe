@@ -20,8 +20,10 @@ def test(long):
     that take significantly longer, but ensure that we're able to fully run
     in your environment.
     """
+    default = ["-v"]
+    pyargs = ["--pyargs", "openfe", "--pyargs", "openfecli"]
     old_env = dict(os.environ)
-    os.environ["OFE_SLOW_TESTS"] = str(long)
+    os.environ["OFE_SLOW_TESTS"] = long
 
     write("Testing can import....")
     import openfe

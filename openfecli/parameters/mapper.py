@@ -3,6 +3,7 @@
 
 from plugcli.params import MultiStrategyGetter, Option
 from openfecli.parameters.utils import import_parameter
+from openfe import setup
 
 def _atommapper_from_openfe_setup(user_input, context):
     return import_parameter("openfe.setup." + user_input)
@@ -26,5 +27,6 @@ MAPPER = Option(
     "--mapper",
     getter=get_atommapper,
     help=("Atom mapper; can either be a name in the openfe.setup namespace "
-          "or a custom fully-qualified name.\n")
+          "or a custom fully-qualified name.\n"
+          "In the openfe.setup namespace currently following options are possible: "+", ".join([m for m in vars(setup) if "Mapper" in m]))
 )
