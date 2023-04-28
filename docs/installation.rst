@@ -14,26 +14,38 @@ Installing ``openfe``
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
 
-Installation with ``conda`` (recommended)
+Installation with ``micromamba`` (recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We recommend installing ``openfe`` with ``conda``, because it provides easy
+We recommend installing ``openfe`` with ``micromamba``, because it provides easy
 installation of other tools, including molecular dynamics tools such as
-OpenMM and ambertools, which are needed by ``openfe``. 
-Conda can be installed either with the `full Anaconda distribution
-<https://www.anaconda.com/products/individual>`_, or with
-the `smaller-footprint miniconda
-<https://docs.conda.io/en/latest/miniconda.html>`_.
+OpenMM and ambertools, which are needed by ``openfe``.
 
-You can get ``openfe`` from the ``conda-forge`` channel. To install the most
-recent release in its own environment, use the commands ::
+To install ``micromamba`` execute the installation script.
 
-  $ conda create -n openfe -c conda-forge openfe
-  $ conda activate openfe
+On Linux the default shell is ``bash`` ::
+  
+  $ curl micro.mamba.pm/install.sh | bash
 
-That creates a separate environment for ``openfe`` that won't interfere with
-other things you have installed. You will need to activate the ``openfe``
-environment before using it in a new shell.
+And on macOS the default shell is ``zsh`` ::
+
+  $ curl micro.mamba.pm/install.sh | zsh
+
+Now we will set ``conda-forge`` as the default channel ::
+
+  $ micromamba config append channels conda-forge
+
+To install ``openfe`` run ::
+
+  $ micromamba create -n openfe_env openfe
+
+Now we need to activate our new environment ::
+
+  $ micromamba activate openfe_env
+
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe
 
 With that, you should be ready to use ``openfe``!
 
@@ -227,7 +239,11 @@ Now the CLI tool should work as well ::
                file
      quickrun  Run a given transformation, saved as a JSON file
 
- 
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe
+
+With that, you should be ready to use ``openfe``!
 
 Containers
 ~~~~~~~~~~
@@ -270,6 +286,12 @@ You can access the ``openfe`` CLI from the singularity image with ::
 
   $ singularity run --nv openfe_0.7.4-apptainer.sif openfe --help
 
+To make sure everything is working, run the tests ::
+
+  $ singularity run --nv openfe_0.7.4-apptainer.sif pytest --pyargs openfe
+
+With that, you should be ready to use ``openfe``!
+
 Developer install
 ~~~~~~~~~~~~~~~~~
 
@@ -279,7 +301,7 @@ functionality. This is called a "developer" or "editable" installation.
 
 Getting a developer installation for ``openfe`` first installing the
 requirements, and then creating the editable installation. We recommend
-doing that with ``conda`` using the following procedure:
+doing that with ``micromamba`` using the following procedure:
 
 First, clone the ``openfe`` repository, and switch into its root directory::
 
@@ -289,15 +311,15 @@ First, clone the ``openfe`` repository, and switch into its root directory::
 Next create a ``conda`` environment containing the requirements from the
 specification in that directory::
 
-  $ conda env create -f environment.yml
+  $ micromamba create -f environment.yml
 
 Then activate the ``openfe`` environment with::
 
-  $ conda activate openfe
+  $ micromamba activate openfe_env
 
 Finally, create the editable installation::
 
-  $ python -m pip install -e .
+  $ python -m pip install --no-deps -e .
 
 Note the ``.`` at the end of that command, which indicates the current
 directory.
@@ -311,10 +333,12 @@ optional packages.
 * **perses tools**: To use perses, you need to install perses and OpenEye,
   and you need a valid OpenEye license. To install both packages, use::
 
-    $ conda install -c conda-forge -c openeye perses openeye-toolkits
+    $ micromamba install -c openeye perses openeye-toolkits
 
 Testing your installation
 -------------------------
+
+.. NOTE This section can probally be dropped
 
 ``openfe`` has a thorough test suite, and running the test suite is a good
 start to troubleshooting any installation problems. The test suite requires
