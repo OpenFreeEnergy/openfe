@@ -17,11 +17,11 @@ will install both the core library and the command line interface (CLI).
 Installation with ``micromamba`` (recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We recommend installing ``openfe`` with ``micromamba``, because it provides easy
+We recommend installing ``openfe`` with ```micromamba`` <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#micromamba>`_ , because it provides easy
 installation of other tools, including molecular dynamics tools such as
 OpenMM and ambertools, which are needed by ``openfe``.
 
-To install ``micromamba`` execute the installation script.
+To install ``micromamba`` execute the `installation script <https://mamba.readthedocs.io/en/latest/installation.html#install-script>`_.
 
 On Linux the default shell is ``bash`` ::
   
