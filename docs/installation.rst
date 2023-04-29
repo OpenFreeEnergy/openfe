@@ -44,18 +44,18 @@ Single file installers are available for x86_64 Linux and MacOS.
 They are attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with a browser or ``curl`` (or similar tool).
 For example, the linux installer can be downloaded with ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.1/OpenFEforge-0.7.1-Linux-x86_64.sh
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.4/OpenFEforge-0.7.4-Linux-x86_64.sh
 
 And the MacOS installer ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.1/OpenFEforge-0.7.1-MacOSX-x86_64.sh 
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.4/OpenFEforge-0.7.4-MacOSX-x86_64.sh 
 
 The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
 Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
 The installer can be installed in batch mode or interactively  ::
   
-  $ chmod +x ./OpenFEforge-0.7.1-Linux-x86_64.sh # Make installer executable
-  $ ./OpenFEforge-0.7.1-Linux-x86_64.sh # Run the installer
+  $ chmod +x ./OpenFEforge-0.7.4-Linux-x86_64.sh # Make installer executable
+  $ ./OpenFEforge-0.7.4-Linux-x86_64.sh # Run the installer
 
 Example installer output is shown below (click to expand "Installer Output")
 
@@ -63,7 +63,7 @@ Example installer output is shown below (click to expand "Installer Output")
 
   .. code-block::
   
-      Welcome to OpenFEforge 0.7.1
+      Welcome to OpenFEforge 0.7.4
     
       In order to continue the installation process, please review the license
       agreement.
@@ -235,16 +235,16 @@ Containers
 We provide an official docker and apptainer (formally singularity) image.
 The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
 
-  $ docker pull ghcr.io/openfreeenergy/openfe:0.7.1
+  $ docker pull ghcr.io/openfreeenergy/openfe:0.7.4
 
-The apptainer image is pre-built and attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with ``curl`` (or similar tool) ::
+The apptainer image is pre-built and can be pulled with ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.1/openfe_0.7.1.sif
+  $ singularity pull oras://ghcr.io/openfreeenergy/openfe:0.7.4-apptainer
 
 We recommend testing the container to ensure that it can access a GPU (if desired).
 This can be done with the following command ::
 
-  $ singularity run --nv openfe_0.7.1.sif python -m openmm.testInstallation
+  $ singularity run --nv openfe_0.7.4-apptainer.sif python -m openmm.testInstallation
   
   OpenMM Version: 8.0
   Git Revision: a7800059645f4471f4b91c21e742fe5aa4513cda
@@ -268,7 +268,7 @@ Your output may produce different values for the forces, but should list the CUD
 
 You can access the ``openfe`` CLI from the singularity image with ::
 
-  $ singularity run --nv openfe_0.7.1.sif openfe --help
+  $ singularity run --nv openfe_0.7.4-apptainer.sif openfe --help
 
 Developer install
 ~~~~~~~~~~~~~~~~~
