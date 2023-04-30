@@ -420,7 +420,7 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
 
 
 def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
-                                benzene_to_toluene_mapping):
+                                benzene_to_toluene_mapping, tmpdir):
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
 
@@ -455,7 +455,8 @@ def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
             mapping={'ligand': mapping},
             )
         unit = list(dag.protocol_units)[0]
-        unit.run(dry=True)
+        with tmpdir.as_cwd():
+            unit.run(dry=True)
 
 
 @pytest.fixture
