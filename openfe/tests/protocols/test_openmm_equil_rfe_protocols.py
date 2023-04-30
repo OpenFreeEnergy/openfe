@@ -4,6 +4,7 @@ import os
 
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+from gufe.protocols import execute_DAG
 import pytest
 from unittest import mock
 from openff.units import unit
@@ -13,7 +14,7 @@ import xml.etree.ElementTree as ET
 from openmm import app, XmlSerializer
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
-
+import pathlib
 from rdkit.Geometry import Point3D
 
 import openfe
@@ -786,3 +787,27 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+@pytest.mark.slow
+def test_moist_test(benzene_vacuum_system, toluene_vacuum_system,
+                    benzene_to_toluene_mapping, tmpdir):
+    # this test actually runs MD
+    # if this passes, you're 99% likely to have a good time
+    # these settings are a small sim, that has enough eq that it doesn't occaisionally crash
+    s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    s.simulation_settings.equilibration_length = 1.0 * unit.picosecond
+    s.simulation_settings.production_length = 0.1 * unit.picosecond
+    s.integrator_settings.n_steps = 5 * unit.timestep
+    s.system_settings.nonbonded_method = 'nocutoff'
+    s.alchemical_sampler_settings.n_repeats = 1
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(s)
+
+    dag = p.create(stateA=benzene_vacuum_system, stateB=toluene_vacuum_system,
+                   mapping={'ligand': benzene_to_toluene_mapping})
+
+    cwd = pathlib.Path(str(tmpdir))
+    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd)
+
+    assert r.ok()
