@@ -811,6 +811,7 @@ def set_openmm_threads_1():
             os.environ['OPENMM_CPU_THREADS'] = previous
 
 
+@pytest.mark.slow
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
 def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
