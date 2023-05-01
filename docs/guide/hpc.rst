@@ -2,8 +2,8 @@ HPC
 ===
 
 We recommend using `apptainer (formally singularity) <https://apptainer.org/>`_ when running ``openfe`` workflows in HPC environments.
-
-isolated and reproducible
+This images provide a software environment that is isolated from the host which can make workflow execution easier to setup and more reproducible.
+See our guide on :ref:`containers <installation:containers>` for how to get started using apptainer/singularity.
 
 ``micromamba`` Installation Considerations in HPC Environments 
 --------------------------------------------------------------
@@ -78,8 +78,6 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 
 Common Errors
 -------------
-
-Here we
 
 openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VERSION (222)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

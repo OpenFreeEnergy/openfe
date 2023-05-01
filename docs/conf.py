@@ -33,9 +33,13 @@ extensions = [
     'sphinx_click.ext',
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_toolbox.collapse',
+    'sphinx.ext.autosectionlabel'
 ]
 
 autoclass_content = 'both'
+# Make sure labels are unique
+# https://www.sphinx-doc.org/en/master/usage/extensions/autosectionlabel.html#confval-autosectionlabel_prefix_document
+autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
