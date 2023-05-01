@@ -46,6 +46,9 @@ from .equil_rfe_settings import (
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings
 )
+from ..openmm_utils import (
+    system_validation, settings_validation, system_creation
+)
 from . import _rfe_utils
 
 logger = logging.getLogger(__name__)
@@ -59,61 +62,6 @@ def _get_resname(off_mol) -> str:
     if len(names) > 1:
         raise ValueError("We assume single residue")
     return names[0]
-
-
-def _get_alchemical_components(
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
-) -> Dict[str, List[Component]]:
-    """
-    Checks the equality between Components of two end state ChemicalSystems
-    and identify which components do not match.
-
-    Parameters
-    ----------
-    stateA : ChemicalSystem
-      The chemical system of end state A.
-    stateB : ChemicalSystem
-      The chemical system of end state B.
-
-    Returns
-    -------
-    alchemical_components : Dict[str, List[Component]]
-      Dictionary containing a list of alchemical components for each state.
-
-    Raises
-    ------
-    ValueError
-      If there are any duplicate components in states A or B.
-    """
-    matched_components = {}
-    alchemical_components: Dict[str, List[Component]] = {
-        'stateA': [], 'stateB': [],
-    }
-
-    for keyA, valA in stateA.components.items():
-        for keyB, valB in stateB.components.items():
-            if valA.to_dict() == valB.to_dict():
-                if valA not in matched_components.keys():
-                    matched_components[valA] = valB
-                else:
-                    # Could be that either we have a duplicate component
-                    # in stateA or in stateB
-                    errmsg = (f"state A components {keyA}: {valA} matches "
-                              "multiple components in stateA or stateB")
-                    raise ValueError(errmsg)
-
-    # populate stateA alchemical components
-    for valA in stateA.components.values():
-        if valA not in matched_components.keys():
-            alchemical_components['stateA'].append(valA)
-
-    # populate stateB alchemical components
-    for valB in stateB.components.values():
-        if valB not in matched_components.values():
-            alchemical_components['stateB'].append(valB)
-
-    return alchemical_components
 
 
 def _validate_alchemical_components(
@@ -178,66 +126,6 @@ def _validate_alchemical_components(
                     f"Element change in mapping between atoms "
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
                     f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
-
-
-def _validate_solvent(state: ChemicalSystem, nonbonded_method: str):
-    """
-    Checks that the ChemicalSysttem component has the right solvent
-    composition for an input nonbonded_methtod.
-
-    Parameters
-    ----------
-    state : ChemicalSystem
-      The chemical system to inspect.
-    nonbonded_method : str
-      The nonbonded method to be applied for the simulation.
-
-    Raises
-    ------
-    ValueError
-      * If there are multiple SolventComponents in the ChemicalSystem.
-      * If there is a SolventComponent and the `nonbonded_method` is
-        `nocutoff`.
-      * If the SolventComponent solvent is not water.
-    """
-    solv = [comp for comp in state.values()
-            if isinstance(comp, SmallMoleculeComponent)]
-
-    if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
-        errmsg = (f"{nonbonded_method} cannot be used for solvent "
-                  "transformations")
-        raise ValueError(errmsg)
-
-    if len(solv) > 1:
-        errmsg = "Multiple SolventComponent found, only one is supported"
-        raise ValueError(errmsg)
-
-    if solv[0].smiles != 'O':
-        errmsg = "Non water solvent is not currently supported"
-        raise ValueError(errmsg)
-
-
-def _validate_protein(state: ChemicalSystem):
-    """
-    Checks that the ChemicalSystem's ProteinComponent are suitable for the
-    RFE protocol.
-
-    Parameters
-    ----------
-    state : ChemicalSystem
-      The chemical system to inspect.
-
-    Raises
-    ------
-    ValueError
-      If there are multiple ProteinComponent in the ChemicalSystem.
-    """
-    nprot = sum(1 for comp in state.values()
-                if isinstance(comp, ProteinComponent))
-
-    if nprot > 1:
-        errmsg = "Multiple ProteinComponent found, only one is supported"
-        raise ValueError(errmsg)
 
 
 class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
@@ -328,15 +216,17 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Get alchemical components & validate them
-        alchem_comps = _get_alchemical_components(stateA, stateB)
+        alchem_comps = system_validation.get_alchemical_components(
+            stateA, stateB
+        )
         _validate_alchemical_components(alchem_comps, mapping)
 
         # Validate solvent component
         nonbond = self.settings.system_settings.nonbonded_method
-        _validate_solvent(stateA, nonbond)
+        system_validation.validate_solvent(stateA, nonbond)
 
         # Validate protein component
-        _validate_protein(stateA)
+        system_validation.validate_protein(stateA)
 
         # actually create and return Units
         Anames = ','.join(c.name for c in alchem_comps['stateA'])
@@ -384,7 +274,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
-                 settings: settings.RelativeHybridTopologyProtocolSettings,
+                 settings: RelativeHybridTopologyProtocolSettings,
                  generation: int,
                  repeat_id: int,
                  name: Optional[str] = None,
@@ -463,8 +353,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 0. General setup and settings dependency resolution step
 
-        # a. check timestep correctness + that
-        # equilibration & production are divisible by n_steps
+        # Extract relevant settings
         protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
@@ -481,56 +370,37 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         mc_steps = protocol_settings.integrator_settings.n_steps.m
 
         # is the timestep good for the mass?
-        if forcefield_settings.hydrogen_mass < 3.0:
-            if timestep > 2.0 * unit.femtoseconds:
-                errmsg = (f"timestep {timestep} too large for "
-                          "hydrogen mass {forcefield_settings.hydrogen_mass}")
-                raise ValueError(errmsg)
-
-        equil_time = sim_settings.equilibration_length.to('femtosecond')
-        equil_steps = round(equil_time / timestep)
-
-        logger.debug(f'Timestep is {timestep}')
-        logger.debug(f'MC move frequency is {mc_steps}')
-        logger.debug(f'Equilibration time was {equil_time}')
-        logger.debug(f'Equilibration steps is {equil_steps}')
-
-        # mypy gets the return type of round wrong, it's a Quantity
-        if (equil_steps.m % mc_steps) != 0:  # type: ignore
-            errmsg = (f"Equilibration time {equil_time} should contain a "
-                      f"number of steps ({equil_steps}) divisible by the number of integrator "
-                      f"timesteps between MC moves {mc_steps}")
-            raise ValueError(errmsg)
-
-        prod_time = sim_settings.production_length.to('femtosecond')
-        prod_steps = round(prod_time / timestep)
-
-        logger.debug(f'Production time was {prod_time}')
-        logger.debug(f'Production steps is {prod_steps}')
-
-        if (prod_steps.m % mc_steps) != 0:  # type: ignore
-            errmsg = (f"Production time {prod_time} should contain a "
-                      f"number of steps ({prod_steps}) divisible by the number of integrator "
-                      f"timesteps between MC moves {mc_steps}")
-            raise ValueError(errmsg)
-
-        # b. get the openff objects for the ligands
-        stateA_openff_ligand = stateA['ligand'].to_openff()
-        stateB_openff_ligand = stateB['ligand'].to_openff()
-
-        # temporary hack, will fix in next PR
-        ligand_ff = f"{forcefield_settings.small_molecule_forcefield}.offxml"
-
-        #  1. Get smirnoff template generators
-        smirnoff_stateA = SMIRNOFFTemplateGenerator(
-            forcefield=ligand_ff,
-            molecules=[stateA_openff_ligand],
+        settings_validation.validate_timestep(
+            forcefield_settings.hydrogen_mass, timestep
+        )
+        equil_steps, prod_steps = settings_validation.get_simsteps(
+            equil_length=sim_settings.equilibration_length,
+            prod_length=sim_settings.production_length,
+            timestep=timestep, mc_steps=mc_steps
         )
 
-        smirnoff_stateB = SMIRNOFFTemplateGenerator(
-            forcefield=ligand_ff,
-            molecules=[stateB_openff_ligand],
+        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+
+        # 1. Parameterise things
+        # a. get a system generator
+        system_generator = system_creation.get_system_generator(
+            forcefield_settings=forcefield_settings,
+            thermo_settings=thermo_settings,
+            system_settings=system_settings,
+            cache=ctx.shared / sim_settings.forcefield_cache,
+            has_solvent=solvent_comp is not None,
         )
+
+        # b. force the creation of paramaters
+        # Note: by default this is cached to ctx.shared/db.json so shouldn't
+        # incur too large a cost
+        for comp, offmol in small_mols.items():
+            system_generator.create_system(mol.to_topology().to_openmm(),
+                                           molecules=[mol])
+            if comp == mapping.componentA:
+                molB = mapping.componentB.to_openff()
+                system_generator.create_system(molB.to_topology().to_openmm(),
+                                               molecules=[molB])
 
         # 2. Create forece fields and register them
         #  a. state A
@@ -686,8 +556,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if 'solvent' in stateA.components:
             hybrid_factory.hybrid_system.addForce(
                 openmm.MonteCarloBarostat(
-                    protocol_settings.thermo_settings.pressure.to(unit.bar).m,
-                    protocol_settings.thermo_settings.temperature.m,
+                    thermo_settings.pressure.to(unit.bar).m,
+                    thermo_settings.temperature.m,
                     protocol_settings.integrator_settings.barostat_frequency.m,
                 )
             )
@@ -775,7 +645,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             n_replicas=sampler_settings.n_replicas,
             reporter=reporter,
             lambda_protocol=lambdas,
-            temperature=to_openmm(protocol_settings.thermo_settings.temperature),
+            temperature=to_openmm(thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
             minimization_platform=platform.getName(),
         )
