@@ -6,7 +6,7 @@ import pytest
 import click
 
 import openfe
-from openfecli.parameters.mol_dir import get_molecules
+from openfecli.parameters.molecules import load_molecules
 from openfe import SmallMoleculeComponent
 
 
@@ -18,7 +18,7 @@ def test_get_dir_molecules_sdf():
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
         dir_path = os.path.dirname(file_path)
-        mols = get_molecules(dir_path)
+        mols = load_molecules(dir_path)
 
         assert len(mols) == 1
         assert mols[0].smiles == "CC"
@@ -33,7 +33,7 @@ def test_get_dir_molecules_mol2():
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
         dir_path = os.path.dirname(file_path)
-        mols = get_molecules(dir_path)
+        mols = load_molecules(dir_path)
 
         assert len(mols) == 8
         assert mols[0].smiles == "Cc1cc(C)c2cc(C)ccc2c1"
@@ -42,4 +42,4 @@ def test_get_dir_molecules_mol2():
 
 def test_get_molecule_error():
     with pytest.raises(click.BadParameter):
-        get_molecules("foobar")
+        load_molecules("foobar")
