@@ -10,6 +10,7 @@ dependencies:
   - pytest
   - pytest-xdist
   - pytest-cov
+  - pytest-rerunfailures
   - pydantic
   - coverage
   - openff-toolkit>=0.12.0

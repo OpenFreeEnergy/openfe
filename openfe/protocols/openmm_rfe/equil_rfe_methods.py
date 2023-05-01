@@ -348,19 +348,27 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         equil_time = sim_settings.equilibration_length.to('femtosecond')
         equil_steps = round(equil_time / timestep)
 
+        logger.debug(f'Timestep is {timestep}')
+        logger.debug(f'MC move frequency is {mc_steps}')
+        logger.debug(f'Equilibration time was {equil_time}')
+        logger.debug(f'Equilibration steps is {equil_steps}')
+
         # mypy gets the return type of round wrong, it's a Quantity
         if (equil_steps.m % mc_steps) != 0:  # type: ignore
             errmsg = (f"Equilibration time {equil_time} should contain a "
-                      "number of steps divisible by the number of integrator "
+                      f"number of steps ({equil_steps}) divisible by the number of integrator "
                       f"timesteps between MC moves {mc_steps}")
             raise ValueError(errmsg)
 
         prod_time = sim_settings.production_length.to('femtosecond')
         prod_steps = round(prod_time / timestep)
 
+        logger.debug(f'Production time was {prod_time}')
+        logger.debug(f'Production steps is {prod_steps}')
+
         if (prod_steps.m % mc_steps) != 0:  # type: ignore
             errmsg = (f"Production time {prod_time} should contain a "
-                      "number of steps divisible by the number of integrator "
+                      f"number of steps ({prod_steps}) divisible by the number of integrator "
                       f"timesteps between MC moves {mc_steps}")
             raise ValueError(errmsg)
 
