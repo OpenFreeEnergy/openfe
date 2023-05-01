@@ -15,9 +15,9 @@ When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
 
 Installation with ``micromamba`` (recommended)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We recommend installing ``openfe`` with `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#micromamba>`_ , because it provides easy
+We recommend installing ``openfe`` with `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#micromamba>`_, because it provides easy
 installation of other tools, including molecular dynamics tools such as
 OpenMM and ambertools, which are needed by ``openfe``.
 
@@ -55,7 +55,7 @@ skipped, or xfailed (expected fail).
 With that, you should be ready to use ``openfe``!
 
 Single file installer
-~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^
 
 Single file installers are available for x86_64 Linux and MacOS. 
 They are attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with a browser or ``curl`` (or similar tool).
@@ -255,7 +255,7 @@ skipped, or xfailed (expected fail).
 With that, you should be ready to use ``openfe``!
 
 Containers
-~~~~~~~~~~
+^^^^^^^^^^
 
 We provide an official docker and apptainer (formally singularity) image.
 The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
@@ -306,7 +306,7 @@ skipped, or xfailed (expected fail).
 With that, you should be ready to use ``openfe``!
 
 Developer install
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 If you're going to be developing for ``openfe``, you will want an
 installation where your changes to the code are immediately reflected in the
@@ -338,7 +338,7 @@ Note the ``.`` at the end of that command, which indicates the current
 directory.
 
 Optional dependencies
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Certain functionalities are only available if you also install other,
 optional packages.

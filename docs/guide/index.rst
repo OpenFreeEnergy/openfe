@@ -9,3 +9,4 @@ User Guide
     execution/index
     results/index
     cli
+    hpc
