@@ -92,7 +92,7 @@ def gather(rootdir, output):
 
     for result_fn in result_fns:
         result = load_results(result_fn)
-        if result is None:
+        if result is None or result['estimate'] is None or result['uncertainty'] is None:
             continue
 
         names = get_names(result)
