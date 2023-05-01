@@ -811,11 +811,12 @@ def set_openmm_threads_1():
             os.environ['OPENMM_CPU_THREADS'] = previous
 
 
-#@pytest.mark.slow
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA', 'OpenCL'])
 def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
                            set_openmm_threads_1, tmpdir):
+    if os.environ['CI'] and os.environ['RUNNER_OS'] == 'macOS' and platform == 'OpenCL':
+        pytest.skip(f'Skipping OpenCL on CI')
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
     # this test actually runs MD
