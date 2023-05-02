@@ -46,7 +46,7 @@ Now we need to activate our new environment ::
 
 To make sure everything is working, run the tests ::
 
-  $ pytest --pyargs openfe openfecli
+  $ openfe test --long
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
