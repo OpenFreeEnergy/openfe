@@ -95,7 +95,7 @@ def gather(rootdir, output):
         if result is None:
             continue
         elif result['estimate'] is None or result['uncertainty'] is None:
-            print("WARNING: Calculations for "+result_fn+" did not finish succesfully!")
+            print(f"WARNING: Calculations for {result_fn} did not finish succesfully!")
             continue
 
         names = get_names(result)
