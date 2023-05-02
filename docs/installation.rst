@@ -46,7 +46,7 @@ Now we need to activate our new environment ::
 
 To make sure everything is working, run the tests ::
 
-  $ pytest --pyargs openfe
+  $ pytest --pyargs openfe openfecli
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
@@ -246,7 +246,7 @@ Now the CLI tool should work as well ::
 
 To make sure everything is working, run the tests ::
 
-  $ pytest --pyargs openfe
+  $ pytest --pyargs openfe openfecli
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
@@ -297,7 +297,7 @@ You can access the ``openfe`` CLI from the singularity image with ::
 
 To make sure everything is working, run the tests ::
 
-  $ singularity run --nv openfe_0.7.4-apptainer.sif pytest --pyargs openfe
+  $ singularity run --nv openfe_0.7.4-apptainer.sif pytest --pyargs openfe openfecli
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,

@@ -74,7 +74,7 @@ This means that if we run a ``micromamba install`` command on a node with a GPU,
 However, if we ran the same command on the login node, the solver may install the wrong version of the ``cudatoolkit``, or depending on how the conda packages are setup, a CPU only version of the package.
 We can control the virtual package with the environmental variable ``CONDA_OVERRIDE_CUDA``.
 So on the login node, we can run ``CONDA_OVERRIDE_CUDA=11.3 micromamba info`` and see that the "correct" virtual CUDA is listed.
-For example, to install a version of ``openfe`` which is compatible with ``cudatoolkit 11.3`` run ``$ CONDA_OVERRIDE_CUDA=11.3 micromamba install openfe``.
+For example, to install a version of ``openfe`` which is compatible with ``cudatoolkit 11.3`` run ``CONDA_OVERRIDE_CUDA=11.3 micromamba install openfe``.
 
 Common Errors
 -------------
