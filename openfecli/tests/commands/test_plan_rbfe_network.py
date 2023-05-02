@@ -100,8 +100,8 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, mapper_args):
         "Protein: ProteinComponent(name=)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
-        "- complex/tmp_network_easy_rbfe_ligand_23_receptor_ligand_55_receptor.json",
-        "- solvent/tmp_network_easy_rbfe_ligand_23_solvent_ligand_55_solvent.json",
+        "- easy_rbfe_ligand_23_receptor_ligand_55_receptor.json",
+        "- easy_rbfe_ligand_23_solvent_ligand_55_solvent.json",
     ]
 
     patch_base = (
