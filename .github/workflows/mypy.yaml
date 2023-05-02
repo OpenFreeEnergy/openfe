@@ -25,7 +25,7 @@ jobs:
         uses: mamba-org/provision-with-micromamba@main
         with:
           environment-file: environment.yml
-          environment-name: openfe
+          environment-name: openfe_env
           cache-env: true
           cache-downloads: true
           extra-specs: |
