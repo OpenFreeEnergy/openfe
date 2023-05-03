@@ -36,10 +36,12 @@ def test_get_dir_molecules_mol2():
         mols = load_molecules(dir_path)
 
         assert len(mols) == 8
-        assert mols[0].smiles == "Cc1cc(C)c2cc(C)ccc2c1"
-        assert mols[0].name == "*****"
+        all_smiles = {mol.smiles for mol in mols}
+        all_names = {mol.name for mol in mols}
+        assert "Cc1cc(C)c2cc(C)ccc2c1" in all_smiles
+        assert "*****" in all_names
 
 
 def test_get_molecule_error():
-    with pytest.raises(click.BadParameter):
+    with pytest.raises(ValueError, match="Unable to find"):
         load_molecules("foobar")
