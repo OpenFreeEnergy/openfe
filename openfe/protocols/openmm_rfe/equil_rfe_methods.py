@@ -24,7 +24,7 @@ from collections import defaultdict
 import numpy as np
 import openmm
 from openff.units import unit
-from openff.units.openmm import to_openmm, ensure_quantity
+from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
 from typing import Optional, Dict, List
 from openmm import app
@@ -381,13 +381,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        # 1. Parameterise things
+        # 1. Create stateA system
         # a. get a system generator
         system_generator = system_creation.get_system_generator(
             forcefield_settings=forcefield_settings,
             thermo_settings=thermo_settings,
             system_settings=system_settings,
-            cache=ctx.shared / sim_settings.forcefield_cache,
+            cache=shared_basepath / sim_settings.forcefield_cache,
             has_solvent=solvent_comp is not None,
         )
 
@@ -402,78 +402,30 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 system_generator.create_system(molB.to_topology().to_openmm(),
                                                molecules=[molB])
 
-        # 2. Create forece fields and register them
-        #  a. state A
-        omm_forcefield_stateA = app.ForceField(
-            *[ff for ff in forcefield_settings.forcefields]
+        # c. get OpenMM Modeller + a dictionary of resids for each component
+        stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+            protein_comp=protein_comp,
+            solvent_comp=solvent_comp,
+            small_mols=small_mols,
+            omm_forcefield=system_generator.forcefield,
+            solvent_settings=solvation_settings,
         )
 
-        omm_forcefield_stateA.registerTemplateGenerator(
-                smirnoff_stateA.generator)
-
-        #  b. state B
-        omm_forcefield_stateB = app.ForceField(
-            *[ff for ff in forcefield_settings.forcefields]
+        # d. get topology & positions
+        # Note: roundtrip positions to remove vec3 issues
+        stateA_topology = stateA_modeller.getTopology()
+        stateA_positions = to_openmm(
+            from_openmm(stateA_modeller.getPositions())
         )
 
-        omm_forcefield_stateB.registerTemplateGenerator(
-                smirnoff_stateB.generator)
+        # e. create the stateA System
+        stateA_system = system_generator.create_system(
+            stateA_modeller.topology,
+            molecules=list(small_mols.values())
+        )
 
-        # 3. Model state A
-        # Note: protein dry run tests are part of the slow tests and don't show
-        # up in coverage reports
-        stateA_ligand_topology = stateA_openff_ligand.to_topology().to_openmm()
-        if 'protein' in stateA.components:  # pragma: no-cover
-            pdbfile: gufe.ProteinComponent = stateA['protein']
-            stateA_modeller = app.Modeller(pdbfile.to_openmm_topology(),
-                                           pdbfile.to_openmm_positions())
-            stateA_modeller.add(
-                stateA_ligand_topology,
-                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
-            )
-        else:
-            stateA_modeller = app.Modeller(
-                stateA_ligand_topology,
-                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
-            )
-        # make note of which chain id(s) the ligand is,
-        # we'll need this to swap it out later
-        stateA_ligand_nchains = stateA_ligand_topology.getNumChains()
-        stateA_ligand_chain_id = stateA_modeller.topology.getNumChains()
-
-        # 4. Solvate the complex in a `concentration` mM cubic water box with
-        # `solvent_padding` from the solute to the edges of the box
-        if 'solvent' in stateA.components:
-            conc = stateA['solvent'].ion_concentration
-            pos = stateA['solvent'].positive_ion
-            neg = stateA['solvent'].negative_ion
-
-            stateA_modeller.addSolvent(
-                omm_forcefield_stateA,
-                model=solvation_settings.solvent_model,
-                padding=to_openmm(solvation_settings.solvent_padding),
-                positiveIon=pos, negativeIon=neg,
-                ionicStrength=to_openmm(conc),
-            )
 
         # 5.  Create OpenMM system + topology + initial positions for "A" system
-        #  a. Get nonbond method
-        nonbonded_method = {
-            'pme': app.PME,
-            'nocutoff': app.NoCutoff,
-            'cutoffnonperiodic': app.CutoffNonPeriodic,
-            'cutoffperiodic': app.CutoffPeriodic,
-            'ewald': app.Ewald
-        }[system_settings.nonbonded_method.lower()]
-
-        #  b. Get the constraint method
-        constraints = {
-            'hbonds': app.HBonds,
-            'none': None,
-            'allbonds': app.AllBonds,
-            'hangles': app.HAngles
-            # vvv can be None so string it
-        }[str(forcefield_settings.constraints).lower()]
 
         #  c. create the stateA System
         stateA_system = omm_forcefield_stateA.createSystem(
