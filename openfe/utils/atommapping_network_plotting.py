@@ -173,14 +173,16 @@ def plot_atommapping_network(network: LigandNetwork):
     """
     return AtomMappingNetworkDrawing(network.graph).fig
 
-
-if __name__ == "__main__":
-    import sys
+def main(filename):
     import openfe.setup
     matplotlib.use("TkAgg")  # MacOS only works Python <3.8 ?!
-    with open(sys.argv[1], mode='r') as f:
+    with open(filename, mode='r') as f:
         graphml = f.read()
 
     network = openfe.setup.LigandNetwork.from_graphml(graphml)
     fig = plot_atommapping_network(network)
     matplotlib.pyplot.show()
+
+if __name__ == "__main__":
+    import sys
+    main(sys.argv[1])
