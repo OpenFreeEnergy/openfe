@@ -14,31 +14,48 @@ Installing ``openfe``
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
 
-Installation with ``conda`` (recommended)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installation with ``micromamba`` (recommended)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We recommend installing ``openfe`` with ``conda``, because it provides easy
+We recommend installing ``openfe`` with `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#micromamba>`_, because it provides easy
 installation of other tools, including molecular dynamics tools such as
-OpenMM and ambertools, which are needed by ``openfe``. 
-Conda can be installed either with the `full Anaconda distribution
-<https://www.anaconda.com/products/individual>`_, or with
-the `smaller-footprint miniconda
-<https://docs.conda.io/en/latest/miniconda.html>`_.
+OpenMM and ambertools, which are needed by ``openfe``.
 
-You can get ``openfe`` from the ``conda-forge`` channel. To install the most
-recent release in its own environment, use the commands ::
+To install ``micromamba`` execute the `installation script <https://mamba.readthedocs.io/en/latest/installation.html#install-script>`_.
+We recommend ``micromamba`` because it is faster than ``mamba`` and ``conda`` and does not require a ``base`` environment. 
 
-  $ conda create -n openfe -c conda-forge openfe
-  $ conda activate openfe
+On Linux the default shell is ``bash`` ::
+  
+  $ curl micro.mamba.pm/install.sh | bash
 
-That creates a separate environment for ``openfe`` that won't interfere with
-other things you have installed. You will need to activate the ``openfe``
-environment before using it in a new shell.
+And on macOS the default shell is ``zsh`` ::
 
+  $ curl micro.mamba.pm/install.sh | zsh
+
+Now we will set the channel where packages are downloaded from to ``conda-forge`` ::
+
+  $ micromamba config append channels conda-forge
+
+This command will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
+
+  $ micromamba create -n openfe_env openfe
+
+Now we need to activate our new environment ::
+
+  $ micromamba activate openfe_env
+
+To make sure everything is working, run the tests ::
+
+  $ openfe test --long
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+  
 With that, you should be ready to use ``openfe``!
 
 Single file installer
-~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^
 
 Single file installers are available for x86_64 Linux and MacOS. 
 They are attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with a browser or ``curl`` (or similar tool).
@@ -227,10 +244,18 @@ Now the CLI tool should work as well ::
                file
      quickrun  Run a given transformation, saved as a JSON file
 
- 
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe openfecli
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+  
+With that, you should be ready to use ``openfe``!
 
 Containers
-~~~~~~~~~~
+^^^^^^^^^^
 
 We provide an official docker and apptainer (formally singularity) image.
 The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
@@ -270,8 +295,18 @@ You can access the ``openfe`` CLI from the singularity image with ::
 
   $ singularity run --nv openfe_0.7.4-apptainer.sif openfe --help
 
+To make sure everything is working, run the tests ::
+
+  $ singularity run --nv openfe_0.7.4-apptainer.sif pytest --pyargs openfe openfecli
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+  
+With that, you should be ready to use ``openfe``!
+
 Developer install
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 If you're going to be developing for ``openfe``, you will want an
 installation where your changes to the code are immediately reflected in the
@@ -279,7 +314,7 @@ functionality. This is called a "developer" or "editable" installation.
 
 Getting a developer installation for ``openfe`` first installing the
 requirements, and then creating the editable installation. We recommend
-doing that with ``conda`` using the following procedure:
+doing that with ``micromamba`` using the following procedure:
 
 First, clone the ``openfe`` repository, and switch into its root directory::
 
@@ -289,21 +324,21 @@ First, clone the ``openfe`` repository, and switch into its root directory::
 Next create a ``conda`` environment containing the requirements from the
 specification in that directory::
 
-  $ conda env create -f environment.yml
+  $ micromamba create -f environment.yml
 
 Then activate the ``openfe`` environment with::
 
-  $ conda activate openfe
+  $ micromamba activate openfe_env
 
 Finally, create the editable installation::
 
-  $ python -m pip install -e .
+  $ python -m pip install --no-deps -e .
 
 Note the ``.`` at the end of that command, which indicates the current
 directory.
 
 Optional dependencies
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Certain functionalities are only available if you also install other,
 optional packages.
@@ -311,21 +346,4 @@ optional packages.
 * **perses tools**: To use perses, you need to install perses and OpenEye,
   and you need a valid OpenEye license. To install both packages, use::
 
-    $ conda install -c conda-forge -c openeye perses openeye-toolkits
-
-Testing your installation
--------------------------
-
-``openfe`` has a thorough test suite, and running the test suite is a good
-start to troubleshooting any installation problems. The test suite requires
-``pytest`` to run. You can install ``pytest`` with::
-
-  $ conda install -c conda-forge  pytest
-
-Then you can run the test suite (from any directory) with the command::
-
-  $ pytest --pyargs openfe openfecli
-
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
+    $ micromamba install -c openeye perses openeye-toolkits
