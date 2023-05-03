@@ -15,12 +15,15 @@ from typing import List
 
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, MAPPER, OUTPUT_DIR
+from openfecli.parameters import (
+    MOL_DIR, MAPPER, OUTPUT_DIR, LIGAND_NETWORK
+)
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
 def plan_rhfe_network_main(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
+    mapper, mapping_scorer, ligand_network_planner, small_molecules,
+    solvent, ligand_network
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -36,6 +39,8 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
+    ligand_network : pathlib.Path
+        File to output the ligand network into
 
     Returns
     -------
@@ -54,6 +59,9 @@ def plan_rhfe_network_main(
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent
     )
+    if ligand_network:
+        write(f"Writing ligand network to {str(ligand_network)}")
+        ligand_network.write(network_planner._ligand_network.to_graphml())
 
     return alchemical_network
 
@@ -70,8 +78,10 @@ def plan_rhfe_network_main(
     default="alchemicalNetwork",
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
+@LIGAND_NETWORK.parameter(required=False)
 @print_duration
-def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
+def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str,
+                      ligand_network):
     """Plan a relative hydration free energy network, saved in a dir with multiple JSON files.
 
     This tool is an easy way to setup a RHFE-Calculation Campaign. This can be useful for testing our tools.
@@ -134,6 +144,7 @@ def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str):
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
+        ligand_network=ligand_network,
     )
     write("\tDone")
     write("")
