@@ -154,11 +154,15 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
                     if isinstance(comp, SolventComponent)]
     if len(solvent_comp) == 0:
         solvent_comp = None
+    else:
+        solvent_comp = solvent_comp[0]
 
     protein_comp = [comp for comp in state.values()
-            if isinstance(comp, ProteinComponent)]a
+            if isinstance(comp, ProteinComponent)]
     if len(protein_comp) == 0:
         protein_comp = None
+    else:
+        protein_comp = protein_comp[0]
 
     off_small_mols = {}
     for comp in state.components.values():

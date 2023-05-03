@@ -142,7 +142,7 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
       Protein Component, if it exists.
     solvent_comp : Optional[ProteinCompoinent]
       Solvent Component, if it exists.
-    off_mols : Dict[Component, openff.toolkit.Molecule]
+    small_mols : Dict[Component, openff.toolkit.Molecule]
       Dictionary of SmallMoleculeComponents and their associated
       OpenFF Molecule.
     omm_forcefield : app.ForceField
@@ -179,4 +179,52 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
 
     # If there's a protein in the system, we add it first to the Modeller
     if protein_comp is not None:
+        system_modeller = app.Modeller(protein_comp.to_openmm_topology(),
+                                       protein_comp.to_openmm_positions())
+        component_resids[protein_comp] = np.array(
+          [r.index for r in system_modeller.topology.residues()]
+        )
+
+        for comp, mol in small_mols.items():
+            _add_small_mol(comp, mol, system_modeller, component_resids)
+
+    # Otherwise we add the first molecule and then the rest
+    else:
+        mol_items = list(small_mols.items())
+
+        system_modeller = app.Modeller(
+            mol_items[0][1].to_topology().to_openmm(),
+            ensure_quantity(mol_items[0][1].conformers[0], 'openmm')
+        )
+
+        component_resids[mol_items[0][0]] = np.array(
+            [r.index for r in system_modeller.topology.residues()]
+        )
+
+        for comp, mol in mol_items[1:]::
+            _add_small_mol(comp, mol, system_modeller, component_resids)
+
+    # Add solvent if neeeded
+    if solvent_comp is not None:
+        conc = solvent_comp.ion_concentration
+        pos = solvent_comp.positive_ion
+        neg = solvent_comp.negative_ion
+
+        system_modeller.addSolvent(
+            omm_forcefield,
+            model=solvent_settings.solvent_model,
+            padding=to_openmm(solvent_settings.solvent_padding),
+            positiveIon=pos, negativeIon=neg,
+            ionicStrength=to_openmm(conc)
+        )
+
+        all_resids = np.array(
+            [r.index for r in system_modeller.topology.residues()]
+        )
+
+        component_resids[solvent_comp] = np.setdiff1d(
+            all_resids, existing_resids
+        )
+
+    return system_modeller, component_resids
 
