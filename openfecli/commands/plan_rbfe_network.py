@@ -10,7 +10,9 @@ import click
 from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
+from openfecli.parameters import (
+    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, LIGAND_NETWORK
+)
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
@@ -21,6 +23,7 @@ def plan_rbfe_network_main(
     small_molecules,
     solvent,
     protein,
+    ligand_network,
 ):
     """Utiiity method to plan a relative binding free energy network.
 
@@ -57,6 +60,9 @@ def plan_rbfe_network_main(
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent, protein=protein
     )
+    if ligand_network:
+        write(f"Writing ligand network to {str(ligand_network)}")
+        ligand_network.write(network_planner._ligand_network.to_graphml())
 
     return alchemical_network
 
@@ -76,9 +82,11 @@ def plan_rbfe_network_main(
     default="alchemicalNetwork",
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
+@LIGAND_NETWORK.parameter(required=False)
 @print_duration
 def plan_rbfe_network(
-    mol_dir: List[str], protein: str, output_dir: str, mapper: str
+    mol_dir: List[str], protein: str, output_dir: str, mapper: str,
+    ligand_network
 ):
     """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
 
@@ -147,6 +155,7 @@ def plan_rbfe_network(
         small_molecules=small_molecules,
         solvent=solvent,
         protein=protein,
+        ligand_network=ligand_network,
     )
     write("\tDone")
     write("")
