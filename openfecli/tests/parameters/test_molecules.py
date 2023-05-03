@@ -24,6 +24,13 @@ def test_get_dir_molecules_sdf():
         assert mols[0].smiles == "CC"
         assert mols[0].name == "ethane"
 
+def test_load_molecules_sdf_file():
+    files = importlib.resources.files('openfe.tests.data')
+    ref = files / "benzene_modifications.sdf"
+    with importlib.resources.as_file(ref) as path:
+        mols = load_molecules(path)
+
+    assert len(mols) == 7
 
 def test_get_dir_molecules_mol2():
     with importlib.resources.path(

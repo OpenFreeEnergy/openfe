@@ -37,7 +37,6 @@ def load_molecules(file_or_directory):
     -------
     list[SmallMoleculeComponent]
     """
-    # import pdb; pdb.set_trace()
     inp = pathlib.Path(file_or_directory)  # for shorter lines
     if inp.is_dir():
         sdf_files = [f for f in inp.iterdir() if f.suffix.lower() == ".sdf"]
