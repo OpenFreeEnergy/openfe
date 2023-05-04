@@ -131,7 +131,7 @@ def validate_protein(state: ChemicalSystem):
 
 
 ParseCompRet = Tuple[
-    Optional[SolventComponent], Optional[ProteinComponent],
+    Optional[List[SolventComponent]], Optional[List[ProteinComponent]],
     Dict[SmallMoleculeComponent, OFFMol],
 ]
 
@@ -153,19 +153,21 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
       If it exists, the ProteinComponent for the state, otherwise None.
     openff_mols : Dict[str, openff.toolkit.Molecule]
     """
-    solvent_comp: Optional[SolventComponent] = [comp for comp in state.values()
-                    if isinstance(comp, SolventComponent)]
-    if len(solvent_comp) == 0:
-        solvent_comp = None
-    else:
-        solvent_comp = solvent_comp[0]
+    def _get_single_comps(comp_list, comptype):
+        ret_comps = [comp for comp in comp_list
+                     if isinstance(comp, comptype)]
+        if ret_comps:
+            return ret_comps[0]
+        else:
+            return None
 
-    protein_comp: Optional[ProteinComponent] = [comp for comp in state.values()
-            if isinstance(comp, ProteinComponent)]
-    if len(protein_comp) == 0:
-        protein_comp = None
-    else:
-        protein_comp = protein_comp[0]
+    solvent_comp: Optional[SolventComponent] = _get_single_comps(
+        list(state.values()), SolventComponent
+    )
+
+    protein_comp: Optional[ProteinComponent] = _get_single_comps(
+        list(state.values()), ProteinComponent
+    )
 
     off_small_mols = {}
     for comp in state.components.values():
