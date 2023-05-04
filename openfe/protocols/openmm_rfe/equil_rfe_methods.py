@@ -203,7 +203,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettings(
-                equilibration_length=2.0 * unit.nanosecond,
+                equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             )
         )
