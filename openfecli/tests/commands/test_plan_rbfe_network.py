@@ -18,7 +18,7 @@ def mol_dir_args():
     ) as file_path:
         ofe_dir_path = os.path.dirname(file_path)
 
-    return ["--mol-dir", ofe_dir_path]
+    return ["--molecules", ofe_dir_path]
 
 
 @pytest.fixture

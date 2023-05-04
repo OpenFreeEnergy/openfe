@@ -78,7 +78,7 @@ def plan_rbfe_network_main(
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
 @print_duration
 def plan_rbfe_network(
-    mol_dir: List[str], protein: str, output_dir: str, mapper: str
+    molecules: List[str], protein: str, output_dir: str, mapper: str
 ):
     """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
 
@@ -112,7 +112,7 @@ def plan_rbfe_network(
     write("Parsing in Files: ")
     write("\tGot input: ")
 
-    small_molecules = MOL_DIR.get(mol_dir)
+    small_molecules = MOL_DIR.get(molecules)
     write(
         "\t\tSmall Molecules: "
         + " ".join([str(sm) for sm in small_molecules])
