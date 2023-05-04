@@ -8,7 +8,7 @@ import importlib.resources
 
 from openfe.utils.atommapping_network_plotting import (
     AtomMappingNetworkDrawing, plot_atommapping_network,
-    LigandNode, main
+    LigandNode,
 )
 
 from openfe.tests.utils.test_network_plotting import mock_event
@@ -186,19 +186,3 @@ class TestLigandNode:
 def test_plot_atommapping_network(simple_network):
     fig = plot_atommapping_network(simple_network.network)
     assert isinstance(fig, matplotlib.figure.Figure)
-
-
-@pytest.mark.filterwarnings("ignore:.*non-GUI backend")
-def test_main():
-    # smoke test
-    resource = importlib.resources.files('openfe.tests.data.serialization')
-    ref = resource / "network_template.graphml"
-
-    # prevent matplotlib from actually opening a window!
-    backend = matplotlib.get_backend()
-    matplotlib.use("ps")
-    loc = "openfe.utils.atommapping_network_plotting.matplotlib.use"
-    with mock.patch(loc, mock.Mock()):
-        main(ref)
-
-    matplotlib.use(backend)

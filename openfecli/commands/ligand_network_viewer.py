@@ -11,8 +11,19 @@ from openfecli import OFECommandPlugin
                     file_okay=True),
 )
 def ligand_network_viewer(ligand_network):
-    from openfe.utils.atommapping_network_plotting import main
-    main(ligand_network)
+    from openfe.utils.atommapping_network_plotting import (
+        plot_atommapping_network
+    )
+    from openfe.setup import LigandNetwork
+    import matplotlib
+
+    matplotlib.use("TkAgg")
+    with open(ligand_network) as f:
+        graphml = f.read()
+
+    network = LigandNetwork.from_graphml(graphml)
+    fig = plot_atommapping_network(network)
+    matplotlib.pyplot.show()
 
 
 PLUGIN = OFECommandPlugin(
