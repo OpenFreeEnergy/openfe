@@ -11,7 +11,7 @@ from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
 
-from openmm import app, Platform, XmlSerializer
+from openmm import app, Platform, XmlSerializer, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
@@ -137,6 +137,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         sampler = unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert not sampler.is_periodic
+        assert sampler._thermodynamic_states[0].barostat is None
 
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
@@ -180,6 +181,9 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         sampler = unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
+        assert isinstance(sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
 
 @pytest.mark.slow
@@ -205,6 +209,9 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         sampler = unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
+        assert isinstance(sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
 
 def test_lambda_schedule_default():
@@ -882,5 +889,4 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
         assert nc.exists()
 
 # TODO:
-#  - Add checking for barostat
 #  - Check passing several non-alchemical small molecules
