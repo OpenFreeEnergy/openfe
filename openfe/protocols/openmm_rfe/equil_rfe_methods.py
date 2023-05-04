@@ -219,11 +219,16 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Get alchemical components & validate them
+        # Get alchemical components & validate them + mapping
         alchem_comps = system_validation.get_alchemical_components(
             stateA, stateB
         )
         _validate_alchemical_components(alchem_comps, mapping)
+
+        # For now we've made it fail already if it was None,
+        # but let's make mypy happy
+        if mapping is not None:
+            ligandmapping = list(mapping.values())[0]
 
         # Validate solvent component
         nonbond = self.settings.system_settings.nonbonded_method
@@ -238,7 +243,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.alchemical_sampler_settings.n_repeats
         units = [RelativeHybridTopologyProtocolUnit(
-            stateA=stateA, stateB=stateB, ligandmapping=list(mapping.values())[0],
+            stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
