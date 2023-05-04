@@ -172,15 +172,3 @@ def plot_atommapping_network(network: LigandNetwork):
         the matplotlib figure containing the iteractive visualization
     """
     return AtomMappingNetworkDrawing(network.graph).fig
-
-
-if __name__ == "__main__":
-    import sys
-    import openfe.setup
-    matplotlib.use("TkAgg")  # MacOS only works Python <3.8 ?!
-    with open(sys.argv[1], mode='r') as f:
-        graphml = f.read()
-
-    network = openfe.setup.LigandNetwork.from_graphml(graphml)
-    fig = plot_atommapping_network(network)
-    matplotlib.pyplot.show()
