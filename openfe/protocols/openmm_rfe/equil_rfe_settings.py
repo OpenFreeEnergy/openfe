@@ -169,7 +169,7 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    online_analysis_interval: Optional[int] = None
+    online_analysis_interval: Optional[int] = 200
     """
     Interval at which to perform an analysis of the free energies.
     At each interval the free energy is estimate and the simulation is
@@ -177,11 +177,12 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     ``online_analysis_target_error``. If set, will write a yaml file with
     real time analysis data. Default `None`.
     """
-    online_analysis_target_error = 0.1 * unit.boltzmann_constant * unit.kelvin
+    online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
     is at or below this value, the simulation will be considered complete.
-    Default 0.1 * unit.bolzmann_constant * unit.kelvin
+    Default 0.0 * unit.bolzmann_constant * unit.kelvin, i.e. no early
+    termination will occur.
     """
     online_analysis_minimum_iterations = 500
     """
