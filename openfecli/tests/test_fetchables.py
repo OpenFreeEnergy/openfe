@@ -12,7 +12,7 @@ def fetchable_test(fetchable):
     assert isinstance(fetchable, FetchablePlugin)
     expected_paths = [pathlib.Path(f) for f in fetchable.filenames]
     runner = CliRunner()
-    if fetchable.fetcher.REQUIRES_INTERNET and not HAS_INTERNET:
+    if fetchable.fetcher.REQUIRES_INTERNET and not HAS_INTERNET:  # -no-cov-
         pytest.skip("Internet seems to be unavailable")
     with runner.isolated_filesystem():
         result = runner.invoke(fetchable.command, ['-d' 'output-dir'])
