@@ -4,6 +4,7 @@ from plugcli.plugin_management import CommandPlugin
 import urllib.request
 import importlib.resources
 import shutil
+from .utils import write
 
 import pathlib
 
@@ -47,6 +48,7 @@ class _Fetcher:
 
     @property
     def plugin(self):
+        """Plugin used by this fetcher"""
         docs = self.long_help or ""
         docs += "\n\nThis will fetch the following files:\n\n"
         # if you're getting a problem with unpacking here, you probably
@@ -64,6 +66,7 @@ class _Fetcher:
             type=click.Path(file_okay=False, dir_okay=True, writable=True),
         )
         def command(directory):
+            directory = pathlib.Path(directory)
             directory.mkdir(parents=True, exist_ok=True)
             self(directory)
 
@@ -71,14 +74,14 @@ class _Fetcher:
             section = "Requires Internet"
         elif self.REQUIRES_INTERNET is False:
             section = "Built-in"
-        else:
+        else:  # -no-cov-
             raise RuntimeError("Class must set boolean REQUIRES_INTERNET")
 
         return FetchablePlugin(
             command,
             section,
-            requires_lib=self.requires_ofe,
-            requires_cli=self.requires_ofe
+            requires_ofe=self.requires_ofe,
+            fetcher=self
         )
 
 class URLFetcher(_Fetcher):
@@ -93,6 +96,8 @@ class URLFetcher(_Fetcher):
             # let's just prevent one footgun here
             if not base.endswith('/'):
                 base += "/"
+
+            write(f"Fetching {base}{filename}")
 
             with urllib.request.urlopen(base + filename) as resp:
                 contents = resp.read()
@@ -111,6 +116,7 @@ class PkgResourceFetcher(_Fetcher):
     def __call__(self, dest_dir):
         for package, filename in self.resources:
             ref = importlib.resources.files(package) / filename
+            write("Fetching {str(ref)}")
             with importlib.resources.as_file(ref) as f:
                 shutil.copyfile(ref, dest_dir / filename)
 
@@ -133,6 +139,19 @@ class PkgResourceFetcher(_Fetcher):
 
 
 class FetchablePlugin(CommandPlugin):
-    pass  # separate class for isinstance reasons
+    """Plugin class for Fetchables.
+
+    This includes the fetcher to simplify testing and introspection.
+    """
+    def __init__(self, command, section, requires_ofe, fetcher):
+        super().__init__(command=command,
+                         section=section,
+                         requires_lib=requires_ofe,
+                         requires_cli=requires_ofe)
+        self.fetcher = fetcher
+
+    @property
+    def filenames(self):
+        return [res[1] for res in self.fetcher.resources]
 
 
