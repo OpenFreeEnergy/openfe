@@ -8,7 +8,7 @@ from plugcli.cli import CLI, CONTEXT_SETTINGS
 from openfecli.fetching import FetchablePlugin
 from openfecli import OFECommandPlugin
 
-# MOVE SINGLEMODULEPLUGINLOADER UPSTREAM
+# MOVE SINGLEMODULEPLUGINLOADER UPSTREAM TO PLUGCLI
 import importlib
 from plugcli.plugin_management import CLIPluginLoader
 class SingleModulePluginLoader(CLIPluginLoader):
@@ -28,6 +28,11 @@ class SingleModulePluginLoader(CLIPluginLoader):
 
 
 class FetchCLI(CLI):
+    """Custom command class for the Fetch subcommand.
+
+    This provides the command sections used in help and defines where
+    plugins should be kept.
+    """
     COMMAND_SECTIONS = ["Built-in", "Requires Internet"]
 
     def get_loaders(self):
@@ -57,5 +62,6 @@ PLUGIN = OFECommandPlugin(
 )
 
 if __name__ == "__main__":
+    # it's useful to keep a main here for debugging where problems happen in
+    # the command tree
     fetch()
-
