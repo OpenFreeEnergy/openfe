@@ -139,6 +139,25 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         assert not sampler.is_periodic
 
 
+def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
+                             benzene_to_toluene_mapping, tmpdir):
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.small_molecule_forcefield = 'gaff-2.11'
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
@@ -864,5 +883,4 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
 
 # TODO:
 #  - Add checking for barostat
-#  - Check passing gaff
 #  - Check passing several non-alchemical small molecules
