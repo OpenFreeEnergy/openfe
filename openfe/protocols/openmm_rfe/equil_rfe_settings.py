@@ -484,7 +484,7 @@ class SimulationSettings(SettingsBaseModel):
     Separate filename for the checkpoint file. Note, this should
     not be a full path, just a filename. Default 'checkpoint.nc'.
     """
-    forcefield_cache: Optional[str] = None
+    forcefield_cache: Optional[str] = 'db.json'
     """
     Filename for caching small molecule residue templates so they can be
     later reused.

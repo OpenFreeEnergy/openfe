@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
-
+import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 from gufe.protocols import execute_DAG
@@ -46,9 +46,9 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
 
     lig2 = toluene_complex_system['ligand'].to_openff()
 
-    top2 = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
+    top2, appended_resids = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
         top1, lig2.to_topology().to_openmm(),
-        exclude_chains=list(top1.chains())[-1:],
+        exclude_resids=np.asarray(list(top1.residues())[-1].index),
     )
 
     assert len(list(top2.atoms())) == 2625 + 3  # added methyl
@@ -259,7 +259,8 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
 
-    with pytest.raises(ValueError, match='Missing ligand in state B'):
+    match_str = "missing alchemical components in stateB"
+    with pytest.raises(ValueError, match=match_str):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
@@ -267,7 +268,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         )
 
 
-def test_vaccuum_PME_error(benzene_system, benzene_modifications,
+def test_vaccuum_PME_error(benzene_vacuum_system, benzene_modifications,
                            benzene_to_toluene_mapping):
     # state B doesn't have a solvent component (i.e. its vacuum)
     stateB = openfe.ChemicalSystem({'ligand': benzene_modifications['toluene']})
@@ -278,7 +279,7 @@ def test_vaccuum_PME_error(benzene_system, benzene_modifications,
     errmsg = "PME cannot be used for vacuum transform"
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
-            stateA=benzene_system,
+            stateA=benzene_vacuum_system,
             stateB=stateB,
             mapping={'ligand': benzene_to_toluene_mapping},
         )
@@ -296,7 +297,10 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError, match="Solvents aren't identical"):
+    # We don't have a way to map non-ligand components so for now it
+    # just triggers that it's not a mapped component
+    errmsg = "missing alchemical components in stateA"
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
@@ -315,8 +319,9 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError,
-                       match="Ligand in state B doesn't match mapping"):
+    errmsg = (r"Unmapped alchemical component "
+              r"SmallMoleculeComponent\(name=toluene\)")
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
@@ -334,8 +339,9 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError,
-                       match="Ligand in state A doesn't match mapping"):
+    errmsg = (r"Unmapped alchemical component "
+              r"SmallMoleculeComponent\(name=benzene\)")
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
@@ -357,17 +363,19 @@ def test_complex_mismatch(benzene_system, toluene_complex_system,
         )
 
 
-def test_badly_specified_mapping(benzene_system, toluene_system,
+def test_too_many_specified_mappings(benzene_system, toluene_system,
                                  benzene_to_toluene_mapping):
     # mapping dict requires 'ligand' key
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError):
+    errmsg = "A single LigandAtomMapping is expected for this Protocol"
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping={'solvent': benzene_to_toluene_mapping}
+            mapping={'solvent': benzene_to_toluene_mapping,
+                     'ligand': benzene_to_toluene_mapping,}
         )
 
 
@@ -545,10 +553,10 @@ class TestConstraintRemoval:
             removeCMMotion=True,
         )
 
-        stateB_topology = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
+        stateB_topology, _ = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             ligB.to_openff().to_topology().to_openmm(),
-            exclude_chains=list(stateA_topology.chains())
+            exclude_resids=np.array([r.index for r in list(stateA_topology.residues())])
         )
         # since we're doing a swap of the only molecule, this is equivalent:
         # stateB_topology = app.Modeller(
@@ -853,3 +861,8 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
+
+# TODO:
+#  - Add checking for barostat
+#  - Check passing gaff
+#  - Check passing several non-alchemical small molecules

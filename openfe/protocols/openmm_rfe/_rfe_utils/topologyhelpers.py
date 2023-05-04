@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def combined_topology(topology1, topology2, exclude_chains=None):
+def combined_topology(topology1, topology2, exclude_resids=None):
     """
     Create a new topology combining these two topologies.
 
@@ -24,35 +24,55 @@ def combined_topology(topology1, topology2, exclude_chains=None):
     ----------
     topology1 : openmm.app.Topology
     topology2 : openmm.app.Topology
-    exclude_chains : Iterable[openmm.app.topology.Chain]
+    exclude_resids : npt.NDArray
+      Residue indices in topology 1 to exclude from the combined topology.
 
     Returns
     -------
     new : openmm.app.Topology
+    appended_resids : npt.NDArray
+      Residue indices of the residues appended from topology2 in the new
+      topology.
     """
-    if exclude_chains is None:
-        exclude_chains = []
+    if exclude_resids is None:
+        exclude_resids = []
 
     top = app.Topology()
-    # I couldn't resist bringing in itertools.chain, with so much chain
-    # going on here
-    chains = (chain for chain in itertools.chain(topology1.chains(),
-                                                 topology2.chains())
-              if chain not in exclude_chains)
+
+    # create list of excluded residues from topology
+    print(exclude_resids)
+    excluded_res = [
+        r for r in topology1.residues() if r.index in exclude_resids
+    ]
+    print(excluded_res)
+
+    # get a list of all excluded atoms
     excluded_atoms = set(itertools.chain.from_iterable(
-        c.atoms() for c in exclude_chains)
+        r.atoms() for r in excluded_res)
     )
+    print(excluded_atoms)
 
     # add new copies of selected chains, residues, and atoms; keep mapping
     # of old atoms to new for adding bonds later
     old_to_new_atom_map = {}
-    for chain_id, chain in enumerate(chains):
+    appended_resids = []
+    for chain_id, chain in enumerate(
+            itertools.chain(topology1.chains(), topology2.chains())):
         # TODO: is chain ID int or str? I recall it being int in MDTraj....
+        # are there any issues if we just add a blank chain?
         new_chain = top.addChain(chain_id)
         for residue in chain.residues():
+            if residue in excluded_res:
+                continue
+
             new_res = top.addResidue(residue.name,
                                      new_chain,
                                      residue.id)
+
+            # append the new resindex if it's part of topology2
+            if residue in list(topology2.residues()):
+                appended_resids.append(new_res.index)
+
             for atom in residue.atoms():
                 new_atom = top.addAtom(atom.name,
                                        atom.element,
@@ -78,12 +98,12 @@ def combined_topology(topology1, topology2, exclude_chains=None):
     # Copy over the box vectors
     top.setPeriodicBoxVectors(topology1.getPeriodicBoxVectors())
 
-    return top
+    return top, np.array(appended_resids)
 
 
-def _get_indices(topology, residue_name):
+def _get_indices(topology, resids):
     """
-    Get the indices of a unique residue in an OpenMM Topology
+    Get the atoms indices from an array of residue indices in an OpenMM Topology
 
     Parameters
     ----------
@@ -92,15 +112,17 @@ def _get_indices(topology, residue_name):
     residue_name : str
         Name of the residue to get the indices for.
     """
-    residues = []
-    for res in topology.residues():
-        if res.name == residue_name:
-            residues.append(res)
-
-    if len(residues) > 1:
+    # TODO: remove, this shouldn't be necessary anymore
+    if len(resids) > 1:
         raise ValueError("multiple residues were found")
 
-    return [at.index for at in residues[0].atoms()]
+    # create list of openmm residues
+    top_res = [r for r in topology.residues() if r.index in resids]
+
+    # get a list of all atoms in residues
+    top_atoms = list(itertools.chain.from_iterable(r.atoms() for r in top_res))
+
+    return [at.index for at in top_atoms]
 
 
 def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
@@ -209,8 +231,8 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
 
 
 def get_system_mappings(old_to_new_atom_map,
-                        old_system, old_topology, old_residue,
-                        new_system, new_topology, new_residue,
+                        old_system, old_topology, old_resids,
+                        new_system, new_topology, new_resids,
                         fix_constraints=True):
     """
     From a starting alchemical map between two molecules, get the mappings
@@ -227,14 +249,14 @@ def get_system_mappings(old_to_new_atom_map,
         System of the "old" alchemical state.
     old_topology : openmm.app.Topology
         Topology of the "old" alchemical state.
-    old_residue : str
-        Name of the alchemical residue in the "old" topology.
+    old_resids : npt.NDArray
+        Residue ids of the alchemical residues in the "old" topology.
     new_system : openmm.app.System
         System of the "new" alchemical state.
     new_topology : openmm.app.Topology
         Topology of the "new" alchemical state.
-    new_residue : str
-        Name of the alchemical residue in the "new" topology.
+    new_resids : npt.NDArray
+        Residue ids of the alchemical residues in the "new" topology.
     fix_constraints : bool, default True
         Whether to fix the atom mapping by removing any atoms which are
         involved in constrained bonds that change length across the alchemical
@@ -267,8 +289,8 @@ def get_system_mappings(old_to_new_atom_map,
     """
     # Get the indices of the atoms in the alchemical residue of interest for
     # both the old and new systems
-    old_at_indices = _get_indices(old_topology, old_residue)
-    new_at_indices = _get_indices(new_topology, new_residue)
+    old_at_indices = _get_indices(old_topology, old_resids)
+    new_at_indices = _get_indices(new_topology, new_resids)
 
     # We assume that the atom indices are linear in the residue so we shift
     # by the index of the first atom in each residue
