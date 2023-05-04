@@ -1,5 +1,7 @@
 import pytest
 
+from conftest import HAS_INTERNET
+
 from openfecli.fetching import URLFetcher, PkgResourceFetcher
 from openfecli.fetching import FetchablePlugin
 
@@ -45,9 +47,22 @@ class TestURLFetcher(FetcherTester):
         expected = [("https://www.google.com/", "index.html")]
         assert list(fetcher.resources) == expected
 
+    @pytest.mark.skipif(not HAS_INTERNET,
+                        reason="Internet seems to be unavailable")
     def test_call(self, fetcher, tmp_path):
-        # TODO skip if no internet
         super().test_call(fetcher, tmp_path)
+
+    def test_without_trailing_slash(self, tmp_path):
+        fetcher = URLFetcher(
+            resources=[("https://www.google.com", "index.html")],
+            short_name="goog2",
+            short_help="more goog",
+            requires_ofe=(0, 7, 0),
+            long_help="What if you forget the trailing slash?"
+        )
+
+        self.test_call(fetcher, tmp_path)
+
 
 class TestPkgResourceFetcher(FetcherTester):
     @pytest.fixture
