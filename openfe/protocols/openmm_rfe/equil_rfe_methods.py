@@ -603,13 +603,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 if verbose:
                     logger.info("equilibrating systems")
 
-                sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
+                sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
                 # production
                 if verbose:
                     logger.info("running production phase")
 
-                sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+                sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
                 # calculate estimate of results from this individual unit
                 ana = multistate.MultiStateSamplerAnalyzer(reporter)
