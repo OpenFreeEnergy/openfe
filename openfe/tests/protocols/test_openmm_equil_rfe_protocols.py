@@ -876,7 +876,8 @@ def set_openmm_threads_1():
 @pytest.mark.slow
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
+def test_openmm_run_engine(benzene_vacuum_system, platform,
+                           available_platforms, benzene_modifications,
                            set_openmm_threads_1, tmpdir):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
@@ -895,9 +896,17 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
     b = benzene_vacuum_system['ligand']
-    m = openfe.LigandAtomMapping(componentA=b, componentB=b,
+    
+    # make a copy with a different name
+    rdmol = benzene_modifications['benzene'].to_rdkit()
+    b_alt = openfe.SmallMoleculeComponent.from_rdkit(rdmol, name='alt')
+    benzene_vacuum_alt_system = openfe.ChemicalSystem({
+        'ligand': b_alt
+    })
+
+    m = openfe.LigandAtomMapping(componentA=b, componentB=b_alt,
                                  componentA_to_componentB={i: i for i in range(12)})
-    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_system,
+    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_alt_system,
                    mapping={'ligand': m})
 
     cwd = pathlib.Path(str(tmpdir))
