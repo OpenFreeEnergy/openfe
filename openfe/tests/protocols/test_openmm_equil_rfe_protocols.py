@@ -158,6 +158,34 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     )
     unit = list(dag.protocol_units)[0]
 
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+
+
+def test_dry_many_molecules_solvent(
+    benzene_many_solv_system, toluene_many_solv_system,
+    benzene_to_toluene_mapping, tmpdir
+):
+    """
+    A basic test flushing "will it work if you pass multiple molecules"
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_many_solv_system,
+        stateB=toluene_many_solv_system,
+        mapping={'spicyligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_ligand(benzene_system, toluene_system,
