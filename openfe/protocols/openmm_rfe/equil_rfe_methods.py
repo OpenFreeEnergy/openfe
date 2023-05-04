@@ -19,8 +19,9 @@ from __future__ import annotations
 
 import os
 import logging
-
 from collections import defaultdict
+import uuid
+
 import numpy as np
 import openmm
 from openff.units import unit
@@ -106,6 +107,9 @@ def _validate_alchemical_components(
     mapped['stateB'] = [m.componentB for m in mapping.values()]
 
     for idx in ['stateA', 'stateB']:
+        if len(alchemical_components[idx]) != len(mapped[idx]):
+            errmsg = f"missing alchemical components in {idx}"
+            raise ValueError(errmsg)
         for comp in alchemical_components[idx]:
             if comp not in mapped[idx]:
                 raise ValueError(f"Unmapped alchemical component {comp}")
@@ -234,7 +238,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.alchemical_sampler_settings.n_repeats
         units = [RelativeHybridTopologyProtocolUnit(
-            stateA=stateA, stateB=stateB, ligandmapping=mapping.values()[0],
+            stateA=stateA, stateB=stateB, ligandmapping=list(mapping.values())[0],
             settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
@@ -383,11 +387,16 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 1. Create stateA system
         # a. get a system generator
+        if sim_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / sim_settings.forcefield_cache
+        else:
+            ffcache = None
+
         system_generator = system_creation.get_system_generator(
             forcefield_settings=forcefield_settings,
             thermo_settings=thermo_settings,
             system_settings=system_settings,
-            cache=shared_basepath / sim_settings.forcefield_cache,
+            cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
 
@@ -395,8 +404,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
         for comp, offmol in small_mols.items():
-            system_generator.create_system(mol.to_topology().to_openmm(),
-                                           molecules=[mol])
+            system_generator.create_system(offmol.to_topology().to_openmm(),
+                                           molecules=[offmol])
             if comp == mapping.componentA:
                 molB = mapping.componentB.to_openff()
                 system_generator.create_system(molB.to_topology().to_openmm(),
@@ -425,57 +434,30 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
 
-        # 5.  Create OpenMM system + topology + initial positions for "A" system
-
-        #  c. create the stateA System
-        stateA_system = omm_forcefield_stateA.createSystem(
-            stateA_modeller.topology,
-            nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(system_settings.nonbonded_cutoff),
-            constraints=constraints,
-            rigidWater=forcefield_settings.rigid_water,
-            hydrogenMass=forcefield_settings.hydrogen_mass * omm_unit.amu,
-            removeCMMotion=forcefield_settings.remove_com,
-        )
-
-        #  d. create stateA topology
-        stateA_topology = stateA_modeller.getTopology()
-
-        #  e. get stateA positions
-        stateA_positions = stateA_modeller.getPositions()
-        # TODO: fix this using the same approach as the AFE Protocol
-        # canonicalize positions (tuples to np.array)
-        stateA_positions = omm_unit.Quantity(
-            value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
-            unit=openmm.unit.nanometers
-        )
-
-        # 6.  Create OpenMM system + topology + positions for "B" system
-        #  a. stateB topology from stateA (replace out the ligands)
-        stateB_topology = _rfe_utils.topologyhelpers.combined_topology(
+        # 2. Get stateB system
+        # a. get the topology
+        stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
-            stateB_openff_ligand.to_topology().to_openmm(),
-            # as we kept track as we added, we can slice the ligand out
-            # this isn't at the end because of solvents
-            exclude_chains=list(stateA_topology.chains())[stateA_ligand_chain_id - stateA_ligand_nchains:stateA_ligand_chain_id]
+            mapping.componentB.to_openff().to_topology().to_openmm(),
+            exclude_resids=comp_resids[mapping.componentA],
         )
 
-        #  b. Create the system
-        stateB_system = omm_forcefield_stateB.createSystem(
+        # b. get a list of small molecules for stateB
+        small_mols_stateB = [mapping.componentB.to_openff(),]
+        for comp, offmol in small_mols.items():
+            if comp != mapping.componentA:
+                small_mols_stateB.append(offmol)
+
+        stateB_system = system_generator.create_system(
             stateB_topology,
-            nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(system_settings.nonbonded_cutoff),
-            constraints=constraints,
-            rigidWater=forcefield_settings.rigid_water,
-            hydrogenMass=forcefield_settings.hydrogen_mass * omm_unit.amu,
-            removeCMMotion=forcefield_settings.remove_com,
+            molecules=small_mols_stateB,
         )
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
             mapping.componentA_to_componentB,
-            stateA_system, stateA_topology, _get_resname(stateA_openff_ligand),
-            stateB_system, stateB_topology, _get_resname(stateB_openff_ligand),
+            stateA_system, stateA_topology, comp_resids[mapping.componentA],
+            stateB_system, stateB_topology, stateB_alchem_resids,
             # These are non-optional settings for this method
             fix_constraints=True,
         )
@@ -484,10 +466,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
-            insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
+            insert_positions=ensure_quantity(mapping.componentB.to_openff().conformers[0], 'openmm'),
         )
 
-        # 7. Create the hybrid topology
+        # 3. Create the hybrid topology
         hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
@@ -504,17 +486,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             flatten_torsions=alchem_settings.flatten_torsions,
         )
 
-        #  c. Add a barostat to the hybrid system
-        if 'solvent' in stateA.components:
-            hybrid_factory.hybrid_system.addForce(
-                openmm.MonteCarloBarostat(
-                    thermo_settings.pressure.to(unit.bar).m,
-                    thermo_settings.temperature.m,
-                    protocol_settings.integrator_settings.barostat_frequency.m,
-                )
-            )
-
-        # 8. Create lambda schedule
+        # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(

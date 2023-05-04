@@ -4,12 +4,14 @@
 Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
+import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
+from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
@@ -124,13 +126,13 @@ def get_system_generator(
     return system_generator
 
 
-ModellerReturn = Tuple[app.Modeller, Dict[Component, npt.NDArr]]
+ModellerReturn = Tuple[app.Modeller, Dict[Component, npt.NDArray]]
 
 
 def get_omm_modeller(protein_comp: Optional[ProteinComponent],
                      solvent_comp: Optional[SolventComponent],
                      small_mols: Dict[Component, OFFMol],
-                     omm_forcefield : app.Forcefield,
+                     omm_forcefield : app.ForceField,
                      solvent_settings : SolvationSettings) -> ModellerReturn:
     """
     Generate an OpenMM Modeller class based on a potential input ProteinComponent,
@@ -201,7 +203,7 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
             [r.index for r in system_modeller.topology.residues()]
         )
 
-        for comp, mol in mol_items[1:]::
+        for comp, mol in mol_items[1:]:
             _add_small_mol(comp, mol, system_modeller, component_resids)
 
     # Add solvent if neeeded
@@ -220,6 +222,10 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
 
         all_resids = np.array(
             [r.index for r in system_modeller.topology.residues()]
+        )
+
+        existing_resids = np.concatenate(
+            [resids for resids in component_resids.values()]
         )
 
         component_resids[solvent_comp] = np.setdiff1d(

@@ -65,10 +65,10 @@ def get_simsteps(equil_length: unit.Quantity, prod_length: unit.Quantity,
     prod_time = round(prod_length.to('attosecond').m)
     ts = round(timestep.to('attosecond').m)
 
-    equil_steps, mod = divmod(equil_time / ts)
+    equil_steps, mod = divmod(equil_time, ts)
     if mod != 0:
         raise ValueError("Equilibration time not divisible by timestep")
-    prod_steps, mod = divmod(prod_time / ts)
+    prod_steps, mod = divmod(prod_time, ts)
     if mod != 0:
         raise ValueError("Production time not divisible by timestep")
 

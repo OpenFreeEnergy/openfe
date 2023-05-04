@@ -4,7 +4,7 @@
 Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from openff.toolkit import Molecule as OFFMol
 from gufe import (
     Component, ChemicalSystem, SolventComponent, ProteinComponent,
@@ -91,15 +91,18 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
             if isinstance(comp, SolventComponent)]
 
     if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
-        errmsg = (f"{nonbonded_method} cannot be used for solvent "
-                  "transformations")
+        errmsg = "nocutoff cannot be used for solvent transformations"
+        raise ValueError(errmsg)
+
+    if len(solv) == 0 and nonbonded_method.lower() == 'pme':
+        errmsg = "PME cannot be used for vacuum transform"
         raise ValueError(errmsg)
 
     if len(solv) > 1:
         errmsg = "Multiple SolventComponent found, only one is supported"
         raise ValueError(errmsg)
 
-    if solv[0].smiles != 'O':
+    if len(solv) > 0 and solv[0].smiles != 'O':
         errmsg = "Non water solvent is not currently supported"
         raise ValueError(errmsg)
 
