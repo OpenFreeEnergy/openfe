@@ -14,27 +14,71 @@ Installing ``openfe``
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
 
-Installation with ``micromamba`` (recommended)
+Installation with ``mambaforge`` (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We recommend installing ``openfe`` with `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#micromamba>`_, because it provides easy
+We recommend installing ``openfe`` with `mambaforge <https://github.com/conda-forge/miniforge#mambaforge>`_, because it provides easy
 installation of other tools, including molecular dynamics tools such as
 OpenMM and ambertools, which are needed by ``openfe``.
+We recommend ``mambaforge`` because it is faster than ``conda`` and has
+comes preconfigured to use ``conda-forge``.
 
-To install ``micromamba`` execute the `installation script <https://mamba.readthedocs.io/en/latest/installation.html#install-script>`_.
-We recommend ``micromamba`` because it is faster than ``mamba`` and ``conda`` and does not require a ``base`` environment. 
+To install ``mambaforge``, select you operating system and architecture from
+the tool below, and run the ``curl`` / ``sh`` command it suggests.
 
-On Linux the default shell is ``bash`` ::
-  
-  $ curl micro.mamba.pm/install.sh | bash
+.. someone else improve the above wording?
 
-And on macOS the default shell is ``zsh`` ::
+.. raw:: html
 
-  $ curl micro.mamba.pm/install.sh | zsh
+    <select id="mambaforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
+        <option value="Linux">Linux</option>
+        <option value="MacOS">macOS</option>
+    </select>
+    <select id="mambaforge-architecture" onchange="updateFilename()">
+    </select>
+    <br />
+    <pre><span id="mambaforge-curl-install"></span></pre>
+    <script>
+      function setArchitectureOptions(os) {
+          let options = {
+              "MacOS": [
+                  ["x86_64", ""],
+                  ["arm64", " (Apple Silicon)"]
+              ],
+              "Linux": [
+                  ["x86_64", " (amd64)"],
+                  ["aarch64", " (arm64)"],
+                  ["ppc64le", " (POWER8/9)"]
+              ]
+          };
+          choices = options[os];
+          let htmlString = ""
+          for (const [val, extra] of choices) {
+              htmlString += `<option value="${val}">${val}${extra}</option>`;
+          }
+          let arch = document.getElementById("mambaforge-architecture");
+          arch.innerHTML = htmlString
+          updateFilename()
+      }
 
-Now we will set the channel where packages are downloaded from to ``conda-forge`` ::
+      function updateFilename() {
+          let cmd = document.getElementById("mambaforge-curl-install");
+          let osElem = document.getElementById("mambaforge-os");
+          let archElem = document.getElementById("mambaforge-architecture");
+          let os = osElem[osElem.selectedIndex].value;
+          let arch = archElem[archElem.selectedIndex].value;
+          let filename = "Mambaforge-" + os + "-" + arch + ".sh"
+          let cmdText = (
+              "curl https://github.com/conda-forge/miniforge/releases/"
+              + "latest/download/" + filename + " | sh"
+          )
+          cmd.innerHTML = cmdText
 
-  $ micromamba config append channels conda-forge
+      }
+
+      setArchitectureOptions("Linux");
+      updateFilename();
+    </script>
 
 This command will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
 
