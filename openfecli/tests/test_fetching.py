@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import HAS_INTERNET
+from .conftest import HAS_INTERNET
 
 from openfecli.fetching import URLFetcher, PkgResourceFetcher
 from openfecli.fetching import FetchablePlugin
