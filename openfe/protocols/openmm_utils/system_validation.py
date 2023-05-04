@@ -37,7 +37,7 @@ def get_alchemical_components(
     ValueError
       If there are any duplicate components in states A or B.
     """
-    matched_components = {}
+    matched_components: Dict[Component, Component]  = {}
     alchemical_components: Dict[str, List[Component]] = {
         'stateA': [], 'stateB': [],
     }
@@ -153,14 +153,14 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
       If it exists, the ProteinComponent for the state, otherwise None.
     openff_mols : Dict[str, openff.toolkit.Molecule]
     """
-    solvent_comp = [comp for comp in state.values()
+    solvent_comp: Optional[SolventComponent] = [comp for comp in state.values()
                     if isinstance(comp, SolventComponent)]
     if len(solvent_comp) == 0:
         solvent_comp = None
     else:
         solvent_comp = solvent_comp[0]
 
-    protein_comp = [comp for comp in state.values()
+    protein_comp: Optional[ProteinComponent] = [comp for comp in state.values()
             if isinstance(comp, ProteinComponent)]
     if len(protein_comp) == 0:
         protein_comp = None
