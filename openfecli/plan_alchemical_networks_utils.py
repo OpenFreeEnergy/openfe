@@ -8,19 +8,6 @@ from openfecli.utils import write
 
 from gufe import AlchemicalNetwork
 
-
-def deduce_label(t) -> str:
-    """Take a transformation and classify as either 'complex', 'solvent' or 'vacuum' leg"""
-    s = t.stateA
-
-    if 'protein' in s.components:
-        return 'complex'
-    elif 'solvent' in s.components:
-        return 'solvent'
-    else:
-        return 'vacuum'
-
-
 def plan_alchemical_network_output(alchemical_network: AlchemicalNetwork, folder_path: pathlib.Path):
     """Write the contents of an alchemical network into the structure
     """
