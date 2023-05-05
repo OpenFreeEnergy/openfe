@@ -8,6 +8,7 @@ from .atom_mapping import (LigandAtomMapping,
                            PersesAtomMapper, perses_scorers)
 
 from .ligand_network import LigandNetwork
+from .load_molecules import load_molecules
 from . import ligand_network_planning
 
 from .alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner

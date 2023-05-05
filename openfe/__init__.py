@@ -17,6 +17,7 @@ from .setup import (
     PersesAtomMapper,
     perses_scorers,
     ligand_network_planning,
+    load_molecules,
     LigandNetwork,
     LigandAtomMapper,
 )
