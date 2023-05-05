@@ -19,7 +19,7 @@ def results_dir(tmpdir):
 
 @pytest.fixture
 def ref_gather():
-    return b"""
+    return b"""\
 measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)\tuncertainty (kcal/mol)
 DDGhyd(lig_15, lig_12)\tRHFE\tlig_12\tlig_15\t-1.1\t0.055
 DDGhyd(lig_16, lig_15)\tRHFE\tlig_15\tlig_16\t-5.7\t0.043
