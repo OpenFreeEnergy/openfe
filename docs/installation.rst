@@ -41,7 +41,7 @@ the tool below, and run the ``curl`` / ``sh`` command it suggests.
     <script>
       function setArchitectureOptions(os) {
           let options = {
-              "MacOS": [
+              "MacOSX": [
                   ["x86_64", ""],
                   ["arm64", " (Apple Silicon)"]
               ],
