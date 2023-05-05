@@ -2,16 +2,17 @@
 
 .. module:: openfe
 
+==================================
 Welcome to OpenFE's documentation!
 ==================================
 
 **Version:**: |version|
 
 **useful links**:
-`OpenFE Website: <https://openfree.energy/>`__ |
-`Example Tutorial notebooks: <https://github.com/OpenFreeEnergy/ExampleNotebooks/>`__ |
-`Source Repository: <https://github.com/OpenFreeEnergy/openfe/>`__ |
-`Issues & Ideas: <https://github.com/OpenFreeEnergy/openfe/issues/>`__
+`OpenFE Website <https://openfree.energy/>`__ |
+`Example Tutorial notebooks <https://github.com/OpenFreeEnergy/ExampleNotebooks/>`__ |
+`Source Repository <https://github.com/OpenFreeEnergy/openfe/>`__ |
+`Issues & Ideas <https://github.com/OpenFreeEnergy/openfe/issues/>`__
 
 The **OpenFE** toolkit provides open-source frameworks for calculating alchemical free energies.
 
@@ -20,7 +21,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         Installing OpenFE
-        ^^^^^^^^^^^^^^^^^
+        -----------------
         
         New to **OpenFE**? Check out our installation details to get it working on your machine!
         
@@ -36,7 +37,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         Tutorials
-        ^^^^^^^^^
+        ---------
         
         Some blurb
         
@@ -52,7 +53,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         Tutorials
-        ^^^^^^^^^
+        ---------
         
         Some blurb
         
@@ -68,7 +69,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         Cookbook
-        ^^^^^^^^
+        --------
         
         Some blurb
         
@@ -84,7 +85,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         API Reference
-        ^^^^^^^^^^^^^
+        -------------
         
         Some blurb
         
@@ -100,7 +101,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         Using the CLI
-        ^^^^^^^^^^^^^
+        -------------
         
         Some blurb
         
@@ -116,7 +117,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card::
 
         Relative Free Energy Protocol
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        -----------------------------
         
         Some blurb
         
