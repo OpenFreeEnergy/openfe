@@ -12,7 +12,6 @@ import abc
 from typing import Optional, Union
 from pydantic import Extra, validator, BaseModel, PositiveFloat, Field
 from openff.units import unit
-from gufe import settings
 import os
 
 
@@ -112,8 +111,7 @@ if os.environ.get('SPHINX', False):
                 thermo_settings=ThermoSettings(temperature=300 * unit.kelvin),
             )
 else:
-    SettingsBaseModel = settings.SettingsBaseModel
-    Settings = settings.Settings
+    from gufe.settings import Settings, SettingsBaseModel  # type: ignore
 
 
 class SystemSettings(SettingsBaseModel):
