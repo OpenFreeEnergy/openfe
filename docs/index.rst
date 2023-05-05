@@ -29,7 +29,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
@@ -45,7 +45,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
@@ -61,7 +61,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
@@ -77,7 +77,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
@@ -93,7 +93,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
@@ -109,7 +109,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
@@ -125,7 +125,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         
         .. button-ref:: installation
             :expand:
-            :color: secondary
+            :color: primary
             :click-parent:
             
             To the installation information
