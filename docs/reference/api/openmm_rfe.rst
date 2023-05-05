@@ -19,7 +19,13 @@ Settings
 
 .. autopydantic_model:: openfe.protocols.openmm_rfe.equil_rfe_settings.SolvationSettings
 
-.. autopydantic_model:: openfe.protocols.openmm_rfe.equil_rfe_settings.SystemSettings
+.. autopydantic_settings:: openfe.protocols.openmm_rfe.equil_rfe_settings.SystemSettings
+   :settings-show-json: False
+   :settings-show-config-member: False
+   :settings-show-config-summary: False
+   :settings-show-validator-members: False
+   :settings-show-validator-summary: False
+   :field-list-validators: False
 
 
 
