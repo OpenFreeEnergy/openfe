@@ -385,7 +385,7 @@ functionality. This is called a "developer" or "editable" installation.
 
 Getting a developer installation for ``openfe`` first installing the
 requirements, and then creating the editable installation. We recommend
-doing that with ``micromamba`` using the following procedure:
+doing that with ``mamba`` using the following procedure:
 
 First, clone the ``openfe`` repository, and switch into its root directory::
 
@@ -395,11 +395,11 @@ First, clone the ``openfe`` repository, and switch into its root directory::
 Next create a ``conda`` environment containing the requirements from the
 specification in that directory::
 
-  $ micromamba create -f environment.yml
+  $ mamba create -f environment.yml
 
 Then activate the ``openfe`` environment with::
 
-  $ micromamba activate openfe_env
+  $ mamba activate openfe_env
 
 Finally, create the editable installation::
 
@@ -417,4 +417,4 @@ optional packages.
 * **perses tools**: To use perses, you need to install perses and OpenEye,
   and you need a valid OpenEye license. To install both packages, use::
 
-    $ micromamba install -c openeye perses openeye-toolkits
+    $ mamba install -c openeye perses openeye-toolkits
