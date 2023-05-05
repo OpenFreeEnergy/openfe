@@ -43,6 +43,8 @@ autoclass_content = 'both'
 # https://www.sphinx-doc.org/en/master/usage/extensions/autosectionlabel.html#confval-autosectionlabel_prefix_document
 autosectionlabel_prefix_document = True
 
+autodoc_pydantic_model_show_json = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
