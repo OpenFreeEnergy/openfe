@@ -115,16 +115,16 @@ def gather(rootdir, output):
 
         name = ", ".join(ligpair[::-1])
         if DDGbind is not None:
-            output.write(f'DDGbind({name})\tbind\t{ligpair[-2]}\t{ligpair[-1]}\t{DDGbind}\t+-{bind_unc}\n')
+            output.write(f'DDGbind({name})\tRBFE\t{ligpair[-2]}\t{ligpair[-1]}\t{DDGbind}\t{bind_unc}\n')
         if DDGhyd is not None:
-            output.write(f'DDGhyd({name})\thyd\t{ligpair[-2]}\t{ligpair[-1]}\t{DDGhyd}\t+-{hyd_unc}\n')
+            output.write(f'DDGhyd({name})\tRHFE\t{ligpair[-2]}\t{ligpair[-1]}\t{DDGhyd}\t{hyd_unc}\n')
 
     # 4b write out each leg
     for ligpair, vals in legs.items():
         name = ', '.join(ligpair)
         for simtype, (m, u) in vals.items():
             m, u = dp2(m.m), dp2(u.m)
-            output.write(f'DG{simtype}({name})\t{m}\t+-{u}\n')
+            output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[-2]}\t{ligpair[-1]}\t{m}\t{u}\n')
 
 
 PLUGIN = OFECommandPlugin(
