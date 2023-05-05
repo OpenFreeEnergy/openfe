@@ -171,8 +171,9 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     """
     online_analysis_interval: Optional[int] = 200
     """
-    Interval at which to perform an analysis of the free energies.
-    At each interval the free energy is estimate and the simulation is
+    MCMC steps (i.e. ``IntegratorSettings.nsteps``) interval at which
+    to perform an analysis of the free energies.
+    At each interval, the free energy is estimate and the simulation is
     considered complete if the free energy estimate is below
     ``online_analysis_target_error``. If set, will write a yaml file with
     real time analysis data. Default `None`.
@@ -180,8 +181,10 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
-    is at or below this value, the simulation will be considered complete.
-    Default 0.0 * unit.bolzmann_constant * unit.kelvin, i.e. no early
+    is at or below this value, the simulation will be considered complete. A
+    suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
+    shown to be effective in both hydration and binding free energy benchmarks.
+    Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
     termination will occur.
     """
     online_analysis_minimum_iterations = 500
