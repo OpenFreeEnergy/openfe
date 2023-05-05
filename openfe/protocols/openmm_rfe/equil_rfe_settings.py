@@ -171,12 +171,20 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     """
     online_analysis_interval: Optional[int] = 200
     """
-    MCMC steps (i.e. ``IntegratorSettings.nsteps``) interval at which
+    MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
     to perform an analysis of the free energies.
-    At each interval, the free energy is estimate and the simulation is
-    considered complete if the free energy estimate is below
-    ``online_analysis_target_error``. If set, will write a yaml file with
-    real time analysis data. Default `None`.
+
+    At each interval, real time analysis data (e.g. current free energy
+    estimate and timing data) will be written to a yaml file named 
+    ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
+    current error in the estimate will also be assed and if it drops
+    below ``AlchemicalSamplerSettings.online_analysis_target_error``
+    the simulation will be terminated.
+
+    If ``None``, no real time analysis will be performed and the yaml
+    file will not be written.
+
+    Default `200`.
     """
     online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
