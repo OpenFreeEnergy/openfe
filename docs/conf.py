@@ -35,7 +35,8 @@ extensions = [
     'sphinx_click.ext',
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_toolbox.collapse',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinx_design',
 ]
 
 autoclass_content = 'both'
