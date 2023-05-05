@@ -576,6 +576,39 @@ class HybridTopologyFactory:
                 if constraint_lengths[hybrid_atoms] != length:
                     raise AssertionError('constraint length is changing')
 
+    @staticmethod
+    def _copy_threeparticleavg(atm_map, env_atoms, vs):
+        """
+        Helper method to copy a ThreeParticleAverageSite virtual site
+        from two mapped Systems.
+        
+        Parameters
+        ----------
+        atm_map : dict[int, int]
+          The atom map correspondance between the two Systems.
+        env_atoms: list[int]
+          A list of environment atoms for the target System. This
+          checks that no alchemical atoms are being tied to.
+        vs : openmm.ThreeParticleAverageSite
+        
+        Returns
+        -------
+        openmm.ThreeParticleAverageSite
+        """
+        particles = {}
+        weights = {}
+        for i in range(vs.getNumParticles()):
+            particles[i] = atm_map[vs.getParticle(i)]
+            weights[i] = vs.getWeight(i)
+        if not all(i in env_atoms for i in particles):
+            errmsg = ("Virtual sites bound to non-environment atoms "
+                      "are not supported")
+            raise ValueError(errmsg)
+        return openmm.ThreeParticleAverageSite(
+            particles[0], particles[1], particles[2],
+            weights[0], weights[1], weights[2],
+        )
+                    
     def _handle_virtual_sites(self):
         """
         Ensure that all virtual sites in old and new system are copied over to
@@ -600,10 +633,22 @@ class HybridTopologyFactory:
                 else:
                     virtual_site = self._old_system.getVirtualSite(
                         particle_idx)
-                    self._hybrid_system.setVirtualSite(hybrid_idx,
-                                                       virtual_site)
+                    if isinstance(
+                        virtual_site, openmm.ThreeParticleAverageSite):
+                        vs_copy = self._copy_threeparticleavg(
+                            self._old_to_hybrid_map,
+                            self._atom_classes['environment_atoms'],
+                            virtual_site,
+                        )
+                    else:
+                        errmsg = ("Unsupported VirtualSite "
+                                  f"class: {virtual_site}")
+                        raise ValueError(errmsg)
 
-        # new system
+                    self._hybrid_system.setVirtualSite(hybrid_idx,
+                                                       vs_copy)
+
+        # new system - there should be nothing left to add
         # Loop through virtual sites
         for particle_idx in range(self._new_system.getNumParticles()):
             if self._new_system.isVirtualSite(particle_idx):
@@ -615,10 +660,10 @@ class HybridTopologyFactory:
                               "unsupported.")
                     raise ValueError(errmsg)
                 else:
-                    virtual_site = self._new_system.getVirtualSite(
-                        particle_idx)
-                    self._hybrid_system.setVirtualSite(hybrid_idx,
-                                                       virtual_site)
+                    if not self._hybrid_system.isVirtualSite(hybrid_idx):
+                        errmsg = ("Environment virtual site in new system "
+                                  "found not copied from old system")
+                        raise ValueError(errmsg)
 
     def _add_bond_force_terms(self):
         """
