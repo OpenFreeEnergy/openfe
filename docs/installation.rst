@@ -32,7 +32,7 @@ the tool below, and run the ``curl`` / ``sh`` command it suggests.
 
     <select id="mambaforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
         <option value="Linux">Linux</option>
-        <option value="MacOS">macOS</option>
+        <option value="MacOSX">macOS</option>
     </select>
     <select id="mambaforge-architecture" onchange="updateFilename()">
     </select>
