@@ -18,11 +18,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
 .. grid:: 2
 
-    .. grid-item-card::
+    .. grid-item-card:: Installing OpenFE
 
-        Installing OpenFE
-        -----------------
-        
         New to **OpenFE**? Check out our installation details to get it working on your machine!
         
         +++
@@ -34,11 +31,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
             To the installation information
             
-    .. grid-item-card::
+    .. grid-item-card:: Tutorials
 
-        Tutorials
-        ---------
-        
         Some blurb
         
         +++
@@ -50,11 +44,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
             To the installation information
 
-    .. grid-item-card::
+    .. grid-item-card:: Tutorials
 
-        Tutorials
-        ---------
-        
         Some blurb
         
         +++
@@ -66,11 +57,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
             To the installation information
             
-    .. grid-item-card::
+    .. grid-item-card:: Cookbook
 
-        Cookbook
-        --------
-        
         Some blurb
         
         +++
@@ -82,11 +70,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
             To the installation information
 
-    .. grid-item-card::
+    .. grid-item-card:: API Reference
 
-        API Reference
-        -------------
-        
         Some blurb
         
         +++
@@ -98,11 +83,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
             To the installation information
 
-    .. grid-item-card::
+    .. grid-item-card:: Using the CLI
 
-        Using the CLI
-        -------------
-        
         Some blurb
         
         +++
@@ -114,11 +96,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
             To the installation information
 
-    .. grid-item-card::
+    .. grid-item-card:: Relative Free Energy Protocol
 
-        Relative Free Energy Protocol
-        -----------------------------
-        
         Some blurb
         
         +++
