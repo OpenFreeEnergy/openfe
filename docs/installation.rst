@@ -24,7 +24,7 @@ We recommend ``mambaforge`` because it is faster than ``conda`` and comes
 preconfigured to use ``conda-forge``.
 
 To install ``mambaforge``, select your operating system and architecture from
-the tool below, and run the ``curl`` / ``sh`` command it suggests.
+the tool below, and run the commands it suggests.
 
 .. someone else improve the above wording?
 
@@ -34,7 +34,7 @@ the tool below, and run the ``curl`` / ``sh`` command it suggests.
         <option value="Linux">Linux</option>
         <option value="MacOSX">macOS</option>
     </select>
-    <select id="mambaforge-architecture" onchange="updateFilename()">
+    <select id="mambaforge-architecture" onchange="updateInstructions()">
     </select>
     <br />
     <pre><span id="mambaforge-curl-install"></span></pre>
@@ -58,25 +58,27 @@ the tool below, and run the ``curl`` / ``sh`` command it suggests.
           }
           let arch = document.getElementById("mambaforge-architecture");
           arch.innerHTML = htmlString
-          updateFilename()
+          updateInstructions()
       }
 
-      function updateFilename() {
+      function updateInstructions() {
           let cmd = document.getElementById("mambaforge-curl-install");
           let osElem = document.getElementById("mambaforge-os");
           let archElem = document.getElementById("mambaforge-architecture");
           let os = osElem[osElem.selectedIndex].value;
           let arch = archElem[archElem.selectedIndex].value;
           let filename = "Mambaforge-" + os + "-" + arch + ".sh"
-          let cmdText = (
-              "curl https://github.com/conda-forge/miniforge/releases/"
-              + "latest/download/" + filename + " | sh"
+          let curlText = (
+              "curl -OL https://github.com/conda-forge/miniforge/releases/"
+              + "latest/download/" + filename
           )
+          let installText = "sh " + filename + " -b"
+          let cleanText = "rm -f " + filename
+          let cmdText = curlText + "\n" + installText + "\n" + cleanText
           cmd.innerHTML = cmdText
-
       }
 
-      setArchitectureOptions("Linux");
+      setArchitectureOptions("Linux");  // default
     </script>
 
 This command will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
@@ -86,6 +88,17 @@ This command will create an environment called ``openfe_env`` with the ``openfe`
 Now we need to activate our new environment ::
 
   $ mamba activate openfe_env
+
+
+.. warning::
+
+   Installing on newer Macs with Apple Silicon requires a creating an x86_64
+   environmment, as one of our requirements is not yet available for Apple
+   Silicon. Run the following modified commands::
+
+      CONDA_SUBDIR=osx-64 mamba create -n openfe_env openfe
+      mamba activate openfe_env
+      mamba env config vars set CONDA_SUBDIR=osx-64
 
 To make sure everything is working, run the tests ::
 
