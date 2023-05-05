@@ -163,6 +163,37 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert sampler.is_periodic
 
 
+def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
+                              benzene_to_toluene_mapping, tmpdir):
+    """
+    Test that we can create a system with ThreeParticleAverageSite
+    virtual sites in the environment (waters)
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()a
+    settings.forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",  # ff14SB protein force field
+        "amber/tip4pew_standard.xml",  # tip4p and recommended monovalent ion parameters
+        "amber/tip4pew_HFE_multivalent.xml",  # for divalent ions
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    settings.solvation_settings.solvent_model = 'tip4pew'
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+        assert isinstance(sampler, MultiStateSampler)
+        assert sampler.is_periodic
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
