@@ -16,7 +16,7 @@ Welcome to OpenFE's documentation!
 
 The **OpenFE** toolkit provides open-source frameworks for calculating alchemical free energies.
 
-.. grid:: 2
+.. grid:: auto
 
     .. grid-item-card:: Installing OpenFE
 
