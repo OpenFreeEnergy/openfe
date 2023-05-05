@@ -586,7 +586,7 @@ class HybridTopologyFactory:
         ----------
         atm_map : dict[int, int]
           The atom map correspondance between the two Systems.
-        env_atoms: list[int]
+        env_atoms: set[int]
           A list of environment atoms for the target System. This
           checks that no alchemical atoms are being tied to.
         vs : openmm.ThreeParticleAverageSite
@@ -600,7 +600,7 @@ class HybridTopologyFactory:
         for i in range(vs.getNumParticles()):
             particles[i] = atm_map[vs.getParticle(i)]
             weights[i] = vs.getWeight(i)
-        if not all(i in env_atoms for i in particles):
+        if not all(i in env_atoms for i in particles.values()):
             errmsg = ("Virtual sites bound to non-environment atoms "
                       "are not supported")
             raise ValueError(errmsg)
