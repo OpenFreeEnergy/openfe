@@ -20,10 +20,10 @@ Installation with ``mambaforge`` (recommended)
 We recommend installing ``openfe`` with `mambaforge <https://github.com/conda-forge/miniforge#mambaforge>`_, because it provides easy
 installation of other tools, including molecular dynamics tools such as
 OpenMM and ambertools, which are needed by ``openfe``.
-We recommend ``mambaforge`` because it is faster than ``conda`` and has
-comes preconfigured to use ``conda-forge``.
+We recommend ``mambaforge`` because it is faster than ``conda`` and comes
+preconfigured to use ``conda-forge``.
 
-To install ``mambaforge``, select you operating system and architecture from
+To install ``mambaforge``, select your operating system and architecture from
 the tool below, and run the ``curl`` / ``sh`` command it suggests.
 
 .. someone else improve the above wording?
@@ -77,16 +77,15 @@ the tool below, and run the ``curl`` / ``sh`` command it suggests.
       }
 
       setArchitectureOptions("Linux");
-      updateFilename();
     </script>
 
 This command will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
 
-  $ micromamba create -n openfe_env openfe
+  $ mamba create -n openfe_env openfe
 
 Now we need to activate our new environment ::
 
-  $ micromamba activate openfe_env
+  $ mamba activate openfe_env
 
 To make sure everything is working, run the tests ::
 
