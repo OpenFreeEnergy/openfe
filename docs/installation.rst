@@ -23,10 +23,11 @@ OpenMM and ambertools, which are needed by ``openfe``.
 We recommend ``mambaforge`` because it is faster than ``conda`` and comes
 preconfigured to use ``conda-forge``.
 
-To install ``mambaforge``, select your operating system and architecture from
-the tool below, and run the commands it suggests.
-
-.. someone else improve the above wording?
+To install and configure ``mambaforge``, you need to know your operating
+system, your machine architecture (output of ``uname -m``), and your shell
+(in most cases, can be determined from ``echo $SHELL``). Select
+your operating system and architecture from the tool below, and run the
+commands it suggests.
 
 .. raw:: html
 
@@ -35,6 +36,13 @@ the tool below, and run the commands it suggests.
         <option value="MacOSX">macOS</option>
     </select>
     <select id="mambaforge-architecture" onchange="updateInstructions()">
+    </select>
+    <select id="mambaforge-shell" onchange="updateInstructions()">
+        <option value="bash">bash</option>
+        <option value="zsh">zsh</option>
+        <option value="tcsh">tcsh</option>
+        <option value="fish">fish</option>
+        <option value="xonsh">xonsh</option>
     </select>
     <br />
     <pre><span id="mambaforge-curl-install"></span></pre>
@@ -65,23 +73,30 @@ the tool below, and run the commands it suggests.
           let cmd = document.getElementById("mambaforge-curl-install");
           let osElem = document.getElementById("mambaforge-os");
           let archElem = document.getElementById("mambaforge-architecture");
+          let shellElem = document.getElementById("mambaforge-shell");
           let os = osElem[osElem.selectedIndex].value;
           let arch = archElem[archElem.selectedIndex].value;
+          let shell = shellElem[shellElem.selectedIndex].value;
           let filename = "Mambaforge-" + os + "-" + arch + ".sh"
-          let curlText = (
-              "curl -OL https://github.com/conda-forge/miniforge/releases/"
-              + "latest/download/" + filename
-          )
-          let installText = "sh " + filename + " -b"
-          let cleanText = "rm -f " + filename
-          let cmdText = curlText + "\n" + installText + "\n" + cleanText
-          cmd.innerHTML = cmdText
+          let cmdArr = [
+              (
+                  "curl -OL https://github.com/conda-forge/miniforge/"
+                  + "releases/latest/download/" + filename
+              ),
+              "sh " + filename + " -b",
+              "~/mambaforge/bin/mamba init " + shell,
+              "rm -f " + filename,
+          ]
+          cmd.innerHTML = cmdArr.join("\n")
       }
 
       setArchitectureOptions("Linux");  // default
     </script>
 
-This command will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
+You should then close your current session and open a fresh login to ensure
+that everything is properly registered.
+
+Next we will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
 
   $ mamba create -n openfe_env openfe
 
