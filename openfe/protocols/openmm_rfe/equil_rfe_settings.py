@@ -15,7 +15,7 @@ from openff.units import unit
 import os
 
 
-if os.environ.get('SPHINX', False):
+if os.environ.get('SPHINX', False):  #pragma: no cover
     class SettingsBaseModel(BaseModel):
         class Config:
             extra = Extra.forbid
