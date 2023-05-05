@@ -8,13 +8,113 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional
-from pydantic import validator
+import abc
+from typing import Optional, Union
+from pydantic import Extra, validator, BaseModel, PositiveFloat, Field
 from openff.units import unit
-from gufe import settings
+import os
 
 
-class SystemSettings(settings.SettingsBaseModel):
+if os.environ.get('SPHINX', False):  #pragma: no cover
+    class SettingsBaseModel(BaseModel):
+        class Config:
+            extra = Extra.forbid
+            validate_assignment = True
+            arbitrary_types_allowed = True
+            smart_union = True
+
+
+    class ThermoSettings(SettingsBaseModel):
+        """Settings for thermodynamic parameters.
+
+        .. note::
+           No checking is done to ensure a valid thermodynamic ensemble is
+           possible.
+        """
+
+        temperature = 298.15 * unit.kelvin
+        """Simulation temperature, default units kelvin"""
+
+        pressure = 1.0 * unit.bar
+        """Simulation pressure, default units standard atmosphere (atm)"""
+
+        ph: Union[PositiveFloat, None] = Field(None, description="Simulation pH")
+        redox_potential: Optional[float] = Field(
+            None, description="Simulation redox potential"
+        )
+
+
+    class BaseForceFieldSettings(SettingsBaseModel, abc.ABC):
+        """Base class for ForceFieldSettings objects"""
+        ...
+
+
+    class OpenMMSystemGeneratorFFSettings(SettingsBaseModel):
+        """Parameters to set up the force field with OpenMM ForceFields
+
+        .. note::
+           Right now we just basically just grab what we need for the
+           :class:`openmmforcefields.system_generators.SystemGenerator`
+           signature. See the `OpenMMForceField SystemGenerator documentation`_
+           for more details.
+
+
+        .. _`OpenMMForceField SystemGenerator documentation`:
+           https://github.com/openmm/openmmforcefields#automating-force-field-management-with-systemgenerator
+        """
+        constraints: Optional[str] = 'hbonds'
+        """Constraints to be applied to system.
+           One of 'hbonds', 'allbonds', 'hangles' or None, default 'hbonds'"""
+
+        rigid_water: bool = True
+        remove_com: bool = False
+        hydrogen_mass: float = 3.0
+        """Mass to be repartitioned to hydrogens from neighbouring
+           heavy atoms (in amu), default 3.0"""
+
+        forcefields: list[str] = [
+            "amber/ff14SB.xml",  # ff14SB protein force field
+            "amber/tip3p_standard.xml",  # TIP3P and recommended monovalent ion parameters
+            "amber/tip3p_HFE_multivalent.xml",  # for divalent ions
+            "amber/phosaa10.xml",  # Handles THE TPO
+        ]
+        """List of force field paths for all components except :class:`SmallMoleculeComponent` """
+
+        small_molecule_forcefield: str = "openff-2.0.0"  # other default ideas 'openff-2.0.0', 'gaff-2.11', 'espaloma-0.2.0'
+        """Name of the force field to be used for :class:`SmallMoleculeComponent` """
+
+        @validator('constraints')
+        def constraint_check(cls, v):
+            allowed = {'hbonds', 'hangles', 'allbonds'}
+
+            if not (v is None or v.lower() in allowed):
+                raise ValueError(f"Bad constraints value, use one of {allowed}")
+
+            return v
+
+
+    class Settings(SettingsBaseModel):
+        """
+        Container for all settings needed by a protocol
+
+        This represents the minimal surface that all settings objects will have.
+
+        Protocols can subclass this to extend this to cater for their additional settings.
+        """
+        forcefield_settings: BaseForceFieldSettings
+        thermo_settings: ThermoSettings
+
+        @classmethod
+        def get_defaults(cls):
+            return cls(
+                forcefield_settings=OpenMMSystemGeneratorFFSettings(),
+                thermo_settings=ThermoSettings(temperature=300 * unit.kelvin),
+            )
+else:
+    from gufe.settings import Settings, SettingsBaseModel  # type: ignore
+
+
+class SystemSettings(SettingsBaseModel):
     """Settings describing the simulation system settings."""
 
     class Config:
@@ -50,7 +150,7 @@ class SystemSettings(settings.SettingsBaseModel):
         return v
 
 
-class SolvationSettings(settings.SettingsBaseModel):
+class SolvationSettings(SettingsBaseModel):
     """Settings for solvating the system
     NOTE
     ----
@@ -88,7 +188,7 @@ class SolvationSettings(settings.SettingsBaseModel):
         return v
 
 
-class AlchemicalSettings(settings.SettingsBaseModel):
+class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
 
     This describes the lambda schedule and the creation of the
@@ -143,11 +243,13 @@ class AlchemicalSettings(settings.SettingsBaseModel):
     """
 
 
-class AlchemicalSamplerSettings(settings.SettingsBaseModel):
+class AlchemicalSamplerSettings(SettingsBaseModel):
     """Settings for the Equilibrium Alchemical sampler, currently supporting
     either MultistateSampler, SAMSSampler or ReplicaExchangeSampler.
 
+    """
 
+    """
     TODO
     ----
     * It'd be great if we could pass in the sampler object rather than using
@@ -253,10 +355,11 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
         return v
 
 
-class OpenMMEngineSettings(settings.SettingsBaseModel):
-    """OpenMM MD engine settings
+class OpenMMEngineSettings(SettingsBaseModel):
+    """OpenMM MD engine settings"""
 
 
+    """
     TODO
     ----
     * In the future make precision and deterministic forces user defined too.
@@ -269,7 +372,7 @@ class OpenMMEngineSettings(settings.SettingsBaseModel):
     """
 
 
-class IntegratorSettings(settings.SettingsBaseModel):
+class IntegratorSettings(SettingsBaseModel):
     """Settings for the LangevinSplittingDynamicsMove integrator"""
 
     class Config:
@@ -334,7 +437,7 @@ class IntegratorSettings(settings.SettingsBaseModel):
         return v
 
 
-class SimulationSettings(settings.SettingsBaseModel):
+class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths,
     writing to disk, etc...
@@ -400,7 +503,7 @@ class SimulationSettings(settings.SettingsBaseModel):
         return v
 
 
-class RelativeHybridTopologyProtocolSettings(settings.Settings):
+class RelativeHybridTopologyProtocolSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 
