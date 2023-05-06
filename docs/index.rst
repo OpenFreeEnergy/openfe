@@ -31,7 +31,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The Installation Information
             
     .. grid-item-card:: Tutorials
-        :img-top: _static/Tutorial.svg
+        :img-top: _static/Tutorial.png
         :text-align: center
 
         Some blurb
@@ -44,7 +44,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The Tutorials
 
     .. grid-item-card:: User Guide
-        :img-top: _static/UserGuide.svg
+        :img-top: _static/UserGuide.png
         :text-align: center
 
         Some blurb
@@ -57,7 +57,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The User Guide
             
     .. grid-item-card:: Cookbook
-        :img-top: _static/Cookbook.svg
+        :img-top: _static/Cookbook.png
         :text-align: center
 
         Some blurb
@@ -70,7 +70,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The Cookbook
 
     .. grid-item-card:: API Reference
-        :img-top: _static/API.svg
+        :img-top: _static/API.png
         :text-align: center
 
         Some blurb
@@ -83,7 +83,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The API Reference
 
     .. grid-item-card:: Using the CLI
-        :img-top: _static/CLI.svg
+        :img-top: _static/CLI.png
         :text-align: center
 
         Some blurb
@@ -96,7 +96,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To CLI Documentation
 
     .. grid-item-card:: Relative Free Energy Protocol
-        :img-top: _static/Rocket.svg
+        :img-top: _static/Rocket.png
         :text-align: center
 
         Some blurb
