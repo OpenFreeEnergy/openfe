@@ -11,6 +11,8 @@ dependencies:
 - python=3.9
 - sphinx
 - sphinx-click
+- openff-models>=0.0.5
 - pip:
+  - sphinx-design
   - sphinx-toolbox
   - git+https://github.com/OpenFreeEnergy/gufe@main
