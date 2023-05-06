@@ -21,7 +21,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/Download.svg
         :text-align: center
         :link: installation
-        :link-type: ref
+        :link-type: doc
 
         New to *OpenFE*? Check out our installation details to get it working on your machine!
         
@@ -29,7 +29,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/Tutorial.svg
         :text-align: center
         :link: tutorials/index
-        :link-type: ref
+        :link-type: doc
 
         Some blurb
         
@@ -37,7 +37,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/UserGuide.svg
         :text-align: center
         :link: guide/index
-        :link-type: ref
+        :link-type: doc
 
         Some blurb
         
@@ -45,7 +45,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/API.svg
         :text-align: center
         :link: reference/index
-        :link-type: ref
+        :link-type: doc
 
         Some blurb
 
@@ -53,7 +53,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/Cookbook.svg
         :text-align: center
         :link: cookbook/index
-        :link-type: ref
+        :link-type: doc
 
         Some blurb
         
@@ -61,7 +61,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/CLI.svg
         :text-align: center
         :link: reference/cli/index
-        :link-type: ref
+        :link-type: doc
 
         Some blurb
         
@@ -69,7 +69,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :img-top: _static/Rocket.svg
         :text-align: center
         :link: reference/api/openmm_rfe
-        :link-type: ref
+        :link-type: doc
 
         Some blurb
 
