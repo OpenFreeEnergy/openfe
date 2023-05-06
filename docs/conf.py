@@ -73,6 +73,14 @@ html_theme_options = {
     "logo": {
         "text": "OpenFE Documentation"
     }
+    "icon_links": [
+        {
+            "name": "Github",
+            "url": "https://github.com/OpenFreeEnergy/openfe",
+            "icon": "fa-brands fa-square-github",
+            "type": "fontawesome",
+        }
+    ]
 }
 html_logo = "_static/Squaredcircle.svg"
 
