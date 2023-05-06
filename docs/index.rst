@@ -23,7 +23,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: installation
         :link-type: doc
 
-        New to *OpenFE*? Check out our installation details to get it working on your machine!
+        New to *OpenFE*? Check out our installation guide to get it working on your machine!
         
     .. grid-item-card:: Tutorials
         :img-top: _static/Tutorial.svg
@@ -31,7 +31,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: tutorials/index
         :link-type: doc
 
-        Some blurb
+        Worked through examples of how to use the OpenFE toolkit.
         
     .. grid-item-card:: User Guide
         :img-top: _static/UserGuide.svg
@@ -39,7 +39,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: guide/index
         :link-type: doc
 
-        Some blurb
+        Learn about the underlying concepts of the OpenFE toolkit.
         
     .. grid-item-card:: API Reference
         :img-top: _static/API.svg
@@ -47,7 +47,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: reference/index
         :link-type: doc
 
-        Some blurb
+        Get details on the toolkit's core methods and classes.
 
     .. grid-item-card:: Cookbook
         :img-top: _static/Cookbook.svg
@@ -55,7 +55,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: cookbook/index
         :link-type: doc
 
-        Some blurb
+        How-to guides on how to utilise the toolkit components.
         
     .. grid-item-card:: Using the CLI
         :img-top: _static/CLI.svg
@@ -63,7 +63,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: reference/cli/index
         :link-type: doc
 
-        Some blurb
+        Reference guide on using the OpenFE CLI.
         
     .. grid-item-card:: Relative Free Energy Protocol
         :img-top: _static/Rocket.svg
@@ -71,7 +71,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link: reference/api/openmm_rfe
         :link-type: doc
 
-        Some blurb
+        Documentation for OpenFE's OpenMM-based Hybrid Topology Relative Free
+        Energy Protocol.
 
 
 .. toctree::
