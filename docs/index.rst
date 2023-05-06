@@ -2,9 +2,9 @@
 
 .. module:: openfe
 
-==================================
-Welcome to OpenFE's documentation!
-==================================
+====================================
+Welcome to the OpenFE documentation!
+====================================
 
 **Version:**: |version|
 
@@ -34,7 +34,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
         Some blurb
         
-        .. button-ref:: tutorials
+        .. button-ref:: tutorials/index
             :expand:
             :color: primary
             :click-parent:
@@ -45,7 +45,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
         Some blurb
         
-        .. button-ref:: guide
+        .. button-ref:: guide/index
             :expand:
             :color: primary
             :click-parent:
@@ -56,7 +56,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
         Some blurb
         
-        .. button-ref:: cookbook
+        .. button-ref:: cookbook/index
             :expand:
             :color: primary
             :click-parent:
@@ -67,7 +67,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
         Some blurb
         
-        .. button-ref:: reference
+        .. button-ref:: reference/index
             :expand:
             :color: primary
             :click-parent:
@@ -78,7 +78,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
         Some blurb
         
-        .. button-ref:: reference/cli
+        .. button-ref:: reference/cli/index
             :expand:
             :color: primary
             :click-parent:
@@ -108,7 +108,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
    reference/index
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

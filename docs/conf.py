@@ -70,7 +70,11 @@ autodoc_mock_imports = ['openff.models',
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
-
+html_theme_options = {
+    "logo": {
+        "text": "OpenFE"
+    }
+}
 html_logo = "_static/Squaredcircle.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
