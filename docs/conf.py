@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import openfe
 sys.path.insert(0, os.path.abspath('../'))
 
 
@@ -22,7 +23,7 @@ os.environ['SPHINX'] = 'True'
 project = 'OpenFE'
 copyright = '2022, The OpenFE Development Team'
 author = 'The OpenFE Development Team'
-
+version = re.sub(r'\.dev-.*$', r'.dev', openfe.__version__)
 
 # -- General configuration ---------------------------------------------------
 

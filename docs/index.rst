@@ -8,7 +8,7 @@ Welcome to the OpenFE documentation!
 
 **Version:**: |version|
 
-**useful links**:
+**Useful Links**:
 `OpenFE Website <https://openfree.energy/>`__ |
 `Example Tutorial notebooks <https://github.com/OpenFreeEnergy/ExampleNotebooks/>`__ |
 `Source Repository <https://github.com/OpenFreeEnergy/openfe/>`__ |
