@@ -21,80 +21,80 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
     .. grid-item-card:: Installing OpenFE
 
-        New to **OpenFE**? Check out our installation details to get it working on your machine!
+        New to *OpenFE*? Check out our installation details to get it working on your machine!
         
         .. button-ref:: installation
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To The Installation Information
             
     .. grid-item-card:: Tutorials
 
         Some blurb
         
-        .. button-ref:: installation
+        .. button-ref:: tutorials
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To The Tutorials
 
-    .. grid-item-card:: Tutorials
+    .. grid-item-card:: User Guide
 
         Some blurb
         
-        .. button-ref:: installation
+        .. button-ref:: guide
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To The User Guide
             
     .. grid-item-card:: Cookbook
 
         Some blurb
         
-        .. button-ref:: installation
+        .. button-ref:: cookbook
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To The Cookbook
 
     .. grid-item-card:: API Reference
 
         Some blurb
         
-        .. button-ref:: installation
+        .. button-ref:: reference
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To The API Reference
 
     .. grid-item-card:: Using the CLI
 
         Some blurb
         
-        .. button-ref:: installation
+        .. button-ref:: reference/cli
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To CLI Documentation
 
     .. grid-item-card:: Relative Free Energy Protocol
 
         Some blurb
         
-        .. button-ref:: installation
+        .. button-ref:: reference/api/openmm_rfe
             :expand:
             :color: primary
             :click-parent:
             
-            To the installation information
+            To The RFE Protocol Documentation
 
 
 .. toctree::
