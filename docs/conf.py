@@ -23,7 +23,6 @@ project = 'OpenFE'
 copyright = '2022, The OpenFE Development Team'
 author = 'The OpenFE Development Team'
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -35,7 +34,8 @@ extensions = [
     'sphinx_click.ext',
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_toolbox.collapse',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinx_design',
 ]
 
 autoclass_content = 'both'
@@ -69,6 +69,20 @@ autodoc_mock_imports = ['openff.models',
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
+html_theme_options = {
+    "logo": {
+        "text": "OpenFE Documentation"
+    },
+    "icon_links": [
+        {
+            "name": "Github",
+            "url": "https://github.com/OpenFreeEnergy/openfe",
+            "icon": "fa-brands fa-square-github",
+            "type": "fontawesome",
+        }
+    ]
+}
+html_logo = "_static/Squaredcircle.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
