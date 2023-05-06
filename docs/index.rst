@@ -6,8 +6,6 @@
 Welcome to the OpenFE documentation!
 ====================================
 
-**Version:**: |version|
-
 **Useful Links**:
 `OpenFE Website <https://openfree.energy/>`__ |
 `Example Tutorial notebooks <https://github.com/OpenFreeEnergy/ExampleNotebooks/>`__ |
@@ -21,6 +19,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
     .. grid-item-card:: Installing OpenFE
         :img-top: _static/Download.svg
+        :text-align: center
 
         New to *OpenFE*? Check out our installation details to get it working on your machine!
         
@@ -32,7 +31,8 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The Installation Information
             
     .. grid-item-card:: Tutorials
-        :img-top: _static/Tutorial.svg
+        :img-top: _static/Tutorial.svga
+        :text-align: center
 
         Some blurb
         
@@ -45,6 +45,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
     .. grid-item-card:: User Guide
         :img-top: _static/UserGuide.svg
+        :text-align: center
 
         Some blurb
         
@@ -57,6 +58,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             
     .. grid-item-card:: Cookbook
         :img-top: _static/Cookbook.svg
+        :text-align: center
 
         Some blurb
         
@@ -69,6 +71,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
     .. grid-item-card:: API Reference
         :img-top: _static/API.svg
+        :text-align: center
 
         Some blurb
         
@@ -81,6 +84,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
     .. grid-item-card:: Using the CLI
         :img-top: _static/CLI.svg
+        :text-align: center
 
         Some blurb
         
@@ -93,6 +97,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
 
     .. grid-item-card:: Relative Free Energy Protocol
         :img-top: _static/Rocket.svg
+        :text-align: center
 
         Some blurb
         

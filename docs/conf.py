@@ -12,7 +12,6 @@
 #
 import os
 import sys
-import openfe
 sys.path.insert(0, os.path.abspath('../'))
 
 
@@ -23,7 +22,6 @@ os.environ['SPHINX'] = 'True'
 project = 'OpenFE'
 copyright = '2022, The OpenFE Development Team'
 author = 'The OpenFE Development Team'
-version = re.sub(r'\.dev-.*$', r'.dev', openfe.__version__)
 
 # -- General configuration ---------------------------------------------------
 
@@ -73,7 +71,7 @@ autodoc_mock_imports = ['openff.models',
 html_theme = 'pydata_sphinx_theme'
 html_theme_options = {
     "logo": {
-        "text": "OpenFE"
+        "text": "OpenFE Documentation"
     }
 }
 html_logo = "_static/Squaredcircle.svg"
