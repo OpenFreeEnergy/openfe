@@ -22,9 +22,10 @@ OUTPUT_FILE_AND_EXT = Option(
     type=click.File(mode='wb'),
 )
 
-LIGAND_NETWORK = Option(
-    "-L", "--ligand-network",
-    help="output ligand network graphml",
-    type=click.File(mode="w"),
-    getter=lambda x, ctx: x
+OUTPUT_LIGAND_NETWORK = click.option(
+    "-L", "--output-ligand-network",
+    help="whether output ligand network graphml",
+    is_flag=True,
+    default=True,
+    show_default=True
 )

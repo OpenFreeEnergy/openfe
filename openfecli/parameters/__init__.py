@@ -3,7 +3,7 @@
 
 from .mol import MOL
 from .mapper import MAPPER
-from .output import OUTPUT_FILE_AND_EXT, LIGAND_NETWORK
+from .output import OUTPUT_FILE_AND_EXT, OUTPUT_LIGAND_NETWORK
 from .output_dir import OUTPUT_DIR
 from .protein import PROTEIN
 from .molecules import MOL_DIR

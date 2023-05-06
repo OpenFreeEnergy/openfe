@@ -8,14 +8,14 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, LIGAND_NETWORK
+    MOL_DIR, MAPPER, OUTPUT_DIR, OUTPUT_LIGAND_NETWORK
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, ligand_network
+    solvent, output_ligand_network
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -40,7 +40,7 @@ def plan_rhfe_network_main(
         Alchemical network with protocol for executing simulations.
     """
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RHFEAlchemicalNetworkPlanner,
+        RHFEAlchemicalNetworkPlanner
     )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
@@ -51,11 +51,8 @@ def plan_rhfe_network_main(
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent
     )
-    if ligand_network:
-        write(f"Writing ligand network to {str(ligand_network)}")
-        ligand_network.write(network_planner._ligand_network.to_graphml())
 
-    return alchemical_network
+    return alchemical_network, network_planner._ligand_network
 
 
 @click.command(
@@ -73,10 +70,10 @@ def plan_rhfe_network_main(
     default="alchemicalNetwork",
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
-@LIGAND_NETWORK.parameter(required=False)
+@OUTPUT_LIGAND_NETWORK
 @print_duration
 def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
-                      ligand_network):
+                      output_ligand_network):
     """
     Plan a relative hydration free energy network, saved in a dir with
     multiple JSON files.
@@ -144,13 +141,13 @@ def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
 
     # DO
     write("Planning RHFE-Campaign:")
-    alchemical_network = plan_rhfe_network_main(
+    alchemical_network, ligand_network = plan_rhfe_network_main(
         mapper=mapper_obj,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
-        ligand_network=ligand_network,
+        output_ligand_network=output_ligand_network,
     )
     write("\tDone")
     write("")
@@ -158,8 +155,12 @@ def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + output_dir)
+    if not output_ligand_network:
+        ligand_network = None
+
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
+        ligand_network=ligand_network,
         folder_path=OUTPUT_DIR.get(output_dir),
     )
 
