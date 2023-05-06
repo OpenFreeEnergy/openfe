@@ -8,3 +8,4 @@ OpenFE API Reference
     alchemical_data_objects
     ligand_network
     alchemical_network_planning
+    openmm_rfe

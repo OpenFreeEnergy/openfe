@@ -14,35 +14,106 @@ Installing ``openfe``
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
 
-Installation with ``micromamba`` (recommended)
+Installation with ``mambaforge`` (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We recommend installing ``openfe`` with `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#micromamba>`_, because it provides easy
+We recommend installing ``openfe`` with `mambaforge <https://github.com/conda-forge/miniforge#mambaforge>`_, because it provides easy
 installation of other tools, including molecular dynamics tools such as
 OpenMM and ambertools, which are needed by ``openfe``.
+We recommend ``mambaforge`` because it is faster than ``conda`` and comes
+preconfigured to use ``conda-forge``.
 
-To install ``micromamba`` execute the `installation script <https://mamba.readthedocs.io/en/latest/installation.html#install-script>`_.
-We recommend ``micromamba`` because it is faster than ``mamba`` and ``conda`` and does not require a ``base`` environment. 
+To install and configure ``mambaforge``, you need to know your operating
+system, your machine architecture (output of ``uname -m``), and your shell
+(in most cases, can be determined from ``echo $SHELL``). Select
+your operating system and architecture from the tool below, and run the
+commands it suggests.
 
-On Linux the default shell is ``bash`` ::
-  
-  $ curl micro.mamba.pm/install.sh | bash
+.. raw:: html
 
-And on macOS the default shell is ``zsh`` ::
+    <select id="mambaforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
+        <option value="Linux">Linux</option>
+        <option value="MacOSX">macOS</option>
+    </select>
+    <select id="mambaforge-architecture" onchange="updateInstructions()">
+    </select>
+    <select id="mambaforge-shell" onchange="updateInstructions()">
+        <option value="bash">bash</option>
+        <option value="zsh">zsh</option>
+        <option value="tcsh">tcsh</option>
+        <option value="fish">fish</option>
+        <option value="xonsh">xonsh</option>
+    </select>
+    <br />
+    <pre><span id="mambaforge-curl-install"></span></pre>
+    <script>
+      function setArchitectureOptions(os) {
+          let options = {
+              "MacOSX": [
+                  ["x86_64", ""],
+                  ["arm64", " (Apple Silicon)"]
+              ],
+              "Linux": [
+                  ["x86_64", " (amd64)"],
+                  ["aarch64", " (arm64)"],
+                  ["ppc64le", " (POWER8/9)"]
+              ]
+          };
+          choices = options[os];
+          let htmlString = ""
+          for (const [val, extra] of choices) {
+              htmlString += `<option value="${val}">${val}${extra}</option>`;
+          }
+          let arch = document.getElementById("mambaforge-architecture");
+          arch.innerHTML = htmlString
+          updateInstructions()
+      }
 
-  $ curl micro.mamba.pm/install.sh | zsh
+      function updateInstructions() {
+          let cmd = document.getElementById("mambaforge-curl-install");
+          let osElem = document.getElementById("mambaforge-os");
+          let archElem = document.getElementById("mambaforge-architecture");
+          let shellElem = document.getElementById("mambaforge-shell");
+          let os = osElem[osElem.selectedIndex].value;
+          let arch = archElem[archElem.selectedIndex].value;
+          let shell = shellElem[shellElem.selectedIndex].value;
+          let filename = "Mambaforge-" + os + "-" + arch + ".sh"
+          let cmdArr = [
+              (
+                  "curl -OL https://github.com/conda-forge/miniforge/"
+                  + "releases/latest/download/" + filename
+              ),
+              "sh " + filename + " -b",
+              "~/mambaforge/bin/mamba init " + shell,
+              "rm -f " + filename,
+          ]
+          cmd.innerHTML = cmdArr.join("\n")
+      }
 
-Now we will set the channel where packages are downloaded from to ``conda-forge`` ::
+      setArchitectureOptions("Linux");  // default
+    </script>
 
-  $ micromamba config append channels conda-forge
+You should then close your current session and open a fresh login to ensure
+that everything is properly registered.
 
-This command will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
+Next we will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
 
-  $ micromamba create -n openfe_env openfe
+  $ mamba create -n openfe_env openfe
 
 Now we need to activate our new environment ::
 
-  $ micromamba activate openfe_env
+  $ mamba activate openfe_env
+
+
+.. warning::
+
+   Installing on newer Macs with Apple Silicon requires a creating an x86_64
+   environmment, as one of our requirements is not yet available for Apple
+   Silicon. Run the following modified commands::
+
+      CONDA_SUBDIR=osx-64 mamba create -n openfe_env openfe
+      mamba activate openfe_env
+      mamba env config vars set CONDA_SUBDIR=osx-64
 
 To make sure everything is working, run the tests ::
 
@@ -314,7 +385,7 @@ functionality. This is called a "developer" or "editable" installation.
 
 Getting a developer installation for ``openfe`` first installing the
 requirements, and then creating the editable installation. We recommend
-doing that with ``micromamba`` using the following procedure:
+doing that with ``mamba`` using the following procedure:
 
 First, clone the ``openfe`` repository, and switch into its root directory::
 
@@ -324,11 +395,11 @@ First, clone the ``openfe`` repository, and switch into its root directory::
 Next create a ``conda`` environment containing the requirements from the
 specification in that directory::
 
-  $ micromamba create -f environment.yml
+  $ mamba create -f environment.yml
 
 Then activate the ``openfe`` environment with::
 
-  $ micromamba activate openfe_env
+  $ mamba activate openfe_env
 
 Finally, create the editable installation::
 
@@ -346,4 +417,4 @@ optional packages.
 * **perses tools**: To use perses, you need to install perses and OpenEye,
   and you need a valid OpenEye license. To install both packages, use::
 
-    $ micromamba install -c openeye perses openeye-toolkits
+    $ mamba install -c openeye perses openeye-toolkits

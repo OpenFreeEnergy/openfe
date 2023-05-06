@@ -15,12 +15,13 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 
 
+os.environ['SPHINX'] = 'True'
+
 # -- Project information -----------------------------------------------------
 
 project = 'OpenFE'
 copyright = '2022, The OpenFE Development Team'
 author = 'The OpenFE Development Team'
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -33,13 +34,16 @@ extensions = [
     'sphinx_click.ext',
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_toolbox.collapse',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinx_design',
 ]
 
 autoclass_content = 'both'
 # Make sure labels are unique
 # https://www.sphinx-doc.org/en/master/usage/extensions/autosectionlabel.html#confval-autosectionlabel_prefix_document
 autosectionlabel_prefix_document = True
+
+autodoc_pydantic_model_show_json = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -65,6 +69,20 @@ autodoc_mock_imports = ['openff.models',
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
+html_theme_options = {
+    "logo": {
+        "text": "OpenFE Documentation"
+    },
+    "icon_links": [
+        {
+            "name": "Github",
+            "url": "https://github.com/OpenFreeEnergy/openfe",
+            "icon": "fa-brands fa-square-github",
+            "type": "fontawesome",
+        }
+    ]
+}
+html_logo = "_static/Squaredcircle.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

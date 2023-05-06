@@ -2,14 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 
-"""
-Here I want to build the cmd tool for easy campaigner with RHFE. The output should be runnable with quickrun directly!
-    So user experience would be:
-        easy_campaign -l sdf_dir -p receptor.pdb -> Alchem network
-        quickrun -i alchem_network
-
-"""
-
 import click
 from typing import List
 
@@ -68,7 +60,10 @@ def plan_rhfe_network_main(
 
 @click.command(
     "plan-rhfe-network",
-    short_help="Plan a relative hydration free energy network, saved in a dir with multiple JSON files",
+    short_help=(
+        "Plan a relative hydration free energy network, with each leg "
+        "saved as a JSON file"
+    ),
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
@@ -80,22 +75,33 @@ def plan_rhfe_network_main(
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
 @LIGAND_NETWORK.parameter(required=False)
 @print_duration
-def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str,
+def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
                       ligand_network):
-    """Plan a relative hydration free energy network, saved in a dir with multiple JSON files.
+    """
+    Plan a relative hydration free energy network, saved in a dir with
+    multiple JSON files.
 
-    This tool is an easy way to setup a RHFE-Calculation Campaign. This can be useful for testing our tools.
-    Plan-rhfe-network finds a reasonable network of transformations and adds the openfe rbfe protocol of year one to the transformations.
-    The output of the command can be used, in order to run the planned transformations with the quickrun tool.
-    For more sophisticated setups, please consider using the python layer of openfe.
-    
+    This tool is an easy way to setup a RHFE-Calculation Campaign. This can
+    be useful for testing our tools.  Plan-rhfe-network finds a reasonable
+    network of transformations and adds the openfe rbfe protocol of year one
+    to the transformations.  The output of the command can be used, in order
+    to run the planned transformations with the quickrun tool.  For more
+    sophisticated setups, please consider using the python layer of openfe.
 
-    The tool will parse the input and run the rbfe network planner, which executes following steps:
-        1. generate an atom mapping for all possible ligand pairs. (default: Lomap) 
-        2. score all atom mappings. (default: Lomap default score) 
-        3. build network form all atom mapping scores (default: minimal spanning graph) 
-        
-    The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
+    The tool will parse the input and run the rbfe network planner, which
+    executes following steps:
+
+        1. generate an atom mapping for all possible ligand pairs. (default:
+           Lomap)
+
+        2. score all atom mappings. (default: Lomap default score)
+
+        3. build network form all atom mapping scores (default: minimal
+           spanning graph)
+
+    The generated Network will be stored in a folder containing for each
+    transformation a JSON file, that can be run with quickrun (or other
+    future tools).
     """
     from gufe import SolventComponent
     from openfe.setup.atom_mapping.lomap_scorers import (
@@ -113,7 +119,7 @@ def plan_rhfe_network(mol_dir: List[str], output_dir: str, mapper: str,
     write("Parsing in Files: ")
     write("\tGot input: ")
 
-    small_molecules = MOL_DIR.get(mol_dir)
+    small_molecules = MOL_DIR.get(molecules)
     write(
         "\t\tSmall Molecules: "
         + " ".join([str(sm) for sm in small_molecules])

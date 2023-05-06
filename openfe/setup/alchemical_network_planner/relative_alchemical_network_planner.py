@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
 import copy
-from typing import Iterable, Callable, Type
+from typing import Iterable, Callable, Type, Optional
 
 from gufe import (
     Protocol,
@@ -47,12 +47,10 @@ class RelativeAlchemicalNetworkPlanner(
     def __init__(
         self,
         name: str = "easy_rfe_calculation",
-        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
+        mappers: Optional[Iterable[LigandAtomMapper]] = None,
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
-        protocol: Protocol = RelativeHybridTopologyProtocol(
-            RelativeHybridTopologyProtocol.default_settings()
-        ),
+        protocol: Optional[Protocol] = None,
     ):
         """A simple strategy for executing a given protocol with mapper, mapping_scorers and networks for relative FE approaches.
 
@@ -67,8 +65,13 @@ class RelativeAlchemicalNetworkPlanner(
         ligand_network_planner : Callable, optional
             network using mapper and mapping_scorer to build up an optimal network, by default generate_minimal_spanning_network
         protocol : Protocol, optional
-            FE-protocol for each transformation (edge of ligand network) that is required in order to calculate the FE graph, by default RelativeHybridTopologyProtocol( RelativeHybridTopologyProtocol._default_settings() )
+            FE-protocol for each transformation (edge of ligand network) that is required in order to calculate the
+            FE graph, by default RelativeHybridTopologyProtocol( RelativeHybridTopologyProtocol._default_settings() )
         """
+        if protocol is None:
+            protocol = RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings())
+        if mappers is None:
+            mappers = [LomapAtomMapper()]
 
         # TODO: Remove as soon as element Changes are possible. - START
         for mapper in mappers:
@@ -236,12 +239,10 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name: str = "easy_rhfe",
-        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
+        mappers: Optional[Iterable[LigandAtomMapper]] = None,
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
-        protocol: Protocol = RelativeHybridTopologyProtocol(
-            RelativeHybridTopologyProtocol.default_settings()
-        ),
+        protocol: Optional[Protocol] = None,
     ):
         super().__init__(
             name=name,
@@ -321,12 +322,10 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
         self,
         name: str = "easy_rbfe",
-        mappers: Iterable[LigandAtomMapper] = [LomapAtomMapper()],
+        mappers: Optional[Iterable[LigandAtomMapper]] = None,
         mapping_scorer: Callable = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
-        protocol: Protocol = RelativeHybridTopologyProtocol(
-            RelativeHybridTopologyProtocol._default_settings()
-        ),
+        protocol: Optional[Protocol] = None,
     ):
         super().__init__(
             name=name,
