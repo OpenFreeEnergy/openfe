@@ -14,7 +14,7 @@ Welcome to the OpenFE documentation!
 
 The **OpenFE** toolkit provides open-source frameworks for calculating alchemical free energies.
 
-.. grid:: 3
+.. grid:: 4
     :gutter: 3
 
     .. grid-item-card:: Installing OpenFE
@@ -55,7 +55,20 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             :click-parent:
             
             To The User Guide
-            
+ 
+    .. grid-item-card:: API Reference
+        :img-top: _static/API.svg
+        :text-align: center
+
+        Some blurb
+
+        .. button-ref:: reference/index
+            :expand:
+            :color: primary
+            :click-parent:
+
+            To The API Reference
+
     .. grid-item-card:: Cookbook
         :img-top: _static/Cookbook.svg
         :text-align: center
@@ -68,19 +81,6 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             :click-parent:
             
             To The Cookbook
-
-    .. grid-item-card:: API Reference
-        :img-top: _static/API.svg
-        :text-align: center
-
-        Some blurb
-        
-        .. button-ref:: reference/index
-            :expand:
-            :color: primary
-            :click-parent:
-            
-            To The API Reference
 
     .. grid-item-card:: Using the CLI
         :img-top: _static/CLI.svg
