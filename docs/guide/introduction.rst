@@ -4,7 +4,7 @@ Introduction
 ============
 
 Here we present an overview of the workflow for calculating free energies in
-OpenFE, in the broadest strokes possible This workflow is reflected in both
+OpenFE in the broadest strokes possible. This workflow is reflected in both
 the Python API and in the command line interface, and so we have a section
 for each.
 
