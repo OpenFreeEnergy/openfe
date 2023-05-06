@@ -271,19 +271,31 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    online_analysis_interval: Optional[int] = None
+    online_analysis_interval: Optional[int] = 200
     """
-    Interval at which to perform an analysis of the free energies.
-    At each interval the free energy is estimate and the simulation is
-    considered complete if the free energy estimate is below
-    ``online_analysis_target_error``. If set, will write a yaml file with
-    real time analysis data. Default `None`.
+    MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
+    to perform an analysis of the free energies.
+
+    At each interval, real time analysis data (e.g. current free energy
+    estimate and timing data) will be written to a yaml file named 
+    ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
+    current error in the estimate will also be assed and if it drops
+    below ``AlchemicalSamplerSettings.online_analysis_target_error``
+    the simulation will be terminated.
+
+    If ``None``, no real time analysis will be performed and the yaml
+    file will not be written.
+
+    Default `200`.
     """
-    online_analysis_target_error = 0.1 * unit.boltzmann_constant * unit.kelvin
+    online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
-    is at or below this value, the simulation will be considered complete.
-    Default 0.1 * unit.bolzmann_constant * unit.kelvin
+    is at or below this value, the simulation will be considered complete. A
+    suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
+    shown to be effective in both hydration and binding free energy benchmarks.
+    Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
+    termination will occur.
     """
     online_analysis_minimum_iterations = 500
     """
