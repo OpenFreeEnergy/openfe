@@ -31,7 +31,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
             To The Installation Information
             
     .. grid-item-card:: Tutorials
-        :img-top: _static/Tutorial.svga
+        :img-top: _static/Tutorial.svg
         :text-align: center
 
         Some blurb
