@@ -21,11 +21,3 @@ OUTPUT_FILE_AND_EXT = Option(
     getter=get_file_and_extension,
     type=click.File(mode='wb'),
 )
-
-OUTPUT_LIGAND_NETWORK = click.option(
-    "-L", "--output-ligand-network",
-    help="whether output ligand network graphml",
-    is_flag=True,
-    default=True,
-    show_default=True
-)

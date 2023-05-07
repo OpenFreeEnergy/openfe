@@ -8,14 +8,14 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, OUTPUT_LIGAND_NETWORK
+    MOL_DIR, MAPPER, OUTPUT_DIR,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, output_ligand_network
+    solvent,
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -70,10 +70,8 @@ def plan_rhfe_network_main(
     default="alchemicalNetwork",
 )
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
-@OUTPUT_LIGAND_NETWORK
 @print_duration
-def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
-                      output_ligand_network):
+def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str):
     """
     Plan a relative hydration free energy network, saved in a dir with
     multiple JSON files.
@@ -147,7 +145,6 @@ def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
-        output_ligand_network=output_ligand_network,
     )
     write("\tDone")
     write("")
@@ -155,9 +152,6 @@ def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str,
     # OUTPUT
     write("Output:")
     write("\tSaving to: " + output_dir)
-    if not output_ligand_network:
-        ligand_network = None
-
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
         ligand_network=ligand_network,

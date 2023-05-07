@@ -36,8 +36,7 @@ def print_test_with_file(
     print(solvent)
 
 
-@pytest.mark.parametrize('output_ligand_network', [True, False])
-def test_plan_rhfe_network_main(output_ligand_network):
+def test_plan_rhfe_network_main():
     import os, glob
     from gufe import SmallMoleculeComponent, SolventComponent
     from openfe.setup import (
@@ -61,7 +60,6 @@ def test_plan_rhfe_network_main(output_ligand_network):
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
-        output_ligand_network=output_ligand_network,
     )
 
     assert alchemical_network

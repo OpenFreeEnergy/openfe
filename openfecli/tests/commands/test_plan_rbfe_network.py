@@ -50,8 +50,7 @@ def print_test_with_file(
     print(protein)
 
 
-@pytest.mark.parametrize('output_ligand_network', [True, False])
-def test_plan_rbfe_network_main(output_ligand_network):
+def test_plan_rbfe_network_main():
     import os, glob
     from gufe import (
         ProteinComponent,
@@ -86,7 +85,6 @@ def test_plan_rbfe_network_main(output_ligand_network):
         small_molecules=smallM_components,
         solvent=solvent_component,
         protein=protein_compontent,
-        output_ligand_network=output_ligand_network,
     )
     print(alchemical_network)
 
