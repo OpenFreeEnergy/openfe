@@ -7,12 +7,15 @@ from typing import List
 
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, MAPPER, OUTPUT_DIR
+from openfecli.parameters import (
+    MOL_DIR, MAPPER, OUTPUT_DIR,
+)
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
 def plan_rhfe_network_main(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
+    mapper, mapping_scorer, ligand_network_planner, small_molecules,
+    solvent,
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -31,11 +34,12 @@ def plan_rhfe_network_main(
 
     Returns
     -------
-    AlchemicalNetwork
-        Alchemical network with protocol for executing simulations.
+    Tuple[AlchemicalNetwork, LigandNetwork]
+        Alchemical network with protocol for executing simulations, and the
+        associated ligand network
     """
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RHFEAlchemicalNetworkPlanner,
+        RHFEAlchemicalNetworkPlanner
     )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
@@ -47,7 +51,7 @@ def plan_rhfe_network_main(
         ligands=small_molecules, solvent=solvent
     )
 
-    return alchemical_network
+    return alchemical_network, network_planner._ligand_network
 
 
 @click.command(
@@ -134,7 +138,7 @@ def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str):
 
     # DO
     write("Planning RHFE-Campaign:")
-    alchemical_network = plan_rhfe_network_main(
+    alchemical_network, ligand_network = plan_rhfe_network_main(
         mapper=mapper_obj,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
@@ -149,6 +153,7 @@ def plan_rhfe_network(molecules: List[str], output_dir: str, mapper: str):
     write("\tSaving to: " + output_dir)
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
+        ligand_network=ligand_network,
         folder_path=OUTPUT_DIR.get(output_dir),
     )
 
