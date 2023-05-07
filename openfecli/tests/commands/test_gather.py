@@ -12,7 +12,7 @@ def results_dir(tmpdir):
     with tmpdir.as_cwd():
         with resources.path('openfecli.tests.data', 'results.tar.gz') as f:
             t = tarfile.open(f, mode='r')
-            t.extractall('res')
+            t.extractall('.')
 
         yield
 
@@ -72,7 +72,7 @@ DGsolvent(lig_4, lig_7)\t-3.3\t+-0.15
 def test_gather(results_dir, ref_gather):
     runner = CliRunner()
 
-    result = runner.invoke(gather, ['res', '-o', '-'])
+    result = runner.invoke(gather, ['results', '-o', '-'])
 
     assert result.exit_code == 0
 
