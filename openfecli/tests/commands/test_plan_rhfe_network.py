@@ -21,15 +21,9 @@ def mol_dir_args():
     return ["--molecules", ofe_dir_path]
 
 
-@pytest.fixture
-def mapper_args():
-    return ["--mapper", "LomapAtomMapper"]
-
-
 def print_test_with_file(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
+    mapping_scorer, ligand_network_planner, small_molecules, solvent
 ):
-    print(mapper)
     print(mapping_scorer)
     print(ligand_network_planner)
     print(small_molecules)
@@ -66,11 +60,11 @@ def test_plan_rhfe_network_main():
     assert ligand_network
 
 
-def test_plan_rhfe_network(mol_dir_args, mapper_args):
+def test_plan_rhfe_network(mol_dir_args):
     """
     smoke test
     """
-    args = mol_dir_args + mapper_args
+    args = mol_dir_args
     expected_output = [
         "RHFE-NETWORK PLANNER",
         "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",

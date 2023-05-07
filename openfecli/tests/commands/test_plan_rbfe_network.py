@@ -29,13 +29,7 @@ def protein_args():
         return ["--protein", file_path]
 
 
-@pytest.fixture
-def mapper_args():
-    return ["--mapper", "LomapAtomMapper"]
-
-
 def print_test_with_file(
-    mapper,
     mapping_scorer,
     ligand_network_planner,
     small_molecules,
@@ -89,11 +83,11 @@ def test_plan_rbfe_network_main():
     print(alchemical_network)
 
 
-def test_plan_rbfe_network(mol_dir_args, protein_args, mapper_args):
+def test_plan_rbfe_network(mol_dir_args, protein_args):
     """
     smoke test
     """
-    args = mol_dir_args + protein_args + mapper_args
+    args = mol_dir_args + protein_args
     expected_output = [
         "RBFE-NETWORK PLANNER",
         "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",

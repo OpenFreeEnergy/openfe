@@ -72,10 +72,9 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
-@MAPPER.parameter(required=False, default="LomapAtomMapper")
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, output_dir: str, mapper: str,
+    molecules: List[str], protein: str, output_dir: str
 ):
     """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
 
@@ -97,6 +96,7 @@ def plan_rbfe_network(
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
     )
+    from openfe.setup import LomapAtomMapper
     from openfe.setup.ligand_network_planning import (
         generate_minimal_spanning_network,
     )
@@ -123,7 +123,7 @@ def plan_rbfe_network(
     write("")
 
     write("Using Options:")
-    mapper_obj = MAPPER.get(mapper)()
+    mapper_obj = LomapAtomMapper(element_change=False)
     write("\tMapper: " + str(mapper_obj))
 
     # TODO:  write nice parameter
