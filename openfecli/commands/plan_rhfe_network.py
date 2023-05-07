@@ -124,7 +124,7 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
     write("")
 
     write("Using Options:")
-    mapper_obj = LomapAtomMapper(element_change=False)
+    mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
     write("\tMapper: " + str(mapper_obj))
 
     # TODO:  write nice parameter
