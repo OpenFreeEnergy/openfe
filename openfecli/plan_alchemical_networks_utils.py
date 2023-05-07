@@ -27,11 +27,10 @@ def plan_alchemical_network_output(
     json.dump(an_dict, an_json.open(mode="w"), cls=tokenization.JSON_HANDLER.encoder)
     write("\t\t- " + base_name + ".json")
 
-    if ligand_network:
-        ln_fname = "ligand_network.graphml"
-        with open(folder_path / ln_fname, mode='w') as f:
-            f.write(ligand_network.to_graphml())
-        write(f"\t\t- {ln_fname}")
+    ln_fname = "ligand_network.graphml"
+    with open(folder_path / ln_fname, mode='w') as f:
+        f.write(ligand_network.to_graphml())
+    write(f"\t\t- {ln_fname}")
 
     transformations_dir = folder_path / "transformations"
     transformations_dir.mkdir(parents=True, exist_ok=True)
