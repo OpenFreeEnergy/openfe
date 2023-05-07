@@ -8,6 +8,7 @@ import pathlib
 from openfecli.utils import write
 import typing
 
+
 def plan_alchemical_network_output(
     alchemical_network: AlchemicalNetwork,
     ligand_network: LigandNetwork,
