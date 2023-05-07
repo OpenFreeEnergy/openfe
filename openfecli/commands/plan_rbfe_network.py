@@ -1,16 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-"""
-
-
-"""
-
 import click
 from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
+from openfecli.parameters import (
+    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
+)
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
@@ -41,8 +38,9 @@ def plan_rbfe_network_main(
 
     Returns
     -------
-    AlchemicalNetwork
-        Alchemical network with protocol for executing simulations.
+    Tuple[AlchemicalNetwork, LigandNetwork]
+        Alchemical network with protocol for executing simulations, and the
+        associated ligand network
     """
 
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
@@ -57,8 +55,7 @@ def plan_rbfe_network_main(
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent, protein=protein
     )
-
-    return alchemical_network
+    return alchemical_network, network_planner._ligand_network
 
 
 @click.command(
@@ -78,7 +75,7 @@ def plan_rbfe_network_main(
 @MAPPER.parameter(required=False, default="LomapAtomMapper")
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, output_dir: str, mapper: str
+    molecules: List[str], protein: str, output_dir: str, mapper: str,
 ):
     """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
 
@@ -140,7 +137,7 @@ def plan_rbfe_network(
 
     # DO
     write("Planning RBFE-Campaign:")
-    alchemical_network = plan_rbfe_network_main(
+    alchemical_network, ligand_network = plan_rbfe_network_main(
         mapper=mapper_obj,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
@@ -156,6 +153,7 @@ def plan_rbfe_network(
     write("\tSaving to: " + str(output_dir))
     plan_alchemical_network_output(
         alchemical_network=alchemical_network,
+        ligand_network=ligand_network,
         folder_path=OUTPUT_DIR.get(output_dir),
     )
 

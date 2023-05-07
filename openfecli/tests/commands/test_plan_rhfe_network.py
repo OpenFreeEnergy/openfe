@@ -54,7 +54,7 @@ def test_plan_rhfe_network_main():
         ]
 
     solvent_component = SolventComponent()
-    alchemical_network = plan_rhfe_network_main(
+    alchemical_network, ligand_network = plan_rhfe_network_main(
         mapper=LomapAtomMapper(),
         mapping_scorer=lomap_scorers.default_lomap_score,
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
@@ -63,6 +63,7 @@ def test_plan_rhfe_network_main():
     )
 
     assert alchemical_network
+    assert ligand_network
 
 
 def test_plan_rhfe_network(mol_dir_args, mapper_args):
