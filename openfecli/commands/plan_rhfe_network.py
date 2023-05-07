@@ -31,8 +31,6 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
-    ligand_network : pathlib.Path
-        File to output the ligand network into
 
     Returns
     -------
