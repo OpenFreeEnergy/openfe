@@ -50,7 +50,8 @@ def print_test_with_file(
     print(protein)
 
 
-def test_plan_rbfe_network_main():
+@pytest.mark.parametrize('output_ligand_network', [True, False])
+def test_plan_rbfe_network_main(output_ligand_network):
     import os, glob
     from gufe import (
         ProteinComponent,
@@ -78,13 +79,14 @@ def test_plan_rbfe_network_main():
         )
 
     solvent_component = SolventComponent()
-    alchemical_network = plan_rbfe_network_main(
+    alchemical_network, ligand_network = plan_rbfe_network_main(
         mapper=LomapAtomMapper(),
         mapping_scorer=lomap_scorers.default_lomap_score,
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
         protein=protein_compontent,
+        output_ligand_network=output_ligand_network,
     )
     print(alchemical_network)
 
