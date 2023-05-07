@@ -34,8 +34,9 @@ def plan_rhfe_network_main(
 
     Returns
     -------
-    AlchemicalNetwork
-        Alchemical network with protocol for executing simulations.
+    Tuple[AlchemicalNetwork, LigandNetwork]
+        Alchemical network with protocol for executing simulations, and the
+        associated ligand network
     """
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner
