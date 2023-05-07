@@ -116,7 +116,7 @@ class PkgResourceFetcher(_Fetcher):
     def __call__(self, dest_dir):
         for package, filename in self.resources:
             ref = importlib.resources.files(package) / filename
-            write("Fetching {str(ref)}")
+            write(f"Fetching {str(ref)}")
             with importlib.resources.as_file(ref) as f:
                 shutil.copyfile(ref, dest_dir / filename)
 
