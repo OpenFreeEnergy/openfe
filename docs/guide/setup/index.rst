@@ -9,7 +9,7 @@ simulation campaign.
 The first thing you will need to do will be to load in your molecules.
 OpenFE can small molecules from anything that RDKit can handle, and can load
 proteins from PDB or PDBx. For details of this, see
-:ref:`loading molecules <cookbook/loading_molecules>`.
+:ref:`loading molecules <Loading Molecules>`.
 
 The procedure for setting up a simulation depends somewhat on the on the
 type of free energy calculation you are running. See more detailed
@@ -24,7 +24,7 @@ instructions can be found under:
 
 If you intend to set up your alchemical network using the Python interface,
 but to run it using the CLI, you will want to export the network in the same
-format used by the CLI. See :ref:`dumping transformations <cookbook/dumping_transformation>`
+format used by the CLI. See :ref:`dumping transformations <dumping_transformations>`
 for more details.
 
 .. TODO link to docs on outputting the network
