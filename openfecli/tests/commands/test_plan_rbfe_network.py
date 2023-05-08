@@ -93,7 +93,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
         "Protein: ProteinComponent(name=)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
-        "- easy_rbfe_ligand_23_receptor_ligand_55_receptor.json",
+        "- easy_rbfe_ligand_23_complex_ligand_55_complex.json",
         "- easy_rbfe_ligand_23_solvent_ligand_55_solvent.json",
     ]
 

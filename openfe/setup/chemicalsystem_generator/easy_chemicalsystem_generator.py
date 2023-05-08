@@ -102,7 +102,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             if self.solvent is not None:
                 components.update({RFEComponentLabels.SOLVENT: self.solvent})
             chem_sys = ChemicalSystem(
-                components=components, name=component.name + "_receptor"
+                components=components, name=component.name + "_complex"
             )
             yield chem_sys
 
