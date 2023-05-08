@@ -80,6 +80,22 @@ some of the following settings.
    :settings-show-validator-summary: False
    :field-list-validators: False
 
+.. autopydantic_settings:: openfe.protocols.openmm_rfe.equil_rfe_settings.ThermoSettings
+   :settings-show-json: False
+   :settings-show-config-member: False
+   :settings-show-config-summary: False
+   :settings-show-validator-members: False
+   :settings-show-validator-summary: False
+   :field-list-validators: False
+
+.. autopydantic_settings:: openfe.protocols.openmm_rfe.equil_rfe_settings.OpenMMSystemGeneratorFFSettings
+   :settings-show-json: False
+   :settings-show-config-member: False
+   :settings-show-config-summary: False
+   :settings-show-validator-members: False
+   :settings-show-validator-summary: False
+   :field-list-validators: False
+
 
 Protocol API specification
 --------------------------
