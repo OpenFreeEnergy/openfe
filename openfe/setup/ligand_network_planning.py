@@ -1,10 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable, Callable, List, Optional
+from typing import Iterable, Callable, List, Optional, Union
 import itertools
+import functools
 
 import networkx as nx
+from tqdm.auto import tqdm
 
 from gufe import SmallMoleculeComponent
 from openfe.setup import LigandNetwork
@@ -79,11 +81,12 @@ def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Iterable[LigandAtomMapper],
     scorer: Optional[Callable[[LigandAtomMapper], float]] = None,
+    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
     # allow_disconnected=True
 ):
     """Create a network with all possible proposed mappings.
 
-    This will attempt to create (and optionally score) all possible mappings
+    This pt to create (and optionally score) all possible mappings
     (up to $N(N-1)/2$ for each mapper given). There may be fewer actual
     mappings that this because, when a mapper cannot return a mapping for a
     given pair, there is simply no suggested mapping for that pair.
@@ -105,6 +108,12 @@ def generate_maximal_network(
     """
     nodes = list(ligands)
 
+    if progress is True:
+        # default is a tqdm progress bar that only shows after 1 second
+        progress = functools.partial(tqdm, delay=1.0)
+    elif progress is False:
+        progress = lambda x: x
+    # otherwise, it should be a user-defined callable
     mapping_generator = itertools.chain.from_iterable(
         mapper.suggest_mappings(molA, molB)
         for molA, molB in itertools.combinations(nodes, 2)
@@ -112,9 +121,9 @@ def generate_maximal_network(
     )
     if scorer:
         mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                    for mapping in mapping_generator]
+                    for mapping in progress(mapping_generator)]
     else:
-        mappings = list(mapping_generator)
+        mappings = list(progress(mapping_generator))
 
     network = LigandNetwork(mappings, nodes=nodes)
     return network
