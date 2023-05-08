@@ -36,7 +36,6 @@ def print_test_with_file(
     solvent,
     protein,
 ):
-    print(mapper)
     print(mapping_scorer)
     print(ligand_network_planner)
     print(small_molecules)
