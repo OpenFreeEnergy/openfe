@@ -31,8 +31,8 @@ of output, which is the input to the next stage.
     The main stages of a free energy calculation in OpenFE, and the intermediates between them.
 
 The output of **setup** is an :class:`.AlchemicalNetwork`. This contains all
-the information about what is being simulated (e.g., what ligands) and the
-information about how to perform the simulation (the protocol).
+the information about what is being simulated (e.g., what ligands, host proteins, solvation details etc) and the
+information about how to perform the simulation (the Protocol).
 
 The output of the **executation** stage is the basic results from each edge.
 This can depend of the specific analysis intended, but will either involve a
@@ -63,17 +63,17 @@ in an intermediate representation between the commands.
 
 The commands used to generate an :class:`AlchemicalNetwork` using the CLI are:
 
-* the :ref:`cli_plan-rbfe-network`
-* the :ref:`cli_plan-rhfe-network`
+* :ref:`cli_plan-rbfe-network`
+* :ref:`cli_plan-rhfe-network`
 
-For example, you can create an RBFE network using
+For example, you can create a relative binding free energy (RBFE) network using
 
 .. code:: bash
 
     $ openfe plan-rbfe-network -p protein.pdb -M dir_with_sdfs/
 
 These will save the alchemical network represented as a JSON file for each
-edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the simulation).
+edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the alchemical cycle).
 
 To run a given transformation, use the :ref:`cli_quickrun`; for example:
 
