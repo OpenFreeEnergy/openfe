@@ -109,21 +109,23 @@ def generate_maximal_network(
     nodes = list(ligands)
 
     if progress is True:
-        # default is a tqdm progress bar that only shows after 1 second
-        progress = functools.partial(tqdm, delay=1.0)
+        # default is a tqdm progress bar
+        total = len(nodes) * (len(nodes) - 1) // 2
+        progress = functools.partial(tqdm, total=total, delay=1.5)
     elif progress is False:
         progress = lambda x: x
     # otherwise, it should be a user-defined callable
+
     mapping_generator = itertools.chain.from_iterable(
         mapper.suggest_mappings(molA, molB)
-        for molA, molB in itertools.combinations(nodes, 2)
+        for molA, molB in progress(itertools.combinations(nodes, 2))
         for mapper in mappers
     )
     if scorer:
         mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                    for mapping in progress(mapping_generator)]
+                    for mapping in mapping_generator]
     else:
-        mappings = list(progress(mapping_generator))
+        mappings = list(mapping_generator)
 
     network = LigandNetwork(mappings, nodes=nodes)
     return network
