@@ -96,6 +96,12 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
     transformation a JSON file, that can be run with quickrun (or other
     future tools).
     """
+    write("RHFE-NETWORK PLANNER")
+    write("______________________")
+    write("")
+
+    write("Parsing in Files: ")
+
     from gufe import SolventComponent
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
@@ -105,12 +111,7 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
         generate_minimal_spanning_network,
     )
 
-    write("RHFE-NETWORK PLANNER")
-    write("______________________")
-    write("")
-
     # INPUT
-    write("Parsing in Files: ")
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
