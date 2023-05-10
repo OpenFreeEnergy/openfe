@@ -135,6 +135,6 @@ def quickrun(transformation, work_dir, output):
 
 PLUGIN = OFECommandPlugin(
     command=quickrun,
-    section="Simulation",
+    section="Quickrun Executor",
     requires_ofe=(0, 3)
 )

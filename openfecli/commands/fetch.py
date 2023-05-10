@@ -57,7 +57,7 @@ def fetch():
 
 PLUGIN = OFECommandPlugin(
     command=fetch,
-    section="Setup",
+    section="Miscellaneous",
     requires_ofe=(0, 7),
 )
 

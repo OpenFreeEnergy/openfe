@@ -159,5 +159,5 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
 
 
 PLUGIN = OFECommandPlugin(
-    command=plan_rhfe_network, section="Setup", requires_ofe=(0, 3)
+    command=plan_rhfe_network, section="Network Planning", requires_ofe=(0, 3)
 )
