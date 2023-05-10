@@ -33,7 +33,7 @@ class FetchCLI(CLI):
     This provides the command sections used in help and defines where
     plugins should be kept.
     """
-    COMMAND_SECTIONS = ["Built-in", "Requires Internet"]
+    COMMAND_SECTIONS = ["Tutorials"]
 
     def get_loaders(self):
         return [

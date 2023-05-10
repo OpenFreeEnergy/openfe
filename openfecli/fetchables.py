@@ -14,6 +14,7 @@ RBFE_TUTORIAL = URLFetcher(
     ],
     short_name="rbfe-tutorial",
     short_help="CLI and Python tutorial on relative binding free energies",
+    section="Tutorials",
     requires_ofe=(0, 7, 0),
 ).plugin
 
@@ -23,5 +24,6 @@ RBFE_TUTORIAL_RESULTS = PkgResourceFetcher(
     ],
     short_name="rbfe-tutorial-results",
     short_help="Results package to follow-up the rbfe-tutorial",
+    section="Tutorials",
     requires_ofe=(0, 7, 5),
 ).plugin
