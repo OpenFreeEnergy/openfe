@@ -5,23 +5,25 @@ from openfecli.fetching import URLFetcher, PkgResourceFetcher
 _EXAMPLE_NB_BASE = ("https://raw.githubusercontent.com/"
                     "OpenFreeEnergy/ExampleNotebooks/master/")
 
-RHFE_TUTORIAL = URLFetcher(
+RBFE_TUTORIAL = URLFetcher(
     resources=[
-        (_EXAMPLE_NB_BASE + "easy_campaign/molecules/rhfe/",
-         "benzenes_RHFE.sdf"),
-        (_EXAMPLE_NB_BASE + "easy_campaign/", "cli-tutorial.md"),
-        (_EXAMPLE_NB_BASE + "easy_campaign/", "rhfe-python-tutorial.ipynb"),
+        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_ligands.sdf"),
+        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_protein.pdb"),
+        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "cli_tutorial.md"),
+        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "python_tutorial.ipynb"),
     ],
-    short_name="rhfe-tutorial",
-    short_help="CLI and Python tutorial on relative hydration free energies",
+    short_name="rbfe-tutorial",
+    short_help="CLI and Python tutorial on relative binding free energies",
+    section="Tutorials",
     requires_ofe=(0, 7, 0),
 ).plugin
 
-RHFE_TUTORIAL_RESULTS = PkgResourceFetcher(
+RBFE_TUTORIAL_RESULTS = PkgResourceFetcher(
     resources=[
-        ("openfecli.tests.data", "results.tar.gz"),
+        ("openfecli.tests.data", "rbfe_results.tar.gz"),
     ],
-    short_name="rhfe-tutorial-results",
-    short_help="Results package to follow-up the rhfe-tutorial",
+    short_name="rbfe-tutorial-results",
+    short_help="Results package to follow-up the rbfe-tutorial",
+    section="Tutorials",
     requires_ofe=(0, 7, 5),
 ).plugin

@@ -4,7 +4,7 @@ Introduction
 ============
 
 Here we present an overview of the workflow for calculating free energies in
-OpenFE, in the broadest strokes possible This workflow is reflected in both
+OpenFE in the broadest strokes possible. This workflow is reflected in both
 the Python API and in the command line interface, and so we have a section
 for each.
 
@@ -24,15 +24,15 @@ example, you are likely to make use of HPC or cloud computing resources to
 run the simulation campaign. Because of this, each stage has a certain type
 of output, which is the input to the next stage.
 
-.. TODO: make figure
+.. TODO make figure
 .. .. figure:: ???
     :alt: Setup -> (AlchemicalNetwork) -> Execution -> (ProtocolResults) -> Gather
 
     The main stages of a free energy calculation in OpenFE, and the intermediates between them.
 
 The output of **setup** is an :class:`.AlchemicalNetwork`. This contains all
-the information about what is being simulated (e.g., what ligands) and the
-information about how to perform the simulation (the protocol).
+the information about what is being simulated (e.g., what ligands, host proteins, solvation details etc) and the
+information about how to perform the simulation (the Protocol).
 
 The output of the **executation** stage is the basic results from each edge.
 This can depend of the specific analysis intended, but will either involve a
@@ -61,15 +61,19 @@ in an intermediate representation between the commands.
    planner to generate the network, before saving each transformation as a
    JSON file.
 
-The commands used for set up the CLI are:
+The commands used to generate an :class:`AlchemicalNetwork` using the CLI are:
 
-* the :ref:`cli_plan-rbfe-network`
-* the :ref:`cli_plan-rhfe-network`
+* :ref:`cli_plan-rbfe-network`
+* :ref:`cli_plan-rhfe-network`
 
-.. TODO add command example here;
+For example, you can create a relative binding free energy (RBFE) network using
+
+.. code:: bash
+
+    $ openfe plan-rbfe-network -p protein.pdb -M dir_with_sdfs/
 
 These will save the alchemical network represented as a JSON file for each
-edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the simulation).
+edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the alchemical cycle).
 
 To run a given transformation, use the :ref:`cli_quickrun`; for example:
 
@@ -81,15 +85,15 @@ In many cases, you will want to create a job script for a queuing system
 (e.g., SLURM) that wraps that command. You can do this for all JSON files
 from the network planning command with something like this:
 
-.. TODO Link to example here.
+.. TODO Link to example here. I think this is waiting on the CLI example
+   being merged into example notebooks?
 
-Finally, to gather the results of that, use the ref:`cli_gather`:
-
-.. TODO: update command here
+Finally, to gather the results of that, assuming all results (and only
+results) are in the `results/` direcory, use the :ref:`cli_gather`:
 
 .. code:: bash
 
-    $ openfe gather -o
+    $ openfe gather ./results/ -o final_results.tsv
 
 This will output a tab-separated file with the ligand pair, the estimated
 :math:`\Delta G` and the uncertainty in that estimate.

@@ -121,7 +121,10 @@ To make sure everything is working, run the tests ::
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
+skipped, or xfailed (expected fail). The very first time you run this, the
+initial check that you can import ``openfe`` will take a while, because some
+code is compiled the first time it is encountered. That compilation only
+happens once per installation.
   
 With that, you should be ready to use ``openfe``!
 

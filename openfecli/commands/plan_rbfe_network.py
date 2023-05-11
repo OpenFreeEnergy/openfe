@@ -72,10 +72,9 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
-@MAPPER.parameter(required=False, default="LomapAtomMapper")
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, output_dir: str, mapper: str,
+    molecules: List[str], protein: str, output_dir: str
 ):
     """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
 
@@ -93,20 +92,22 @@ def plan_rbfe_network(
 
     The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
     """
-    from gufe import SolventComponent
-    from openfe.setup.atom_mapping.lomap_scorers import (
-        default_lomap_score,
-    )
-    from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network,
-    )
-
-    # INPUT
     write("RBFE-NETWORK PLANNER")
     write("______________________")
     write("")
 
     write("Parsing in Files: ")
+
+    from gufe import SolventComponent
+    from openfe.setup.atom_mapping.lomap_scorers import (
+        default_lomap_score,
+    )
+    from openfe.setup import LomapAtomMapper
+    from openfe.setup.ligand_network_planning import (
+        generate_minimal_spanning_network,
+    )
+
+    # INPUT
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
@@ -123,7 +124,7 @@ def plan_rbfe_network(
     write("")
 
     write("Using Options:")
-    mapper_obj = MAPPER.get(mapper)()
+    mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
     write("\tMapper: " + str(mapper_obj))
 
     # TODO:  write nice parameter
@@ -159,5 +160,5 @@ def plan_rbfe_network(
 
 
 PLUGIN = OFECommandPlugin(
-    command=plan_rbfe_network, section="Setup", requires_ofe=(0, 3)
+    command=plan_rbfe_network, section="Network Planning", requires_ofe=(0, 3)
 )

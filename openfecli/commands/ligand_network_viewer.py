@@ -28,6 +28,6 @@ def ligand_network_viewer(ligand_network):
 
 PLUGIN = OFECommandPlugin(
     command=ligand_network_viewer,
-    section="Setup",
+    section="Network Planning",
     requires_ofe=(0, 7, 0),
 )
