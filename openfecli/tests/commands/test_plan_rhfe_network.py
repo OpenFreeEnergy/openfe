@@ -65,13 +65,21 @@ def test_plan_rhfe_network(mol_dir_args):
     smoke test
     """
     args = mol_dir_args
-    expected_output = [
+    expected_output_always = [
         "RHFE-NETWORK PLANNER",
-        "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
+    ]
+    # we can get these in either order: 22 then 55 or 55 then 22
+    expected_output_1 = [
+        "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
         "- easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json",
         "- easy_rhfe_ligand_23_solvent_ligand_55_solvent.json",
+    ]
+    expected_output_2 = [
+        "Small Molecules: SmallMoleculeComponent(name=ligand_55) SmallMoleculeComponent(name=ligand_23)",
+        "- easy_rhfe_ligand_55_vacuum_ligand_23_vacuum.json",
+        "- easy_rhfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
     patch_base = (
@@ -88,5 +96,8 @@ def test_plan_rhfe_network(mol_dir_args):
             result = runner.invoke(plan_rhfe_network, args)
             print(result.output)
             assert result.exit_code == 0
-            for line in expected_output:
+            for line in expected_output_always:
                 assert line in result.output
+
+            for l1, l2 in zip(expected_output_1, expected_output_2):
+                assert l1 in result.output or l2 in result.output
