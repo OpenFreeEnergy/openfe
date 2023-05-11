@@ -37,6 +37,6 @@ def test(long):
 
 PLUGIN = OFECommandPlugin(
     test,
-    "hidden",
+    "Miscellaneous",
     requires_ofe=(0, 7,5)
 )

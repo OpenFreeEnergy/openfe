@@ -15,7 +15,9 @@ from openfecli.plugins import OFECommandPlugin
 
 
 class OpenFECLI(CLI):
-    COMMAND_SECTIONS = ["Setup", "Simulation", "Orchestration", "Analysis"]
+    # COMMAND_SECTIONS = ["Setup", "Simulation", "Orchestration", "Analysis"]
+    COMMAND_SECTIONS = ["Network Planning", "Quickrun Executor",
+                        "Miscellaneous"]
 
     def get_loaders(self):
         commands = str(pathlib.Path(__file__).parent.resolve() / "commands")

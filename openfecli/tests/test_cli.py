@@ -52,7 +52,8 @@ class TestCLI:
         # This test does not ensure the order of the sections, and does not
         # prevent other sections from being added later. It only ensures
         # that the main 4 sections continue to exist.
-        included = ["Setup", "Simulation", "Orchestration", "Analysis"]
+        included = ["Network Planning", "Quickrun Executor",
+                    "Miscellaneous"]
         for sec in included:
             assert sec in cli.COMMAND_SECTIONS
 

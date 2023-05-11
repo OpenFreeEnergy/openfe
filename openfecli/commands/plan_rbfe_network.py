@@ -160,5 +160,5 @@ def plan_rbfe_network(
 
 
 PLUGIN = OFECommandPlugin(
-    command=plan_rbfe_network, section="Setup", requires_ofe=(0, 3)
+    command=plan_rbfe_network, section="Network Planning", requires_ofe=(0, 3)
 )

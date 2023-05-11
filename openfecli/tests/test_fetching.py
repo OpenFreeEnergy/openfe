@@ -52,6 +52,8 @@ class TestURLFetcher(FetcherTester):
     def test_call(self, fetcher, tmp_path):
         super().test_call(fetcher, tmp_path)
 
+    @pytest.mark.skipif(not HAS_INTERNET,
+                        reason="Internet seems to be unavailable")
     def test_without_trailing_slash(self, tmp_path):
         fetcher = URLFetcher(
             resources=[("https://www.google.com", "index.html")],
