@@ -415,6 +415,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             pdbfile: gufe.ProteinComponent = stateA['protein']
             stateA_modeller = app.Modeller(pdbfile.to_openmm_topology(),
                                            pdbfile.to_openmm_positions())
+            # add missing virtual particles (from crystal waters)
+            stateA_modeller.addExtraParticles(omm_forcefield_stateA)
             stateA_modeller.add(
                 stateA_ligand_topology,
                 ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
