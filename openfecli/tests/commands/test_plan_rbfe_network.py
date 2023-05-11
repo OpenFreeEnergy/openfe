@@ -111,9 +111,5 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
             result = runner.invoke(plan_rbfe_network, args)
             print(result.output)
             assert result.exit_code == 0
-            assert all(
-                [
-                    expected_line in result.output
-                    for expected_line in expected_output
-                ]
-            )
+            for line in expected_output:
+                assert line in result.output
