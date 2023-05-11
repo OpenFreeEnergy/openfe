@@ -92,6 +92,12 @@ def plan_rbfe_network(
 
     The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
     """
+    write("RBFE-NETWORK PLANNER")
+    write("______________________")
+    write("")
+
+    write("Parsing in Files: ")
+
     from gufe import SolventComponent
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
@@ -102,11 +108,6 @@ def plan_rbfe_network(
     )
 
     # INPUT
-    write("RBFE-NETWORK PLANNER")
-    write("______________________")
-    write("")
-
-    write("Parsing in Files: ")
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
