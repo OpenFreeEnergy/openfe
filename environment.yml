@@ -25,6 +25,7 @@ dependencies:
   - py3dmol
   - plugcli
   - libnetcdf<4.9
+  - tqdm
   # docs
   - autodoc-pydantic
   - pydata-sphinx-theme
