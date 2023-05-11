@@ -59,7 +59,8 @@ class RelativeAlchemicalNetworkPlanner(
         name : str, optional
             name of the approach/project the rfe, by default "easy_rfe_calculation"
         mappers : Iterable[LigandAtomMapper], optional
-            mappers used to connect the ligands, by default [LomapAtomMapper()]
+            mappers used to connect the ligands, by default the LomapAtomMapper
+            with sensible default settings
         mapping_scorer : Callable, optional
             scorer evaluating the quality of the atom mappings, by default default_lomap_score
         ligand_network_planner : Callable, optional
@@ -71,12 +72,8 @@ class RelativeAlchemicalNetworkPlanner(
         if protocol is None:
             protocol = RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings())
         if mappers is None:
-            mappers = [LomapAtomMapper()]
-
-        # TODO: Remove as soon as element Changes are possible. - START
-        for mapper in mappers:
-            mapper._no_element_changes = True
-        # TODO: Remove as soon as element Changes are possible. - END
+            mappers = [LomapAtomMapper(time=20, threed=True,
+                                       element_change=False, max3d=1)]
 
         self.name = name
         self._mappers = mappers

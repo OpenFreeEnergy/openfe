@@ -1,9 +1,9 @@
 .. _define-rsfe:
 
-Defining RHFE/RSFE Calculations
-===============================
+Defining Relative Hydration Free Energy Calculations
+====================================================
 
-Relative solvation/hydration free energy calculations are very similar to
+Relative hydration free energy calculations are very similar to
 :ref:`relative binding free energy calculations <define-rbfe>`. The
 main difference is that there is no protein component.
 

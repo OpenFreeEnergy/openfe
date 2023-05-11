@@ -97,6 +97,6 @@ def atommapping_visualize_main(mapper, molA, molB, file, ext):
 
 PLUGIN = OFECommandPlugin(
     command=atommapping,
-    section="Setup",
+    section="hidden",
     requires_ofe=(0, 0, 1),
 )

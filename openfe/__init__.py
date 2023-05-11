@@ -8,6 +8,15 @@ from gufe import (
     AlchemicalNetwork,
     LigandAtomMapping,
 )
+from gufe.protocols import (
+    Protocol,
+    ProtocolDAG,
+    ProtocolUnit,
+    ProtocolUnitResult, ProtocolUnitFailure,
+    ProtocolDAGResult,
+    ProtocolResult,
+    execute_DAG,
+)
 
 from . import utils
 from . import setup
