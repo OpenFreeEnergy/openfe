@@ -140,6 +140,6 @@ def gather(rootdir, output):
 
 PLUGIN = OFECommandPlugin(
     command=gather,
-    section='Simulation',
+    section='Quickrun Executor',
     requires_ofe=(0, 6),
 )

@@ -6,7 +6,7 @@ import pathlib
 from openfecli.fetching import FetchablePlugin
 
 from openfecli.fetchables import (
-    RHFE_TUTORIAL, RHFE_TUTORIAL_RESULTS
+    RBFE_TUTORIAL, RBFE_TUTORIAL_RESULTS
 )
 
 def fetchable_test(fetchable):
@@ -24,7 +24,7 @@ def fetchable_test(fetchable):
 
 
 def test_rhfe_tutorial():
-    fetchable_test(RHFE_TUTORIAL)
+    fetchable_test(RBFE_TUTORIAL)
 
 def test_rhfe_tutorial_results():
-    fetchable_test(RHFE_TUTORIAL_RESULTS)
+    fetchable_test(RBFE_TUTORIAL_RESULTS)
