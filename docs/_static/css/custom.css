@@ -163,7 +163,7 @@ html[data-theme=light] {
     --pst-color-on-background: #fff;
     --pst-color-surface: #f5f5f5;
     --pst-color-on-surface: #e1e1e1;
-    --pst-color-link: var(--pst-color-primary);
+    --pst-color-link: var( --ofe-color-DarkGoldenYellow);
     --pst-color-link-hover: var(--pst-color-warning)
 }
 
@@ -244,12 +244,12 @@ html[data-theme=dark] {
     --pst-color-text-muted: var(--ofe-color-SandySergio);
     --pst-color-shadow: #212121;
     --pst-color-border: silver;
-    --pst-color-inline-code: var(--ofe-color-FeelingSick);
+    --pst-color-inline-code: var(--ofe-color-FeelingSpicy);
     --pst-color-target: var(--ofe-color-DarkGoldenYellow);
     --pst-color-background: var(--ofe-color-BeastlyLightGrey);
     --pst-color-on-background: #1e1e1e;
     --pst-color-surface: #666666;
     --pst-color-on-surface: #373737;
-    --pst-color-link: var(--pst-color-primary);
+    --pst-color-link: var(--ofe-color-DarkGoldenYellow);
     --pst-color-link-hover: var(--pst-color-warning)
 }
