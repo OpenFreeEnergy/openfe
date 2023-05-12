@@ -57,8 +57,8 @@ def plan_rhfe_network_main(
 @click.command(
     "plan-rhfe-network",
     short_help=(
-        "Plan a relative hydration free energy network, with each leg "
-        "saved as a JSON file"
+        "Plan a relative hydration free energy network, saved as JSON files "
+        "for the quickrun command."
     ),
 )
 @MOL_DIR.parameter(
@@ -71,8 +71,8 @@ def plan_rhfe_network_main(
 @print_duration
 def plan_rhfe_network(molecules: List[str], output_dir: str):
     """
-    Plan a relative hydration free energy network, saved in a dir with
-    multiple JSON files.
+    Plan a relative hydration free energy network, saved as JSON files for
+    the quickrun command.
 
     This tool is an easy way to setup a RHFE-Calculation Campaign. This can
     be useful for testing our tools.  Plan-rhfe-network finds a reasonable
