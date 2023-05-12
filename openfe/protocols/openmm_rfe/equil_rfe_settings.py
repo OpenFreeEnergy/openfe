@@ -168,6 +168,7 @@ class SolvationSettings(SettingsBaseModel):
     """
 
     solvent_padding = 1.2 * unit.nanometer
+    """Minimum distance from any solute atoms to the solvent box edge."""
 
     @validator('solvent_model')
     def allowed_solvent(cls, v):
