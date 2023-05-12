@@ -23,13 +23,22 @@ This is pre-alpha work, it should not be considered ready for production and API
 
 ## Install
 
+### Latest release
+
+The latest release of `openfe` can be installed via `mamba`, `docker`, or a `single file installer`. See [our installation instructions](https://docs.openfree.energy/en/stable/installation.html) for more details.
 Dependencies can be installed via conda through:
 
+### Developement version
+
+The development version of `openfe` can be installed directly from the `main` branch of this repository.
+
+First install the package dependencies using `mamba`:
+
 ```bash
-conda env create -f environment.yml
+mamba env create -f environment.yml
 ```
 
-The openfe library can be installed via:
+The openfe library can then be installed via:
 
 ```
 python -m pip install --no-deps .
