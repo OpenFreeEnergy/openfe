@@ -12,6 +12,7 @@ dependencies:
 - sphinx
 - sphinx-click
 - openff-models>=0.0.5
+- tqdm
 - pip:
   - sphinx-design
   - sphinx-toolbox
