@@ -15,6 +15,15 @@ relative binding free energies using explicit solvent. There will however be som
 cases (such as when doing gas phase calculations) where you will need to tweak
 some of the following settings.
 
+.. autopydantic_settings:: openfe.protocols.openmm_rfe.equil_rfe_settings.RelativeHybridTopologyProtocolSettings
+    :settings-show-json: False
+    :settings-show-config-member: False
+    :settings-show-config-summary: False
+    :settings-show-validator-members: False
+    :settings-show-validator-summary: False
+    :field-list-validators: False
+    :inherited-members: Settings
+
 
 .. autopydantic_settings:: openfe.protocols.openmm_rfe.equil_rfe_settings.AlchemicalSamplerSettings
    :settings-show-json: False
