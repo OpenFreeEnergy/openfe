@@ -250,6 +250,6 @@ html[data-theme=dark] {
     --pst-color-on-background: #1e1e1e;
     --pst-color-surface: #666666;
     --pst-color-on-surface: #373737;
-    --pst-color-link: var(--pst-color-primary);
+    --pst-color-link: var(--ofe-color-DarkGoldenYellow);
     --pst-color-link-hover: var(--pst-color-warning)
 }
