@@ -185,7 +185,7 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
 
     # If there's a protein in the system, we add it first to the Modeller
     if protein_comp is not None:
-        system.modeller.add(protein_comp.to_openmm_topology(),
+        system_modeller.add(protein_comp.to_openmm_topology(),
                             protein_comp.to_openmm_positions())
         component_resids[protein_comp] = np.array(
           [r.index for r in system_modeller.topology.residues()]
