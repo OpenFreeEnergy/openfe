@@ -180,32 +180,20 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
         resids = [res.index for res in system_modeller.topology.residues()]
         comp_resids[comp] = np.array(resids[-nres:])
 
+    # Create empty modeller
+    system_modeller = app.Modeller(app.Topology(), [])
+
     # If there's a protein in the system, we add it first to the Modeller
     if protein_comp is not None:
-        system_modeller = app.Modeller(protein_comp.to_openmm_topology(),
-                                       protein_comp.to_openmm_positions())
+        system.modeller.add(protein_comp.to_openmm_topology(),
+                            protein_comp.to_openmm_positions())
         component_resids[protein_comp] = np.array(
           [r.index for r in system_modeller.topology.residues()]
         )
 
-        for comp, mol in small_mols.items():
-            _add_small_mol(comp, mol, system_modeller, component_resids)
-
-    # Otherwise we add the first molecule and then the rest
-    else:
-        mol_items = list(small_mols.items())
-
-        system_modeller = app.Modeller(
-            mol_items[0][1].to_topology().to_openmm(),
-            ensure_quantity(mol_items[0][1].conformers[0], 'openmm')
-        )
-
-        component_resids[mol_items[0][0]] = np.array(
-            [r.index for r in system_modeller.topology.residues()]
-        )
-
-        for comp, mol in mol_items[1:]:
-            _add_small_mol(comp, mol, system_modeller, component_resids)
+    # Now loop through small mols
+    for comp, mol in small_mols.items():
+        _add_small_mol(comp, mol, system_modeller, component_resids)
 
     # Add solvent if neeeded
     if solvent_comp is not None:
