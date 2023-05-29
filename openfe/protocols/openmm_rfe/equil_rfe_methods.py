@@ -23,14 +23,11 @@ from collections import defaultdict
 import uuid
 
 import numpy as np
-import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
 from typing import Optional
-from openmm import app
 from openmm import unit as omm_unit
-from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 import pathlib
 from typing import Any, Iterable
 import openmmtools
