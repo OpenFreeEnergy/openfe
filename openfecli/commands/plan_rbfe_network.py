@@ -60,7 +60,10 @@ def plan_rbfe_network_main(
 
 @click.command(
     "plan-rbfe-network",
-    short_help="Plan a relative binding free energy network, saved in a dir with multiple JSON files.",
+    short_help=(
+        "Plan a relative binding free energy network, saved as JSON files "
+        "for the quickrun command."
+    )
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
@@ -76,21 +79,28 @@ def plan_rbfe_network_main(
 def plan_rbfe_network(
     molecules: List[str], protein: str, output_dir: str
 ):
-    """Plan a relative binding free energy network, saved in a dir with multiple JSON files.
+    """
+    Plan a relative binding free energy network, saved as JSON files for
+    the quickrun command.
 
-    This tool is an easy way to setup a RBFE-Calculation Campaign.
-    This can be useful for calculating the relative binding free energies of a given set of compounds to a given protein receptor.
-    Plan-rbfe-network finds a reasonable network of transformations and adds the openfe rbfe protocol of year one to the transformations.
-    The output of the command can be used, in order to run the planned transformations with the quickrun tool.
-    For more sophisticated setups, please consider using the python layer of openfe.
+    This tool is an easy way to set up a RBFE calculation campaign.
+    The JSON files this outputs can be used to run each leg of the campaign.
+    For customized setups, please consider using the Python layer of
+    openfe. This tool makes the following choices:
 
+    * Atom mappings performed by LOMAP, with settings max3d=1.0 and
+      element_change=False
 
-    The tool will parse the input and run the rbfe network planner, which executes following steps:
-        1. generate an atom mapping for all possible ligand pairs. (default: Lomap)
-        2. score all atom mappings. (default: Lomap default score)
-        3. build network form all atom mapping scores (default: minimal spanning graph)
+    * Minimal spanning network as the network planner, with LOMAP default
+      score as the weight function
 
-    The generated Network will be stored in a folder containing for each transformation a JSON file, that can be run with quickrun (or other future tools).
+    * Water as solvent, with NaCl at 0.15 M.
+
+    * Protocol is the OpenMM-based relative hybrid topology protocol, with
+      default settings.
+
+    The generated Network will be stored in a folder containing for each
+    transformation a JSON file, that can be run with quickrun.
     """
     write("RBFE-NETWORK PLANNER")
     write("______________________")
