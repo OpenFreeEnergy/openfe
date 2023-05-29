@@ -402,18 +402,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             has_solvent=solvent_comp is not None,
         )
 
-        # b. force the creation of paramaters
-        # Note: by default this is cached to ctx.shared/db.json so shouldn't
-        # incur too large a cost
-        for comp, offmol in small_mols.items():
-            system_generator.create_system(offmol.to_topology().to_openmm(),
-                                           molecules=[offmol])
-            if comp == mapping.componentA:
-                molB = mapping.componentB.to_openff()
-                system_generator.create_system(molB.to_topology().to_openmm(),
-                                               molecules=[molB])
-
-        # c. get OpenMM Modeller + a dictionary of resids for each component
+        # b. get OpenMM Modeller + a dictionary of resids for each component
         stateA_modeller, comp_resids = system_creation.get_omm_modeller(
             protein_comp=protein_comp,
             solvent_comp=solvent_comp,
@@ -422,14 +411,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             solvent_settings=solvation_settings,
         )
 
-        # d. get topology & positions
+        # c. get topology & positions
         # Note: roundtrip positions to remove vec3 issues
         stateA_topology = stateA_modeller.getTopology()
         stateA_positions = to_openmm(
             from_openmm(stateA_modeller.getPositions())
         )
 
-        # e. create the stateA System
+        # d. create the stateA System
         stateA_system = system_generator.create_system(
             stateA_modeller.topology,
             molecules=list(small_mols.values())
