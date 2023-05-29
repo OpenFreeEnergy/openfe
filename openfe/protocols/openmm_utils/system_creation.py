@@ -47,7 +47,7 @@ def get_system_generator(
     cache : pathlib.Path
       Path to openff force field cache.
     has_solvent : bool
-      Wether or not the target system has solvent (and by extension
+      Whether or not the target system has solvent (and by extension
       might require a barostat).
 
     Returns
