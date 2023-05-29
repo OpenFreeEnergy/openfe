@@ -27,7 +27,7 @@ import openmm
 from openff.units import unit
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
-from typing import Optional, Dict, List
+from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -66,8 +66,8 @@ def _get_resname(off_mol) -> str:
 
 
 def _validate_alchemical_components(
-        alchemical_components: Dict[str, List[Component]],
-        mapping: Optional[Dict[str, ComponentMapping]],
+        alchemical_components: dict[str, list[Component]],
+        mapping: Optional[dict[str, ComponentMapping]],
 ):
     """
     Checks that the alchemical components are suitable for the RFE protocol.
@@ -80,10 +80,10 @@ def _validate_alchemical_components(
 
     Parameters
     ----------
-    alchemical_components : Dictt[str, List[Component]]
+    alchemical_components : dict[str, list[Component]]
       Dictionary contatining the alchemical components for
       states A and B.
-    mapping : Dict[str, ComponentMapping]
+    mapping : dict[str, ComponentMapping]
       Dictionary of mappings between transforming components.
 
     Raises
