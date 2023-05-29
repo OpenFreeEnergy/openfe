@@ -104,6 +104,16 @@ def get_system_generator(
     else:  # pragma: no-cover
         nonperiodic_kwargs = periodic_kwargs
 
+    # Add barostat if necessary
+    # TODO: move this to its own place where we can handle membranes
+    if has_solvent:
+        barostat = MonteCarloBarostat(
+            ensure_quantity(thermo_settings.pressure, 'openmm'),
+            ensure_quantity(thermo_settings.temperature, 'openmm'),
+        )
+    else:
+        barostat = None
+
     system_generator = SystemGenerator(
         forcefields=forcefield_settings.forcefields,
         small_molecule_forcefield=forcefield_settings.small_molecule_forcefield,
@@ -111,17 +121,8 @@ def get_system_generator(
         nonperiodic_forcefield_kwargs=nonperiodic_kwargs,
         periodic_forcefield_kwargs=periodic_kwargs,
         cache=str(cache),
+        barostat=barostat,
     )
-
-    # Add a barostat if necessary
-    # TODO: move this to its own place where we can then handle membranes
-    # Note: this behaviour was broken pre 0.11.2 of openmmff
-    if has_solvent:
-        barostat = MonteCarloBarostat(
-            ensure_quantity(thermo_settings.pressure, 'openmm'),
-            ensure_quantity(thermo_settings.temperature, 'openmm'),
-        )
-        system_generator.barostat = barostat
 
     return system_generator
 
