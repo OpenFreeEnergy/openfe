@@ -1,10 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable, Callable, List, Optional
+from typing import Iterable, Callable, List, Optional, Union
 import itertools
+import functools
 
 import networkx as nx
+from tqdm.auto import tqdm
 
 from gufe import SmallMoleculeComponent
 from openfe.setup import LigandNetwork
@@ -79,6 +81,7 @@ def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Iterable[LigandAtomMapper],
     scorer: Optional[Callable[[LigandAtomMapper], float]] = None,
+    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
     # allow_disconnected=True
 ):
     """Create a network with all possible proposed mappings.
@@ -102,12 +105,24 @@ def generate_maximal_network(
       lowest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
+    progress : Union[bool, Callable[Iterable], Iterable]
+      progress bar: if False, no progress bar will be shown. If True, use a
+      tqdm progress bar that only appears after 1.5 seconds. You can also
+      provide a custom progress bar wrapper as a callable.
     """
     nodes = list(ligands)
 
+    if progress is True:
+        # default is a tqdm progress bar
+        total = len(nodes) * (len(nodes) - 1) // 2
+        progress = functools.partial(tqdm, total=total, delay=1.5)
+    elif progress is False:
+        progress = lambda x: x
+    # otherwise, it should be a user-defined callable
+
     mapping_generator = itertools.chain.from_iterable(
         mapper.suggest_mappings(molA, molB)
-        for molA, molB in itertools.combinations(nodes, 2)
+        for molA, molB in progress(itertools.combinations(nodes, 2))
         for mapper in mappers
     )
     if scorer:
@@ -123,7 +138,8 @@ def generate_maximal_network(
 def generate_minimal_spanning_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Iterable[LigandAtomMapper],
-    scorer: Callable[[LigandAtomMapping], float]
+    scorer: Callable[[LigandAtomMapping], float],
+    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ):
     """Plan a LigandNetwork which connects all ligands with minimal cost
 
@@ -137,9 +153,13 @@ def generate_minimal_spanning_network(
       lowest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
+    progress : Union[bool, Callable[Iterable], Iterable]
+      progress bar: if False, no progress bar will be shown. If True, use a
+      tqdm progress bar that only appears after 1.5 seconds. You can also
+      provide a custom progress bar wrapper as a callable.
     """
     # First create a network with all the proposed mappings (scored)
-    network = generate_maximal_network(ligands, mappers, scorer)
+    network = generate_maximal_network(ligands, mappers, scorer, progress)
 
     # Next analyze that network to create minimal spanning network. Because
     # we carry the original (directed) LigandAtomMapping, we don't lose

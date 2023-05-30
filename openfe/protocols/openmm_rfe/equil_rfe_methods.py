@@ -579,7 +579,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             storage=shared_basepath / sim_settings.output_filename,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=sim_settings.checkpoint_interval.m,
-            checkpoint_storage=shared_basepath / sim_settings.checkpoint_storage,
+            checkpoint_storage=sim_settings.checkpoint_storage,
         )
 
         # 10. Get platform

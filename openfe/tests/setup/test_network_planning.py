@@ -90,10 +90,11 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
         )
 
 
+@pytest.mark.parametrize('with_progress', [True, False])
 @pytest.mark.parametrize('with_scorer', [True, False])
 @pytest.mark.parametrize('extra_mapper', [True, False])
-def test_generate_maximal_network(toluene_vs_others, with_scorer,
-                                  extra_mapper):
+def test_generate_maximal_network(toluene_vs_others, with_progress,
+                                  with_scorer, extra_mapper):
     toluene, others = toluene_vs_others
     if extra_mapper:
         mappers = [BadMapper()]
@@ -110,7 +111,8 @@ def test_generate_maximal_network(toluene_vs_others, with_scorer,
     network = openfe.setup.ligand_network_planning.generate_maximal_network(
         ligands=others + [toluene],
         mappers=mappers,
-        scorer=scorer
+        scorer=scorer,
+        progress=with_progress,
     )
 
     assert len(network.nodes) == len(others) + 1

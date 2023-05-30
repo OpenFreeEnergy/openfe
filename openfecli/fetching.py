@@ -31,12 +31,14 @@ class _Fetcher:
         short_name,
         short_help,
         requires_ofe,
+        section=None,
         long_help=None
     ):
         self._resources = resources
         self.short_name = short_name
         self.short_help = short_help
         self.requires_ofe = requires_ofe
+        self.section = section
         self.long_help = long_help
 
     @property
@@ -55,9 +57,19 @@ class _Fetcher:
         # forgot to make resources a list of tuple of (base, filename)
         for _, filename in self.resources:
             docs += f"* {filename}\n"
+
+        if self.REQUIRES_INTERNET is True:
+            short_help = self.short_help + " [requires internet]"
+            section = "Requires Internet"
+        elif self.REQUIRES_INTERNET is False:
+            short_help = self.short_help
+            section = "Built-in"
+        else:  # -no-cov-
+            raise RuntimeError("Class must set boolean REQUIRES_INTERNET")
+
         @click.command(
             self.short_name,
-            short_help=self.short_help,
+            short_help=short_help,
             help=docs,
         )
         @click.option(
@@ -70,16 +82,9 @@ class _Fetcher:
             directory.mkdir(parents=True, exist_ok=True)
             self(directory)
 
-        if self.REQUIRES_INTERNET is True:
-            section = "Requires Internet"
-        elif self.REQUIRES_INTERNET is False:
-            section = "Built-in"
-        else:  # -no-cov-
-            raise RuntimeError("Class must set boolean REQUIRES_INTERNET")
-
         return FetchablePlugin(
             command,
-            section,
+            section=self.section,
             requires_ofe=self.requires_ofe,
             fetcher=self
         )
@@ -116,7 +121,7 @@ class PkgResourceFetcher(_Fetcher):
     def __call__(self, dest_dir):
         for package, filename in self.resources:
             ref = importlib.resources.files(package) / filename
-            write("Fetching {str(ref)}")
+            write(f"Fetching {str(ref)}")
             with importlib.resources.as_file(ref) as f:
                 shutil.copyfile(ref, dest_dir / filename)
 
