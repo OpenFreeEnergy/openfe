@@ -4,7 +4,7 @@
 Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 from openff.toolkit import Molecule as OFFMol
 from gufe import (
     Component, ChemicalSystem, SolventComponent, ProteinComponent,
@@ -15,7 +15,7 @@ from gufe import (
 def get_alchemical_components(
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-) -> Dict[str, List[Component]]:
+) -> dict[str, list[Component]]:
     """
     Checks the equality between Components of two end state ChemicalSystems
     and identify which components do not match.
@@ -29,7 +29,7 @@ def get_alchemical_components(
 
     Returns
     -------
-    alchemical_components : Dict[str, List[Component]]
+    alchemical_components : dict[str, list[Component]]
       Dictionary containing a list of alchemical components for each state.
 
     Raises
@@ -37,8 +37,8 @@ def get_alchemical_components(
     ValueError
       If there are any duplicate components in states A or B.
     """
-    matched_components: Dict[Component, Component]  = {}
-    alchemical_components: Dict[str, List[Component]] = {
+    matched_components: dict[Component, Component]  = {}
+    alchemical_components: dict[str, list[Component]] = {
         'stateA': [], 'stateB': [],
     }
 
@@ -131,8 +131,8 @@ def validate_protein(state: ChemicalSystem):
 
 
 ParseCompRet = Tuple[
-    Optional[List[SolventComponent]], Optional[List[ProteinComponent]],
-    Dict[SmallMoleculeComponent, OFFMol],
+    Optional[SolventComponent], Optional[ProteinComponent],
+    list[SmallMoleculeComponent],
 ]
 
 
@@ -151,7 +151,7 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
       If it exists, the SolventComponent for the state, otherwise None.
     protein_comp : Optional[ProteinComponent]
       If it exists, the ProteinComponent for the state, otherwise None.
-    openff_mols : Dict[str, openff.toolkit.Molecule]
+    small_mols : list[SmallMoleculeComponent]
     """
     def _get_single_comps(comp_list, comptype):
         ret_comps = [comp for comp in comp_list
@@ -169,9 +169,9 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
         list(state.values()), ProteinComponent
     )
 
-    off_small_mols = {}
+    small_mols = []
     for comp in state.components.values():
         if isinstance(comp, SmallMoleculeComponent):
-            off_small_mols[comp] = comp.to_openff()
+            small_mols.append(comp)
 
-    return solvent_comp, protein_comp, off_small_mols
+    return solvent_comp, protein_comp, small_mols
