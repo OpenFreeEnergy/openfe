@@ -1,8 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from openff.units import unit
-from openfe.protocols.openmm_utils import settings_validation
 import pytest
+from openff.units import unit
+import openfe
+from openfe.protocols.openmm_utils import (
+        settings_validation, system_validation,
+)
 
 
 def test_validate_timestep():
@@ -33,3 +36,14 @@ def test_mc_indivisible(nametype, timelengths):
         settings_validation.get_simsteps(
                 timelengths[0], timelengths[1],
                 2 * unit.femtoseconds, 1000)
+
+
+def test_duplicate_chemical_components(benzene_modifications):
+    stateA = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
+                                    'B': benzene_modifications['toluene'],})
+    stateB = openfe.ChemicalSystem({'A': benzene_modifications['toluene']})
+
+    errmsg = "state A components B:"
+
+    with pytest.raises(ValueError, match=errmsg):
+        system_validation.get_alchemical_components(stateA, stateB)
