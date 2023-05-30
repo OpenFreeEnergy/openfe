@@ -76,3 +76,12 @@ def test_not_water_solvent(benzene_modifications):
     with pytest.raises(ValueError, match="Non water solvent"):
         system_validation.validate_solvent(state, 'pme')
 
+
+def test_multiple_proteins(T4_protein_component):
+
+    state = openfe.ChemicalSystem({'A': T4_protein_component,
+                                   'B': T4_protein_component})
+
+    with pytest.raises(ValueError, match="Multiple ProteinComponent"):
+        system_validation.validate_protein(state)
+
