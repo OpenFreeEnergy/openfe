@@ -11,7 +11,7 @@ from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
-from typing import Dict, List, Tuple, Optional
+from typing import Optional
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
@@ -127,12 +127,12 @@ def get_system_generator(
     return system_generator
 
 
-ModellerReturn = Tuple[app.Modeller, Dict[Component, npt.NDArray]]
+ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 
 
 def get_omm_modeller(protein_comp: Optional[ProteinComponent],
                      solvent_comp: Optional[SolventComponent],
-                     small_mols: Dict[Component, OFFMol],
+                     small_mols: list[SmallMoleculeComponent],
                      omm_forcefield : app.ForceField,
                      solvent_settings : SolvationSettings) -> ModellerReturn:
     """
@@ -145,9 +145,8 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
       Protein Component, if it exists.
     solvent_comp : Optional[ProteinCompoinent]
       Solvent Component, if it exists.
-    small_mols : Dict[Component, openff.toolkit.Molecule]
-      Dictionary of SmallMoleculeComponents and their associated
-      OpenFF Molecule.
+    small_mols : list[SmallMoleculeComponents]
+      List of SmallMoleculeComponents to add.
     omm_forcefield : app.ForceField
       ForceField object for system.
     solvent_settings : SolvationSettings
@@ -158,18 +157,19 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
     system_modeller : app.Modeller
       OpenMM Modeller object generated from ProteinComponent and
       OpenFF Molecules.
-    component_resids : Dict[Component, npt.NDArray]
+    component_resids : dict[Component, npt.NDArray]
       Dictionary of residue indices for each component in system.
     """
     component_resids = {}
 
-    def _add_small_mol(comp: Component, mol: OFFMol,
+    def _add_small_mol(comp: SmallMoleculeComponent,
                        system_modeller: app.Modeller,
-                       comp_resids: Dict[Component, npt.NDArray]):
+                       comp_resids: dict[Component, npt.NDArray]):
         """
         Helper method to add OFFMol to an existing Modeller object and
         update a dictionary tracking residue indices for each component.
         """
+        mol = comp.to_openff()
         omm_top = mol.to_topology().to_openmm()
         system_modeller.add(
             omm_top,
@@ -192,8 +192,8 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
         )
 
     # Now loop through small mols
-    for comp, mol in small_mols.items():
-        _add_small_mol(comp, mol, system_modeller, component_resids)
+    for comp in small_mols:
+        _add_small_mol(comp, system_modeller, component_resids)
 
     # Add solvent if neeeded
     if solvent_comp is not None:

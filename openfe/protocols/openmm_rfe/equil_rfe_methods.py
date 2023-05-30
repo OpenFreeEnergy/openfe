@@ -405,7 +405,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # solvating the system.
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
-        for comp, offmol in small_mols.items():
+        for comp in small_mols:
+            offmol = comp.to_openff()
             system_generator.create_system(offmol.to_topology().to_openmm(),
                                            molecules=[offmol])
             if comp == mapping.componentA:
@@ -432,7 +433,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # e. create the stateA System
         stateA_system = system_generator.create_system(
             stateA_modeller.topology,
-            molecules=list(small_mols.values())
+            molecules=[s.to_openff() for s in small_mols],
         )
 
 
@@ -445,14 +446,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # b. get a list of small molecules for stateB
-        small_mols_stateB = [mapping.componentB.to_openff(),]
-        for comp, offmol in small_mols.items():
+        off_mols_stateB = [mapping.componentB.to_openff(),]
+        for comp in small_mols:
             if comp != mapping.componentA:
-                small_mols_stateB.append(offmol)
+                off_mols_stateB.append(comp.to_openff())
 
         stateB_system = system_generator.create_system(
             stateB_topology,
-            molecules=small_mols_stateB,
+            molecules=off_mols_stateB,
         )
 
         #  c. Define correspondence mappings between the two systems
