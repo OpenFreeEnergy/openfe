@@ -13,6 +13,19 @@ def test_validate_timestep():
         settings_validation.validate_timestep(2.0, 4.0 * unit.femtoseconds)
 
 
+@pytest.mark.parametrize('e,p,ts,mc,es,ps', [
+    [1 * unit.nanoseconds, 5 * unit.nanoseconds, 4 * unit.femtoseconds,
+     250, 250000, 1250000],
+    [1 * unit.picoseconds, 1 * unit.picoseconds, 2 * unit.femtoseconds,
+     250, 500, 500],
+])
+def test_get_simsteps(e, p, ts, mc, es, ps):
+    equil_steps, prod_steps = settings_validation.get_simsteps(e, p, ts, mc)
+
+    assert equil_steps == es
+    assert prod_steps == ps
+
+
 @pytest.mark.parametrize('nametype, timelengths', [
     ['Equilibration', [1.003 * unit.picoseconds, 1 * unit.picoseconds]],
     ['Production', [1 * unit.picoseconds, 1.003 * unit.picoseconds]],
