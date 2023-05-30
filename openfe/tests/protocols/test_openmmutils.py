@@ -47,3 +47,32 @@ def test_duplicate_chemical_components(benzene_modifications):
 
     with pytest.raises(ValueError, match=errmsg):
         system_validation.get_alchemical_components(stateA, stateB)
+
+
+def test_validate_solvent_nocutoff(benzene_modifications):
+
+    state = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
+                                   'S': openfe.SolventComponent()})
+
+    with pytest.raises(ValueError, match="nocutoff cannot be used"):
+        system_validation.validate_solvent(state, 'nocutoff')
+
+
+def test_validate_solvent_multiple_solvent(benzene_modifications):
+
+    state = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
+                                   'S': openfe.SolventComponent(),
+                                   'S2': openfe.SolventComponent()})
+
+    with pytest.raises(ValueError, match="Multiple SolventComponent"):
+        system_validation.validate_solvent(state, 'pme')
+
+
+def test_not_water_solvent(benzene_modifications):
+
+    state = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
+                                   'S': openfe.SolventComponent(smiles='C')})
+
+    with pytest.raises(ValueError, match="Non water solvent"):
+        system_validation.validate_solvent(state, 'pme')
+
