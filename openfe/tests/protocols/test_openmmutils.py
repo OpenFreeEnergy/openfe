@@ -38,6 +38,28 @@ def test_mc_indivisible(nametype, timelengths):
                 2 * unit.femtoseconds, 1000)
 
 
+def test_get_alchemical_components(benzene_modifications,
+                                   T4_protein_component):
+
+    stateA = openfe.ChemicalSystem({'A': benzene_modifications['benzene'],
+                                    'B': benzene_modifications['toluene'],
+                                    'P': T4_protein_component,
+                                    'S': openfe.SolventComponent(smiles='C')})
+    stateB = openfe.ChemicalSystem({'A': benzene_modifications['benzene'],
+                                    'B': benzene_modifications['benzonitrile'],
+                                    'P': T4_protein_component,
+                                    'S': openfe.SolventComponent()})
+
+    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
+
+    assert len(alchem_comps['stateA']) == 2
+    assert benzene_modifications['toluene'] in alchem_comps['stateA']
+    assert openfe.SolventComponent(smiles='C') in alchem_comps['stateA']
+    assert len(alchem_comps['stateB']) == 2
+    assert benzene_modifications['benzonitrile'] in alchem_comps['stateB']
+    assert openfe.SolventComponent() in alchem_comps['stateB']
+
+
 def test_duplicate_chemical_components(benzene_modifications):
     stateA = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
                                     'B': benzene_modifications['toluene'],})
@@ -84,4 +106,45 @@ def test_multiple_proteins(T4_protein_component):
 
     with pytest.raises(ValueError, match="Multiple ProteinComponent"):
         system_validation.validate_protein(state)
+
+
+def test_get_components_gas(benzene_modifications):
+
+    state = openfe.ChemicalSystem({'A': benzene_modifications['benzene'],
+                                   'B': benzene_modifications['toluene'],})
+
+    s, p, mols = system_validation.get_components(state)
+
+    assert s is None
+    assert p is None
+    assert len(mols) == 2
+
+
+def test_components_solvent(benzene_modifications):
+
+    state = openfe.ChemicalSystem({'S': openfe.SolventComponent(),
+                                   'A': benzene_modifications['benzene'],
+                                   'B': benzene_modifications['toluene'],})
+
+    s, p, mols = system_validation.get_components(state)
+
+    assert s == openfe.SolventComponent()
+    assert p is None
+    assert len(mols) == 2
+
+
+def test_components_complex(T4_protein_component, benzene_modifications):
+
+    state = openfe.ChemicalSystem({'S': openfe.SolventComponent(),
+                                   'A': benzene_modifications['benzene'],
+                                   'B': benzene_modifications['toluene'],
+                                   'P': T4_protein_component,})
+
+    s, p, mols = system_validation.get_components(state)
+
+    assert s == openfe.SolventComponent()
+    assert p == T4_protein_component
+    assert len(mols) == 2
+
+
 
