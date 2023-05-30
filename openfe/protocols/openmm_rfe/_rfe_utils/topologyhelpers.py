@@ -40,17 +40,14 @@ def combined_topology(topology1, topology2, exclude_resids=None):
     top = app.Topology()
 
     # create list of excluded residues from topology
-    print(exclude_resids)
     excluded_res = [
         r for r in topology1.residues() if r.index in exclude_resids
     ]
-    print(excluded_res)
 
     # get a list of all excluded atoms
     excluded_atoms = set(itertools.chain.from_iterable(
         r.atoms() for r in excluded_res)
     )
-    print(excluded_atoms)
 
     # add new copies of selected chains, residues, and atoms; keep mapping
     # of old atoms to new for adding bonds later

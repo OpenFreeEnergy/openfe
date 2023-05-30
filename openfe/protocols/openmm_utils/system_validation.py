@@ -44,7 +44,7 @@ def get_alchemical_components(
 
     for keyA, valA in stateA.components.items():
         for keyB, valB in stateB.components.items():
-            if valA.to_dict() == valB.to_dict():
+            if valA == valB:
                 if valA not in matched_components.keys():
                     matched_components[valA] = valB
                 else:

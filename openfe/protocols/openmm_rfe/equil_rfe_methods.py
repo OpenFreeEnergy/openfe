@@ -223,9 +223,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         _validate_alchemical_components(alchem_comps, mapping)
 
         # For now we've made it fail already if it was None,
-        # but let's make mypy happy
-        if mapping is not None:
-            ligandmapping = list(mapping.values())[0]
+        ligandmapping = list(mapping.values())[0]  # type: ignore
 
         # Validate solvent component
         nonbond = self.settings.system_settings.nonbonded_method
@@ -402,7 +400,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             has_solvent=solvent_comp is not None,
         )
 
-        # b. force the creation of paramaters
+        # b. force the creation of parameters
+        # This is necessary because we need to have the FF generated ahead of
+        # solvating the system.
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
         for comp, offmol in small_mols.items():
