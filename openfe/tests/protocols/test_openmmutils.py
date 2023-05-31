@@ -229,7 +229,9 @@ class TestSystemCreation:
                 SolvationSettings())
 
         resids = [r for r in model.topology.residues()]
+        assert resids[163].name == 'NME'
         assert resids[164].name == 'UNK'
+        assert resids[165].name == 'HOH'
         assert_equal(comp_resids[T4_protein_component], np.linspace(0, 163, 164))
         assert_equal(comp_resids[benzene_modifications['toluene']], np.array([164]))
         assert_equal(comp_resids[openfe.SolventComponent()],
