@@ -2,6 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from pathlib import Path
 import pytest
+import numpy as np
+from numpy.testing import assert_equal
 from openmm import app, MonteCarloBarostat
 from openmm import unit as ommunit
 from openff.units import unit
@@ -11,7 +13,7 @@ from openfe.protocols.openmm_utils import (
         settings_validation, system_validation, system_creation
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-        SystemSettings,
+        SystemSettings, SolvationSettings,
 )
 
 
@@ -45,6 +47,7 @@ def test_get_simsteps_indivisible_simtime(nametype, timelengths):
                 timelengths[1],
                 2 * unit.femtoseconds,
                 100)
+
 
 @pytest.mark.parametrize('nametype, timelengths', [
     ['Equilibration', [1 * unit.picoseconds, 10 * unit.picoseconds]],
@@ -209,3 +212,25 @@ class TestSystemCreation:
         assert isinstance(generator.barostat, MonteCarloBarostat)
         assert generator.template_generator._cache == 'db.json'
 
+    def test_get_omm_modeller_complex(self, T4_protein_component,
+                                      benzene_modifications):
+        ffsets, thermosets, systemsets = self.get_settings()
+        generator = system_creation.get_system_generator(
+                ffsets, thermosets, systemsets, None, True)
+
+        mol = benzene_modifications['toluene'].to_openff()
+        generator.create_system(mol.to_topology().to_openmm(),
+                                molecules=[mol])
+
+        model, comp_resids = system_creation.get_omm_modeller(
+                T4_protein_component, openfe.SolventComponent(),
+                [benzene_modifications['toluene'],],
+                generator.forcefield,
+                SolvationSettings())
+
+        resids = [r for r in model.topology.residues()]
+        assert resids[164].name == 'UNK'
+        assert_equal(comp_resids[T4_protein_component], np.linspace(0, 163, 164))
+        assert_equal(comp_resids[benzene_modifications['toluene']], np.array([164]))
+        assert_equal(comp_resids[openfe.SolventComponent()],
+                     np.linspace(165, len(resids)-1, len(resids)-165))
