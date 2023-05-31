@@ -26,7 +26,7 @@ def get_system_generator(
     forcefield_settings: OpenMMSystemGeneratorFFSettings,
     thermo_settings: ThermoSettings,
     system_settings: SystemSettings,
-    cache: Path,
+    cache: Optional[Path],
     has_solvent: bool,
 ) -> SystemGenerator:
     """
@@ -44,7 +44,7 @@ def get_system_generator(
     system_settings : SystemSettings
       System settings including all necessary information for
       the nonbonded methods.
-    cache : pathlib.Path
+    cache : Optional[pathlib.Path]
       Path to openff force field cache.
     has_solvent : bool
       Whether or not the target system has solvent (and by extension
@@ -120,7 +120,7 @@ def get_system_generator(
         forcefield_kwargs=forcefield_kwargs,
         nonperiodic_forcefield_kwargs=nonperiodic_kwargs,
         periodic_forcefield_kwargs=periodic_kwargs,
-        cache=str(cache),
+        cache=str(cache) if cache is not None else None,
         barostat=barostat,
     )
 
