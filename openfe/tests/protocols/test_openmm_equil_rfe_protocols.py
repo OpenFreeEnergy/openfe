@@ -864,6 +864,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
     s.system_settings.nonbonded_method = 'nocutoff'
     s.alchemical_sampler_settings.n_repeats = 1
     s.engine_settings.compute_platform = platform
+    s.simulation_settings.checkpoint_interval = 5 * unit.timestep
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
@@ -874,6 +875,17 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
                    mapping={'ligand': m})
 
     cwd = pathlib.Path(str(tmpdir))
-    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd)
+    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
+                    keep_shared=True)
 
     assert r.ok()
+    for pur in r.protocol_unit_results:
+        unit_shared = tmpdir / f"shared_{pur.source_key}"
+        assert unit_shared.exists()
+        assert pathlib.Path(unit_shared).is_dir()
+        checkpoint = pur.outputs['last_checkpoint']
+        assert checkpoint == unit_shared / "checkpoint.nc"
+        assert checkpoint.exists()
+        nc = pur.outputs['nc']
+        assert nc == unit_shared / "simulation.nc"
+        assert nc.exists()

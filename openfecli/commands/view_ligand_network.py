@@ -2,7 +2,7 @@ import click
 from openfecli import OFECommandPlugin
 
 @click.command(
-    "ligand-network-viewer",
+    "view-ligand-network",
     short_help="Visualize a ligand network"
 )
 @click.argument(
@@ -10,7 +10,7 @@ from openfecli import OFECommandPlugin
     type=click.Path(exists=True, readable=True, dir_okay=False,
                     file_okay=True),
 )
-def ligand_network_viewer(ligand_network):
+def view_ligand_network(ligand_network):
     from openfe.utils.atommapping_network_plotting import (
         plot_atommapping_network
     )
@@ -27,7 +27,7 @@ def ligand_network_viewer(ligand_network):
 
 
 PLUGIN = OFECommandPlugin(
-    command=ligand_network_viewer,
-    section="Setup",
+    command=view_ligand_network,
+    section="Network Planning",
     requires_ofe=(0, 7, 0),
 )

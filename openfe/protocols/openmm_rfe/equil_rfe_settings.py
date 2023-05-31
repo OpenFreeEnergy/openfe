@@ -152,19 +152,23 @@ class SystemSettings(SettingsBaseModel):
 
 class SolvationSettings(SettingsBaseModel):
     """Settings for solvating the system
-    NOTE
+
+    Note
     ----
-    * No solvation will happen if a SolventComponent is not passed.
+    No solvation will happen if a SolventComponent is not passed.
+
     """
+    class Config:
+        arbitrary_types_allowed = True
+
     solvent_model = 'tip3p'
     """
     Force field water model to use.
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
-    class Config:
-        arbitrary_types_allowed = True
 
     solvent_padding = 1.2 * unit.nanometer
+    """Minimum distance from any solute atoms to the solvent box edge."""
 
     @validator('solvent_model')
     def allowed_solvent(cls, v):
