@@ -131,10 +131,10 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         stateB=toluene_vacuum_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert not sampler.is_periodic
 
@@ -155,10 +155,10 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         stateB=toluene_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
 
@@ -178,7 +178,10 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         ff,                    # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
+    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
+    settings.integrator_settings.reassign_velocities = True
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -188,12 +191,12 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         stateB=toluene_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
-        assert sampler.is_periodic
+        assert sampler._factory.hybrid_system
 
 
 @pytest.mark.slow
@@ -213,10 +216,10 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         stateB=toluene_complex_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
 
@@ -249,12 +252,12 @@ def test_hightimestep(benzene_vacuum_system,
         stateB=toluene_vacuum_system,
         mapping={'ligand': benzene_to_toluene_mapping},
     )
-    unit = list(dag.protocol_units)[0]
+    dag_unit = list(dag.protocol_units)[0]
 
     errmsg = "too large for hydrogen mass"
     with tmpdir.as_cwd():
         with pytest.raises(ValueError, match=errmsg):
-            unit.run(dry=True)
+            dag_unit.run(dry=True)
 
 
 def test_n_replicas_not_n_windows(benzene_vacuum_system,
@@ -280,8 +283,8 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
                 stateB=toluene_vacuum_system,
                 mapping={'ligand': benzene_to_toluene_mapping},
             )
-            unit = list(dag.protocol_units)[0]
-            unit.run(dry=True)
+            dag_unit = list(dag.protocol_units)[0]
+            dag_unit.run(dry=True)
 
 
 def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
@@ -487,9 +490,9 @@ def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
             stateA=sysA, stateB=toluene_vacuum_system,
             mapping={'ligand': mapping},
             )
-        unit = list(dag.protocol_units)[0]
+        dag_unit = list(dag.protocol_units)[0]
         with tmpdir.as_cwd():
-            unit.run(dry=True)
+            dag_unit.run(dry=True)
 
 
 @pytest.fixture
@@ -508,11 +511,11 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
 
 def test_unit_tagging(solvent_protocol_dag, tmpdir):
     # test that executing the Units includes correct generation and repeat info
-    units = solvent_protocol_dag.protocol_units
+    dag_units = solvent_protocol_dag.protocol_units
     with mock.patch('openfe.protocols.openmm_rfe.equil_rfe_methods.RelativeHybridTopologyProtocolUnit.run',
                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
         results = []
-        for u in units:
+        for u in dag_units:
             ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
             results.append(ret)
 

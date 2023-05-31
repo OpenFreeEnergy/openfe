@@ -2486,3 +2486,17 @@ class HybridTopologyFactory:
         hybrid_topology : simtk.openmm.app.Topology
         """
         return mdt.Topology.to_openmm(self._hybrid_topology)
+
+    @property
+    def has_virtual_sites(self):
+        """
+        Checks the hybrid system and tells us if we have any virtual sites.
+
+        Returns
+        -------
+        has_virtual_sites : bool
+        """
+        has_virtual_sites = False
+        for ix in range(self._hybrid_system.getNumParticles()):
+            if self._hybrid_system.isVirtualSite(ix):
+                return True

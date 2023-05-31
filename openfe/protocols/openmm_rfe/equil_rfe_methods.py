@@ -591,6 +591,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         #  a. get integrator settings
         integrator_settings = protocol_settings.integrator_settings
 
+        # Validate settings
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        if hybrid_factory.has_virtual_sites:
+            if not integrator_settings.reassign_velocities:
+                errmsg = ("Simulations with virtual sites without velocity "
+                          "reassignments are unstable in openmmtools")
+                raise ValueError(errmsg)
+
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
