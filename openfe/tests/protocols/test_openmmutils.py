@@ -1,10 +1,17 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from pathlib import Path
 import pytest
+from openmm import app, MonteCarloBarostat
+from openmm import unit as ommunit
 from openff.units import unit
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
-        settings_validation, system_validation,
+        settings_validation, system_validation, system_creation
+)
+from openfe.protocols.openmm_rfe.equil_rfe_settings import (
+        SystemSettings,
 )
 
 
@@ -160,4 +167,45 @@ def test_components_complex(T4_protein_component, benzene_modifications):
     assert len(mols) == 2
 
 
+class TestSystemCreation:
+    @staticmethod
+    def get_settings():
+        forcefield_settings=OpenMMSystemGeneratorFFSettings()
+        thermo_settings=ThermoSettings(
+                temperature=298.15 * unit.kelvin,
+                pressure=1 * unit.bar,
+        )
+        system_settings=SystemSettings()
+
+        return forcefield_settings, thermo_settings, system_settings
+
+    def test_system_generator_nosolv_nocache(self):
+        ffsets, thermosets, systemsets = self.get_settings()
+        generator = system_creation.get_system_generator(
+                ffsets, thermosets, systemsets, None, False)
+        assert generator.barostat is None
+        assert generator.template_generator._cache is None
+        assert not generator.postprocess_system
+
+        forcefield_kwargs = {
+            'constraints': app.HBonds,
+            'rigidWater': True,
+            'removeCMMotion': False,
+            'hydrogenMass': 3.0 * ommunit.amu
+        }
+        assert generator.forcefield_kwargs == forcefield_kwargs
+        periodic_kwargs = {
+                'nonbondedMethod': app.PME,
+                'nonbondedCutoff': 1.0 * ommunit.nanometer
+        }
+        nonperiodic_kwargs = {'nonbondedMethod': app.NoCutoff,}
+        assert generator.nonperiodic_forcefield_kwargs == nonperiodic_kwargs
+        assert generator.periodic_forcefield_kwargs == periodic_kwargs
+
+    def test_system_generator_solv_cache(self):
+        ffsets, thermosets, systemsets = self.get_settings()
+        generator = system_creation.get_system_generator(
+                ffsets, thermosets, systemsets, Path('./db.json'), True)
+        assert isinstance(generator.barostat, MonteCarloBarostat)
+        assert generator.template_generator._cache == 'db.json'
 
