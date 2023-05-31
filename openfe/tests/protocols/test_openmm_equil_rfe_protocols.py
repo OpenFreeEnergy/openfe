@@ -163,11 +163,8 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert sampler.is_periodic
 
 
-@pytest.mark.parametrize('ff', [
-    'amber/tip4pew_standard.xml',
-])                                 
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
-                              benzene_to_toluene_mapping, ff, tmpdir):
+                              benzene_to_toluene_mapping, tmpdir):
     """
     Test that we can create a system with virtual sites in the
     environment (waters)
@@ -175,7 +172,7 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        ff,                    # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
@@ -197,6 +194,40 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler._factory.hybrid_system
+
+
+def test_virtual_sites_no_reassign(benzene_system, toluene_system,
+                                   benzene_to_toluene_mapping, tmpdir):
+    """
+    Because of some as-of-yet not fully identified issue, not reassigning
+    velocities will cause systems to NaN.
+    See https://github.com/choderalab/openmmtools/issues/695
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",    # ff14SB protein force field
+        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+    settings.solvation_settings.solvent_model = 'tip4pew'
+    settings.integrator_settings.reassign_velocities = False
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        errmsg = "Simulations with virtual sites without velocity"
+        with pytest.raises(ValueError, match=errmsg):
+            dag_unit.run(dry=True)
 
 
 @pytest.mark.slow
