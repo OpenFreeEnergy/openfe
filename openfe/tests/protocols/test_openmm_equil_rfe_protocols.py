@@ -20,6 +20,9 @@ from rdkit.Geometry import Point3D
 import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
+from openfe.protocols.openmm_rfe.equil_rfe_methods import (
+        _validate_alchemical_components,
+)
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
 
@@ -108,6 +111,25 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
         repeat_ids.add(u.inputs['repeat_id'])
 
     assert len(repeat_ids) == 6
+
+
+@pytest.mark.parametrize('mapping', [
+    None, {'A': 'Foo', 'B': 'bar'},
+])
+def test_validate_alchemical_components_wrong_mappings(mapping):
+    with pytest.raises(ValueError, match="A single LigandAtomMapping"):
+        _validate_alchemical_components(
+            {'stateA': [], 'stateB': []}, mapping
+        )
+
+
+def test_validate_alchemical_components_missing_alchem_comp(
+        benzene_to_toluene_mapping):
+    alchem_comps = {'stateA': [openfe.SolventComponent(),], 'stateB': []}
+    with pytest.raises(ValueError, match="Unmapped alchemical component"):
+        _validate_alchemical_components(
+            alchem_comps, {'ligand': benzene_to_toluene_mapping},
+        )
 
 
 @pytest.mark.parametrize('method', [
@@ -924,6 +946,3 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
-
-# TODO:
-#  - Check passing several non-alchemical small molecules
