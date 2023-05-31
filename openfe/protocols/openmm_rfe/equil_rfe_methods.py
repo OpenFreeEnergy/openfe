@@ -110,9 +110,10 @@ def _validate_alchemical_components(
         for comp in alchemical_components[idx]:
             if comp not in mapped[idx]:
                 raise ValueError(f"Unmapped alchemical component {comp}")
-            if not isinstance(comp, SmallMoleculeComponent):
-                errmsg = ("Transformations between non SmallMoleculeComponent "
-                          "species are not currently supported")
+            if not isinstance(comp, SmallMoleculeComponent):  # pragma: no-cover
+                errmsg = ("Transformations involving non "
+                          "SmallMoleculeComponent species {comp} "
+                          "are not currently supported")
                 raise ValueError(errmsg)
 
     # Validate element changes in mappings
