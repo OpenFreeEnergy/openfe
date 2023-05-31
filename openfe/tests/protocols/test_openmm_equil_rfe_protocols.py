@@ -23,6 +23,7 @@ from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe.equil_rfe_methods import (
         _validate_alchemical_components,
 )
+from openfe.protocols.openmm_utils import system_creation
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
 
@@ -46,6 +47,7 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
     top1 = mod.topology
 
     assert len(list(top1.atoms())) == 2625
+    assert len(list(top1.bonds())) == 2645
 
     lig2 = toluene_complex_system['ligand'].to_openff()
 
@@ -55,6 +57,37 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
     )
 
     assert len(list(top2.atoms())) == 2625 + 3  # added methyl
+    assert len(list(top2.bonds())) == 2645 + 4 - 1 # add methyl bonds, minus hydrogen
+    assert appended_resids[0] == len(list(top1.residues())) - 1
+
+
+def test_append_topology_no_exclude(benzene_complex_system,
+                                    toluene_complex_system):
+    mod = app.Modeller(
+        benzene_complex_system['protein'].to_openmm_topology(),
+        benzene_complex_system['protein'].to_openmm_positions(),
+    )
+    lig1 = benzene_complex_system['ligand'].to_openff()
+    mod.add(
+        lig1.to_topology().to_openmm(),
+        ensure_quantity(lig1.conformers[0], 'openmm'),
+    )
+
+    top1 = mod.topology
+
+    assert len(list(top1.atoms())) == 2625
+    assert len(list(top1.bonds())) == 2645
+
+    lig2 = toluene_complex_system['ligand'].to_openff()
+
+    top2, appended_resids = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
+        top1, lig2.to_topology().to_openmm(),
+        exclude_resids=None,
+    )
+
+    assert len(list(top2.atoms())) == 2625 + 15  # added toluene
+    assert len(list(top2.bonds())) == 2645 + 15 # 15 bonds in toluene
+    assert appended_resids[0] == len(list(top1.residues()))
 
 
 def test_create_default_settings():
