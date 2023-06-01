@@ -19,26 +19,23 @@ from __future__ import annotations
 
 import os
 import logging
-
 from collections import defaultdict
-import gufe
-from gufe import settings
+import uuid
+
 import numpy as np
-import openmm
 from openff.units import unit
-from openff.units.openmm import to_openmm, ensure_quantity
+from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
 from typing import Optional
-from openmm import app
 from openmm import unit as omm_unit
-from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 import pathlib
 from typing import Any, Iterable
 import openmmtools
-import uuid
 
+import gufe
 from gufe import (
-    ChemicalSystem, LigandAtomMapping,
+    settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
+    SmallMoleculeComponent, ProteinComponent,
 )
 
 from .equil_rfe_settings import (
@@ -46,6 +43,9 @@ from .equil_rfe_settings import (
     SolvationSettings, AlchemicalSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings
+)
+from ..openmm_utils import (
+    system_validation, settings_validation, system_creation
 )
 from . import _rfe_utils
 
@@ -60,6 +60,74 @@ def _get_resname(off_mol) -> str:
     if len(names) > 1:
         raise ValueError("We assume single residue")
     return names[0]
+
+
+def _validate_alchemical_components(
+        alchemical_components: dict[str, list[Component]],
+        mapping: Optional[dict[str, ComponentMapping]],
+):
+    """
+    Checks that the alchemical components are suitable for the RFE protocol.
+
+    Specifically we check:
+      1. That all alchemical components are mapped.
+      2. That all alchemical components are SmallMoleculeComponents.
+      3. That the mappings don't involve element changes in core atoms
+         (note: this is a temporary limitation).
+
+    Parameters
+    ----------
+    alchemical_components : dict[str, list[Component]]
+      Dictionary contatining the alchemical components for
+      states A and B.
+    mapping : dict[str, ComponentMapping]
+      Dictionary of mappings between transforming components.
+
+    Raises
+    ------
+    ValueError
+      * If there are more than one mapping or mapping is None
+      * If there are any unmapped alchemical components.
+      * If there are any alchemical components that are not
+        SmallMoleculeComponents.
+      * Mappings which involve element changes in core atoms.
+    """
+    # Check mapping
+    # For now we only allow for a single mapping, this will likely change
+    if mapping is None or len(mapping.values()) > 1:
+        errmsg = "A single LigandAtomMapping is expected for this Protocol"
+        raise ValueError(errmsg)
+
+    # Check that all alchemical components are mapped & small molecules
+    mapped = {}
+    mapped['stateA'] = [m.componentA for m in mapping.values()]
+    mapped['stateB'] = [m.componentB for m in mapping.values()]
+
+    for idx in ['stateA', 'stateB']:
+        if len(alchemical_components[idx]) != len(mapped[idx]):
+            errmsg = f"missing alchemical components in {idx}"
+            raise ValueError(errmsg)
+        for comp in alchemical_components[idx]:
+            if comp not in mapped[idx]:
+                raise ValueError(f"Unmapped alchemical component {comp}")
+            if not isinstance(comp, SmallMoleculeComponent):  # pragma: no-cover
+                errmsg = ("Transformations involving non "
+                          "SmallMoleculeComponent species {comp} "
+                          "are not currently supported")
+                raise ValueError(errmsg)
+
+    # Validate element changes in mappings
+    for m in mapping.values():
+        molA = m.componentA.to_rdkit()
+        molB = m.componentB.to_rdkit()
+        for i, j in m.componentA_to_componentB.items():
+            atomA = molA.GetAtomWithIdx(i)
+            atomB = molB.GetAtomWithIdx(j)
+            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
+                raise ValueError(
+                    f"Element change in mapping between atoms "
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
 
 
 class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
@@ -133,7 +201,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettings(
-                equilibration_length=2.0 * unit.nanosecond,
+                equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             )
         )
@@ -146,66 +214,35 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
-        if mapping is None:
-            raise ValueError("`mapping` is required for this Protocol")
-        if 'ligand' not in mapping:
-            raise ValueError("'ligand' must be specified in `mapping` dict")
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Checks on the inputs!
-        # 1) check that both states have solvent and ligand
-        for state, label in [(stateA, 'A'), (stateB, 'B')]:
-            if 'solvent' not in state.components:
-                nonbond = self.settings.system_settings.nonbonded_method
-                if nonbond != 'nocutoff':
-                    errmsg = f"{nonbond} cannot be used for vacuum transform"
-                    raise ValueError(errmsg)
-            if 'ligand' not in state.components:
-                raise ValueError(f"Missing ligand in state {label}")
-        # 1b) check xnor have Protein component
-        nproteins = sum(1 for state in (stateA, stateB) if 'protein' in state)
-        if nproteins == 1:  # only one state has a protein defined
-            raise ValueError("Only one state had a protein component")
-        elif nproteins == 2:
-            if stateA['protein'] != stateB['protein']:
-                raise ValueError("Proteins in each state aren't compatible")
+        # Get alchemical components & validate them + mapping
+        alchem_comps = system_validation.get_alchemical_components(
+            stateA, stateB
+        )
+        _validate_alchemical_components(alchem_comps, mapping)
 
-        # 2) check that both states have same solvent
-        # TODO: defined box compatibility check
-        #       probably lives as a ChemicalSystem.box_is_compatible_with(other)
-        if 'solvent' in stateA.components:
-            if not stateA['solvent'] == stateB['solvent']:
-                raise ValueError("Solvents aren't identical between states")
-        # check that the mapping refers to the two ligand components
-        ligandmapping: LigandAtomMapping = mapping['ligand']
-        if stateA['ligand'] != ligandmapping.componentA:
-            raise ValueError("Ligand in state A doesn't match mapping")
-        if stateB['ligand'] != ligandmapping.componentB:
-            raise ValueError("Ligand in state B doesn't match mapping")
-        # 3) check that the mapping doesn't involve element changes
-        # this is currently a requirement of the method
-        molA = ligandmapping.componentA.to_rdkit()
-        molB = ligandmapping.componentB.to_rdkit()
-        for i, j in ligandmapping.componentA_to_componentB.items():
-            atomA = molA.GetAtomWithIdx(i)
-            atomB = molB.GetAtomWithIdx(j)
-            if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                raise ValueError(
-                    f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+        # For now we've made it fail already if it was None,
+        ligandmapping = list(mapping.values())[0]  # type: ignore
+
+        # Validate solvent component
+        nonbond = self.settings.system_settings.nonbonded_method
+        system_validation.validate_solvent(stateA, nonbond)
+
+        # Validate protein component
+        system_validation.validate_protein(stateA)
 
         # actually create and return Units
-        Aname = stateA['ligand'].name
-        Bname = stateB['ligand'].name
+        Anames = ','.join(c.name for c in alchem_comps['stateA'])
+        Bnames = ','.join(c.name for c in alchem_comps['stateB'])
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.alchemical_sampler_settings.n_repeats
         units = [RelativeHybridTopologyProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
-            name=f'{Aname} {Bname} repeat {i} generation 0')
+            name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]
 
         return units
@@ -242,7 +279,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  ligandmapping: LigandAtomMapping,
-                 settings: settings.RelativeHybridTopologyProtocolSettings,
+                 settings: RelativeHybridTopologyProtocolSettings,
                  generation: int,
                  repeat_id: int,
                  name: Optional[str] = None,
@@ -321,8 +358,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 0. General setup and settings dependency resolution step
 
-        # a. check timestep correctness + that
-        # equilibration & production are divisible by n_steps
+        # Extract relevant settings
         protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
@@ -339,179 +375,93 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         mc_steps = protocol_settings.integrator_settings.n_steps.m
 
         # is the timestep good for the mass?
-        if forcefield_settings.hydrogen_mass < 3.0:
-            if timestep > 2.0 * unit.femtoseconds:
-                errmsg = (f"timestep {timestep} too large for "
-                          "hydrogen mass {forcefield_settings.hydrogen_mass}")
-                raise ValueError(errmsg)
-
-        equil_time = sim_settings.equilibration_length.to('femtosecond')
-        equil_steps = round(equil_time / timestep)
-
-        logger.debug(f'Timestep is {timestep}')
-        logger.debug(f'MC move frequency is {mc_steps}')
-        logger.debug(f'Equilibration time was {equil_time}')
-        logger.debug(f'Equilibration steps is {equil_steps}')
-
-        # mypy gets the return type of round wrong, it's a Quantity
-        if (equil_steps.m % mc_steps) != 0:  # type: ignore
-            errmsg = (f"Equilibration time {equil_time} should contain a "
-                      f"number of steps ({equil_steps}) divisible by the number of integrator "
-                      f"timesteps between MC moves {mc_steps}")
-            raise ValueError(errmsg)
-
-        prod_time = sim_settings.production_length.to('femtosecond')
-        prod_steps = round(prod_time / timestep)
-
-        logger.debug(f'Production time was {prod_time}')
-        logger.debug(f'Production steps is {prod_steps}')
-
-        if (prod_steps.m % mc_steps) != 0:  # type: ignore
-            errmsg = (f"Production time {prod_time} should contain a "
-                      f"number of steps ({prod_steps}) divisible by the number of integrator "
-                      f"timesteps between MC moves {mc_steps}")
-            raise ValueError(errmsg)
-
-        # b. get the openff objects for the ligands
-        stateA_openff_ligand = stateA['ligand'].to_openff()
-        stateB_openff_ligand = stateB['ligand'].to_openff()
-
-        # temporary hack, will fix in next PR
-        ligand_ff = f"{forcefield_settings.small_molecule_forcefield}.offxml"
-
-        #  1. Get smirnoff template generators
-        smirnoff_stateA = SMIRNOFFTemplateGenerator(
-            forcefield=ligand_ff,
-            molecules=[stateA_openff_ligand],
+        settings_validation.validate_timestep(
+            forcefield_settings.hydrogen_mass, timestep
+        )
+        equil_steps, prod_steps = settings_validation.get_simsteps(
+            equil_length=sim_settings.equilibration_length,
+            prod_length=sim_settings.production_length,
+            timestep=timestep, mc_steps=mc_steps
         )
 
-        smirnoff_stateB = SMIRNOFFTemplateGenerator(
-            forcefield=ligand_ff,
-            molecules=[stateB_openff_ligand],
-        )
+        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        # 2. Create forece fields and register them
-        #  a. state A
-        omm_forcefield_stateA = app.ForceField(
-            *[ff for ff in forcefield_settings.forcefields]
-        )
-
-        omm_forcefield_stateA.registerTemplateGenerator(
-                smirnoff_stateA.generator)
-
-        #  b. state B
-        omm_forcefield_stateB = app.ForceField(
-            *[ff for ff in forcefield_settings.forcefields]
-        )
-
-        omm_forcefield_stateB.registerTemplateGenerator(
-                smirnoff_stateB.generator)
-
-        # 3. Model state A
-        # Note: protein dry run tests are part of the slow tests and don't show
-        # up in coverage reports
-        stateA_ligand_topology = stateA_openff_ligand.to_topology().to_openmm()
-        if 'protein' in stateA.components:  # pragma: no-cover
-            pdbfile: gufe.ProteinComponent = stateA['protein']
-            stateA_modeller = app.Modeller(pdbfile.to_openmm_topology(),
-                                           pdbfile.to_openmm_positions())
-            stateA_modeller.add(
-                stateA_ligand_topology,
-                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
-            )
+        # 1. Create stateA system
+        # a. get a system generator
+        if sim_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / sim_settings.forcefield_cache
         else:
-            stateA_modeller = app.Modeller(
-                stateA_ligand_topology,
-                ensure_quantity(stateA_openff_ligand.conformers[0], 'openmm'),
-            )
-        # make note of which chain id(s) the ligand is,
-        # we'll need this to swap it out later
-        stateA_ligand_nchains = stateA_ligand_topology.getNumChains()
-        stateA_ligand_chain_id = stateA_modeller.topology.getNumChains()
+            ffcache = None
 
-        # 4. Solvate the complex in a `concentration` mM cubic water box with
-        # `solvent_padding` from the solute to the edges of the box
-        if 'solvent' in stateA.components:
-            conc = stateA['solvent'].ion_concentration
-            pos = stateA['solvent'].positive_ion
-            neg = stateA['solvent'].negative_ion
-
-            stateA_modeller.addSolvent(
-                omm_forcefield_stateA,
-                model=solvation_settings.solvent_model,
-                padding=to_openmm(solvation_settings.solvent_padding),
-                positiveIon=pos, negativeIon=neg,
-                ionicStrength=to_openmm(conc),
-            )
-
-        # 5.  Create OpenMM system + topology + initial positions for "A" system
-        #  a. Get nonbond method
-        nonbonded_method = {
-            'pme': app.PME,
-            'nocutoff': app.NoCutoff,
-            'cutoffnonperiodic': app.CutoffNonPeriodic,
-            'cutoffperiodic': app.CutoffPeriodic,
-            'ewald': app.Ewald
-        }[system_settings.nonbonded_method.lower()]
-
-        #  b. Get the constraint method
-        constraints = {
-            'hbonds': app.HBonds,
-            'none': None,
-            'allbonds': app.AllBonds,
-            'hangles': app.HAngles
-            # vvv can be None so string it
-        }[str(forcefield_settings.constraints).lower()]
-
-        #  c. create the stateA System
-        stateA_system = omm_forcefield_stateA.createSystem(
-            stateA_modeller.topology,
-            nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(system_settings.nonbonded_cutoff),
-            constraints=constraints,
-            rigidWater=forcefield_settings.rigid_water,
-            hydrogenMass=forcefield_settings.hydrogen_mass * omm_unit.amu,
-            removeCMMotion=forcefield_settings.remove_com,
+        system_generator = system_creation.get_system_generator(
+            forcefield_settings=forcefield_settings,
+            thermo_settings=thermo_settings,
+            system_settings=system_settings,
+            cache=ffcache,
+            has_solvent=solvent_comp is not None,
         )
 
-        #  d. create stateA topology
+        # b. force the creation of parameters
+        # This is necessary because we need to have the FF generated ahead of
+        # solvating the system.
+        # Note: by default this is cached to ctx.shared/db.json so shouldn't
+        # incur too large a cost
+        for comp in small_mols:
+            offmol = comp.to_openff()
+            system_generator.create_system(offmol.to_topology().to_openmm(),
+                                           molecules=[offmol])
+            if comp == mapping.componentA:
+                molB = mapping.componentB.to_openff()
+                system_generator.create_system(molB.to_topology().to_openmm(),
+                                               molecules=[molB])
+
+        # c. get OpenMM Modeller + a dictionary of resids for each component
+        stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+            protein_comp=protein_comp,
+            solvent_comp=solvent_comp,
+            small_mols=small_mols,
+            omm_forcefield=system_generator.forcefield,
+            solvent_settings=solvation_settings,
+        )
+
+        # d. get topology & positions
+        # Note: roundtrip positions to remove vec3 issues
         stateA_topology = stateA_modeller.getTopology()
-
-        #  e. get stateA positions
-        stateA_positions = stateA_modeller.getPositions()
-        # TODO: fix this using the same approach as the AFE Protocol
-        # canonicalize positions (tuples to np.array)
-        stateA_positions = omm_unit.Quantity(
-            value=np.array([list(pos) for pos in stateA_positions.value_in_unit_system(openmm.unit.md_unit_system)]),
-            unit=openmm.unit.nanometers
+        stateA_positions = to_openmm(
+            from_openmm(stateA_modeller.getPositions())
         )
 
-        # 6.  Create OpenMM system + topology + positions for "B" system
-        #  a. stateB topology from stateA (replace out the ligands)
-        stateB_topology = _rfe_utils.topologyhelpers.combined_topology(
+        # e. create the stateA System
+        stateA_system = system_generator.create_system(
+            stateA_modeller.topology,
+            molecules=[s.to_openff() for s in small_mols],
+        )
+
+
+        # 2. Get stateB system
+        # a. get the topology
+        stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
-            stateB_openff_ligand.to_topology().to_openmm(),
-            # as we kept track as we added, we can slice the ligand out
-            # this isn't at the end because of solvents
-            exclude_chains=list(stateA_topology.chains())[stateA_ligand_chain_id - stateA_ligand_nchains:stateA_ligand_chain_id]
+            mapping.componentB.to_openff().to_topology().to_openmm(),
+            exclude_resids=comp_resids[mapping.componentA],
         )
 
-        #  b. Create the system
-        stateB_system = omm_forcefield_stateB.createSystem(
+        # b. get a list of small molecules for stateB
+        off_mols_stateB = [mapping.componentB.to_openff(),]
+        for comp in small_mols:
+            if comp != mapping.componentA:
+                off_mols_stateB.append(comp.to_openff())
+
+        stateB_system = system_generator.create_system(
             stateB_topology,
-            nonbondedMethod=nonbonded_method,
-            nonbondedCutoff=to_openmm(system_settings.nonbonded_cutoff),
-            constraints=constraints,
-            rigidWater=forcefield_settings.rigid_water,
-            hydrogenMass=forcefield_settings.hydrogen_mass * omm_unit.amu,
-            removeCMMotion=forcefield_settings.remove_com,
+            molecules=off_mols_stateB,
         )
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
             mapping.componentA_to_componentB,
-            stateA_system, stateA_topology, _get_resname(stateA_openff_ligand),
-            stateB_system, stateB_topology, _get_resname(stateB_openff_ligand),
+            stateA_system, stateA_topology, comp_resids[mapping.componentA],
+            stateB_system, stateB_topology, stateB_alchem_resids,
             # These are non-optional settings for this method
             fix_constraints=True,
         )
@@ -520,10 +470,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
-            insert_positions=ensure_quantity(stateB_openff_ligand.conformers[0], 'openmm'),
+            insert_positions=ensure_quantity(mapping.componentB.to_openff().conformers[0], 'openmm'),
         )
 
-        # 7. Create the hybrid topology
+        # 3. Create the hybrid topology
         hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
@@ -540,17 +490,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             flatten_torsions=alchem_settings.flatten_torsions,
         )
 
-        #  c. Add a barostat to the hybrid system
-        if 'solvent' in stateA.components:
-            hybrid_factory.hybrid_system.addForce(
-                openmm.MonteCarloBarostat(
-                    protocol_settings.thermo_settings.pressure.to(unit.bar).m,
-                    protocol_settings.thermo_settings.temperature.m,
-                    protocol_settings.integrator_settings.barostat_frequency.m,
-                )
-            )
-
-        # 8. Create lambda schedule
+        # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
@@ -633,7 +573,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             n_replicas=sampler_settings.n_replicas,
             reporter=reporter,
             lambda_protocol=lambdas,
-            temperature=to_openmm(protocol_settings.thermo_settings.temperature),
+            temperature=to_openmm(thermo_settings.temperature),
             endstates=alchem_settings.unsampled_endstates,
             minimization_platform=platform.getName(),
         )
@@ -662,13 +602,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 if verbose:
                     logger.info("equilibrating systems")
 
-                sampler.equilibrate(int(equil_steps.m / mc_steps))  # type: ignore
+                sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
                 # production
                 if verbose:
                     logger.info("running production phase")
 
-                sampler.extend(int(prod_steps.m / mc_steps))  # type: ignore
+                sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
                 # calculate estimate of results from this individual unit
                 ana = multistate.MultiStateSamplerAnalyzer(reporter)
