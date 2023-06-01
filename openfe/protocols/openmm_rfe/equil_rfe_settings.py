@@ -470,10 +470,10 @@ class SimulationSettings(SettingsBaseModel):
     # reporter settings
     output_filename = 'simulation.nc'
     """Path to the storage file for analysis. Default 'simulation.nc'."""
-    output_indices = 'all'
+    output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.
-    Default 'all'.
+    Default 'not water'.
     """
     checkpoint_interval = 250 * unit.timestep
     """
