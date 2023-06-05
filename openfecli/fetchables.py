@@ -12,7 +12,7 @@ RBFE_SHOWCASE = URLFetcher(
         (_EXAMPLE_NB_BASE + "openmm_rbfe", "inputs/181L_mod_capped_protonated.pdb"),
     ],
     short_name="rbfe-showcase",
-    short_help="Inputes needed for the RBFE Showcase Notebook",
+    short_help="Inputs needed for the RBFE Showcase Notebook",
     section="Tutorials",
     requires_ofe=(0, 9, 1),
 ).plugin
