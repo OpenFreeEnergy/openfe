@@ -10,7 +10,7 @@ RBFE_SHOWCASE = URLFetcher(
         (_EXAMPLE_NB_BASE + "openmm_rbfe/", "ligands.sdf"),
         (_EXAMPLE_NB_BASE + "openmm_rbfe/", "Jnk1_ligands.sdf"),
         (_EXAMPLE_NB_BASE + "openmm_rbfe/", "181L_mod_capped_protonated.pdb"),
-    ]
+    ],
     short_name="rbfe-showcase",
     short_help="Inputes needed for the RBFE Showcase Notebook",
     section="Tutorials",
