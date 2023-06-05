@@ -511,7 +511,7 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
         )
 
 
-def test_element_change_rejection(atom_mapping_basic_test_files):
+def test_element_change_warning(atom_mapping_basic_test_files):
     # check a mapping with element change gets rejected early
     l1 = atom_mapping_basic_test_files['2-methylnaphthalene']
     l2 = atom_mapping_basic_test_files['2-naftanol']
@@ -529,7 +529,7 @@ def test_element_change_rejection(atom_mapping_basic_test_files):
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError, match="Element change"):
+    with pytest.warns(UserWarning, match="Element change"):
         _ = p.create(
             stateA=sys1, stateB=sys2,
             mapping={'ligand': mapping},

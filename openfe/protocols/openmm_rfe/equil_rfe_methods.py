@@ -21,7 +21,7 @@ import os
 import logging
 from collections import defaultdict
 import uuid
-import warning
+import warnings
 
 import numpy as np
 from openff.units import unit
