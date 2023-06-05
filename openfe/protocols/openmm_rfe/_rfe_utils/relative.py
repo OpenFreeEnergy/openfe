@@ -158,7 +158,11 @@ class HybridTopologyFactory:
         # Other options
         self._use_dispersion_correction = use_dispersion_correction
         self._interpolate_14s = interpolate_old_and_new_14s
-        self._flatten_torsions = flatten_torsions
+
+        # TODO: re-implement this at some point
+        if flatten_torsions:
+            errmsg = "Flatten torsions option is not current implemented"
+            raise ValueError(errmsg)
 
         # Sofcore options
         self._softcore_alpha = softcore_alpha
@@ -376,8 +380,7 @@ class HybridTopologyFactory:
 
         TODO
         ----
-        * Verify if we should just not allow elemental changes, current
-          behaviour reflects original perses code.
+        * Review influence of lack of mass scaling.
         """
         # Begin by copying all particles in the old system
         for particle_idx in range(self._old_system.getNumParticles()):

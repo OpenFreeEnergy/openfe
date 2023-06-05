@@ -21,6 +21,7 @@ import os
 import logging
 from collections import defaultdict
 import uuid
+import warning
 
 import numpy as np
 from openff.units import unit
@@ -72,8 +73,7 @@ def _validate_alchemical_components(
     Specifically we check:
       1. That all alchemical components are mapped.
       2. That all alchemical components are SmallMoleculeComponents.
-      3. That the mappings don't involve element changes in core atoms
-         (note: this is a temporary limitation).
+      3. If the mappings involves element changes in core atoms
 
     Parameters
     ----------
@@ -90,7 +90,8 @@ def _validate_alchemical_components(
       * If there are any unmapped alchemical components.
       * If there are any alchemical components that are not
         SmallMoleculeComponents.
-      * Mappings which involve element changes in core atoms.
+    UserWarning
+      * Mappings which involve element changes in core atoms
     """
     # Check mapping
     # For now we only allow for a single mapping, this will likely change
@@ -124,10 +125,15 @@ def _validate_alchemical_components(
             atomA = molA.GetAtomWithIdx(i)
             atomB = molB.GetAtomWithIdx(j)
             if atomA.GetAtomicNum() != atomB.GetAtomicNum():
-                raise ValueError(
+                wmsg = (
                     f"Element change in mapping between atoms "
                     f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}")
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}\n"
+                    "No mass scaling is attempted in the hybrid topology, "
+                    "the average mass of the two atoms will be used in the "
+                    "simulation")
+                logger.warn(wmsg)
+                warnings.warn(wmsg)  # TODO: remove this once logging is fixed
 
 
 class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
