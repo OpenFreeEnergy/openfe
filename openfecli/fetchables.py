@@ -7,9 +7,9 @@ _EXAMPLE_NB_BASE = ("https://raw.githubusercontent.com/"
 
 RBFE_SHOWCASE = URLFetcher(
     resources=[
-        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs", "ligands.sdf"),
-        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs", "Jnk1_ligands.sdf"),
-        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs", "181L_mod_capped_protonated.pdb"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe", "inputs/ligands.sdf"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe", "inputs/Jnk1_ligands.sdf"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe", "inputs/181L_mod_capped_protonated.pdb"),
     ],
     short_name="rbfe-showcase",
     short_help="Inputes needed for the RBFE Showcase Notebook",
