@@ -158,7 +158,11 @@ class HybridTopologyFactory:
         # Other options
         self._use_dispersion_correction = use_dispersion_correction
         self._interpolate_14s = interpolate_old_and_new_14s
-        self._flatten_torsions = flatten_torsions
+
+        # TODO: re-implement this at some point
+        if flatten_torsions:
+            errmsg = "Flatten torsions option is not current implemented"
+            raise ValueError(errmsg)
 
         # Sofcore options
         self._softcore_alpha = softcore_alpha
@@ -376,8 +380,7 @@ class HybridTopologyFactory:
 
         TODO
         ----
-        * Verify if we should just not allow elemental changes, current
-          behaviour reflects original perses code.
+        * Review influence of lack of mass scaling.
         """
         # Begin by copying all particles in the old system
         for particle_idx in range(self._old_system.getNumParticles()):
@@ -2079,6 +2082,8 @@ class HybridTopologyFactory:
 
         nonbonded_exceptions_force = openmm.CustomBondForce(
                                          old_new_nonbonded_exceptions)
+        name = f"{nonbonded_exceptions_force.__class__.__name__}_exceptions"
+        nonbonded_exceptions_force.setName(name)
         self._hybrid_system.addForce(nonbonded_exceptions_force)
 
         # For reference, set name in force dict
