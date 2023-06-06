@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
-
+import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 from gufe.protocols import execute_DAG
@@ -11,7 +11,7 @@ from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
 
-from openmm import app, Platform, XmlSerializer
+from openmm import app, Platform, XmlSerializer, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
@@ -20,6 +20,10 @@ from rdkit.Geometry import Point3D
 import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
+from openfe.protocols.openmm_rfe.equil_rfe_methods import (
+        _validate_alchemical_components,
+)
+from openfe.protocols.openmm_utils import system_creation
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
 
@@ -43,15 +47,47 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
     top1 = mod.topology
 
     assert len(list(top1.atoms())) == 2625
+    assert len(list(top1.bonds())) == 2645
 
     lig2 = toluene_complex_system['ligand'].to_openff()
 
-    top2 = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
+    top2, appended_resids = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
         top1, lig2.to_topology().to_openmm(),
-        exclude_chains=list(top1.chains())[-1:],
+        exclude_resids=np.asarray(list(top1.residues())[-1].index),
     )
 
     assert len(list(top2.atoms())) == 2625 + 3  # added methyl
+    assert len(list(top2.bonds())) == 2645 + 4 - 1 # add methyl bonds, minus hydrogen
+    assert appended_resids[0] == len(list(top1.residues())) - 1
+
+
+def test_append_topology_no_exclude(benzene_complex_system,
+                                    toluene_complex_system):
+    mod = app.Modeller(
+        benzene_complex_system['protein'].to_openmm_topology(),
+        benzene_complex_system['protein'].to_openmm_positions(),
+    )
+    lig1 = benzene_complex_system['ligand'].to_openff()
+    mod.add(
+        lig1.to_topology().to_openmm(),
+        ensure_quantity(lig1.conformers[0], 'openmm'),
+    )
+
+    top1 = mod.topology
+
+    assert len(list(top1.atoms())) == 2625
+    assert len(list(top1.bonds())) == 2645
+
+    lig2 = toluene_complex_system['ligand'].to_openff()
+
+    top2, appended_resids = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
+        top1, lig2.to_topology().to_openmm(),
+        exclude_resids=None,
+    )
+
+    assert len(list(top2.atoms())) == 2625 + 15  # added toluene
+    assert len(list(top2.bonds())) == 2645 + 15 # 15 bonds in toluene
+    assert appended_resids[0] == len(list(top1.residues()))
 
 
 def test_create_default_settings():
@@ -110,6 +146,25 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
     assert len(repeat_ids) == 6
 
 
+@pytest.mark.parametrize('mapping', [
+    None, {'A': 'Foo', 'B': 'bar'},
+])
+def test_validate_alchemical_components_wrong_mappings(mapping):
+    with pytest.raises(ValueError, match="A single LigandAtomMapping"):
+        _validate_alchemical_components(
+            {'stateA': [], 'stateB': []}, mapping
+        )
+
+
+def test_validate_alchemical_components_missing_alchem_comp(
+        benzene_to_toluene_mapping):
+    alchem_comps = {'stateA': [openfe.SolventComponent(),], 'stateB': []}
+    with pytest.raises(ValueError, match="Unmapped alchemical component"):
+        _validate_alchemical_components(
+            alchem_comps, {'ligand': benzene_to_toluene_mapping},
+        )
+
+
 @pytest.mark.parametrize('method', [
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
@@ -137,6 +192,54 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert not sampler.is_periodic
+        assert sampler._thermodynamic_states[0].barostat is None
+
+
+def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
+                             benzene_to_toluene_mapping, tmpdir):
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.small_molecule_forcefield = 'gaff-2.11'
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+
+
+def test_dry_many_molecules_solvent(
+    benzene_many_solv_system, toluene_many_solv_system,
+    benzene_to_toluene_mapping, tmpdir
+):
+    """
+    A basic test flushing "will it work if you pass multiple molecules"
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_many_solv_system,
+        stateB=toluene_many_solv_system,
+        mapping={'spicyligand': benzene_to_toluene_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -161,6 +264,9 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
+        assert isinstance(sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
 
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
@@ -253,6 +359,9 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
+        assert isinstance(sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
 
 def test_lambda_schedule_default():
@@ -326,7 +435,8 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
 
-    with pytest.raises(ValueError, match='Missing ligand in state B'):
+    match_str = "missing alchemical components in stateB"
+    with pytest.raises(ValueError, match=match_str):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
@@ -334,7 +444,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         )
 
 
-def test_vaccuum_PME_error(benzene_system, benzene_modifications,
+def test_vaccuum_PME_error(benzene_vacuum_system, benzene_modifications,
                            benzene_to_toluene_mapping):
     # state B doesn't have a solvent component (i.e. its vacuum)
     stateB = openfe.ChemicalSystem({'ligand': benzene_modifications['toluene']})
@@ -345,7 +455,7 @@ def test_vaccuum_PME_error(benzene_system, benzene_modifications,
     errmsg = "PME cannot be used for vacuum transform"
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
-            stateA=benzene_system,
+            stateA=benzene_vacuum_system,
             stateB=stateB,
             mapping={'ligand': benzene_to_toluene_mapping},
         )
@@ -363,7 +473,10 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError, match="Solvents aren't identical"):
+    # We don't have a way to map non-ligand components so for now it
+    # just triggers that it's not a mapped component
+    errmsg = "missing alchemical components in stateA"
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
@@ -382,8 +495,9 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError,
-                       match="Ligand in state B doesn't match mapping"):
+    errmsg = (r"Unmapped alchemical component "
+              r"SmallMoleculeComponent\(name=toluene\)")
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
@@ -401,8 +515,9 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError,
-                       match="Ligand in state A doesn't match mapping"):
+    errmsg = (r"Unmapped alchemical component "
+              r"SmallMoleculeComponent\(name=benzene\)")
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
@@ -424,17 +539,19 @@ def test_complex_mismatch(benzene_system, toluene_complex_system,
         )
 
 
-def test_badly_specified_mapping(benzene_system, toluene_system,
+def test_too_many_specified_mappings(benzene_system, toluene_system,
                                  benzene_to_toluene_mapping):
     # mapping dict requires 'ligand' key
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
-    with pytest.raises(ValueError):
+    errmsg = "A single LigandAtomMapping is expected for this Protocol"
+    with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping={'solvent': benzene_to_toluene_mapping}
+            mapping={'solvent': benzene_to_toluene_mapping,
+                     'ligand': benzene_to_toluene_mapping,}
         )
 
 
@@ -612,10 +729,10 @@ class TestConstraintRemoval:
             removeCMMotion=True,
         )
 
-        stateB_topology = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
+        stateB_topology, _ = openmm_rfe._rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             ligB.to_openff().to_topology().to_openmm(),
-            exclude_chains=list(stateA_topology.chains())
+            exclude_resids=np.array([r.index for r in list(stateA_topology.residues())])
         )
         # since we're doing a swap of the only molecule, this is equivalent:
         # stateB_topology = app.Modeller(
@@ -881,7 +998,8 @@ def set_openmm_threads_1():
 @pytest.mark.slow
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
+def test_openmm_run_engine(benzene_vacuum_system, platform,
+                           available_platforms, benzene_modifications,
                            set_openmm_threads_1, tmpdir):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
@@ -900,9 +1018,17 @@ def test_openmm_run_engine(benzene_vacuum_system, platform, available_platforms,
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
     b = benzene_vacuum_system['ligand']
-    m = openfe.LigandAtomMapping(componentA=b, componentB=b,
+    
+    # make a copy with a different name
+    rdmol = benzene_modifications['benzene'].to_rdkit()
+    b_alt = openfe.SmallMoleculeComponent.from_rdkit(rdmol, name='alt')
+    benzene_vacuum_alt_system = openfe.ChemicalSystem({
+        'ligand': b_alt
+    })
+
+    m = openfe.LigandAtomMapping(componentA=b, componentB=b_alt,
                                  componentA_to_componentB={i: i for i in range(12)})
-    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_system,
+    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_alt_system,
                    mapping={'ligand': m})
 
     cwd = pathlib.Path(str(tmpdir))

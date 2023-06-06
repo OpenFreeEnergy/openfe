@@ -4,6 +4,7 @@ channels:
 - https://conda.anaconda.org/conda-forge
 dependencies:
 - autodoc-pydantic
+- openff-toolkit >=0.13.0
 - openff-units
 - openmm
 - plugcli

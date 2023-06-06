@@ -10,9 +10,6 @@
 name: Create and publish a Docker image
 
 on:
-  push:
-    tags:
-      - '*'  # Build on pushes with tags (unless they contain a / )
   workflow_dispatch:
 
 defaults:

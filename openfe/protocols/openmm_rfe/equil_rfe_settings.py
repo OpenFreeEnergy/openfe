@@ -470,10 +470,10 @@ class SimulationSettings(SettingsBaseModel):
     # reporter settings
     output_filename = 'simulation.nc'
     """Path to the storage file for analysis. Default 'simulation.nc'."""
-    output_indices = 'all'
+    output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.
-    Default 'all'.
+    Default 'not water'.
     """
     checkpoint_interval = 250 * unit.timestep
     """
@@ -484,7 +484,7 @@ class SimulationSettings(SettingsBaseModel):
     Separate filename for the checkpoint file. Note, this should
     not be a full path, just a filename. Default 'checkpoint.nc'.
     """
-    forcefield_cache: Optional[str] = None
+    forcefield_cache: Optional[str] = 'db.json'
     """
     Filename for caching small molecule residue templates so they can be
     later reused.
