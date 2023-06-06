@@ -1,6 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+import importlib
+from rdkit import Chem
 from rdkit.Geometry import Point3D
 import openfe
 from openff.units import unit
@@ -137,3 +139,15 @@ def toluene_many_solv_system(benzene_modifications):
          "bar": benzo,
          "solvent": openfe.SolventComponent()},
     )
+
+
+@pytest.fixture
+def benzene_to_pyridine():
+    files = {}
+    with importlib.resources.path('openfe.tests.data',
+                                  'benzene_to_pyridine.sdf') as fn:
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = openfe.SmallMoleculeComponent(rdmol)
+    return files
+

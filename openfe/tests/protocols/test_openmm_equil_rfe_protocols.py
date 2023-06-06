@@ -242,6 +242,46 @@ def test_dry_many_molecules_solvent(
         sampler = unit.run(dry=True)['debug']['sampler']
 
 
+def test_dry_core_element_change(benzene_to_pyridine, tmpdir):
+    benz = benzene_to_pyridine['benzene']
+    pyr = benzene_to_pyridine['pyridine']
+
+    mapping = openfe.LigandAtomMapping(
+        benz, pyr,
+        {0: 0, 1: 10, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 9, 9: 8, 10: 7, 11: 6}
+    )
+
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.system_settings.nonbonded_method = 'nocutoff'
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem({'ligand': benz,}),
+        stateB=openfe.ChemicalSystem({'ligand': pyr,}),
+        mapping={'whatamapping': mapping},
+    )
+
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        system = sampler._hybrid_factory.hybrid_system
+        assert system.getNumParticles() == 12
+        # Average mass between nitrogen and carbon
+        assert system.getParticleMass(1) == 12.0127235 * omm_unit.amu
+
+        # Get out the CustomNonbondedForce
+        cnf = [f for f in system.getForces()
+               if f.__class__.__name__ == 'CustomNonbondedForce'][0]
+        # there should be no new unique atoms
+        assert cnf.getInteractionGroupParameters(6) == [(), ()]
+        # there should be one old unique atom (spare hydrogen from the benzene)
+        assert cnf.getInteractionGroupParameters(7) == [(7,), (7,)]
+
+
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
