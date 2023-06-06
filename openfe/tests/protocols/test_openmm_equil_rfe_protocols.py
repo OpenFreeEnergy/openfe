@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
+from io import StringIO
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
@@ -15,6 +16,7 @@ from openmm import app, Platform, XmlSerializer, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
+from rdkit import Chem
 from rdkit.Geometry import Point3D
 
 import openfe
@@ -242,9 +244,76 @@ def test_dry_many_molecules_solvent(
         sampler = unit.run(dry=True)['debug']['sampler']
 
 
-def test_dry_core_element_change(benzene_to_pyridine, tmpdir):
-    benz = benzene_to_pyridine['benzene']
-    pyr = benzene_to_pyridine['pyridine']
+BENZ = """\
+benzene
+  PyMOL2.5          3D                             0
+
+ 12 12  0  0  0  0  0  0  0  0999 V2000
+    1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7022    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7023    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2540    2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.2540    2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.5079   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.2540   -2.1719    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2540   -2.1720    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0  0  0  0
+  1  6  1  0  0  0  0
+  1  7  1  0  0  0  0
+  2  3  1  0  0  0  0
+  2  8  1  0  0  0  0
+  3  4  2  0  0  0  0
+  3  9  1  0  0  0  0
+  4  5  1  0  0  0  0
+  4 10  1  0  0  0  0
+  5  6  2  0  0  0  0
+  5 11  1  0  0  0  0
+  6 12  1  0  0  0  0
+M  END
+$$$$
+"""
+
+
+PYRIDINE = """\
+pyridine
+  PyMOL2.5          3D                             0
+
+ 11 11  0  0  0  0  0  0  0  0999 V2000
+    1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7023    1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4045   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7023   -1.2164    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4940   -0.0325    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2473   -2.1604    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.2473   -2.1604    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.4945   -0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.2753    2.1437    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7525    1.3034    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+  1  5  1  0  0  0  0
+  1  6  1  0  0  0  0
+  1 11  2  0  0  0  0
+  2  3  2  0  0  0  0
+  2 10  1  0  0  0  0
+  3  4  1  0  0  0  0
+  3  9  1  0  0  0  0
+  4  5  2  0  0  0  0
+  4  8  1  0  0  0  0
+  5  7  1  0  0  0  0
+  2 11  1  0  0  0  0
+M  END
+$$$$
+"""
+
+
+def test_dry_core_element_change(tmpdir):
+
+    benz = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(BENZ, removeHs=False))
+    pyr = openfe.SmallMoleculeComponent(Chem.MolFromMolBlock(PYRIDINE, removeHs=False))
 
     mapping = openfe.LigandAtomMapping(
         benz, pyr,
