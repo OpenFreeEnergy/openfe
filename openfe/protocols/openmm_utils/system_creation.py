@@ -187,6 +187,8 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
     if protein_comp is not None:
         system_modeller.add(protein_comp.to_openmm_topology(),
                             protein_comp.to_openmm_positions())
+        # add missing virtual particles (from crystal waters)
+        system_modeller.addExtraParticles(omm_forcefield)
         component_resids[protein_comp] = np.array(
           [r.index for r in system_modeller.topology.residues()]
         )
