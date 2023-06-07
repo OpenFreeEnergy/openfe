@@ -2494,9 +2494,10 @@ class HybridTopologyFactory:
 
         Returns
         -------
-        has_virtual_sites : bool
+        bool
+          ``True`` if there are virtual sites, otherwise ``False``.
         """
-        has_virtual_sites = False
         for ix in range(self._hybrid_system.getNumParticles()):
             if self._hybrid_system.isVirtualSite(ix):
                 return True
+        return False
