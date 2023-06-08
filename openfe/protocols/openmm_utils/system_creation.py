@@ -192,6 +192,12 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
         component_resids[protein_comp] = np.array(
           [r.index for r in system_modeller.topology.residues()]
         )
+        # if we solvate temporarily rename water molecules to 'WAT'
+        # see openmm issue #4103
+        if solvent_comp is not None:
+            for r in system_modeller.topology.residues():
+                if r.name == 'HOH':
+                    r.name = 'WAT'
 
     # Now loop through small mols
     for comp in small_mols:
@@ -222,6 +228,10 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
         component_resids[solvent_comp] = np.setdiff1d(
             all_resids, existing_resids
         )
+        # undo rename of pre-existing waters
+        for r in system_modeller.topology.residues():
+            if r.name == 'WAT':
+                r.name = 'HOH'
 
     return system_modeller, component_resids
 
