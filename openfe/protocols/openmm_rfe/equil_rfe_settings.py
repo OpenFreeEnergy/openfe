@@ -14,6 +14,14 @@ from pydantic import Extra, validator, BaseModel, PositiveFloat, Field
 from openff.units import unit
 import os
 
+import functools
+
+import gufe
+from gufe import settings
+from gufe.custom_json import JSONCodec
+from gufe.custom_codecs import inherited_is_my_dict, default_from_dict, SETTINGS_CODEC
+from gufe.tokenization import JSON_HANDLER
+
 
 if os.environ.get('SPHINX', False):  #pragma: no cover
     class SettingsBaseModel(BaseModel):
@@ -527,3 +535,24 @@ class RelativeHybridTopologyProtocolSettings(Settings):
 
     # Simulation run settings
     simulation_settings: SimulationSettings
+
+
+
+def from_dict(dct):
+
+    dct = dict(dct)  # make a copy
+
+    if 'splitting' in dct.get('integrator_settings'):
+        del dct['integrator_settings']['splitting']
+
+    return default_from_dict(dct)
+
+
+RTH_SETTINGS_CODEC = JSONCodec(
+    cls=RelativeHybridTopologyProtocolSettings,
+    to_dict=lambda obj: {field: getattr(obj, field) for field in obj.__fields__},
+    from_dict=from_dict,
+    is_my_dict=functools.partial(inherited_is_my_dict, cls=RelativeHybridTopologyProtocolSettings),
+)
+
+JSON_HANDLER.add_codec(RTH_SETTINGS_CODEC, before=SETTINGS_CODEC)
