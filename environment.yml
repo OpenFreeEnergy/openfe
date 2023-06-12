@@ -1,6 +1,7 @@
 name: openfe_env
 channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
+  - conda-forge/label/openmm_dev/linux-64
   - conda-forge
 dependencies:
   - numpy<1.24
@@ -19,7 +20,7 @@ dependencies:
   - click
   - typing-extensions
   - lomap2>=2.3.0
-  - openmmtools
+  - openmmtools==0.22.2_dev0
   - openmmforcefields>=0.11.2
   - perses
   - py3dmol
