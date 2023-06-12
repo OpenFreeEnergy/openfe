@@ -30,18 +30,15 @@ def subsample_omm_topology(
       Subsampled Topology.
     """
     top = app.Topology()
-    chains = []
-    residues = []
+    chains = set()
+    residues = set()
     old_to_new_atom_map = {}
 
     # First pass - get chain & resid info
     for at in topology.atoms():
         if at.index in subsample_indices:
-            residues.append(at.residue.index)
-            chains.append(at.residue.chain.index)
-
-    chains = set(chains)
-    residues = set(residues)
+            residues.add(at.residue.index)
+            chains.add(at.residue.chain.index)
 
     # Now let's actually add things
     for chain_id, chain in enumerate(topology.chains()):
