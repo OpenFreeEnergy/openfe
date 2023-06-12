@@ -140,7 +140,7 @@ def gather(rootdir, output):
         name = ', '.join(ligpair)
         for simtype, (m, u) in vals.items():
             if m is None:
-                m, u = 'FAIL', 0.0
+                m, u = 'NaN', 'NaN'
             else:
                 m, u = dp2(m.m), dp2(u.m)
             output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[0]}\t'
