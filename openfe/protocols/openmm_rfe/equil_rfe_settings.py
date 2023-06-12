@@ -290,7 +290,9 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     If ``None``, no real time analysis will be performed and the yaml
     file will not be written.
 
-    Default `200`.
+    Must be a multiple of ``SimulationSettings.checkpoint_interval``
+
+    Default `250`.
     """
     online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
