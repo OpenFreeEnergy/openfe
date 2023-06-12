@@ -83,7 +83,7 @@ def gather(rootdir, output):
                                           fractional=False)
 
     # 1) find all possible jsons
-    json_fns = glob.glob(str(rootdir) + '**/*json', recursive=True)
+    json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
 
     # 2) filter only result jsons
     result_fns = filter(is_results_json, json_fns)
