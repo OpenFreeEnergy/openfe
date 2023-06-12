@@ -29,6 +29,7 @@ from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
+from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable
 import openmmtools
@@ -48,6 +49,7 @@ from .equil_rfe_settings import (
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation
 )
+from ..openmm_utils.utils import subsample_omm_topology
 from . import _rfe_utils
 
 logger = logging.getLogger(__name__)
@@ -522,6 +524,19 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             checkpoint_interval=sim_settings.checkpoint_interval.m,
             checkpoint_storage=sim_settings.checkpoint_storage,
         )
+
+        #  b. Write out a PDB containing the subsampled hybrid state
+        sub_top = subsample_omm_topology(
+            hybrid_factory.omm_hybrid_topology,
+            reporter.analysis_particle_indices,
+        )
+
+        sub_pos = hybrid_factory.hybrid_positions[
+                reporter.analysis_particle_indices, :
+        ]
+
+        with open(shared_basepath / sim_settings.output_structure, 'w') as outfile:
+            PDBFile.writeFile(sub_top, sub_pos, outfile)
 
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
