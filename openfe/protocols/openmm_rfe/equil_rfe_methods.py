@@ -175,9 +175,6 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.std(vals) * u
 
-    def get_rate_of_convergence(self):
-        raise NotImplementedError
-
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
     result_cls = RelativeHybridTopologyProtocolResult

@@ -5,6 +5,20 @@ from openfecli.fetching import URLFetcher, PkgResourceFetcher
 _EXAMPLE_NB_BASE = ("https://raw.githubusercontent.com/"
                     "OpenFreeEnergy/ExampleNotebooks/main/")
 
+RBFE_SHOWCASE = URLFetcher(
+    resources=[
+        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs/", "181L_mod_capped_protonated.pdb"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs/", "Jnk1_ligands.sdf"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs/", "benzene.sdf"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs/", "ligands.sdf"),
+        (_EXAMPLE_NB_BASE + "openmm_rbfe/inputs/", "styrene.sdf"),
+    ],
+    short_name="rbfe-showcase",
+    short_help="Inputs needed for the RBFE Showcase Notebook",
+    section="hidden",
+    requires_ofe=(0, 9, 1),
+).plugin
+
 RBFE_TUTORIAL = URLFetcher(
     resources=[
         (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_ligands.sdf"),
