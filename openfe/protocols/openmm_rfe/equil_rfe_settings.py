@@ -275,13 +275,13 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    online_analysis_interval: Optional[int] = 200
+    online_analysis_interval: Optional[int] = 250
     """
     MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
     to perform an analysis of the free energies.
 
     At each interval, real time analysis data (e.g. current free energy
-    estimate and timing data) will be written to a yaml file named 
+    estimate and timing data) will be written to a yaml file named
     ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
     current error in the estimate will also be assed and if it drops
     below ``AlchemicalSamplerSettings.online_analysis_target_error``
