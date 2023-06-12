@@ -21,8 +21,10 @@ def load_results(f):
 
 
 def get_names(result):
-    # Result to list of ligand names
-    return tuple(list(result['unit_results'].values())[0]['name'].split()[:2])
+    # Result to tuple of ligand names
+    nm = list(result['unit_results'].values())[0]['name']
+    toks = nm.split()
+    return toks[0], toks[2]
 
 
 def get_type(f):
