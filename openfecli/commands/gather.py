@@ -4,7 +4,6 @@
 import click
 from openfecli import OFECommandPlugin
 import pathlib
-from openfecli.utils import write
 
 
 def is_results_json(f):
@@ -20,7 +19,7 @@ def load_results(f):
     return json.load(open(f, 'r'), cls=JSON_HANDLER.decoder)
 
 
-def get_names(result):
+def get_names(result) -> tuple[str, str]:
     # Result to tuple of ligand names
     nm = list(result['unit_results'].values())[0]['name']
     toks = nm.split()
@@ -97,8 +96,8 @@ def gather(rootdir, output):
         if result is None:
             continue
         elif result['estimate'] is None or result['uncertainty'] is None:
-            print(f"WARNING: Calculations for {result_fn} did not finish succesfully!")
-            continue
+            click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
+                       err=True)
 
         names = get_names(result)
         simtype = get_type(result_fn)
@@ -117,14 +116,16 @@ def gather(rootdir, output):
         if 'complex' in vals and 'solvent' in vals:
             DG1_mag, DG1_unc = vals['complex']
             DG2_mag, DG2_unc = vals['solvent']
-            # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
-            DDGbind = dp2((DG1_mag - DG2_mag).m)
-            bind_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
+            if not ((DG1_mag is None) or (DG2_mag is None)):
+                # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
+                DDGbind = dp2((DG1_mag - DG2_mag).m)
+                bind_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
         if 'solvent' in vals and 'vacuum' in vals:
             DG1_mag, DG1_unc = vals['solvent']
             DG2_mag, DG2_unc = vals['vacuum']
-            DDGhyd = dp2((DG1_mag - DG2_mag).m)
-            hyd_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
+            if not ((DG1_mag is None) or (DG2_mag is None)):
+                DDGhyd = dp2((DG1_mag - DG2_mag).m)
+                hyd_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
 
         name = ", ".join(ligpair[::-1])
         if DDGbind is not None:
@@ -138,7 +139,10 @@ def gather(rootdir, output):
     for ligpair, vals in legs.items():
         name = ', '.join(ligpair)
         for simtype, (m, u) in vals.items():
-            m, u = dp2(m.m), dp2(u.m)
+            if m is None:
+                m, u = 'FAIL', 0.0
+            else:
+                m, u = dp2(m.m), dp2(u.m)
             output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[0]}\t'
                          f'{ligpair[1]}\t{m}\t{u}\n')
 
