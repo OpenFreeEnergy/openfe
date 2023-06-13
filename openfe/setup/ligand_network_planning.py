@@ -15,7 +15,7 @@ from openfe.setup.atom_mapping import LigandAtomMapping
 
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
                             central_ligand: SmallMoleculeComponent,
-                            mappers: AtomMapper | Iterable[AtomMapper],
+                            mappers: Union[AtomMapper, Iterable[AtomMapper]],
                             scorer=None):
     """Generate a radial network with all ligands connected to a central node
 
@@ -82,7 +82,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
 
 def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
-    mappers: AtomMapper | Iterable[AtomMapper],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
     # allow_disconnected=True
@@ -143,7 +143,7 @@ def generate_maximal_network(
 
 def generate_minimal_spanning_network(
     ligands: Iterable[SmallMoleculeComponent],
-    mappers: AtomMapper | Iterable[AtomMapper],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ):
