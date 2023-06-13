@@ -1,21 +1,22 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
-from typing import Iterable, Callable, List, Optional, Union
+from typing import Iterable, Callable, Optional, Union
 import itertools
 import functools
 
 import networkx as nx
 from tqdm.auto import tqdm
 
-from gufe import SmallMoleculeComponent
+from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
-from openfe.setup.atom_mapping import LigandAtomMapper, LigandAtomMapping
+from openfe.setup.atom_mapping import LigandAtomMapping
 
 
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
                             central_ligand: SmallMoleculeComponent,
-                            mappers: Iterable[LigandAtomMapper], scorer=None):
+                            mappers: AtomMapper | Iterable[AtomMapper],
+                            scorer=None):
     """Generate a radial network with all ligands connected to a central node
 
     Also known as hub and spoke or star-map, this plans a LigandNetwork where
@@ -27,8 +28,8 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
       the ligands to arrange around the central ligand
     central_ligand : SmallMoleculeComponent
       the ligand to use as the hub/central ligand
-    mappers : iterable of LigandAtomMappers
-      mappers to use, at least 1 required
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use, at least 1 required
     scorer : scoring function, optional
       a callable which returns a float for any LigandAtomMapping.  Used to
       assign scores to potential mappings, higher scores indicate worse
@@ -49,6 +50,8 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
       If no scorer is supplied, the first mapping provided by the iterable
       of mappers will be used.
     """
+    if isinstance(mappers, AtomMapper):
+        mappers = [mappers]
     edges = []
 
     for ligand in ligands:
@@ -79,8 +82,8 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
 
 def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
-    mappers: Iterable[LigandAtomMapper],
-    scorer: Optional[Callable[[LigandAtomMapper], float]] = None,
+    mappers: AtomMapper | Iterable[AtomMapper],
+    scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
     # allow_disconnected=True
 ):
@@ -99,8 +102,8 @@ def generate_maximal_network(
     ----------
     ligands : Iterable[SmallMoleculeComponent]
       the ligands to include in the LigandNetwork
-    mappers : Iterable[LigandAtomMapper]
-      the AtomMappers to use to propose mappings.  At least 1 required,
+    mappers : AtomMapper or Iterable[AtomMapper]
+      the AtomMapper(s) to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the
       lowest score edges
     scorer : Scoring function
@@ -110,6 +113,9 @@ def generate_maximal_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     """
+    if isinstance(mappers, AtomMapper):
+        mappers = [mappers]
+
     nodes = list(ligands)
 
     if progress is True:
@@ -137,7 +143,7 @@ def generate_maximal_network(
 
 def generate_minimal_spanning_network(
     ligands: Iterable[SmallMoleculeComponent],
-    mappers: Iterable[LigandAtomMapper],
+    mappers: AtomMapper | Iterable[AtomMapper],
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ):
@@ -147,8 +153,8 @@ def generate_minimal_spanning_network(
     ----------
     ligands : Iterable[SmallMoleculeComponent]
       the ligands to include in the LigandNetwork
-    mappers : Iterable[LigandAtomMapper]
-      the AtomMappers to use to propose mappings.  At least 1 required,
+    mappers : AtomMapper or Iterable[AtomMapper]
+      the AtomMapper(s) to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the
       lowest score edges
     scorer : Scoring function
@@ -158,6 +164,9 @@ def generate_minimal_spanning_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     """
+    if isinstance(mappers, AtomMapper):
+        mappers = [mappers]
+
     # First create a network with all the proposed mappings (scored)
     network = generate_maximal_network(ligands, mappers, scorer, progress)
 
