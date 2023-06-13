@@ -1,6 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
+import importlib
+from rdkit import Chem
+from rdkit.Geometry import Point3D
 import openfe
 from openff.units import unit
 
@@ -71,3 +74,68 @@ def benzene_to_toluene_mapping(benzene_modifications):
     molB = benzene_modifications['toluene']
 
     return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
+def benzene_many_solv_system(benzene_modifications):
+
+    rdmol_phenol = benzene_modifications['phenol'].to_rdkit()
+    rdmol_benzo = benzene_modifications['benzonitrile'].to_rdkit()
+
+    conf_phenol = rdmol_phenol.GetConformer()
+    conf_benzo = rdmol_benzo.GetConformer()
+
+    for atm in range(rdmol_phenol.GetNumAtoms()):
+        x, y, z = conf_phenol.GetAtomPosition(atm)
+        conf_phenol.SetAtomPosition(atm, Point3D(x+30, y, z))
+
+    for atm in range(rdmol_benzo.GetNumAtoms()):
+        x, y, z = conf_benzo.GetAtomPosition(atm)
+        conf_benzo.SetAtomPosition(atm, Point3D(x, y+30, z))
+
+    phenol = openfe.SmallMoleculeComponent.from_rdkit(
+        rdmol_phenol, name='phenol'
+    )
+
+    benzo = openfe.SmallMoleculeComponent.from_rdkit(
+        rdmol_benzo, name='benzonitrile'
+    )
+
+    return openfe.ChemicalSystem(
+        {'whatligand': benzene_modifications['benzene'],
+         "foo": phenol,
+         "bar": benzo,
+         "solvent": openfe.SolventComponent()},
+    )
+
+
+@pytest.fixture
+def toluene_many_solv_system(benzene_modifications):
+
+    rdmol_phenol = benzene_modifications['phenol'].to_rdkit()
+    rdmol_benzo = benzene_modifications['benzonitrile'].to_rdkit()
+
+    conf_phenol = rdmol_phenol.GetConformer()
+    conf_benzo = rdmol_benzo.GetConformer()
+
+    for atm in range(rdmol_phenol.GetNumAtoms()):
+        x, y, z = conf_phenol.GetAtomPosition(atm)
+        conf_phenol.SetAtomPosition(atm, Point3D(x+30, y, z))
+
+    for atm in range(rdmol_benzo.GetNumAtoms()):
+        x, y, z = conf_benzo.GetAtomPosition(atm)
+        conf_benzo.SetAtomPosition(atm, Point3D(x, y+30, z))
+
+    phenol = openfe.SmallMoleculeComponent.from_rdkit(
+        rdmol_phenol, name='phenol'
+    )
+
+    benzo = openfe.SmallMoleculeComponent.from_rdkit(
+        rdmol_benzo, name='benzonitrile'
+    )
+    return openfe.ChemicalSystem(
+        {'whatligand': benzene_modifications['toluene'],
+         "foo": phenol,
+         "bar": benzo,
+         "solvent": openfe.SolventComponent()},
+    )

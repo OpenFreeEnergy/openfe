@@ -275,13 +275,13 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    online_analysis_interval: Optional[int] = 200
+    online_analysis_interval: Optional[int] = 250
     """
     MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
     to perform an analysis of the free energies.
 
     At each interval, real time analysis data (e.g. current free energy
-    estimate and timing data) will be written to a yaml file named 
+    estimate and timing data) will be written to a yaml file named
     ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
     current error in the estimate will also be assed and if it drops
     below ``AlchemicalSamplerSettings.online_analysis_target_error``
@@ -290,7 +290,9 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     If ``None``, no real time analysis will be performed and the yaml
     file will not be written.
 
-    Default `200`.
+    Must be a multiple of ``SimulationSettings.checkpoint_interval``
+
+    Default `250`.
     """
     online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
@@ -470,10 +472,10 @@ class SimulationSettings(SettingsBaseModel):
     # reporter settings
     output_filename = 'simulation.nc'
     """Path to the storage file for analysis. Default 'simulation.nc'."""
-    output_indices = 'all'
+    output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.
-    Default 'all'.
+    Default 'not water'.
     """
     checkpoint_interval = 250 * unit.timestep
     """
@@ -484,7 +486,7 @@ class SimulationSettings(SettingsBaseModel):
     Separate filename for the checkpoint file. Note, this should
     not be a full path, just a filename. Default 'checkpoint.nc'.
     """
-    forcefield_cache: Optional[str] = None
+    forcefield_cache: Optional[str] = 'db.json'
     """
     Filename for caching small molecule residue templates so they can be
     later reused.

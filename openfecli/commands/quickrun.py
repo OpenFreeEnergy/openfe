@@ -88,7 +88,9 @@ def quickrun(transformation, work_dir, output):
                             shared_basedir=work_dir,
                             scratch_basedir=work_dir,
                             keep_shared=True,
-                            raise_error=False)
+                            raise_error=False,
+                            n_retries=2,
+                            )
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
