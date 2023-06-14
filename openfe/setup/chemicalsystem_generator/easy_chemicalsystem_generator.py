@@ -20,6 +20,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         self,
         solvent: SolventComponent = None,
         protein: ProteinComponent = None,
+        cofactors: Iterable[SmallMoleculeComponent] = None,
         do_vacuum: bool = False,
     ):
         """This class is a easy generator class, for generating chemical systems with a focus on a given SmallMoleculeComponent.
@@ -33,6 +34,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             if a SolventComponent is given, solvated chemical systems will be generated, by default None
         protein : ProteinComponent, optional
             if a ProteinComponent is given, complex chemical systems will be generated, by default None
+        cofactors : Iterable[SmallMoleculeComponent], optional
         do_vacuum : bool, optional
             if true a chemical system in vacuum is returned, by default False
 
@@ -43,6 +45,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         """
         self.solvent = solvent
         self.protein = protein
+        self.cofactors = cofactors
         self.do_vacuum = do_vacuum
 
         if solvent is None and protein is None and not do_vacuum:
@@ -51,11 +54,6 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             )
 
     def __call__(
-        self, component: SmallMoleculeComponent
-    ) -> Iterable[ChemicalSystem]:
-        return self._generate_systems(component=component)
-
-    def _generate_systems(
         self, component: SmallMoleculeComponent
     ) -> Iterable[ChemicalSystem]:
         """generate systems, around the given SmallMoleculeComponent
@@ -99,6 +97,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 RFEComponentLabels.LIGAND: component,
                 RFEComponentLabels.PROTEIN: self.protein,
             }
+            if self.cofactors is not None:
+                components.update({RFEComponentLabels.COFACTOR: self.cofactors})
             if self.solvent is not None:
                 components.update({RFEComponentLabels.SOLVENT: self.solvent})
             chem_sys = ChemicalSystem(
