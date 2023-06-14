@@ -6,7 +6,7 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTOR,
+    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -37,6 +37,7 @@ def plan_rbfe_network_main(
     protein : ProteinComponent
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
+        any cofactors alongisde the protein, can be empty list
 
     Returns
     -------
@@ -74,8 +75,8 @@ def plan_rbfe_network_main(
 @PROTEIN.parameter(
     multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
 )
-@COFACTOR.parameter(
-    multiple=False, required=False, default=None, help=PROTEIN.kwargs["help"]
+@COFACTORS.parameter(
+    multiple=False, required=False, default=None, help=COFACTORS.kwargs["help"]
 )
 @OUTPUT_DIR.parameter(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
@@ -135,7 +136,10 @@ def plan_rbfe_network(
     protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
 
-    cofactors = COFACTOR.get(cofactors)
+    if cofactors is not None:
+        cofactors = COFACTORS.get(cofactors)
+    else:
+        cofactors = []
     write("\t\tCofactors: " + str(cofactors))
 
     solvent = SolventComponent()
