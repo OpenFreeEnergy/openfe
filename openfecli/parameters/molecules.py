@@ -69,3 +69,10 @@ MOL_DIR = Option(
     ),
     getter=molecule_getter,
 )
+
+COFACTORS = Option(
+    "-c", "--cofactors",
+    type=click.Path(exists=True),
+    help="Path to cofactors sdf file.  May contain multiple molecules",
+    getter=molecule_getter,
+)
