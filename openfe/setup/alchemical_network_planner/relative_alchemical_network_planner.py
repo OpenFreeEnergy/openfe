@@ -86,7 +86,7 @@ class RelativeAlchemicalNetworkPlanner(
 
     @abc.abstractmethod
     def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
-        return self._build_alchemical_network(*args, **kwargs)
+        ...
 
     @property
     def mappers(self) -> Iterable[LigandAtomMapper]:
@@ -168,7 +168,7 @@ class RelativeAlchemicalNetworkPlanner(
             set(all_transformation_labels)
         ):
             raise ValueError(
-                "There where multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
+                "There were multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
                 + str(len(all_transformation_labels))
                 + "\nunique: "
                 + str(len(set(all_transformation_labels)))
