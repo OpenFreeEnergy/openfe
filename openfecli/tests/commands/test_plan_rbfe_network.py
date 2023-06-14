@@ -78,6 +78,7 @@ def test_plan_rbfe_network_main():
         small_molecules=smallM_components,
         solvent=solvent_component,
         protein=protein_compontent,
+        cofactors=[],
     )
     print(alchemical_network)
 
