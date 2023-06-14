@@ -159,6 +159,7 @@ def test_minimal_spanning_network_mappers(atom_mapping_basic_test_files, multi_m
     )
 
     assert isinstance(network, openfe.LigandNetwork)
+    assert list(network.edges)
 
 
 @pytest.fixture(scope='session')
