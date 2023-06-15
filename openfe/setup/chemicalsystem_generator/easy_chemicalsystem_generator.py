@@ -8,6 +8,7 @@ from .abstract_chemicalsystem_generator import (
 from typing import Iterable, Optional
 
 from gufe import (
+    Component,
     SmallMoleculeComponent,
     ProteinComponent,
     SolventComponent,
@@ -94,6 +95,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             )
             yield chem_sys
 
+        components: dict[str, Component]
         if self.protein is not None:
             components = {
                 RFEComponentLabels.LIGAND: component,
