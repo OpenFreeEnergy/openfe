@@ -1080,24 +1080,3 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
-
-
-@pytest.fixture
-def available_platforms() -> set[str]:
-    return {Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())}
-
-
-@pytest.fixture
-def set_openmm_threads_1():
-    # for vacuum sims, we want to limit threads to one
-    # this fixture sets OPENMM_CPU_THREADS='1' for a single test, then reverts to previously held value
-    previous: str | None = os.environ.get('OPENMM_CPU_THREADS')
-
-    try:
-        os.environ['OPENMM_CPU_THREADS'] = '1'
-        yield
-    finally:
-        if previous is None:
-            del os.environ['OPENMM_CPU_THREADS']
-        else:
-            os.environ['OPENMM_CPU_THREADS'] = previous

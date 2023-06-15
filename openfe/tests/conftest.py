@@ -163,19 +163,19 @@ def T4_protein_component():
 
 
 @pytest.fixture()
-def eg5_protein_pdb() -> str:
+def eg5_protein_pdb():
     with resources.path('openfe.tests.data.eg5', 'eg5_protein.pdb') as fn:
         yield str(fn)
 
 
 @pytest.fixture()
-def eg5_ligands_sdf() -> str:
+def eg5_ligands_sdf():
     with resources.path('openfe.tests.data.eg5', 'eg5_ligands.sdf') as fn:
         yield str(fn)
 
 
 @pytest.fixture()
-def eg5_cofactor_sdf() -> str:
+def eg5_cofactor_sdf():
     with resources.path('openfe.tests.data.eg5', 'eg5_cofactor.sdf') as fn:
         yield str(fn)
 
