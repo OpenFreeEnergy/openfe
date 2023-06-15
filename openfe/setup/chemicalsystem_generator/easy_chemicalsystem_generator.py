@@ -5,7 +5,7 @@ from .abstract_chemicalsystem_generator import (
     AbstractChemicalSystemGenerator,
     RFEComponentLabels,
 )
-from typing import Iterable
+from typing import Iterable, Optional
 
 from gufe import (
     SmallMoleculeComponent,
@@ -20,7 +20,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         self,
         solvent: SolventComponent = None,
         protein: ProteinComponent = None,
-        cofactors: Iterable[SmallMoleculeComponent] = None,
+        cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
         do_vacuum: bool = False,
     ):
         """This class is a easy generator class, for generating chemical systems with a focus on a given SmallMoleculeComponent.
@@ -35,6 +35,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         protein : ProteinComponent, optional
             if a ProteinComponent is given, complex chemical systems will be generated, by default None
         cofactors : Iterable[SmallMoleculeComponent], optional
+            any cofactors in the system.  will be put in any systems containing
+            the protein
         do_vacuum : bool, optional
             if true a chemical system in vacuum is returned, by default False
 
@@ -45,7 +47,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         """
         self.solvent = solvent
         self.protein = protein
-        self.cofactors = cofactors
+        self.cofactors = cofactors or []
         self.do_vacuum = do_vacuum
 
         if solvent is None and protein is None and not do_vacuum:

@@ -299,7 +299,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         ligands: Iterable[SmallMoleculeComponent],
         solvent: SolventComponent,
         protein: ProteinComponent,
-        cofactors: Iterable[SmallMoleculeComponent],
+        cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
     ) -> AlchemicalNetwork:
         """plan the alchemical network for RBFE calculations with the given ligands, protein and solvent.
 

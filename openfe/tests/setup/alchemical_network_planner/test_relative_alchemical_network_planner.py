@@ -27,7 +27,6 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
         ligands=atom_mapping_basic_test_files.values(),
         solvent=SolventComponent(),
         protein=T4_protein_component,
-        cofactors=[],
     )
     
     assert isinstance(alchem_network, AlchemicalNetwork)

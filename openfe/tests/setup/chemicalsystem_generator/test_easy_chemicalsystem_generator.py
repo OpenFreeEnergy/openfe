@@ -55,9 +55,9 @@ def test_build_solvent_chemical_system(ethane):
 
 
 def test_build_protein_chemical_system(ethane, T4_protein_component):
+    # TODO: cofactors with eg5 system
     chem_sys_generator = EasyChemicalSystemGenerator(
         protein=T4_protein_component,
-        cofactors=[],
     )
     chem_sys = next(chem_sys_generator(ethane))
 
@@ -85,7 +85,6 @@ def test_build_hydr_scenario_chemical_systems(ethane):
 def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
     chem_sys_generator = EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component,
-        cofactors=[]
     )
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]
@@ -100,10 +99,7 @@ def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
 
 def test_build_hbinding_scenario_chemical_systems(ethane, T4_protein_component):
     chem_sys_generator = EasyChemicalSystemGenerator(
-        do_vacuum=True,
-        solvent=SolventComponent(),
-        protein=T4_protein_component,
-        cofactors=[],
+        do_vacuum=True, solvent=SolventComponent(), protein=T4_protein_component,
     )
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]
