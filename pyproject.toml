@@ -58,6 +58,7 @@ ignore_missing_imports = true
 [tool.coverage.run]
 omit = [
     "*/tests/dev/*py",
+    "*/tests/protocols/test_openmm_rfe_slow.py"
 ]
 
 [tool.coverage.report]

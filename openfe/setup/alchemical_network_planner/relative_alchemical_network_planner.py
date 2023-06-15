@@ -86,7 +86,7 @@ class RelativeAlchemicalNetworkPlanner(
 
     @abc.abstractmethod
     def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
-        ...
+        ...  # -no-cov-
 
     @property
     def mappers(self) -> Iterable[LigandAtomMapper]:
