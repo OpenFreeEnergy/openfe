@@ -137,7 +137,6 @@ def eg5_files():
         yield pdb_path, lig_path, cof_path
 
 
-@pytest.mark.slow
 def test_plan_rbfe_network_cofactors(eg5_files):
 
     runner = CliRunner()

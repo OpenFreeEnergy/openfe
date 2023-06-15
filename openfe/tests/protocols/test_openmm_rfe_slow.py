@@ -110,7 +110,7 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
         'solvent': openfe.SolventComponent(),
     }
     # this is just a simple (unmapped) *-H -> *-F switch
-    l1, l2 = eg5_ligands[4], eg5_ligands[5]
+    l1, l2 = eg5_ligands[0], eg5_ligands[1]
     m = openfe.LigandAtomMapping(
         componentA=l1, componentB=l2,
         # a bit lucky, first 51 atoms map to each other, H->F swap is at 52
