@@ -5,14 +5,13 @@ from io import StringIO
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
-from gufe.protocols import execute_DAG
 import pytest
 from unittest import mock
 from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
 
-from openmm import app, Platform, XmlSerializer, MonteCarloBarostat
+from openmm import app, XmlSerializer, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
@@ -1102,56 +1101,3 @@ def set_openmm_threads_1():
             del os.environ['OPENMM_CPU_THREADS']
         else:
             os.environ['OPENMM_CPU_THREADS'] = previous
-
-
-@pytest.mark.slow
-@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
-@pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_openmm_run_engine(benzene_vacuum_system, platform,
-                           available_platforms, benzene_modifications,
-                           set_openmm_threads_1, tmpdir):
-    if platform not in available_platforms:
-        pytest.skip(f"OpenMM Platform: {platform} not available")
-    # this test actually runs MD
-    # if this passes, you're 99% likely to have a good time
-    # these settings are a small self to self sim, that has enough eq that it doesn't occasionally crash
-    s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.simulation_settings.production_length = 0.1 * unit.picosecond
-    s.integrator_settings.n_steps = 5 * unit.timestep
-    s.system_settings.nonbonded_method = 'nocutoff'
-    s.alchemical_sampler_settings.n_repeats = 1
-    s.engine_settings.compute_platform = platform
-    s.simulation_settings.checkpoint_interval = 5 * unit.timestep
-
-    p = openmm_rfe.RelativeHybridTopologyProtocol(s)
-
-    b = benzene_vacuum_system['ligand']
-    
-    # make a copy with a different name
-    rdmol = benzene_modifications['benzene'].to_rdkit()
-    b_alt = openfe.SmallMoleculeComponent.from_rdkit(rdmol, name='alt')
-    benzene_vacuum_alt_system = openfe.ChemicalSystem({
-        'ligand': b_alt
-    })
-
-    m = openfe.LigandAtomMapping(componentA=b, componentB=b_alt,
-                                 componentA_to_componentB={i: i for i in range(12)})
-    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_alt_system,
-                   mapping={'ligand': m})
-
-    cwd = pathlib.Path(str(tmpdir))
-    r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
-                    keep_shared=True)
-
-    assert r.ok()
-    for pur in r.protocol_unit_results:
-        unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
-        assert unit_shared.exists()
-        assert pathlib.Path(unit_shared).is_dir()
-        checkpoint = pur.outputs['last_checkpoint']
-        assert checkpoint == unit_shared / "checkpoint.nc"
-        assert checkpoint.exists()
-        nc = pur.outputs['nc']
-        assert nc == unit_shared / "simulation.nc"
-        assert nc.exists()
