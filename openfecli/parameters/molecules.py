@@ -59,6 +59,7 @@ def load_molecules(file_or_directory):
 def molecule_getter(user_input, context):
     return load_molecules(user_input)
 
+
 MOL_DIR = Option(
     "-M",
     "--molecules",
@@ -71,8 +72,8 @@ MOL_DIR = Option(
 )
 
 COFACTORS = Option(
-    "-c", "--cofactors",
+    "-C", "--cofactors",
     type=click.Path(exists=True),
-    help="Path to cofactors sdf file.  May contain multiple molecules",
+    help="Path to cofactors sdf file.  This may contain multiple molecules",
     getter=molecule_getter,
 )
