@@ -76,7 +76,7 @@ def plan_rbfe_network_main(
     multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
 )
 @COFACTORS.parameter(
-    multiple=False, required=False, default=None, help=COFACTORS.kwargs["help"]
+    multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
 )
 @OUTPUT_DIR.parameter(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
@@ -84,7 +84,7 @@ def plan_rbfe_network_main(
 )
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, cofactors: str, output_dir: str
+    molecules: List[str], protein: str, cofactors: tuple[str], output_dir: str
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -137,7 +137,7 @@ def plan_rbfe_network(
     write("\t\tProtein: " + str(protein))
 
     if cofactors is not None:
-        cofactors = COFACTORS.get(cofactors)
+        cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])
     else:
         cofactors = []
     write("\t\tCofactors: " + str(cofactors))

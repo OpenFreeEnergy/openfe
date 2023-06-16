@@ -144,7 +144,7 @@ def test_plan_rbfe_network_cofactors(eg5_files):
     args = [
         '-p', eg5_files[0],
         '-M', eg5_files[1],
-        '-c', eg5_files[2],
+        '-C', eg5_files[2],
     ]
 
     with runner.isolated_filesystem():
