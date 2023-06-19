@@ -11,4 +11,4 @@ dependencies:
   - py3dmol
   - pytest
   - pytest-xdist
-  - python==3.9
+  - python==3.10.*
