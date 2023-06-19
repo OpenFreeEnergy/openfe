@@ -4,6 +4,8 @@
 Reusable unclassified utility methods for OpenMM-based alchemical
 Protocols.
 """
+from pathlib import Path
+from numpy import typing as npt
 from openmm import app
 
 
@@ -66,3 +68,38 @@ def subsample_omm_topology(
                             bond.type, bond.order)
 
     return top
+
+
+def write_subsampled_pdb(
+    topology: app.Topology,
+    positions: npt.NDArray,
+    subsample_indices: tuple,
+    outfile: Path,
+) -> None:
+    """
+    Write out a PDB of the subsampled system.
+
+    Parameters
+    ----------
+    topology : app.Topology
+      Initial Topology to subsample from.
+    positions: npt.NDArray
+      Positions of the system to subsample from.
+    subsample_indices : tuple
+      Tuple of atom indices for the atoms we want to subsample from the
+      input Topology.
+    outfile : pathlib.Path
+      File to write PDB to.
+    """
+    # Get a subsampled topology
+    sub_top = subsample_omm_topology(
+        topology, subsample_indices
+    )
+
+    # Subsample the positions
+    sub_pos = positions[subsample_indices, :]
+
+
+    # Write it out
+    with open(outfile, 'w') as f:
+        app.PDBFile.writeFile(sub_top, sub_pos, f)

@@ -5,7 +5,7 @@
 
 import logging
 import openmm
-from openmm import unit
+from openmm import unit, app
 import numpy as np
 import copy
 import itertools
@@ -251,6 +251,7 @@ class HybridTopologyFactory:
 
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
+        self._omm_hybrid_topology = self._create_hybrid_topology()
         logger.info("DONE")
 
     @staticmethod
@@ -2346,20 +2347,98 @@ class HybridTopologyFactory:
             at1_uniq = at1_hybrid_idx in self._atom_classes['unique_new_atoms']
             at2_uniq = at2_hybrid_idx in self._atom_classes['unique_new_atoms']
             if at1_uniq or at2_uniq:
-                if atom1.index in self._atom_classes['unique_new_atoms']:
-                    atom1_to_bond = added_atoms[atom1.index]
+                if at1_uniq:
+                    atom1_to_bond = added_atoms[at1_hybrid_idx]
                 else:
-                    atom1_to_bond = atom1
+                    old_idx = self._hybrid_to_old_map[at1_hybrid_idx]
+                    atom1_to_bond = hybrid_topology.atom(old_idx)
 
-                if atom2.index in self._atom_classes['unique_new_atoms']:
-                    atom2_to_bond = added_atoms[atom2.index]
+                if at2_uniq:
+                    atom2_to_bond = added_atoms[at2_hybrid_idx]
                 else:
-                    atom2_to_bond = atom2
+                    old_idx = self._hybrid_to_old_map[at2_hybrid_idx]
+                    atom2_to_bond = hybrid_topology.atom(old_idx)
 
                 hybrid_topology.add_bond(atom1_to_bond, atom2_to_bond)
 
         return hybrid_topology
 
+
+    def _create_hybrid_topology(self):
+        """
+        Create a hybrid openmm.app.Topology from the input old and new
+        Topologies.
+
+        Note
+        ----
+        This is not intended for parameterisation purposes, but instead
+        for system visualisation.
+        """
+
+        hybrid_top = app.Topology()
+
+        # In the first instance, create a list of necessary atoms from
+        # both old & new Topologies
+        atom_list = []
+
+        for pidx in range(self.hybrid_system.getNumParticles()):
+            if pidx in self._hybrid_to_old_map:
+                idx = self._hybrid_to_old_map[pidx]
+                atom_list.append(list(self._old_topology.atoms())[idx])
+            else:
+                idx = self._hybrid_to_new_map[pidx]
+                atom_list.append(list(self._new_topology.atoms())[idx])
+
+        # Now we loop over the atoms and add them in alongside chains & resids
+        
+        # Non ideal variables to track the previous set of residues & chains
+        # without having to constantly search backwards
+        prev_res = None
+        prev_chain = None
+        chain_idx = 0
+
+        for at in atom_list:
+            if at.residue.chain != prev_chain:
+                hybrid_chain = hybrid_top.addChain(chain_idx)
+                chain_idx += 1
+                prev_chain = at.residue.chain
+
+            if at.residue != prev_res:
+                hybrid_residue = hybrid_top.addResidue(
+                    at.residue.name, hybrid_chain, at.residue.id
+                )
+                prev_res = at.residue
+
+            hybrid_atom = hybrid_top.addAtom(
+                at.name, at.element, hybrid_residue, at.id
+            )
+
+        # Next we deal with bonds
+        # First we add in all the old topology bonds
+        for bond in self._old_topology.bonds():
+            at1 = self.old_to_hybrid_atom_map[bond.atom1.index]
+            at2 = self.old_to_hybrid_atom_map[bond.atom2.index]
+
+            hybrid_top.addBond(
+                list(hybrid_top.atoms())[at1],
+                list(hybrid_top.atoms())[at2],
+                bond.type, bond.order,
+            )
+
+        # Finally we add in all the bonds from the unique atoms in the
+        # new Topology
+        for bond in self._new_topology.bonds():
+            at1 = self.new_to_hybrid_atom_map[bond.atom1.index]
+            at2 = self.new_to_hybrid_atom_map[bond.atom2.index]
+            if ((at1 in self._atom_classes['unique_new_atoms']) or
+                (at2 in self._atom_classes['unique_new_atoms'])):
+                hybrid_top.addBond(
+                    list(hybrid_top.atoms())[at1],
+                    list(hybrid_top.atoms())[at2],
+                    bond.type, bond.order,
+                )
+
+        return hybrid_top
 
     def old_positions(self, hybrid_positions):
         """
@@ -2489,8 +2568,14 @@ class HybridTopologyFactory:
         Returns
         -------
         hybrid_topology : simtk.openmm.app.Topology
+
+
+        .. versionchanged:: OpenFE 0.11
+           Now returns a Topology directly constructed from the input
+           old / new Topologies, instead of trying to roundtrip an
+           mdtraj topology.
         """
-        return mdt.Topology.to_openmm(self._hybrid_topology)
+        return self._omm_hybrid_topology
 
     @property
     def has_virtual_sites(self):
