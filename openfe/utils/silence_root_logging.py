@@ -15,10 +15,12 @@ def silence_root_logging():
 
     null = logging.NullHandler()
     root.addHandler(null)
-    yield
-    root.removeHandler(null)
-    for handler in old_handlers:
-        root.addHandler(handler)
+    try:
+        yield
+    finally:
+        root.removeHandler(null)
+        for handler in old_handlers:
+            root.addHandler(handler)
 
 
 

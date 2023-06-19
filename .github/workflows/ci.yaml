@@ -9,6 +9,9 @@ on:
   schedule:
     # At 07:00 UTC on Monday and Thursday.
     - cron: "0 7 * * *"
+  release:
+    types:
+      - published
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -49,6 +52,9 @@ jobs:
           extra-specs: |
             python==${{ matrix.python-version }}
 
+      - name: "Install GUFE from main@HEAD"
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
+
       - name: "Install"
         run: python -m pip install --no-deps -e .
 
@@ -65,7 +71,7 @@ jobs:
       - name: "Run tests"
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
-          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name == 'schedule'] }}
+          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
         run: |
           pytest -n auto -v --dist worksteal --cov=openfe --cov=openfecli --cov-report=xml
 

@@ -73,8 +73,36 @@ We can see that there is a virtual package ``__cuda=11.7=0``.
 This means that if we run a ``micromamba install`` command on a node with a GPU, the solver will install the correct version of the ``cudatoolkit``.
 However, if we ran the same command on the login node, the solver may install the wrong version of the ``cudatoolkit``, or depending on how the conda packages are setup, a CPU only version of the package.
 We can control the virtual package with the environmental variable ``CONDA_OVERRIDE_CUDA``.
-So on the login node, we can run ``CONDA_OVERRIDE_CUDA=11.3 micromamba info`` and see that the "correct" virtual CUDA is listed.
-For example, to install a version of ``openfe`` which is compatible with ``cudatoolkit 11.3`` run ``CONDA_OVERRIDE_CUDA=11.3 micromamba install openfe``.
+
+In order to determine the correct ``cudatoolkit`` version, we recommend connecting to the node where the simulation will be executed and run ``nvidia-smi``.
+For example ::
+
+  $ nvidia-smi
+  Tue Jun 13 17:47:11 2023       
+  +-----------------------------------------------------------------------------+
+  | NVIDIA-SMI 515.43.04    Driver Version: 515.43.04    CUDA Version: 11.7     |
+  |-------------------------------+----------------------+----------------------+
+  | GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+  | Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+  |                               |                      |               MIG M. |
+  |===============================+======================+======================|
+  |   0  NVIDIA A40          On   | 00000000:65:00.0 Off |                    0 |
+  |  0%   30C    P8    32W / 300W |      0MiB / 46068MiB |      0%      Default |
+  |                               |                      |                  N/A |
+  +-------------------------------+----------------------+----------------------+
+                                                                                 
+  +-----------------------------------------------------------------------------+
+  | Processes:                                                                  |
+  |  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+  |        ID   ID                                                   Usage      |
+  |=============================================================================|
+  |  No running processes found                                                 |
+  +-----------------------------------------------------------------------------+
+
+in this output of ``nvidia-smi`` we can see in the upper right of the output ``CUDA Version: 11.7`` which means the installed driver will support a ``cudatoolkit`` version up to ``11.7``
+
+So on the login node, we can run ``CONDA_OVERRIDE_CUDA=11.7 micromamba info`` and see that the "correct" virtual CUDA is listed.
+For example, to install a version of ``openfe`` which is compatible with ``cudatoolkit 11.7`` run ``CONDA_OVERRIDE_CUDA=11.7 micromamba install openfe``.
 
 Common Errors
 -------------

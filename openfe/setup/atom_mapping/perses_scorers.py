@@ -73,8 +73,8 @@ def default_perses_scorer(mapping: LigandAtomMapping,
 
     # normalize
     if (normalize):
-        oeyMolA = mapping.componentA.to_openeye()
-        oeyMolB = mapping.componentB.to_openeye()
+        oeyMolA = mapping.componentA.to_openff().to_openeye()
+        oeyMolB = mapping.componentB.to_openff().to_openeye()
         if (use_positions):
             raise NotImplementedError("normalizing using positions is "
                                       "not currently implemented")
