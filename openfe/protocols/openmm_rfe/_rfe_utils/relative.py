@@ -2395,11 +2395,10 @@ class HybridTopologyFactory:
         # without having to constantly search backwards
         prev_res = None
         prev_chain = None
-        chain_idx = 0
 
         for at in atom_list:
             if at.residue.chain != prev_chain:
-                hybrid_chain = hybrid_top.addChain(chain_idx)
+                hybrid_chain = hybrid_top.addChain()
                 chain_idx += 1
                 prev_chain = at.residue.chain
 
