@@ -2399,7 +2399,6 @@ class HybridTopologyFactory:
         for at in atom_list:
             if at.residue.chain != prev_chain:
                 hybrid_chain = hybrid_top.addChain()
-                chain_idx += 1
                 prev_chain = at.residue.chain
 
             if at.residue != prev_res:
