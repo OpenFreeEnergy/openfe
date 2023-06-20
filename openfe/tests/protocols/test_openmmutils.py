@@ -12,9 +12,6 @@ import openfe
 from openfe.protocols.openmm_utils import (
     settings_validation, system_validation, system_creation
 )
-from openfe.protocols.openmm_utils.utils import (
-    subsample_omm_topology,
-)
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     SystemSettings, SolvationSettings,
 )
@@ -183,45 +180,6 @@ def get_settings():
     system_settings = SystemSettings()
 
     return forcefield_settings, thermo_settings, system_settings
-
-
-@pytest.mark.parametrize(
-    'indices,n_atoms,n_bonds,n_residues,n_chains,resname', [
-        [tuple(2613 + i for i in range(15)), 15, 15, 1, 1, 'UNK'],
-        [(6, 7, 23, 24, 37, 38, 2613), 7, 3, 4, 2, 'MET'],
-    ],
-)
-def test_subsample_topology(T4_protein_component, benzene_modifications,
-                            get_settings, indices, n_atoms, n_bonds,
-                            n_residues, n_chains, resname):
-    # Get settings
-    ffsets, thermosets, systemsets = get_settings
-    generator = system_creation.get_system_generator(
-        ffsets, thermosets, systemsets, None, True
-    )
-
-    # Get generator and Modeller object
-    mol = benzene_modifications['toluene'].to_openff()
-    generator.create_system(mol.to_topology().to_openmm(),
-                            molecules=[mol])
-
-    model, comp_resids = system_creation.get_omm_modeller(
-        T4_protein_component, openfe.SolventComponent(),
-        [benzene_modifications['toluene'],],
-        generator.forcefield,
-        SolvationSettings()
-    )
-
-    # Subsample the Topology
-    topology = model.getTopology()
-    sub_top = subsample_omm_topology(topology, indices)
-
-    # Checks
-    assert len(list(sub_top.atoms())) == n_atoms
-    assert len(list(sub_top.bonds())) == n_bonds
-    assert len(list(sub_top.residues())) == n_residues
-    assert len(list(sub_top.chains())) == n_chains
-    assert list(sub_top.residues())[0].name == resname
 
 
 class TestSystemCreation:
