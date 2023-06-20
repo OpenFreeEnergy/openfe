@@ -2371,8 +2371,10 @@ class HybridTopologyFactory:
 
         Note
         ----
-        This is not intended for parameterisation purposes, but instead
-        for system visualisation.
+        * This is not intended for parameterisation purposes, but instead
+          for system visualisation.
+        * Unlike the MDTraj Topology object, the residues of the alchemical
+          species are not squashed.
         """
 
         hybrid_top = app.Topology()

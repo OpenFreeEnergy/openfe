@@ -33,6 +33,7 @@ from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable
 import openmmtools
+import mdtraj
 
 import gufe
 from gufe import (
@@ -49,7 +50,6 @@ from .equil_rfe_settings import (
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation
 )
-from ..openmm_utils.utils import write_subsampled_pdb
 from . import _rfe_utils
 
 logger = logging.getLogger(__name__)
@@ -526,12 +526,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
-        write_subsampled_pdb(
-            hybrid_factory.omm_hybrid_topology,
-            hybrid_factory.hybrid_positions,
-            reporter.analysis_particle_indices,
-            shared_basepath / sim_settings.output_structure,
-        )
+        traj = mdtraj.Trajectory(
+                hybrid_factory.hybrid_positions[selection_indices, :],
+                hybrid_factory.hybrid_topology.subset(selection_indices),
+        ).save_pdb(shared_basepath / sim_settings.output_structure)
 
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
