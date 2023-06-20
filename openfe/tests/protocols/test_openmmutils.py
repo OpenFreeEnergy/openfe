@@ -10,10 +10,13 @@ from openff.units import unit
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
-        settings_validation, system_validation, system_creation
+    settings_validation, system_validation, system_creation
+)
+from openfe.protocols.openmm_utils.utils import (
+    subsample_omm_topology,
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-        SystemSettings, SolvationSettings,
+    SystemSettings, SolvationSettings,
 )
 
 
@@ -170,20 +173,65 @@ def test_components_complex(T4_protein_component, benzene_modifications):
     assert len(mols) == 2
 
 
+@pytest.fixture(scope='module')
+def get_settings():
+    forcefield_settings = OpenMMSystemGeneratorFFSettings()
+    thermo_settings = ThermoSettings(
+        temperature=298.15 * unit.kelvin,
+        pressure=1 * unit.bar,
+    )
+    system_settings = SystemSettings()
+
+    return forcefield_settings, thermo_settings, system_settings
+
+
+def test_subsample_topology(T4_protein_component, benzene_modifications,
+                            get_settings):
+    # Get settings
+    ffsets, thermosets, systemsets = get_settings
+    generator = system_creation.get_system_generator(
+        ffsets, thermosets, systemsets, None, True
+    )
+
+    # Get generator and Modeller object
+    mol = benzene_modifications['toluene'].to_openff()
+    generator.create_system(mol.to_topology().to_openmm(),
+                            molecules=[mol])
+
+    model, comp_resids = system_creation.get_omm_modeller(
+        T4_protein_component, openfe.SolventComponent(),
+        [benzene_modifications['toluene'],],
+        generator.forcefield,
+        SolvationSettings()
+    )
+
+    # Subsample the Topology
+    topology = model.getTopology()
+    indices = tuple(2613 + i for i in range(15))
+    sub_top = subsample_omm_topology(topology, indices)
+
+    # Checks
+    assert len(list(sub_top.atoms())) == 15
+    assert len(list(sub_top.bonds())) == 15
+    assert len(list(sub_top.residues())) == 1
+    assert len(list(sub_top.chains())) == 1
+    assert list(sub_top.residues())[0].name == "UNK"
+
+
 class TestSystemCreation:
     @staticmethod
     def get_settings():
-        forcefield_settings=OpenMMSystemGeneratorFFSettings()
-        thermo_settings=ThermoSettings(
+        forcefield_settings = OpenMMSystemGeneratorFFSettings()
+        thermo_settings = ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
         )
-        system_settings=SystemSettings()
+        system_settings = SystemSettings()
 
         return forcefield_settings, thermo_settings, system_settings
 
-    def test_system_generator_nosolv_nocache(self):
-        ffsets, thermosets, systemsets = self.get_settings()
+    def test_system_generator_nosolv_nocache(self, get_settings):
+        ffsets, thermosets, systemsets = get_settings
         generator = system_creation.get_system_generator(
                 ffsets, thermosets, systemsets, None, False)
         assert generator.barostat is None
@@ -205,16 +253,17 @@ class TestSystemCreation:
         assert generator.nonperiodic_forcefield_kwargs == nonperiodic_kwargs
         assert generator.periodic_forcefield_kwargs == periodic_kwargs
 
-    def test_system_generator_solv_cache(self):
-        ffsets, thermosets, systemsets = self.get_settings()
+    def test_system_generator_solv_cache(self, get_settings):
+        ffsets, thermosets, systemsets = get_settings
         generator = system_creation.get_system_generator(
                 ffsets, thermosets, systemsets, Path('./db.json'), True)
         assert isinstance(generator.barostat, MonteCarloBarostat)
         assert generator.template_generator._cache == 'db.json'
 
     def test_get_omm_modeller_complex(self, T4_protein_component,
-                                      benzene_modifications):
-        ffsets, thermosets, systemsets = self.get_settings()
+                                      benzene_modifications,
+                                      get_settings):
+        ffsets, thermosets, systemsets = get_settings
         generator = system_creation.get_system_generator(
                 ffsets, thermosets, systemsets, None, True)
 
