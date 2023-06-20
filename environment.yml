@@ -14,7 +14,8 @@ dependencies:
   - pydantic
   - coverage
   - openff-toolkit>=0.13.0
-  - openff-units>=0.2.0
+  - openff-units==0.2.0
+  - pint<0.22
   - openff-models>=0.0.5
   - click
   - typing-extensions
