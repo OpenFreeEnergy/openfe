@@ -185,8 +185,15 @@ def get_settings():
     return forcefield_settings, thermo_settings, system_settings
 
 
+@pytest.mark.parametrize(
+    'indices,n_atoms,n_bonds,n_residues,n_chains,resname', [
+        [tuple(2613 + i for i in range(15)), 15, 15, 1, 1, 'UNK'],
+        [(6, 7, 23, 24, 37, 38, 2613), 7, 3, 4, 2, 'MET'],
+    ],
+)
 def test_subsample_topology(T4_protein_component, benzene_modifications,
-                            get_settings):
+                            get_settings, indices, n_atoms, n_bonds,
+                            n_residues, n_chains, resname):
     # Get settings
     ffsets, thermosets, systemsets = get_settings
     generator = system_creation.get_system_generator(
@@ -207,15 +214,14 @@ def test_subsample_topology(T4_protein_component, benzene_modifications,
 
     # Subsample the Topology
     topology = model.getTopology()
-    indices = tuple(2613 + i for i in range(15))
     sub_top = subsample_omm_topology(topology, indices)
 
     # Checks
-    assert len(list(sub_top.atoms())) == 15
-    assert len(list(sub_top.bonds())) == 15
-    assert len(list(sub_top.residues())) == 1
-    assert len(list(sub_top.chains())) == 1
-    assert list(sub_top.residues())[0].name == "UNK"
+    assert len(list(sub_top.atoms())) == n_atoms
+    assert len(list(sub_top.bonds())) == n_bonds
+    assert len(list(sub_top.residues())) == n_residues
+    assert len(list(sub_top.chains())) == n_chains
+    assert list(sub_top.residues())[0].name == resname
 
 
 class TestSystemCreation:
