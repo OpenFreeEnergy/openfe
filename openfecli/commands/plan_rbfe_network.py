@@ -7,6 +7,7 @@ from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
     MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS,
+    NEW_STORAGE_OUTPUT,  # separate line for easy delete later
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -82,9 +83,11 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@NEW_STORAGE_OUTPUT.parameter()
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, cofactors: tuple[str], output_dir: str
+    molecules: List[str], protein: str, cofactors: tuple[str],
+    output_dir: str, new_storage: bool,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -175,12 +178,16 @@ def plan_rbfe_network(
 
     # OUTPUT
     write("Output:")
-    write("\tSaving to: " + str(output_dir))
-    plan_alchemical_network_output(
-        alchemical_network=alchemical_network,
-        ligand_network=ligand_network,
-        folder_path=OUTPUT_DIR.get(output_dir),
-    )
+    if new_storage:
+        write("Got new storage!")
+        ...
+    else:
+        write("\tSaving to: " + str(output_dir))
+        plan_alchemical_network_output(
+            alchemical_network=alchemical_network,
+            ligand_network=ligand_network,
+            folder_path=OUTPUT_DIR.get(output_dir),
+        )
 
 
 PLUGIN = OFECommandPlugin(
