@@ -78,6 +78,7 @@ def test_plan_rbfe_network_main():
         small_molecules=smallM_components,
         solvent=solvent_component,
         protein=protein_compontent,
+        cofactors=[],
     )
     print(alchemical_network)
 
@@ -124,3 +125,31 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
 
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
+
+
+@pytest.fixture
+def eg5_files():
+    with importlib.resources.files('openfe.tests.data.eg5') as p:
+        pdb_path = str(p.joinpath('eg5_protein.pdb'))
+        lig_path = str(p.joinpath('eg5_ligands.sdf'))
+        cof_path = str(p.joinpath('eg5_cofactor.sdf'))
+
+        yield pdb_path, lig_path, cof_path
+
+
+def test_plan_rbfe_network_cofactors(eg5_files):
+
+    runner = CliRunner()
+
+    args = [
+        '-p', eg5_files[0],
+        '-M', eg5_files[1],
+        '-C', eg5_files[2],
+    ]
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rbfe_network, args)
+
+        print(result.output)
+
+        assert result.exit_code == 0

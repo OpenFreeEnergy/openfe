@@ -5,9 +5,10 @@ from .abstract_chemicalsystem_generator import (
     AbstractChemicalSystemGenerator,
     RFEComponentLabels,
 )
-from typing import Iterable
+from typing import Iterable, Optional
 
 from gufe import (
+    Component,
     SmallMoleculeComponent,
     ProteinComponent,
     SolventComponent,
@@ -20,6 +21,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         self,
         solvent: SolventComponent = None,
         protein: ProteinComponent = None,
+        cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
         do_vacuum: bool = False,
     ):
         """This class is a easy generator class, for generating chemical systems with a focus on a given SmallMoleculeComponent.
@@ -33,6 +35,9 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             if a SolventComponent is given, solvated chemical systems will be generated, by default None
         protein : ProteinComponent, optional
             if a ProteinComponent is given, complex chemical systems will be generated, by default None
+        cofactors : Iterable[SmallMoleculeComponent], optional
+            any cofactors in the system.  will be put in any systems containing
+            the protein
         do_vacuum : bool, optional
             if true a chemical system in vacuum is returned, by default False
 
@@ -43,6 +48,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         """
         self.solvent = solvent
         self.protein = protein
+        self.cofactors = cofactors or []
         self.do_vacuum = do_vacuum
 
         if solvent is None and protein is None and not do_vacuum:
@@ -51,11 +57,6 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             )
 
     def __call__(
-        self, component: SmallMoleculeComponent
-    ) -> Iterable[ChemicalSystem]:
-        return self._generate_systems(component=component)
-
-    def _generate_systems(
         self, component: SmallMoleculeComponent
     ) -> Iterable[ChemicalSystem]:
         """generate systems, around the given SmallMoleculeComponent
@@ -94,11 +95,14 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
             )
             yield chem_sys
 
+        components: dict[str, Component]
         if self.protein is not None:
             components = {
                 RFEComponentLabels.LIGAND: component,
                 RFEComponentLabels.PROTEIN: self.protein,
             }
+            for i, c in enumerate(self.cofactors):
+                components.update({f'{RFEComponentLabels.COFACTOR}{i+1}': c})
             if self.solvent is not None:
                 components.update({RFEComponentLabels.SOLVENT: self.solvent})
             chem_sys = ChemicalSystem(

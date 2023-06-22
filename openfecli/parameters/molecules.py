@@ -59,6 +59,7 @@ def load_molecules(file_or_directory):
 def molecule_getter(user_input, context):
     return load_molecules(user_input)
 
+
 MOL_DIR = Option(
     "-M",
     "--molecules",
@@ -67,5 +68,12 @@ MOL_DIR = Option(
         "A directory or file containing all molecules to be loaded, either"
         " as a single SDF or multiple MOL2/SDFs."
     ),
+    getter=molecule_getter,
+)
+
+COFACTORS = Option(
+    "-C", "--cofactors",
+    type=click.Path(exists=True),
+    help="Path to cofactors sdf file.  This may contain multiple molecules",
     getter=molecule_getter,
 )
