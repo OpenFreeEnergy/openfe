@@ -39,7 +39,7 @@ def default_perses_scorer(mapping: LigandAtomMapping,
                           use_positions: bool = False,
                           normalize: bool = True) -> float:
     """
-        This function is accessing the default perser scorer function and
+        This function is accessing the default perses scorer function and
         returns, the score as float.
 
     Parameters
