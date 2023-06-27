@@ -107,7 +107,7 @@ def gather(rootdir, output):
     # 4a for each ligand pair, write out the DDG
     output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
                  '\tuncertainty (kcal/mol)\n')
-    for ligpair, vals in legs.items():
+    for ligpair, vals in sorted(legs.items()):
         DDGbind = None
         DDGhyd = None
         bind_unc = None
@@ -136,7 +136,7 @@ def gather(rootdir, output):
                          f'{DDGhyd}\t{hyd_unc}\n')
 
     # 4b write out each leg
-    for ligpair, vals in legs.items():
+    for ligpair, vals in sorted(legs.items()):
         name = ', '.join(ligpair)
         for simtype, (m, u) in vals.items():
             if m is None:

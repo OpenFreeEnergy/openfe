@@ -6,7 +6,7 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR
+    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -18,8 +18,9 @@ def plan_rbfe_network_main(
     small_molecules,
     solvent,
     protein,
+    cofactors,
 ):
-    """Utiiity method to plan a relative binding free energy network.
+    """Utility method to plan a relative binding free energy network.
 
     Parameters
     ----------
@@ -35,6 +36,8 @@ def plan_rbfe_network_main(
         Solvent component used for solvation
     protein : ProteinComponent
         protein component for complex simulations, to which the ligands are bound
+    cofactors : Iterable[SmallMoleculeComponent]
+        any cofactors alongisde the protein, can be empty list
 
     Returns
     -------
@@ -53,7 +56,8 @@ def plan_rbfe_network_main(
         ligand_network_planner=ligand_network_planner,
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent, protein=protein
+        ligands=small_molecules, solvent=solvent, protein=protein,
+        cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
 
@@ -71,13 +75,16 @@ def plan_rbfe_network_main(
 @PROTEIN.parameter(
     multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
 )
+@COFACTORS.parameter(
+    multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
+)
 @OUTPUT_DIR.parameter(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, output_dir: str
+    molecules: List[str], protein: str, cofactors: tuple[str], output_dir: str
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -129,6 +136,12 @@ def plan_rbfe_network(
     protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
 
+    if cofactors is not None:
+        cofactors = sum((COFACTORS.get(c) for c in cofactors), start=[])
+    else:
+        cofactors = []
+    write("\t\tCofactors: " + str(cofactors))
+
     solvent = SolventComponent()
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -155,6 +168,7 @@ def plan_rbfe_network(
         small_molecules=small_molecules,
         solvent=solvent,
         protein=protein,
+        cofactors=cofactors,
     )
     write("\tDone")
     write("")

@@ -86,7 +86,7 @@ class RelativeAlchemicalNetworkPlanner(
 
     @abc.abstractmethod
     def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
-        return self._build_alchemical_network(*args, **kwargs)
+        ...  # -no-cov-
 
     @property
     def mappers(self) -> Iterable[LigandAtomMapper]:
@@ -168,7 +168,7 @@ class RelativeAlchemicalNetworkPlanner(
             set(all_transformation_labels)
         ):
             raise ValueError(
-                "There where multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
+                "There were multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
                 + str(len(all_transformation_labels))
                 + "\nunique: "
                 + str(len(set(all_transformation_labels)))
@@ -221,16 +221,6 @@ class RelativeAlchemicalNetworkPlanner(
             protocol=transformation_protocol,
         )
 
-    @abc.abstractmethod
-    def _build_chemicalsystem_generator(
-        self, *args, **kwargs
-    ) -> AbstractChemicalSystemGenerator:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def _build_alchemical_network(self, *args, **kwargs) -> AlchemicalNetwork:
-        raise NotImplementedError()
-
 
 class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     def __init__(
@@ -268,41 +258,13 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         AlchemicalNetwork
             RHFE network for the given ligands and solvent.
         """
-        return self._build_alchemical_network(ligands=ligands, solvent=solvent)
-
-    def _build_chemicalsystem_generator(
-        self, solvent
-    ) -> AbstractChemicalSystemGenerator:
-        return self._chemical_system_generator_type(
-            solvent=solvent, do_vacuum=True
-        )
-
-    def _build_alchemical_network(
-        self,
-        ligands: Iterable[SmallMoleculeComponent],
-        solvent: SolventComponent,
-    ) -> AlchemicalNetwork:
-        """plan the alchemical network for the given ligands and solvent.
-
-        Parameters
-        ----------
-        ligands : Iterable[SmallMoleculeComponent]
-            ligands that shall be used for the alchemical network.
-        solvent : SolventComponent
-            solvent for solvated simulations
-
-        Returns
-        -------
-        AlchemicalNetwork
-            RHFE network for the given ligands and solvent.
-        """
         # components might be given differently!
         # throw into ligand_network_planning
         self._ligand_network = self._construct_ligand_network(ligands)
 
         # Prepare system generation
-        self._chemical_system_generator = self._build_chemicalsystem_generator(
-            solvent=solvent
+        self._chemical_system_generator = self._chemical_system_generator_type(
+            solvent=solvent, do_vacuum=True,
         )
 
         # Build transformations
@@ -337,6 +299,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         ligands: Iterable[SmallMoleculeComponent],
         solvent: SolventComponent,
         protein: ProteinComponent,
+        cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
     ) -> AlchemicalNetwork:
         """plan the alchemical network for RBFE calculations with the given ligands, protein and solvent.
 
@@ -348,40 +311,8 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
             solvent for solvated and complex simulations
         protein : ProteinComponent
             protein for complex simulations
-
-        Returns
-        -------
-        AlchemicalNetwork
-            RBFE network for the given ligands, protein and solvent.
-        """
-        return self._build_alchemical_network(
-            ligands=ligands, solvent=solvent, protein=protein
-        )
-
-    def _build_chemicalsystem_generator(
-        self, solvent: SolventComponent, protein: ProteinComponent
-    ) -> AbstractChemicalSystemGenerator:
-        chemical_system_generator = self._chemical_system_generator_type(
-            solvent=solvent, protein=protein
-        )
-        return chemical_system_generator
-
-    def _build_alchemical_network(
-        self,
-        ligands: Iterable[SmallMoleculeComponent],
-        solvent: SolventComponent,
-        protein: ProteinComponent,
-    ) -> AlchemicalNetwork:
-        """plan the alchemical network for RBFE calculations with the given ligands, protein and solvent.
-
-        Parameters
-        ----------
-        ligands : Iterable[SmallMoleculeComponent]
-            ligands that shall be used for the alchemical network.
-        solvent : SolventComponent
-            solvent for solvated and complex simulations
-        protein : ProteinComponent
-            protein for complex simulations
+        cofactors : Iterable[SmallMoleculeComponent]
+            any cofactors in the system, can be empty list
 
         Returns
         -------
@@ -393,8 +324,8 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         self._ligand_network = self._construct_ligand_network(ligands)
 
         # Prepare system generation
-        self._chemical_system_generator = self._build_chemicalsystem_generator(
-            solvent=solvent, protein=protein
+        self._chemical_system_generator = self._chemical_system_generator_type(
+            solvent=solvent, protein=protein, cofactors=cofactors,
         )
 
         # Build transformations

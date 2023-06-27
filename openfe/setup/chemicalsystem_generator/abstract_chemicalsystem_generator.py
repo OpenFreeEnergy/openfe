@@ -12,6 +12,7 @@ class RFEComponentLabels(str, Enum):
     PROTEIN = "protein"
     LIGAND = "ligand"
     SOLVENT = "solvent"
+    COFACTOR = "cofactor"
 
 
 class AbstractChemicalSystemGenerator(abc.ABC):
