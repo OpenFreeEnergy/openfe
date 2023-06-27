@@ -21,24 +21,26 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: Setup Micromamba
+        uses: mamba-org/provision-with-micromamba@main
         with:
-            auto-update-conda: true
-            use-mamba: true
-            python-version: 3.9
-            miniforge-variant: Mambaforge
-            environment-file: environment.yml
-            activate-environment: openfe
+          environment-file: environment.yml
+          environment-name: openfe_env
+          cache-env: true
+          cache-downloads: true
+          extra-specs: |
+            python==3.9
 
       - name: "Install steps"
         run: |
+          python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
           python -m pip install mypy
-          python setup.py develop --no-deps
+          python -m pip install --no-deps -e .
 
       - name: "Environment Information"
         run: |
-          mamba info -a
-          mamba list
+          micromamba info
+          micromamba list
 
       - name: "Lint with mypy"
-        run: mypy openfe
+        run: mypy 

@@ -9,9 +9,10 @@ from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import 
 )
 
 
-from ..conftest import T4_protein_component
+from ...conftest import T4_protein_component
 from gufe import SolventComponent
 from .component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
+
 
 def test_easy_chemical_system_generator_init(T4_protein_component):
 
@@ -52,8 +53,12 @@ def test_build_solvent_chemical_system(ethane):
     assert solventC_in_chem_sys(chem_sys)
     assert ligandC_in_chem_sys(chem_sys)
 
+
 def test_build_protein_chemical_system(ethane, T4_protein_component):
-    chem_sys_generator = EasyChemicalSystemGenerator(protein=T4_protein_component)
+    # TODO: cofactors with eg5 system
+    chem_sys_generator = EasyChemicalSystemGenerator(
+        protein=T4_protein_component,
+    )
     chem_sys = next(chem_sys_generator(ethane))
 
     assert chem_sys is not None
@@ -61,6 +66,7 @@ def test_build_protein_chemical_system(ethane, T4_protein_component):
     assert proteinC_in_chem_sys(chem_sys)
     assert not solventC_in_chem_sys(chem_sys)
     assert ligandC_in_chem_sys(chem_sys)
+
 
 def test_build_hydr_scenario_chemical_systems(ethane):
     chem_sys_generator = EasyChemicalSystemGenerator(
@@ -75,9 +81,10 @@ def test_build_hydr_scenario_chemical_systems(ethane):
     assert [solventC_in_chem_sys(chem_sys) for chem_sys in chem_syss] == [False, True]
     assert [ligandC_in_chem_sys(chem_sys) for chem_sys in chem_syss] == [True, True]
 
+
 def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
     chem_sys_generator = EasyChemicalSystemGenerator(
-        solvent=SolventComponent(), protein=T4_protein_component
+        solvent=SolventComponent(), protein=T4_protein_component,
     )
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]
@@ -92,7 +99,7 @@ def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
 
 def test_build_hbinding_scenario_chemical_systems(ethane, T4_protein_component):
     chem_sys_generator = EasyChemicalSystemGenerator(
-        do_vacuum=True, solvent=SolventComponent(), protein=T4_protein_component
+        do_vacuum=True, solvent=SolventComponent(), protein=T4_protein_component,
     )
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]

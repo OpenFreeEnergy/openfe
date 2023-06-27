@@ -6,7 +6,7 @@ import networkx as nx
 
 import openfe.setup
 
-from .conftest import mol_from_smiles
+from ..conftest import mol_from_smiles
 
 
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
@@ -23,14 +23,18 @@ def toluene_vs_others(atom_mapping_basic_test_files):
     return toluene, others
 
 
-def test_radial_network(atom_mapping_basic_test_files, toluene_vs_others):
+@pytest.mark.parametrize('as_list', [False, True])
+def test_radial_network(atom_mapping_basic_test_files, toluene_vs_others,
+                        as_list):
     toluene, others = toluene_vs_others
     central_ligand_name = 'toluene'
     mapper = openfe.setup.atom_mapping.LomapAtomMapper()
+    if as_list:
+        mapper = [mapper]
 
     network = openfe.setup.ligand_network_planning.generate_radial_network(
         ligands=others, central_ligand=toluene,
-        mappers=[mapper], scorer=None,
+        mappers=mapper, scorer=None,
     )
     # couple sanity checks
     assert len(network.nodes) == len(atom_mapping_basic_test_files)
@@ -90,17 +94,19 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
         )
 
 
+@pytest.mark.parametrize('with_progress', [True, False])
 @pytest.mark.parametrize('with_scorer', [True, False])
 @pytest.mark.parametrize('extra_mapper', [True, False])
-def test_generate_maximal_network(toluene_vs_others, with_scorer,
-                                  extra_mapper):
+def test_generate_maximal_network(toluene_vs_others, with_progress,
+                                  with_scorer, extra_mapper):
     toluene, others = toluene_vs_others
     if extra_mapper:
-        mappers = [BadMapper()]
+        mappers = [
+            openfe.setup.atom_mapping.LomapAtomMapper(),
+            BadMapper()
+        ]
     else:
-        mappers = []
-
-    mappers += [openfe.setup.atom_mapping.LomapAtomMapper()]
+        mappers = openfe.setup.atom_mapping.LomapAtomMapper()
 
     def scoring_func(mapping):
         return 1.0 / len(mapping.componentA_to_componentB)
@@ -110,7 +116,8 @@ def test_generate_maximal_network(toluene_vs_others, with_scorer,
     network = openfe.setup.ligand_network_planning.generate_maximal_network(
         ligands=others + [toluene],
         mappers=mappers,
-        scorer=scorer
+        scorer=scorer,
+        progress=with_progress,
     )
 
     assert len(network.nodes) == len(others) + 1
@@ -129,6 +136,30 @@ def test_generate_maximal_network(toluene_vs_others, with_scorer,
     else:
         for edge in network.edges:
             assert 'score' not in edge.annotations
+
+
+@pytest.mark.parametrize('multi_mappers', [False, True])
+def test_minimal_spanning_network_mappers(atom_mapping_basic_test_files, multi_mappers):
+    ligands = [atom_mapping_basic_test_files['toluene'],
+               atom_mapping_basic_test_files['2-naftanol'],
+               ]
+
+    if multi_mappers:
+        mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
+    else:
+        mappers = openfe.setup.atom_mapping.LomapAtomMapper()
+
+    def scorer(mapping):
+        return 1.0 / len(mapping.componentA_to_componentB)
+
+    network = openfe.ligand_network_planning.generate_minimal_spanning_network(
+        ligands=ligands,
+        mappers=mappers,
+        scorer=scorer,
+    )
+
+    assert isinstance(network, openfe.LigandNetwork)
+    assert list(network.edges)
 
 
 @pytest.fixture(scope='session')

@@ -14,22 +14,16 @@ from openfecli.commands.plan_rhfe_network import (
 @pytest.fixture
 def mol_dir_args():
     with importlib.resources.path(
-        "openfe.tests.data.openmm_rbfe", "__init__.py"
+        "openfe.tests.data.openmm_rfe", "__init__.py"
     ) as file_path:
         ofe_dir_path = os.path.dirname(file_path)
 
-    return ["--mol-dir", ofe_dir_path]
-
-
-@pytest.fixture
-def mapper_args():
-    return ["--mapper", "LomapAtomMapper"]
+    return ["--molecules", ofe_dir_path]
 
 
 def print_test_with_file(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules, solvent
+    mapping_scorer, ligand_network_planner, small_molecules, solvent
 ):
-    print(mapper)
     print(mapping_scorer)
     print(ligand_network_planner)
     print(small_molecules)
@@ -46,7 +40,7 @@ def test_plan_rhfe_network_main():
     )
 
     with importlib.resources.path(
-        "openfe.tests.data.openmm_rbfe", "__init__.py"
+        "openfe.tests.data.openmm_rfe", "__init__.py"
     ) as file_path:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(f)
@@ -54,28 +48,38 @@ def test_plan_rhfe_network_main():
         ]
 
     solvent_component = SolventComponent()
-    alchemical_network = plan_rhfe_network_main(
+    alchemical_network, ligand_network = plan_rhfe_network_main(
         mapper=LomapAtomMapper(),
         mapping_scorer=lomap_scorers.default_lomap_score,
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
     )
-    print(alchemical_network)
+
+    assert alchemical_network
+    assert ligand_network
 
 
-def test_plan_rhfe_network(mol_dir_args, mapper_args):
+def test_plan_rhfe_network(mol_dir_args):
     """
     smoke test
     """
-    args = mol_dir_args + mapper_args
-    expected_output = [
+    args = mol_dir_args
+    expected_output_always = [
         "RHFE-NETWORK PLANNER",
-        "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
-        "- vacuum/tmp_network_easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json",
-        "- solvent/tmp_network_easy_rhfe_ligand_23_solvent_ligand_55_solvent.json",
+    ]
+    # we can get these in either order: 22 then 55 or 55 then 22
+    expected_output_1 = [
+        "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
+        "- easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json",
+        "- easy_rhfe_ligand_23_solvent_ligand_55_solvent.json",
+    ]
+    expected_output_2 = [
+        "Small Molecules: SmallMoleculeComponent(name=ligand_55) SmallMoleculeComponent(name=ligand_23)",
+        "- easy_rhfe_ligand_55_vacuum_ligand_23_vacuum.json",
+        "- easy_rhfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
     patch_base = (
@@ -92,9 +96,8 @@ def test_plan_rhfe_network(mol_dir_args, mapper_args):
             result = runner.invoke(plan_rhfe_network, args)
             print(result.output)
             assert result.exit_code == 0
-            assert all(
-                [
-                    expected_line in result.output
-                    for expected_line in expected_output
-                ]
-            )
+            for line in expected_output_always:
+                assert line in result.output
+
+            for l1, l2 in zip(expected_output_1, expected_output_2):
+                assert l1 in result.output or l2 in result.output

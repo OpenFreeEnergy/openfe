@@ -2,11 +2,12 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from openfecli import OFECommandPlugin
-from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write
 import json
 import pathlib
+
+from openfecli import OFECommandPlugin
+from openfecli.parameters.output import ensure_file_does_not_exist
+from openfecli.utils import write, print_duration
 
 
 def _format_exception(exception) -> str:
@@ -23,11 +24,11 @@ def _format_exception(exception) -> str:
 @click.argument('transformation', type=click.File(mode='r'),
                 required=True)
 @click.option(
-    'directory', '-d', default=None,
+    '--work-dir', '-d', default=None,
     type=click.Path(dir_okay=True, file_okay=False, writable=True,
                     path_type=pathlib.Path),
     help=(
-        "directory to store files in (defaults to temporary directory)"
+        "directory to store files in (defaults to current directory)"
     ),
 )
 @click.option(
@@ -37,15 +38,48 @@ def _format_exception(exception) -> str:
     help="output file (JSON format) for the final results",
     callback=ensure_file_does_not_exist,
 )
-def quickrun(transformation, directory, output):
+@print_duration
+def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file in serial.
 
-    To save a transformation as JSON, create the transformation and then
-    save it with transformation.dump(filename).
+    A transformation can be saved as JSON using from Python using its dump
+    method::
+
+        transformation.dump("filename.json")
+
+    That will save a JSON file suitable to be input for this command.
     """
     import gufe
+    import os
+    import sys
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
+    from openfe.utils.logging_filter import MsgIncludesStringFilter
+    import logging
+
+    # avoid problems with output not showing if queueing system kills a job
+    sys.stdout.reconfigure(line_buffering=True)
+
+    # silence the openmmtools.multistate API warning
+    stfu = MsgIncludesStringFilter(
+        "The openmmtools.multistate API is experimental and may change in "
+        "future releases"
+    )
+    omm_multistate = "openmmtools.multistate"
+    modules = ["multistatereporter", "multistateanalyzer",
+               "multistatesampler"]
+    for module in modules:
+        ms_log = logging.getLogger(omm_multistate + "." + module)
+        ms_log.addFilter(stfu)
+
+    # turn warnings into log message (don't show stack trace)
+    logging.captureWarnings(True)
+
+
+    if work_dir is None:
+        work_dir = pathlib.Path(os.getcwd())
+    else:
+        work_dir.mkdir(exist_ok=True, parents=True)
 
     write("Loading file...")
     # TODO: change this to `Transformation.load(transformation)`
@@ -54,7 +88,13 @@ def quickrun(transformation, directory, output):
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Running the simulations...")
-    dagresult = execute_DAG(dag, shared=directory, raise_error=False)
+    dagresult = execute_DAG(dag,
+                            shared_basedir=work_dir,
+                            scratch_basedir=work_dir,
+                            keep_shared=True,
+                            raise_error=False,
+                            n_retries=2,
+                            )
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
@@ -73,17 +113,15 @@ def quickrun(transformation, directory, output):
             for unit in dagresult.protocol_unit_results
         }
     }
-    # TODO: remove this ugly hack on next release
-    #       strip out Settings objects in each unit_result inputs dict
-    for _, dd in out_dict['unit_results'].items():
-        if 'inputs' in dd:
-            dd['inputs'].pop('settings')
 
-    if output:
-        with open(output, mode='w') as outf:
-            json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
+    if output is None:
+        output = work_dir / (str(trans.key) + '_results.json')
 
-    write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
+    with open(output, mode='w') as outf:
+        json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
+
+    write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
+
     write("Additional information:")
     for result in dagresult.protocol_unit_results:
         write(f"{result.name}:")
@@ -103,6 +141,6 @@ def quickrun(transformation, directory, output):
 
 PLUGIN = OFECommandPlugin(
     command=quickrun,
-    section="Simulation",
+    section="Quickrun Executor",
     requires_ofe=(0, 3)
 )

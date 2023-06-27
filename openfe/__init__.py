@@ -5,21 +5,32 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
     Transformation,
+    AlchemicalNetwork,
+    LigandAtomMapping,
+)
+from gufe.protocols import (
+    Protocol,
+    ProtocolDAG,
+    ProtocolUnit,
+    ProtocolUnitResult, ProtocolUnitFailure,
+    ProtocolDAGResult,
+    ProtocolResult,
+    execute_DAG,
 )
 
 from . import utils
 from . import setup
 from .setup import (
-    LigandAtomMapping,
     LomapAtomMapper,
     lomap_scorers,
     PersesAtomMapper,
     perses_scorers,
     ligand_network_planning,
     LigandNetwork,
+    LigandAtomMapper,
 )
 from . import orchestration
 from . import analysis
 
-from openfecli import _version
-__version__ = _version.get_versions()['version']
+from importlib.metadata import version
+__version__ = version("openfe")

@@ -9,7 +9,7 @@ from .resultserver import ResultServer
 from .metadatastore import JSONMetadataStore
 
 from gufe.tokenization import (
-    get_all_gufe_objs, key_decode_dependencies, from_dict
+    get_all_gufe_objs, key_decode_dependencies, from_dict, JSON_HANDLER,
 )
 
 
@@ -138,6 +138,7 @@ class ResultClient(_ResultContainer):
             # we only store on keys that we don't already know
             if key not in self.result_server:
                 data = json.dumps(o.to_keyed_dict(),
+                                  cls=JSON_HANDLER.encoder,
                                   sort_keys=True).encode('utf-8')
                 self.result_server.store_bytes(key, data)
 
@@ -175,7 +176,7 @@ class ResultClient(_ResultContainer):
             with self.load_stream(storage_key) as f:
                 keyencoded_json = f.read().decode('utf-8')
 
-            dct = json.loads(keyencoded_json)
+            dct = json.loads(keyencoded_json, cls=JSON_HANDLER.decoder)
             # this implementation may seem strange, but it will be a
             # faster than traversing the dict
             key_encoded = set(GUFEKEY_JSON_REGEX.findall(keyencoded_json))

@@ -2,11 +2,13 @@ import inspect
 import pytest
 from unittest import mock
 from matplotlib import pyplot as plt
+import matplotlib
 import matplotlib.figure
+import importlib.resources
 
 from openfe.utils.atommapping_network_plotting import (
     AtomMappingNetworkDrawing, plot_atommapping_network,
-    LigandNode
+    LigandNode,
 )
 
 from openfe.tests.utils.test_network_plotting import mock_event

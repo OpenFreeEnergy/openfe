@@ -14,9 +14,13 @@ class LomapAtomMapper(LigandAtomMapper):
     time: int
     threed: bool
     max3d: float
+    element_change: bool
+    seed: str
+    shift: bool
 
-    def __init__(self, time: int = 20, threed: bool = True,
-                 max3d: float = 1000.0, element_change: bool = True):
+    def __init__(self, *, time: int = 20, threed: bool = True,
+                 max3d: float = 1000.0, element_change: bool = True,
+                 seed: str = '', shift: bool = True):
         """Wraps the MCS atom mapper from Lomap.
 
         Kwargs are passed directly to the MCS class from Lomap for each mapping
@@ -35,18 +39,27 @@ class LomapAtomMapper(LigandAtomMapper):
           allowed, default 1000.0, which effectively trims no atoms
         element_change: bool, optional
           whether to allow element changes in the mappings, default True
+        seed: str, optional
+          SMARTS string to use as seed for MCS searches.  When used across an entire set
+          of ligands, this can create
+        shift: bool, optional
+          when determining 3D overlap, if to translate the two molecules MCS to minimise
+          RMSD to boost potential alignment.
         """
         self.time = time
         self.threed = threed
         self.max3d = max3d
         self.element_change = element_change
+        self.seed = seed
+        self.shift = shift
 
     def _mappings_generator(self, componentA, componentB):
         try:
             mcs = lomap_mcs.MCS(componentA.to_rdkit(), componentB.to_rdkit(),
                                 time=self.time,
                                 threed=self.threed, max3d=self.max3d,
-                                element_change=self.element_change)
+                                element_change=self.element_change, seed=self.seed,
+                                shift=self.shift)
         except ValueError:
             # if no match found, Lomap throws ValueError, so we just yield
             # generator with no contents

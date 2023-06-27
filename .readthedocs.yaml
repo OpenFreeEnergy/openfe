@@ -1,0 +1,19 @@
+version: 2
+
+build:
+  os: "ubuntu-20.04"
+  tools:
+    python: "mambaforge-4.10"
+
+sphinx:
+   configuration: docs/conf.py
+   fail_on_warning: true
+
+conda:
+  environment: docs/environment.yaml
+
+python:
+  # Install our python package before building the docs
+  install:
+    - method: pip
+      path: .
