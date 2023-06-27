@@ -120,9 +120,7 @@ def _create_new_dataset(filename: Path, n_atoms: int,
     return ncfile
 
 
-def _get_unitcell(
-        dataset: nc.Dataset, state_num: int, frame_num: int
-) -> tuple[float, float, float, float, float, float]:
+def _get_unitcell(dataset: nc.Dataset, state_num: int, frame_num: int):
     """
     Helper method to extract a unit cell from the stored
     box vectors in a MultiState reporter generated NetCDF file
@@ -150,7 +148,7 @@ def _get_unitcell(
     ly = np.linalg.norm(y)
     lz = np.linalg.norm(z)
     # angle between y and z
-    alpha =  np.arccos(np.dot(y, z) / (ly * lz))
+    alpha = np.arccos(np.dot(y, z) / (ly * lz))
     # angle between x and z
     beta = np.arccos(np.dot(x, z) / (lx * lz))
     # angle between x and y
