@@ -129,8 +129,8 @@ def _validate_alchemical_components(
             if atomA.GetAtomicNum() != atomB.GetAtomicNum():
                 wmsg = (
                     f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}\n"
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
                     "No mass scaling is attempted in the hybrid topology, "
                     "the average mass of the two atoms will be used in the "
                     "simulation")
