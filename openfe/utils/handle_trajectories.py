@@ -55,10 +55,10 @@ def _state_positions_at_frame(dataset: nc.Dataset, state_num: int,
     effective_replica = _effective_replica(dataset, state_num, frame_num)
     pos = dataset.variables['positions'][frame_num][effective_replica].data
     pos_units = dataset.variables['positions'].units
-    return pos * pos_units
+    return pos * unit(pos_units)
 
 
-def _create_new_dataset(filename: Pathlib, n_atoms: int,
+def _create_new_dataset(filename: Path, n_atoms: int,
                         title: str) -> nc.Dataset:
     """
     Helper method to create a new NetCDF dataset which follows the
@@ -83,8 +83,8 @@ def _create_new_dataset(filename: Pathlib, n_atoms: int,
     ncfile.Conventions = 'AMBER'
     ncfile.ConventionVersion = "1.0"
     ncfile.application = "openfe"
-    ncfile.program = f"openfe {openfe.__version__}"
-    ncfile.programVersion = f"{openfe.__version__}"
+    ncfile.program = f"openfe {__version__}"
+    ncfile.programVersion = f"{__version__}"
     ncfile.title = title
     
     # Set the dimensions
@@ -122,7 +122,7 @@ def _create_new_dataset(filename: Pathlib, n_atoms: int,
 
 def _get_unitcell(
         dataset: nc.Dataset, state_num: int, frame_num: int
-) -> Tuple[float, float, float, float, float, float]:
+) -> tuple[float, float, float, float, float, float]:
     """
     Helper method to extract a unit cell from the stored
     box vectors in a MultiState reporter generated NetCDF file
@@ -145,7 +145,7 @@ def _get_unitcell(
     effective_replica = _effective_replica(dataset, state_num, frame_num)
     vecs = dataset.variables['box_vectors'][frame_num][effective_replica].data
     vecs_units = dataset.variables['box_vectors'].units
-    x, y, z = (vecs * vecs_units).to('angstrom').m
+    x, y, z = (vecs * unit(vecs_units)).to('angstrom').m
     lx = np.linalg.norm(x)
     ly = np.linalg.norm(y)
     lz = np.linalg.norm(z)
@@ -159,7 +159,7 @@ def _get_unitcell(
     return lx, ly, lz, np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)
 
 
-def trajectory_from_multistate(input_file: Pathlib, output_file: Pathlib,
+def trajectory_from_multistate(input_file: Path, output_file: Path,
                                state_number: int) -> None:
     """
     Extract a state's trajectory (in an AMBER compliant format)
@@ -175,27 +175,30 @@ def trajectory_from_multistate(input_file: Pathlib, output_file: Pathlib,
         Index of the state to write out to the trajectory.
     """
     # Open MultiState NC file and get number of atoms and frames
-    multistate = nc.Dataset(infile, 'r')
-    n_atoms = len(traj.variables['positions'][0][0])
-    n_replicas = len(traj.variables['positions'][0])
-    n_frames = len(traj.variables['positions'])
+    multistate = nc.Dataset(input_file, 'r')
+    n_atoms = len(multistate.variables['positions'][0][0])
+    n_replicas = len(multistate.variables['positions'][0])
+    n_frames = len(multistate.variables['positions'])
     
     # Sanity check
-    if state_num + 1 > n_replicas:
+    if state_number + 1 > n_replicas:
         # Note this works for now, but when we have more states
         # than replicas (e.g. SAMS) this won't really work
         errmsg = "State does not exist"
         raise ValueError(errmsg)
     
     # Create output AMBER NetCDF convention file
-    traj = _create_new_dataset(outfile, str(infile), n_atoms, state_num)
+    traj = _create_new_dataset(
+        output_file, n_atoms,
+        title=f"state {state_number} trajectory from {input_file}"
+    )
     
     # Loopy de loop
     for frame in range(n_frames):
         traj.variables['coordinates'][frame] = _state_positions_at_frame(
-                multistate, state_num, frame
+                multistate, state_number, frame
         ).to('angstrom').m
-        unitcell = _get_unitcell(multistate, state_num, frame)
+        unitcell = _get_unitcell(multistate, state_number, frame)
         traj.variables['cell_lengths'][frame] = unitcell[:3]
         traj.variables['cell_angles'][frame] = unitcell[3:]
 
