@@ -33,6 +33,7 @@ dependencies:
   - autodoc-pydantic
   - pydata-sphinx-theme
   - sphinx-click
+  - ambertools<23.3
   - pip:
     - sphinx-toolbox
     - git+https://github.com/OpenFreeEnergy/gufe@main
