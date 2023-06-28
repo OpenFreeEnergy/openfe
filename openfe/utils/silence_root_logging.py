@@ -9,16 +9,18 @@ def silence_root_logging():
     code at all?"
     """
     root = logging.getLogger()
-    old_handlers = root.handlers
+    old_handlers = list(root.handlers)
     for handler in old_handlers:
         root.removeHandler(handler)
 
     null = logging.NullHandler()
     root.addHandler(null)
-    yield
-    root.removeHandler(null)
-    for handler in old_handlers:
-        root.addHandler(handler)
+    try:
+        yield
+    finally:
+        root.removeHandler(null)
+        for handler in old_handlers:
+            root.addHandler(handler)
 
 
 

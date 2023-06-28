@@ -8,6 +8,15 @@ from gufe import (
     AlchemicalNetwork,
     LigandAtomMapping,
 )
+from gufe.protocols import (
+    Protocol,
+    ProtocolDAG,
+    ProtocolUnit,
+    ProtocolUnitResult, ProtocolUnitFailure,
+    ProtocolDAGResult,
+    ProtocolResult,
+    execute_DAG,
+)
 
 from . import utils
 from . import setup
@@ -18,6 +27,7 @@ from .setup import (
     perses_scorers,
     ligand_network_planning,
     LigandNetwork,
+    LigandAtomMapper,
 )
 from . import orchestration
 from . import analysis

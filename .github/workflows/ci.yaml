@@ -9,6 +9,9 @@ on:
   schedule:
     # At 07:00 UTC on Monday and Thursday.
     - cron: "0 7 * * *"
+  release:
+    types:
+      - published
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -43,11 +46,14 @@ jobs:
         uses: mamba-org/provision-with-micromamba@main
         with:
           environment-file: environment.yml
-          environment-name: openfe
+          environment-name: openfe_env
           cache-env: true
           cache-downloads: true
           extra-specs: |
             python==${{ matrix.python-version }}
+
+      - name: "Install GUFE from main@HEAD"
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
@@ -65,13 +71,13 @@ jobs:
       - name: "Run tests"
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
-          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name == 'schedule'] }}
+          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml
 
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
-                && github.event_name != 'schedule' }}
+                && github.event_name == 'pull_request' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

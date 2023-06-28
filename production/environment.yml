@@ -1,4 +1,4 @@
-name: openfe
+name: openfe_env
 channels:
   - conda-forge
 dependencies:
@@ -11,4 +11,4 @@ dependencies:
   - py3dmol
   - pytest
   - pytest-xdist
-  - python==3.9
+  - python==3.10.*

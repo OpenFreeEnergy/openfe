@@ -51,8 +51,30 @@ def quickrun(transformation, work_dir, output):
     """
     import gufe
     import os
+    import sys
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
+    from openfe.utils.logging_filter import MsgIncludesStringFilter
+    import logging
+
+    # avoid problems with output not showing if queueing system kills a job
+    sys.stdout.reconfigure(line_buffering=True)
+
+    # silence the openmmtools.multistate API warning
+    stfu = MsgIncludesStringFilter(
+        "The openmmtools.multistate API is experimental and may change in "
+        "future releases"
+    )
+    omm_multistate = "openmmtools.multistate"
+    modules = ["multistatereporter", "multistateanalyzer",
+               "multistatesampler"]
+    for module in modules:
+        ms_log = logging.getLogger(omm_multistate + "." + module)
+        ms_log.addFilter(stfu)
+
+    # turn warnings into log message (don't show stack trace)
+    logging.captureWarnings(True)
+
 
     if work_dir is None:
         work_dir = pathlib.Path(os.getcwd())
@@ -70,7 +92,9 @@ def quickrun(transformation, work_dir, output):
                             shared_basedir=work_dir,
                             scratch_basedir=work_dir,
                             keep_shared=True,
-                            raise_error=False)
+                            raise_error=False,
+                            n_retries=2,
+                            )
     write("Done! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
@@ -117,6 +141,6 @@ def quickrun(transformation, work_dir, output):
 
 PLUGIN = OFECommandPlugin(
     command=quickrun,
-    section="Simulation",
+    section="Quickrun Executor",
     requires_ofe=(0, 3)
 )

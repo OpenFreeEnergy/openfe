@@ -8,13 +8,113 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional
-from pydantic import validator
+import abc
+from typing import Optional, Union
+from pydantic import Extra, validator, BaseModel, PositiveFloat, Field
 from openff.units import unit
-from gufe import settings
+import os
 
 
-class SystemSettings(settings.SettingsBaseModel):
+if os.environ.get('SPHINX', False):  #pragma: no cover
+    class SettingsBaseModel(BaseModel):
+        class Config:
+            extra = Extra.forbid
+            validate_assignment = True
+            arbitrary_types_allowed = True
+            smart_union = True
+
+
+    class ThermoSettings(SettingsBaseModel):
+        """Settings for thermodynamic parameters.
+
+        .. note::
+           No checking is done to ensure a valid thermodynamic ensemble is
+           possible.
+        """
+
+        temperature = 298.15 * unit.kelvin
+        """Simulation temperature, default units kelvin"""
+
+        pressure = 1.0 * unit.bar
+        """Simulation pressure, default units standard atmosphere (atm)"""
+
+        ph: Union[PositiveFloat, None] = Field(None, description="Simulation pH")
+        redox_potential: Optional[float] = Field(
+            None, description="Simulation redox potential"
+        )
+
+
+    class BaseForceFieldSettings(SettingsBaseModel, abc.ABC):
+        """Base class for ForceFieldSettings objects"""
+        ...
+
+
+    class OpenMMSystemGeneratorFFSettings(SettingsBaseModel):
+        """Parameters to set up the force field with OpenMM ForceFields
+
+        .. note::
+           Right now we just basically just grab what we need for the
+           :class:`openmmforcefields.system_generators.SystemGenerator`
+           signature. See the `OpenMMForceField SystemGenerator documentation`_
+           for more details.
+
+
+        .. _`OpenMMForceField SystemGenerator documentation`:
+           https://github.com/openmm/openmmforcefields#automating-force-field-management-with-systemgenerator
+        """
+        constraints: Optional[str] = 'hbonds'
+        """Constraints to be applied to system.
+           One of 'hbonds', 'allbonds', 'hangles' or None, default 'hbonds'"""
+
+        rigid_water: bool = True
+        remove_com: bool = False
+        hydrogen_mass: float = 3.0
+        """Mass to be repartitioned to hydrogens from neighbouring
+           heavy atoms (in amu), default 3.0"""
+
+        forcefields: list[str] = [
+            "amber/ff14SB.xml",  # ff14SB protein force field
+            "amber/tip3p_standard.xml",  # TIP3P and recommended monovalent ion parameters
+            "amber/tip3p_HFE_multivalent.xml",  # for divalent ions
+            "amber/phosaa10.xml",  # Handles THE TPO
+        ]
+        """List of force field paths for all components except :class:`SmallMoleculeComponent` """
+
+        small_molecule_forcefield: str = "openff-2.0.0"  # other default ideas 'openff-2.0.0', 'gaff-2.11', 'espaloma-0.2.0'
+        """Name of the force field to be used for :class:`SmallMoleculeComponent` """
+
+        @validator('constraints')
+        def constraint_check(cls, v):
+            allowed = {'hbonds', 'hangles', 'allbonds'}
+
+            if not (v is None or v.lower() in allowed):
+                raise ValueError(f"Bad constraints value, use one of {allowed}")
+
+            return v
+
+
+    class Settings(SettingsBaseModel):
+        """
+        Container for all settings needed by a protocol
+
+        This represents the minimal surface that all settings objects will have.
+
+        Protocols can subclass this to extend this to cater for their additional settings.
+        """
+        forcefield_settings: BaseForceFieldSettings
+        thermo_settings: ThermoSettings
+
+        @classmethod
+        def get_defaults(cls):
+            return cls(
+                forcefield_settings=OpenMMSystemGeneratorFFSettings(),
+                thermo_settings=ThermoSettings(temperature=300 * unit.kelvin),
+            )
+else:
+    from gufe.settings import Settings, SettingsBaseModel  # type: ignore
+
+
+class SystemSettings(SettingsBaseModel):
     """Settings describing the simulation system settings."""
 
     class Config:
@@ -50,21 +150,25 @@ class SystemSettings(settings.SettingsBaseModel):
         return v
 
 
-class SolvationSettings(settings.SettingsBaseModel):
+class SolvationSettings(SettingsBaseModel):
     """Settings for solvating the system
-    NOTE
+
+    Note
     ----
-    * No solvation will happen if a SolventComponent is not passed.
+    No solvation will happen if a SolventComponent is not passed.
+
     """
+    class Config:
+        arbitrary_types_allowed = True
+
     solvent_model = 'tip3p'
     """
     Force field water model to use.
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
-    class Config:
-        arbitrary_types_allowed = True
 
     solvent_padding = 1.2 * unit.nanometer
+    """Minimum distance from any solute atoms to the solvent box edge."""
 
     @validator('solvent_model')
     def allowed_solvent(cls, v):
@@ -88,7 +192,7 @@ class SolvationSettings(settings.SettingsBaseModel):
         return v
 
 
-class AlchemicalSettings(settings.SettingsBaseModel):
+class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
 
     This describes the lambda schedule and the creation of the
@@ -143,11 +247,13 @@ class AlchemicalSettings(settings.SettingsBaseModel):
     """
 
 
-class AlchemicalSamplerSettings(settings.SettingsBaseModel):
+class AlchemicalSamplerSettings(SettingsBaseModel):
     """Settings for the Equilibrium Alchemical sampler, currently supporting
     either MultistateSampler, SAMSSampler or ReplicaExchangeSampler.
 
+    """
 
+    """
     TODO
     ----
     * It'd be great if we could pass in the sampler object rather than using
@@ -169,19 +275,33 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    online_analysis_interval: Optional[int] = None
+    online_analysis_interval: Optional[int] = 250
     """
-    Interval at which to perform an analysis of the free energies.
-    At each interval the free energy is estimate and the simulation is
-    considered complete if the free energy estimate is below
-    ``online_analysis_target_error``. If set, will write a yaml file with
-    real time analysis data. Default `None`.
+    MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
+    to perform an analysis of the free energies.
+
+    At each interval, real time analysis data (e.g. current free energy
+    estimate and timing data) will be written to a yaml file named
+    ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
+    current error in the estimate will also be assed and if it drops
+    below ``AlchemicalSamplerSettings.online_analysis_target_error``
+    the simulation will be terminated.
+
+    If ``None``, no real time analysis will be performed and the yaml
+    file will not be written.
+
+    Must be a multiple of ``SimulationSettings.checkpoint_interval``
+
+    Default `250`.
     """
-    online_analysis_target_error = 0.1 * unit.boltzmann_constant * unit.kelvin
+    online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
-    is at or below this value, the simulation will be considered complete.
-    Default 0.1 * unit.bolzmann_constant * unit.kelvin
+    is at or below this value, the simulation will be considered complete. A
+    suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
+    shown to be effective in both hydration and binding free energy benchmarks.
+    Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
+    termination will occur.
     """
     online_analysis_minimum_iterations = 500
     """
@@ -241,10 +361,11 @@ class AlchemicalSamplerSettings(settings.SettingsBaseModel):
         return v
 
 
-class OpenMMEngineSettings(settings.SettingsBaseModel):
-    """OpenMM MD engine settings
+class OpenMMEngineSettings(SettingsBaseModel):
+    """OpenMM MD engine settings"""
 
 
+    """
     TODO
     ----
     * In the future make precision and deterministic forces user defined too.
@@ -257,7 +378,7 @@ class OpenMMEngineSettings(settings.SettingsBaseModel):
     """
 
 
-class IntegratorSettings(settings.SettingsBaseModel):
+class IntegratorSettings(SettingsBaseModel):
     """Settings for the LangevinSplittingDynamicsMove integrator"""
 
     class Config:
@@ -276,11 +397,6 @@ class IntegratorSettings(settings.SettingsBaseModel):
     """
     If True, velocities are reassigned from the Maxwell-Boltzmann
     distribution at the beginning of move. Default False.
-    """
-    splitting = "V R O R V"
-    """
-    Sequence of "R", "V", "O" substeps to be carried out at each timestep.
-    Default "V R O R V".
     """
     n_restart_attempts = 20
     """
@@ -327,7 +443,7 @@ class IntegratorSettings(settings.SettingsBaseModel):
         return v
 
 
-class SimulationSettings(settings.SettingsBaseModel):
+class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths,
     writing to disk, etc...
@@ -355,11 +471,17 @@ class SimulationSettings(settings.SettingsBaseModel):
 
     # reporter settings
     output_filename = 'simulation.nc'
-    """Path to the storage file for analysis. Default 'simulation.nc'."""
-    output_indices = 'all'
+    """Path to the trajectory storage file. Default 'simulation.nc'."""
+    output_structure = 'hybrid_system.pdb'
+    """
+    Path of the output hybrid topology structure file. This is used
+    to visualise and further manipulate the system.
+    Default 'hybrid_system.pdb'.
+    """
+    output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.
-    Default 'all'.
+    Default 'not water'.
     """
     checkpoint_interval = 250 * unit.timestep
     """
@@ -370,7 +492,7 @@ class SimulationSettings(settings.SettingsBaseModel):
     Separate filename for the checkpoint file. Note, this should
     not be a full path, just a filename. Default 'checkpoint.nc'.
     """
-    forcefield_cache: Optional[str] = None
+    forcefield_cache: Optional[str] = 'db.json'
     """
     Filename for caching small molecule residue templates so they can be
     later reused.
@@ -393,7 +515,7 @@ class SimulationSettings(settings.SettingsBaseModel):
         return v
 
 
-class RelativeHybridTopologyProtocolSettings(settings.Settings):
+class RelativeHybridTopologyProtocolSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 

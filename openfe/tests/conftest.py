@@ -160,3 +160,37 @@ def T4_protein_component():
         comp = gufe.ProteinComponent.from_pdb_file(str(fn), name="T4_protein")
 
     return comp
+
+
+@pytest.fixture()
+def eg5_protein_pdb():
+    with resources.path('openfe.tests.data.eg5', 'eg5_protein.pdb') as fn:
+        yield str(fn)
+
+
+@pytest.fixture()
+def eg5_ligands_sdf():
+    with resources.path('openfe.tests.data.eg5', 'eg5_ligands.sdf') as fn:
+        yield str(fn)
+
+
+@pytest.fixture()
+def eg5_cofactor_sdf():
+    with resources.path('openfe.tests.data.eg5', 'eg5_cofactor.sdf') as fn:
+        yield str(fn)
+
+
+@pytest.fixture()
+def eg5_protein(eg5_protein_pdb) -> openfe.ProteinComponent:
+    return openfe.ProteinComponent.from_pdb_file(eg5_protein_pdb)
+
+
+@pytest.fixture()
+def eg5_ligands(eg5_ligands_sdf) -> list[SmallMoleculeComponent]:
+    return [SmallMoleculeComponent(m)
+            for m in Chem.SDMolSupplier(eg5_ligands_sdf, removeHs=False)]
+
+
+@pytest.fixture()
+def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
+    return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)

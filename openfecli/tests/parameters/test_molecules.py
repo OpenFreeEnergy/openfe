@@ -6,7 +6,7 @@ import pytest
 import click
 
 import openfe
-from openfecli.parameters.mol_dir import get_molecules
+from openfecli.parameters.molecules import load_molecules
 from openfe import SmallMoleculeComponent
 
 
@@ -18,12 +18,19 @@ def test_get_dir_molecules_sdf():
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
         dir_path = os.path.dirname(file_path)
-        mols = get_molecules(dir_path)
+        mols = load_molecules(dir_path)
 
         assert len(mols) == 1
         assert mols[0].smiles == "CC"
         assert mols[0].name == "ethane"
 
+def test_load_molecules_sdf_file():
+    files = importlib.resources.files('openfe.tests.data')
+    ref = files / "benzene_modifications.sdf"
+    with importlib.resources.as_file(ref) as path:
+        mols = load_molecules(path)
+
+    assert len(mols) == 7
 
 def test_get_dir_molecules_mol2():
     with importlib.resources.path(
@@ -33,13 +40,15 @@ def test_get_dir_molecules_mol2():
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
         dir_path = os.path.dirname(file_path)
-        mols = get_molecules(dir_path)
+        mols = load_molecules(dir_path)
 
         assert len(mols) == 8
-        assert mols[0].smiles == "Cc1cc(C)c2cc(C)ccc2c1"
-        assert mols[0].name == "*****"
+        all_smiles = {mol.smiles for mol in mols}
+        all_names = {mol.name for mol in mols}
+        assert "Cc1cc(C)c2cc(C)ccc2c1" in all_smiles
+        assert "*****" in all_names
 
 
 def test_get_molecule_error():
-    with pytest.raises(click.BadParameter):
-        get_molecules("foobar")
+    with pytest.raises(ValueError, match="Unable to find"):
+        load_molecules("foobar")
