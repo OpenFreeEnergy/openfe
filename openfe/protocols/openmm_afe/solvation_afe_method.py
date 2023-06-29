@@ -12,7 +12,7 @@ following alchemical sampling methods:
 * Independent window sampling
 
 
-.. versionadded:: 0.7.0
+.. versionadded:: 0.10.2
 
 
 Running a Solvation Free Energy Calculation
@@ -190,13 +190,16 @@ from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
-from openfe.protocols.openmm_afe.afe_settings import (
+from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteTransformSettings, SystemSettings,
-    SolventSettings, AlchemicalSettings,
+    SolvationSettings, AlchemicalSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings,
 )
-from openfe.protocols.openmm_rbfe._rbfe_utils import compute
+from openfe.protocols.openmm_rfe._rfe_utils import compute
+from ..openmm_utils import (
+    system_validation, settings_validation, system_creation
+)
 
 
 logger = logging.getLogger(__name__)
@@ -272,7 +275,7 @@ class AbsoluteTransformProtocolResult(gufe.ProtocolResult):
         raise NotImplementedError
 
 
-class AbsoluteTransformProtocol(gufe.Protocol):
+class AbsoluteSolvationProtocol(gufe.Protocol):
     result_cls = AbsoluteTransformProtocolResult
     _settings: AbsoluteTransformSettings
 
@@ -295,77 +298,69 @@ class AbsoluteTransformProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            system_settings=SystemSettings(),
+            solvent_system_settings=SystemSettings(),
+            vacuum_system_settings=SystemSettings(nonbonded_method='nocutoff'),
             alchemical_settings=AlchemicalSettings(),
             alchemsampler_settings=AlchemicalSamplerSettings(),
-            solvent_settings=SolventSettings(),
+            solvation_settings=SolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(
-                timestep=4.0 * unit.femtosecond,
-                n_steps=250 * unit.timestep,
+            integrator_settings=IntegratorSettings(),
+            solvent_simulation_settings=SimulationSettings(
+                equilibration_length=1.0 * unit.nanosecond,
+                production_length=10.0 * unit.nanosecond,
+                output_filename='solvent.nc',
+                checkpoint_storage='solvent_checkpoint.nc',
             ),
-            simulation_settings=SimulationSettings(
-                equilibration_length=2.0 * unit.nanosecond,
-                production_length=5.0 * unit.nanosecond,
-            )
+            vacuum_simulation_settings=SimulationSettings(
+                equilibration_length=0.5 * unit.nanosecond,
+                production_length=2.0 * unit.nanosecond,
+                output_filename='vacuum.nc',
+                checkpoint_storage='vacuum_checkpoint.nc'
+            ),
         )
 
     @staticmethod
-    def _get_alchemical_components(
-            stateA: ChemicalSystem,
-            stateB: ChemicalSystem) -> Dict[str, List[Component]]:
+    def _validate_solvent_endstates(
+        stateA: ChemicalSystem, stateB: ChemicalSystem,
+    ) -> None:
         """
-        Checks equality of ChemicalSystem components across both states and
-        identify which components do not match.
+        A solvent transformation is defined (in terms of gufe components)
+        as starting from a ligand in solvent and ending up just in solvent.
 
         Parameters
         ----------
         stateA : ChemicalSystem
-          The chemical system of end state A.
+          The chemical system of end state A
         stateB : ChemicalSystem
-          The chemical system of end state B.
+          The chemical system of end state B
 
-        Returns
-        -------
-        alchemical_components : Dictionary
-            Dictionary containing a list of alchemical components for each
-            state.
+        Raises
+        ------
+        ValueError
+          If stateB contains anything else but a SolventComponent.
+          If stateA contains a ProteinComponent
         """
-        matched_components = {}
-        alchemical_components: Dict[str, List[Any]] = {
-            'stateA': [], 'stateB': []
-        }
+        if ((len(stateB) != 1) or
+            (not isinstance(stateB.values()[0], SolventComponent))):
+            errmsg = "Only a single SolventComponent is allowed in stateB"
+            raise ValueError(errmsg)
 
-        for keyA, valA in stateA.components.items():
-            for keyB, valB in stateB.components.items():
-                if valA.to_dict() == valB.to_dict():
-                    matched_components[keyA] = keyB
-                    break
-
-        # populate state A alchemical components
-        for keyA in stateA.components.keys():
-            if keyA not in matched_components.keys():
-                alchemical_components['stateA'].append(keyA)
-
-        # populate state B alchemical components
-        for keyB in stateB.components.keys():
-            if keyB not in matched_components.values():
-                alchemical_components['stateB'].append(keyB)
-
-        return alchemical_components
+        for comp in stateA.values():
+            if isinstance(comp, ProteinComponent):
+                errmsg = ("Protein components are not allow for "
+                          "absolute solvation free energies")
+                raise ValueError(errmsg)
 
     @staticmethod
     def _validate_alchemical_components(
-            stateA: ChemicalSystem,
-            alchemical_components: Dict[str, List[str]]):
+        alchemical_components: dict[str, list[Component]]
+    ) -> None:
         """
         Checks that the ChemicalSystem alchemical components are correct.
 
         Parameters
         ----------
-        stateA : ChemicalSystem
-          The chemical system of end state A.
-        alchemical_components : Dict[str, List[str]]
+        alchemical_components : Dict[str, list[Component]]
           Dictionary containing the alchemical components for
           stateA and stateB.
 
@@ -374,12 +369,15 @@ class AbsoluteTransformProtocol(gufe.Protocol):
         ValueError
           If there are alchemical components in state B.
           If there are non SmallMoleculeComponent alchemical species.
+          If there are more than one alchemical species.
 
         Notes
         -----
         * Currently doesn't support alchemical components in state B.
         * Currently doesn't support alchemical components which are not
           SmallMoleculeComponents.
+        * Currently doesn't support more than one alchemical component
+          being desolvated.
         """
 
         # Crash out if there are any alchemical components in state B for now
@@ -387,46 +385,18 @@ class AbsoluteTransformProtocol(gufe.Protocol):
             errmsg = ("Components appearing in state B are not "
                       "currently supported")
             raise ValueError(errmsg)
+        
+        if len(alchemical_components['stateA']) > 1:
+            errmsg = ("More than one alchemical components is not supported "
+                      "for absolute solvation free energies")
 
         # Crash out if any of the alchemical components are not
         # SmallMoleculeComponent
-        for key in alchemical_components['stateA']:
-            comp = stateA.components[key]
+        for comp in alchemical_components['stateA']:
             if not isinstance(comp, SmallMoleculeComponent):
                 errmsg = ("Non SmallMoleculeComponent alchemical species "
                           "are not currently supported")
                 raise ValueError(errmsg)
-
-    @staticmethod
-    def _validate_solvent(state: ChemicalSystem, nonbonded_method: str):
-        """
-        Checks that the ChemicalSystem component has the right solvent
-        composition with an input nonbonded_method.
-
-        Parameters
-        ----------
-        state : ChemicalSystem
-          The chemical system to inspect
-
-        Raises
-        ------
-        ValueError
-          If there are multiple SolventComponents in the ChemicalSystem
-          or if there is a SolventComponent and
-          `nonbonded_method` is `nocutoff`
-        """
-        solvents = 0
-        for component in state.components.values():
-            if isinstance(component, SolventComponent):
-                if nonbonded_method.lower() == "nocutoff":
-                    errmsg = (f"{nonbonded_method} cannot be used for solvent "
-                              "transformation")
-                    raise ValueError(errmsg)
-                solvents += 1
-
-        if solvents > 1:
-            errmsg = "Multiple SolventComponents found, only one is supported"
-            raise ValueError(errmsg)
 
     def _create(
         self,
@@ -439,34 +409,55 @@ class AbsoluteTransformProtocol(gufe.Protocol):
         if extends:  # pragma: no-cover
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Checks on the inputs!
-        # 1) check solvent compatibility
-        nonbonded_method = self.settings.system_settings.nonbonded_method
-        self._validate_solvent(stateA, nonbonded_method)
-        self._validate_solvent(stateB, nonbonded_method)
-
-        #  2) check your alchemical molecules
-        #  Note: currently only SmallMoleculeComponents in state A are
-        #  supported
-        alchemical_comps = self._get_alchemical_components(stateA, stateB)
-        self._validate_alchemical_components(stateA, alchemical_comps)
-
-        # Get a list of names for all the alchemical molecules
-        stateA_alchnames = ','.join(
-            [stateA.components[c].name for c in alchemical_comps['stateA']]
+        # Validate components and get alchemical components
+        self._validate_solvation_endstates(stateA, stateB)
+        alchem_comps = system_validation.get_alchemical_components(
+            stateA, stateB,
         )
+        self._validate_alchemical_components(alchem_comps)
 
-        # our DAG has no dependencies, so just list units
-        units = [AbsoluteTransformUnit(
-            stateA=stateA, stateB=stateB,
-            settings=self.settings,
-            alchemical_components=alchemical_comps,
-            generation=0, repeat_id=i,
-            name=f'Absolute {stateA_alchnames}: repeat {i} generation 0')
-            for i in range(self.settings.alchemsampler_settings.n_repeats)]
+        # Check nonbond & solvent compatibility
+        solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method
+        vac_nonbonded_method = self.settings.vacuum_system_settings.nonbonded_method
+        # Use the more complete system validation solvent checks
+        system_validation.validate_solvent(stateA, solv_nonbonded_method)
+        # Gas phase is always gas phase
+        assert vac_nonbonded_method.lower() != 'pme'
 
-        return units
+        # Get the name of the alchemical species
+        alchname = alchem_comps['stateA'][0].name
 
+        # Create list units for vacuum and solvent transforms
+
+        solvent_units = [
+            AbsoluteSolventTransformUnit(
+                stateA=stateA, stateB=stateB,
+                settings=self.settings,
+                alchemical_components=alchemical_comps,
+                generation=0, repeat_id=i,
+                name=(f"Absolute Solvation, {alchname} solvent leg: "
+                      f"repeat {i} generation 0"),
+            )
+            for i in range(self.settings.alchemsampler_settings.n_repeats)
+        ]
+
+        vacuum_units = [
+            AbsoluteVacuumTransformUnit(
+                # These don't really reflect the actual transform
+                # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
+                stateA=stateA, stateB=stateB,
+                settings=self.settings,
+                alchemical_components=alchemical_comps,
+                generation=0, repeat_id=i,
+                name=(f"Absolute Solvation, {alchname} solvent leg: "
+                      f"repeat {i} generation 0"),
+            )
+            for i in range(self.settings.alchemsampler_settings.n_repeats)
+        ]
+
+        return solvent_units + vacuum_units
+
+    # TODO: update to match new unit list
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> Dict[str, Any]:
@@ -502,9 +493,9 @@ class AbsoluteTransformProtocol(gufe.Protocol):
         }
 
 
-class AbsoluteTransformUnit(gufe.ProtocolUnit):
+class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
     """
-    Calculates an alchemical absolute free energy transformation of a ligand.
+    Base class for ligand absolute free energy transformations.
     """
     def __init__(self, *,
                  stateA: ChemicalSystem,
@@ -546,207 +537,6 @@ class AbsoluteTransformUnit(gufe.ProtocolUnit):
             repeat_id=repeat_id,
             generation=generation,
         )
-
-    ParseCompRet = Tuple[
-        Optional[SolventComponent], Optional[ProteinComponent],
-        Dict[str, OFFMol],
-    ]
-
-    @staticmethod
-    def _parse_components(state: ChemicalSystem) -> ParseCompRet:
-        """
-        Establish all necessary Components for the transformation.
-
-        Parameters
-        ----------
-        state : ChemicalSystem
-          Chemical system to get all necessary components from.
-
-        Returns
-        -------
-        solvent_comp : Optional[SolventComponent]
-          If it exists, the SolventComponent for the state, otherwise None.
-        protein_comp : Optional[ProteinComponent]
-          If it exists, the ProteinComponent for the state, otherwise None.
-        openff_mols : Dict[str, openff.toolkit.Molecule]
-          A dictionary of openff.toolkit Molecules for each
-          SmallMoleculeComponent in the input state keyed by the original
-          component name.
-
-        Raises
-        ------
-        ValueError
-          If there are more than one ProteinComponent
-
-        TODO
-        ----
-        * Fix things so that we can have multiple ProteinComponents
-        """
-        # Is the system solvated?
-        solvent_comp = None
-        for comp in state.components.values():
-            if isinstance(comp, SolventComponent):
-                solvent_comp = comp
-
-        # Is it complexed?
-        # TODO: we intentionally crash if there's multiple proteins, fix this!
-        protein_comp = None
-        for comp in state.components.values():
-            if isinstance(comp, ProteinComponent):
-                if protein_comp is not None:
-                    errmsg = "Multiple proteins are not currently supported"
-                    raise ValueError(errmsg)
-                protein_comp = comp
-
-        # Get a dictionary of SmallMoleculeComponents as openff Molecules
-        off_small_mols = {}
-        for key, comp in state.components.items():
-            if isinstance(comp, SmallMoleculeComponent):
-                off_small_mols[key] = comp.to_openff()
-
-        return solvent_comp, protein_comp, off_small_mols
-
-    @staticmethod
-    def _get_sim_steps(time: unit.Quantity, timestep: unit.Quantity,
-                       mc_steps: int) -> unit.Quantity:
-        """
-        Get and validate the number of simulation steps
-
-        Parameters
-        ----------
-        time : unit.Quantity
-          Simulation time in femtoseconds.
-        timestep : unit.Quantity
-          Simulation timestep in femtoseconds.
-        mc_steps : int
-          Number of integration steps between MC moves.
-
-        Returns
-        -------
-        steps : unit.Quantity
-          Total number of integration steps
-
-        Raises
-        ------
-        ValueError
-          If the number of steps is not divisible by the number of mc_steps.
-        """
-        steps = round(time / timestep).m
-
-        if (steps % mc_steps) != 0:  # type: ignore
-            errmsg = (f"Simulation time {time} should contain a number of "
-                      "steps divisible by the number of integrator "
-                      f"timesteps between MC moves {mc_steps}")
-            raise ValueError(errmsg)
-
-        return steps
-
-    ModellerReturn = Tuple[app.Modeller, Dict[str, npt.NDArray]]
-
-    @staticmethod
-    def _get_omm_modeller(protein_comp: Optional[ProteinComponent],
-                          solvent_comp: Optional[SolventComponent],
-                          off_mols: Dict[str, OFFMol],
-                          omm_forcefield: app.ForceField,
-                          solvent_settings: settings.SettingsBaseModel,
-                          ) -> ModellerReturn:
-        """
-        Generate an OpenMM Modeller class based on a potential input
-        ProteinComponent, and a set of openff molecules.
-
-        Parameters
-        ----------
-        protein_comp : Optional[ProteinComponent]
-          Protein Component, if it exists.
-        solvent_comp : Optional[ProteinCompoinent]
-          Solvent COmponent, if it exists.
-        off_mols : List[openff.toolkit.Molecule]
-          List of small molecules as OpenFF Molecule.
-        omm_forcefield : app.ForceField
-          ForceField object for system.
-        solvent_settings : settings.SettingsBaseModel
-          Solventation settings
-
-        Returns
-        -------
-        system_modeller : app.Modeller
-          OpenMM Modeller object generated from ProteinComponent and
-          OpenFF Molecules.
-        component_resids : Dict[str, npt.NDArray]
-          List of residue indices for each component in system.
-        """
-        component_resids = {}
-
-        def _add_small_mol(compkey: str, mol: OFFMol,
-                           system_modeller: app.Modeller,
-                           comp_resids: Dict[str, npt.NDArray]):
-            """
-            Helper method to add off molecules to an existing Modeller
-            object and update a dictionary tracking residue indices
-            for each component.
-            """
-            omm_top = mol.to_topology().to_openmm()
-            system_modeller.add(
-                omm_top,
-                ensure_quantity(mol.conformers[0], 'openmm')
-            )
-
-            nres = omm_top.getNumResidues()
-            resids = [res.index for res in system_modeller.topology.residues()]
-            comp_resids[key] = np.array(resids[-nres:])
-
-        # If there's a protein in the system, we add it first to Modeller
-        if protein_comp is not None:
-            system_modeller = app.Modeller(protein_comp.to_openmm_topology(),
-                                           protein_comp.to_openmm_positions())
-            component_resids['protein'] = np.array(
-                [res.index for res in system_modeller.topology.residues()]
-            )
-
-            for key, mol in off_mols.items():
-                _add_small_mol(key, mol, system_modeller, component_resids)
-        # Otherwise, we add the first small molecule, and then the rest
-        else:
-            mol_items = list(off_mols.items())
-
-            system_modeller = app.Modeller(
-                mol_items[0][1].to_topology().to_openmm(),
-                ensure_quantity(mol_items[0][1].conformers[0], 'openmm')
-            )
-            component_resids[mol_items[0][0]] = np.array(
-                [res.index for res in system_modeller.topology.residues()]
-            )
-
-            for key, mol in mol_items[1:]:
-                _add_small_mol(key, mol, system_modeller, component_resids)
-
-        # If there's solvent, add it and then set leftover resids to solvent
-        if solvent_comp is not None:
-            conc = solvent_comp.ion_concentration
-            pos = solvent_comp.positive_ion
-            neg = solvent_comp.negative_ion
-
-            system_modeller.addSolvent(
-                omm_forcefield,
-                model=solvent_settings.solvent_model,
-                padding=to_openmm(solvent_settings.solvent_padding),
-                positiveIon=pos, negativeIon=neg,
-                ionicStrength=to_openmm(conc),
-            )
-
-            all_resids = np.array(
-                [res.index for res in system_modeller.topology.residues()]
-            )
-
-            existing_resids = np.concatenate(
-                [resids for resids in component_resids.values()]
-            )
-
-            component_resids['solvent'] = np.setdiff1d(
-                all_resids, existing_resids
-            )
-
-        return system_modeller, component_resids
 
     @staticmethod
     def _get_alchemical_indices(omm_top: openmm.Topology,
