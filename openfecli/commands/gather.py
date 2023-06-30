@@ -26,13 +26,18 @@ def get_names(result) -> tuple[str, str]:
     return toks[0], toks[2]
 
 
-def get_type(f):
-    if 'solvent' in f:
-        return 'solvent'
-    elif 'vacuum' in f:
+def get_type(res):
+    list_of_pur = list(res['protocol_result']['data'].values())[0]
+    pur = list_of_pur[0]
+    components = pur['inputs']['stateA']['components']
+
+    if 'solvent' not in components:
         return 'vacuum'
-    else:
+    elif 'protein' in components:
         return 'complex'
+    else:
+        return 'solvent'
+
 
 @click.command(
     'gather',
@@ -100,7 +105,7 @@ def gather(rootdir, output):
                        err=True)
 
         names = get_names(result)
-        simtype = get_type(result_fn)
+        simtype = get_type(result)
 
         legs[names][simtype] = result['estimate'], result['uncertainty']
 
