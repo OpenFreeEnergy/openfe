@@ -123,7 +123,7 @@ DGcomplex(lig_ejm_46, lig_jmc_28)\tcomplex\tlig_ejm_46\tlig_jmc_28\t4.2\t0.0
 def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
                   mock_execute, ref_gather):
     runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir='/home/richard/test/quickrun_test'):
+    with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
                                                    '-p', tyk2_protein])
 
