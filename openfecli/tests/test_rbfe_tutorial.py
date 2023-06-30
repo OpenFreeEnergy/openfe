@@ -101,8 +101,8 @@ DDGbind(lig_jmc_27, lig_ejm_46)\tRBFE\tlig_ejm_46\tlig_jmc_27\t0.0\t0.0
 DDGbind(lig_jmc_28, lig_ejm_46)\tRBFE\tlig_ejm_46\tlig_jmc_28\t0.0\t0.0
 DGcomplex(lig_ejm_31, lig_ejm_42)\tcomplex\tlig_ejm_31\tlig_ejm_42\t4.2\t0.0
 DGsolvent(lig_ejm_31, lig_ejm_42)\tsolvent\tlig_ejm_31\tlig_ejm_42\t4.2\t0.0
-DGsolvent(lig_ejm_31, lig_ejm_46)\tsolvent\tlig_ejm_31\tlig_ejm_46\t4.2\t0.0
 DGcomplex(lig_ejm_31, lig_ejm_46)\tcomplex\tlig_ejm_31\tlig_ejm_46\t4.2\t0.0
+DGsolvent(lig_ejm_31, lig_ejm_46)\tsolvent\tlig_ejm_31\tlig_ejm_46\t4.2\t0.0
 DGcomplex(lig_ejm_31, lig_ejm_47)\tcomplex\tlig_ejm_31\tlig_ejm_47\t4.2\t0.0
 DGsolvent(lig_ejm_31, lig_ejm_47)\tsolvent\tlig_ejm_31\tlig_ejm_47\t4.2\t0.0
 DGcomplex(lig_ejm_31, lig_ejm_48)\tcomplex\tlig_ejm_31\tlig_ejm_48\t4.2\t0.0
@@ -111,12 +111,12 @@ DGcomplex(lig_ejm_31, lig_ejm_50)\tcomplex\tlig_ejm_31\tlig_ejm_50\t4.2\t0.0
 DGsolvent(lig_ejm_31, lig_ejm_50)\tsolvent\tlig_ejm_31\tlig_ejm_50\t4.2\t0.0
 DGcomplex(lig_ejm_42, lig_ejm_43)\tcomplex\tlig_ejm_42\tlig_ejm_43\t4.2\t0.0
 DGsolvent(lig_ejm_42, lig_ejm_43)\tsolvent\tlig_ejm_42\tlig_ejm_43\t4.2\t0.0
-DGsolvent(lig_ejm_46, lig_jmc_23)\tsolvent\tlig_ejm_46\tlig_jmc_23\t4.2\t0.0
 DGcomplex(lig_ejm_46, lig_jmc_23)\tcomplex\tlig_ejm_46\tlig_jmc_23\t4.2\t0.0
-DGsolvent(lig_ejm_46, lig_jmc_27)\tsolvent\tlig_ejm_46\tlig_jmc_27\t4.2\t0.0
+DGsolvent(lig_ejm_46, lig_jmc_23)\tsolvent\tlig_ejm_46\tlig_jmc_23\t4.2\t0.0
 DGcomplex(lig_ejm_46, lig_jmc_27)\tcomplex\tlig_ejm_46\tlig_jmc_27\t4.2\t0.0
-DGsolvent(lig_ejm_46, lig_jmc_28)\tsolvent\tlig_ejm_46\tlig_jmc_28\t4.2\t0.0
+DGsolvent(lig_ejm_46, lig_jmc_27)\tsolvent\tlig_ejm_46\tlig_jmc_27\t4.2\t0.0
 DGcomplex(lig_ejm_46, lig_jmc_28)\tcomplex\tlig_ejm_46\tlig_jmc_28\t4.2\t0.0
+DGsolvent(lig_ejm_46, lig_jmc_28)\tsolvent\tlig_ejm_46\tlig_jmc_28\t4.2\t0.0
 """
 
 
