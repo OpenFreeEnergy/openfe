@@ -143,7 +143,7 @@ def gather(rootdir, output):
     # 4b write out each leg
     for ligpair, vals in sorted(legs.items()):
         name = ', '.join(ligpair)
-        for simtype, (m, u) in vals.items():
+        for simtype, (m, u) in sorted(vals.items()):
             if m is None:
                 m, u = 'NaN', 'NaN'
             else:
