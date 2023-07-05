@@ -610,6 +610,73 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         minimized_positions = state.getPositions(asNumpy=True)
         return minimized_positions
 
+    def _prepare(self, verbose, basepath):
+        if verbose:
+            logger.info("setting up alchemical system")
+
+        # set basepath
+        if basepath is None:
+            self.basepath = pathlib.Path('.')
+        else:
+            self.basepath = basepath
+
+    def _get_components(self):
+        """
+        stateA = self._inputs['stateA']
+        alchem_comps = self._inputs['alchemical_components']
+        # Get the relevant solvent & protein components & openff molecules
+        solvent_comp, protein_comp, off_mols = self._parse_components(stateA)
+        """
+        raise NotImplementedError
+    
+    def _get_settings(self):
+        """
+        Settings may change depending on what type of simulation you are
+        running. Cherry pick them and return them to be available later on.
+
+        Base case would be:
+        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
+
+        Also add:
+        # a. Validation checks
+        settings_validation.validate_timestep(
+            settings.forcefield_settings.hydrogen_mass,
+            settings.integrator_settings.timestep
+        )
+        """
+        raise NotImplementedError
+    
+    def _get_modeller(self, protein_component, solvent_component,
+                      smc_components, system_generator, settings):
+        """
+        # force the creation of parameters for the small molecules
+        # this is cached and shouldn't incur further cost
+        for mol in off_mols.values():
+            system_generator.create_system(mol.to_topology().to_openmm(),
+                                           molecules=[mol])
+
+        # b. Get OpenMM Modller + a dictionary of resids for each component
+        system_modeller, comp_resids = self._get_omm_modeller(
+            protein_comp, solvent_comp, off_mols, system_generator.forcefield,
+            settings.solvent_settings
+        )
+
+        """
+        ...
+
+    def _get_omm_objects(self, ...):
+        """
+        system_topology = system_modeller.getTopology()
+
+        # roundtrip via off_units to canocalize
+        positions = to_openmm(from_openmm(system_modeller.getPositions()))
+
+        omm_system = system_generator.create_system(
+            system_modeller.topology,
+            molecules=list(off_mols.values())
+        )
+        """
+
     def run(self, dry=False, verbose=True, basepath=None) -> Dict[str, Any]:
         """Run the absolute free energy calculation.
 
@@ -641,129 +708,43 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
           List of OpenFF Molecule objects for each SmallMoleculeComponent in
           the stateA ChemicalSystem
         """
-        if verbose:
-            logger.info("setting up alchemical system")
+        # 0. Generaly preparation tasks
+        self._prepare(verbose, basepath)
 
-        # Get basepath
-        if basepath is None:
-            # use cwd
-            basepath = pathlib.Path('.')
+        # 1. Get components
+        alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
-        # 0. General setup and settings dependency resolution step
+        # 2. Get settings
+        settings = self._handle_settings()
 
-        # a. Establish chemical system and their components
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
-        # Get the relevant solvent & protein components & openff molecules
-        solvent_comp, protein_comp, off_mols = self._parse_components(stateA)
-
-        # b. Establish integration nsettings
-        settings = self._inputs['settings']
-        sim_settings = settings.simulation_settings
-        timestep = settings.integrator_settings.timestep
-        mc_steps = settings.integrator_settings.n_steps.m
-        equil_time = sim_settings.equilibration_length.to('femtosecond')
-        prod_time = sim_settings.production_length.to('femtosecond')
-        equil_steps = self._get_sim_steps(equil_time, timestep, mc_steps)
-        prod_steps = self._get_sim_steps(prod_time, timestep, mc_steps)
-
-        # 1. Parameterise System
-        # a. Set up SystemGenerator object
-        ffsettings = settings.forcefield_settings
-        protein_ffs = ffsettings.forcefields
-        small_ffs = ffsettings.small_molecule_forcefield
-
-        constraints = {
-            'hbonds': app.HBonds,
-            'none': None,
-            'allbonds': app.AllBonds,
-            'hangles': app.HAngles
-            # vvv can be None so string it
-        }[str(ffsettings.constraints).lower()]
-
-        forcefield_kwargs = {
-            'constraints': constraints,
-            'rigidWater': ffsettings.rigid_water,
-            'removeCMMotion': ffsettings.remove_com,
-            'hydrogenMass': ffsettings.hydrogen_mass * omm_unit.amu,
-        }
-
-        nonbonded_method = {
-            'pme': app.PME,
-            'nocutoff': app.NoCutoff,
-            'cutoffnonperiodic': app.CutoffNonPeriodic,
-            'cutoffperiodic': app.CutoffPeriodic,
-            'ewald': app.Ewald
-        }[settings.system_settings.nonbonded_method.lower()]
-
-        nonbonded_cutoff = to_openmm(
-            settings.system_settings.nonbonded_cutoff
+        # 3. Get system generator
+        system_generator = self._handle_system_generation(
+            settings, solv_comp
         )
 
-        periodic_kwargs = {
-            'nonbondedMethod': nonbonded_method,
-            'nonbondedCutoff': nonbonded_cutoff,
-        }
-
-        # Currently the else is a dead branch, we will want to investigate the
-        # possibility of using CutoffNonPeriodic at some point though (for RF)
-        if nonbonded_method is not app.CutoffNonPeriodic:
-            nonperiodic_kwargs = {
-                'nonbondedMethod': app.NoCutoff,
-            }
-        else:  # pragma: no-cover
-            nonperiodic_kwargs = periodic_kwargs
-
-        system_generator = SystemGenerator(
-            forcefields=protein_ffs,
-            small_molecule_forcefield=small_ffs,
-            forcefield_kwargs=forcefield_kwargs,
-            nonperiodic_forcefield_kwargs=nonperiodic_kwargs,
-            periodic_forcefield_kwargs=periodic_kwargs,
-            cache=sim_settings.forcefield_cache,
+        # 4. Get modeller
+        system_modeller, comp_resids = self._get_modeller(
+            prot_comp, solv_comp, smc_comps, system_generator,
+            settings
         )
 
-        # Add a barostat if necessary note, was broken pre 0.11.2 of openmmff
-        pressure = settings.thermo_settings.pressure
-        temperature = settings.thermo_settings.temperature
-        if solvent_comp is not None:
-            barostat = openmm.MonteCarloBarostat(
-                ensure_quantity(pressure, 'openmm'),
-                ensure_quantity(temperature, 'openmm')
-            )
-            system_generator.barostat = barostat
-
-        # force the creation of parameters for the small molecules
-        # this is cached and shouldn't incur further cost
-        for mol in off_mols.values():
-            system_generator.create_system(mol.to_topology().to_openmm(),
-                                           molecules=[mol])
-
-        # b. Get OpenMM Modller + a dictionary of resids for each component
-        system_modeller, comp_resids = self._get_omm_modeller(
-            protein_comp, solvent_comp, off_mols, system_generator.forcefield,
-            settings.solvent_settings
+        # 5. Get OpenMM topology, positions and system
+        omm_topology, omm_system, positions = self._get_omm_objects(
+            system_generator, system_modeller, smc_comps
         )
 
-        # c. Get OpenMM topology
-        system_topology = system_modeller.getTopology()
+        # Probably will need to handle restraints somewhere here
 
-        # d. Get initial positions (roundtrip via off_units to canocalize)
-        positions = to_openmm(from_openmm(system_modeller.getPositions()))
-
-        # d. Create System
-        omm_system = system_generator.create_system(
-            system_modeller.topology,
-            molecules=list(off_mols.values())
-        )
-
-        # e. Get a list of indices for the alchemical species
-        alchemical_indices = self._get_alchemical_indices(
-            system_topology, comp_resids, alchem_comps
-        )
-
-        # 2. Pre-minimize System (Test + Avoid NaNs)
+        # 6. Pre-minimize System (Test + Avoid NaNs)
         positions = self._pre_minimize(omm_system, positions)
+
+        # 7. Create 
+        # e. Get a list of indices for the alchemical species
+        
+        alchemical_indices = self._get_alchemical_indices(
+            omm_topology, comp_resids, alchem_comps
+        )
+
 
         # 3. Create the alchemical system
         # a. Get alchemical settings
