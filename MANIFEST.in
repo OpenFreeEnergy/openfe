@@ -5,3 +5,5 @@ recursive-include openfe/tests/data/ *.xml
 recursive-include openfe/tests/data/ *.graphml
 include openfecli/tests/data/*.json
 include openfecli/tests/data/*.tar.gz
+recursive-include openfecli/tests/ *.sdf
+recursive-include openfecli/tests/ *.pdb
