@@ -210,3 +210,66 @@ def generate_minimal_spanning_network(
                            + str(list(missing_nodes)))
 
     return min_network
+
+
+def generate_network_from_names(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        names: list[tuple[str, str]],
+) -> LigandNetwork:
+    """Generate a LigandNetwork
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    names : list of tuples of names
+      the edges to form where the values refer to names of the small molecules,
+      eg `[('benzene', 'toluene'), ...]` will create an edge between the
+      molecule with names 'benzene' and 'toluene'
+
+    Returns
+    -------
+    LigandNetwork
+    """
+    nm2idx = {l.name: i for i, l in enumerate(ligands)}
+
+    ids = [(nm2idx[nm1], nm2idx[nm2]) for nm1, nm2 in names]
+
+    return generate_network_from_indices(ligands, mapper, ids)
+
+
+def generate_network_from_indices(
+        ligands: list[SmallMoleculeComponent],
+        mapper: Union[AtomMapper, Iterable[AtomMapper]],
+        indices: list[tuple[int, int]],
+) -> LigandNetwork:
+    """Generate a LigandNetwork
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    indices : list of tuples of indices
+      the edges to form where the values refer to names of the small molecules,
+      eg `[(3, 4), ...]` will create an edge between the 3rd and 4th molecules
+      remembering that Python uses 0-based indexing
+
+    Returns
+    -------
+    LigandNetwork
+    """
+    edges = []
+
+    for i, j in indices:
+        m1, m2 = ligands[i], ligands[j]
+
+        mapping = next(mapper.suggest_mappings(m1, m2))
+
+        edges.append(mapping)
+
+    return LigandNetwork(edges=edges, nodes=ligands)
