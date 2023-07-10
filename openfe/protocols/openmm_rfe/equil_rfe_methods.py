@@ -527,10 +527,29 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
+        A_atoms = {hybrid_factory.old_to_hybrid_atom_map[i]
+                   for i in ligand_mappings['old_mol_indices']}
+        B_atoms = {hybrid_factory.new_to_hybrid_atom_map[i]
+                   for i in ligand_mappings['new_mol_indices']}
+        A_unique = list(A_atoms - B_atoms)
+        AB_core = list(A_atoms & B_atoms)
+        B_unique = list(B_atoms - A_atoms)
+
+        bfactors = np.zeros_like(selection_indices, dtype=float)  # solvent
+        bfactors[np.in1d(selection_indices, A_unique)] = 0.25  # lig A
+        bfactors[np.in1d(selection_indices, AB_core)] = 0.50  # core
+        bfactors[np.in1d(selection_indices, B_unique)] = 0.75  # lig B
+        # TODO: ??? Protein & crystals == 1.0
+        #       cofactor = ???
+
+
         traj = mdtraj.Trajectory(
                 hybrid_factory.hybrid_positions[selection_indices, :],
                 hybrid_factory.hybrid_topology.subset(selection_indices),
-        ).save_pdb(shared_basepath / sim_settings.output_structure)
+        ).save_pdb(
+            shared_basepath / sim_settings.output_structure,
+            bfactors=bfactors,
+        )
 
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
