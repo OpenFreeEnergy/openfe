@@ -527,16 +527,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
-        A_unique = list(hybrid_factory._atom_classes['unique_old_atoms'])
-        AB_core = list(hybrid_factory._atom_classes['core_atoms'])
-        B_unique = list(hybrid_factory._atom_classes['unique_new_atoms'])
-        protein = []  # TODO
-
         bfactors = np.zeros_like(selection_indices, dtype=float)  # solvent
-        bfactors[np.in1d(selection_indices, A_unique)] = 0.25  # lig A
-        bfactors[np.in1d(selection_indices, AB_core)] = 0.50  # core
-        bfactors[np.in1d(selection_indices, B_unique)] = 0.75  # lig B
-        bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_old_atoms']))] = 0.25  # lig A
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['core_atoms']))] = 0.50  # core
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
+        # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
 
         traj = mdtraj.Trajectory(
                 hybrid_factory.hybrid_positions[selection_indices, :],
