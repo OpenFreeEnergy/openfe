@@ -23,7 +23,10 @@ def get_names(result) -> tuple[str, str]:
     # Result to tuple of ligand names
     nm = list(result['unit_results'].values())[0]['name']
     toks = nm.split()
-    return toks[0], toks[2]
+    if toks[2] == 'repeat':
+        return toks[0], toks[1]
+    else:
+        return toks[0], toks[2]
 
 
 def get_type(res):
@@ -37,6 +40,15 @@ def get_type(res):
         return 'complex'
     else:
         return 'solvent'
+
+
+def legacy_get_type(res_fn):
+    if 'solvent' in res_fn:
+        return 'solvent'
+    elif 'vacuum' in res_fn:
+        return 'vacuum'
+    else:
+        return 'complex'
 
 
 @click.command(
@@ -104,8 +116,14 @@ def gather(rootdir, output):
             click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
                        err=True)
 
-        names = get_names(result)
-        simtype = get_type(result)
+        try:
+            names = get_names(result)
+        except KeyError:
+            raise ValueError("Failed to guess names")
+        try:
+            simtype = get_type(result)
+        except KeyError:
+            simtype = legacy_get_type(result_fn)
 
         legs[names][simtype] = result['estimate'], result['uncertainty']
 

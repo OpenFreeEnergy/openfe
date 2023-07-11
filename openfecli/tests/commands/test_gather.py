@@ -69,7 +69,6 @@ DGvacuum(lig_13, lig_14)\tvacuum\tlig_13\tlig_14\t15.0\t0.0057
 """
 
 
-@pytest.mark.xfail
 def test_gather(results_dir, ref_gather):
     runner = CliRunner()
 

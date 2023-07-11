@@ -51,6 +51,7 @@ from ..openmm_utils import (
     system_validation, settings_validation, system_creation
 )
 from . import _rfe_utils
+from ...utils import without_oechem_backend
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -693,7 +694,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        with without_oechem_backend():
+            outputs = self.run(scratch_basepath=ctx.scratch,
+                               shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
