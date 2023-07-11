@@ -452,7 +452,6 @@ class HybridTopologyFactory:
             self._atom_classes['unique_new_atoms'].add(hybrid_idx)
 
         # The core atoms:
-        core_atoms = []
         for new_idx, old_idx in self._core_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -460,10 +459,9 @@ class HybridTopologyFactory:
                 errmsg = (f"there is an index collision in hybrid indices of "
                           f"the core atom map: {self._core_new_to_old_map}")
                 raise AssertionError(errmsg)
-            core_atoms.append(new_to_hybrid_idx)
+            self._atom_classes['core_atoms'].add(new_to_hybrid_idx)
 
         # The environment atoms:
-        env_atoms = []
         for new_idx, old_idx in self._env_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -472,11 +470,7 @@ class HybridTopologyFactory:
                           f"the environment atom map: "
                           f"{self._env_new_to_old_map}")
                 raise AssertionError(errmsg)
-            env_atoms.append(new_to_hybrid_idx)
-
-        # TODO - this is weirdly done and double assignments - fix
-        self._atom_classes['core_atoms'] = set(core_atoms)
-        self._atom_classes['environment_atoms'] = set(env_atoms)
+            self._atom_classes['environment_atoms'].add(new_to_hybrid_idx)
 
     @staticmethod
     def _generate_dict_from_exceptions(force):
