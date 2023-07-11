@@ -11,6 +11,26 @@ from tqdm.auto import tqdm
 from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
+from openfe.setup import LomapAtomMapper
+from lomap.dbmol import _find_common_core
+
+
+def _hasten_lomap(mapper, ligands):
+    """take a mapper and some ligands, put a common core arg into the mapper """
+    if mapper.seed:
+        return mapper
+
+    try:
+        core = _find_common_core([m.to_rdkit() for m in ligands],
+                                 element_change=mapper.element_change)
+    except RuntimeError:  # in case MCS throws a hissy fit
+        core = ""
+
+    return LomapAtomMapper(
+        time=mapper.time, threed=mapper.threed, max3d=mapper.max3d,
+        element_change=mapper.element_change, seed=core,
+        shift=mapper.shift
+    )
 
 
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
@@ -52,6 +72,9 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
+
     edges = []
 
     for ligand in ligands:
@@ -115,6 +138,8 @@ def generate_maximal_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
 
     nodes = list(ligands)
 
@@ -166,6 +191,8 @@ def generate_minimal_spanning_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
 
     # First create a network with all the proposed mappings (scored)
     network = generate_maximal_network(ligands, mappers, scorer, progress)
