@@ -18,8 +18,11 @@ html{
 /*
 NavBar
 */
-code{
+html[data-theme=light] code {
     color: var(--ofe-color-FeelingSick);
+}
+html[data-theme=dark] code {
+    color: var(--ofe-color-SandySergio);
 }
 .bd-page-width {
     max-width: None;
