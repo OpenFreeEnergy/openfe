@@ -70,8 +70,8 @@ class SlowTests:
         if (config.getoption('--integration') or
             os.getenv("OFE_INTEGRATION_TESTS", default="false").lower() == 'true'):
             return
-        elif not (config.getoption('--runslow') or
-                  os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
+        elif (config.getoption('--runslow') or
+              os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
             self._modify_integration(items, config)
         else:
             self._modify_integration(items, config)
