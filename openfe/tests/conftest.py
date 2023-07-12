@@ -15,16 +15,35 @@ from gufe import SmallMoleculeComponent, LigandAtomMapping
 class SlowTests:
     """Plugin for handling fixtures that skips slow tests
 
+    Fixtures
+    --------
+
     Currently two fixture types are handled:
-      * integration:
+      * `integration`:
         Extremely slow tests that are meant to be run to truly put the code
         through a real run.
 
-      * slow:
+      * `slow`:
         Unit tests that just take too long to be running regularly.
+
+
+    How to use the fixtures
+    -----------------------
 
     To add these fixtures simply add `@pytest.mark.integration` or
     `@pytest.mark.slow` decorator to the relevant function or class.
+
+
+    How to run tests marked by these fixtures
+    -----------------------------------------
+
+    To run the `integration` tests, either use the `--integration` flag
+    when invoking pytest, or set the environment variable
+    `OFE_INTEGRATION_TESTS` to `true`. Note: triggering `integration` will
+    automatically also trigger tests marked as `slow`.
+
+    To run the `slow` tests, either use the `--runslow` flag when invoking
+    pytest, or set the environment variable `OFE_SLOW_TESTS` to `true`
     """
     def __init__(self, config):
         self.config = config
