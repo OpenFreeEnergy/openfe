@@ -144,7 +144,7 @@ Current limitations
 
 Acknowledgements
 ----------------
-* Originally based on the hydration.py in
+* Originally based on hydration.py in
   `espaloma <https://github.com/choderalab/espaloma_charge>`_
 
 
@@ -676,6 +676,84 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             molecules=list(off_mols.values())
         )
         """
+        ...
+
+    def _get_lambda_schedule(self, settings):
+        """
+        # c. Create the lambda schedule
+        # TODO: do this properly using LambdaProtocol
+        # TODO: double check we definitely don't need to define
+        #       temperature & pressure (pressure sure that's the case)
+        lambdas = dict()
+        n_elec = alchem_settings.lambda_elec_windows
+        n_vdw = alchem_settings.lambda_vdw_windows + 1
+        lambdas['lambda_electrostatics'] = np.concatenate(
+                [np.linspace(1, 0, n_elec), np.linspace(0, 0, n_vdw)[1:]]
+        )
+        lambdas['lambda_sterics'] = np.concatenate(
+                [np.linspace(1, 1, n_elec), np.linspace(1, 0, n_vdw)[1:]]
+        )
+
+        # d. Check that the lambda schedule matches n_replicas
+        # TODO: undo for SAMS
+        n_replicas = settings.alchemsampler_settings.n_replicas
+
+        if n_replicas != (len(lambdas['lambda_sterics'])):
+            errmsg = (f"Number of replicas {n_replicas} "
+                      "does not equal the number of lambda windows ")
+            raise ValueError(errmsg)
+        """
+        ...
+
+    def _get_alchemical_system(self, omm_topology, comp_resids, alchem_comps):
+        """
+        alchemical_indices = self._get_alchemical_indices(
+            omm_topology, comp_resids, alchem_comps
+        )
+
+
+        # 3. Create the alchemical system
+        # a. Get alchemical settings
+        alchem_settings = settings.alchemical_settings
+
+        # b. Set the alchemical region & alchemical factory
+        # TODO: add support for all the variants here
+        # TODO: check that adding indices this way works
+        alchemical_region = AlchemicalRegion(
+                alchemical_atoms=alchemical_indices,
+        )
+        alchemical_factory = AbsoluteAlchemicalFactory()
+        alchemical_system = alchemical_factory.create_alchemical_system(
+                omm_system, alchemical_region
+        )
+        """
+        ...
+
+    def _get_states(self, ...):
+        """
+        # 4. Create compound states
+        alchemical_state = AlchemicalState.from_system(alchemical_system)
+        constants = dict()
+        constants['temperature'] = ensure_quantity(temperature, 'openmm')
+        if solvent_comp is not None:
+            constants['pressure'] = ensure_quantity(pressure, 'openmm')
+        cmp_states = create_thermodynamic_state_protocol(
+                alchemical_system,
+                protocol=lambdas,
+                constants=constants,
+                composable_states=[alchemical_state],
+        )
+
+        # 5. Create the sampler states
+        # Fill up a list of sampler states all with the same starting state
+        sampler_state = SamplerState(positions=positions)
+        if omm_system.usesPeriodicBoundaryConditions():
+            box = omm_system.getDefaultPeriodicBoxVectors()
+            sampler_state.box_vectors = box
+
+        sampler_states = [sampler_state for _ in cmp_states]
+        """
+        ...
 
     def run(self, dry=False, verbose=True, basepath=None) -> Dict[str, Any]:
         """Run the absolute free energy calculation.
@@ -718,9 +796,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         settings = self._handle_settings()
 
         # 3. Get system generator
-        system_generator = self._handle_system_generation(
-            settings, solv_comp
-        )
+        system_generator = self._handle_system_generation(settings, solv_comp)
 
         # 4. Get modeller
         system_modeller, comp_resids = self._get_modeller(
@@ -738,51 +814,17 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         # 6. Pre-minimize System (Test + Avoid NaNs)
         positions = self._pre_minimize(omm_system, positions)
 
-        # 7. Create 
-        # e. Get a list of indices for the alchemical species
-        
-        alchemical_indices = self._get_alchemical_indices(
+        # 7. Get lambdas
+        lambdas = self._get_lambda_schedule(settings)
+
+        # 8. Get alchemical system
+        alchem_system, alchem_factory = self._get_alchemical_system(
             omm_topology, comp_resids, alchem_comps
         )
 
-
-        # 3. Create the alchemical system
-        # a. Get alchemical settings
-        alchem_settings = settings.alchemical_settings
-
-        # b. Set the alchemical region & alchemical factory
-        # TODO: add support for all the variants here
-        # TODO: check that adding indices this way works
-        alchemical_region = AlchemicalRegion(
-                alchemical_atoms=alchemical_indices,
+        cmp_states, sampler_states = self._get_states(
+            alchem_system, solvent_comp, settings
         )
-        alchemical_factory = AbsoluteAlchemicalFactory()
-        alchemical_system = alchemical_factory.create_alchemical_system(
-                omm_system, alchemical_region
-        )
-
-        # c. Create the lambda schedule
-        # TODO: do this properly using LambdaProtocol
-        # TODO: double check we definitely don't need to define
-        #       temperature & pressure (pressure sure that's the case)
-        lambdas = dict()
-        n_elec = alchem_settings.lambda_elec_windows
-        n_vdw = alchem_settings.lambda_vdw_windows + 1
-        lambdas['lambda_electrostatics'] = np.concatenate(
-                [np.linspace(1, 0, n_elec), np.linspace(0, 0, n_vdw)[1:]]
-        )
-        lambdas['lambda_sterics'] = np.concatenate(
-                [np.linspace(1, 1, n_elec), np.linspace(1, 0, n_vdw)[1:]]
-        )
-
-        # d. Check that the lambda schedule matches n_replicas
-        # TODO: undo for SAMS
-        n_replicas = settings.alchemsampler_settings.n_replicas
-
-        if n_replicas != (len(lambdas['lambda_sterics'])):
-            errmsg = (f"Number of replicas {n_replicas} "
-                      "does not equal the number of lambda windows ")
-            raise ValueError(errmsg)
 
         # 4. Create compound states
         alchemical_state = AlchemicalState.from_system(alchemical_system)
