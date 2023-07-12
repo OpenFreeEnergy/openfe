@@ -12,42 +12,51 @@ import openfe
 from gufe import SmallMoleculeComponent, LigandAtomMapping
 
 
-class SlowTest:
-    """Plugin for a fixture that skips slow tests"""
+class SlowTests:
+    """Plugin for handling fixtures that skips slow tests
 
+    Currently two fixture types are handled:
+      * integration:
+        Extremely slow tests that are meant to be run to truly put the code
+        through a real run.
+
+      * slow:
+        Unit tests that just take too long to be running regularly.
+
+    To add these fixtures simply add `@pytest.mark.integration` or
+    `@pytest.mark.slow` decorator to the relevant function or class.
+    """
     def __init__(self, config):
         self.config = config
 
-    def pytest_collection_modifyitems(self, items, config):
-        if (config.getoption('--runslow') or
-            os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
-            return
-
+    @staticmethod
+    def _modify_slow(items, config):
         msg = ("need --runslow pytest cli option or the environment variable "
-           "`OFE_SLOW_TESTS` set to `True` to run")
+               "`OFE_SLOW_TESTS` set to `True` to run")
         skip_slow = pytest.mark.skip(reason=msg)
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
 
-
-class IntegrationTest:
-    """Plugin for a fixture that skips very slow integration tests"""
-
-    def __init__(self, config):
-        self.config = config
-
-    def pytest_collection_modifyitems(self, items, config):
-        if (config.getoption('--integration') or
-            os.getenv("OFE_INTEGRATION_TESTS", default="false").lower() == 'true'):
-            return
-
+    @staticmethod
+    def _modify_integration(items, config):
         msg = ("need --integration pytest cli option or the environment "
                "variable `OFE_INTEGRATION_TESTS` set to `True` to run")
         skip_int = pytest.mark.skip(reason=msg)
         for item in items:
             if "integration" in item.keywords:
                 item.add_marker(skip_int)
+
+    def pytest_collection_modifyitems(self, items, config):
+        if (config.getoption('--integration') or
+            os.getenv("OFE_INTEGRATION_TESTS", default="false").lower() == 'true'):
+            return
+        elif not (config.getoption('--runslow') or
+                  os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
+            self._modify_integration(items, config)
+        else:
+            self._modify_integration(items, config)
+            self._modify_slow(items, config)
 
 
 # allow for optional slow tests
@@ -65,7 +74,6 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.pluginmanager.register(SlowTest(config), "slow")
     config.addinivalue_line("markers", "slow: mark test as slow")
-    config.pluginmanager.register(IntegrationTest(config), "integration")
     config.addinivalue_line(
             "markers", "integration: mark test as long integration test")
 
