@@ -37,7 +37,20 @@ extensions = [
     "sphinx_toolbox.collapse",
     "sphinx.ext.autosectionlabel",
     "sphinx_design",
+    "sphinx.ext.intersphinx",
 ]
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3.7", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "scikit.learn": ("https://scikit-learn.org/stable", None),
+    "openmm": ("http://docs.openmm.org/latest/api-python/", None),
+    "rdkit": ("https://www.rdkit.org/docs", None),
+    "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
+    "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
+    "openff.units": ("https://docs.openforcefield.org/units/en/stable", None),
+}
 
 autoclass_content = "both"
 # Make sure labels are unique
