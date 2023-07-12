@@ -4,6 +4,7 @@ OpenFE API Reference
 ====================
 
 .. toctree::
+    :maxdepth: 3
 
     alchemical_data_objects
     ligand_network

@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx_design",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.autosummary",
 ]
 
 intersphinx_mapping = {
@@ -58,6 +59,12 @@ autoclass_content = "both"
 autosectionlabel_prefix_document = True
 
 autodoc_pydantic_model_show_json = False
+
+autodoc_default_options = {
+    "members": True,
+    "member-order": "bysource",
+}
+toc_object_entries_show_parents = "hide"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
