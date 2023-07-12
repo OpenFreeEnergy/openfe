@@ -31,6 +31,9 @@ dl:not(.docutils):not(.field-list):not(.simple):not(.citation):not(.option-list)
 dl:not(.docutils):not(.field-list):not(.simple):not(.citation):not(.option-list):not(.footnote)[class].method > dt > *:not(.property):first-child::before {
   content: "method ";
 }
+dl:not(.docutils):not(.field-list):not(.simple):not(.citation):not(.option-list):not(.footnote)[class].function > dt > *:not(.property):first-child::before {
+  content: "function ";
+}
 dl:not(.docutils):not(.field-list):not(.simple):not(.citation):not(.option-list):not(.footnote)[class] > dt {
   font-family: var(--pst-font-family-monospace);
   font-size: var(--ofe-api-header-font-size);
