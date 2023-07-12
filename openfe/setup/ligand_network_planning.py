@@ -3,6 +3,7 @@
 import math
 from typing import Iterable, Callable, Optional, Union
 import itertools
+from collections import Counter
 import functools
 
 import networkx as nx
@@ -233,17 +234,37 @@ def generate_network_from_names(
     Returns
     -------
     LigandNetwork
+
+    Raises
+    ------
+    KeyError
+      if an invalid name is requested
+    ValueError
+      if multiple molecules have the same name (this would otherwise be
+      problematic)
     """
     nm2idx = {l.name: i for i, l in enumerate(ligands)}
 
-    ids = [(nm2idx[nm1], nm2idx[nm2]) for nm1, nm2 in names]
+    if len(nm2idx) < len(ligands):
+        dupes = Counter((l.name for l in ligands))
+        dupe_names = [k for k, v in dupes.items() if v > 1]
+        raise ValueError(f"Duplicate names: {dupe_names}")
+
+    try:
+        ids = [(nm2idx[nm1], nm2idx[nm2]) for nm1, nm2 in names]
+    except KeyError:
+        badnames = [nm for nm in itertools.chain.from_iterable(names)
+                    if nm not in nm2idx]
+        available = [ligand.name for ligand in ligands]
+        raise KeyError(f"Invalid name(s) requested {badnames}.  "
+                       f"Available: {available}")
 
     return generate_network_from_indices(ligands, mapper, ids)
 
 
 def generate_network_from_indices(
         ligands: list[SmallMoleculeComponent],
-        mapper: Union[AtomMapper, Iterable[AtomMapper]],
+        mapper: AtomMapper,
         indices: list[tuple[int, int]],
 ) -> LigandNetwork:
     """Generate a LigandNetwork
@@ -262,11 +283,20 @@ def generate_network_from_indices(
     Returns
     -------
     LigandNetwork
+
+    Raises
+    ------
+    IndexError
+      if an invalid ligand index is requested
     """
     edges = []
 
     for i, j in indices:
-        m1, m2 = ligands[i], ligands[j]
+        try:
+            m1, m2 = ligands[i], ligands[j]
+        except IndexError:
+            raise IndexError(f"Invalid ligand id, requested {i} {j} "
+                             f"with {len(ligands)} available")
 
         mapping = next(mapper.suggest_mappings(m1, m2))
 
