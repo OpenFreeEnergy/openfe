@@ -91,7 +91,7 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    config.pluginmanager.register(SlowTest(config), "slow")
+    config.pluginmanager.register(SlowTests(config), "slow")
     config.addinivalue_line("markers", "slow: mark test as slow")
     config.addinivalue_line(
             "markers", "integration: mark test as long integration test")
