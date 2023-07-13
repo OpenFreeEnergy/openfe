@@ -122,6 +122,8 @@ def plan_rbfe_network(
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
     )
+    from openfe.storage.resultclient import ResultClient
+    from gufe.storage.externalresource import FileStorage
     from openfe.setup import LomapAtomMapper
     from openfe.setup.ligand_network_planning import (
         generate_minimal_spanning_network,
@@ -179,8 +181,10 @@ def plan_rbfe_network(
     # OUTPUT
     write("Output:")
     if new_storage:
-        write("Got new storage!")
-        ...
+        write(f"Saving to: {output_dir}")
+        storage = ResultClient(FileStorage(output_dir))
+        storage.store_network(alchemical_network)
+        # TODO: save out the ligand network as well
     else:
         write("\tSaving to: " + str(output_dir))
         plan_alchemical_network_output(
