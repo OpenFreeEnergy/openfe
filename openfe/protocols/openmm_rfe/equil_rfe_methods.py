@@ -29,9 +29,11 @@ from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
+from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable
 import openmmtools
+import mdtraj
 
 import gufe
 from gufe import (
@@ -49,6 +51,7 @@ from ..openmm_utils import (
     system_validation, settings_validation, system_creation
 )
 from . import _rfe_utils
+from ...utils import without_oechem_backend
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -127,8 +130,8 @@ def _validate_alchemical_components(
             if atomA.GetAtomicNum() != atomB.GetAtomicNum():
                 wmsg = (
                     f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}\n"
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
                     "No mass scaling is attempted in the hybrid topology, "
                     "the average mass of the two atoms will be used in the "
                     "simulation")
@@ -523,6 +526,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             checkpoint_storage=sim_settings.checkpoint_storage,
         )
 
+        #  b. Write out a PDB containing the subsampled hybrid state
+        traj = mdtraj.Trajectory(
+                hybrid_factory.hybrid_positions[selection_indices, :],
+                hybrid_factory.hybrid_topology.subset(selection_indices),
+        ).save_pdb(shared_basepath / sim_settings.output_structure)
+
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
             protocol_settings.engine_settings.compute_platform
@@ -671,7 +680,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        with without_oechem_backend():
+            outputs = self.run(scratch_basepath=ctx.scratch,
+                               shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
