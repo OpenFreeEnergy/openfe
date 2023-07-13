@@ -86,7 +86,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         assert nc.exists()
 
 
-@pytest.mark.slow  # takes ~7 minutes to run
+@pytest.mark.integration  # takes ~7 minutes to run
 @pytest.mark.flaky(reruns=3)
 def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     # this runs a very short eg5 complex leg

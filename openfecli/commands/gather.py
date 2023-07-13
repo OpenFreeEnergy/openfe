@@ -23,16 +23,33 @@ def get_names(result) -> tuple[str, str]:
     # Result to tuple of ligand names
     nm = list(result['unit_results'].values())[0]['name']
     toks = nm.split()
-    return toks[0], toks[2]
+    if toks[2] == 'repeat':
+        return toks[0], toks[1]
+    else:
+        return toks[0], toks[2]
 
 
-def get_type(f):
-    if 'solvent' in f:
+def get_type(res):
+    list_of_pur = list(res['protocol_result']['data'].values())[0]
+    pur = list_of_pur[0]
+    components = pur['inputs']['stateA']['components']
+
+    if 'solvent' not in components:
+        return 'vacuum'
+    elif 'protein' in components:
+        return 'complex'
+    else:
         return 'solvent'
-    elif 'vacuum' in f:
+
+
+def legacy_get_type(res_fn):
+    if 'solvent' in res_fn:
+        return 'solvent'
+    elif 'vacuum' in res_fn:
         return 'vacuum'
     else:
         return 'complex'
+
 
 @click.command(
     'gather',
@@ -99,8 +116,14 @@ def gather(rootdir, output):
             click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
                        err=True)
 
-        names = get_names(result)
-        simtype = get_type(result_fn)
+        try:
+            names = get_names(result)
+        except KeyError:
+            raise ValueError("Failed to guess names")
+        try:
+            simtype = get_type(result)
+        except KeyError:
+            simtype = legacy_get_type(result_fn)
 
         legs[names][simtype] = result['estimate'], result['uncertainty']
 
@@ -138,7 +161,7 @@ def gather(rootdir, output):
     # 4b write out each leg
     for ligpair, vals in sorted(legs.items()):
         name = ', '.join(ligpair)
-        for simtype, (m, u) in vals.items():
+        for simtype, (m, u) in sorted(vals.items()):
             if m is None:
                 m, u = 'NaN', 'NaN'
             else:
