@@ -68,8 +68,17 @@ def plan_rhfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@click.option(
+    "--radial", required=False, default=False, type=bool, is_flag=True,
+    help="Toggle on generation of a radial network, otherwise uses minimal-spanning-tree",
+)
+@click.option(
+    "--radial_hub", required=False, default=0, type=int,
+    help="For radial networks, the index of the ligand to use as the center",
+)
 @print_duration
-def plan_rhfe_network(molecules: List[str], output_dir: str):
+def plan_rhfe_network(molecules: List[str], output_dir: str,
+                      radial: bool, radial_hub: int):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -109,7 +118,9 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
     from openfe.setup import LomapAtomMapper
     from openfe.setup.ligand_network_planning import (
         generate_minimal_spanning_network,
+        generate_radial_network,
     )
+    from functools import partial
 
     # INPUT
     write("\tGot input: ")
@@ -133,7 +144,14 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO: write nice parameter
-    ligand_network_planner = generate_minimal_spanning_network
+    if radial:
+        central_lig = small_molecules[radial_hub]
+        write(f"\tUsing {central_lig} as radial hub")
+        ligand_network_planner = partial(generate_radial_network,
+                                         central_ligand=central_lig)
+    else:
+        ligand_network_planner = generate_minimal_spanning_network
+
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 
