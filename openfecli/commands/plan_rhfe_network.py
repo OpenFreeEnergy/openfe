@@ -3,7 +3,7 @@
 
 
 import click
-from typing import List
+from typing import List, Optional
 
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
@@ -73,12 +73,12 @@ def plan_rhfe_network_main(
     help="Toggle on generation of a radial network, otherwise uses minimal-spanning-tree",
 )
 @click.option(
-    "--radial_hub", required=False, default=0, type=int,
-    help="For radial networks, the index of the ligand to use as the center",
+    "--radial_hub", required=False, default=None, type=str,
+    help="For radial networks, the name of the ligand to use as the center",
 )
 @print_duration
 def plan_rhfe_network(molecules: List[str], output_dir: str,
-                      radial: bool, radial_hub: int):
+                      radial: bool, radial_hub: Optional[str]):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -145,7 +145,16 @@ def plan_rhfe_network(molecules: List[str], output_dir: str,
 
     # TODO: write nice parameter
     if radial:
-        central_lig = small_molecules[radial_hub]
+        if radial_hub is not None:
+            # check that hub input is unambiguous
+            candidates = [m for m in small_molecules if m.name == radial_hub]
+            if len(candidates) > 1:
+                raise ValueError("Ambiguous ligand name given as radial_hub")
+            elif not candidates:
+                raise ValueError(f"ligand name {radial_hub} not found")
+            central_lig = candidates[0]
+        else:
+            central_lig = small_molecules[0]
         write(f"\tUsing {central_lig} as radial hub")
         ligand_network_planner = partial(generate_radial_network,
                                          central_ligand=central_lig)
