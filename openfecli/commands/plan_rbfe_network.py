@@ -177,6 +177,8 @@ def plan_rbfe_network(
             central_lig = candidates[0]
         else:
             central_lig = small_molecules[0]
+        # avoid hub to hub edges
+        small_molecules = [m for m in small_molecules if m is not central_lig]
         write(f"\tUsing {central_lig} as radial hub")
         ligand_network_planner = partial(generate_radial_network,
                                          central_ligand=central_lig)
