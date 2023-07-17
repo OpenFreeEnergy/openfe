@@ -150,6 +150,65 @@ def test_plan_rbfe_network_cofactors(eg5_files):
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, args)
 
-        print(result.output)
-
         assert result.exit_code == 0
+
+
+def test_plan_rbfe_radial(mol_dir_args, protein_args):
+    runner = CliRunner()
+
+    args = mol_dir_args + protein_args
+    args += ['--radial']
+
+    expected = [
+        '- easy_rbfe_ligand_23_complex_ligand_55_complex.json',
+        '- easy_rbfe_ligand_23_solvent_ligand_55_solvent.json',
+    ]
+
+    with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
+                    print_test_with_file):
+        with runner.isolated_filesystem():
+            result = runner.invoke(plan_rbfe_network, args)
+
+            assert result.exit_code == 0
+
+            output_lines = {l.strip() for l in result.output.split('\n')}
+            for e in expected:
+                assert e in output_lines
+
+
+def test_plan_rbfe_radial_withhub(mol_dir_args, protein_args):
+    runner = CliRunner()
+
+    args = mol_dir_args + protein_args
+    args += ['--radial', '--radial_hub', 'ligand_55']
+
+    expected = [
+        '- easy_rbfe_ligand_55_complex_ligand_23_complex.json',
+        '- easy_rbfe_ligand_55_solvent_ligand_23_solvent.json',
+    ]
+
+    with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
+                    print_test_with_file):
+        with runner.isolated_filesystem():
+            result = runner.invoke(plan_rbfe_network, args)
+
+            assert result.exit_code == 0
+
+            output_lines = {l.strip() for l in result.output.split('\n')}
+            for e in expected:
+                assert e in output_lines
+
+
+def test_plan_rbfe_radial_badname(mol_dir_args, protein_args):
+    runner = CliRunner()
+
+    args = mol_dir_args + protein_args
+    args += ['--radial', '--radial_hub', 'bobbie']
+
+    with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
+                    print_test_with_file):
+        with runner.isolated_filesystem():
+            result = runner.invoke(plan_rbfe_network, args)
+
+            assert result.exit_code == 1
+            assert 'ligand name bobbie not found' in result.exception.args[0]

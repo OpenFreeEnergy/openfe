@@ -101,3 +101,64 @@ def test_plan_rhfe_network(mol_dir_args):
 
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
+
+
+def test_plan_rhfe_radial(mol_dir_args):
+    runner = CliRunner()
+
+    args = mol_dir_args
+    args += ['--radial']
+
+    expected = [
+        '- easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json',
+        '- easy_rhfe_ligand_23_solvent_ligand_55_solvent.json',
+    ]
+
+    with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
+                    print_test_with_file):
+        with runner.isolated_filesystem():
+            result = runner.invoke(plan_rhfe_network, args)
+
+            assert result.exit_code == 0
+
+            output_lines = {l.strip() for l in result.output.split('\n')}
+            for e in expected:
+                assert e in output_lines
+
+
+def test_plan_rhfe_radial_withhub(mol_dir_args):
+    runner = CliRunner()
+
+    args = mol_dir_args
+    args += ['--radial', '--radial_hub', 'ligand_55']
+
+    expected = [
+        '- easy_rhfe_ligand_55_vacuum_ligand_23_vacuum.json',
+        '- easy_rhfe_ligand_55_solvent_ligand_23_solvent.json',
+    ]
+
+    with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
+                    print_test_with_file):
+        with runner.isolated_filesystem():
+            result = runner.invoke(plan_rhfe_network, args)
+
+            assert result.exit_code == 0
+
+            output_lines = {l.strip() for l in result.output.split('\n')}
+            for e in expected:
+                assert e in output_lines
+
+
+def test_plan_rhfe_radial_badname(mol_dir_args):
+    runner = CliRunner()
+
+    args = mol_dir_args
+    args += ['--radial', '--radial_hub', 'bobbie']
+
+    with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
+                    print_test_with_file):
+        with runner.isolated_filesystem():
+            result = runner.invoke(plan_rhfe_network, args)
+
+            assert result.exit_code == 1
+            assert 'ligand name bobbie not found' in result.exception.args[0]
