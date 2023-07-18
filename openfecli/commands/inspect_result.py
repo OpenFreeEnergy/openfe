@@ -1,3 +1,6 @@
+import click
+from openfecli import OFECommandPlugin
+
 import json
 import warnings
 
@@ -27,14 +30,23 @@ def result_summary(result_dict):
         yield ""
 
 
-def inspect_result(json_filename):
-    with open(json_filename, mode='r') as f:
+@click.command(
+    'inspect-result',
+    short_help="Inspect result to show errors.",
+)
+@click.argument('result_json', type=click.Path(exists=True, readable=True))
+def inspect_result(result_json):
+    with open(result_json, mode='r') as f:
         result_dict = json.loads(f.read())
 
     for line in result_summary(result_dict):
         print(line)
 
+PLUGIN = OFECommandPlugin(
+    command=inspect_result,
+    section="Quickrun Executor",
+    requires_ofe=(0, 10)
+)
 
 if __name__ == "__main__":
-    import sys
-    inspect_result(sys.argv[1])
+    inspect_result()
