@@ -51,6 +51,7 @@ intersphinx_mapping = {
     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
     "openff.units": ("https://docs.openforcefield.org/units/en/stable", None),
+    "gufe": ("https://gufe.readthedocs.io/en/latest/", None),
 }
 
 autoclass_content = "both"
@@ -75,8 +76,6 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 autodoc_mock_imports = [
-    "openff.models",
-    "rdkit",
     "matplotlib",
     "lomap",
     "openmmtools",
