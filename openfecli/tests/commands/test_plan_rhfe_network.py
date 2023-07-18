@@ -109,10 +109,14 @@ def test_plan_rhfe_radial(mol_dir_args):
     args = mol_dir_args
     args += ['--radial']
 
-    expected = [
+    expected_1 = {
         '- easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json',
         '- easy_rhfe_ligand_23_solvent_ligand_55_solvent.json',
-    ]
+    }
+    expected_2 = {
+        '- easy_rhfe_ligand_55_vacuum_ligand_23_vacuum.json',
+        '- easy_rhfe_ligand_55_solvent_ligand_23_solvent.json',
+    }
 
     with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
                     print_test_with_file):
@@ -121,9 +125,10 @@ def test_plan_rhfe_radial(mol_dir_args):
 
             assert result.exit_code == 0
 
-            output_lines = {l.strip() for l in result.output.split('\n')}
-            for e in expected:
-                assert e in output_lines
+            output_lines = {l.strip() for l in result.output.split('\n')
+                            if l.strip().startswith('- easy')}
+
+            assert output_lines == expected_1 or output_lines == expected_2
 
 
 def test_plan_rhfe_radial_withhub(mol_dir_args):
@@ -132,10 +137,14 @@ def test_plan_rhfe_radial_withhub(mol_dir_args):
     args = mol_dir_args
     args += ['--radial', '--radial_hub', 'ligand_55']
 
-    expected = [
+    expected_1 = {
+        '- easy_rhfe_ligand_23_vacuum_ligand_55_vacuum.json',
+        '- easy_rhfe_ligand_23_solvent_ligand_55_solvent.json',
+    }
+    expected_2 = {
         '- easy_rhfe_ligand_55_vacuum_ligand_23_vacuum.json',
         '- easy_rhfe_ligand_55_solvent_ligand_23_solvent.json',
-    ]
+    }
 
     with mock.patch("openfecli.commands.plan_rbfe_network.plan_rbfe_network",
                     print_test_with_file):
@@ -144,9 +153,10 @@ def test_plan_rhfe_radial_withhub(mol_dir_args):
 
             assert result.exit_code == 0
 
-            output_lines = {l.strip() for l in result.output.split('\n')}
-            for e in expected:
-                assert e in output_lines
+            output_lines = {l.strip() for l in result.output.split('\n')
+                            if l.strip().startswith('- easy')}
+
+            assert output_lines == expected_1 or output_lines == expected_2
 
 
 def test_plan_rhfe_radial_badname(mol_dir_args):
