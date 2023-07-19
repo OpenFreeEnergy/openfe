@@ -13,6 +13,7 @@ dependencies:
   - pytest-rerunfailures
   - pydantic<2.0
   - coverage
+  - cinnabar ==0.3.0
   - openff-toolkit>=0.13.0
   - openff-units==0.2.0
   - pint<0.22
