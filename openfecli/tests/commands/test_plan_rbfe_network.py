@@ -220,5 +220,5 @@ def test_plan_rbfe_radial_badname(mol_dir_args, protein_args):
         with runner.isolated_filesystem():
             result = runner.invoke(plan_rbfe_network, args)
 
-            assert result.exit_code == 1
-            assert 'ligand name bobbie not found' in result.exception.args[0]
+            assert result.exit_code == 2
+            assert "ligand name 'bobbie' not found" in ''.join(result.stdout)

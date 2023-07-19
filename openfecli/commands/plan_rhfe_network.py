@@ -120,9 +120,7 @@ def plan_rhfe_network(molecules: List[str], output_dir: str,
     from openfe.setup import LomapAtomMapper
     from openfe.setup.ligand_network_planning import (
         generate_minimal_spanning_network,
-        generate_radial_network,
     )
-    from functools import partial
 
     # INPUT
     write("\tGot input: ")

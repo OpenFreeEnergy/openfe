@@ -87,12 +87,12 @@ def handle_radial_generator(radial_hub, molecules):
         if len(candidates) > 1:
             raise click.BadParameter(f"Ambiguous ligand name ({radial_hub}) given as radial_hub")
         elif not candidates:
-            raise click.BadParameter(f"ligand name {radial_hub} not found")
+            raise click.BadParameter(f"ligand name '{radial_hub}' not found")
         central_lig = candidates[0]
     else:
         central_lig = molecules[0]
     # avoid hub to hub edges
-    small_molecules = [m for m in molecules if m is not central_lig]
+    molecules = [m for m in molecules if m is not central_lig]
     write(f"\tUsing {central_lig} as radial hub")
     ligand_network_planner = partial(generate_radial_network,
                                      central_ligand=central_lig)
