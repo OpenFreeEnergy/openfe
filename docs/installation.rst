@@ -149,8 +149,8 @@ The single file installer contains all of the dependencies required for ``openfe
 Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
 The installer can be installed in batch mode or interactively  ::
   
-  $ chmod +x ./OpenFEforge-0.7.4-Linux-x86_64.sh # Make installer executable
-  $ ./OpenFEforge-0.7.4-Linux-x86_64.sh # Run the installer
+  $ chmod +x ./OpenFEforge-Linux-x86_64.sh # Make installer executable
+  $ ./OpenFEforge-Linux-x86_64.sh # Run the installer
 
 Example installer output is shown below (click to expand "Installer Output")
 
@@ -338,16 +338,25 @@ Containers
 We provide an official docker and apptainer (formally singularity) image.
 The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
 
-  $ docker pull ghcr.io/openfreeenergy/openfe:0.7.4
+  $ docker pull ghcr.io/openfreeenergy/openfe:latest
 
 The apptainer image is pre-built and can be pulled with ::
 
-  $ singularity pull oras://ghcr.io/openfreeenergy/openfe:0.7.4-apptainer
+  $ singularity pull oras://ghcr.io/openfreeenergy/openfe:latest-apptainer
+
+.. warning::
+
+   For production use, we recommend using version tags to prevent disruptions in workflows e.g.
+   
+   .. parsed-literal::
+
+     $ docker pull ghcr.io/openfreeenergy/openfe:\ |version|
+     $ singularity pull oras://ghcr.io/openfreeenergy/openfe:\ |version|-apptainer
 
 We recommend testing the container to ensure that it can access a GPU (if desired).
 This can be done with the following command ::
 
-  $ singularity run --nv openfe_0.7.4-apptainer.sif python -m openmm.testInstallation
+  $ singularity run --nv openfe_latest-apptainer.sif python -m openmm.testInstallation
   
   OpenMM Version: 8.0
   Git Revision: a7800059645f4471f4b91c21e742fe5aa4513cda
@@ -371,11 +380,11 @@ Your output may produce different values for the forces, but should list the CUD
 
 You can access the ``openfe`` CLI from the singularity image with ::
 
-  $ singularity run --nv openfe_0.7.4-apptainer.sif openfe --help
+  $ singularity run --nv openfe_latest-apptainer.sif openfe --help
 
 To make sure everything is working, run the tests ::
 
-  $ singularity run --nv openfe_0.7.4-apptainer.sif pytest --pyargs openfe openfecli
+  $ singularity run --nv openfe_latest-apptainer.sif pytest --pyargs openfe openfecli
 
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
