@@ -127,9 +127,8 @@ def gather(rootdir, output):
 
         legs[names][simtype] = result['estimate'], result['uncertainty']
 
-    # 4a for each ligand pair, write out the DDG
-    output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
-                 '\tuncertainty (kcal/mol)\n')
+    # 4a for each ligand pair, resolve legs
+    DDGs = []
     for ligpair, vals in sorted(legs.items()):
         DDGbind = None
         DDGhyd = None
@@ -150,15 +149,27 @@ def gather(rootdir, output):
                 DDGhyd = dp2((DG1_mag - DG2_mag).m)
                 hyd_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
 
-        name = ", ".join(ligpair[::-1])
+        DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
+
+    MLEs = []
+    # 4b) perform MLE
+
+    output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
+                 '\tuncertainty (kcal/mol)\n')
+    # 5a) write out MLE values
+    for mle in MLEs:
+        pass
+    # 5b) write out DDG values
+    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
+        name = f"{ligB}, {ligA}"
         if DDGbind is not None:
-            output.write(f'DDGbind({name})\tRBFE\t{ligpair[0]}\t{ligpair[1]}'
+            output.write(f'DDGbind({name})\tRBFE\t{ligA}\t{ligB}'
                          f'\t{DDGbind}\t{bind_unc}\n')
         if DDGhyd is not None:
-            output.write(f'DDGhyd({name})\tRHFE\t{ligpair[0]}\t{ligpair[1]}\t'
+            output.write(f'DDGhyd({name})\tRHFE\t{ligA}\t{ligB}\t'
                          f'{DDGhyd}\t{hyd_unc}\n')
 
-    # 4b write out each leg
+    # 5c) write out each leg
     for ligpair, vals in sorted(legs.items()):
         name = ', '.join(ligpair)
         for simtype, (m, u) in sorted(vals.items()):
