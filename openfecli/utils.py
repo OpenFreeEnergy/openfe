@@ -44,9 +44,6 @@ def write(string: str):
     click.echo(string)
 
 
-
-
-
 def print_duration(function: Callable) -> Callable:
     """
     Helper function to denote that a function should print a duration information.
@@ -67,3 +64,37 @@ def print_duration(function: Callable) -> Callable:
 
     return wrapper
 
+
+def handle_radial_generator(radial_hub, molecules):
+    """Create the network generator for radial networks
+
+    Returns
+    -------
+    planner, molecules
+      the planner function and list of molecules
+
+    Raises
+    ------
+    click.BadParameter
+      if ambiguous or unknown radial_hub is used
+    """
+    from functools import partial
+    from openfe.setup.ligand_network_planning import generate_radial_network
+
+    if radial_hub is not None:
+        # check that hub input is unambiguous
+        candidates = [m for m in molecules if m.name == radial_hub]
+        if len(candidates) > 1:
+            raise click.BadParameter(f"Ambiguous ligand name ({radial_hub}) given as radial_hub")
+        elif not candidates:
+            raise click.BadParameter(f"ligand name {radial_hub} not found")
+        central_lig = candidates[0]
+    else:
+        central_lig = molecules[0]
+    # avoid hub to hub edges
+    small_molecules = [m for m in molecules if m is not central_lig]
+    write(f"\tUsing {central_lig} as radial hub")
+    ligand_network_planner = partial(generate_radial_network,
+                                     central_ligand=central_lig)
+
+    return ligand_network_planner, molecules

@@ -8,7 +8,9 @@ from openfecli import OFECommandPlugin
 from openfecli.parameters import (
     MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS,
 )
+from openfecli.utils import handle_radial_generator
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+import warnings
 
 
 def plan_rbfe_network_main(
@@ -131,9 +133,7 @@ def plan_rbfe_network(
     from openfe.setup import LomapAtomMapper
     from openfe.setup.ligand_network_planning import (
         generate_minimal_spanning_network,
-        generate_radial_network,
     )
-    from functools import partial
 
     # INPUT
     write("\tGot input: ")
@@ -167,22 +167,11 @@ def plan_rbfe_network(
 
     # TODO:  write nice parameter
     if radial:
-        if radial_hub is not None:
-            # check that hub input is unambiguous
-            candidates = [m for m in small_molecules if m.name == radial_hub]
-            if len(candidates) > 1:
-                raise ValueError("Ambiguous ligand name given as radial_hub")
-            elif not candidates:
-                raise ValueError(f"ligand name {radial_hub} not found")
-            central_lig = candidates[0]
-        else:
-            central_lig = small_molecules[0]
-        # avoid hub to hub edges
-        small_molecules = [m for m in small_molecules if m is not central_lig]
-        write(f"\tUsing {central_lig} as radial hub")
-        ligand_network_planner = partial(generate_radial_network,
-                                         central_ligand=central_lig)
+        ligand_network_planner, small_molecules = handle_radial_generator(
+            radial_hub, small_molecules)
     else:
+        if radial_hub:
+            warnings.warn("Ignoring radial hub argument")
         ligand_network_planner = generate_minimal_spanning_network
 
     write("\tNetworker: " + str(ligand_network_planner))

@@ -11,6 +11,8 @@ from openfecli.parameters import (
     MOL_DIR, MAPPER, OUTPUT_DIR,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+from openfecli.utils import handle_radial_generator
+import warnings
 
 
 def plan_rhfe_network_main(
@@ -145,22 +147,12 @@ def plan_rhfe_network(molecules: List[str], output_dir: str,
 
     # TODO: write nice parameter
     if radial:
-        if radial_hub is not None:
-            # check that hub input is unambiguous
-            candidates = [m for m in small_molecules if m.name == radial_hub]
-            if len(candidates) > 1:
-                raise ValueError("Ambiguous ligand name given as radial_hub")
-            elif not candidates:
-                raise ValueError(f"ligand name {radial_hub} not found")
-            central_lig = candidates[0]
-        else:
-            central_lig = small_molecules[0]
-        # avoid hub to hub edges
-        small_molecules = [m for m in small_molecules if m is not central_lig]
-        write(f"\tUsing {central_lig} as radial hub")
-        ligand_network_planner = partial(generate_radial_network,
-                                         central_ligand=central_lig)
+        ligand_network_planner, small_molecules = handle_radial_generator(
+            radial_hub, small_molecules
+        )
     else:
+        if radial_hub:
+            warnings.warn("Ignoring radial hub argument")
         ligand_network_planner = generate_minimal_spanning_network
 
     write("\tNetworker: " + str(ligand_network_planner))
