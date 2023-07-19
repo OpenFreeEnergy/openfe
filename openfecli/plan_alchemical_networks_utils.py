@@ -37,13 +37,10 @@ def plan_alchemical_network_output(
     transformations_dir.mkdir(parents=True, exist_ok=True)
 
     filenames = []
-    for transformation in alchemical_network.edges:
+    for transformation in sorted(alchemical_network.edges,
+                                 key=lambda x: x.name or x.key):
         transformation_name = transformation.name or transformation.key
         filename = f"{transformation_name}.json"
         filenames.append(filename)
         transformation.dump(transformations_dir / filename)
-
-    for filename in sorted(filenames):
         write("\t\t\t\t- " + filename)
-
-
