@@ -139,11 +139,11 @@ Single file installers are available for x86_64 Linux and MacOS.
 They are attached to our `releases on GitHub <https://github.com/OpenFreeEnergy/openfe/releases>`_ and can be downloaded with a browser or ``curl`` (or similar tool).
 For example, the linux installer can be downloaded with ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.4/OpenFEforge-0.7.4-Linux-x86_64.sh
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-Linux-x86_64.sh
 
 And the MacOS installer ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v0.7.4/OpenFEforge-0.7.4-MacOSX-x86_64.sh 
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-x86_64.sh
 
 The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
 Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
