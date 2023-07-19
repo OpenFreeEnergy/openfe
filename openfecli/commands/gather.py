@@ -92,7 +92,9 @@ def gather(rootdir, output):
     """
     from collections import defaultdict
     import glob
+    import networkx as nx
     import numpy as np
+    from cinnabar.stats import mle
 
     def dp2(v: float) -> str:
         # turns 0.0012345 -> '0.0012', round() would get this wrong
@@ -140,32 +142,51 @@ def gather(rootdir, output):
             DG2_mag, DG2_unc = vals['solvent']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
-                DDGbind = dp2((DG1_mag - DG2_mag).m)
-                bind_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
+                DDGbind = (DG1_mag - DG2_mag).m
+                bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
         if 'solvent' in vals and 'vacuum' in vals:
             DG1_mag, DG1_unc = vals['solvent']
             DG2_mag, DG2_unc = vals['vacuum']
             if not ((DG1_mag is None) or (DG2_mag is None)):
-                DDGhyd = dp2((DG1_mag - DG2_mag).m)
-                hyd_unc = dp2(np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m]))))
+                DDGhyd = (DG1_mag - DG2_mag).m
+                hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     MLEs = []
     # 4b) perform MLE
+    g = nx.DiGraph()
+    DDGbind_count = 0
+    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
+        if DDGbind is None:
+            continue
+        DDGbind_count += 1
+        g.add_edge(
+            ligA, ligB, calc_DDG=DDGbind, calc_dDDG=bind_unc,
+        )
+    if DDGbind_count > 2:
+        f_i, df_i = mle(g, factor='calc_DDG')
+        df_i = np.diagonal(df_i) ** 0.5
+
+        for node, f, df in zip(g.nodes, f_i, df_i):
+            MLEs.append((node, f, df))
 
     output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
                  '\tuncertainty (kcal/mol)\n')
     # 5a) write out MLE values
-    for mle in MLEs:
-        pass
+    for ligA, DG, unc_DG in MLEs:
+        DG, unc_DG = dp2(DG), dp2(unc_DG)
+        output.write(f'DGbind({ligA})\tDG(MLE)\tZero\t{ligA}\t{DG}\t{unc_DG}\n')
+
     # 5b) write out DDG values
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         name = f"{ligB}, {ligA}"
         if DDGbind is not None:
+            DDGbind, bind_unc = dp2(DDGbind), dp2(bind_unc)
             output.write(f'DDGbind({name})\tRBFE\t{ligA}\t{ligB}'
                          f'\t{DDGbind}\t{bind_unc}\n')
         if DDGhyd is not None:
+            DDGhyd, hyd_unc = dp2(DDGhyd), dp2(hyd_unc)
             output.write(f'DDGhyd({name})\tRHFE\t{ligA}\t{ligB}\t'
                          f'{DDGhyd}\t{hyd_unc}\n')
 
