@@ -39,6 +39,7 @@ extensions = [
     "sphinx_design",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
+    "docs._ext.sass",
 ]
 
 intersphinx_mapping = {
@@ -73,7 +74,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_ext", "_sass"]
 
 autodoc_mock_imports = [
     "matplotlib",
@@ -122,3 +123,6 @@ html_css_files = [
     "css/custom.css",
     "css/custom-api.css",
 ]
+# custom-api.css is compiled from custom-api.scss
+sass_src_dir = "_sass"
+sass_out_dir = "_static/css"
