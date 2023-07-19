@@ -96,9 +96,11 @@ commands it suggests.
 You should then close your current session and open a fresh login to ensure
 that everything is properly registered.
 
-Next we will create an environment called ``openfe_env`` with the ``openfe`` package and all required  dependencies ::
+Next we will create an environment called ``openfe_env`` with the ``openfe`` package and all required dependencies
 
-  $ mamba create -n openfe_env openfe
+.. parsed-literal::
+
+  $ mamba create -n openfe_env openfe=\ |version|
 
 Now we need to activate our new environment ::
 
