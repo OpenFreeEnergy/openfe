@@ -14,7 +14,7 @@ specs:
   - conda
   - jupyterlab
   - mamba
-  - notebook
+  - notebook <7
   - openfe=={{ environ["VERSION"] }}
   - pip
   - pytest
