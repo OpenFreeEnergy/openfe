@@ -14,6 +14,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
 
 .. autopydantic_model:: RelativeHybridTopologyProtocolSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
@@ -21,87 +22,106 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
+   :member-order: groupwise
 
 .. autopydantic_model:: OpenMMSystemGeneratorFFSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: ThermoSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: AlchemicalSamplerSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: AlchemicalSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: OpenMMEngineSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: IntegratorSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: SimulationSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: SolvationSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 .. autopydantic_model:: SystemSettings
    :model-show-json: False
+   :model-show-field-summary: False
    :model-show-config-member: False
    :model-show-config-summary: False
    :model-show-validator-members: False
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
+   :member-order: groupwise
 
 Protocol API specification
 --------------------------
