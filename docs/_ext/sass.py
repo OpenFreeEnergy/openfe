@@ -5,17 +5,17 @@ Kayuza Takei
 Apache 2.0
 
 Modified to:
-    - Write directly to sphinx output directory
-    - Infer targets if not given
-    - Ensure `target: Path` in `configure_path()`
-    - Return version number and thread safety from `setup()`
-    - Use compressed style by default
-    - More complete type checking
+- Write directly to Sphinx output directory
+- Infer targets if not given
+- Ensure ``target: Path`` in ``configure_path()``
+- Return version number and thread safety from ``setup()``
+- Use compressed style by default
+- More complete type checking
 """
 
 from os import PathLike
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 
 import sass
@@ -25,9 +25,6 @@ from sphinx.util import logging
 
 
 logger = logging.getLogger(__name__)
-
-
-Targets = Dict[Path, Path]
 
 
 def configure_path(conf_dir: str, src: Optional[Union[PathLike, Path]]) -> Path:
@@ -40,7 +37,7 @@ def configure_path(conf_dir: str, src: Optional[Union[PathLike, Path]]) -> Path:
     return target
 
 
-def get_targets(app: Sphinx) -> Targets:
+def get_targets(app: Sphinx) -> dict[Path, Path]:
     src_dir = configure_path(app.confdir, app.config.sass_src_dir)
     dst_dir = configure_path(app.outdir, app.config.sass_out_dir)
 
