@@ -156,20 +156,42 @@ def gather(rootdir, output):
     MLEs = []
     # 4b) perform MLE
     g = nx.DiGraph()
+    nm_to_idx = {}
     DDGbind_count = 0
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         if DDGbind is None:
             continue
         DDGbind_count += 1
+
+        # tl;dr this is super paranoid, but safer for now:
+        # cinnabar seems to rely on the ordering of values within the graph
+        # to correspond to the matrix that comes out from mle()
+        # internally they also convert the ligand names to ints, which I think
+        # has a side effect of giving the graph nodes a predictable order.
+        # fwiw this code didn't affect ordering locally
+        try:
+            idA = nm_to_idx[ligA]
+        except KeyError:
+            idA = len(nm_to_idx)
+            nm_to_idx[ligA] = idA
+        try:
+            idB = nm_to_idx[ligB]
+        except KeyError:
+            idB = len(nm_to_idx)
+            nm_to_idx[ligB] = idB
+
         g.add_edge(
-            ligA, ligB, calc_DDG=DDGbind, calc_dDDG=bind_unc,
+            idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc,
         )
     if DDGbind_count > 2:
+        idx_to_nm = {v: k for k, v in nm_to_idx.items()}
+
         f_i, df_i = mle(g, factor='calc_DDG')
         df_i = np.diagonal(df_i) ** 0.5
 
         for node, f, df in zip(g.nodes, f_i, df_i):
-            MLEs.append((node, f, df))
+            ligname = idx_to_nm[node]
+            MLEs.append((ligname, f, df))
 
     output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
                  '\tuncertainty (kcal/mol)\n')
