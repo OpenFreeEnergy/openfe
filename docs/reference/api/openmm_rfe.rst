@@ -4,13 +4,13 @@ OpenMM Relative Free Energy Protocol
 This section provides details about the OpenMM Relative Free Energy Protocol
 implemented in OpenFE.
 
+.. module:: openfe.protocols.openmm_rfe
+
 Protocol Settings
 -----------------
 
 
 Below are the settings which can be tweaked in the protocol. The default settings (accessed using :meth:`RelativeHybridTopologyProtocol.default_settings`) will automatically populate a settings which we have found to be useful for running relative binding free energies using explicit solvent. There will however be some cases (such as when doing gas phase calculations) where you will need to tweak some of the following settings.
-
-.. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
 
 .. autopydantic_model:: RelativeHybridTopologyProtocolSettings
    :model-show-json: False
@@ -23,6 +23,8 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
    :member-order: groupwise
+
+.. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
 
 .. autopydantic_model:: OpenMMSystemGeneratorFFSettings
    :model-show-json: False
@@ -127,6 +129,7 @@ Protocol API specification
 --------------------------
 
 .. module:: openfe.protocols.openmm_rfe
+   :noindex:
 
 .. autoclass:: RelativeHybridTopologyProtocol
    :no-members:
