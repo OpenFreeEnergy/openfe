@@ -51,85 +51,7 @@ def legacy_get_type(res_fn):
         return 'complex'
 
 
-@click.command(
-    'gather',
-    short_help="Gather result jsons for network of RFE results into a TSV file"
-)
-@click.argument('rootdir',
-                type=click.Path(dir_okay=True, file_okay=False,
-                                         path_type=pathlib.Path),
-                required=True)
-@click.option('output', '-o',
-              type=click.File(mode='w'),
-              default='-')
-def gather(rootdir, output):
-    """Gather simulation result jsons of relative calculations to a tsv file
-
-    Will walk ROOTDIR recursively and find all results files ending in .json
-    (i.e those produced by the quickrun command).  Each of these contains the
-    results of a separate leg from a relative free energy thermodynamic cycle.
-
-    Paired legs of simulations will be combined to give the DDG values between
-    two ligands in the corresponding phase, producing either binding ('DDGbind')
-    or hydration ('DDGhyd') relative free energies.  These will be reported as
-    'DDGbind(B,A)' meaning DGbind(B) - DGbind(A), the difference in free energy
-    of binding for ligand B relative to ligand A.
-
-    Individual leg results will be also be written.  These are reported as
-    either DGvacuum(A,B) DGsolvent(A,B) or DGcomplex(A,B) for the vacuum,
-    solvent or complex free energy of transmuting ligand A to ligand B.
-
-    \b
-    Will produce a **tab** separated file with 6 columns:
-    1) a description of the measurement, for example DDGhyd(A, B)
-    2) the type of this measurement, either RBFE or RHFE
-    3) the identifier of the first ligand
-    4) the identifier of the second ligand
-    5) the estimated value (in kcal/mol)
-    6) the uncertainty on the value (also kcal/mol)
-
-    By default, outputs to stdout, use -o option to choose file.
-    """
-    from collections import defaultdict
-    import glob
-    import networkx as nx
-    import numpy as np
-    from cinnabar.stats import mle
-
-    def dp2(v: float) -> str:
-        # turns 0.0012345 -> '0.0012', round() would get this wrong
-        return np.format_float_positional(v, precision=2, trim='0',
-                                          fractional=False)
-
-    # 1) find all possible jsons
-    json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
-
-    # 2) filter only result jsons
-    result_fns = filter(is_results_json, json_fns)
-
-    # 3) pair legs of simulations together into dict of dicts
-    legs = defaultdict(dict)
-
-    for result_fn in result_fns:
-        result = load_results(result_fn)
-        if result is None:
-            continue
-        elif result['estimate'] is None or result['uncertainty'] is None:
-            click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
-                       err=True)
-
-        try:
-            names = get_names(result)
-        except KeyError:
-            raise ValueError("Failed to guess names")
-        try:
-            simtype = get_type(result)
-        except KeyError:
-            simtype = legacy_get_type(result_fn)
-
-        legs[names][simtype] = result['estimate'], result['uncertainty']
-
-    # 4a for each ligand pair, resolve legs
+def _get_ddgs(legs):
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
         DDGbind = None
@@ -144,15 +66,47 @@ def gather(rootdir, output):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        if 'solvent' in vals and 'vacuum' in vals:
+        elif 'solvent' in vals and 'vacuum' in vals:
             DG1_mag, DG1_unc = vals['solvent']
             DG2_mag, DG2_unc = vals['vacuum']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
+        else:  # -no-cov-
+            raise RuntimeError(f"Unknown DDG type for {vals}")
 
         DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
+    return DDGs
+
+def _write_ddg(legs, output):
+    DDGs = _get_ddgs(legs)
+    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
+        name = f"{ligB}, {ligA}"
+        if DDGbind is not None:
+            DDGbind, bind_unc = dp2(DDGbind), dp2(bind_unc)
+            output.write(f'DDGbind({name})\tRBFE\t{ligA}\t{ligB}'
+                         f'\t{DDGbind}\t{bind_unc}\n')
+        if DDGhyd is not None:
+            DDGhyd, hyd_unc = dp2(DDGhyd), dp2(hyd_unc)
+            output.write(f'DDGhyd({name})\tRHFE\t{ligA}\t{ligB}\t'
+                         f'{DDGhyd}\t{hyd_unc}\n')
+
+
+    ...
+
+def _write_raw_dg(legs, output):
+    for ligpair, vals in sorted(legs.items()):
+        name = ', '.join(ligpair)
+        for simtype, (m, u) in sorted(vals.items()):
+            if m is None:
+                m, u = 'NaN', 'NaN'
+            else:
+                m, u = dp2(m.m), dp2(u.m)
+            output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[0]}\t'
+                         f'{ligpair[1]}\t{m}\t{u}\n')
+
+def _write_dg_mle(legs, output):
     MLEs = []
     # 4b) perform MLE
     g = nx.DiGraph()
@@ -193,35 +147,118 @@ def gather(rootdir, output):
             ligname = idx_to_nm[node]
             MLEs.append((ligname, f, df))
 
-    output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
-                 '\tuncertainty (kcal/mol)\n')
-    # 5a) write out MLE values
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = dp2(DG), dp2(unc_DG)
         output.write(f'DGbind({ligA})\tDG(MLE)\tZero\t{ligA}\t{DG}\t{unc_DG}\n')
 
-    # 5b) write out DDG values
-    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        name = f"{ligB}, {ligA}"
-        if DDGbind is not None:
-            DDGbind, bind_unc = dp2(DDGbind), dp2(bind_unc)
-            output.write(f'DDGbind({name})\tRBFE\t{ligA}\t{ligB}'
-                         f'\t{DDGbind}\t{bind_unc}\n')
-        if DDGhyd is not None:
-            DDGhyd, hyd_unc = dp2(DDGhyd), dp2(hyd_unc)
-            output.write(f'DDGhyd({name})\tRHFE\t{ligA}\t{ligB}\t'
-                         f'{DDGhyd}\t{hyd_unc}\n')
 
+def dp2(v: float) -> str:
+    # turns 0.0012345 -> '0.0012', round() would get this wrong
+    return np.format_float_positional(v, precision=2, trim='0',
+                                      fractional=False)
+
+
+
+
+
+@click.command(
+    'gather',
+    short_help="Gather result jsons for network of RFE results into a TSV file"
+)
+@click.argument('rootdir',
+                type=click.Path(dir_okay=True, file_okay=False,
+                                         path_type=pathlib.Path),
+                required=True)
+@click.option(
+    '--report',
+    type=click.Choice(['dg', 'ddg', 'leg'], case_sensitive=False),
+    default="dg", show_default=True,
+    help=(
+        "What data to report. 'dg' gives maximum-likelihood estimate of "
+        "asbolute deltaG,  'ddg' gives delta-delta-G, and 'leg' gives the "
+        "raw result of the deltaG for a leg."
+    )
+)
+@click.option('output', '-o',
+              type=click.File(mode='w'),
+              default='-')
+def gather(rootdir, output, report):
+    """Gather simulation result jsons of relative calculations to a tsv file
+
+    Will walk ROOTDIR recursively and find all results files ending in .json
+    (i.e those produced by the quickrun command).  Each of these contains the
+    results of a separate leg from a relative free energy thermodynamic cycle.
+
+    Paired legs of simulations will be combined to give the DDG values between
+    two ligands in the corresponding phase, producing either binding ('DDGbind')
+    or hydration ('DDGhyd') relative free energies.  These will be reported as
+    'DDGbind(B,A)' meaning DGbind(B) - DGbind(A), the difference in free energy
+    of binding for ligand B relative to ligand A.
+
+    Individual leg results will be also be written.  These are reported as
+    either DGvacuum(A,B) DGsolvent(A,B) or DGcomplex(A,B) for the vacuum,
+    solvent or complex free energy of transmuting ligand A to ligand B.
+
+    \b
+    Will produce a **tab** separated file with 6 columns:
+    1) a description of the measurement, for example DDGhyd(A, B)
+    2) the type of this measurement, either RBFE or RHFE
+    3) the identifier of the first ligand
+    4) the identifier of the second ligand
+    5) the estimated value (in kcal/mol)
+    6) the uncertainty on the value (also kcal/mol)
+
+    By default, outputs to stdout, use -o option to choose file.
+    """
+    from collections import defaultdict
+    import glob
+    import networkx as nx
+    import numpy as np
+    from cinnabar.stats import mle
+
+    # 1) find all possible jsons
+    json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
+
+    # 2) filter only result jsons
+    result_fns = filter(is_results_json, json_fns)
+
+    # 3) pair legs of simulations together into dict of dicts
+    legs = defaultdict(dict)
+
+    for result_fn in result_fns:
+        result = load_results(result_fn)
+        if result is None:
+            continue
+        elif result['estimate'] is None or result['uncertainty'] is None:
+            click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
+                       err=True)
+
+        try:
+            names = get_names(result)
+        except KeyError:
+            raise ValueError("Failed to guess names")
+        try:
+            simtype = get_type(result)
+        except KeyError:
+            simtype = legacy_get_type(result_fn)
+
+        legs[names][simtype] = result['estimate'], result['uncertainty']
+
+    # 4a for each ligand pair, resolve legs
+    DDGs = _get_ddgs(legs)
+
+    output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
+                 '\tuncertainty (kcal/mol)\n')
+
+    # 5a) write out MLE values
+    # 5b) write out DDG values
     # 5c) write out each leg
-    for ligpair, vals in sorted(legs.items()):
-        name = ', '.join(ligpair)
-        for simtype, (m, u) in sorted(vals.items()):
-            if m is None:
-                m, u = 'NaN', 'NaN'
-            else:
-                m, u = dp2(m.m), dp2(u.m)
-            output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[0]}\t'
-                         f'{ligpair[1]}\t{m}\t{u}\n')
+    writing_func = {
+        'dg': _write_dg_mle,
+        'ddg': _write_ddg,
+        'leg': _write_raw_dg,
+    }[report.lower()]
+    writing_func(legs, output)
 
 
 PLUGIN = OFECommandPlugin(
