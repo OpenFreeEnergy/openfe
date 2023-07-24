@@ -113,25 +113,24 @@ def _get_ddgs(legs):
 
     return DDGs
 
-def _write_ddg(legs, output):
+def _write_ddg(legs, writer):
     DDGs = _get_ddgs(legs)
+    writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
+                      "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         name = f"{ligB}, {ligA}"
         if DDGbind is not None:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind,
                                                             bind_unc)
-            # DDGbind, bind_unc = dp2(DDGbind), dp2(bind_unc)
-            output.write(f'DDGbind({name})\tRBFE\t{ligA}\t{ligB}'
-                         f'\t{DDGbind}\t{bind_unc}\n')
+            writer.writerow([ligA, ligB, DDGbind, bind_unc])
         if DDGhyd is not None:
-            DDGhyd, hyd_unc = dp2(DDGhyd), dp2(hyd_unc)
-            output.write(f'DDGhyd({name})\tRHFE\t{ligA}\t{ligB}\t'
-                         f'{DDGhyd}\t{hyd_unc}\n')
+            DDGhyd, hyd_unc = format_estimate_uncertainty(DDGbind,
+                                                          bind_unc)
+            writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
-
-    ...
-
-def _write_raw_dg(legs, output):
+def _write_raw_dg(legs, writer):
+    writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
+                     "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
         name = ', '.join(ligpair)
         for simtype, (m, u) in sorted(vals.items()):
@@ -139,10 +138,9 @@ def _write_raw_dg(legs, output):
                 m, u = 'NaN', 'NaN'
             else:
                 m, u = format_estimate_uncertainty(m.m, u.m)
-            output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[0]}\t'
-                         f'{ligpair[1]}\t{m}\t{u}\n')
+            writer.writerow([simtype, *ligpair, m, u])
 
-def _write_dg_mle(legs, output):
+def _write_dg_mle(legs, writer):
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
@@ -187,19 +185,11 @@ def _write_dg_mle(legs, output):
             ligname = idx_to_nm[node]
             MLEs.append((ligname, f, df))
 
+    writer.writerow(["ligand", "DG(MLE) (kcal/mol)",
+                     "uncertainty (kcal/mol)"])
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
-        output.write(f'DGbind({ligA})\tDG(MLE)\tZero\t{ligA}\t{DG}\t{unc_DG}\n')
-
-
-def dp2(v: float) -> str:
-    # turns 0.0012345 -> '0.0012', round() would get this wrong
-    import numpy as np
-    return np.format_float_positional(v, precision=2, trim='0',
-                                      fractional=False)
-
-
-
+        writer.writerow([ligA, DG, unc_DG])
 
 
 @click.command(
@@ -253,6 +243,7 @@ def gather(rootdir, output, report):
     """
     from collections import defaultdict
     import glob
+    import csv
 
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
@@ -282,11 +273,11 @@ def gather(rootdir, output, report):
 
         legs[names][simtype] = result['estimate'], result['uncertainty']
 
-    # 4a for each ligand pair, resolve legs
-    DDGs = _get_ddgs(legs)
-
-    output.write('measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)'
-                 '\tuncertainty (kcal/mol)\n')
+    writer = csv.writer(
+        output,
+        delimiter="\t",
+        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
+    )
 
     # 5a) write out MLE values
     # 5b) write out DDG values
@@ -296,7 +287,7 @@ def gather(rootdir, output, report):
         'ddg': _write_ddg,
         'leg': _write_raw_dg,
     }[report.lower()]
-    writing_func(legs, output)
+    writing_func(legs, writer)
 
 
 PLUGIN = OFECommandPlugin(
