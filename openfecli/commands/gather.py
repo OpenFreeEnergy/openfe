@@ -52,6 +52,7 @@ def legacy_get_type(res_fn):
 
 
 def _get_ddgs(legs):
+    import numpy as np
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
         DDGbind = None
@@ -107,6 +108,10 @@ def _write_raw_dg(legs, output):
                          f'{ligpair[1]}\t{m}\t{u}\n')
 
 def _write_dg_mle(legs, output):
+    import networkx as nx
+    import numpy as np
+    from cinnabar.stats import mle
+    DDGs = _get_ddgs(legs)
     MLEs = []
     # 4b) perform MLE
     g = nx.DiGraph()
@@ -154,6 +159,7 @@ def _write_dg_mle(legs, output):
 
 def dp2(v: float) -> str:
     # turns 0.0012345 -> '0.0012', round() would get this wrong
+    import numpy as np
     return np.format_float_positional(v, precision=2, trim='0',
                                       fractional=False)
 
@@ -212,9 +218,6 @@ def gather(rootdir, output, report):
     """
     from collections import defaultdict
     import glob
-    import networkx as nx
-    import numpy as np
-    from cinnabar.stats import mle
 
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
