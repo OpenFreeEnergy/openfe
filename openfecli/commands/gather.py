@@ -5,6 +5,39 @@ import click
 from openfecli import OFECommandPlugin
 import pathlib
 
+from typing import Tuple
+
+def _get_column(val):
+    import numpy as np
+    if val == 0:
+        return 0
+
+    log10 = np.log10(val)
+
+    if log10 >= 0.0:
+        col = np.floor(log10 + 1)
+    else:
+        col = np.floor(log10)
+    return int(col)
+
+def format_estimate_uncertainty(
+    est: float,
+    unc: float,
+    unc_prec: int = 2,
+) -> Tuple[str, str]:
+    import numpy as np
+    # get the last column needed for uncertainty
+    unc_col = _get_column(unc) - (unc_prec - 1)
+
+    if unc_col < 0:
+        est_str = f"{est:.{-unc_col}f}"
+        unc_str = f"{unc:.{-unc_col}f}"
+    else:
+        est_str = f"{np.round(est, -unc_col + 1)}"
+        unc_str = f"{np.round(unc, -unc_col + 1)}"
+
+    return est_str, unc_str
+
 
 def is_results_json(f):
     # sanity check on files before we try and deserialize
@@ -85,7 +118,9 @@ def _write_ddg(legs, output):
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         name = f"{ligB}, {ligA}"
         if DDGbind is not None:
-            DDGbind, bind_unc = dp2(DDGbind), dp2(bind_unc)
+            DDGbind, bind_unc = format_estimate_uncertainty(DDGbind,
+                                                            bind_unc)
+            # DDGbind, bind_unc = dp2(DDGbind), dp2(bind_unc)
             output.write(f'DDGbind({name})\tRBFE\t{ligA}\t{ligB}'
                          f'\t{DDGbind}\t{bind_unc}\n')
         if DDGhyd is not None:
@@ -103,7 +138,7 @@ def _write_raw_dg(legs, output):
             if m is None:
                 m, u = 'NaN', 'NaN'
             else:
-                m, u = dp2(m.m), dp2(u.m)
+                m, u = format_estimate_uncertainty(m.m, u.m)
             output.write(f'DG{simtype}({name})\t{simtype}\t{ligpair[0]}\t'
                          f'{ligpair[1]}\t{m}\t{u}\n')
 
@@ -153,7 +188,7 @@ def _write_dg_mle(legs, output):
             MLEs.append((ligname, f, df))
 
     for ligA, DG, unc_DG in MLEs:
-        DG, unc_DG = dp2(DG), dp2(unc_DG)
+        DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         output.write(f'DGbind({ligA})\tDG(MLE)\tZero\t{ligA}\t{DG}\t{unc_DG}\n')
 
 
@@ -269,3 +304,6 @@ PLUGIN = OFECommandPlugin(
     section='Quickrun Executor',
     requires_ofe=(0, 6),
 )
+
+if __name__ == "__main__":
+    gather()
