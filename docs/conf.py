@@ -12,8 +12,11 @@
 #
 import os
 import sys
+from importlib.metadata import version
+from packaging.version import parse
 
-sys.path.insert(0, os.path.abspath("../"))
+
+sys.path.insert(0, os.path.abspath('../'))
 
 
 os.environ["SPHINX"] = "True"
@@ -23,6 +26,8 @@ os.environ["SPHINX"] = "True"
 project = "OpenFE"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
+version = parse(version("openfe")).base_version
+
 
 # -- General configuration ---------------------------------------------------
 
@@ -123,6 +128,7 @@ html_css_files = [
     "css/custom.css",
     "css/custom-api.css",
 ]
+
 # custom-api.css is compiled from custom-api.scss
 sass_src_dir = "_sass"
 sass_out_dir = "_static/css"
