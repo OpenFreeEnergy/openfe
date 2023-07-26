@@ -439,7 +439,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
-    """Alchemical protocol settings including lambda windows and soft cores."""
+    """Alchemical protocol settings including lambda windows and soft core scaling choices."""
     alchemical_sampler_settings: AlchemicalSamplerSettings
     """Settings for sampling within lambda windows."""
 
