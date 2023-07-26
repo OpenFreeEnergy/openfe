@@ -20,6 +20,7 @@ from gufe.settings import (
     ThermoSettings,
 )
 
+
 class SystemSettings(SettingsBaseModel):
     """Settings describing the simulation system settings."""
 
@@ -54,6 +55,7 @@ class SystemSettings(SettingsBaseModel):
             errmsg = "nonbonded_cutoff must be a positive value"
             raise ValueError(errmsg)
         return v
+
 
 class SolvationSettings(SettingsBaseModel):
     """Settings for solvating the system
