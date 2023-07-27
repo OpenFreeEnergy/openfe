@@ -23,7 +23,7 @@ def _get_column(val):
 def format_estimate_uncertainty(
     est: float,
     unc: float,
-    unc_prec: int = 2,
+    unc_prec: int = 1,
 ) -> Tuple[str, str]:
     import numpy as np
     # get the last column needed for uncertainty
@@ -202,7 +202,7 @@ def _write_dg_mle(legs, writer):
                 required=True)
 @click.option(
     '--report',
-    type=click.Choice(['dg', 'ddg', 'leg'], case_sensitive=False),
+    type=click.Choice(['dg', 'ddg', 'legs'], case_sensitive=False),
     default="dg", show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
@@ -285,7 +285,7 @@ def gather(rootdir, output, report):
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
-        'leg': _write_raw_dg,
+        'legs': _write_raw_dg,
     }[report.lower()]
     writing_func(legs, writer)
 
