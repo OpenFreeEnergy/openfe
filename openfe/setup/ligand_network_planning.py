@@ -3,6 +3,7 @@
 import math
 from typing import Iterable, Callable, Optional, Union
 import itertools
+from collections import Counter
 import functools
 
 import networkx as nx
@@ -11,6 +12,26 @@ from tqdm.auto import tqdm
 from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
+from openfe.setup import LomapAtomMapper
+from lomap.dbmol import _find_common_core
+
+
+def _hasten_lomap(mapper, ligands):
+    """take a mapper and some ligands, put a common core arg into the mapper """
+    if mapper.seed:
+        return mapper
+
+    try:
+        core = _find_common_core([m.to_rdkit() for m in ligands],
+                                 element_change=mapper.element_change)
+    except RuntimeError:  # in case MCS throws a hissy fit
+        core = ""
+
+    return LomapAtomMapper(
+        time=mapper.time, threed=mapper.threed, max3d=mapper.max3d,
+        element_change=mapper.element_change, seed=core,
+        shift=mapper.shift
+    )
 
 
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
@@ -52,6 +73,9 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
+
     edges = []
 
     for ligand in ligands:
@@ -115,6 +139,8 @@ def generate_maximal_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
 
     nodes = list(ligands)
 
@@ -166,6 +192,8 @@ def generate_minimal_spanning_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
 
     # First create a network with all the proposed mappings (scored)
     network = generate_maximal_network(ligands, mappers, scorer, progress)
@@ -183,3 +211,95 @@ def generate_minimal_spanning_network(
                            + str(list(missing_nodes)))
 
     return min_network
+
+
+def generate_network_from_names(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        names: list[tuple[str, str]],
+) -> LigandNetwork:
+    """Generate a LigandNetwork
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    names : list of tuples of names
+      the edges to form where the values refer to names of the small molecules,
+      eg `[('benzene', 'toluene'), ...]` will create an edge between the
+      molecule with names 'benzene' and 'toluene'
+
+    Returns
+    -------
+    LigandNetwork
+
+    Raises
+    ------
+    KeyError
+      if an invalid name is requested
+    ValueError
+      if multiple molecules have the same name (this would otherwise be
+      problematic)
+    """
+    nm2idx = {l.name: i for i, l in enumerate(ligands)}
+
+    if len(nm2idx) < len(ligands):
+        dupes = Counter((l.name for l in ligands))
+        dupe_names = [k for k, v in dupes.items() if v > 1]
+        raise ValueError(f"Duplicate names: {dupe_names}")
+
+    try:
+        ids = [(nm2idx[nm1], nm2idx[nm2]) for nm1, nm2 in names]
+    except KeyError:
+        badnames = [nm for nm in itertools.chain.from_iterable(names)
+                    if nm not in nm2idx]
+        available = [ligand.name for ligand in ligands]
+        raise KeyError(f"Invalid name(s) requested {badnames}.  "
+                       f"Available: {available}")
+
+    return generate_network_from_indices(ligands, mapper, ids)
+
+
+def generate_network_from_indices(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        indices: list[tuple[int, int]],
+) -> LigandNetwork:
+    """Generate a LigandNetwork
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    indices : list of tuples of indices
+      the edges to form where the values refer to names of the small molecules,
+      eg `[(3, 4), ...]` will create an edge between the 3rd and 4th molecules
+      remembering that Python uses 0-based indexing
+
+    Returns
+    -------
+    LigandNetwork
+
+    Raises
+    ------
+    IndexError
+      if an invalid ligand index is requested
+    """
+    edges = []
+
+    for i, j in indices:
+        try:
+            m1, m2 = ligands[i], ligands[j]
+        except IndexError:
+            raise IndexError(f"Invalid ligand id, requested {i} {j} "
+                             f"with {len(ligands)} available")
+
+        mapping = next(mapper.suggest_mappings(m1, m2))
+
+        edges.append(mapping)
+
+    return LigandNetwork(edges=edges, nodes=ligands)

@@ -51,10 +51,14 @@ def quickrun(transformation, work_dir, output):
     """
     import gufe
     import os
+    import sys
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
     from openfe.utils.logging_filter import MsgIncludesStringFilter
     import logging
+
+    # avoid problems with output not showing if queueing system kills a job
+    sys.stdout.reconfigure(line_buffering=True)
 
     # silence the openmmtools.multistate API warning
     stfu = MsgIncludesStringFilter(
