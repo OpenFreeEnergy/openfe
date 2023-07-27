@@ -149,3 +149,6 @@ PLUGIN = OFECommandPlugin(
     section="Quickrun Executor",
     requires_ofe=(0, 3)
 )
+
+if __name__ == "__main__":
+    quickrun()
