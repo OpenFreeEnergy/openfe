@@ -45,7 +45,7 @@ def write(string: str):
     click.echo(string)
 
 
-def configure_logger(logger_name: str, level: int = logging.INFO,
+def configure_logger(logger_name: str, level: int = logging.INFO, *,
                      handler: Optional[logging.Handler] = None):
     """Configure the logger at ``logger_name`` to be at ``level``.
 

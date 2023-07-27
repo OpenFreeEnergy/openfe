@@ -60,9 +60,11 @@ def quickrun(transformation, work_dir, output):
     # avoid problems with output not showing if queueing system kills a job
     sys.stdout.reconfigure(line_buffering=True)
 
-    configure_logger('gufekey')
-    configure_logger('gufe')
-    configure_logger('openfe')
+    stdout_handler = logging.StreamHandler(sys.stdout)
+
+    configure_logger('gufekey', handler=stdout_handler)
+    configure_logger('gufe', handler=stdout_handler)
+    configure_logger('openfe', handler=stdout_handler)
 
     # silence the openmmtools.multistate API warning
     stfu = MsgIncludesStringFilter(
