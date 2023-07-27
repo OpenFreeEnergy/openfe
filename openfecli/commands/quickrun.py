@@ -7,7 +7,7 @@ import pathlib
 
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write, print_duration
+from openfecli.utils import write, print_duration, configure_logger
 
 
 def _format_exception(exception) -> str:
@@ -60,6 +60,10 @@ def quickrun(transformation, work_dir, output):
     # avoid problems with output not showing if queueing system kills a job
     sys.stdout.reconfigure(line_buffering=True)
 
+    configure_logger('gufekey')
+    configure_logger('gufe')
+    configure_logger('openfe')
+
     # silence the openmmtools.multistate API warning
     stfu = MsgIncludesStringFilter(
         "The openmmtools.multistate API is experimental and may change in "
@@ -74,7 +78,6 @@ def quickrun(transformation, work_dir, output):
 
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
-
 
     if work_dir is None:
         work_dir = pathlib.Path(os.getcwd())

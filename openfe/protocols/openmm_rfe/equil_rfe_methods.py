@@ -54,7 +54,7 @@ from . import _rfe_utils
 from ...utils import without_oechem_backend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)
 
 
 def _get_resname(off_mol) -> str:
@@ -355,7 +355,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           Exception if anything failed
         """
         if verbose:
-            logger.info("creating hybrid system")
+            self.logger.info("creating hybrid system")
         if scratch_basepath is None:
             scratch_basepath = pathlib.Path('.')
         if shared_basepath is None:
@@ -561,6 +561,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 12. Create sampler
+        self.logger.debug("Creating and setting up the sampler")
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
@@ -615,19 +616,19 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             if not dry:  # pragma: no-cover
                 # minimize
                 if verbose:
-                    logger.info("minimizing systems")
+                    self.logger.info("minimizing systems")
 
                 sampler.minimize(max_iterations=sim_settings.minimization_steps)
 
                 # equilibrate
                 if verbose:
-                    logger.info("equilibrating systems")
+                    self.logger.info("equilibrating systems")
 
                 sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
                 # production
                 if verbose:
-                    logger.info("running production phase")
+                    self.logger.info("running production phase")
 
                 sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
