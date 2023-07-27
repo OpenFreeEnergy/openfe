@@ -441,9 +441,13 @@ class RelativeHybridTopologyProtocolSettings(Settings):
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
-    """Alchemical protocol settings including lambda windows and soft core scaling choices."""
+    """
+    Alchemical protocol settings including lambda windows and soft core scaling.
+    """
     alchemical_sampler_settings: AlchemicalSamplerSettings
-    """Settings for sampling within lambda windows."""
+    """
+    Settings for sampling alchemical space, including the number of repeats.
+    """
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
