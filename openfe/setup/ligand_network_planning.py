@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
+from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
 import itertools
 from collections import Counter
@@ -308,7 +309,7 @@ def generate_network_from_indices(
 def load_nes_network(
         ligands: list[SmallMoleculeComponent],
         mapper: AtomMapper,
-        network_file: str,
+        network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Generate a LigandNetwork from an Orion NES network file.
 
@@ -350,7 +351,7 @@ def load_nes_network(
 def load_fepplus_network(
         ligands: list[SmallMoleculeComponent],
         mapper: AtomMapper,
-        network_file: str,
+        network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Generate a LigandNetwork from an FEP+ edges network file.
 
