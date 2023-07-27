@@ -1,0 +1,162 @@
+:root {
+    --arrow-thickness: 4px;
+    --arrow-head-size: 7px;
+    --arrow-length: 2em;
+    --arrow-color: var(--pst-color-text-muted);
+    --deflist-def-bg-color: var(--pst-color-surface);
+}
+.arrow.thick {
+    --arrow-thickness: 6px;
+    --arrow-head-size: 10px;
+}
+
+.deflist-flowchart p:first-child {
+  margin-top: 0;
+}
+
+.deflist-flowchart p:last-child {
+  margin-bottom: 0;
+}
+
+.deflist-flowchart {
+    margin: 1em 0;
+}
+
+.deflist-flowchart li,
+.deflist-flowchart li ul
+{
+  margin: 0;
+  padding: 0;
+}
+
+.deflist-flowchart ul,
+ul.deflist-flowchart {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  grid-column-gap: 1em;
+  margin: 0;
+  padding: 0;
+}
+
+.deflist-flowchart li {
+  list-style: none;
+}
+
+.deflist-flowchart .arrow-down,
+.deflist-flowchart .arrow-up,
+.deflist-flowchart .arrow-cycle {
+  display: block;
+  min-height: var(--arrow-length);
+  height: 100%;
+  margin: 0.75em auto;
+  width: fit-content;
+  position: relative;
+  z-index: 1;
+}
+
+.deflist-flowchart .arrow-down::after,
+.deflist-flowchart .arrow-up::after,
+.deflist-flowchart .arrow-cycle::after,
+.deflist-flowchart .arrow-cycle::before
+{
+  --actual-arrow-length: max(var(--arrow-length), 100%);
+  height: calc(var(--actual-arrow-length)/1.4142);
+  width: auto;
+  aspect-ratio: 1;
+  content: "";
+  padding: 0;
+  display: inline-block;
+  transform: rotate(45deg);
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - var(--arrow-thickness)/2),
+      var(--arrow-color) calc(50% - var(--arrow-thickness)/2),
+      var(--arrow-color) calc(50% + var(--arrow-thickness)/2),
+      transparent calc(50% + var(--arrow-thickness)/2)
+    ),
+    linear-gradient(
+      -45deg,
+      var(--arrow-color) var(--arrow-head-size),
+      transparent var(--arrow-head-size)
+    );
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform-origin: 0 0;
+  z-index: -1;
+}
+
+.deflist-flowchart .arrow-cycle::after,
+.deflist-flowchart .arrow-cycle::before
+{
+  margin: 0 calc(-0.5 * var(--arrow-length)/1.4142 + 10px);
+  margin-top: calc(var(--arrow-length) / 7);
+}
+
+.deflist-flowchart .arrow-up::after,
+.deflist-flowchart .arrow-cycle::before
+{
+    transform: rotate(-135deg);
+}
+
+
+.deflist-flowchart dl {
+    text-align: center;
+    position: relative;
+    border: 1px solid var(--pst-color-border);
+    border-radius: .25rem;
+    padding: 0.5em;
+    margin: 0.5em 0;
+}
+
+.deflist-flowchart dl dl {
+    background-color: var(--deflist-def-bg-color);
+    border-radius: 4px;
+    box-shadow: 0 6px 10px 0 rgba(0,0,0,0.14),
+                0 1px 18px 0 rgba(0,0,0,0.12),
+                0 3px 5px -1px rgba(0,0,0,0.4);
+}
+
+.deflist-flowchart .optional dl {
+    box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14),0 1px 5px 0 rgba(0,0,0,0.12),0 3px 1px -2px rgba(0,0,0,0.2);
+}
+
+.deflist-flowchart dd {
+  margin: 0;
+  margin-top: 0.5em;
+  padding: 0;
+}
+
+.deflist-flowchart dl a {
+  font-weight: bold;
+}
+
+.deflist-flowchart .flowchart-sidebyside, .deflist-flowchart div.flowchart-sidebyside > ul:only-child {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+}
+
+.deflist-flowchart .optional {
+  --arrow-color: #777;
+  border: 1.5px var(--arrow-color) dashed;
+  border-radius: 10px;
+  padding: 1em !important;
+  filter: opacity(0.5);
+  transition: filter 0.2s;
+}
+
+.deflist-flowchart .optional::before {
+  content: "[Optional]";
+  text-align: center;
+  font-size: 0.8em;
+  line-height: 0;
+  font-weight: 200;
+}
+
+.deflist-flowchart .optional:hover {
+  filter: opacity(1.0);
+}
