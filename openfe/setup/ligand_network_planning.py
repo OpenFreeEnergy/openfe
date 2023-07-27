@@ -352,7 +352,7 @@ def load_fepplus_network(
         mapper: AtomMapper,
         network_file: str,
 ) -> LigandNetwork:
-    """Generate a LigandNetwork from an Orion NES network file.
+    """Generate a LigandNetwork from an FEP+ edges network file.
 
     Parameters
     ----------
@@ -361,7 +361,7 @@ def load_fepplus_network(
     mapper: AtomMapper
       the atom mapper to use to construct edges
     network_file : str
-      path to NES network file.
+      path to edges network file.
 
     Returns
     -------
