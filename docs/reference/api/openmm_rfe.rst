@@ -22,7 +22,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
-   :member-order: groupwise
+   :member-order: bysource
 
 .. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
 
@@ -35,7 +35,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: ThermoSettings
    :model-show-json: False
@@ -46,7 +46,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: AlchemicalSamplerSettings
    :model-show-json: False
@@ -57,7 +57,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: AlchemicalSettings
    :model-show-json: False
@@ -68,7 +68,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: OpenMMEngineSettings
    :model-show-json: False
@@ -79,7 +79,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: IntegratorSettings
    :model-show-json: False
@@ -90,7 +90,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: SimulationSettings
    :model-show-json: False
@@ -101,7 +101,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: SolvationSettings
    :model-show-json: False
@@ -112,7 +112,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 .. autopydantic_model:: SystemSettings
    :model-show-json: False
@@ -123,7 +123,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :model-show-validator-summary: False
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
-   :member-order: groupwise
+   :member-order: bysource
 
 Protocol API specification
 --------------------------
