@@ -20,6 +20,7 @@ def _get_column(val):
         col = np.floor(log10)
     return int(col)
 
+
 def format_estimate_uncertainty(
     est: float,
     unc: float,
@@ -113,6 +114,7 @@ def _get_ddgs(legs):
 
     return DDGs
 
+
 def _write_ddg(legs, writer):
     DDGs = _get_ddgs(legs)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
@@ -128,6 +130,7 @@ def _write_ddg(legs, writer):
                                                           bind_unc)
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
+
 def _write_raw_dg(legs, writer):
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
@@ -139,6 +142,7 @@ def _write_raw_dg(legs, writer):
             else:
                 m, u = format_estimate_uncertainty(m.m, u.m)
             writer.writerow([simtype, *ligpair, m, u])
+
 
 def _write_dg_mle(legs, writer):
     import networkx as nx
