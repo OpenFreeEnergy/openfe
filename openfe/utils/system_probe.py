@@ -70,7 +70,7 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
             ["nvidia-smi", GPU_QUERY, "--format=csv"]
         ).decode("utf-8")
     except FileNotFoundError:
-        logging.info(
+        logging.debug(
             "Error: nvidia-smi command not found. Make sure NVIDIA drivers are installed, this is expected if there is no GPU available"
         )
         return {}
