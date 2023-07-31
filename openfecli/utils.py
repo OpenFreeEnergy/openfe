@@ -45,6 +45,34 @@ def write(string: str):
     click.echo(string)
 
 
+def _should_configure_logger(logger: logging.Logger):
+    """Determine whether a logger should be configured.
+
+    Separated from configure_logger for ease of testing.
+    """
+    try:
+        has_handlers = logger.hasHandlers()
+    except AttributeError:
+        # for LoggerAdapter classes
+        has_handlers = logger.logger.hasHandlers()
+
+    if has_handlers:
+        return False
+
+    # walk up the logging tree to see if any parent loggers are not default
+    l = logger
+    while (
+        l.parent is not None  # not the root logger
+        and l.level == logging.NOTSET  # level not already set
+        and l.propagate  # configured to use parent when not set
+    ):
+        l = l.parent
+
+    is_default = (l == logging.root and l.level == logging.WARNING)
+
+    return is_default
+
+
 def configure_logger(logger_name: str, level: int = logging.INFO, *,
                      handler: Optional[logging.Handler] = None):
     """Configure the logger at ``logger_name`` to be at ``level``.
@@ -65,24 +93,7 @@ def configure_logger(logger_name: str, level: int = logging.INFO, *,
     """
     logger = logging.getLogger(logger_name)
 
-    try:
-        has_handlers = logger.hasHandlers()
-    except AttributeError:
-        # for LoggerAdapter classes
-        has_handlers = logger.logger.hasHandlers()
-
-    # walk up the logging tree to see if any parent loggers are not default
-    l = logger
-    while (
-        l.parent is not None  # not the root logger
-        and l.level == logging.NOTSET  # level not already set
-        and l.propagate  # configured to use parent when not set
-    ):
-        l = l.parent
-
-    is_default = (l == logging.root and l.level == logging.WARNING)
-
-    if not has_handlers and is_default:
+    if _should_configure_logger(logger):
         logger.setLevel(level)
         if handler is not None:
             logger.addHandler(handler)
