@@ -5,7 +5,6 @@ import click
 from openfecli import OFECommandPlugin
 import pathlib
 
-from typing import Tuple
 
 def _get_column(val):
     import numpy as np
@@ -25,7 +24,7 @@ def format_estimate_uncertainty(
     est: float,
     unc: float,
     unc_prec: int = 1,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     import numpy as np
     # get the last column needed for uncertainty
     unc_col = _get_column(unc) - (unc_prec - 1)
