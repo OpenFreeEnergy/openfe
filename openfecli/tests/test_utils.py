@@ -58,3 +58,25 @@ def test_should_configure_logger(logger_name, expected):
         logging.getLogger("default.noprop").propagate = False
         logger = logging.getLogger(logger_name)
         assert _should_configure_logger(logger) == expected
+
+def test_root_logger_level_configured():
+    with patch_root_logger():
+        root = logging.getLogger()
+        root.setLevel(logging.INFO)
+
+        logger = logging.getLogger("default.default")
+        assert not _should_configure_logger(logger)
+
+
+@pytest.mark.parametrize('with_handler', [True, False])
+def test_configure_logger(with_handler):
+    handler = logging.NullHandler() if with_handler else None
+    expected_handlers = [handler] if handler else []
+    with patch_root_logger():
+        configure_logger('default.default', handler=handler)
+        logger = logging.getLogger('default.default')
+        parent = logging.getLogger('default')
+        assert logger.isEnabledFor(logging.INFO)
+        assert not parent.isEnabledFor(logging.INFO)
+        assert logger.handlers == expected_handlers
+        assert parent.handlers == []
