@@ -51,12 +51,15 @@ def test_import_thing_attribute_error():
     ("handler", False), ("handler.default", False),
     ("default.noprop", False)
 ])
-def test_should_configure_logger(logger_name, expected):
+@pytest.mark.parametrize('with_adapter', [True, False])
+def test_should_configure_logger(logger_name, expected, with_adapter):
     with patch_root_logger():
         logging.getLogger("level").setLevel(logging.INFO)
         logging.getLogger("handler").addHandler(logging.NullHandler())
         logging.getLogger("default.noprop").propagate = False
         logger = logging.getLogger(logger_name)
+        if with_adapter:
+            logger = logging.LoggerAdapter(logger, extra={"foo": "bar"})
         assert _should_configure_logger(logger) == expected
 
 def test_root_logger_level_configured():
@@ -80,3 +83,5 @@ def test_configure_logger(with_handler):
         assert not parent.isEnabledFor(logging.INFO)
         assert logger.handlers == expected_handlers
         assert parent.handlers == []
+
+

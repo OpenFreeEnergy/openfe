@@ -50,13 +50,10 @@ def _should_configure_logger(logger: logging.Logger):
 
     Separated from configure_logger for ease of testing.
     """
-    try:
-        has_handlers = logger.hasHandlers()
-    except AttributeError:
-        # for LoggerAdapter classes
-        has_handlers = logger.logger.hasHandlers()
+    if isinstance(logger, logging.LoggerAdapter):
+        logger = logger.logger
 
-    if has_handlers:
+    if logger.hasHandlers():
         return False
 
     # walk up the logging tree to see if any parent loggers are not default

@@ -92,7 +92,7 @@ def quickrun(transformation, work_dir, output):
     trans = gufe.Transformation.from_dict(dct)
     write("Planning simulations for this edge...")
     dag = trans.create()
-    write("Running the simulations...")
+    write("Starting the simulations for this edge...")
     dagresult = execute_DAG(dag,
                             shared_basedir=work_dir,
                             scratch_basedir=work_dir,
@@ -100,7 +100,7 @@ def quickrun(transformation, work_dir, output):
                             raise_error=False,
                             n_retries=2,
                             )
-    write("Done! Analyzing the results....")
+    write("Done with all simulations! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
     if dagresult.ok():
