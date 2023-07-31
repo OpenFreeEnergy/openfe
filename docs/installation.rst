@@ -123,8 +123,7 @@ To make sure everything is working, run the tests ::
 
   $ openfe test --long
 
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
+The test suite contains several hundred individual tests. This may take up to an hour, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail). The very first time you run this, the
 initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
