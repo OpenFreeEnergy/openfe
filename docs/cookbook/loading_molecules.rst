@@ -27,7 +27,7 @@ and then how these are assembled to form ``ChemicalSystem`` objects.
 Loading small molecules
 -----------------------
 
-Small molecules, such as ligands, are handled using the {py:class}`openfe.SmallMoleculeComponent` class.
+Small molecules, such as ligands, are handled using the :py:class:`openfe.SmallMoleculeComponent` class.
 These are lightweight wrappers around RDKit Molecules and can be created directly
 from an RDKit molecule:
 
