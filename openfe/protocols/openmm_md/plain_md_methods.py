@@ -10,7 +10,6 @@ simulation using OpenMM tools.
 """
 from __future__ import annotations
 
-import os
 import logging
 
 from collections import defaultdict
@@ -27,6 +26,7 @@ from typing import Any, Iterable
 import openmmtools
 import uuid
 import time
+from mdtraj.reporters import NetCDFReporter
 
 from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
@@ -124,11 +124,13 @@ class PlainMDProtocol(gufe.Protocol):
         system_validation.validate_protein(stateA)
 
         # actually create and return Units
-        lig_name = stateA.components['ligand'].name
+        solvent_comp, protein_comp, small_mols = \
+            system_validation.get_components(stateA)
+        lig_name = small_mols[0].name
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
-            stateA=stateA, stateB=stateB, ligandmapping=None,
+            stateA=stateA, stateB=stateB,
             settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{lig_name} repeat {i} generation 0')
@@ -179,8 +181,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         stateA, stateB : ChemicalSystem
           the two ligand SmallMoleculeComponents to transform between.  The
           transformation will go from ligandA to ligandB.
-        ligandmapping : LigandAtomMapping
-          the mapping of atoms between the two ligand components
         settings : settings.Settings
           the settings for the Method.  This can be constructed using the
           get_default_settings classmethod to give a starting point that
@@ -201,7 +201,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             name=name,
             stateA=stateA,
             stateB=stateB,
-            ligandmapping=None,
             settings=settings,
             repeat_id=repeat_id,
             generation=generation
@@ -295,6 +294,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             protocol_settings.simulation_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.integrator_settings.n_steps.m
+        integrator_settings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
@@ -351,27 +351,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # e. create the stateA System
         stateA_system = system_generator.create_system(
-            stateA_modeller.topology,
+            stateA_topology,
             molecules=[s.to_openff() for s in small_mols],
         )
-
-        # 9. Create the reporter
-        # Get the sub selection of the system to print coords for
-        # selection_indices = stateA_topology.select(
-        #     sim_settings.output_indices
-        # )
-
-        #  a. Create the reporter
-        reporter_dcd = openmm.app.DCDReporter(
-            shared_basepath / sim_settings.output_filename,
-            sim_settings.checkpoint_interval.m,
-            enforcePeriodicBox=False)
-        # reporter = multistate.MultiStateReporter(
-        #     storage=shared_basepath / sim_settings.output_filename,
-        #     analysis_particle_indices=selection_indices,
-        #     checkpoint_interval=sim_settings.checkpoint_interval.m,
-        #     checkpoint_storage=sim_settings.checkpoint_storage,
-        # )
 
         # 10. Get platform
         platform = compute.get_openmm_platform(
@@ -379,26 +361,29 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 11. Set the integrator
-        #  a. get integrator settings
-        integrator_settings = protocol_settings.integrator_settings
+        # #  a. get integrator settings
+        # integrator_settings = protocol_settings.integrator_settings
+        #
+        # #  b. create langevin integrator
+        # integrator = openmmtools.mcmc.LangevinDynamicsMove(
+        #     timestep=to_openmm(integrator_settings.timestep),
+        #     collision_rate=to_openmm(integrator_settings.collision_rate),
+        #     n_steps=integrator_settings.n_steps.m,
+        #     reassign_velocities=integrator_settings.reassign_velocities,
+        #     n_restart_attempts=integrator_settings.n_restart_attempts,
+        #     constraint_tolerance=integrator_settings.constraint_tolerance,
+        # )
+        integrator = openmm.LangevinIntegrator(
+            to_openmm(thermo_settings.temperature),
+            integrator_settings.n_steps.m,
+            to_openmm(integrator_settings.timestep),
+        )
 
-        # Validate settings
-        # Virtual sites sanity check - ensure we restart velocities when
-        # there are virtual sites in the system
-        if stateA_system.has_virtual_sites:
-            if not integrator_settings.reassign_velocities:
-                errmsg = ("Simulations with virtual sites without velocity "
-                          "reassignments are unstable in openmmtools")
-                raise ValueError(errmsg)
-
-        #  b. create langevin integrator
-        integrator = openmmtools.mcmc.LangevinDynamicsMove(
-            timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.collision_rate),
-            n_steps=integrator_settings.n_steps.m,
-            reassign_velocities=integrator_settings.reassign_velocities,
-            n_restart_attempts=integrator_settings.n_restart_attempts,
-            constraint_tolerance=integrator_settings.constraint_tolerance,
+        simulation = openmm.app.Simulation(
+            stateA_modeller.topology,
+            stateA_system,
+            integrator,
+            platform=platform
         )
 
         try:
@@ -416,12 +401,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
             if not dry:  # pragma: no-cover
 
-                simulation = openmm.app.Simulation(
-                    stateA_topology,
-                    stateA_system,
-                    integrator,
-                    platform=platform
-                )
                 simulation.context.setPositions(stateA_positions)
 
                 # minimize
@@ -447,7 +426,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 if verbose:
                     logger.info("running production phase")
 
-                simulation.reporters.append(reporter_dcd)
+                simulation.reporters.append(NetCDFReporter(
+                    shared_basepath / sim_settings.output_filename, 1000))
 
                 t0 = time.time()
                 simulation.step(prod_steps)
@@ -462,34 +442,15 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 #     omm_unit.kilocalories_per_mole)
                 # est = ensure_quantity(est, 'openff')
                 # ana.clear()  # clean up cached values
-
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
-            else:
-                # clean up the reporter file
-                fns = [shared_basepath / sim_settings.output_filename,
-                       shared_basepath / sim_settings.checkpoint_storage]
-                for fn in fns:
-                    os.remove(fn)
+            # else:
+            #     # clean up the reporter file
+            #     fns = [shared_basepath / sim_settings.output_filename,
+            #            shared_basepath / sim_settings.checkpoint_storage]
+            #     for fn in fns:
+            #         os.remove(fn)
         finally:
-            # close reporter when you're done, prevent file handle clashes
-            reporter_dcd.close()
-            del reporter_dcd
-
-            # # clear GPU contexts
-            # # replace with above
-            # for context in list(energy_context_cache._lru._data.keys()):
-            #     del energy_context_cache._lru._data[context]
-            # for context in list(sampler_context_cache._lru._data.keys()):
-            #     del sampler_context_cache._lru._data[context]
-            # # cautiously clear out the global context cache too
-            # for context in list(
-            #         openmmtools.cache.global_context_cache._lru._data
-            #         .keys()):
-            #     del openmmtools.cache.global_context_cache._lru._data[
-            #     context]
-            #
-            # del sampler_context_cache, energy_context_cache
 
             if not dry:
                 del integrator, simulation
@@ -500,7 +461,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 'last_checkpoint': chk,
             }
         else:
-            return {'debug': {'simulation': simulation}}
+            return {'debug': {'sampler': stateA_system}}
 
     def _execute(
             self, ctx: gufe.Context, **kwargs,
