@@ -9,6 +9,7 @@ from openfecli.utils import (
     import_thing, _should_configure_logger, configure_logger
 )
 
+
 # looks like this can't be done as a fixture; related to
 # https://github.com/pytest-dev/pytest/issues/2974
 @contextlib.contextmanager
@@ -61,6 +62,7 @@ def test_should_configure_logger(logger_name, expected, with_adapter):
         if with_adapter:
             logger = logging.LoggerAdapter(logger, extra={"foo": "bar"})
         assert _should_configure_logger(logger) == expected
+
 
 def test_root_logger_level_configured():
     with patch_root_logger():
