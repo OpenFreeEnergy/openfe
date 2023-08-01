@@ -1,1 +1,1 @@
-from hyphenchoice import HyphenAwareChoice
+from .hyphenchoice import HyphenAwareChoice

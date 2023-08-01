@@ -131,7 +131,7 @@ def _write_ddg(legs, writer):
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
-def _write_raw_dg(legs, writer):
+def _write_dg_raw(legs, writer):
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
@@ -210,8 +210,8 @@ def _write_dg_mle(legs, writer):
     default="dg", show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
-        "asbolute deltaG,  'ddg' gives delta-delta-G, and 'leg' gives the "
-        "raw result of the deltaG for a leg."
+        "absolute deltaG,  'ddg' gives delta-delta-G, and 'dg-raw' gives "
+        "the raw result of the deltaG for a leg."
     )
 )
 @click.option('output', '-o',
@@ -220,30 +220,24 @@ def _write_dg_mle(legs, writer):
 def gather(rootdir, output, report):
     """Gather simulation result jsons of relative calculations to a tsv file
 
-    Will walk ROOTDIR recursively and find all results files ending in .json
-    (i.e those produced by the quickrun command).  Each of these contains the
-    results of a separate leg from a relative free energy thermodynamic cycle.
+    This walks ROOTDIR recursively and finds all result JSON files from the
+    quickrun command (these files must end in .json). Each of these contains
+    the results of a separate leg from a relative free energy thermodynamic
+    cycle.
 
-    Paired legs of simulations will be combined to give the DDG values between
-    two ligands in the corresponding phase, producing either binding ('DDGbind')
-    or hydration ('DDGhyd') relative free energies.  These will be reported as
-    'DDGbind(B,A)' meaning DGbind(B) - DGbind(A), the difference in free energy
-    of binding for ligand B relative to ligand A.
-
-    Individual leg results will be also be written.  These are reported as
-    either DGvacuum(A,B) DGsolvent(A,B) or DGcomplex(A,B) for the vacuum,
-    solvent or complex free energy of transmuting ligand A to ligand B.
+    The results reported depend on ``--report`` flag:
 
     \b
-    Will produce a **tab** separated file with 6 columns:
-    1) a description of the measurement, for example DDGhyd(A, B)
-    2) the type of this measurement, either RBFE or RHFE
-    3) the identifier of the first ligand
-    4) the identifier of the second ligand
-    5) the estimated value (in kcal/mol)
-    6) the uncertainty on the value (also kcal/mol)
+    * 'dg' (default) reports the ligand and the results are the maximum
+      likelihood estimate of its absolute free, and the uncertainty in
+      that.
+    * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
+      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty
+    * 'dg-raw' reports the raw results, giving the leg (vacuum, solvent, or
+      complex), ligand_i, ligand_j, the raw DG(i->j) associated with it.
 
-    By default, outputs to stdout, use -o option to choose file.
+    The output is a table of **tab** separated values. By default, this
+    outputs to stdout, use the -o option to choose an output file.
     """
     from collections import defaultdict
     import glob
@@ -289,7 +283,7 @@ def gather(rootdir, output, report):
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
-        'legs': _write_raw_dg,
+        'dg-raw': _write_dg_raw,
     }[report.lower()]
     writing_func(legs, writer)
 
