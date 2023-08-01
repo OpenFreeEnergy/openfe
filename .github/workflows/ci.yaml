@@ -32,6 +32,7 @@ jobs:
         python-version:
           - "3.9"
           - "3.10"
+          - "3.11"
         exclude:
           - os: 'macos'
             python-version: "3.9"
