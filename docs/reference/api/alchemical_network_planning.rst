@@ -10,11 +10,24 @@ classes along the way.
 Alchemical Network Planners
 ---------------------------
 
-.. autoclass:: openfe.setup.RBFEAlchemicalNetworkPlanner
-.. autoclass:: openfe.setup.RHFEAlchemicalNetworkPlanner
+.. module:: openfe.setup
+   :noindex:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    RBFEAlchemicalNetworkPlanner
+    RHFEAlchemicalNetworkPlanner
 
 
 Chemical System Generators
 --------------------------
 
-.. autoclass:: openfe.setup.chemicalsystem_generator.EasyChemicalSystemGenerator
+.. module:: openfe.setup.chemicalsystem_generator
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    EasyChemicalSystemGenerator
