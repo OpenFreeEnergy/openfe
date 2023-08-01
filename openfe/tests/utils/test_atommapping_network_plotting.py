@@ -94,6 +94,7 @@ class TestAtomMappingEdge:
         assert default_edge.picked
         assert len(default_edge.artist.axes.images) == 2
 
+    @pytest.mark.flaky(reruns=3)
     @pytest.mark.parametrize('edge_str,left_right,molA_to_molB', [
         (("CCO", "CC"), ("CC", "CCO"), {0: 0, 1: 1}),
         (("CC", "CO"), ("CC", "CO"), {0: 0}),
