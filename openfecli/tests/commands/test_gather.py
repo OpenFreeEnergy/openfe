@@ -4,7 +4,24 @@ from importlib import resources
 import tarfile
 import pytest
 
-from openfecli.commands.gather import gather
+from openfecli.commands.gather import (
+    gather, format_estimate_uncertainty, _get_column
+)
+
+@pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
+    (12.432, 0.111, 2, "12.43", "0.11"),
+    (0.9999, 0.01, 2, "1.000", "0.010"),
+    (1234, 100, 2, "1230", "100"),
+])
+def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
+    assert format_estimate_uncertainty(est, unc, unc_prec) == (est_str, unc_str)
+
+@pytest.mark.parametrize('val, col', [
+    (1.0, 1), (0.1, -1), (-0.0, 0), (0.0, 0), (0.2, -1), (0.9, -1),
+    (0.011, -2), (9, 1), (10, 2), (15, 2),
+])
+def test_get_column(val, col):
+    assert _get_column(val) == col
 
 
 @pytest.fixture
