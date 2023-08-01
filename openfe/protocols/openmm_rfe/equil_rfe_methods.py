@@ -54,7 +54,6 @@ from . import _rfe_utils
 from ...utils import without_oechem_backend
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
 
 
 def _get_resname(off_mol) -> str:
@@ -681,7 +680,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             }
         else:
             return {'debug': {'sampler': sampler}}
-
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,

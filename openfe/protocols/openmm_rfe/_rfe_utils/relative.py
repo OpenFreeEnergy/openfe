@@ -15,7 +15,6 @@ import mdtraj as mdt
 
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
 
 
 class HybridTopologyFactory:
