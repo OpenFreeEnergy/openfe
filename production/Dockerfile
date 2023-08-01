@@ -6,6 +6,13 @@ LABEL org.opencontainers.image.licenses=MIT
 # OpenFE Version we want to build
 ARG VERSION
 
+# install ps
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+USER $MAMBA_USER
+
 # Don't buffer stdout & stderr streams, so if there is a crash no partial buffer output is lost
 # https://docs.python.org/3/using/cmdline.html#cmdoption-u
 ENV PYTHONUNBUFFERED=1

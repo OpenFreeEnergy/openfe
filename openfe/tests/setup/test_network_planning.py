@@ -229,3 +229,92 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
             mappers=[openfe.setup.atom_mapping.LomapAtomMapper()],
             scorer=scorer
         )
+
+
+def test_network_from_names(atom_mapping_basic_test_files):
+    ligs = list(atom_mapping_basic_test_files.values())
+
+    requested = [
+        ('toluene', '2-naftanol'),
+        ('2-methylnaphthalene', '2-naftanol'),
+    ]
+
+    network = openfe.setup.ligand_network_planning.generate_network_from_names(
+        ligands=ligs,
+        names=requested,
+        mapper=openfe.LomapAtomMapper(),
+    )
+
+    assert len(network.nodes) == len(ligs)
+    assert len(network.edges) == 2
+    actual_edges = [(e.componentA.name, e.componentB.name)
+                    for e in network.edges]
+    assert set(requested) == set(actual_edges)
+
+
+def test_network_from_names_bad_name(atom_mapping_basic_test_files):
+    ligs = list(atom_mapping_basic_test_files.values())
+
+    requested = [
+        ('hank', '2-naftanol'),
+        ('2-methylnaphthalene', '2-naftanol'),
+    ]
+
+    with pytest.raises(KeyError, match="Invalid name"):
+        _ = openfe.setup.ligand_network_planning.generate_network_from_names(
+            ligands=ligs,
+            names=requested,
+            mapper=openfe.LomapAtomMapper(),
+        )
+
+
+def test_network_from_names_duplicate_name(atom_mapping_basic_test_files):
+    ligs = list(atom_mapping_basic_test_files.values())
+    ligs = ligs + [ligs[0]]
+
+    requested = [
+        ('toluene', '2-naftanol'),
+        ('2-methylnaphthalene', '2-naftanol'),
+    ]
+
+    with pytest.raises(ValueError, match="Duplicate names"):
+        _ = openfe.setup.ligand_network_planning.generate_network_from_names(
+            ligands=ligs,
+            names=requested,
+            mapper=openfe.LomapAtomMapper(),
+        )
+
+
+def test_network_from_indices(atom_mapping_basic_test_files):
+    ligs = list(atom_mapping_basic_test_files.values())
+
+    requested = [(0, 1), (2, 3)]
+
+    network = openfe.setup.ligand_network_planning.generate_network_from_indices(
+        ligands=ligs,
+        indices=requested,
+        mapper=openfe.LomapAtomMapper(),
+    )
+
+    assert len(network.nodes) == len(ligs)
+    assert len(network.edges) == 2
+
+    edges = list(network.edges)
+    expected_edges = {(ligs[0], ligs[1]), (ligs[2], ligs[3])}
+    actual_edges = {(edges[0].componentA, edges[0].componentB),
+                    (edges[1].componentA, edges[1].componentB)}
+
+    assert actual_edges == expected_edges
+
+
+def test_network_from_indices_indexerror(atom_mapping_basic_test_files):
+    ligs = list(atom_mapping_basic_test_files.values())
+
+    requested = [(20, 1), (2, 3)]
+
+    with pytest.raises(IndexError, match="Invalid ligand id"):
+        network = openfe.setup.ligand_network_planning.generate_network_from_indices(
+            ligands=ligs,
+            indices=requested,
+            mapper=openfe.LomapAtomMapper(),
+        )

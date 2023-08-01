@@ -26,7 +26,6 @@ dependencies:
   - perses
   - py3dmol
   - plugcli
-  - libnetcdf<4.9
   - tqdm
   # Issue #443
   - pymbar<4.0

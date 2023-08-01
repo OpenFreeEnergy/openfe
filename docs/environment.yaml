@@ -4,16 +4,18 @@ channels:
 - https://conda.anaconda.org/conda-forge
 dependencies:
 - autodoc-pydantic
+- openff-models>=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
 - openmm
+- packaging
 - plugcli
 - pydata-sphinx-theme
 - python=3.9
 - sphinx
 - sphinx-click
-- openff-models>=0.0.5
 - tqdm
+- libsass
 - pip:
   - sphinx-design
   - sphinx-toolbox
