@@ -14,7 +14,7 @@ Workflow overview
 The overall workflow of OpenFE involves three stages:
 
 1. **Setup**: Defining the simulation campaign you are going to run.
-2. **Executation**: Running and performing initial analysis of your
+2. **Execution**: Running and performing initial analysis of your
    simulation campaign.
 3. **Gather results**: Assembling the results from the simulation
    campaign for further analysis.
@@ -34,7 +34,7 @@ The output of **setup** is an :class:`.AlchemicalNetwork`. This contains all
 the information about what is being simulated (e.g., what ligands, host proteins, solvation details etc) and the
 information about how to perform the simulation (the Protocol).
 
-The output of the **executation** stage is the basic results from each edge.
+The output of the **execution** stage is the basic results from each edge.
 This can depend of the specific analysis intended, but will either involve a
 :class:`.ProtocolResult` representing the calculated :math:`\Delta G` for
 each edge or the :class:`.ProtocolDAGResult` linked to the data needed to

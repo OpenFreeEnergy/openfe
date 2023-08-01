@@ -5,32 +5,48 @@ Alchemical Data Objects
 Chemical Systems
 ~~~~~~~~~~~~~~~~
 
-We describe a chemical system as being made up of one or more "components,"
-e.g., solvent, protein, or small molecule. The :class:`.ChemicalSystem`
-object joins them together.
+We describe a chemical system as being made up of one or more "components," e.g., solvent, protein, or small molecule. The :class:`.ChemicalSystem` object joins components together into a simulation system.
 
-.. autoclass:: openfe.SmallMoleculeComponent
+.. module:: openfe
+   :noindex:
 
-.. autoclass:: openfe.ProteinComponent
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
 
-.. autoclass:: openfe.SolventComponent
-
-.. autoclass:: openfe.ChemicalSystem
+	SmallMoleculeComponent
+	ProteinComponent
+	SolventComponent
+	ChemicalSystem
 
 
 Atom Mappings
 ~~~~~~~~~~~~~
 
-.. autoclass:: openfe.LigandAtomMapper
-           :members:
+Tools for mapping atoms in one molecule to those in another. Used to generate efficient ligand networks.
 
-.. autoclass:: openfe.LigandAtomMapping
-	       :members:
+.. module:: openfe
+   :noindex:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+	LigandAtomMapper
+	LigandAtomMapping
 
 
 Alchemical Simulations
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: openfe.Transformation
+Descriptions of anticipated alchemical simulation campaigns.
 
-.. autoclass:: openfe.AlchemicalNetwork
+.. module:: openfe
+   :noindex:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+	Transformation
+	AlchemicalNetwork
