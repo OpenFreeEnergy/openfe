@@ -3,6 +3,7 @@
 
 import click
 from openfecli import OFECommandPlugin
+from openfecli.clicktypes import HyphenAwareChoice
 import pathlib
 
 
@@ -205,7 +206,7 @@ def _write_dg_mle(legs, writer):
                 required=True)
 @click.option(
     '--report',
-    type=click.Choice(['dg', 'ddg', 'legs'], case_sensitive=False),
+    type=HyphenAwareChoice(['dg', 'ddg', 'dg-raw'], case_sensitive=False),
     default="dg", show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
