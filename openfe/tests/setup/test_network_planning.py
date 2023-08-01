@@ -318,3 +318,15 @@ def test_network_from_indices_indexerror(atom_mapping_basic_test_files):
             indices=requested,
             mapper=openfe.LomapAtomMapper(),
         )
+
+
+def test_network_from_nes(nes_network, benzene_modifications):
+
+    network = openfe.setup.ligand_network_planning.load_nes_network(
+        ligands=benzene_modifications,
+        mapper=openfe.LomapAtomMapper(),
+        network_file=nes_network
+    )
+
+    assert len(network.nodes) == 6
+    assert len(network.edges) == 5
