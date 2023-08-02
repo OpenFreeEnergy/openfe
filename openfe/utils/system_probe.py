@@ -196,16 +196,18 @@ def _get_psutil_info() -> dict[str, dict[str, str]]:
                 "status",
             ]
         )
+        # OSX doesn't have rlimit for Process
+        if sys.platform != "darwin":
+            RLIMIT_AS = p.rlimit(psutil.RLIMIT_AS)
+            info["RLIMIT_AS"] = RLIMIT_AS
 
         # The maximum size of the process's virtual memory
-        RLIMIT_AS = p.rlimit(psutil.RLIMIT_AS)
         mem = psutil.virtual_memory()
+
     # memory_full_info is a named tuple, and we need to dict-ify it
     mem_full_info = info["memory_full_info"]._asdict()
     info["memory_full_info"] = mem_full_info
-    # OSX doesn't have rlimit for Process
-    if sys.platform != "darwin":
-        info["RLIMIT_AS"] = RLIMIT_AS
+
     info["virtual_memory"] = mem._asdict()
 
     return info
