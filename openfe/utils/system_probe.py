@@ -5,6 +5,7 @@ import sys
 import subprocess
 
 import psutil
+from psutil._common import bytes2human  # just a little naughty here
 
 
 def _get_disk_usage() -> dict[str, dict[str, str]]:
@@ -478,9 +479,13 @@ def log_system_probe(level=logging.DEBUG):
         else:
             gpu.log(level, f"CUDA-based GPU not found")
 
-        base.log(level, f"Memory used: {...} ({...}%)")
+        psutilinfo = sysinfo["psutil inforomation"]
+        memused = psutilinfo['virtual_memory']['used']
+        mempct = psutilinfo['virtual_memory']['percent']
+        base.log(level, f"Memory used: {bytes2human(memused)} ({mempct}%)")
         for disk in ...:
             base.log(level, f"Disk free: {...}")
+
 
 if __name__ == "__main__":
     print(_probe_system())
