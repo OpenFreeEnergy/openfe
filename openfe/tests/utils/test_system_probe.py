@@ -1,4 +1,5 @@
 import contextlib
+from collections import namedtuple
 from unittest.mock import Mock, patch
 
 import psutil
@@ -11,6 +12,27 @@ from openfe.utils.system_probe import (
     _get_psutil_info,
     _probe_system,
 )
+
+
+# Named tuples from https://github.com/giampaolo/psutil/blob/master/psutil/_pslinux.py
+svmem = namedtuple(
+    "svmem",
+    [
+        "total",
+        "available",
+        "percent",
+        "used",
+        "free",
+        "active",
+        "inactive",
+        "buffers",
+        "cached",
+        "shared",
+        "slab",
+    ],
+)
+pmem = namedtuple("pmem", "rss vms shared text lib data dirty")
+pfullmem = namedtuple("pfullmem", pmem._fields + ("uss", "pss", "swap"))
 
 
 @contextlib.contextmanager
@@ -29,7 +51,7 @@ def patch_system():
                 "num_fds": 4,
                 "create_time": 1690999298.62,
                 "memory_percent": 0.02006491389254216,
-                "memory_full_info": psutil._pslinux.pfullmem(
+                "memory_full_info": pfullmem(
                     rss=13500416,
                     vms=31858688,
                     shared=6946816,
@@ -51,7 +73,7 @@ def patch_system():
     patch_psutil_virtual_memory = patch(
         "psutil.virtual_memory",
         Mock(
-            return_value=psutil._pslinux.svmem(
+            return_value=svmem(
                 total=67283697664,
                 available=31731806208,
                 percent=52.8,
