@@ -129,6 +129,9 @@ def _get_psutil_info() -> dict[str, dict[str, str]]:
     Note that the memory-related values are represented as strings, which include units
     (e.g., 'MB', 'GB').
 
+    Note that RLIMIT_AS key will be missing when this function is executed on macOS
+    systems.
+
     Raises
     ------
     NoSuchProcess
