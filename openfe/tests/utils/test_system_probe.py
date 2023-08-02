@@ -1,5 +1,6 @@
 import contextlib
 from collections import namedtuple
+import sys
 from unittest.mock import Mock, patch
 
 import psutil
@@ -70,7 +71,7 @@ def patch_system():
     )
     # Since this attribute doesn't exist on OSX, we have to create it
     patch_psutil_Process_rlimit = patch(
-        "psutil.Process.rlimit", Mock(return_value=(-1, -1), create=True)
+        "psutil.Process.rlimit", Mock(return_value=(-1, -1))
     )
     patch_psutil_virtual_memory = patch(
         "psutil.virtual_memory",
@@ -121,12 +122,18 @@ def patch_system():
         yield stack
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
+)
 def test_get_hostname():
     with patch_system():
         hostname = _get_hostname()
         assert hostname == "mock-hostname"
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
+)
 def test_get_gpu_info():
     with patch_system():
         gpu_info = _get_gpu_info()
@@ -153,6 +160,9 @@ def test_get_gpu_info():
         assert gpu_info == expected_gpu_info
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
+)
 def test_get_psutil_info():
     with patch_system():
         psutil_info = _get_psutil_info()
@@ -194,6 +204,9 @@ def test_get_psutil_info():
         assert psutil_info == expected_psutil_info
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
+)
 def test_get_disk_usage():
     with patch_system():
         disk_info = _get_disk_usage()
@@ -216,6 +229,9 @@ def test_get_disk_usage():
         assert disk_info == expected_disk_info
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
+)
 def test_probe_system():
     with patch_system():
         system_info = _probe_system()
