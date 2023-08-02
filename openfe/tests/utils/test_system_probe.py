@@ -31,8 +31,10 @@ svmem = namedtuple(
         "slab",
     ],
 )
-pmem = namedtuple("pmem", "rss vms shared text lib data dirty")
-pfullmem = namedtuple("pfullmem", pmem._fields + ("uss", "pss", "swap"))
+pfullmem = namedtuple(
+    "pfullmem",
+    ["rss", "vms", "shared", "text", "lib", "data", "dirty", "uss", "pss", "swap"],
+)
 
 
 @contextlib.contextmanager
