@@ -11,6 +11,7 @@ simulation using OpenMM tools.
 from __future__ import annotations
 
 import logging
+import sys
 
 from collections import defaultdict
 import gufe
@@ -427,8 +428,15 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                     logger.info("running production phase")
 
                 simulation.reporters.append(NetCDFReporter(
-                    shared_basepath / sim_settings.output_filename, 1000))
-
+                    shared_basepath / sim_settings.output_filename,
+                    sim_settings.checkpoint_interval.m))
+                simulation.reporters.append(openmm.app.StateDataReporter(
+                    sys.stdout,
+                    sim_settings.checkpoint_interval.m,
+                    step=True,
+                    potentialEnergy=True,
+                    temperature=True
+                ))
                 t0 = time.time()
                 simulation.step(prod_steps)
                 t1 = time.time()
