@@ -306,7 +306,7 @@ def generate_network_from_indices(
     return LigandNetwork(edges=edges, nodes=ligands)
 
 
-def load_nes_network(
+def load_orion_network(
         ligands: list[SmallMoleculeComponent],
         mapper: AtomMapper,
         network_file: Union[str, Path],
@@ -380,8 +380,9 @@ def load_fepplus_network(
     names = []
     for entry in network_lines:
         if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
-            errmsg = ("line does not match expected name >> name format: "
-                      f"{entry}")
+            errmsg = ("line does not match expected format "
+                      f"hash:hash # name -> name\n"
+                      "line format: {entry}")
             raise KeyError(errmsg)
 
         names.append((entry[2], entry[4]))
