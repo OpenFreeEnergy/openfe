@@ -488,4 +488,5 @@ def log_system_probe(level=logging.DEBUG):
 
 
 if __name__ == "__main__":
-    print(_probe_system())
+    from pprint import pprint
+    pprint(_probe_system())
