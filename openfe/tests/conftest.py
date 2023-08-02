@@ -253,3 +253,17 @@ def eg5_ligands(eg5_ligands_sdf) -> list[SmallMoleculeComponent]:
 @pytest.fixture()
 def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
     return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)
+
+
+@pytest.fixture()
+def orion_network():
+    with resources.path('openfe.tests.data.external_formats',
+                        'somebenzenes_nes.dat') as fn:
+        yield fn
+
+
+@pytest.fixture()
+def fepplus_network():
+    with resources.path('openfe.tests.data.external_formats',
+                        'somebenzenes_edges.edge') as fn:
+        yield fn
