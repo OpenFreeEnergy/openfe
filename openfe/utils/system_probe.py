@@ -295,7 +295,10 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
     }
     """
 
-    GPU_QUERY = "--query-gpu=gpu_uuid,gpu_name,compute_mode,pstate,temperature.gpu,utilization.memory,memory.total,driver_version,"
+    GPU_QUERY = (
+        "--query-gpu=gpu_uuid,gpu_name,compute_mode,pstate,temperature.gpu,"
+        "utilization.memory,memory.total,driver_version,"
+    )
 
     try:
         nvidia_smi_output = subprocess.check_output(
@@ -303,7 +306,8 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
         ).decode("utf-8")
     except FileNotFoundError:
         logging.debug(
-            "Error: nvidia-smi command not found. Make sure NVIDIA drivers are installed, this is expected if there is no GPU available"
+            "Error: nvidia-smi command not found. Make sure NVIDIA drivers are"
+            " installed, this is expected if there is no GPU available"
         )
         return {}
 
@@ -339,16 +343,21 @@ def _probe_system() -> dict:
 
     Notes
     -----
-    This function gathers information about the system by calling several internal functions.
+    This function gathers information about the system by calling several internal
+    functions.
 
     The returned dictionary contains the following system information:
     - 'system information': A dictionary containing various system-related details.
         - 'hostname': The hostname of the current system.
-        - 'gpu information': GPU information retrieved using the '_get_gpu_info' function.
-        - 'psutil information': Process and memory-related information obtained using the '_get_psutil_info' function.
-        - 'disk usage information': Disk usage details for all filesystems, obtained through the '_get_disk_usage' function.
+        - 'gpu information': GPU information retrieved using the '_get_gpu_info'
+          function.
+        - 'psutil information': Process and memory-related information obtained using
+          the '_get_psutil_info' function.
+        - 'disk usage information': Disk usage details for all filesystems, obtained
+          through the '_get_disk_usage' function.
 
-    Each nested dictionary provides specific details about the corresponding system component.
+    Each nested dictionary provides specific details about the corresponding system
+    component.
 
     Examples
     --------
