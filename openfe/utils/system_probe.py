@@ -1,6 +1,7 @@
 import logging
 import os
 import socket
+import sys
 import subprocess
 
 import psutil
@@ -199,8 +200,9 @@ def _get_psutil_info() -> dict[str, dict[str, str]]:
     # memory_full_info is a named tuple, and we need to dict-ify it
     mem_full_info = info["memory_full_info"]._asdict()
     info["memory_full_info"] = mem_full_info
-
-    info["RLIMIT_AS"] = RLIMIT_AS
+    # OSX doesn't have rlimit for Process
+    if sys.platform != "darwin":
+        info["RLIMIT_AS"] = RLIMIT_AS
     info["virtual_memory"] = mem._asdict()
 
     return info
