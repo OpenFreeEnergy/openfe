@@ -29,7 +29,7 @@ def patch_system():
                 "num_fds": 4,
                 "create_time": 1690999298.62,
                 "memory_percent": 0.02006491389254216,
-                "memory_full_info": psutil._psplatform.pfullmem(
+                "memory_full_info": psutil._pslinux.pfullmem(
                     rss=13500416,
                     vms=31858688,
                     shared=6946816,
@@ -51,7 +51,7 @@ def patch_system():
     patch_psutil_virtual_memory = patch(
         "psutil.virtual_memory",
         Mock(
-            return_value=psutil._psplatform.svmem(
+            return_value=psutil._pslinux.svmem(
                 total=67283697664,
                 available=31731806208,
                 percent=52.8,
