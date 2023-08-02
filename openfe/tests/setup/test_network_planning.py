@@ -353,6 +353,25 @@ def test_network_from_external(file_fixture, loader, request,
     assert actual_edges == expected_edges
 
 
+@pytest.mark.parametrize('file_fixture, loader', [
+    ['orion_network',
+     openfe.setup.ligand_network_planning.load_orion_network],
+    ['fepplus_network',
+     openfe.setup.ligand_network_planning.load_fepplus_network],
+])
+def test_network_from_external_unknown_edge(file_fixture, loader, request,
+                                            benzene_modifications):
+    network_file = request.getfixturevalue(file_fixture)
+    ligs = [l for l in benzene_modifications.values() if l.name != 'phenol']
+
+    with pytest.raises(KeyError, match="Invalid name"):
+        network = loader(
+            ligands=ligs,
+            mapper=openfe.LomapAtomMapper(),
+            network_file=network_file,
+        )
+
+
 BAD_ORION_NETWORK = """\
 # Total number of edges: 6
 # ------------------------
