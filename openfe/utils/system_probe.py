@@ -454,4 +454,5 @@ def _probe_system() -> dict:
 
 
 if __name__ == "__main__":
-    print(_probe_system())
+    from pprint import pprint
+    pprint(_probe_system())
