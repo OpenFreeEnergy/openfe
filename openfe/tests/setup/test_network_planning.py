@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import io
-import tempfile
 
 from rdkit import Chem
 import pytest
@@ -369,8 +368,6 @@ benzene >> benzaldehyde
 
 
 def test_bad_orion_network(benzene_modifications, tmpdir):
-
-
     with tmpdir.as_cwd():
         with open('bad_orion_net.dat', 'w') as f:
             f.write(BAD_ORION_NETWORK)
@@ -395,8 +392,6 @@ BAD_EDGES = """\
 
 
 def test_bad_edges_network(benzene_modifications, tmpdir):
-
-
     with tmpdir.as_cwd():
         with open('bad_edges.edges', 'w') as f:
             f.write(BAD_EDGES)
