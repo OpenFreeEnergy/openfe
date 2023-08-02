@@ -1,5 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import io
+import tempfile
+
 from rdkit import Chem
 import pytest
 import networkx as nx
@@ -320,13 +323,87 @@ def test_network_from_indices_indexerror(atom_mapping_basic_test_files):
         )
 
 
-def test_network_from_nes(nes_network, benzene_modifications):
+@pytest.mark.parametrize('file_fixture, loader', [
+    ['nes_network',
+     openfe.setup.ligand_network_planning.load_nes_network],
+    ['fepplus_network',
+     openfe.setup.ligand_network_planning.load_fepplus_network],
+])
+def test_network_from_external(file_fixture, loader, request,
+                               benzene_modifications):
 
-    network = openfe.setup.ligand_network_planning.load_nes_network(
-        ligands=benzene_modifications,
+    network_file = request.getfixturevalue(file_fixture)
+
+    network = loader(
+        ligands=[l for l in benzene_modifications.values()],
         mapper=openfe.LomapAtomMapper(),
-        network_file=nes_network
+        network_file=network_file,
     )
 
-    assert len(network.nodes) == 6
-    assert len(network.edges) == 5
+    expected_edges = {
+        (benzene_modifications['benzene'], benzene_modifications['toluene']),
+        (benzene_modifications['benzene'], benzene_modifications['phenol']),
+        (benzene_modifications['benzene'], benzene_modifications['benzonitrile']),
+        (benzene_modifications['benzene'], benzene_modifications['anisole']),
+        (benzene_modifications['benzene'], benzene_modifications['styrene']),
+        (benzene_modifications['benzene'], benzene_modifications['benzaldehyde']),
+    }
+
+    actual_edges = {(e.componentA, e.componentB) for e in list(network.edges)}
+
+    assert len(network.nodes) == 7
+    assert len(network.edges) == 6
+    assert actual_edges == expected_edges
+
+
+BAD_NES = """\
+# Total number of edges: 6
+# ------------------------
+benzene >>> toluene
+benzene >> phenol
+benzene >> benzonitrile
+benzene >> anisole
+benzene >> styrene
+benzene >> benzaldehyde
+"""
+
+
+def test_bad_nes_network(benzene_modifications, tmpdir):
+
+
+    with tmpdir.as_cwd():
+        with open('bad_nes.dat', 'w') as f:
+            f.write(BAD_NES)
+
+        with pytest.raises(KeyError, match="line does not match"):
+            network = openfe.setup.ligand_network_planning.load_nes_network(
+                ligands=[l for l in benzene_modifications.values()],
+                mapper=openfe.LomapAtomMapper(),
+                network_file='bad_nes.dat',
+            )
+
+
+
+BAD_EDGES = """\
+1c91235:9c91235 benzene -> toluene
+1c91235:7876633 benzene -> phenol
+1c91235:2a51f95 benzene -> benzonitrile
+1c91235:efja0bc benzene -> anisole
+1c91235:7877722 benzene -> styrene
+1c91235:99930cd benzene -> benzaldehyde
+"""
+
+
+def test_bad_edges_network(benzene_modifications, tmpdir):
+
+
+    with tmpdir.as_cwd():
+        with open('bad_edges.edges', 'w') as f:
+            f.write(BAD_EDGES)
+
+        with pytest.raises(KeyError, match="line does not match"):
+            network = openfe.setup.ligand_network_planning.load_fepplus_network(
+                ligands=[l for l in benzene_modifications.values()],
+                mapper=openfe.LomapAtomMapper(),
+                network_file='bad_edges.edges',
+            )

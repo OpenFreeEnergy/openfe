@@ -257,13 +257,13 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 @pytest.fixture()
 def nes_network():
-    with resources.as_file('openfe.tests.data.external_formats',
-                           'somebenzenes_nes.dat') as fn:
+    with resources.path('openfe.tests.data.external_formats',
+                        'somebenzenes_nes.dat') as fn:
         yield fn
 
 
 @pytest.fixture()
 def fepplus_network():
-    with resources.as_file('openfe.tests.data.external_formats',
-                           'somebenzenes_edges.edge') as fn:
+    with resources.path('openfe.tests.data.external_formats',
+                        'somebenzenes_edges.edge') as fn:
         yield fn
