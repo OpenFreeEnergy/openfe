@@ -136,13 +136,14 @@ def log_system_probe(level=logging.DEBUG):
         sysinfo = _probe_system()['system information']
         base.log(level, "SYSTEM CONFIG DETAILS:")
         hostname.log(level, f"hostname: '{sysinfo['hostname']}'")
-        if ...:
-            for gpu_card in ...:
-                gpu.log(level, f"GPU: {sysinfo['gpu information'][}")
-            gpu.log(level, f"CUDA driver: {...}")
-            gpu.log(level, f"CUDA toolkit: {...}")
+        if gpuinfo := sysinfo['gpu information']:
+            for uuid, gpu_card in gnuinfo.items():
+                gpu.log(level, f"GPU: {uuid=} {gpu_card['gpu_name']} "
+                        "mode={gpu_card['compute_mode']")
+            # gpu.log(level, f"CUDA driver: {...}")
+            # gpu.log(level, f"CUDA toolkit: {...}")
         else:
-            gpu.log(level, f"No CUDA found")
+            gpu.log(level, f"CUDA-based GPU not found")
 
         base.log(level, f"Memory used: {...} ({...}%)")
         for disk in ...:
