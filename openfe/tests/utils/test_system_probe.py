@@ -16,10 +16,17 @@ def patch_system():
     # assumes that each shell command is called in only one way
     cmd_to_output = {
         'nvidia-smi': (
-            b"gpu_uuid,gpu_name,compute_mode\n"
-            b"GPU-UUID-1,GeForce RTX 3080,Default\n"
-            b"GPU-UUID-2,GeForce GTX 1660,Exclusive Process\n"
+            b"uuid, name, compute_mode, pstate, temperature.gpu, utilization.memory [%], memory.total [MiB], driver_version\n"
+            b"GPU-UUID-1, NVIDIA GeForce RTX 2060, Default, P8, 47, 6 %, 6144 MiB, 525.116.04\n"
+            b"GPU-UUID-2, NVIDIA GeForce RTX 2060, Default, P8, 47, 6 %, 6144 MiB, 525.116.04\n"
         ),
+        'df': (
+            b"Filesystem             Size  Used Avail Use% Mounted on\n"
+            b"tmpfs                  6.3G  3.2M  6.3G   1% /run\n"
+            b"/dev/mapper/data-root  1.8T  626G  1.1T  37% /\n"
+            b"/dev/dm-3              3.7T  1.6T  2.2T  42% /mnt/data\n"
+        ),
+
     }
     patch_check_output = patch(
         "subprocess.check_output",
