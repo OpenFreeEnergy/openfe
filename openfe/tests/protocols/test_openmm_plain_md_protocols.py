@@ -364,21 +364,21 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
     assert len(repeats) == 3
 
 
-# def test_gather(solvent_protocol_dag, tmpdir):
-#     # check .gather behaves as expected
-#     with mock.patch('openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run',
-#                     return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
-#         dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
-#                                             shared_basedir=tmpdir,
-#                                             scratch_basedir=tmpdir,
-#                                             keep_shared=True)
-#
-#     settings = PlainMDProtocol.default_settings()
-#     settings.repeat_settings.n_repeats = 3
-#     prot = PlainMDProtocol(
-#         settings=settings
-#     )
-#
-#     res = prot.gather([dagres])
-#
-#     assert isinstance(res, PlainMDProtocolResult)
+def test_gather(solvent_protocol_dag, tmpdir):
+    # check .gather behaves as expected
+    with mock.patch('openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run',
+                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
+        dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
+                                            shared_basedir=tmpdir,
+                                            scratch_basedir=tmpdir,
+                                            keep_shared=True)
+
+    settings = PlainMDProtocol.default_settings()
+    settings.repeat_settings.n_repeats = 3
+    prot = PlainMDProtocol(
+        settings=settings
+    )
+
+    res = prot.gather([dagres])
+
+    assert isinstance(res, PlainMDProtocolResult)
