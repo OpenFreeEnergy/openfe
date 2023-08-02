@@ -68,9 +68,9 @@ def patch_system():
             }
         ),
     )
-
+    # Since this attribute doesn't exist on OSX, we have to create it
     patch_psutil_Process_rlimit = patch(
-        "psutil.Process.rlimit", Mock(return_value=(-1, -1))
+        "psutil.Process.rlimit", Mock(return_value=(-1, -1), create=True)
     )
     patch_psutil_virtual_memory = patch(
         "psutil.virtual_memory",
