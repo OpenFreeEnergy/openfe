@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
+from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
 import itertools
 from collections import Counter
@@ -303,3 +304,87 @@ def generate_network_from_indices(
         edges.append(mapping)
 
     return LigandNetwork(edges=edges, nodes=ligands)
+
+
+def load_orion_network(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        network_file: Union[str, Path],
+) -> LigandNetwork:
+    """Generate a LigandNetwork from an Orion NES network file.
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    network_file : str
+      path to NES network file.
+
+    Returns
+    -------
+    LigandNetwork
+
+    Raises
+    ------
+    KeyError
+      If an unexpected line format is encountered.
+    """
+    
+    with open(network_file, 'r') as f:
+        network_lines = [l.strip().split(' ') for l in f
+                         if not l.startswith('#')]
+
+    names = []
+    for entry in network_lines:
+        if len(entry) != 3 or entry[1] != ">>":
+            errmsg = ("line does not match expected name >> name format: "
+                      f"{entry}")
+            raise KeyError(errmsg)
+
+        names.append((entry[0], entry[2]))
+
+    return generate_network_from_names(ligands, mapper, names)
+
+
+def load_fepplus_network(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        network_file: Union[str, Path],
+) -> LigandNetwork:
+    """Generate a LigandNetwork from an FEP+ edges network file.
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    network_file : str
+      path to edges network file.
+
+    Returns
+    -------
+    LigandNetwork
+
+    Raises
+    ------
+    KeyError
+      If an unexpected line format is encountered.
+    """
+
+    with open(network_file, 'r') as f:
+        network_lines = [l.split() for l in f.readlines()]
+
+    names = []
+    for entry in network_lines:
+        if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
+            errmsg = ("line does not match expected format "
+                      f"hash:hash # name -> name\n"
+                      "line format: {entry}")
+            raise KeyError(errmsg)
+
+        names.append((entry[2], entry[4]))
+
+    return generate_network_from_names(ligands, mapper, names)
