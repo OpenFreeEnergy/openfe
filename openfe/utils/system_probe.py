@@ -120,5 +120,33 @@ def _probe_system() -> dict:
     }
 
 
+def log_system_probe(level=logging.DEBUG):
+    """Print the system information via configurable logging.
+
+    This creates a logger tree under "{__name__}.log", allowing one to turn
+    on/off logging of GPU info or hostname info the with
+    "{__name__}.log.gpu" and "{__name__}.log.hostname" loggers.
+    """
+    basename = __name__ + ".log"
+    base = logging.getLogger(basename)
+    gpu = logging.getLogger(basename + ".gpu")
+    hostname = logging.getLogger(basename + ".hostname")
+    loggers = [base, gpu, hostname]
+    if any(l.isEnabledFor(level) for l in loggers):
+        sysinfo = _probe_system()['system information']
+        base.log(level, "SYSTEM CONFIG DETAILS:")
+        hostname.log(level, f"hostname: '{sysinfo['hostname']}'")
+        if ...:
+            for gpu_card in ...:
+                gpu.log(level, f"GPU: {sysinfo['gpu information'][}")
+            gpu.log(level, f"CUDA driver: {...}")
+            gpu.log(level, f"CUDA toolkit: {...}")
+        else:
+            gpu.log(level, f"No CUDA found")
+
+        base.log(level, f"Memory used: {...} ({...}%)")
+        for disk in ...:
+            base.log(level, f"Disk free: {...}")
+
 if __name__ == "__main__":
     print(_probe_system())
