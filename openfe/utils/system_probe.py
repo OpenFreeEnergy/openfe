@@ -471,20 +471,21 @@ def log_system_probe(level=logging.DEBUG):
         base.log(level, "SYSTEM CONFIG DETAILS:")
         hostname.log(level, f"hostname: '{sysinfo['hostname']}'")
         if gpuinfo := sysinfo['gpu information']:
-            for uuid, gpu_card in gnuinfo.items():
-                gpu.log(level, f"GPU: {uuid=} {gpu_card['gpu_name']} "
-                        "mode={gpu_card['compute_mode']")
+            for uuid, gpu_card in gpuinfo.items():
+                gpu.log(level, f"GPU: {uuid=} {gpu_card['name']} "
+                        f"mode={gpu_card['compute_mode']}")
             # gpu.log(level, f"CUDA driver: {...}")
             # gpu.log(level, f"CUDA toolkit: {...}")
         else:
             gpu.log(level, f"CUDA-based GPU not found")
 
-        psutilinfo = sysinfo["psutil inforomation"]
+        psutilinfo = sysinfo["psutil information"]
         memused = psutilinfo['virtual_memory']['used']
         mempct = psutilinfo['virtual_memory']['percent']
         base.log(level, f"Memory used: {bytes2human(memused)} ({mempct}%)")
-        for disk in ...:
-            base.log(level, f"Disk free: {...}")
+        for diskdev, disk in sysinfo['disk usage information'].items():
+            base.log(level, f"{diskdev}: {disk['percent_used']}% full "
+                     f"({disk['available']} free)")
 
 
 if __name__ == "__main__":
