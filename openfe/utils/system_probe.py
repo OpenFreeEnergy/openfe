@@ -484,7 +484,7 @@ def log_system_probe(level=logging.DEBUG):
         mempct = psutilinfo['virtual_memory']['percent']
         base.log(level, f"Memory used: {bytes2human(memused)} ({mempct}%)")
         for diskdev, disk in sysinfo['disk usage information'].items():
-            base.log(level, f"{diskdev}: {disk['percent_used']}% full "
+            base.log(level, f"{diskdev}: {disk['percent_used']} full "
                      f"({disk['available']} free)")
 
 

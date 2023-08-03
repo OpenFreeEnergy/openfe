@@ -425,6 +425,20 @@ def test_log_system_probe_unconfigured():
         assert sysprobe_mock.call_count == 1
 
 
-def test_log_system_probe():
+def test_log_system_probe(caplog):
     # this checks that the expected contents show up in log_system_probe
-    ...
+    sysprobe_mock = Mock(return_value=EXPECTED_SYSTEM_INFO)
+    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+        with caplog.at_level(logging.DEBUG):
+            log_system_probe()
+
+    expected = [
+        "hostname: 'mock-hostname'",
+        "GPU: uuid='GPU-UUID-1' NVIDIA GeForce RTX 2060 mode=Default",
+        "GPU: uuid='GPU-UUID-2' NVIDIA GeForce RTX 2060 mode=Default",
+        "Memory used: 27.8G (52.8%)",
+        "/dev/mapper/data-root: 37% full (1.1T free)",
+        "/dev/dm-3: 42% full (2.2T free)"
+    ]
+    for line in expected:
+        assert line in caplog.text
