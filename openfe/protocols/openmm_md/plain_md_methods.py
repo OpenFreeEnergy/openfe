@@ -400,9 +400,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # equilibrate
                 if verbose:
                     logger.info("equilibrating systems")
-                # simulation.context.setVelocitiesToTemperature(
-                #     to_openmm(thermo_settings.temperature), 8)
-                simulation.context.setVelocitiesToTemperature(298.15 * openmm.unit.kelvin)
+                simulation.context.setVelocitiesToTemperature(
+                    to_openmm(thermo_settings.temperature))
                 simulation.step(equil_steps)
 
                 # production
