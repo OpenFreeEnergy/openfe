@@ -39,6 +39,7 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     IntegratorSettings, SimulationSettings,
     RepeatSettings
 )
+
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
     system_validation, settings_validation, system_creation
@@ -364,7 +365,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         # 11. Set the integrator
         integrator = openmm.LangevinMiddleIntegrator(
             to_openmm(thermo_settings.temperature),
-            integrator_settings.n_steps.m,
+            to_openmm(integrator_settings.collision_rate),
             to_openmm(integrator_settings.timestep),
         )
 
@@ -388,13 +389,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 simulation.minimizeEnergy(
                     maxIterations=sim_settings.minimization_steps
                 )
-
+                min_pdb_file = "minimized.pdb"
+                positions = simulation.context.getState(
+                    getPositions=True, enforcePeriodicBox=False
+                ).getPositions()
+                with open(shared_basepath / min_pdb_file, "w") as f:
+                    openmm.app.PDBFile.writeFile(
+                        simulation.topology, positions, file=f, keepIds=True
+                    )
                 # equilibrate
                 if verbose:
                     logger.info("equilibrating systems")
-
-                simulation.context.setVelocitiesToTemperature(
-                    thermo_settings.temperature * openmm.unit.kelvin)
+                # simulation.context.setVelocitiesToTemperature(
+                #     to_openmm(thermo_settings.temperature), 8)
+                simulation.context.setVelocitiesToTemperature(298.15 * openmm.unit.kelvin)
                 simulation.step(equil_steps)
 
                 # production
