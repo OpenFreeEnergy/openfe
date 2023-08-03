@@ -407,15 +407,18 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # production
                 if verbose:
                     logger.info("running production phase")
-                traj = "traj.xtc"
+                traj = "traj.dcd"
                 # simulation.reporters.append(NetCDFReporter(
                 #     shared_basepath / sim_settings.output_filename,
                 #     sim_settings.checkpoint_interval.m))
                 # simulation.reporters.append(NetCDFReporter(
                 #     shared_basepath / traj,
                 #     sim_settings.checkpoint_interval.m))
-                simulation.reporters.append(XTCReporter(
-                    shared_basepath / traj, sim_settings.checkpoint_interval.m))
+                # simulation.reporters.append(XTCReporter(
+                #     shared_basepath / traj, sim_settings.checkpoint_interval.m))
+                simulation.reporters.append(openmm.app.DCDReporter(
+                    shared_basepath / traj, sim_settings.checkpoint_interval.m
+                ))
                 simulation.reporters.append(openmm.app.StateDataReporter(
                     sys.stdout,
                     sim_settings.checkpoint_interval.m,
