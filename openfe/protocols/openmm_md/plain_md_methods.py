@@ -407,9 +407,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # production
                 if verbose:
                     logger.info("running production phase")
-
+                traj = "traj.nc"
+                # simulation.reporters.append(NetCDFReporter(
+                #     shared_basepath / sim_settings.output_filename,
+                #     sim_settings.checkpoint_interval.m))
                 simulation.reporters.append(NetCDFReporter(
-                    shared_basepath / sim_settings.output_filename,
+                    shared_basepath / traj,
                     sim_settings.checkpoint_interval.m))
                 simulation.reporters.append(openmm.app.StateDataReporter(
                     sys.stdout,
