@@ -362,19 +362,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 11. Set the integrator
-        # #  a. get integrator settings
-        # integrator_settings = protocol_settings.integrator_settings
-        #
-        # #  b. create langevin integrator
-        # integrator = openmmtools.mcmc.LangevinDynamicsMove(
-        #     timestep=to_openmm(integrator_settings.timestep),
-        #     collision_rate=to_openmm(integrator_settings.collision_rate),
-        #     n_steps=integrator_settings.n_steps.m,
-        #     reassign_velocities=integrator_settings.reassign_velocities,
-        #     n_restart_attempts=integrator_settings.n_restart_attempts,
-        #     constraint_tolerance=integrator_settings.constraint_tolerance,
-        # )
-        integrator = openmm.LangevinIntegrator(
+        integrator = openmm.LangevinMiddleIntegrator(
             to_openmm(thermo_settings.temperature),
             integrator_settings.n_steps.m,
             to_openmm(integrator_settings.timestep),
@@ -388,17 +376,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         try:
-            # # Create context caches (energy + sampler)
-            # energy_context_cache = openmmtools.cache.ContextCache(
-            #     capacity=None, time_to_live=None, platform=platform,
-            # )
-            #
-            # sampler_context_cache = openmmtools.cache.ContextCache(
-            #     capacity=None, time_to_live=None, platform=platform,
-            # )
-            #
-            # sampler.energy_context_cache = energy_context_cache
-            # sampler.sampler_context_cache = sampler_context_cache
 
             if not dry:  # pragma: no-cover
 
@@ -408,9 +385,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 if verbose:
                     logger.info("minimizing systems")
 
-                simulation.minimizeEnergy()
-                # sampler.minimize(
-                #     max_iterations=sim_settings.minimization_steps)
+                simulation.minimizeEnergy(
+                    maxIterations=sim_settings.minimization_steps
+                )
 
                 # equilibrate
                 if verbose:
@@ -419,9 +396,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 simulation.context.setVelocitiesToTemperature(
                     thermo_settings.temperature * openmm.unit.kelvin)
                 simulation.step(equil_steps)
-
-                # sampler.equilibrate(
-                #     int(equil_steps / mc_steps))  # type: ignore
 
                 # production
                 if verbose:
@@ -441,23 +415,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 simulation.step(prod_steps)
                 t1 = time.time()
                 logger.info(f"Completed simulation in {t1 - t0} seconds")
-                # sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
-                # # calculate estimate of results from this individual unit
-                # ana = multistate.MultiStateSamplerAnalyzer(reporter)
-                # est, _ = ana.get_free_energy()
-                # est = (est[0, -1] * ana.kT).in_units_of(
-                #     omm_unit.kilocalories_per_mole)
-                # est = ensure_quantity(est, 'openff')
-                # ana.clear()  # clean up cached values
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
-            # else:
-            #     # clean up the reporter file
-            #     fns = [shared_basepath / sim_settings.output_filename,
-            #            shared_basepath / sim_settings.checkpoint_storage]
-            #     for fn in fns:
-            #         os.remove(fn)
+
         finally:
 
             if not dry:
@@ -469,7 +430,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 'last_checkpoint': chk,
             }
         else:
-            return {'debug': {'sampler': stateA_system}}
+            return {'debug': {'system': stateA_system}}
 
     def _execute(
             self, ctx: gufe.Context, **kwargs,

@@ -106,7 +106,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True)['debug']['sampler']
+        sim = dag_unit.run(dry=True)['debug']['system']
         print(sim)
         assert not ThermodynamicState(sim, temperature=
         to_openmm(protocol.settings.thermo_settings.temperature)).is_periodic
@@ -146,7 +146,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+        system = unit.run(dry=True)['debug']['system']
 
 
 def test_dry_many_molecules_solvent(
@@ -170,7 +170,7 @@ def test_dry_many_molecules_solvent(
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+        system = unit.run(dry=True)['debug']['system']
 
 
 BENZ = """\
@@ -265,8 +265,8 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)['debug']['sampler']
-        assert sampler
+        system = dag_unit.run(dry=True)['debug']['system']
+        assert system
 
 
 # @pytest.mark.slow
@@ -285,7 +285,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
 #     dag_unit = list(dag.protocol_units)[0]
 #
 #     with tmpdir.as_cwd():
-#         sim = dag_unit.run(dry=True)['debug']['sampler']
+#         sim = dag_unit.run(dry=True)['debug']['system']
 #         assert not ThermodynamicState(sim, temperature=
 #         to_openmm(protocol.settings.thermo_settings.temperature)).is_periodic
 #         assert isinstance(ThermodynamicState(sim, temperature=
