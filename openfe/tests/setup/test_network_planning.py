@@ -320,6 +320,18 @@ def test_network_from_indices_indexerror(atom_mapping_basic_test_files):
         )
 
 
+def test_network_from_indices_disconnected_warning(atom_mapping_basic_test_files):
+    ligs = list(atom_mapping_basic_test_files.values())
+    requested = [(0, 1), (1, 2)]
+
+    with pytest.warns(UserWarning):
+        _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
+            ligands=ligs,
+            indices=requested,
+            mapper=openfe.LomapAtomMapper(),
+        )
+
+
 @pytest.mark.parametrize('file_fixture, loader', [
     ['orion_network',
      openfe.setup.ligand_network_planning.load_orion_network],
