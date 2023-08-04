@@ -6,6 +6,7 @@ from typing import Iterable, Callable, Optional, Union
 import itertools
 from collections import Counter
 import functools
+import warnings
 
 import networkx as nx
 from tqdm.auto import tqdm
@@ -312,7 +313,12 @@ def generate_network_from_indices(
 
         edges.append(mapping)
 
-    return LigandNetwork(edges=edges, nodes=ligands)
+    network = LigandNetwork(edges=edges, nodes=ligands)
+
+    if not network.is_connected():
+        warnings.warn("Generated network is not fully connected")
+
+    return network
 
 
 def load_orion_network(
