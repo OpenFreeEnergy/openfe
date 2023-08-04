@@ -411,9 +411,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # simulation.reporters.append(NetCDFReporter(
                 #     shared_basepath / sim_settings.output_filename,
                 #     sim_settings.checkpoint_interval.m))
-                # simulation.reporters.append(NetCDFReporter(
-                #     shared_basepath / traj,
-                #     sim_settings.checkpoint_interval.m))
                 # simulation.reporters.append(XTCReporter(
                 #     shared_basepath / traj, sim_settings.checkpoint_interval.m))
                 simulation.reporters.append(openmm.app.DCDReporter(
