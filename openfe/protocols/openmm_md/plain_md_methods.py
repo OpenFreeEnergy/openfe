@@ -28,6 +28,7 @@ import openmmtools
 import uuid
 import time
 from mdtraj.reporters import NetCDFReporter, XTCReporter
+import netCDF4 as netcdf
 
 from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
@@ -407,12 +408,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # production
                 if verbose:
                     logger.info("running production phase")
-                traj = "prod.dcd"
-                simulation.reporters.append(NetCDFReporter(
-                    shared_basepath / sim_settings.output_filename,
-                    sim_settings.checkpoint_interval.m))
-                # simulation.reporters.append(XTCReporter(
-                #     shared_basepath / traj, sim_settings.checkpoint_interval.m))
+                traj = "prod.xtc"
+                # simulation.reporters.append(NetCDFReporter(
+                #     shared_basepath / sim_settings.output_filename,
+                #     sim_settings.checkpoint_interval.m))
+                simulation.reporters.append(XTCReporter(file = str(
+                    shared_basepath / traj), reportInterval=sim_settings.checkpoint_interval.m))
                 # simulation.reporters.append(openmm.app.DCDReporter(
                 #     shared_basepath / traj, sim_settings.checkpoint_interval.m
                 # ))
