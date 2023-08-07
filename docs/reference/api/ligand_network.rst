@@ -5,10 +5,15 @@ Ligand Network Tools
 Atom Mappers
 ------------
 
-.. autoclass:: openfe.setup.LomapAtomMapper
-     :members:
+.. module:: openfe.setup
+   :noindex:
 
-.. autoclass:: openfe.setup.PersesAtomMapper
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   LomapAtomMapper
+   PersesAtomMapper
 
 
 Scorers
@@ -21,17 +26,23 @@ LOMAP Scorers
    trying ``import openfe.setup.lomap_scorers``, which doesn't work (whereas
    ``from openfe.setup import lomap_scorers`` does)
 
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.default_lomap_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.ecr_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.mcsr_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.mncar_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.tmcsr_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.atomic_number_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.hybridization_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.sulfonamides_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.heterocycles_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.transmuting_methyl_into_ring_score
-.. autofunction:: openfe.setup.atom_mapping.lomap_scorers.transmuting_ring_sizes_score
+.. module:: openfe.setup.atom_mapping.lomap_scorers
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   default_lomap_score
+   ecr_score
+   mcsr_score
+   mncar_score
+   tmcsr_score
+   atomic_number_score
+   hybridization_score
+   sulfonamides_score
+   heterocycles_score
+   transmuting_methyl_into_ring_score
+   transmuting_ring_sizes_score
 
 
 
@@ -39,13 +50,23 @@ LOMAP Scorers
 PersesScorers
 ~~~~~~~~~~~~~
 
-.. autofunction:: openfe.setup.atom_mapping.perses_scorers.default_perses_scorer
+.. module:: openfe.setup.atom_mapping.perses_scorers
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   default_perses_scorer
 
 Network Planners
 ----------------
 
-.. autofunction:: openfe.setup.ligand_network_planning.generate_radial_network
+.. module:: openfe.setup.ligand_network_planning
 
-.. autofunction:: openfe.setup.ligand_network_planning.generate_maximal_network
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
 
-.. autofunction:: openfe.setup.ligand_network_planning.generate_minimal_spanning_network
+   generate_radial_network
+   generate_maximal_network
+   generate_minimal_spanning_network
