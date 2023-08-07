@@ -1,11 +1,10 @@
 import logging
 import os
-import socket
-import sys
-import subprocess
 import pathlib
-
-from typing import Optional, Iterable
+import socket
+import subprocess
+import sys
+from typing import Iterable, Optional
 
 import psutil
 from psutil._common import bytes2human
@@ -485,4 +484,5 @@ def _probe_system(paths: Optional[Iterable[pathlib.Path]] = None) -> dict:
 
 if __name__ == "__main__":
     from pprint import pprint
+
     pprint(_probe_system())
