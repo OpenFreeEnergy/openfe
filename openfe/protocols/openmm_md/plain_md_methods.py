@@ -408,25 +408,28 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # production
                 if verbose:
                     logger.info("running production phase")
-                traj = "prod.xtc"
-                # simulation.reporters.append(NetCDFReporter(
-                #     shared_basepath / sim_settings.output_filename,
-                #     sim_settings.checkpoint_interval.m))
-                simulation.reporters.append(XTCReporter(file = str(
-                    shared_basepath / traj), reportInterval=sim_settings.checkpoint_interval.m))
-                # simulation.reporters.append(openmm.app.DCDReporter(
-                #     shared_basepath / traj, sim_settings.checkpoint_interval.m
-                # ))
-                simulation.reporters.append(openmm.app.CheckpointReporter(
-                    shared_basepath / sim_settings.checkpoint_storage,
+                chk_out = "checkpoint.chk"
+                log_out = "output.log"
+                simulation.reporters.append(NetCDFReporter(file=
+                    str(shared_basepath / sim_settings.output_filename), reportInterval=
+                    sim_settings.checkpoint_interval.m))
+                # simulation.reporters.append(XTCReporter(file = str(
+                #     shared_basepath / traj), reportInterval=sim_settings.checkpoint_interval.m))
+                simulation.reporters.append(openmm.app.CheckpointReporter(file=str(
+                    shared_basepath / chk_out), reportInterval=
                     sim_settings.checkpoint_interval.m
                 ))
                 simulation.reporters.append(openmm.app.StateDataReporter(
-                    sys.stdout,
+                    shared_basepath / log_out,
                     sim_settings.checkpoint_interval.m,
                     step=True,
+                    time=True,
                     potentialEnergy=True,
-                    temperature=True
+                    kineticEnergy=True,
+                    totalEnergy=True,
+                    temperature=True,
+                    volume=True,
+                    density=True,
                 ))
                 t0 = time.time()
                 simulation.step(prod_steps)
@@ -434,7 +437,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 logger.info(f"Completed simulation in {t1 - t0} seconds")
 
                 nc = shared_basepath / sim_settings.output_filename
-                chk = shared_basepath / sim_settings.checkpoint_storage
+                chk = shared_basepath / chk_out
 
         finally:
 
