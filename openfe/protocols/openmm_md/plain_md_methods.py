@@ -11,7 +11,6 @@ simulation using OpenMM tools.
 from __future__ import annotations
 
 import logging
-import sys
 
 from collections import defaultdict
 import gufe
@@ -24,20 +23,18 @@ from openmm import app
 from openmm import unit as omm_unit
 import pathlib
 from typing import Any, Iterable
-import openmmtools
 import uuid
 import time
-from mdtraj.reporters import NetCDFReporter, XTCReporter
-import netCDF4 as netcdf
+import mdtraj
+from mdtraj.reporters import XTCReporter
 
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
-    ProteinComponent
+    settings, ChemicalSystem,
 )
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
     SolvationSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings,
+    IntegratorSettings, SimulationSettingsMD,
     RepeatSettings
 )
 
@@ -101,7 +98,7 @@ class PlainMDProtocol(gufe.Protocol):
             solvation_settings=SolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            simulation_settings=SimulationSettings(
+            simulation_settings=SimulationSettingsMD(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
@@ -293,7 +290,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         system_settings: SystemSettings = protocol_settings.system_settings
         solvation_settings: SolvationSettings = \
             protocol_settings.solvation_settings
-        sim_settings: SimulationSettings = \
+        sim_settings: SimulationSettingsMD = \
             protocol_settings.simulation_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.integrator_settings.n_steps.m
@@ -408,19 +405,21 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # production
                 if verbose:
                     logger.info("running production phase")
-                chk_out = "checkpoint.chk"
-                log_out = "output.log"
-                simulation.reporters.append(NetCDFReporter(file=
-                    str(shared_basepath / sim_settings.output_filename), reportInterval=
-                    sim_settings.checkpoint_interval.m))
-                # simulation.reporters.append(XTCReporter(file = str(
-                #     shared_basepath / traj), reportInterval=sim_settings.checkpoint_interval.m))
-                simulation.reporters.append(openmm.app.CheckpointReporter(file=str(
-                    shared_basepath / chk_out), reportInterval=
-                    sim_settings.checkpoint_interval.m
-                ))
+
+                # Get the sub selection of the system to print coords for
+                selection_indices = mdtraj.Topology.from_openmm(
+                    stateA_topology).select(sim_settings.output_indices)
+
+                # Setup the reporters
+                simulation.reporters.append(XTCReporter(
+                    file=str(shared_basepath / sim_settings.output_filename),
+                    reportInterval=sim_settings.checkpoint_interval.m,
+                    atomSubset=selection_indices))
+                simulation.reporters.append(openmm.app.CheckpointReporter(
+                    file=str(shared_basepath / sim_settings.checkpoint_storage),
+                    reportInterval=sim_settings.checkpoint_interval.m))
                 simulation.reporters.append(openmm.app.StateDataReporter(
-                    str(shared_basepath / log_out),
+                    str(shared_basepath / sim_settings.log_output),
                     sim_settings.checkpoint_interval.m,
                     step=True,
                     time=True,
@@ -437,7 +436,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 logger.info(f"Completed simulation in {t1 - t0} seconds")
 
                 nc = shared_basepath / sim_settings.output_filename
-                chk = shared_basepath / chk_out
+                chk = shared_basepath / sim_settings.checkpoint_storage
 
         finally:
 

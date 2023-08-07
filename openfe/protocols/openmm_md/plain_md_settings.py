@@ -9,8 +9,8 @@ This module implements the settings necessary to run MD simulations using
 """
 from openfe.protocols.openmm_utils.omm_settings import (
     Settings, SystemSettings,
-    SolvationSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings, RepeatSettings
+    SolvationSettings, OpenMMEngineSettings, SimulationSettingsMD,
+    IntegratorSettings, RepeatSettings
 )
 
 
@@ -29,7 +29,7 @@ class PlainMDProtocolSettings(Settings):
     integrator_settings: IntegratorSettings
 
     # Simulation run settings
-    simulation_settings: SimulationSettings
+    simulation_settings: SimulationSettingsMD
 
     # Setting number of repeats of md simulation
     repeat_settings : RepeatSettings

@@ -456,3 +456,25 @@ class SimulationSettings(SettingsBaseModel):
                       "intervals must be positive")
             raise ValueError(errmsg)
         return v
+
+class SimulationSettingsMD(SimulationSettings):
+    """
+    Settings for simulation control for plain MD simulations, including
+    writing outputs
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    # reporter settings
+    output_filename = 'simulation.xtc'
+    """Path to the storage file for analysis. Default 'simulation.xtc'."""
+    checkpoint_storage = 'checkpoint.chk'
+    """
+    Separate filename for the checkpoint file. Note, this should
+    not be a full path, just a filename. Default 'checkpoint.chk'.
+    """
+    log_output = 'simulation.log'
+    """
+    Filename for writing the log of the MD simulation, including timesteps,
+    energies, density, etc.
+    """
