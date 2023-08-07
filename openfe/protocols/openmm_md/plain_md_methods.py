@@ -420,7 +420,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                     sim_settings.checkpoint_interval.m
                 ))
                 simulation.reporters.append(openmm.app.StateDataReporter(
-                    shared_basepath / log_out,
+                    str(shared_basepath / log_out),
                     sim_settings.checkpoint_interval.m,
                     step=True,
                     time=True,
