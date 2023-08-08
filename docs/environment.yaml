@@ -3,7 +3,7 @@ channels:
 - https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
 dependencies:
-- autodoc-pydantic
+- autodoc-pydantic<2.0
 - openff-models>=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
