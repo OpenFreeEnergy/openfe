@@ -1,34 +1,17 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import os
-from io import StringIO
-import numpy as np
+
 import gufe
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
 from unittest import mock
 from openff.units import unit
-from importlib import resources
-import xml.etree.ElementTree as ET
-from openff.units.openmm import from_openmm, to_openmm
-from openmm import app, XmlSerializer, MonteCarloBarostat
-from openmm import unit as omm_unit
-from openmmtools.states import ThermodynamicState
-import pathlib
-from rdkit import Chem
-from rdkit.Geometry import Point3D
-import mdtraj as mdt
 
-import openfe
-from openfe import setup
-from openfe.protocols import openmm_md
-from openfe.protocols.openmm_utils import system_creation
-from openmmforcefields.generators import SMIRNOFFTemplateGenerator
-from openff.units.openmm import ensure_quantity
+from openff.units.openmm import to_openmm
+from openmmtools.states import ThermodynamicState
+
 from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
 )
-from openfe.protocols.openmm_md.plain_md_settings import PlainMDProtocolSettings
 
 
 def test_create_default_settings():
@@ -108,10 +91,10 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
     with tmpdir.as_cwd():
         sim = dag_unit.run(dry=True)['debug']['system']
         print(sim)
-        assert not ThermodynamicState(sim, temperature=
-        to_openmm(protocol.settings.thermo_settings.temperature)).is_periodic
-        assert ThermodynamicState(sim, temperature=
-        to_openmm(protocol.settings.thermo_settings.temperature)).barostat is None
+        assert not ThermodynamicState(sim, temperature=to_openmm(
+            protocol.settings.thermo_settings.temperature)).is_periodic
+        assert ThermodynamicState(sim, temperature=to_openmm(
+            protocol.settings.thermo_settings.temperature)).barostat is None
 
         # Check MDTtraj Topologies
         # 16 atoms:
@@ -238,6 +221,7 @@ M  END
 $$$$
 """
 
+
 def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     """
     Test that we can create a system with virtual sites in the
@@ -246,7 +230,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     settings = PlainMDProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
