@@ -11,7 +11,7 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - pytest-rerunfailures
-  - pydantic
+  - pydantic<2.0
   - coverage
   - openff-toolkit>=0.13.0
   - openff-units==0.2.0
@@ -25,12 +25,11 @@ dependencies:
   - perses
   - py3dmol
   - plugcli
-  - libnetcdf<4.9
   - tqdm
   # Issue #443
   - pymbar<4.0
   # docs
-  - autodoc-pydantic
+  - autodoc-pydantic<2.0
   - pydata-sphinx-theme
   - sphinx-click
   - pip:

@@ -15,7 +15,6 @@ import mdtraj as mdt
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class HybridTopologyFactory:
@@ -186,7 +185,7 @@ class HybridTopologyFactory:
 
         self._check_and_store_system_forces()
 
-        logger.info("creating hybrid system")
+        logger.info("Creating hybrid system")
         # Create empty system that will become the hybrid system
         self._hybrid_system = openmm.System()
 
@@ -209,7 +208,7 @@ class HybridTopologyFactory:
         # check for exceptions clashes between unique and env atoms
         self._validate_disjoint_sets()
 
-        logger.info("setting force field terms")
+        logger.info("Setting force field terms")
         # Copy constraints, checking to make sure they are not changing
         self._handle_constraints()
 
@@ -233,7 +232,7 @@ class HybridTopologyFactory:
 
         # Call each force preparation method to generate the actual
         # interactions that we need:
-        logger.info("adding forces")
+        logger.info("Adding forces")
         self._handle_harmonic_bonds()
 
         self._handle_harmonic_angles()
@@ -252,7 +251,7 @@ class HybridTopologyFactory:
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
         self._omm_hybrid_topology = self._create_hybrid_topology()
-        logger.info("DONE")
+        logger.info("Hybrid system created")
 
     @staticmethod
     def _check_bounds(value, varname, minmax=(0, 1)):
