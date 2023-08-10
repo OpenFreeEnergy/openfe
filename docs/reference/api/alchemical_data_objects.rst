@@ -11,8 +11,8 @@ We describe a chemical system as being made up of one or more "components," e.g.
    :noindex:
 
 .. autosummary::
-    :nosignatures:
-    :toctree: generated/
+   :nosignatures:
+   :toctree: generated/
 
 	SmallMoleculeComponent
 	ProteinComponent
@@ -25,17 +25,13 @@ Atom Mappings
 
 Tools for mapping atoms in one molecule to those in another. Used to generate efficient ligand networks.
 
-.. module:: openfe
-   :noindex:
-
 .. autosummary::
-    :nosignatures:
-    :toctree: generated/
+   :nosignatures:
+   :toctree: generated/
 
 	LigandAtomMapper
 	LigandAtomMapping
-
-.. autoclass:: openfe.LigandNetwork
+   LigandNetwork
 
 
 Alchemical Simulations
@@ -43,12 +39,9 @@ Alchemical Simulations
 
 Descriptions of anticipated alchemical simulation campaigns.
 
-.. module:: openfe
-   :noindex:
-
 .. autosummary::
-    :nosignatures:
-    :toctree: generated/
+   :nosignatures:
+   :toctree: generated/
 
 	Transformation
 	AlchemicalNetwork

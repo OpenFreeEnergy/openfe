@@ -70,6 +70,7 @@ autodoc_pydantic_model_show_json = False
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
+    "inherited-members": "GufeTokenizable,BaseModel"
 }
 toc_object_entries_show_parents = "hide"
 
