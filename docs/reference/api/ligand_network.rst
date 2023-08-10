@@ -15,7 +15,6 @@ Atom Mappers
    LomapAtomMapper
    PersesAtomMapper
 
-
 Scorers
 -------
 

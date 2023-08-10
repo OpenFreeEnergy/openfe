@@ -35,6 +35,8 @@ Tools for mapping atoms in one molecule to those in another. Used to generate ef
 	LigandAtomMapper
 	LigandAtomMapping
 
+.. autoclass:: openfe.LigandNetwork
+
 
 Alchemical Simulations
 ~~~~~~~~~~~~~~~~~~~~~~

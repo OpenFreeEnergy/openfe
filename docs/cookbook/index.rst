@@ -3,6 +3,9 @@ Cookbook
 
 This will include various how-to guides.
 
+.. module:: openfe
+    :noindex:
+
 .. container:: deflist-flowchart
 
     * Setup
@@ -18,7 +21,7 @@ This will include various how-to guides.
         - .. container:: flowchart-sidebyside
 
             -
-                - :class:`openfe.SmallMoleculeComponent`
+                - :class:`SmallMoleculeComponent`
                     Small molecule components describe the ligands that will be mutated.
 
                 - .. container:: flowchart-sidebyside
@@ -33,33 +36,33 @@ This will include various how-to guides.
                             .. rst-class:: arrow-down
                         - :any:`Creating Atom Mappings`
 
-                        - Mapping
-                            Mapping between atoms in a mutation.
+                        - :class:`LigandAtomMapping`
+                            Mapping between atoms in one small molecule and those in another for a single transformation (network edge).
 
                             .. rst-class:: arrow-down
                         -
 
-                - LigandNetwork
+                - :class:`LigandNetwork`
                     A network of mutations between the provided ligands.
 
                     .. rst-class:: arrow-down
                 -
 
             -
-                - :class:`openfe.SmallMoleculeComponent`, :class:`openfe.SolventComponent`, :class:`openfe.ProteinComponent`
+                - :class:`SmallMoleculeComponent`, :class:`SolventComponent`, :class:`ProteinComponent`
                     All components are included in the ChemicalSystem
 
                   .. rst-class:: arrow-down
                 -
 
-                - ChemicalSystem
+                - :class:`ChemicalSystem`
                     A description of the system that each ligand lives in.
 
                   .. rst-class:: arrow-down
                 -
 
-        - AlchemicNetwork
-            Combining chemical systems for each ligand with a network that describes how to mutate between them yields a complete description of a simulation campaign.
+        - :class:`AlchemicalNetwork`
+            A complete description of a simulation campaign, including the :class:`LigandNetwork` and a :class:`ChemicalSystem` for each ligand.
 
       .. rst-class:: arrow-down
     *
