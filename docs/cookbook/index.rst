@@ -9,57 +9,59 @@ This will include various how-to guides.
 .. container:: deflist-flowchart
 
     * Setup
-        - Chemical component definition
-            SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
-
-          .. rst-class:: arrow-down
-        - :any:`Loading Molecules`
-
-        - Component
-            A component of a chemical system.
-
         - .. container:: flowchart-sidebyside
 
             -
-                - :class:`SmallMoleculeComponent`
-                    Small molecule components describe the ligands that will be mutated.
 
-                - .. container:: flowchart-sidebyside
-
-                    -
-                        -
-                            .. rst-class:: arrow-down
-                        -
-
-                    -
-                        -
-                            .. rst-class:: arrow-down
-                        - :any:`Creating Atom Mappings`
-
-                        - :class:`LigandAtomMapping`
-                            Mapping between atoms in one small molecule and those in another for a single transformation (network edge).
-
-                            .. rst-class:: arrow-down
-                        -
-
-                - :class:`LigandNetwork`
-                    A network of mutations between the provided ligands.
+              .. rst-class:: flowchart-narrow
+            -   - :class:`Protocol`
+                    Simulation procedure for an alchemic mutation.
 
                     .. rst-class:: arrow-down
                 -
 
-            -
-                - :class:`SmallMoleculeComponent`, :class:`SolventComponent`, :class:`ProteinComponent`
-                    All components are included in the ChemicalSystem
+            -   - Chemical component definition
+                    SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
 
                   .. rst-class:: arrow-down
-                -
+                - :any:`Loading Molecules`
 
-                - :class:`ChemicalSystem`
-                    A description of the system that each ligand lives in.
+                - Component
+                    A component of a chemical system.
 
-                  .. rst-class:: arrow-down
-                -
+                - .. container:: flowchart-sidebyside
+
+                    -   - :class:`SmallMoleculeComponent`
+                            Small molecule components describe the ligands that will be mutated.
+
+                            .. rst-class:: arrow-down
+                        - :any:`Creating Atom Mappings`
+
+                        - :class:`LigandAtomMapping`
+                            Corresponds atoms in one small molecule to those in another.
+
+                            .. rst-class:: arrow-down
+                        -
+
+                    -
+                        - :class:`SmallMoleculeComponent`, :class:`SolventComponent`, :class:`ProteinComponent`
+                            All components are included in the ChemicalSystem
+
+                          .. rst-class:: arrow-down
+                        - :any:`Assembling into ChemicalSystems`
+
+                        - :class:`ChemicalSystem`
+                            The complete system of chemical components required to simulate a given transformation target.
+
+                          .. rst-class:: arrow-down
+                        -
+
+        - :class:`Transformation`
+            A single transformation
+
+          .. rst-class:: arrow-down
+        -
+
 
         - :class:`AlchemicalNetwork`
             A complete description of a simulation campaign, including the :class:`LigandNetwork` and a :class:`ChemicalSystem` for each ligand.
@@ -68,13 +70,15 @@ This will include various how-to guides.
     *
 
     * Run
-        Def
+        - term
+            def
 
       .. rst-class:: arrow-down
     *
 
     * Gather
-        Def
+        - term
+            def
 
 
 .. toctree::

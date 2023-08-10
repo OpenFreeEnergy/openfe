@@ -98,6 +98,7 @@ can be freely defined.
 
     solv = openfe.SolventComponent(ion_concentation=0.15 * unit.molar)
 
+.. _Assembling into ChemicalSystems:
 
 Assembling into ChemicalSystems
 -------------------------------
