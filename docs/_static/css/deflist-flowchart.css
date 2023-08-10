@@ -47,7 +47,9 @@ ul.deflist-flowchart {
 .deflist-flowchart .arrow-down,
 .deflist-flowchart .arrow-up,
 .deflist-flowchart .arrow-cycle {
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: var(--arrow-length);
   height: 100%;
   margin: 0.75em auto;
@@ -55,7 +57,19 @@ ul.deflist-flowchart {
   position: relative;
   z-index: 1;
   text-shadow: var(--pst-color-background) 0 0 10px;
+  padding: 0;
 }
+
+.deflist-flowchart .arrow-down,
+.deflist-flowchart .arrow-cycle {
+  padding-bottom: var(--arrow-head-size);
+}
+
+.deflist-flowchart .arrow-up,
+.deflist-flowchart .arrow-cycle {
+  padding-top: var(--arrow-head-size);
+}
+
 
 .deflist-flowchart .arrow-down::after,
 .deflist-flowchart .arrow-up::after,
