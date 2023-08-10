@@ -426,6 +426,45 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         assert sampler._factory.hybrid_system
 
 
+def test_dry_run_user_charges(benzene_modifications, toluene_vacuum_system,
+                              tmpdir):
+
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.alchemical_sampler_settings.n_repeats = 1
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=vac_settings,
+    )
+
+    # Create new smc with overriden charges
+    benzene_offmol = benzene_modifications['benzene'].to_openff()
+    benzene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
+    benzene_offmol.partial_charges[:] = 0.0 * unit.elementary_charge
+    benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+    prop_chgs = benzene_smc.to_dict()['molprops']['atom.dprop.PartialCharge']
+    assert prop_chgs == '0 0 0 0 0 0 0 0 0 0 0 0'
+
+    # Create new mapping
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    mapping = next(
+        mapper.suggest_mappings(benzene_smc, benzene_modifications['toluene'])
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem({'ligand': benzene_smc,}),
+        stateB=toluene_vacuum_system,
+        mapping={'ligand': mapping},
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        htf = sampler._factory
+        hybrid_system = htf.hybrid_system
+
+
 def test_virtual_sites_no_reassign(benzene_system, toluene_system,
                                    benzene_to_toluene_mapping, tmpdir):
     """
