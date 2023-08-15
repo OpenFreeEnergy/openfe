@@ -56,16 +56,8 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to use the LJ softcore function as defined by
     Gapsys et al. JCTC 2012 Default True.
     """
-    softcore_electrostatics = True
-    """Whether to use softcore electrostatics. Default True."""
     softcore_alpha = 0.85
     """Softcore alpha parameter. Default 0.85"""
-    softcore_electrostatics_alpha = 0.3
-    """Softcore alpha parameter for electrostatics. Default 0.3"""
-    softcore_sigma_Q = 1.0
-    """
-    Softcore sigma parameter for softcore electrostatics. Default 1.0.
-    """
     interpolate_old_and_new_14s = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
