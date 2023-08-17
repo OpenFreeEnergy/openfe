@@ -77,6 +77,8 @@ ul.deflist-flowchart {
 
   .arrow-down::after,
   .arrow-up::after,
+  .arrow-multiple.arrow-down::before,
+  .arrow-multiple.arrow-up::before,
   .arrow-cycle::after,
   .arrow-cycle::before
   {
@@ -108,19 +110,33 @@ ul.deflist-flowchart {
     z-index: -1;
   }
 
-  .arrow-cycle::after,
-  .arrow-cycle::before
-  {
-    margin: 0 calc(-0.5 * var(--arrow-length)/1.4142 + 10px);
-    margin-top: calc(var(--arrow-length) / 7);
+  .arrow-cycle, .arrow-multiple {
+    &::after {
+      translate: 10px 0;
+    }
+    &::before {
+      translate: -10px 0;
+    }
   }
 
   .arrow-up::after,
+  .arrow-multiple.arrow-up::before,
   .arrow-cycle::before
   {
     transform: rotate(-135deg);
   }
 
+  .arrow-cycle::before {
+      translate: -10px calc(var(--actual-arrow-length) + 2 * var(--arrow-head-size));
+  }
+
+  .arrow-aside {
+    margin-left: calc(8 * var(--arrow-head-size));
+    &::after {
+      left: calc(-4 * var(--arrow-head-size));
+    }
+  }
+  
   dl {
     display: flex;
     flex-direction: row-reverse;
@@ -177,5 +193,9 @@ ul.deflist-flowchart {
     > * {
       flex: 1;
     }
+  }
+
+  .flowchart-spacer {
+    height: 99999%
   }
 }

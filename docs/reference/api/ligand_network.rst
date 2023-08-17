@@ -15,8 +15,10 @@ Atom Mappers
    LomapAtomMapper
    PersesAtomMapper
 
-Scorers
--------
+.. _Atom Map Scorers:
+
+Atom Map Scorers
+----------------
 
 LOMAP Scorers
 ~~~~~~~~~~~~~
@@ -56,6 +58,8 @@ PersesScorers
    :toctree: generated/
 
    default_perses_scorer
+
+.. _Ligand Network Planners:
 
 Network Planners
 ----------------

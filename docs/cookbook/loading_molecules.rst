@@ -24,6 +24,8 @@ We will walk through how different items can be loaded,
 and then how these are assembled to form ``ChemicalSystem`` objects.
 
 
+.. _Loading small molecules:
+
 Loading small molecules
 -----------------------
 
@@ -59,6 +61,7 @@ As these types of structures are typically stored inside sdf files, there is a `
    To load multiple molcules, use RDKit's ``Chem.SDMolSupplier`` to iterate over the contents,
    and create a ``SmallMoleculeComponent`` from each.
 
+.. _Loading proteins:
 
 Loading proteins
 ----------------
@@ -78,6 +81,7 @@ To load a protein, use the :func:`openfe.ProteinComponent.from_pdb_file` or :fun
 
     p = openfe.ProteinComponent.from_pdb_file('file.pdb')
 
+.. _Defining solvents:
 
 Defining solvents
 -----------------
