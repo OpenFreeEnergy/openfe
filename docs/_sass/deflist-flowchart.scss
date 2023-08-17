@@ -191,12 +191,13 @@ ul.deflist-flowchart {
       );
     background-repeat: no-repeat;
 
-    margin-left: calc(-0.5 * var(--flowchart-column-gap));
     width: calc(100% + 2 * var(--flowchart-column-gap));
+    margin-left: calc(-1 * var(--flowchart-column-gap));
 
     &.arrow-combine-left, &.arrow-combine-right {
       background-size: 50%;
       width: calc(100% + var(--flowchart-column-gap));
+      margin-left: calc(-0.5 * var(--flowchart-column-gap));
 
       &.arrow-multiple {
         background-size: calc(50% + 0.5 * var(--arrow-multiple-gap));
