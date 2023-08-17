@@ -1,7 +1,7 @@
 .. _Loading Molecules:
 
-Loading your data into ChemicalSystems
-======================================
+Loading your data into Components
+=================================
 
 One of the first tasks you'll likely want to do is loading your various input files.
 In ``openfe`` the entire contents of a simulation volume, for example the ligand, protein and water is referred to

@@ -5,7 +5,9 @@
     --arrow-color: var(--pst-color-text-muted);
     --deflist-def-bg-color: var(--pst-color-surface);
     --arrow-multiple-gap: 20px;
-    --flowchart-column-gap: 16px;
+    --flowchart-column-gap: 15px;
+    --flowchart-unit-width: 45px;
+    --flowchart-top-label-space: 1.5rem;
 }
 .arrow.thick {
     --arrow-thickness: 6px;
@@ -189,13 +191,14 @@ ul.deflist-flowchart {
       );
     background-repeat: no-repeat;
 
-    width: calc(100% + 2 * var(--flowchart-column-gap));
-    margin-left: calc(-1 * var(--flowchart-column-gap));
-    margin-right: calc(-1 * var(--flowchart-column-gap));
+    &:not(.arrow-combine-left):not(.arrow-combine-right) {
+      width: calc(100% + 2 * var(--flowchart-column-gap));
+      margin-left: calc(-1 * var(--flowchart-column-gap));
+      margin-right: calc(-1 * var(--flowchart-column-gap));
+    }
 
     &.arrow-combine-left, &.arrow-combine-right {
       background-size: 50%;
-      width: calc(100% + var(--flowchart-column-gap));
 
       &.arrow-multiple {
         background-size: calc(50% + 0.5 * var(--arrow-multiple-gap));
@@ -204,11 +207,15 @@ ul.deflist-flowchart {
 
     &.arrow-combine-right {
       background-position-x: 100%;
-      margin-left: 0;
     }
+  }
 
-    &.arrow-combine-left {
-      margin-right: 0;
+  > ul > li {
+    &.arrow-down,
+    &.arrow-up,
+    &.arrow-cycle {
+      width: calc(100% - var(--flowchart-top-label-space));
+      margin-left: 0;
     }
   }
   
@@ -216,22 +223,26 @@ ul.deflist-flowchart {
     display: flex;
     flex-direction: row-reverse;
     margin: 0;
+    padding: 0 0.5em;
   }
   dt {
     display: inline-block;
     writing-mode: vertical-rl;
     margin-top: .25rem;
     flex-grow: 0;
+    width: var(--flowchart-top-label-space)
   }
   dd {
     text-align: center;
     position: relative;
     border: 1px solid var(--pst-color-border);
     border-radius: .25rem;
-    padding: 0.5em;
     margin: 0;
     display: inline-block;
     flex-grow: 1;
+    container-type: inline-size;
+    container-name: flowchart;
+    overflow-x: scroll;
   }
 
   dd dl {
@@ -241,36 +252,89 @@ ul.deflist-flowchart {
                 0 1px 18px 0 rgba(0,0,0,0.12),
                 0 3px 5px -1px rgba(0,0,0,0.4);
     display: block;
-    margin: 0.5em 0;
+    margin: 0.5em auto;
+    padding: 0.25em 0.75em;
+    max-width: fit-content; //calc(10 * var(--flowchart-unit-width) + 9 * var(--flowchart-column-gap));
+    min-width: calc(2 * var(--flowchart-unit-width) + var(--flowchart-column-gap));
   }
   dd dt {
     writing-mode: horizontal-tb;
     display: block;
     margin-top: 0;
+    width: unset;
   }
   dd dd {
     border: none;
     display: block;
+    container-type: unset;
+    overflow-x: unset;
+  }
+
+  dd > ul {
+    min-width: fit-content;
+    padding: 0.5rem;
+  }
+
+  dd dd > ul {
+    min-width: unset;
+    padding: 0;
   }
 
   dl a {
     font-weight: bold;
   }
 
-  .flowchart-sidebyside, div.flowchart-sidebyside > ul:only-child {
+  div.flowchart-sidebyside > ul:only-child {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    > .flowchart-narrow {
-      flex: 0;
-      min-width: 200px;
-    }
-    > * {
-      flex: 1;
-    }
   }
 
   .flowchart-spacer {
     height: 99999%
+  }
+
+  .width-2 {
+    width: calc(2 * var(--flowchart-unit-width) + var(--flowchart-column-gap));
+  }
+  .width-3 {
+    width: calc(3 * var(--flowchart-unit-width) + 2 * var(--flowchart-column-gap));
+  }
+  .width-4 {
+    width: calc(4 * var(--flowchart-unit-width) + 3 * var(--flowchart-column-gap));
+  }
+  .width-5 {
+    width: calc(5 * var(--flowchart-unit-width) + 4 * var(--flowchart-column-gap));
+  }
+  .width-6 {
+    width: calc(6 * var(--flowchart-unit-width) + 5 * var(--flowchart-column-gap));
+  }
+  .width-7 {
+    width: calc(7 * var(--flowchart-unit-width) + 6 * var(--flowchart-column-gap));
+  }
+  .width-8 {
+    width: calc(8 * var(--flowchart-unit-width) + 7 * var(--flowchart-column-gap));
+  }
+  .width-9 {
+    width: calc(9 * var(--flowchart-unit-width) + 8 * var(--flowchart-column-gap));
+  }
+  .width-10 {
+    width: calc(10 * var(--flowchart-unit-width) + 9 * var(--flowchart-column-gap));
+  }
+  li {
+    &.width-2,
+    &.width-3,
+    &.width-4,
+    &.width-5,
+    &.width-6,
+    &.width-7,
+    &.width-8,
+    &.width-9,
+    &.width-10,
+    &.width-full {
+      > dl {
+        max-width: unset;
+      }
+    }
   }
 }
