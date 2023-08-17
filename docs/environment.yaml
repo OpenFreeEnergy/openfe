@@ -19,4 +19,5 @@ dependencies:
 - pip:
   - sphinx-design
   - sphinx-toolbox
+  - sphinx<7
   - git+https://github.com/OpenFreeEnergy/gufe@main
