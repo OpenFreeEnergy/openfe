@@ -119,7 +119,7 @@ Network-First Workflow
                 - :class:`ChemicalSystem`
                     The complete system of chemical components required to simulate a given transformation target.
 
-                  .. rst-class:: arrow-down arrow-multiple
+                  .. rst-class:: arrow-down arrow-multiple arrow-tail
                 -
 
             -   - .. container:: flowchart-sidebyside
@@ -128,13 +128,13 @@ Network-First Workflow
                           Small molecule components describe the ligands that     will be mutated.
 
 
-                          .. rst-class:: arrow-down arrow-multiple
+                          .. rst-class:: arrow-down arrow-multiple arrow-tail
                       -
 
                     - - :class:`LigandAtomMapper`
                           Generates atom maps between one molecule and another.
 
-                        .. rst-class:: arrow-down
+                        .. rst-class:: arrow-down arrow-tail
                       -
 
                     - -
@@ -143,19 +143,19 @@ Network-First Workflow
                       - :any:`Atom Map Scorers`
                           Objective function for optimization of a ligand network.
 
-                        .. rst-class:: arrow-down
+                        .. rst-class:: arrow-down arrow-tail
                       -
 
-                - :mod:`openfe.setup.ligand_network_planning`
-                      Functions to plan a network of ligand mutations given a     :class:`LigandAtomMapper` and a scorer.
+                    .. rst-class:: arrow-combine
+                -
 
-                        .. rst-class:: arrow-down
+                    .. rst-class:: arrow-down arrow-head
                 -
 
                 - :class:`LigandNetwork`
                       A network of ligand transformations.
 
-                        .. rst-class:: arrow-down
+                        .. rst-class:: arrow-down arrow-tail
                 -
 
             -
@@ -166,8 +166,15 @@ Network-First Workflow
                 - :class:`Protocol`
                     Simulation procedure for an alchemic mutation.
 
-                  .. rst-class:: arrow-down
+                  .. rst-class:: arrow-down arrow-tail
                 -
+
+
+            .. rst-class:: arrow-combine
+        -
+
+            .. rst-class:: arrow-down arrow-head
+        -
 
         - :class:`AlchemicalNetwork`
             A complete simulation campaign.
@@ -191,7 +198,7 @@ Transformation-First Workflow
                 - :class:`Protocol`
                     Simulation procedure for an alchemic mutation.
 
-                    .. rst-class:: arrow-down
+                    .. rst-class:: arrow-down arrow-tail
                 -
 
             -   - Chemical component definition
@@ -226,7 +233,7 @@ Transformation-First Workflow
                         - :class:`LigandAtomMapping`
                             Corresponds atoms in one small molecule to those in another.
 
-                            .. rst-class:: arrow-down
+                            .. rst-class:: arrow-down arrow-tail
                         -
 
                     -
@@ -239,8 +246,14 @@ Transformation-First Workflow
                         - :class:`ChemicalSystem`
                             The complete system of chemical components required to simulate a given transformation target.
 
-                          .. rst-class:: arrow-down
+                          .. rst-class:: arrow-down arrow-tail
                         -
+
+            .. rst-class:: arrow-combine
+        -
+
+            .. rst-class:: arrow-down arrow-head
+        -
 
         - :class:`Transformation`
             A single transformation

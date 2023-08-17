@@ -48,9 +48,19 @@ ul.deflist-flowchart {
     list-style: none;
   }
 
+  .arrow-down::after,
+  .arrow-up::after,
+  .arrow-multiple.arrow-down::before,
+  .arrow-multiple.arrow-up::before,
+  .arrow-cycle::after,
+  .arrow-cycle::before {
+    content: "";
+  }
+
   .arrow-down,
   .arrow-up,
-  .arrow-cycle {
+  .arrow-cycle
+  {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -62,6 +72,45 @@ ul.deflist-flowchart {
     z-index: 1;
     text-shadow: var(--pst-color-background) 0 0 10px;
     padding: 0;
+
+    &::before, &::after {
+      --actual-arrow-length: max(var(--arrow-length), 100%);
+      --arrow-tail-gradient:
+        linear-gradient(
+          45deg,
+          transparent calc(50% - var(--arrow-thickness)/2),
+          var(--arrow-color) calc(50% - var(--arrow-thickness)/2),
+          var(--arrow-color) calc(50% + var(--arrow-thickness)/2),
+          transparent calc(50% + var(--arrow-thickness)/2)
+        );
+      --arrow-head-gradient:
+        linear-gradient(
+          -45deg,
+          var(--arrow-color) var(--arrow-head-size),
+          transparent var(--arrow-head-size)
+        );
+      height: calc(var(--actual-arrow-length)/1.4142);
+      width: auto;
+      aspect-ratio: 1;
+      padding: 0;
+      display: inline-block;
+      transform: rotate(45deg);
+      background-image:
+        var(--arrow-tail-gradient),
+        var(--arrow-head-gradient);
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform-origin: 0 0;
+      z-index: -1;
+    }
+
+    &.arrow-tail {
+      &::before, &::after {
+        background-image:
+          var(--arrow-tail-gradient);
+      }
+    }
   }
 
   .arrow-down,
@@ -72,42 +121,6 @@ ul.deflist-flowchart {
   .arrow-up,
   .arrow-cycle {
     padding-top: var(--arrow-head-size);
-  }
-
-
-  .arrow-down::after,
-  .arrow-up::after,
-  .arrow-multiple.arrow-down::before,
-  .arrow-multiple.arrow-up::before,
-  .arrow-cycle::after,
-  .arrow-cycle::before
-  {
-    --actual-arrow-length: max(var(--arrow-length), 100%);
-    height: calc(var(--actual-arrow-length)/1.4142);
-    width: auto;
-    aspect-ratio: 1;
-    content: "";
-    padding: 0;
-    display: inline-block;
-    transform: rotate(45deg);
-    background-image:
-      linear-gradient(
-        45deg,
-        transparent calc(50% - var(--arrow-thickness)/2),
-        var(--arrow-color) calc(50% - var(--arrow-thickness)/2),
-        var(--arrow-color) calc(50% + var(--arrow-thickness)/2),
-        transparent calc(50% + var(--arrow-thickness)/2)
-      ),
-      linear-gradient(
-        -45deg,
-        var(--arrow-color) var(--arrow-head-size),
-        transparent var(--arrow-head-size)
-      );
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform-origin: 0 0;
-    z-index: -1;
   }
 
   .arrow-cycle, .arrow-multiple {
@@ -127,7 +140,7 @@ ul.deflist-flowchart {
   }
 
   .arrow-cycle::before {
-      translate: -10px calc(var(--actual-arrow-length) + 2 * var(--arrow-head-size));
+      translate: -10px var(--actual-arrow-length);
   }
 
   .arrow-aside {
@@ -135,6 +148,33 @@ ul.deflist-flowchart {
     &::after {
       left: calc(-4 * var(--arrow-head-size));
     }
+  }
+
+  .arrow-tail {
+    &.arrow-down {
+      margin-bottom: 0;
+    }
+    &.arrow-up {
+      margin-top: 0;
+    }
+  }
+
+  .arrow-head {
+    &.arrow-up {
+      margin-bottom: 0;
+    }
+    &.arrow-down {
+      margin-top: 0;
+    }
+  }
+
+
+  .arrow-combine::before {
+    background: var(--arrow-color);
+    height: var(--arrow-thickness);
+    display: block;
+    content: "";
+    margin: calc(-0.5 * var(--arrow-thickness)) 20px;
   }
   
   dl {
