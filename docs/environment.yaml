@@ -12,7 +12,7 @@ dependencies:
 - plugcli
 - pydata-sphinx-theme
 - python=3.9
-- sphinx=7.1
+- sphinx<7
 - sphinx-click
 - tqdm
 - libsass
