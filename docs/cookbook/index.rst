@@ -75,7 +75,7 @@ Network-First Workflow
 
             -
                 -
-                  .. rst-class:: flowchart-spacer
+                    .. rst-class:: flowchart-spacer
                 -
 
                 - :class:`Protocol`
