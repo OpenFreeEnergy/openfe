@@ -4,6 +4,8 @@
     --arrow-length: 2em;
     --arrow-color: var(--pst-color-text-muted);
     --deflist-def-bg-color: var(--pst-color-surface);
+    --arrow-multiple-gap: 20px;
+    --flowchart-column-gap: 16px;
 }
 .arrow.thick {
     --arrow-thickness: 6px;
@@ -16,7 +18,7 @@ ul.deflist-flowchart {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  grid-column-gap: 1em;
+  grid-column-gap: var(--flowchart-column-gap);
   margin: 0;
   padding: 0;
 }
@@ -66,8 +68,8 @@ ul.deflist-flowchart {
     align-items: center;
     min-height: var(--arrow-length);
     height: 100%;
+    width: 100%;
     margin: 0.75em auto;
-    width: fit-content;
     position: relative;
     z-index: 1;
     text-shadow: var(--pst-color-background) 0 0 10px;
@@ -125,10 +127,10 @@ ul.deflist-flowchart {
 
   .arrow-cycle, .arrow-multiple {
     &::after {
-      translate: 10px 0;
+      translate: calc(0.5 * var(--arrow-multiple-gap)) 0;
     }
     &::before {
-      translate: -10px 0;
+      translate: calc(-0.5 * var(--arrow-multiple-gap)) 0;
     }
   }
 
@@ -140,7 +142,7 @@ ul.deflist-flowchart {
   }
 
   .arrow-cycle::before {
-      translate: -10px var(--actual-arrow-length);
+      translate: calc(-0.5 * var(--arrow-multiple-gap)) var(--actual-arrow-length);
   }
 
   .arrow-aside {
@@ -168,13 +170,46 @@ ul.deflist-flowchart {
     }
   }
 
+  .arrow-combine, .arrow-combine-left, .arrow-combine-right {
+    &.arrow-down.arrow-tail, &.arrow-up.arrow-head {
+      --arrow-combine-gradient-angle: 0deg;
+      padding-bottom: calc(0.5 * var(--arrow-thickness));
+      margin-bottom: calc(-0.5 * var(--arrow-thickness));
+    }
+    &.arrow-up.arrow-tail, &.arrow-down.arrow-head {
+      --arrow-combine-gradient-angle: 180deg;
+      padding-top: calc(0.5 * var(--arrow-thickness));
+      margin-top: calc(-0.5 * var(--arrow-thickness));
+    }
+    background-image:
+      linear-gradient(
+        var(--arrow-combine-gradient-angle),
+        var(--arrow-color) var(--arrow-thickness),
+        transparent var(--arrow-thickness)
+      );
+    background-repeat: no-repeat;
 
-  .arrow-combine::before {
-    background: var(--arrow-color);
-    height: var(--arrow-thickness);
-    display: block;
-    content: "";
-    margin: calc(-0.5 * var(--arrow-thickness)) 20px;
+    width: calc(100% + 2 * var(--flowchart-column-gap));
+    margin-left: calc(-1 * var(--flowchart-column-gap));
+    margin-right: calc(-1 * var(--flowchart-column-gap));
+
+    &.arrow-combine-left, &.arrow-combine-right {
+      background-size: 50%;
+      width: calc(100% + var(--flowchart-column-gap));
+
+      &.arrow-multiple {
+        background-size: calc(50% + 0.5 * var(--arrow-multiple-gap));
+      }
+    }
+
+    &.arrow-combine-right {
+      background-position-x: 100%;
+      margin-left: 0;
+    }
+
+    &.arrow-combine-left {
+      margin-right: 0;
+    }
   }
   
   dl {
