@@ -26,6 +26,7 @@ dependencies:
   - py3dmol
   - plugcli
   - tqdm
+  - pygraphviz
   # Issue #443
   - pymbar<4.0
   # docs
