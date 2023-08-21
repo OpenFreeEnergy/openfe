@@ -21,3 +21,10 @@ dependencies:
   - sphinx-toolbox
   - sphinx<7
   - git+https://github.com/OpenFreeEnergy/gufe@main
+
+# These are added automatically by RTD, so we include them here
+# for a consistent environment.
+- mock
+- pillow
+- sphinx
+- sphinx_rtd_theme
