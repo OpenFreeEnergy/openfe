@@ -5,9 +5,10 @@
     --arrow-color: var(--pst-color-text-muted);
     --deflist-def-bg-color: var(--pst-color-surface);
     --arrow-multiple-gap: 20px;
-    --flowchart-column-gap: 15px;
     --flowchart-unit-width: 45px;
-    --flowchart-top-label-space: 1.5rem;
+    --flowchart-spacing: 0.5rem;
+    --flowchart-column-gap: calc(1.5 * var(--flowchart-spacing));
+    --flowchart-top-label-space: calc(3 * var(--flowchart-spacing));
 }
 .arrow.thick {
     --arrow-thickness: 6px;
@@ -71,7 +72,7 @@ ul.deflist-flowchart {
     min-height: var(--arrow-length);
     height: 100%;
     width: 100%;
-    margin: 0.75em auto;
+    margin: calc(2 * var(--flowchart-spacing)) auto;
     position: relative;
     z-index: 1;
     padding: 0;
@@ -227,7 +228,7 @@ ul.deflist-flowchart {
     display: flex;
     flex-direction: row-reverse;
     margin: 0;
-    padding: 0 0.5em;
+    padding: 0 var(--flowchart-spacing);
   }
   dt {
     display: inline-block;
@@ -256,9 +257,9 @@ ul.deflist-flowchart {
                 0 1px 18px 0 rgba(0,0,0,0.12),
                 0 3px 5px -1px rgba(0,0,0,0.4);
     display: block;
-    margin: 0.5em auto;
-    padding: 0.25em 0.75em;
-    max-width: fit-content; //calc(10 * var(--flowchart-unit-width) + 9 * var(--flowchart-column-gap));
+    margin: 0 auto;
+    padding: calc(var(--flowchart-spacing) / 2);
+    max-width: calc(100cqw - 2 * var(--flowchart-spacing));
     min-width: calc(2 * var(--flowchart-unit-width) + var(--flowchart-column-gap));
   }
   dd dt {
@@ -272,16 +273,19 @@ ul.deflist-flowchart {
     display: block;
     container-type: unset;
     overflow-x: unset;
+    padding: calc(var(--flowchart-spacing) / 2);
   }
 
   dd > ul {
-    min-width: fit-content;
-    padding: 0.5rem;
+    width: fit-content;
+    padding: var(--flowchart-spacing);
+    margin: 0 auto;
   }
 
   dd dd > ul {
     min-width: unset;
     padding: 0;
+    margin: 0;
   }
 
   dl a {
@@ -292,10 +296,12 @@ ul.deflist-flowchart {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    justify-content: center;
   }
 
   .flowchart-spacer {
-    height: 99999%
+    height: 99999%;
+    min-height: calc(2 * var(--flowchart-spacing));
   }
 
   .width-2 {
