@@ -350,7 +350,7 @@ class GraphDrawing:
         self.edges: Dict[Tuple[Node, Node], Any] = {}
 
         if positions is None:
-            positions = nx.spring_layout(self.graph)
+            positions = nx.nx_agraph.graphviz_layout(self.graph, prog='neato')
 
         was_interactive = plt.isinteractive()
         plt.ioff()

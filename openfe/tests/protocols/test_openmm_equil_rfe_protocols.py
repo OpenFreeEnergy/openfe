@@ -11,7 +11,7 @@ from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
 
-from openmm import app, XmlSerializer, MonteCarloBarostat
+from openmm import app, XmlSerializer, MonteCarloBarostat, NonbondedForce
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
@@ -424,6 +424,130 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler._factory.hybrid_system
+
+
+def test_dry_run_user_charges(benzene_modifications, tmpdir):
+    """
+    Create a hybrid system with a set of fictitious user supplied charges
+    and ensure that they are properly passed through to the constructed
+    hybrid topology.
+    """
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.alchemical_sampler_settings.n_repeats = 1
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=vac_settings,
+    )
+
+    def assign_fictitious_charges(offmol):
+        """
+        Get a random array of fake partial charges (ints because why not)
+        that sums up to 0. Note that OpenFF will complain if you try to
+        create a molecule that has a total charge that is different from
+        the expected formal charge, hence we enforce a zero charge here.
+        """
+        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms)
+        rand_arr[-1] = -sum(rand_arr[:-1])
+        return rand_arr * unit.elementary_charge
+
+    def check_propchgs(smc, charge_array):
+        """
+        Check that the partial charges we assigned to our offmol from which
+        the smc was constructed are present and the right ones.
+        """
+        prop_chgs = smc.to_dict()['molprops']['atom.dprop.PartialCharge']
+        prop_chgs = np.array(prop_chgs.split(), dtype=float)
+        np.testing.assert_allclose(prop_chgs, charge_array.m)
+
+    # Create new smc with overriden charges
+    benzene_offmol = benzene_modifications['benzene'].to_openff()
+    toluene_offmol = benzene_modifications['toluene'].to_openff()
+    benzene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
+    toluene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
+    benzene_rand_chg = assign_fictitious_charges(benzene_offmol)
+    toluene_rand_chg = assign_fictitious_charges(toluene_offmol)
+    benzene_offmol.partial_charges[:] = benzene_rand_chg
+    toluene_offmol.partial_charges[:] = toluene_rand_chg
+    benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+    toluene_smc = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
+
+    # Check that the new smcs have the new overriden charges
+    check_propchgs(benzene_smc, benzene_rand_chg)
+    check_propchgs(toluene_smc, toluene_rand_chg)
+
+    # Create new mapping
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    mapping = next(mapper.suggest_mappings(benzene_smc, toluene_smc))
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=openfe.ChemicalSystem({'l': benzene_smc,}),
+        stateB=openfe.ChemicalSystem({'l': toluene_smc,}),
+        mapping={'ligand': mapping},
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        htf = sampler._factory
+        hybrid_system = htf.hybrid_system
+
+        # get the standard nonbonded force
+        nonbond = [f for f in hybrid_system.getForces()
+                   if isinstance(f, NonbondedForce)]
+        assert len(nonbond) == 1
+
+        # Here is a bit of exposition on what we're doing
+        # HTF creates two sets of nonbonded forces, a standard one (for the
+        # PME) and a custom one (for sterics).
+        # Here we specifically check charges, so we only concentrate on the
+        # standard NonbondedForce.
+        # The way the NonbondedForce is constructed is as follows:
+        # - unique old atoms:
+        #  * The particle charge is set to the input molA particle charge
+        #  * The chargeScale offset is set to the negative value of the molA
+        #    particle charge (such that by scaling you effectively zero out
+        #    the charge.
+        # - unique new atoms:
+        #  * The particle charge is set to zero (doesn't exist in the starting
+        #    end state).
+        #  * The chargeScale offset is set to the value of the molB particle
+        #    charge (such that by scaling you effectively go from 0 to molB
+        #    charge).
+        # - core atoms:
+        #  * The particle charge is set to the input molA particle charge
+        #    (i.e. we start from a system that has molA charges).
+        #  * The particle charge offset is set to the difference between
+        #    the molB particle charge and the molA particle charge (i.e.
+        #    we scale by that difference to get to the value of the molB
+        #    particle charge).
+        for i in range(hybrid_system.getNumParticles()):
+            c, s, e = nonbond[0].getParticleParameters(i)
+            offsets = nonbond[0].getParticleParameterOffset(i)
+            # get the particle charge (c) and the chargeScale offset (c_offset)
+            c = ensure_quantity(c, 'openff')
+            c_offset = ensure_quantity(offsets[2], 'openff')
+            # particle charge (c) is equal to molA particle charge
+            # offset (c_offset) is equal to -(molA particle charge)
+            if i in htf._atom_classes['unique_old_atoms']:
+                idx = htf._hybrid_to_old_map[i]
+                np.testing.assert_allclose(c, benzene_rand_chg[idx])
+                np.testing.assert_allclose(c_offset, -benzene_rand_chg[idx])
+            # particle charge (c) is equal to 0
+            # offset (c_offset) is equal to molB particle charge
+            elif i in htf._atom_classes['unique_new_atoms']:
+                idx = htf._hybrid_to_new_map[i]
+                np.testing.assert_allclose(c, 0 * unit.elementary_charge)
+                np.testing.assert_allclose(c_offset, toluene_rand_chg[idx])
+            # particle charge (c) is equal to molA particle charge
+            # offset (c_offset) is equalt to difference between molB and molA
+            elif i in htf._atom_classes['core_atoms']:
+                old_i = htf._hybrid_to_old_map[i]
+                new_i = htf._hybrid_to_new_map[i]
+                c_exp = toluene_rand_chg[new_i] - benzene_rand_chg[old_i]
+                np.testing.assert_allclose(c, benzene_rand_chg[old_i])
+                np.testing.assert_allclose(c_offset, c_exp)
 
 
 def test_virtual_sites_no_reassign(benzene_system, toluene_system,
