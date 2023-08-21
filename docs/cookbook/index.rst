@@ -1,13 +1,19 @@
 Cookbook
 ========
 
-This will include various how-to guides.
+This section describes common tasks involving the OpenFE Python API.
+
+The :any:`OpenFE CLI<cli-reference>` provides a simple way to perform the most common procedures for free energy calculations, but does not provide much flexibility for fine-tuning your approach or combining OpenFE with other tools. The :any:`Python API<api>` allows that flexibility, but using it is more complex. This cookbook breaks down common steps that would be implemented in Python to help navigate that complexity.
+
+.. note:: This section is a work-in-progress.
 
 .. module:: openfe
     :noindex:
 
-Network-First Workflow
------------------------------
+The Basic Workflow
+------------------
+
+The typical way to use the Python API is to load a number of molecules you want to calculate free energies of, construct a :class:`LigandNetwork` connecting them in an efficient way, and then combine that with information for how each ligand should be simulated to construct an :class:`AlchemicalNetwork`, which specifies the entire simulation campaign. This provides a lot of flexibility in how molecules are specified, mapped, connected, and simulated, without exposing a great deal of complexity. OpenFE recommends this workflow for most users.
 
 .. container:: deflist-flowchart
 
@@ -25,7 +31,7 @@ Network-First Workflow
                 - :any:`Loading proteins`, :any:`Defining solvents`
 
                     .. rst-class:: width-3
-                - :class:`SolventComponent`, :class:`ProteinComponent`
+                - :class:`SolventComponent` and :class:`ProteinComponent`
                     Other chemical components needed to simulate the ligand.
 
                     .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
@@ -91,22 +97,24 @@ Network-First Workflow
             A complete simulation campaign.
 
       .. rst-class:: arrow-down
-    *
+    * :any:`dumping_transformations`
 
     * Run
-        - term
-            def
+        - :any:`openfe quickrun <cli_quickrun>`
+            OpenFE recommends using the ``openfe quickrun`` CLI command to execute a transformation.
 
       .. rst-class:: arrow-down
     *
 
     * Gather
-        - term
-            def
+        - :any:`openfe gather <cli_gather>`
+            OpenFE recommends using the ``openfe gather`` CLI command to collect the results of a transformation.
 
 
 Transformation-First Workflow
 -----------------------------
+
+If you want to implement your own atom mapper or free energy procedure, or you want to do something a bit more bespoke, it's helpful to understand how OpenFE thinks about individual alchemic mutation specifications. A :class:`Transformation` stores all the information needed to run an alchemic mutation from one chemical system to another and is the basic unit of an OpenFE simulation campaign. Indeed, :class:`Transformation` objects describe the edges of the graph in the :class:`AlchemicalNetwork` class.
 
 .. container:: deflist-flowchart
 
@@ -136,7 +144,7 @@ Transformation-First Workflow
                         -
 
                         - :class:`SmallMoleculeComponent`
-                            Small molecule components describe the ligands that will be mutated.
+                            The ligands that will be mutated.
 
                         - .. container:: flowchart-sidebyside
 
@@ -164,47 +172,61 @@ Transformation-First Workflow
                             .. rst-class:: arrow-down arrow-head arrow-combine-left
                         -
 
-                        - :class:`SmallMoleculeComponent`, :class:`SolventComponent`, :class:`ProteinComponent`
-                            All components are included in the ChemicalSystem
+                        - :class:`SmallMoleculeComponent`, :class:`SolventComponent` and :class:`ProteinComponent`
+                            The components that make up the chemical system.
 
                             .. rst-class:: arrow-down arrow-multiple
                         - :any:`Assembling into ChemicalSystems`
 
                         - :class:`ChemicalSystem`
-                            The complete system of chemical components required to simulate a given transformation target.
+                            Each of the chemical systems, composed of components, that the :class:`Transformation` mutates between.
 
-                            .. rst-class:: arrow-down arrow-tail arrow-combine-left
+                            .. rst-class:: arrow-down arrow-tail arrow-combine-left arrow-multiple
                         -
 
             .. rst-class:: arrow-down arrow-head
         -
 
         - :class:`Transformation`
-            A single transformation
+            A single alchemic mutation from one chemical system to another.
+
+      .. rst-class:: arrow-down
+    *
+
+    * Run
+        - :class:`Transformation`
+            A single alchemic mutation from one chemical system to another.
 
             .. rst-class:: arrow-down
         -
 
+        - :class:`ProtocolDAG`
+            A directed acyclic graph describing how to compute a :class:`Transformation`.
 
-        - :class:`AlchemicalNetwork`
-            A complete description of a simulation campaign, consisting of a collection of :class:`Transformation` objects and a :class:`ChemicalSystem` for each ligand the transformations connect.
+        - .. container:: flowchart-sidebyside
 
-        .. rst-class:: arrow-down
-    *
+            -
+                -
+                    .. rst-class:: arrow-down arrow-multiple
+                -
 
-    * Run
-        - term
-            def
+                - :class:`ProtocolUnit`
+                    A single unit of computation within a :class:`ProtocolDAG`
 
-        .. rst-class:: arrow-down
-    *
+                    .. rst-class:: arrow-down arrow-multiple
+                -
 
-    * Gather
-        - term
-            def
+            -
+                -
+                    .. rst-class:: arrow-down
+                - :any:`executors`
+
+        - :class:`ProtocolDAGResult`
+            A completed transformation.
 
 
 .. toctree::
+    :hidden:
 
     loading_molecules
     creating_atom_mappings
