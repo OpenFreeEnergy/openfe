@@ -74,7 +74,6 @@ ul.deflist-flowchart {
     margin: 0.75em auto;
     position: relative;
     z-index: 1;
-    text-shadow: var(--pst-color-background) 0 0 10px;
     padding: 0;
 
     &::before, &::after {
@@ -114,6 +113,12 @@ ul.deflist-flowchart {
         background-image:
           var(--arrow-tail-gradient);
       }
+    }
+
+    > p {
+      background: var(--pst-color-background);
+      margin: calc(var(--arrow-length) / 2) 0 !important;
+      line-height: 1.5;
     }
   }
 
