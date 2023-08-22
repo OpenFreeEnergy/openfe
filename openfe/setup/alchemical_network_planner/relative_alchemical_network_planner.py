@@ -48,7 +48,7 @@ class RelativeAlchemicalNetworkPlanner(
         self,
         name: str = "easy_rfe_calculation",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -227,7 +227,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         self,
         name: str = "easy_rhfe",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -282,7 +282,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         self,
         name: str = "easy_rbfe",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):

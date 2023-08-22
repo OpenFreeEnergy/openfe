@@ -35,10 +35,12 @@ def _hasten_lomap(mapper, ligands):
     )
 
 
-def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
-                            central_ligand: SmallMoleculeComponent,
-                            mappers: Union[AtomMapper, Iterable[AtomMapper]],
-                            scorer=None):
+def generate_radial_network(
+    ligands: Iterable[SmallMoleculeComponent],
+    central_ligand: SmallMoleculeComponent,
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
+):
     """Generate a radial network with all ligands connected to a central node
 
     Also known as hub and spoke or star-map, this plans a LigandNetwork where
