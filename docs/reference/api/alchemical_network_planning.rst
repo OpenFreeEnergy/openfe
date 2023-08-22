@@ -11,7 +11,7 @@ Alchemical Network Planners
 ---------------------------
 
 .. module:: openfe.setup
-   :noindex:
+    :noindex:
 
 .. autosummary::
     :nosignatures:
@@ -20,14 +20,17 @@ Alchemical Network Planners
     RBFEAlchemicalNetworkPlanner
     RHFEAlchemicalNetworkPlanner
 
+Alchemical Simulations
+~~~~~~~~~~~~~~~~~~~~~~
 
-Chemical System Generators
---------------------------
+Descriptions of anticipated alchemical simulation campaigns.
 
-.. module:: openfe.setup.chemicalsystem_generator
+.. module:: openfe
+    :noindex:
 
 .. autosummary::
     :nosignatures:
     :toctree: generated/
 
-    EasyChemicalSystemGenerator
+    Transformation
+    AlchemicalNetwork
