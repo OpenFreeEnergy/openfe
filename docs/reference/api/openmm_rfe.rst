@@ -133,6 +133,9 @@ Protocol API specification
 
 .. autoclass:: RelativeHybridTopologyProtocol
    :no-members:
+   :no-inherited-members:
+   :no-undoc-members:
+   :no-special-members:
 
    .. automethod:: default_settings
 

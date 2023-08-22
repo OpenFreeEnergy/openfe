@@ -223,6 +223,14 @@ class RelativeAlchemicalNetworkPlanner(
 
 
 class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
+    """
+    Plan alchemical networks  for Relative Hydration Free Energy calculations.
+
+    Create an instance of the class with a simulation protocol and ligand
+    network planning scheme, then call it on a collection of ligands and solvent
+    to create the network.
+    """
+
     def __init__(
         self,
         name: str = "easy_rhfe",
@@ -278,6 +286,13 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
 
 
 class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
+    """
+    Plan alchemical networks for Relative Binding Free Energy calculations.
+
+    Create an instance of the class with a simulation protocol and ligand
+    network planning scheme, then call it on a collection of ligands, protein,
+    solvent, and co-factors to create the network.
+    """
     def __init__(
         self,
         name: str = "easy_rbfe",

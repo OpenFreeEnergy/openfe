@@ -1,5 +1,5 @@
-Alchemical Network Planning
-===========================
+Simulation Campaign Planning
+============================
 
 Alchemical network planners are objects that pull all the ideas in OpenFE
 into a quick setup for simulation. The goal is to create the

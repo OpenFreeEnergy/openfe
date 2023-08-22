@@ -32,8 +32,7 @@ class PersesAtomMapper(LigandAtomMapper):
                  use_positions: bool = True,
                  coordinate_tolerance: float = 0.25 * unit.angstrom):
         """
-        This class uses the perses code to facilitate the mapping of the
-        atoms of two molecules to each other.
+        Suggest atom mappings with the Perses atom mapper.
 
         Parameters
         ----------

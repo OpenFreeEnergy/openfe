@@ -41,7 +41,8 @@ def generate_radial_network(
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
 ):
-    """Generate a radial network with all ligands connected to a central node
+    """
+    Plan a radial network with all ligands connected to a central node.
 
     Also known as hub and spoke or star-map, this plans a LigandNetwork where
     all ligands are connected via a central ligand.
@@ -114,7 +115,8 @@ def generate_maximal_network(
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
     # allow_disconnected=True
 ):
-    """Create a network with all possible proposed mappings.
+    """
+    Plan a network with all possible proposed mappings.
 
     This will attempt to create (and optionally score) all possible mappings
     (up to :math:`N(N-1)/2` for each mapper given). There may be fewer actual
@@ -176,7 +178,8 @@ def generate_minimal_spanning_network(
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ):
-    """Plan a LigandNetwork which connects all ligands with minimal cost
+    """
+    Plan a :class:`.LigandNetwork` which connects all ligands with minimal cost.
 
     Parameters
     ----------
@@ -221,7 +224,8 @@ def generate_network_from_names(
         mapper: AtomMapper,
         names: list[tuple[str, str]],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork
+    """
+    Generate a :class:`.LigandNetwork` by specifying edges as tuples of names.
 
     Parameters
     ----------
@@ -270,7 +274,8 @@ def generate_network_from_indices(
         mapper: AtomMapper,
         indices: list[tuple[int, int]],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork
+    """
+    Generate a :class:`.LigandNetwork` by specifying edges as tuples of indices.
 
     Parameters
     ----------
@@ -313,7 +318,7 @@ def load_orion_network(
         mapper: AtomMapper,
         network_file: Union[str, Path],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork from an Orion NES network file.
+    """Load a :class:`.LigandNetwork` from an Orion NES network file.
 
     Parameters
     ----------
@@ -355,7 +360,7 @@ def load_fepplus_network(
         mapper: AtomMapper,
         network_file: Union[str, Path],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork from an FEP+ edges network file.
+    """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
 
     Parameters
     ----------

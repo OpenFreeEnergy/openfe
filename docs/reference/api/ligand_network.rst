@@ -23,7 +23,7 @@ A network of mutations between ligands.
 Network Planners
 ~~~~~~~~~~~~~~~~
 
-Functions that build a :class:`LigandNetwork` from a collection of :class:`SmallMoleculeComponents` by optimizing over a `scoring function <scorers>`_.
+Functions that build a :class:`.LigandNetwork` from a collection of :class:`SmallMoleculeComponents` by optimizing over a `scoring function <scorers>`_.
 
 .. autosummary::
     :nosignatures:
@@ -36,7 +36,7 @@ Functions that build a :class:`LigandNetwork` from a collection of :class:`Small
 Network Loaders
 ~~~~~~~~~~~~~~~
 
-Functions to load a :class:`LigandNetwork` from equivalent classes in other packages, or to specify one by hand.
+Functions to load a :class:`.LigandNetwork` from equivalent classes in other packages, or to specify one by hand.
 
 .. autosummary::
     :nosignatures:

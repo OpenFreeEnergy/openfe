@@ -73,6 +73,7 @@ autodoc_default_options = {
     "member-order": "bysource",
     "inherited-members": "GufeTokenizable",
     "undoc-members": True,
+    "special-members": "__call__",
 }
 toc_object_entries_show_parents = "hide"
 

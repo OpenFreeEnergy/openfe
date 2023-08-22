@@ -151,7 +151,7 @@ class LigandNetwork:
 
     def enlarge_graph(self, *, edges=None, nodes=None) -> LigandNetwork:
         """
-        Create a new network with the given edges and nodes added
+        Create a new network with the given edges and nodes added.
 
         Parameters
         ----------
@@ -162,8 +162,9 @@ class LigandNetwork:
 
         Returns
         -------
-        :class:`.Network :
+        :class:`.Network` :
             a new network adding the given edges and nodes to this network
+
         """
         if edges is None:
             edges = set([])
