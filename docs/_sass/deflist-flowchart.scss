@@ -247,7 +247,7 @@ ul.deflist-flowchart {
     flex-grow: 1;
     container-type: inline-size;
     container-name: flowchart;
-    overflow-x: scroll;
+    overflow-x: auto;
   }
 
   dd dl {
