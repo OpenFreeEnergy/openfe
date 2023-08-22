@@ -45,6 +45,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
     "docs._ext.sass",
+    "sphinx.ext.mathjax",
 ]
 
 intersphinx_mapping = {

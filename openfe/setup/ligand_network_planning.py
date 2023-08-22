@@ -115,7 +115,7 @@ def generate_maximal_network(
     """Create a network with all possible proposed mappings.
 
     This will attempt to create (and optionally score) all possible mappings
-    (up to $N(N-1)/2$ for each mapper given). There may be fewer actual
+    (up to :math:`N(N-1)/2` for each mapper given). There may be fewer actual
     mappings that this because, when a mapper cannot return a mapping for a
     given pair, there is simply no suggested mapping for that pair.
     This network is typically used as the starting point for other network
