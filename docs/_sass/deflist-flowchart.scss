@@ -10,7 +10,7 @@
     --flowchart-unit-width: 45px;
     --flowchart-spacing: 0.5rem;
     --flowchart-column-gap: calc(1.5 * var(--flowchart-spacing));
-    --flowchart-top-label-space: calc(3 * var(--flowchart-spacing));
+    --flowchart-top-label-space: 26px;
 }
 .arrow.thick {
     --arrow-thickness: 6px;
@@ -275,7 +275,8 @@ ul.deflist-flowchart {
     writing-mode: vertical-rl;
     margin-top: .25rem;
     flex-grow: 0;
-    width: var(--flowchart-top-label-space)
+    width: var(--flowchart-top-label-space);
+    font-size: 1.1em;
   }
   dd {
     text-align: center;
@@ -307,6 +308,7 @@ ul.deflist-flowchart {
     display: block;
     margin-top: 0;
     width: unset;
+    font-size: unset;
   }
   dd dd {
     border: none;
