@@ -110,8 +110,8 @@ Scoring Mappings
 With many possible mappings,
 and many ligand pairs we could form mappings between,
 we use **scorers** to rate if a mapping is a good idea.
-These take a ``LigandAtomMapping`` object and return a value from 0.0 (indicating a great mapping)
-to 1.0 (indicating a terrible mapping).
+These take a ``LigandAtomMapping`` object and return a value from 1.0 (indicating a great mapping)
+to 0.0 (indicating a terrible mapping).
 
 Again, the scoring functions from Lomap are included in the ``openfe`` package.
 The :func:`default_lomap_score` function combines many different criteria together
