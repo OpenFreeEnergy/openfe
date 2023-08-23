@@ -146,21 +146,8 @@ If you want to implement your own atom mapper or free energy procedure, or you w
                         - :class:`SmallMoleculeComponent`
                             The ligands that will be mutated.
 
-                        - .. container:: flowchart-sidebyside
-
-                            -   -
-                                    .. rst-class:: arrow-down arrow-multiple
-                                -
-
-                                - :class:`LigandNetwork`
-                                    A network of ligand transformations.
-
-                                    .. rst-class:: arrow-down arrow-multiple
-                                -
-
-                            -   -
-                                    .. rst-class:: arrow-down
-                                - :any:`Creating Atom Mappings`
+                            .. rst-class:: arrow-down
+                        - :any:`Creating Atom Mappings`
 
                         - :class:`LigandAtomMapping`
                             Corresponds atoms in one small molecule to those in another.
@@ -234,41 +221,35 @@ If you want to implement your own atom mapper or free energy procedure, or you w
     *
 
     * Gather
-        - :class:`Transformation`
-            A single alchemic mutation from one chemical system to another.
-
-            .. rst-class:: arrow-down
-        -
-
-        - :class:`ProtocolDAG`
-            A directed acyclic graph describing how to compute a :class:`Transformation`.
-
         - .. container:: flowchart-sidebyside
 
             -
-                -
-                    .. rst-class:: arrow-down arrow-multiple
-                -
 
-                - :class:`ProtocolUnit`
-                    A single unit of computation within a :class:`ProtocolDAG`
+                - :class:`Transformation`
+                    The specification for the alchemic mutation.
 
                     .. rst-class:: arrow-down
                 -
 
-                - :class:`ProtocolUnitResult`
-                    The result of a completed :class:`ProtocolUnit`
+                - :class:`Protocol`
+                    A completed single run of a transformation.
 
-                    .. rst-class:: arrow-down arrow-multiple-combine
+                    .. rst-class:: arrow-down arrow-combine-right arrow-tail
                 -
 
             -
+
+                - :class:`ProtocolDAGResult`
+                    A completed single run of a transformation.
+
+                    .. rst-class:: arrow-down arrow-combine-left arrow-multiple arrow-tail
                 -
-                    .. rst-class:: arrow-down
-                - :any:`executors`
+
+            .. rst-class:: arrow-down arrow-head
+        -
 
         - :class:`ProtocolDAGResult`
-            A completed transformation.
+                A completed transformation with multiple user-defined replicas.
 
 
 .. toctree::
