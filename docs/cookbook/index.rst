@@ -213,7 +213,53 @@ If you want to implement your own atom mapper or free energy procedure, or you w
                 - :class:`ProtocolUnit`
                     A single unit of computation within a :class:`ProtocolDAG`
 
+                    .. rst-class:: arrow-down
+                -
+
+                - :class:`ProtocolUnitResult`
+                    The result of a completed :class:`ProtocolUnit`
+
+                    .. rst-class:: arrow-down arrow-multiple-combine
+                -
+
+            -
+                -
+                    .. rst-class:: arrow-down
+                - :any:`executors`
+
+        - :class:`ProtocolDAGResult`
+            A completed transformation.
+
+      .. rst-class:: arrow-down
+    *
+
+    * Gather
+        - :class:`Transformation`
+            A single alchemic mutation from one chemical system to another.
+
+            .. rst-class:: arrow-down
+        -
+
+        - :class:`ProtocolDAG`
+            A directed acyclic graph describing how to compute a :class:`Transformation`.
+
+        - .. container:: flowchart-sidebyside
+
+            -
+                -
                     .. rst-class:: arrow-down arrow-multiple
+                -
+
+                - :class:`ProtocolUnit`
+                    A single unit of computation within a :class:`ProtocolDAG`
+
+                    .. rst-class:: arrow-down
+                -
+
+                - :class:`ProtocolUnitResult`
+                    The result of a completed :class:`ProtocolUnit`
+
+                    .. rst-class:: arrow-down arrow-multiple-combine
                 -
 
             -
