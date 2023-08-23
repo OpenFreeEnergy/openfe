@@ -175,7 +175,7 @@ If you want to implement your own atom mapper or free energy procedure, or you w
                         - :class:`SmallMoleculeComponent`, :class:`SolventComponent` and :class:`ProteinComponent`
                             The components that make up the chemical system.
 
-                            .. rst-class:: arrow-down arrow-multiple
+                            .. rst-class:: arrow-down arrow-multiple-combine
                         - :any:`Assembling into ChemicalSystems`
 
                         - :class:`ChemicalSystem`
