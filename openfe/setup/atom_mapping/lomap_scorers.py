@@ -22,7 +22,7 @@ DEFAULT_ANS_DIFFICULTY = {
 }
 
 
-def ecr_score(mapping: LigandAtomMapping):
+def ecr_score(mapping: LigandAtomMapping) -> float:
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
 
@@ -149,9 +149,7 @@ def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
 
         nmismatch += 1 - diff
 
-    atomic_number_rule = math.exp(-beta * nmismatch)
-
-    return atomic_number_rule
+    return math.exp(-beta * nmismatch)
 
 
 def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
@@ -196,15 +194,13 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
         if mismatch:
             nmismatch += 1
 
-    hybridization_rule = math.exp(- beta * nmismatch)
-
-    return hybridization_rule
+    return math.exp(- beta * nmismatch)
 
 
 def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4) -> float:
     """Checks if a sulfonamide appears and disallow this.
 
-    Returns math.exp(- beta) if this happens, else 0
+    Returns math.exp(- beta) if this happens, else 1.0
     """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
@@ -402,12 +398,21 @@ def transmuting_ring_sizes_score(mapping: LigandAtomMapping) -> float:
     return 0.1 if is_bad else 1.0
 
 
-def default_lomap_score(mapping: LigandAtomMapping):
+def default_lomap_score(mapping: LigandAtomMapping) -> float:
     """The default score function from Lomap2
 
-    Note
-    ----
-    Like other scores, high values are "good", low values are "bad"
+    Parameters
+    ----------
+    mapping : LigandAtomMapping
+      the mapping function to score
+
+    Returns
+    -------
+    score : float
+       A rating of how good this mapping is, from 0.0 (terrible) to 1.0 (great).
+       This score is a combination of many rules combined and considers factors such as the
+       number of heavy atoms in common, if ring sizes are changed or rings are broken,
+       or if other alchemically unwise transformations are attempted.
     """
     score = math.prod((
         ecr_score(mapping),
