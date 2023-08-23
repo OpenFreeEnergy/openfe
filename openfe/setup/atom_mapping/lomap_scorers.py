@@ -311,8 +311,15 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
     """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
-    molA_to_molB = mapping.componentA_to_componentB
-
+    # filter out hydrogens from mapping
+    # this matches the current implementation in Lomap
+    molA_to_molB = {}
+    for i, j in mapping.componentA_to_componentB.items():
+        if molA.GetAtomWithIdx(i).GetAtomicNum() == 1:
+            continue
+        if molB.GetAtomWithIdx(j).GetAtomicNum() == 1:
+            continue
+        molA_to_molB[i] = j
 
     ringbreak = False
     for i, j in molA_to_molB.items():
@@ -330,9 +337,9 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
             atomB = molB.GetAtomWithIdx(j)
             for bB in atomB.GetBonds():
                 otherB = bB.GetOtherAtom(atomB)
-                if otherB.GetIdx() in molA_to_molB.values():
-                    continue
                 if otherB.GetAtomicNum() == 1:
+                    continue
+                if otherB.GetIdx() in molA_to_molB.values():
                     continue
 
                 if otherA.IsInRing() ^ otherB.IsInRing():
