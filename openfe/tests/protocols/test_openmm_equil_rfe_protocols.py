@@ -435,6 +435,7 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         assert sampler._factory.hybrid_system
 
 
+@pytest.mark.slow
 def test_dry_run_user_charges(benzene_modifications, tmpdir):
     """
     Create a hybrid system with a set of fictitious user supplied charges
