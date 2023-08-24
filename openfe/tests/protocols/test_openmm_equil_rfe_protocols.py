@@ -200,7 +200,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         htf = sampler._hybrid_factory
         # 16 atoms:
         # 11 common atoms, 1 extra hydrogen in benzene, 4 extra in toluene
-        # 12 bonds in benzene + 4 extra tolunee bonds
+        # 12 bonds in benzene + 4 extra toluene bonds
         assert len(list(htf.hybrid_topology.atoms)) == 16
         assert len(list(htf.omm_hybrid_topology.atoms())) == 16
         assert len(list(htf.hybrid_topology.bonds)) == 16
@@ -377,6 +377,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
+    settings.simulation_settings.output_indices = 'resname UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -600,6 +601,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
+    settings.simulation_settings.output_indices = 'protein or resname  UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
