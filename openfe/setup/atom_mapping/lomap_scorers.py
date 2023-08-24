@@ -291,10 +291,11 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4):
 
 def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
                                        beta=0.1, penalty=6.0):
-    """Penalises ring forming
+    """Penalises having a non-mapped ring atoms become a non-ring
 
-    Check if any atoms transition to/from rings in the mapping, if so
-    returns a score of::
+    This score would for example penalise R-CH3 to R-Ph where R is the same
+    mapped atom and both CH3 and Ph are unmapped. Does not penalise R-H to R-Ph.
+    If any atoms trigger the rule returns a score of::
 
       1 - exp(-1 * beta * penalty)
 
@@ -310,7 +311,15 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
     """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
-    molA_to_molB = mapping.componentA_to_componentB
+    # filter out hydrogens from mapping
+    # this matches the current implementation in Lomap
+    molA_to_molB = {}
+    for i, j in mapping.componentA_to_componentB.items():
+        if molA.GetAtomWithIdx(i).GetAtomicNum() == 1:
+            continue
+        if molB.GetAtomWithIdx(j).GetAtomicNum() == 1:
+            continue
+        molA_to_molB[i] = j
 
     ringbreak = False
     for i, j in molA_to_molB.items():
@@ -318,6 +327,8 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
 
         for bA in atomA.GetBonds():
             otherA = bA.GetOtherAtom(atomA)
+            if otherA.GetAtomicNum() == 1:
+                continue
             if otherA.GetIdx() in molA_to_molB:
                 # if other end of bond in core, ignore
                 continue
@@ -326,6 +337,8 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
             atomB = molB.GetAtomWithIdx(j)
             for bB in atomB.GetBonds():
                 otherB = bB.GetOtherAtom(atomB)
+                if otherB.GetAtomicNum() == 1:
+                    continue
                 if otherB.GetIdx() in molA_to_molB.values():
                     continue
 
