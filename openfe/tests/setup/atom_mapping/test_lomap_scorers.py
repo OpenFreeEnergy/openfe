@@ -265,3 +265,34 @@ def test_lomap_regression(lomap_basic_test_files_dir,  # in a dir for lomap
         scores[i, i] = 0
 
     assert_allclose(matrix, scores)
+
+
+def test_transmuting_methyl_into_ring_score():
+    """
+    Sets up two mappings:
+      RC_to_RPh = [CCC]C -> [CCC]Ph
+      RH_to_RPh = [CCC]H -> [CCC]Ph
+    Where square brackets show mapped (core) region
+
+    The first mapping should trigger this rule, the second shouldn't
+    """
+    def makemol(smi):
+        m = Chem.MolFromSmiles(smi)
+        m = Chem.AddHs(m)
+        m.Compute2DCoords()
+
+        return openfe.SmallMoleculeComponent(m)
+
+    core = 'CCC{}'
+    RC = makemol(core.format('C'))
+    RPh = makemol(core.format('c1ccccc1'))
+    RH = makemol(core.format('[H]'))
+
+    RC_to_RPh = openfe.LigandAtomMapping(RC, RPh, {i: i for i in range(3)})
+    RH_to_RPh = openfe.LigandAtomMapping(RH, RPh, {i: i for i in range(3)})
+
+    score1 = lomap_scorers.transmuting_methyl_into_ring_score(RC_to_RPh)
+    score2 = lomap_scorers.transmuting_methyl_into_ring_score(RH_to_RPh)
+
+    assert score2 == 0.0
+    assert score1 == pytest.approx(1 - math.exp(-0.1 * 6.0))
