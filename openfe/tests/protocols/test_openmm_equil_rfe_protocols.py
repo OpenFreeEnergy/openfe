@@ -211,6 +211,10 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         assert len(list(ret_top.atoms())) == 16
         assert len(list(ret_top.bonds())) == 16
 
+        # check that our PDB has the right number of atoms
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 16
+
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                              benzene_to_toluene_mapping, tmpdir):
@@ -391,6 +395,10 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert isinstance(sampler._thermodynamic_states[0].barostat,
                           MonteCarloBarostat)
         assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 16
 
 
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
@@ -610,6 +618,10 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         assert isinstance(sampler._thermodynamic_states[0].barostat,
                           MonteCarloBarostat)
         assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 2629
 
 
 def test_lambda_schedule_default():
