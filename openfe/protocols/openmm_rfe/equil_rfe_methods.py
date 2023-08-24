@@ -175,6 +175,151 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.std(vals) * u
 
+    def get_overlap_matrices(self):
+        """
+        Return estimates of the overlap matrix between the states
+        for all repeats.
+
+        Returns
+        -------
+        matrices : List[npt.NDArray]
+          List of overlap matrices for each repeat
+        eigenvalues : List[npt.NDArray]
+          List of sorted eigenvalues of the overlap matrix of each repeat
+        scalar : List[npt.NDAarray]
+          List of scalars (one minus the largest nontrivial eigenvalue)
+          for each matrix
+        """
+        # Loop through and get the repeats and get the matrices
+        matrices = []
+        eigenvalues = []
+        scalar = []
+        for pus in self.data.values():
+            nc = pus[0].outputs['nc']
+            chk = pus[0].outputs['last_checkpoint']
+            reporter = multistate.MultiStateReporter(
+                      storage=nc, checkpoint_storage=chk
+                    )
+            analyzer = multistate.MultiStateSaplerAnalyzer(reporter)
+            # Note this might not work for pymbar 4
+            overlap = analyzer.mbar.computeOverlap()
+            matrices.append(overlap['matrix'])
+            eigenvalues.append(overlap['eigenvalues'])
+            scalar.append(overlap['scalar'])
+            analyzer.clear()
+
+        return matrices, eigenvalues, scalar
+
+    def get_transition_matrices(self):
+        """
+        Returns the transition matrices of replica mixing for all repeats.
+
+        Returns
+        -------
+        matrices : List[npt.NDArray]
+          List of transition matrices for each repeat
+        eigenvalues : List[npt.NDArray]
+          List of sorted eigenvalues of the transition matrix of each repeat
+        """
+        matrices = []
+        eigenvalues = []
+        for pus in self.data.values():
+            nc = pus[0].outputs['nc']
+            chk = pus[0].outputs['last_checkpoint']
+            reporter = multistate.MultiStateReporter(
+                      storage=nc, checkpoint_storage=chk
+                    )
+            analyzer = multistate.MultiStateSaplerAnalyzer(reporter)
+            mixing_stats = analyzer.generate_mixing_statistics()
+            matrices.append(mixing_stats.transition_matrix)
+            eigenvalues.append(mixing_stats.eigenvalues)
+            analyzer.clear()
+        return matrices, eigenvalues
+
+    def get_replica_states(self):
+        """
+        Returns the timeseries of replica states for each repeat.
+
+        Returns
+        -------
+        replica_states : List[npt.NDArray]
+          List of replica states for each repeat
+        """
+        replica_states = []
+        for pus in self.data.values():
+            nc = pus[0].outputs['nc']
+            chk = pus[0].outputs['last_checkpoint']
+            reporter = multistate.MultiStateReporter(
+                      storage=nc, checkpoint_storage=chk
+                    )
+            states = reporter.read_replica_thermodynamic_states()
+            replica_states.append(states)
+
+        return replica_states
+
+    def equilibration_iterations(self):
+        """
+        Returns the length of equilibration estimates for each replica.
+
+        Returns
+        -------
+        equilibration_lengths : List[float]
+        """
+        equilibration_lengths = []
+        for pus in self.data.values():
+            nc = pus[0].outputs['nc']
+            chk = pus[0].outputs['last_checkpoint']
+            reporter = multistate.MultiStateReporter(
+                      storage=nc, checkpoint_storage=chk
+                    )
+            analyzer = multistate.MultiStateSaplerAnalyzer(reporter)
+            equilibration_lengths.append(analyzer.n_equilibration_iterations)
+            analyzer.clear()
+
+        return equilibration_lengths
+
+    def get_individual_results(self):
+        """Returns lists of the estimates and corresponding MBAR uncertainties
+        for all repeats.
+
+        Returns
+        -------
+        DGs : List[unit.Quantity]
+          A list of free energy estimates for each repeat.
+        dDGs : List[unit.Quantity]
+          A list of MBAR estimate uncertainties for each repeat.
+        """
+        DGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        dDGs = [pus[0].outputs['unit_estimate_error'] for pus in self.data.values()]
+        return DGs, dDGs
+
+    @staticmethod
+    def _extract_free_energies(reporter: multistate.MultiStateReporter):
+        """Helper method to extract free energies from a MultiStateReporter
+
+        Parameters
+        ----------
+        reporter : multistate.MultiStateReporter
+
+        Returns
+        -------
+        DG : unit.Quantity
+          The free energy difference between the end states.
+        dDG : unit.Quantity
+          The MBAR error for the free energy difference estimate.
+        """
+        analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
+        DF_ij, dDF_ij = analyzer.get_free_energy()
+        DG = (DF_ij[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole
+             )
+        dDG = (dDF_ij[0, -1] * analyzer.kT).in_units_of(
+                omm_unit.kilocalories_per_mole
+              )
+        ana.clear()
+
+        return ensure_quantity(DG, 'openff'), ensure_quantity(dDG, 'openff')
+
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
     result_cls = RelativeHybridTopologyProtocolResult
@@ -641,12 +786,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 self.logger.info("Production phase complete")
 
                 self.logger.info("Obtaining estimate of results")
-                # calculate estimate of results from this individual unit
-                ana = multistate.MultiStateSamplerAnalyzer(reporter)
-                est, _ = ana.get_free_energy()
-                est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
-                est = ensure_quantity(est, 'openff')
-                ana.clear()  # clean up cached values
+                # calculate estimate & error of results from this individual unit
+                DG, dDG = RelativeHybridTopologyProtocolResult._extract_free_energies(
+                    reporter
+                )
 
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
@@ -682,7 +825,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
-                'unit_estimate': est,
+                'unit_estimate': DG,
+                'unit_estimate_error': dDG,
             }
         else:
             return {'debug': {'sampler': sampler}}
