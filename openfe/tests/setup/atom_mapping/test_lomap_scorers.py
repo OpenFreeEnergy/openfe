@@ -293,5 +293,5 @@ def test_transmuting_methyl_into_ring_score():
     score1 = lomap_scorers.transmuting_methyl_into_ring_score(RC_to_RPh)
     score2 = lomap_scorers.transmuting_methyl_into_ring_score(RH_to_RPh)
 
-    assert score2 == 0.0
-    assert score1 == pytest.approx(1 - math.exp(-0.1 * 6.0))
+    assert score1 == pytest.approx(math.exp(-0.1 * 6.0))
+    assert score2 == 1.0
