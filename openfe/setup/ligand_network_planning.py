@@ -54,7 +54,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
       mapper(s) to use, at least 1 required
     scorer : scoring function, optional
       a callable which returns a float for any LigandAtomMapping.  Used to
-      assign scores to potential mappings, higher scores indicate better
+      assign scores to potential mappings; higher scores indicate better
       mappings.
 
     Raises
