@@ -68,16 +68,18 @@ ul.deflist-flowchart {
   .arrow-up,
   .arrow-cycle
   {
+    --arrow-head-size-clamped: calc(min(var(--arrow-head-size), var(--arrow-length) / 2));
+
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-grow: 1;
     min-height: var(--arrow-length);
-    height: 100%;
     width: 100%;
     margin: calc(2 * var(--flowchart-spacing)) auto;
     position: relative;
     z-index: 1;
-    padding: 0;
+    padding: calc(var(--arrow-length) / 4) 0;
 
     &::before, &::after {
       --actual-arrow-length: max(var(--arrow-length), 100%);
@@ -92,8 +94,8 @@ ul.deflist-flowchart {
       --arrow-head-gradient:
         linear-gradient(
           -45deg,
-          var(--arrow-color) var(--arrow-head-size),
-          transparent var(--arrow-head-size)
+          var(--arrow-color) var(--arrow-head-size-clamped),
+          transparent var(--arrow-head-size-clamped)
         );
       height: calc(var(--actual-arrow-length)/1.4142);
       width: auto;
@@ -120,20 +122,19 @@ ul.deflist-flowchart {
 
     > p {
       background: var(--flowchart-bg-color);
-      margin: calc(var(--arrow-length) / 2) 0 !important;
       line-height: 1.5;
       z-index: 10;
     }
   }
 
-  .arrow-down,
+  .arrow-down:not(.arrow-tail),
   .arrow-cycle {
-    padding-bottom: var(--arrow-head-size);
+    padding-bottom: calc(var(--arrow-head-size-clamped) + var(--arrow-length) / 4);
   }
 
-  .arrow-up,
+  .arrow-up:not(.arrow-tail),
   .arrow-cycle {
-    padding-top: var(--arrow-head-size);
+    padding-top: calc(var(--arrow-head-size-clamped) + var(--arrow-length) / 4);
   }
 
   .arrow-cycle, .arrow-multiple {
@@ -150,19 +151,19 @@ ul.deflist-flowchart {
   .arrow-cycle::before
   {
     transform: rotate(-135deg);
-    translate: 0 calc(var(--actual-arrow-length) + 2 * var(--flowchart-spacing) + var(--arrow-head-size) / 2);
+    translate: 0 calc(var(--actual-arrow-length) + 2 * var(--flowchart-spacing) + var(--arrow-head-size-clamped) / 2);
   }
 
   .arrow-cycle::before {
     translate:
       calc(-0.5 * var(--arrow-multiple-gap))
-      calc(var(--actual-arrow-length) + 2 * var(--flowchart-spacing) + var(--arrow-head-size) / 2);
+      calc(var(--actual-arrow-length) + 2 * var(--flowchart-spacing) + var(--arrow-head-size-clamped) / 2);
   }
 
   .arrow-aside {
-    margin-left: calc(8 * var(--arrow-head-size));
+    margin-left: calc(8 * var(--arrow-head-size-clamped));
     &::after {
-      left: calc(-4 * var(--arrow-head-size));
+      left: calc(-4 * var(--arrow-head-size-clamped));
     }
   }
 
@@ -179,12 +180,10 @@ ul.deflist-flowchart {
     }
 
     &.arrow-down {
+      padding-top: calc(0.75 * var(--arrow-length) - var(--arrow-head-size-clamped) / 2);
+      padding-bottom: calc(0.5 * var(--arrow-head-size-clamped) + 0.25 * var(--arrow-length));
       &::before {
         border-top: 1px solid var(--flowchart-bg-color);
-      }
-      > p {
-        margin-top: calc(1.5 * var(--arrow-length)) !important;
-        margin-bottom: calc(1 * var(--arrow-length)) !important;
       }
     }
 
@@ -193,9 +192,6 @@ ul.deflist-flowchart {
         border-bottom: 1px solid var(--flowchart-bg-color);
         top: auto;
         bottom: -1px;
-      }
-      > p {
-        margin-bottom: var(--arrow-length) !important;
       }
     }
   }
