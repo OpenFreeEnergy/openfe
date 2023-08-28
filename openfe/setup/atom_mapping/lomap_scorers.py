@@ -200,7 +200,15 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
 def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4) -> float:
     """Checks if a sulfonamide appears and disallow this.
 
-    Returns math.exp(- beta) if this happens, else 1.0
+    Returns ``math.exp(- beta)`` if a sulfonamide group is mutated in or out, 
+    otherwise 1.0. Testing has shown that growing a sulfonamide from scratch 
+    performs very badly.
+
+    Parameters
+    ==========
+    beta
+        A positive float describing how much to penalise a growing sulfonamide.
+        Smaller values indicate exponentially larger penalties. 
     """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
@@ -239,7 +247,7 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4) -> float:
 
     Pyrrole, furan and thiophene *are* pemitted however
 
-    Returns math.exp(-beta) if this happens, else 1.0
+    Returns ``math.exp(-beta)`` if this happens, else 1.0
     """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
@@ -401,18 +409,20 @@ def transmuting_ring_sizes_score(mapping: LigandAtomMapping) -> float:
 def default_lomap_score(mapping: LigandAtomMapping) -> float:
     """The default score function from Lomap2
 
+
+    This score is a combination of many rules combined and considers factors such as the
+    number of heavy atoms in common, if ring sizes are changed or rings are broken,
+    or if other alchemically unwise transformations are attempted.
+       
     Parameters
     ----------
     mapping : LigandAtomMapping
-      the mapping function to score
+      The atom mapping to score.
 
     Returns
     -------
     score : float
        A rating of how good this mapping is, from 0.0 (terrible) to 1.0 (great).
-       This score is a combination of many rules combined and considers factors such as the
-       number of heavy atoms in common, if ring sizes are changed or rings are broken,
-       or if other alchemically unwise transformations are attempted.
     """
     score = math.prod((
         ecr_score(mapping),
