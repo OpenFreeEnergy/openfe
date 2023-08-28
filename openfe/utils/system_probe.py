@@ -1,15 +1,28 @@
 import logging
 import os
+import pathlib
 import socket
-import sys
 import subprocess
+import sys
+from typing import Iterable, Optional
 
 import psutil
+from psutil._common import bytes2human
 
 
-def _get_disk_usage() -> dict[str, dict[str, str]]:
+def _get_disk_usage(
+    paths: Optional[Iterable[pathlib.Path]] = None,
+) -> dict[str, dict[str, str]]:
     """
-    Get disk usage information for all filesystems.
+    Get disk usage information for all filesystems or specified paths.
+
+    Parameters
+    ----------
+    paths : Optional[Iterable[pathlib.Path]], default=None
+        An optional iterable of `pathlib.Path` objects representing specific paths for
+        which the disk usage information is required. If not provided (or set to None),
+        the function retrieves disk usage information for all filesystems mounted on
+        the system.
 
     Returns
     -------
@@ -23,13 +36,15 @@ def _get_disk_usage() -> dict[str, dict[str, str]]:
     for all filesystems mounted on the system. The output is then processed to extract
     relevant information.
 
-    The returned dictionary has filesystem names as keys, and each corresponding value
-    is a dictionary containing the following disk usage information:
+    The returned dictionary has filesystem names (or paths) as keys, and each
+    corresponding value is a dictionary containing the following disk usage
+    information:
     - 'size': The total size of the filesystem.
     - 'used': The used space on the filesystem.
     - 'available': The available space on the filesystem.
     - 'percent_used': Percentage of the filesystem's space that is currently in use.
-    - 'mount_point': The mount point directory where the filesystem is mounted.
+    - 'mount_point': The mount point directory where the filesystem is mounted. This
+      key will not be present if the "paths" argument is used.
 
     Note that the disk space values are represented as strings, which include units
     (e.g., 'G' for gigabytes, 'M' for megabytes). The function decodes the 'df'
@@ -68,31 +83,45 @@ def _get_disk_usage() -> dict[str, dict[str, str]]:
     }
     """
 
-    output = subprocess.check_output(["df", "-h"]).decode("utf-8")
+    disk_usage_dict: dict[str, dict[str, str]] = {}
 
-    lines = output.strip().split(os.linesep)
-    lines = lines[1:]
-    disk_usage_dict = {}
+    if paths:
+        for path in paths:
+            usage_info = psutil.disk_usage(str(path))._asdict()
+            disk_usage_dict[str(path)] = {
+                "available": bytes2human(usage_info["free"]),
+                "percent_used": f"{round(usage_info['percent'])}%",
+                "size": bytes2human(usage_info["total"]),
+                "used": bytes2human(usage_info["used"]),
+            }
 
-    for line in lines:
-        columns = line.split()
+        return disk_usage_dict
 
-        filesystem = columns[0]
-        size = columns[1]
-        used = columns[2]
-        available = columns[3]
-        percent_used = columns[4]
-        mount_point = columns[5]
+    else:
+        output = subprocess.check_output(["df", "-h"]).decode("utf-8")
 
-        disk_usage_dict[filesystem] = {
-            "size": size,
-            "used": used,
-            "available": available,
-            "percent_used": percent_used,
-            "mount_point": mount_point,
-        }
+        lines = output.strip().split(os.linesep)
+        lines = lines[1:]
 
-    return disk_usage_dict
+        for line in lines:
+            columns = line.split()
+
+            filesystem = columns[0]
+            size = columns[1]
+            used = columns[2]
+            available = columns[3]
+            percent_used = columns[4]
+            mount_point = columns[5]
+
+            disk_usage_dict[filesystem] = {
+                "size": size,
+                "used": used,
+                "available": available,
+                "percent_used": percent_used,
+                "mount_point": mount_point,
+            }
+
+        return disk_usage_dict
 
 
 def _get_psutil_info() -> dict[str, dict[str, str]]:
@@ -339,7 +368,7 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
     return gpu_info
 
 
-def _probe_system() -> dict:
+def _probe_system(paths: Optional[Iterable[pathlib.Path]] = None) -> dict:
     """
     Probe the system and gather various system information.
 
@@ -441,7 +470,7 @@ def _probe_system() -> dict:
     hostname = _get_hostname()
     gpu_info = _get_gpu_info()
     psutil_info = _get_psutil_info()
-    disk_usage_info = _get_disk_usage()
+    disk_usage_info = _get_disk_usage(paths)
 
     return {
         "system information": {
@@ -455,4 +484,5 @@ def _probe_system() -> dict:
 
 if __name__ == "__main__":
     from pprint import pprint
+
     pprint(_probe_system())
