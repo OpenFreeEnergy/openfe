@@ -40,8 +40,8 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1) -> float:
 
         mcsr = exp( - beta * (n1 + n2 - 2 * n_common))
 
-    Where n1 and n2 are the number of atoms in each molecule, and n_common
-    the number of atoms in the MCS.
+    Where ``n1`` and ``n2`` are the number of atoms in each molecule, and
+    ``n_common`` is the number of atoms common to both.
 
     Giving a value in the range [0, 1.0], with 1.0 being complete agreement
 
@@ -68,6 +68,10 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1) -> float:
 def mncar_score(mapping: LigandAtomMapping, ths: int = 4) -> float:
     """
     Score an atom mapping with the Minimum Number of Common Atoms Rule.
+
+    1.0 if the mapping has at least ``ths`` heavy atoms common to both
+    endpoints, or either endpoint has too few atoms for this to be meaningful;
+    0.0 otherwise.
 
     Parameters
     ----------
@@ -170,7 +174,7 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
 
     Score calculated as:
 
-    1 - math.exp(-beta * nmismatch)
+        1 - math.exp(-beta * nmismatch)
 
     Parameters
     ----------
@@ -214,7 +218,7 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
 
 def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4) -> float:
     """
-    Score an atom mapping according to whether it introduces a sulfonamide.
+    Penalize mappings where a complete sulfonamide group is mutated in or out.
 
     Returns ``(1 - math.exp(- beta))`` if this happens, else ``0``.
     """
@@ -252,9 +256,9 @@ def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4) -> float:
 
 def heterocycles_score(mapping: LigandAtomMapping, beta=0.4) -> float:
     """
-    Penalise an atom mapping if a heterocycle is formed from a hydrogen.
+    Penalize an atom mapping if a heterocycle is formed from a hydrogen.
 
-    Pyrrole, furan and thiophene *are* pemitted however
+    Pyrrole, furan and thiophene *are* pemitted however.
 
     Returns 1 if this happens, else 0
     """
