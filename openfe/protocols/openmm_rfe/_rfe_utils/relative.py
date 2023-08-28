@@ -86,9 +86,6 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 softcore_electrostatics=True,
-                 softcore_electrostatics_alpha=0.3,
-                 softcore_sigma_Q=1.0,
                  interpolate_old_and_new_14s=False,
                  flatten_torsions=False,
                  **kwargs):
@@ -125,12 +122,6 @@ class HybridTopologyFactory:
             Implement the softcore LJ as defined by Gapsys et al. JCTC 2012.
         softcore_LJ_v2_alpha : float, default 0.85
             Softcore alpha parameter for LJ v2
-        softcore_electrostatics : bool, default True
-            Use softcore electrostatics as defined by Gapsys et al. JCTC 2021.
-        softcore_electrostatics_alpha : float, default 0.3
-            Softcore alpha parameter for softcore electrostatics.
-        softcore_sigma_Q : float, default 1.0
-            Softcore sigma parameter for softcore electrostatics.
         interpolate_old_and_new_14s : bool, default False
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
@@ -171,14 +162,6 @@ class HybridTopologyFactory:
         if self._softcore_LJ_v2:
             self._check_bounds(softcore_LJ_v2_alpha, "softcore_LJ_v2_alpha")
             self._softcore_LJ_v2_alpha = softcore_LJ_v2_alpha
-
-        self._softcore_electrostatics = softcore_electrostatics
-        if self._softcore_electrostatics:
-            self._softcore_electrostatics_alpha = softcore_electrostatics_alpha
-            self._check_bounds(softcore_electrostatics_alpha,
-                               "softcore_electrostatics_alpha")
-            self._softcore_sigma_Q = softcore_sigma_Q
-            self._check_bounds(softcore_sigma_Q, "softcore_sigma_Q")
 
         # TODO: end __init__ here and move everything else to
         # create_hybrid_system() or equivalent
@@ -451,7 +434,6 @@ class HybridTopologyFactory:
             self._atom_classes['unique_new_atoms'].add(hybrid_idx)
 
         # The core atoms:
-        core_atoms = []
         for new_idx, old_idx in self._core_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -459,10 +441,9 @@ class HybridTopologyFactory:
                 errmsg = (f"there is an index collision in hybrid indices of "
                           f"the core atom map: {self._core_new_to_old_map}")
                 raise AssertionError(errmsg)
-            core_atoms.append(new_to_hybrid_idx)
+            self._atom_classes['core_atoms'].add(new_to_hybrid_idx)
 
         # The environment atoms:
-        env_atoms = []
         for new_idx, old_idx in self._env_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -471,11 +452,7 @@ class HybridTopologyFactory:
                           f"the environment atom map: "
                           f"{self._env_new_to_old_map}")
                 raise AssertionError(errmsg)
-            env_atoms.append(new_to_hybrid_idx)
-
-        # TODO - this is weirdly done and double assignments - fix
-        self._atom_classes['core_atoms'] = set(core_atoms)
-        self._atom_classes['environment_atoms'] = set(env_atoms)
+            self._atom_classes['environment_atoms'].add(new_to_hybrid_idx)
 
     @staticmethod
     def _generate_dict_from_exceptions(force):

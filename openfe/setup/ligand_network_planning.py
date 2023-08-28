@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import math
+from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
 import itertools
 from collections import Counter
@@ -37,7 +38,7 @@ def _hasten_lomap(mapper, ligands):
 def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
                             central_ligand: SmallMoleculeComponent,
                             mappers: Union[AtomMapper, Iterable[AtomMapper]],
-                            scorer=None):
+                            scorer=None) -> LigandNetwork:
     """Generate a radial network with all ligands connected to a central node
 
     Also known as hub and spoke or star-map, this plans a LigandNetwork where
@@ -53,7 +54,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
       mapper(s) to use, at least 1 required
     scorer : scoring function, optional
       a callable which returns a float for any LigandAtomMapping.  Used to
-      assign scores to potential mappings, higher scores indicate worse
+      assign scores to potential mappings; higher scores indicate better
       mappings.
 
     Raises
@@ -79,7 +80,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
     edges = []
 
     for ligand in ligands:
-        best_score = math.inf
+        best_score = 0.0
         best_mapping = None
 
         for mapping in itertools.chain.from_iterable(
@@ -93,7 +94,7 @@ def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
             score = scorer(mapping)
             mapping = mapping.with_annotations({"score": score})
 
-            if score < best_score:
+            if score > best_score:
                 best_mapping = mapping
                 best_score = score
 
@@ -109,8 +110,7 @@ def generate_maximal_network(
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
-    # allow_disconnected=True
-):
+) -> LigandNetwork:
     """Create a network with all possible proposed mappings.
 
     This will attempt to create (and optionally score) all possible mappings
@@ -128,8 +128,7 @@ def generate_maximal_network(
       the ligands to include in the LigandNetwork
     mappers : AtomMapper or Iterable[AtomMapper]
       the AtomMapper(s) to use to propose mappings.  At least 1 required,
-      but many can be given, in which case all will be tried to find the
-      lowest score edges
+      but many can be given.
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
     progress : Union[bool, Callable[Iterable], Iterable]
@@ -172,8 +171,8 @@ def generate_minimal_spanning_network(
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
-):
-    """Plan a LigandNetwork which connects all ligands with minimal cost
+) -> LigandNetwork:
+    """Connects all ligands with as few edges as possible with maximum score
 
     Parameters
     ----------
@@ -182,7 +181,7 @@ def generate_minimal_spanning_network(
     mappers : AtomMapper or Iterable[AtomMapper]
       the AtomMapper(s) to use to propose mappings.  At least 1 required,
       but many can be given, in which case all will be tried to find the
-      lowest score edges
+      highest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
     progress : Union[bool, Callable[Iterable], Iterable]
@@ -198,17 +197,21 @@ def generate_minimal_spanning_network(
     # First create a network with all the proposed mappings (scored)
     network = generate_maximal_network(ligands, mappers, scorer, progress)
 
+    # Flip network scores so we can use minimal algorithm
+    g2 = nx.MultiGraph()
+    for e1, e2, d in network.graph.edges(data=True):
+        g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
+
     # Next analyze that network to create minimal spanning network. Because
     # we carry the original (directed) LigandAtomMapping, we don't lose
     # direction information when converting to an undirected graph.
-    min_edges = nx.minimum_spanning_edges(nx.MultiGraph(network.graph),
-                                          weight='score')
+    min_edges = nx.minimum_spanning_edges(g2)
     min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
     min_network = LigandNetwork(min_mappings)
     missing_nodes = set(network.nodes) - set(min_network.nodes)
     if missing_nodes:
         raise RuntimeError("Unable to create edges to some nodes: "
-                           + str(list(missing_nodes)))
+                           f"{list(missing_nodes)}")
 
     return min_network
 
@@ -303,3 +306,87 @@ def generate_network_from_indices(
         edges.append(mapping)
 
     return LigandNetwork(edges=edges, nodes=ligands)
+
+
+def load_orion_network(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        network_file: Union[str, Path],
+) -> LigandNetwork:
+    """Generate a LigandNetwork from an Orion NES network file.
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    network_file : str
+      path to NES network file.
+
+    Returns
+    -------
+    LigandNetwork
+
+    Raises
+    ------
+    KeyError
+      If an unexpected line format is encountered.
+    """
+    
+    with open(network_file, 'r') as f:
+        network_lines = [l.strip().split(' ') for l in f
+                         if not l.startswith('#')]
+
+    names = []
+    for entry in network_lines:
+        if len(entry) != 3 or entry[1] != ">>":
+            errmsg = ("line does not match expected name >> name format: "
+                      f"{entry}")
+            raise KeyError(errmsg)
+
+        names.append((entry[0], entry[2]))
+
+    return generate_network_from_names(ligands, mapper, names)
+
+
+def load_fepplus_network(
+        ligands: list[SmallMoleculeComponent],
+        mapper: AtomMapper,
+        network_file: Union[str, Path],
+) -> LigandNetwork:
+    """Generate a LigandNetwork from an FEP+ edges network file.
+
+    Parameters
+    ----------
+    ligands : list of SmallMoleculeComponent
+      the small molecules to place into the network
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
+    network_file : str
+      path to edges network file.
+
+    Returns
+    -------
+    LigandNetwork
+
+    Raises
+    ------
+    KeyError
+      If an unexpected line format is encountered.
+    """
+
+    with open(network_file, 'r') as f:
+        network_lines = [l.split() for l in f.readlines()]
+
+    names = []
+    for entry in network_lines:
+        if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
+            errmsg = ("line does not match expected format "
+                      f"hash:hash # name -> name\n"
+                      "line format: {entry}")
+            raise KeyError(errmsg)
+
+        names.append((entry[2], entry[4]))
+
+    return generate_network_from_names(ligands, mapper, names)

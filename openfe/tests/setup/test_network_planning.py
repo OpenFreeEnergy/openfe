@@ -51,7 +51,7 @@ def test_radial_network_with_scorer(toluene_vs_others):
     toluene, others = toluene_vs_others
 
     def scorer(mapping):
-        return 1.0 / len(mapping.componentA_to_componentB)
+        return len(mapping.componentA_to_componentB)
 
     network = openfe.setup.ligand_network_planning.generate_radial_network(
         ligands=others,
@@ -64,7 +64,7 @@ def test_radial_network_with_scorer(toluene_vs_others):
     for edge in network.edges:
         assert len(edge.componentA_to_componentB) > 1  # we didn't take the bad mapper
         assert 'score' in edge.annotations
-        assert edge.annotations['score'] == 1.0 / len(edge.componentA_to_componentB)
+        assert edge.annotations['score'] == len(edge.componentA_to_componentB)
 
 
 def test_radial_network_multiple_mappers_no_scorer(toluene_vs_others):
@@ -109,7 +109,7 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
         mappers = openfe.setup.atom_mapping.LomapAtomMapper()
 
     def scoring_func(mapping):
-        return 1.0 / len(mapping.componentA_to_componentB)
+        return len(mapping.componentA_to_componentB)
 
     scorer = scoring_func if with_scorer else None
 
@@ -132,7 +132,7 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
     if scorer:
         for edge in network.edges:
             score = edge.annotations['score']
-            assert score == 1.0 / len(edge.componentA_to_componentB)
+            assert score == len(edge.componentA_to_componentB)
     else:
         for edge in network.edges:
             assert 'score' not in edge.annotations
@@ -150,7 +150,7 @@ def test_minimal_spanning_network_mappers(atom_mapping_basic_test_files, multi_m
         mappers = openfe.setup.atom_mapping.LomapAtomMapper()
 
     def scorer(mapping):
-        return 1.0 / len(mapping.componentA_to_componentB)
+        return len(mapping.componentA_to_componentB)
 
     network = openfe.ligand_network_planning.generate_minimal_spanning_network(
         ligands=ligands,
@@ -168,7 +168,7 @@ def minimal_spanning_network(toluene_vs_others):
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
 
     def scorer(mapping):
-        return 1.0 / len(mapping.componentA_to_componentB)
+        return len(mapping.componentA_to_componentB)
 
     network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
         ligands=others + [toluene],
@@ -221,7 +221,7 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
     nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
 
     def scorer(mapping):
-        return 1.0 / len(mapping.componentA_to_componentB)
+        return len(mapping.componentA_to_componentB)
 
     with pytest.raises(RuntimeError, match="Unable to create edges"):
         network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
@@ -318,3 +318,104 @@ def test_network_from_indices_indexerror(atom_mapping_basic_test_files):
             indices=requested,
             mapper=openfe.LomapAtomMapper(),
         )
+
+
+@pytest.mark.parametrize('file_fixture, loader', [
+    ['orion_network',
+     openfe.setup.ligand_network_planning.load_orion_network],
+    ['fepplus_network',
+     openfe.setup.ligand_network_planning.load_fepplus_network],
+])
+def test_network_from_external(file_fixture, loader, request,
+                               benzene_modifications):
+
+    network_file = request.getfixturevalue(file_fixture)
+
+    network = loader(
+        ligands=[l for l in benzene_modifications.values()],
+        mapper=openfe.LomapAtomMapper(),
+        network_file=network_file,
+    )
+
+    expected_edges = {
+        (benzene_modifications['benzene'], benzene_modifications['toluene']),
+        (benzene_modifications['benzene'], benzene_modifications['phenol']),
+        (benzene_modifications['benzene'], benzene_modifications['benzonitrile']),
+        (benzene_modifications['benzene'], benzene_modifications['anisole']),
+        (benzene_modifications['benzene'], benzene_modifications['styrene']),
+        (benzene_modifications['benzene'], benzene_modifications['benzaldehyde']),
+    }
+
+    actual_edges = {(e.componentA, e.componentB) for e in list(network.edges)}
+
+    assert len(network.nodes) == 7
+    assert len(network.edges) == 6
+    assert actual_edges == expected_edges
+
+
+@pytest.mark.parametrize('file_fixture, loader', [
+    ['orion_network',
+     openfe.setup.ligand_network_planning.load_orion_network],
+    ['fepplus_network',
+     openfe.setup.ligand_network_planning.load_fepplus_network],
+])
+def test_network_from_external_unknown_edge(file_fixture, loader, request,
+                                            benzene_modifications):
+    network_file = request.getfixturevalue(file_fixture)
+    ligs = [l for l in benzene_modifications.values() if l.name != 'phenol']
+
+    with pytest.raises(KeyError, match="Invalid name"):
+        network = loader(
+            ligands=ligs,
+            mapper=openfe.LomapAtomMapper(),
+            network_file=network_file,
+        )
+
+
+BAD_ORION_NETWORK = """\
+# Total number of edges: 6
+# ------------------------
+benzene >>> toluene
+benzene >> phenol
+benzene >> benzonitrile
+benzene >> anisole
+benzene >> styrene
+benzene >> benzaldehyde
+"""
+
+
+def test_bad_orion_network(benzene_modifications, tmpdir):
+    with tmpdir.as_cwd():
+        with open('bad_orion_net.dat', 'w') as f:
+            f.write(BAD_ORION_NETWORK)
+
+        with pytest.raises(KeyError, match="line does not match"):
+            network = openfe.setup.ligand_network_planning.load_orion_network(
+                ligands=[l for l in benzene_modifications.values()],
+                mapper=openfe.LomapAtomMapper(),
+                network_file='bad_orion_net.dat',
+            )
+
+
+
+BAD_EDGES = """\
+1c91235:9c91235 benzene -> toluene
+1c91235:7876633 benzene -> phenol
+1c91235:2a51f95 benzene -> benzonitrile
+1c91235:efja0bc benzene -> anisole
+1c91235:7877722 benzene -> styrene
+1c91235:99930cd benzene -> benzaldehyde
+"""
+
+
+def test_bad_edges_network(benzene_modifications, tmpdir):
+    with tmpdir.as_cwd():
+        with open('bad_edges.edges', 'w') as f:
+            f.write(BAD_EDGES)
+
+        with pytest.raises(KeyError, match="line does not match"):
+            network = openfe.setup.ligand_network_planning.load_fepplus_network(
+                ligands=[l for l in benzene_modifications.values()],
+                mapper=openfe.LomapAtomMapper(),
+                network_file='bad_edges.edges',
+            )
