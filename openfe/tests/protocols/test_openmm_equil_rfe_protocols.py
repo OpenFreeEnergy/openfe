@@ -200,7 +200,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         htf = sampler._hybrid_factory
         # 16 atoms:
         # 11 common atoms, 1 extra hydrogen in benzene, 4 extra in toluene
-        # 12 bonds in benzene + 4 extra tolunee bonds
+        # 12 bonds in benzene + 4 extra toluene bonds
         assert len(list(htf.hybrid_topology.atoms)) == 16
         assert len(list(htf.omm_hybrid_topology.atoms())) == 16
         assert len(list(htf.hybrid_topology.bonds)) == 16
@@ -210,6 +210,10 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         ret_top = mdt.Topology.to_openmm(htf.hybrid_topology)
         assert len(list(ret_top.atoms())) == 16
         assert len(list(ret_top.bonds())) == 16
+
+        # check that our PDB has the right number of atoms
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 16
 
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
@@ -373,6 +377,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
+    settings.simulation_settings.output_indices = 'resname UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -391,6 +396,10 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert isinstance(sampler._thermodynamic_states[0].barostat,
                           MonteCarloBarostat)
         assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 16
 
 
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
@@ -592,6 +601,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.alchemical_sampler_settings.n_repeats = 1
+    settings.simulation_settings.output_indices = 'protein or resname  UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -610,6 +620,10 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
         assert isinstance(sampler._thermodynamic_states[0].barostat,
                           MonteCarloBarostat)
         assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 2629
 
 
 def test_lambda_schedule_default():
