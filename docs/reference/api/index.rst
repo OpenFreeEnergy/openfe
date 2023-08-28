@@ -6,6 +6,7 @@ OpenFE API Reference
 .. toctree::
     :maxdepth: 2
 
+    data
     systems_and_components
     ligand_network
     alchemical_network_planning
