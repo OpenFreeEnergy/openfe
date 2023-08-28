@@ -11,7 +11,10 @@ from gufe import (
     Transformation,
     ChemicalSystem,
 )
-from gufe import SmallMoleculeComponent, ProteinComponent, SolventComponent
+from gufe import (
+    SmallMoleculeComponent, ProteinComponent, SolventComponent,
+    LigandNetwork,
+)
 
 
 from .abstract_alchemical_network_planner import (
@@ -19,7 +22,6 @@ from .abstract_alchemical_network_planner import (
 )
 
 from .. import LomapAtomMapper
-from ..ligand_network import LigandNetwork
 from ..atom_mapping.ligandatommapper import LigandAtomMapper
 from ..atom_mapping.lomap_scorers import default_lomap_score
 from ..ligand_network_planning import generate_minimal_spanning_network
