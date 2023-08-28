@@ -105,7 +105,6 @@ Scorers implemented by the `LOMAP <https://github.com/OpenFreeEnergy/Lomap>`_ pa
     ecr_score
     mcsr_score
     mncar_score
-    tmcsr_score
     atomic_number_score
     hybridization_score
     sulfonamides_score
