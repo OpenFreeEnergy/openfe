@@ -238,6 +238,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         sampler = unit.run(dry=True)['debug']['sampler']
 
 
+@pytest.mark.slow
 def test_dry_many_molecules_solvent(
     benzene_many_solv_system, toluene_many_solv_system,
     benzene_to_toluene_mapping, tmpdir
@@ -435,7 +436,6 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         assert sampler._factory.hybrid_system
 
 
-@pytest.mark.slow
 def test_dry_run_user_charges(benzene_modifications, tmpdir):
     """
     Create a hybrid system with a set of fictitious user supplied charges
