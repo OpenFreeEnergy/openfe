@@ -74,7 +74,7 @@ jobs:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
         run: |
-          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
