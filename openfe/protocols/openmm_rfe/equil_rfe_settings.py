@@ -26,6 +26,9 @@ from openfe.protocols.openmm_utils.omm_settings import (
 
 
 class AlchemicalSettings(SettingsBaseModel):
+    class Config:
+        extra = 'ignore'
+
     """Settings for the alchemical protocol
 
     This describes the lambda schedule and the creation of the
