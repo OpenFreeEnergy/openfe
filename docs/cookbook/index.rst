@@ -49,29 +49,28 @@ The typical way to use the Python API is to load a number of molecules you want 
                             The ligands that will be mutated.
 
 
-                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
-                        -
-
-                    -   -
-
-                        - :class:`LigandAtomMapper`
-                            Generates atom maps between one molecule and another.
-
-                            .. rst-class:: arrow-down arrow-tail arrow-combine
+                            .. rst-class:: arrow-down arrow-multiple
                         -
 
                     -   -
                             .. rst-class:: flowchart-spacer
                         -
 
-                        - :any:`Atom Map Scorers`
-                            Objective function for optimization of a ligand network.
+                        - Orion/FEP+
+                            Atom mappings from another tool.
 
-                            .. rst-class:: arrow-down arrow-tail arrow-combine-left
+                            .. rst-class:: arrow-down
                         -
 
-                    .. rst-class:: arrow-down arrow-head
-                -
+                    -   -
+                            .. rst-class:: flowchart-spacer
+                        -
+
+                        - :class:`dict` or :class:`list`
+                            Hand-write an atom mapping.
+
+                            .. rst-class:: arrow-down
+                        -
 
                 - :class:`LigandNetwork`
                     A network of ligand transformations.
