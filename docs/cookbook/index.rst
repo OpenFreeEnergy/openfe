@@ -60,7 +60,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                             Atom mappings from another tool.
 
                             .. rst-class:: arrow-down
-                        -
+                        - :any:`Ligand Network Loaders`
 
                     -   -
                             .. rst-class:: flowchart-spacer
@@ -70,7 +70,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                             Hand-write an atom mapping.
 
                             .. rst-class:: arrow-down
-                        -
+                        - :any:`Ligand Network Loaders`
 
                 - :class:`LigandNetwork`
                     A network of ligand transformations.
