@@ -14,6 +14,9 @@ import os
 import sys
 from importlib.metadata import version
 from packaging.version import parse
+from pathlib import Path
+
+from git import Repo
 
 
 sys.path.insert(0, os.path.abspath('../'))
@@ -134,3 +137,14 @@ html_css_files = [
 # custom-api.css is compiled from custom-api.scss
 sass_src_dir = "_sass"
 sass_out_dir = "_static/css"
+
+# Clone or update ExampleNotebooks
+example_notebooks_path = Path("ExampleNotebooks")
+if example_notebooks_path.exists():
+    repo = Repo(example_notebooks_path)
+    repo.remote('origin').pull()
+else:
+    repo = Repo.clone_from(
+        "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+        to_path=example_notebooks_path,
+    )

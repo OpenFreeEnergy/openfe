@@ -14,6 +14,7 @@ dependencies:
 - python=3.9
 - sphinx<7
 - sphinx-click
+- gitpython
 - tqdm
 - libsass
 - pip:
