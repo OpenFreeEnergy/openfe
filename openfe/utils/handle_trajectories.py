@@ -32,9 +32,9 @@ def _state_to_replica(dataset: nc.Dataset, state_num: int,
     return np.where(state_distribution == state_num)[0][0]
 
 
-def _state_positions_at_frame(dataset: nc.Dataset,
-                              replica_id: int,
-                              frame_num: int) -> unit.Quantity:
+def _replica_positions_at_frame(dataset: nc.Dataset,
+                                replica_index: int,
+                                frame_num: int) -> unit.Quantity:
     """
     Helper method to extract atom positions of a state at a given frame.
 
@@ -42,7 +42,7 @@ def _state_positions_at_frame(dataset: nc.Dataset,
     ----------
     dataset : netCDF4.Dataset
         Dataset containing the MultiState information.
-    replica_id : int
+    replica_index : int
         State index to extract positions for.
     frame_num : int
         Frame number to extract positions for.
@@ -52,7 +52,7 @@ def _state_positions_at_frame(dataset: nc.Dataset,
     unit.Quantity
         n_atoms * 3 position Quantity array
     """
-    pos = dataset.variables['positions'][frame_num][replica_id].data
+    pos = dataset.variables['positions'][frame_num][replica_index].data
     pos_units = dataset.variables['positions'].units
     return pos * unit(pos_units)
 
@@ -119,7 +119,7 @@ def _create_new_dataset(filename: Path, n_atoms: int,
     return ncfile
 
 
-def _get_unitcell(dataset: nc.Dataset, replica_id: int, frame_num: int):
+def _get_unitcell(dataset: nc.Dataset, replica_index: int, frame_num: int):
     """
     Helper method to extract a unit cell from the stored
     box vectors in a MultiState reporter generated NetCDF file
@@ -129,7 +129,7 @@ def _get_unitcell(dataset: nc.Dataset, replica_id: int, frame_num: int):
     ----------
     dataset : netCDF4.Dataset
         Dataset of MultiState reporter generated NetCDF file.
-    replica_id : int
+    replica_index : int
         Replica for which to get the unit cell for.
     frame_num : int
         Frame for which to get the unit cell for.
@@ -139,7 +139,7 @@ def _get_unitcell(dataset: nc.Dataset, replica_id: int, frame_num: int):
     Tuple[lx, ly, lz, alpha, beta, gamma]
         Unit cell lengths and angles in angstroms and degrees.
     """
-    vecs = dataset.variables['box_vectors'][frame_num][replica_id].data
+    vecs = dataset.variables['box_vectors'][frame_num][replica_index].data
     vecs_units = dataset.variables['box_vectors'].units
     x, y, z = (vecs * unit(vecs_units)).to('angstrom').m
     lx = np.linalg.norm(x)
@@ -208,7 +208,7 @@ def trajectory_from_multistate(input_file: Path, output_file: Path,
         if state_number is not None:
             replica_id = _state_to_replica(multistate, state_number, frame)
 
-        traj.variables['coordinates'][frame] = _state_positions_at_frame(
+        traj.variables['coordinates'][frame] = _replica_positions_at_frame(
             multistate, replica_id, frame
         ).to('angstrom').m
         unitcell = _get_unitcell(multistate, replica_id, frame)
