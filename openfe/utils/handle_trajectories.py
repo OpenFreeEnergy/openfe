@@ -175,7 +175,7 @@ def trajectory_from_multistate(input_file: Path, output_file: Path,
     replica_number : int, optional
         Index of the replica to write out
     """
-    if not (state_number ^ replica_number):
+    if not ((state_number is None) ^ (replica_number is None)):
         raise ValueError("Supply either state or replica number, "
                          f"got state_number={state_number} "
                          f"and replica_number={replica_number}")
@@ -187,7 +187,7 @@ def trajectory_from_multistate(input_file: Path, output_file: Path,
     n_frames = len(multistate.variables['positions'])
     
     # Sanity check
-    if state_number + 1 > n_replicas:
+    if state_number is not None and (state_number + 1 > n_replicas):
         # Note this works for now, but when we have more states
         # than replicas (e.g. SAMS) this won't really work
         errmsg = "State does not exist"
@@ -198,12 +198,14 @@ def trajectory_from_multistate(input_file: Path, output_file: Path,
         output_file, n_atoms,
         title=f"state {state_number} trajectory from {input_file}"
     )
-    
+
+    replica_id: int = -1
+    if replica_number is not None:
+        replica_id = replica_number
+
     # Loopy de loop
     for frame in range(n_frames):
-        if replica_number:
-            replica_id = replica_number
-        else:
+        if state_number is not None:
             replica_id = _state_to_replica(multistate, state_number, frame)
 
         traj.variables['coordinates'][frame] = _state_positions_at_frame(
