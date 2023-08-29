@@ -43,7 +43,7 @@ def _replica_positions_at_frame(dataset: nc.Dataset,
     dataset : netCDF4.Dataset
         Dataset containing the MultiState information.
     replica_index : int
-        State index to extract positions for.
+        Replica index to extract positions for.
     frame_num : int
         Frame number to extract positions for.
 
