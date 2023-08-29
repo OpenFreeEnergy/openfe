@@ -1,3 +1,5 @@
+.. _Alchemical Network Planning:
+
 Alchemical Network Planning
 ===========================
 
