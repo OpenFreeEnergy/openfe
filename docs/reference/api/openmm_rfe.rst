@@ -4,7 +4,17 @@ OpenMM Relative Free Energy Protocol
 This section provides details about the OpenMM Relative Free Energy Protocol
 implemented in OpenFE.
 
+Protocol API specification
+--------------------------
+
 .. module:: openfe.protocols.openmm_rfe
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   RelativeHybridTopologyProtocol
+   RelativeHybridTopologyProtocolResult
 
 Protocol Settings
 -----------------
@@ -124,23 +134,3 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
-
-Protocol API specification
---------------------------
-
-.. module:: openfe.protocols.openmm_rfe
-   :noindex:
-
-.. autoclass:: RelativeHybridTopologyProtocol
-   :no-members:
-   :no-inherited-members:
-   :no-undoc-members:
-   :no-special-members:
-
-   .. automethod:: default_settings
-
-   .. automethod:: create
-
-   .. automethod:: gather
-
-.. autoclass:: RelativeHybridTopologyProtocolResult

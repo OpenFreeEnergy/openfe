@@ -71,7 +71,7 @@ autodoc_pydantic_model_show_json = False
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "inherited-members": "GufeTokenizable",
+    "inherited-members": "GufeTokenizable,BaseModel",
     "undoc-members": True,
     "special-members": "__call__",
 }
@@ -131,6 +131,7 @@ html_static_path = ["_static"]
 html_css_files = [
     "css/custom.css",
     "css/custom-api.css",
+    "css/deflist-flowchart.css",
 ]
 
 # custom-api.css is compiled from custom-api.scss

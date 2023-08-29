@@ -15,15 +15,15 @@ A network of mutations between ligands.
 
     LigandNetwork
 
-.. _network_planners:
 
-
-.. module:: openfe.setup.ligand_network_planning
+.. _Ligand Network Planners:
 
 Network Planners
 ~~~~~~~~~~~~~~~~
 
-Functions that build a :class:`.LigandNetwork` from a collection of :class:`SmallMoleculeComponents` by optimizing over a `scoring function <scorers>`_.
+.. module:: openfe.setup.ligand_network_planning
+
+Functions that build a :class:`.LigandNetwork` from a collection of :class:`SmallMoleculeComponents` by optimizing over a `scoring function <Atom Map Scorers>`_.
 
 .. autosummary::
     :nosignatures:
@@ -79,12 +79,12 @@ Tools for mapping atoms in one molecule to those in another. Used to generate ef
 
     LigandAtomMapping
 
-.. _scorers:
+.. _Atom Map Scorers:
 
-Scorers
--------
+Atom Map Scorers
+----------------
 
-Scoring functions for a mapping between ligands. These are used as objective functions for :any:`network_planners`.
+Scoring functions for a mapping between ligands. These are used as objective functions for :any:`Ligand Network Planners`.
 
 LOMAP Scorers
 ~~~~~~~~~~~~~

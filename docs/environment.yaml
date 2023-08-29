@@ -12,11 +12,19 @@ dependencies:
 - plugcli
 - pydata-sphinx-theme
 - python=3.9
-- sphinx
+- sphinx<7
 - sphinx-click
 - tqdm
 - libsass
 - pip:
   - sphinx-design
   - sphinx-toolbox
+  - sphinx<7
   - git+https://github.com/OpenFreeEnergy/gufe@main
+
+# These are added automatically by RTD, so we include them here
+# for a consistent environment.
+- mock
+- pillow
+- sphinx
+- sphinx_rtd_theme

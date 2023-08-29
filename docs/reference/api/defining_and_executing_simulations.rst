@@ -1,6 +1,8 @@
 Defining and Executing Simulations
 ==================================
 
+.. _executors:
+
 Executing Simulations
 ---------------------
 
