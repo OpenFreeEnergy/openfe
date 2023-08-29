@@ -9,7 +9,6 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 from __future__ import annotations
 
 from typing import Optional
-from pydantic import validator
 from openff.units import unit
 import os
 
@@ -23,6 +22,11 @@ from openfe.protocols.openmm_utils.omm_settings import (
     SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
     OpenMMEngineSettings, IntegratorSettings, SimulationSettings
 )
+
+try:
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator
 
 
 class AlchemicalSettings(SettingsBaseModel):
