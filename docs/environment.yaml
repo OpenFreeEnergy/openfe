@@ -17,6 +17,9 @@ dependencies:
 - gitpython
 - tqdm
 - libsass
+- nbsphinx
+- nbsphinx-link
+- myst-parser
 - pip:
   - sphinx-design
   - sphinx-toolbox

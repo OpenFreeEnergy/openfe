@@ -17,7 +17,8 @@ from packaging.version import parse
 from pathlib import Path
 
 from git import Repo
-
+import nbsphinx
+import nbformat
 
 sys.path.insert(0, os.path.abspath('../'))
 
@@ -48,6 +49,9 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
     "docs._ext.sass",
+    "myst_parser",
+    "nbsphinx",
+    "nbsphinx_link",
 ]
 
 intersphinx_mapping = {
@@ -83,7 +87,15 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_ext", "_sass"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "_ext",
+    "_sass",
+    "README.md",
+    "ExampleNotebooks",
+]
 
 autodoc_mock_imports = [
     "matplotlib",
@@ -92,7 +104,6 @@ autodoc_mock_imports = [
     "mdtraj",
     "openmmforcefields",
 ]
-
 
 # -- Options for HTML output -------------------------------------------------
 
