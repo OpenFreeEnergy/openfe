@@ -5,13 +5,12 @@ import numpy as np
 from pathlib import Path
 from openff.units import unit
 from openfe import __version__
+from typing import Optional
 
 
-def _effective_replica(dataset: nc.Dataset, state_num: int,
-                       frame_num: int) -> int:
-    """
-    Helper method to extract the relevant replica number which
-    represents a given state number based on the frame number.
+def _state_to_replica(dataset: nc.Dataset, state_num: int,
+                      frame_num: int) -> int:
+    """Convert a state index to replica index at a given frame
 
     Parameters
     ----------
@@ -33,7 +32,8 @@ def _effective_replica(dataset: nc.Dataset, state_num: int,
     return np.where(state_distribution == state_num)[0][0]
 
 
-def _state_positions_at_frame(dataset: nc.Dataset, state_num: int,
+def _state_positions_at_frame(dataset: nc.Dataset,
+                              replica_id: int,
                               frame_num: int) -> unit.Quantity:
     """
     Helper method to extract atom positions of a state at a given frame.
@@ -42,7 +42,7 @@ def _state_positions_at_frame(dataset: nc.Dataset, state_num: int,
     ----------
     dataset : netCDF4.Dataset
         Dataset containing the MultiState information.
-    state_num : int
+    replica_id : int
         State index to extract positions for.
     frame_num : int
         Frame number to extract positions for.
@@ -52,8 +52,7 @@ def _state_positions_at_frame(dataset: nc.Dataset, state_num: int,
     unit.Quantity
         n_atoms * 3 position Quantity array
     """
-    effective_replica = _effective_replica(dataset, state_num, frame_num)
-    pos = dataset.variables['positions'][frame_num][effective_replica].data
+    pos = dataset.variables['positions'][frame_num][replica_id].data
     pos_units = dataset.variables['positions'].units
     return pos * unit(pos_units)
 
@@ -120,7 +119,7 @@ def _create_new_dataset(filename: Path, n_atoms: int,
     return ncfile
 
 
-def _get_unitcell(dataset: nc.Dataset, state_num: int, frame_num: int):
+def _get_unitcell(dataset: nc.Dataset, replica_id: int, frame_num: int):
     """
     Helper method to extract a unit cell from the stored
     box vectors in a MultiState reporter generated NetCDF file
@@ -130,8 +129,8 @@ def _get_unitcell(dataset: nc.Dataset, state_num: int, frame_num: int):
     ----------
     dataset : netCDF4.Dataset
         Dataset of MultiState reporter generated NetCDF file.
-    state_num : int
-        State for which to get the unit cell for.
+    replica_id : int
+        Replica for which to get the unit cell for.
     frame_num : int
         Frame for which to get the unit cell for.
 
@@ -140,8 +139,7 @@ def _get_unitcell(dataset: nc.Dataset, state_num: int, frame_num: int):
     Tuple[lx, ly, lz, alpha, beta, gamma]
         Unit cell lengths and angles in angstroms and degrees.
     """
-    effective_replica = _effective_replica(dataset, state_num, frame_num)
-    vecs = dataset.variables['box_vectors'][frame_num][effective_replica].data
+    vecs = dataset.variables['box_vectors'][frame_num][replica_id].data
     vecs_units = dataset.variables['box_vectors'].units
     x, y, z = (vecs * unit(vecs_units)).to('angstrom').m
     lx = np.linalg.norm(x)
@@ -158,10 +156,13 @@ def _get_unitcell(dataset: nc.Dataset, state_num: int, frame_num: int):
 
 
 def trajectory_from_multistate(input_file: Path, output_file: Path,
-                               state_number: int) -> None:
+                               state_number: Optional[int] = None,
+                               replica_number: Optional[int] = None) -> None:
     """
     Extract a state's trajectory (in an AMBER compliant format)
     from a MultiState sampler generated NetCDF file.
+
+    Either a state or replica index must be supplied, but not both!
 
     Parameters
     ----------
@@ -169,9 +170,16 @@ def trajectory_from_multistate(input_file: Path, output_file: Path,
         Path to the input MultiState sampler generated NetCDF file.
     output_file : path.Pathlib
         Path to the AMBER-style NetCDF trajectory to be written.
-    state_number : int
+    state_number : int, optional
         Index of the state to write out to the trajectory.
+    replica_number : int, optional
+        Index of the replica to write out
     """
+    if not (state_number ^ replica_number):
+        raise ValueError("Supply either state or replica number, "
+                         f"got state_number={state_number} "
+                         f"and replica_number={replica_number}")
+
     # Open MultiState NC file and get number of atoms and frames
     multistate = nc.Dataset(input_file, 'r')
     n_atoms = len(multistate.variables['positions'][0][0])
@@ -193,10 +201,15 @@ def trajectory_from_multistate(input_file: Path, output_file: Path,
     
     # Loopy de loop
     for frame in range(n_frames):
+        if replica_number:
+            replica_id = replica_number
+        else:
+            replica_id = _state_to_replica(multistate, state_number, frame)
+
         traj.variables['coordinates'][frame] = _state_positions_at_frame(
-                multistate, state_number, frame
+            multistate, replica_id, frame
         ).to('angstrom').m
-        unitcell = _get_unitcell(multistate, state_number, frame)
+        unitcell = _get_unitcell(multistate, replica_id, frame)
         traj.variables['cell_lengths'][frame] = unitcell[:3]
         traj.variables['cell_angles'][frame] = unitcell[3:]
 
