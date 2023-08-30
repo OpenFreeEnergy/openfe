@@ -105,6 +105,17 @@ autodoc_mock_imports = [
     "openmmforcefields",
 ]
 
+# Extensions for the myst parser
+myst_enable_extensions = [
+    "dollarmath",
+    "colon_fence",
+    "smartquotes",
+    "replacements",
+    "deflist",
+    "attrs_inline",
+]
+myst_heading_anchors = 3
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
