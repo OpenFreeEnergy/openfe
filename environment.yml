@@ -11,7 +11,7 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - pytest-rerunfailures
-  - pydantic <2
+  - pydantic >1
   - coverage
   - cinnabar ==0.3.0
   - openff-toolkit>=0.13.0
