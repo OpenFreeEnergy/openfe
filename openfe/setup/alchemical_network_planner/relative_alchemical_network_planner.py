@@ -50,7 +50,7 @@ class RelativeAlchemicalNetworkPlanner(
         self,
         name: str = "easy_rfe_calculation",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -225,11 +225,19 @@ class RelativeAlchemicalNetworkPlanner(
 
 
 class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
+    """
+    Plan alchemical networks  for Relative Hydration Free Energy calculations.
+
+    Create an instance of the class with a simulation protocol and ligand
+    network planning scheme, then call it on a collection of ligands and solvent
+    to create the network.
+    """
+
     def __init__(
         self,
         name: str = "easy_rhfe",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -280,11 +288,18 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
 
 
 class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
+    """
+    Plan alchemical networks for Relative Binding Free Energy calculations.
+
+    Create an instance of the class with a simulation protocol and ligand
+    network planning scheme, then call it on a collection of ligands, protein,
+    solvent, and co-factors to create the network.
+    """
     def __init__(
         self,
         name: str = "easy_rbfe",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):

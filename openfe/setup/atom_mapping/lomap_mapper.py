@@ -21,10 +21,11 @@ class LomapAtomMapper(LigandAtomMapper):
     def __init__(self, *, time: int = 20, threed: bool = True,
                  max3d: float = 1000.0, element_change: bool = True,
                  seed: str = '', shift: bool = True):
-        """Wraps the MCS atom mapper from Lomap.
+        """
+        Suggest atom mappings with the MCS atom mapper from Lomap.
 
-        Kwargs are passed directly to the MCS class from Lomap for each mapping
-        created
+        Keyword arguments are passed directly to the MCS class from Lomap for
+        each mapping created.
 
         Parameters
         ----------

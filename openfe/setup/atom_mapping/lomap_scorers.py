@@ -23,6 +23,9 @@ DEFAULT_ANS_DIFFICULTY = {
 
 
 def ecr_score(mapping: LigandAtomMapping) -> float:
+    """
+    Score an atom mapping with the EleCtrostatic Rule.
+    """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
 
@@ -30,14 +33,15 @@ def ecr_score(mapping: LigandAtomMapping) -> float:
 
 
 def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1) -> float:
-    """Maximum command substructure rule
+    """
+    Score an atom mapping with the Maximum Command Substructure Rule.
 
     This rule is defined as::
 
         mcsr = exp( - beta * (n1 + n2 - 2 * n_common))
 
-    Where n1 and n2 are the number of atoms in each molecule, and n_common
-    the number of atoms in the MCS.
+    Where ``n1`` and ``n2`` are the number of atoms in each molecule, and
+    ``n_common`` is the number of atoms common to both.
 
     Giving a value in the range [0, 1.0], with 1.0 being complete agreement
     """
@@ -60,7 +64,12 @@ def mcsr_score(mapping: LigandAtomMapping, beta: float = 0.1) -> float:
 
 
 def mncar_score(mapping: LigandAtomMapping, ths: int = 4) -> float:
-    """Minimum number of common atoms rule
+    """
+    Score an atom mapping with the Minimum Number of Common Atoms Rule.
+
+    1.0 if the mapping has at least ``ths`` heavy atoms common to both
+    endpoints, or either endpoint has too few atoms for this to be meaningful;
+    0.0 otherwise.
 
     Parameters
     ----------
@@ -84,19 +93,22 @@ def mncar_score(mapping: LigandAtomMapping, ths: int = 4) -> float:
     return 1.0 if ok else 0.0
 
 
-def tmcsr_score(self, mapping: LigandAtomMapping):
+def tmcsr_score(self, mapping: LigandAtomMapping) -> float:
     raise NotImplementedError
 
 
 def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
                         difficulty=None) -> float:
-    """A score on the elemental changes happening in the mapping
+    """
+    Score an atom mapping by the elemental changes it specifies.
 
     For each transmuted atom, a mismatch score is summed, according to the
     difficulty scores (see difficult parameter).  The final score is then
     given as:
 
-    score = exp(-beta * mismatch)
+    .. code::
+
+        score = exp(-beta * mismatch)
 
     Parameters
     ----------
@@ -154,10 +166,11 @@ def atomic_number_score(mapping: LigandAtomMapping, beta=0.1,
 
 def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
     """
+    Score an atom mapping by how much each atom's orbital hybridization changes.
 
     Score calculated as:
 
-    math.exp(-beta * nmismatch)
+        math.exp(-beta * nmismatch)
 
     Parameters
     ----------
@@ -198,17 +211,18 @@ def hybridization_score(mapping: LigandAtomMapping, beta=0.15) -> float:
 
 
 def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4) -> float:
-    """Checks if a sulfonamide appears and disallow this.
+    """
+    Penalize mappings where a complete sulfonamide group is mutated in or out.
 
-    Returns ``math.exp(- beta)`` if a sulfonamide group is mutated in or out, 
-    otherwise 1.0. Testing has shown that growing a sulfonamide from scratch 
+    Returns ``math.exp(- beta)`` if a sulfonamide group is mutated in or out,
+    otherwise 1.0. Testing has shown that growing a sulfonamide from scratch
     performs very badly.
 
     Parameters
     ==========
     beta
         A positive float describing how much to penalise a growing sulfonamide.
-        Smaller values indicate exponentially larger penalties. 
+        Smaller values indicate exponentially larger penalties.
     """
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
@@ -243,9 +257,10 @@ def sulfonamides_score(mapping: LigandAtomMapping, beta=0.4) -> float:
 
 
 def heterocycles_score(mapping: LigandAtomMapping, beta=0.4) -> float:
-    """Checks if a heterocycle is formed from a -H
+    """
+    Penalize an atom mapping if a heterocycle is formed from a hydrogen.
 
-    Pyrrole, furan and thiophene *are* pemitted however
+    Pyrrole, furan and thiophene *are* pemitted however.
 
     Returns ``math.exp(-beta)`` if this happens, else 1.0
     """
@@ -293,13 +308,14 @@ def heterocycles_score(mapping: LigandAtomMapping, beta=0.4) -> float:
 
 def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
                                        beta=0.1, penalty=6.0) -> float:
-    """Penalises having a non-mapped ring atoms become a non-ring
+    """
+    Penalise an atom mapping if a ring is formed from an unmapped atom.
 
     This score would for example penalise R-CH3 to R-Ph where R is the same
     mapped atom and both CH3 and Ph are unmapped. Does not penalise R-H to R-Ph.
-    If any atoms trigger the rule returns a score of::
+    If any atoms trigger the rule returns a score of:
 
-      exp(-1 * beta * penalty)
+        exp(-1 * beta * penalty)
 
     Parameters
     ----------
@@ -354,7 +370,7 @@ def transmuting_methyl_into_ring_score(mapping: LigandAtomMapping,
 
 
 def transmuting_ring_sizes_score(mapping: LigandAtomMapping) -> float:
-    """Checks if mapping alters a ring size"""
+    """Penalise an atom mapping if it alters the size of a ring."""
     molA = mapping.componentA.to_rdkit()
     molB = mapping.componentB.to_rdkit()
     molA_to_molB = mapping.componentA_to_componentB
@@ -407,13 +423,16 @@ def transmuting_ring_sizes_score(mapping: LigandAtomMapping) -> float:
 
 
 def default_lomap_score(mapping: LigandAtomMapping) -> float:
-    """The default score function from Lomap2
+    """
+    Score an atom mapping with the default score function from Lomap2.
+
+    This combines many of the other scores in this module into a single score.
 
 
     This score is a combination of many rules combined and considers factors such as the
     number of heavy atoms in common, if ring sizes are changed or rings are broken,
     or if other alchemically unwise transformations are attempted.
-       
+
     Parameters
     ----------
     mapping : LigandAtomMapping

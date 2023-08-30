@@ -35,11 +35,14 @@ def _hasten_lomap(mapper, ligands):
     )
 
 
-def generate_radial_network(ligands: Iterable[SmallMoleculeComponent],
-                            central_ligand: SmallMoleculeComponent,
-                            mappers: Union[AtomMapper, Iterable[AtomMapper]],
-                            scorer=None) -> LigandNetwork:
-    """Generate a radial network with all ligands connected to a central node
+def generate_radial_network(
+    ligands: Iterable[SmallMoleculeComponent],
+    central_ligand: SmallMoleculeComponent,
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
+) -> LigandNetwork:
+    """
+    Plan a radial network with all ligands connected to a central node.
 
     Also known as hub and spoke or star-map, this plans a LigandNetwork where
     all ligands are connected via a central ligand.
@@ -111,10 +114,11 @@ def generate_maximal_network(
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ) -> LigandNetwork:
-    """Create a network with all possible proposed mappings.
+    """
+    Plan a network with all possible proposed mappings.
 
     This will attempt to create (and optionally score) all possible mappings
-    (up to $N(N-1)/2$ for each mapper given). There may be fewer actual
+    (up to :math:`N(N-1)/2` for each mapper given). There may be fewer actual
     mappings that this because, when a mapper cannot return a mapping for a
     given pair, there is simply no suggested mapping for that pair.
     This network is typically used as the starting point for other network
@@ -172,7 +176,8 @@ def generate_minimal_spanning_network(
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ) -> LigandNetwork:
-    """Connects all ligands with as few edges as possible with maximum score
+    """
+    Plan a network with as few edges as possible with maximum total score
 
     Parameters
     ----------
@@ -221,7 +226,8 @@ def generate_network_from_names(
         mapper: AtomMapper,
         names: list[tuple[str, str]],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork
+    """
+    Generate a :class:`.LigandNetwork` by specifying edges as tuples of names.
 
     Parameters
     ----------
@@ -270,7 +276,8 @@ def generate_network_from_indices(
         mapper: AtomMapper,
         indices: list[tuple[int, int]],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork
+    """
+    Generate a :class:`.LigandNetwork` by specifying edges as tuples of indices.
 
     Parameters
     ----------
@@ -313,7 +320,7 @@ def load_orion_network(
         mapper: AtomMapper,
         network_file: Union[str, Path],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork from an Orion NES network file.
+    """Load a :class:`.LigandNetwork` from an Orion NES network file.
 
     Parameters
     ----------
@@ -355,7 +362,7 @@ def load_fepplus_network(
         mapper: AtomMapper,
         network_file: Union[str, Path],
 ) -> LigandNetwork:
-    """Generate a LigandNetwork from an FEP+ edges network file.
+    """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
 
     Parameters
     ----------
