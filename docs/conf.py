@@ -151,11 +151,20 @@ sass_out_dir = "_static/css"
 
 # Clone or update ExampleNotebooks
 example_notebooks_path = Path("ExampleNotebooks")
-if example_notebooks_path.exists():
-    repo = Repo(example_notebooks_path)
-    repo.remote('origin').pull()
-else:
-    repo = Repo.clone_from(
-        "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-        to_path=example_notebooks_path,
+try:
+    if example_notebooks_path.exists():
+        repo = Repo(example_notebooks_path)
+        repo.remote('origin').pull()
+    else:
+        repo = Repo.clone_from(
+            "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+            to_path=example_notebooks_path,
+        )
+except Exception as e:
+    from sphinx.util.logging import getLogger
+
+    filename = e.__traceback__.tb_frame.f_code.co_filename
+    lineno = e.__traceback__.tb_lineno
+    getLogger('sphinx.ext.openfe_git').warning(
+        f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
     )
