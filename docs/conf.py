@@ -53,6 +53,7 @@ extensions = [
     "myst_parser",
     "nbsphinx",
     "nbsphinx_link",
+    "sphinx.ext.mathjax",
 ]
 
 intersphinx_mapping = {
@@ -78,7 +79,9 @@ autodoc_pydantic_model_show_json = False
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "inherited-members": "GufeTokenizable,BaseModel"
+    "inherited-members": "GufeTokenizable,BaseModel",
+    "undoc-members": True,
+    "special-members": "__call__",
 }
 toc_object_entries_show_parents = "hide"
 

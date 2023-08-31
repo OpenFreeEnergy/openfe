@@ -19,13 +19,24 @@ from gufe import (
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
     def __init__(
         self,
-        solvent: SolventComponent = None,
-        protein: ProteinComponent = None,
+        solvent: Optional[SolventComponent] = None,
+        protein: Optional[ProteinComponent] = None,
         cofactors: Optional[Iterable[SmallMoleculeComponent]] = None,
         do_vacuum: bool = False,
     ):
-        """This class is a easy generator class, for generating chemical systems with a focus on a given SmallMoleculeComponent.
-        depending on which parameters are given, the following systems will be generated in order::
+        """
+        Generate consistent chemical systems given a :class:`SmallMoleculeComponent`.
+
+        This class aids preparation of :class:`ChemicalSystem` instances for
+        free energy simulations. Construct an instance of the class with all the
+        components except the :class:`SmallMoleculeComponent` that will be
+        mutated, and then call the instance on each mutation target to prepare
+        systems in vacuum, solvent, and with protein.
+
+        This class is a easy generator class, for generating chemical systems
+        with a focus on a given SmallMoleculeComponent. Depending on which
+        parameters are given, the following systems will be generated in
+        order:
 
             vacuum -> solvent -> protein
 
@@ -44,7 +55,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         Raises
         ------
         ValueError
-            _description_
+            If neither a solvent nor protein is provided and ``do_vacuum`` is
+            false.
         """
         self.solvent = solvent
         self.protein = protein
@@ -59,22 +71,20 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
     def __call__(
         self, component: SmallMoleculeComponent
     ) -> Iterable[ChemicalSystem]:
-        """generate systems, around the given SmallMoleculeComponent
+        """Generate systems around the given :class:`SmallMoleculeComponent`.
 
         Parameters
         ----------
         component : SmallMoleculeComponent
-            the molecule for the system generation
+            The molecule for the system generation.
 
         Returns
         -------
         Iterable[ChemicalSystem]
-            generator for systems with the given environments
-
-        Yields
-        ------
-        Iterator[Iterable[ChemicalSystem]]
-            generator for systems with the given environments
+            Generator for systems with the given environments. Returns a
+            vacuum system first in ``self.do_vacuum`` is true, then a solvated
+            system without protein, then finally a solvated system with protein
+            if the protein component is set.
 
         """
 

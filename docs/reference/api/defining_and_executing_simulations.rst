@@ -7,28 +7,28 @@ Executing Simulations
 ---------------------
 
 .. module:: openfe
-   :noindex:
+    :noindex:
 
 .. autosummary::
-   :nosignatures:
-   :toctree: generated/
+    :nosignatures:
+    :toctree: generated/
 
-   execute_DAG
+    execute_DAG
 
 General classes
 ---------------
 
 .. module:: openfe
-   :noindex:
+    :noindex:
 
 .. autosummary::
-   :nosignatures:
-   :toctree: generated/
+    :nosignatures:
+    :toctree: generated/
 
-   ProtocolDAG
-   ProtocolUnitResult
-   ProtocolUnitFailure
-   ProtocolDAGResult
+    ProtocolDAG
+    ProtocolUnitResult
+    ProtocolUnitFailure
+    ProtocolDAGResult
 
 Specialised classes
 -------------------
@@ -36,12 +36,12 @@ Specialised classes
 These classes are abstract classes that are specialised (subclassed) for an individual Protocol.
 
 .. module:: openfe
-   :noindex:
+    :noindex:
 
 .. autosummary::
-   :nosignatures:
-   :toctree: generated/
+    :nosignatures:
+    :toctree: generated/
 
-   Protocol
-   ProtocolUnit
-   ProtocolResult
+    Protocol
+    ProtocolUnit
+    ProtocolResult
