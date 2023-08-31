@@ -15,6 +15,7 @@ import sys
 from importlib.metadata import version
 from packaging.version import parse
 from pathlib import Path
+from inspect import cleandoc
 
 from git import Repo
 import nbsphinx
@@ -179,3 +180,65 @@ except Exception as e:
     getLogger('sphinx.ext.openfe_git').warning(
         f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
     )
+
+nbsphinx_prolog = cleandoc(r"""
+    {%- set path = env.doc2path(env.docname, base="ExampleNotebooks") -%}
+    {%- set gh_repo = "OpenFreeEnergy/openfe" -%}
+    {%- set gh_branch = "main" -%}
+    {%- set path = env.doc2path(env.docname, base=None) -%}
+    {%- if path.endswith(".nblink") -%}
+        {%- set path = env.dependencies[env.docname] | first -%}
+        {%- if path.startswith("docs/ExampleNotebooks/") -%}
+            {%- set path = path.replace("docs/ExampleNotebooks/", "", 1) -%}
+            {%- set gh_repo = "OpenFreeEnergy/ExampleNotebooks" -%}
+        {%- endif -%}
+    {%- endif -%}
+    {%- set gh_url =
+        "https://www.github.com/"
+        ~ gh_repo
+        ~ "/blob/"
+        ~ gh_branch
+        ~ "/"
+        ~ path
+    -%}
+    {%- set dl_url =
+        "https://raw.githubusercontent.com/"
+        ~ gh_repo
+        ~ "/"
+        ~ gh_branch
+        ~ "/"
+        ~ path
+    -%}
+    {%- set colab_url =
+        "http://colab.research.google.com/github/"
+        ~ gh_repo
+        ~ "/blob/"
+        ~ gh_branch
+        ~ "/"
+        ~ path
+    -%}
+
+    .. container:: ofe-top-of-notebook
+
+        .. button-link:: {{gh_url}}
+            :color: primary
+            :shadow:
+            :outline:
+
+            :octicon:`mark-github` View on GitHub
+
+        .. button-link:: {{dl_url}}
+            :color: primary
+            :shadow:
+            :outline:
+
+            :octicon:`download` Download Notebook
+
+        .. button-link:: {{colab_url}}
+            :color: primary
+            :shadow:
+            :outline:
+
+            :octicon:`rocket` Run in Colab
+
+""")

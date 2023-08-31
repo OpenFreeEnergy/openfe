@@ -74,6 +74,18 @@ img {
 }
 
 /*
+Links bar at top of notebooks
+*/
+.ofe-top-of-notebook {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 3em;
+    margin: 0;
+    padding: 0;
+}
+
+/*
 Themes - Deviating Colors are ofe-colorVars rest is original scipyData theme.
 */
 
