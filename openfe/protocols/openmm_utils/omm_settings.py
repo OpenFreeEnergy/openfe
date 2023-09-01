@@ -22,7 +22,7 @@ from gufe.settings import (
 try:
     from pydantic.v1 import validator
 except ImportError:
-    from pydantic import validator
+    from pydantic import validator  # type: ignore[assignment]
 
 class SystemSettings(SettingsBaseModel):
     """Settings describing the simulation system settings."""
