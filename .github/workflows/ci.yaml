@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu']
-        pydantic-version: ">1"
+        pydantic-version: [" "]
         python-version:
           - "3.9"
           - "3.10"
