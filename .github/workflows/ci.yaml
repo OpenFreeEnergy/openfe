@@ -24,7 +24,7 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.OS }}-latest
-    name: "tests"
+    name: "py-${{ matrix.python-version }} pan-${{ matrix.pydantic-version }}"
     strategy:
       fail-fast: false
       matrix:
