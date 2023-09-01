@@ -24,7 +24,7 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}-latest
-    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️-${{ matrix.pydantic-version }}"
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }}"
     strategy:
       fail-fast: false
       matrix:
