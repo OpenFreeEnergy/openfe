@@ -37,6 +37,7 @@ jobs:
         include:
           - os: "macos"
             python-version: "3.11"
+            pydantic-version: ">1"
           - os: "ubuntu"
             python-version: "3.11"
             pydantic-version: "<2"
