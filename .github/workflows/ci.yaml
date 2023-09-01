@@ -23,19 +23,19 @@ defaults:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.OS }}-latest
-    name: "py-${{ matrix.python-version }} pan-${{ matrix.pydantic-version }}"
+    runs-on: ${{ matrix.os }}-latest
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️-${{ matrix.pydantic-version }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu']
-        pydantic-version: [" "]
+        os: ["ubuntu"]
+        pydantic-version: [">1"]
         python-version:
           - "3.9"
           - "3.10"
           - "3.11"
         include:
-          - os: 'macos'
+          - os: "macos"
             python-version: "3.11"
           - os: "ubuntu"
             python-version: "3.11"
