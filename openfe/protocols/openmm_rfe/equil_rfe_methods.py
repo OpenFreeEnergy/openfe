@@ -179,7 +179,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.std(vals) * u
 
-    def get_individual_estimates(self) -> list[tuple[unit.Quantity]]:
+    def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
         """Return a list of tuples containing the individual free energy
         estimates and associated MBAR errors for each repeat.
 
