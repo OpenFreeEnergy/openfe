@@ -1,16 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from importlib import resources
 from pathlib import Path
 import pytest
 import numpy as np
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_allclose
 from openmm import app, MonteCarloBarostat
 from openmm import unit as ommunit
+from openmmtools import multistate
 from openff.units import unit
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
-    settings_validation, system_validation, system_creation
+    settings_validation, system_validation, system_creation,
+    multistate_analysis
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     SystemSettings, SolvationSettings,
@@ -180,6 +183,73 @@ def get_settings():
     system_settings = SystemSettings()
 
     return forcefield_settings, thermo_settings, system_settings
+
+
+class TestFEAnalysis:
+
+    @pytest.fixture()
+    def reporter(self):
+        with resources.path('openfe.tests.data.openmm_rfe', 'vacuum_nocoord.nc') as f:
+            ncfile = str(f)
+
+        with resources.path('openfe.tests.data.openmm_rfe', 'vacuum_nocoord_checkpoint.nc') as f:
+            chkfile = str(f)
+
+        return multistate.MultiStateReporter(
+            storage=ncfile, checkpoint_storage=chkfile
+        )
+    
+    @pytest.fixture()
+    def analyzer(self, reporter):
+        return multistate_analysis.MultistateEquilFEAnalysis(
+            reporter, sampling_method='repex',
+            result_units=unit.kilocalorie_per_mole,
+        )
+    
+    def test_free_energies(self, analyzer):
+        ret_dict = analyzer._unit_results_dict
+        assert len(ret_dict.items()) == 8
+        assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
+        assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
+        # forward and reverse (since we do this ourselves)
+        assert_allclose(
+            ret_dict['_forward_and_reverse_energies']['fractions'],
+            np.array([0.08988764, 0.17977528, 0.26966292, 0.35955056, 0.4494382,
+                     0.53932584, 0.62921348, 0.71910112, 0.80898876, 0.8988764]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['_forward_and_reverse_energies']['forward_DGs'].m,
+            np.array([-48.05732596, -48.03598096, -48.02926475, -48.0329885,  -48.04036105,
+                      -48.03218503, -48.01091554, -48.00193127, -47.98884721, -47.97213771]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['_forward_and_reverse_energies']['forward_dDGs'].m,
+            np.array([0.0747102,  0.05446276, 0.04358038, 0.03775871, 0.03439217, 0.03253223,
+                      0.0297394, 0.02804004, 0.026407,  0.0252841]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['_forward_and_reverse_energies']['reverse_DGs'].m,
+            np.array([-47.8238391, -47.85691656, -47.84240611, -47.87927058, -47.87322987,
+                      -47.8919423,  -47.92179435, -47.93318988, -47.94132888, -47.94901565]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['_forward_and_reverse_energies']['reverse_dDGs'].m,
+            np.array([0.08120887, 0.05780535, 0.04694628, 0.04084552, 0.03557856, 0.0334605,
+                      0.03103121, 0.02892107, 0.02679909, 0.0253164]),
+            rtol=1e-04,
+        )
+
+    def test_plots(self, analyzer, tmpdir):
+        with tmpdir.as_cwd():
+            analyzer.plot(filepath=Path('.'), filename_prefix='')
+            assert Path('forward_reverse_convergence.png').is_file()
+            assert Path('mbar_overlap_matrix.png').is_file()
+            assert Path('replica_exchange_matrix.png').is_file()
+            assert Path('replica_state_timeseries.png').is_file()
 
 
 class TestSystemCreation:
