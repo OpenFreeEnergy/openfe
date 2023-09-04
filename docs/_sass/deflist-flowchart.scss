@@ -338,8 +338,8 @@ ul.deflist-flowchart {
   }
 
   .flowchart-spacer {
-    height: 99999%;
-    min-height: calc(2 * var(--flowchart-spacing));
+    height: 100%;
+    flex-shrink: 9999;
   }
 
   .width-2 {
