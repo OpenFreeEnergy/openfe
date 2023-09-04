@@ -50,7 +50,7 @@ The typical way to use the Python API is to load a number of molecules you want 
 
 
                             .. rst-class:: arrow-down arrow-multiple
-                        -
+                        - :any:`generate_ligand_network`
 
                     -   -
                             .. rst-class:: flowchart-spacer
@@ -60,7 +60,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                             Atom mappings from another tool.
 
                             .. rst-class:: arrow-down
-                        - :any:`Ligand Network Loaders`
+                        - :any:`load_ligand_network`
 
                     -   -
                             .. rst-class:: flowchart-spacer
@@ -72,7 +72,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                             .. rst-class:: arrow-down
                         - :any:`Ligand Network Loaders`
 
-                - :class:`LigandNetwork`
+                - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
                     A network of ligand transformations.
 
                     .. rst-class:: arrow-down arrow-tail arrow-combine
@@ -90,7 +90,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                 -
 
             .. rst-class:: arrow-down arrow-head
-        -
+        - :meth:`LigandNetwork.to_rbfe_alchemical_network() <openfe.setup.LigandNetwork.to_rbfe_alchemical_network>`
 
         - :class:`AlchemicalNetwork`
             A complete simulation campaign.
@@ -116,6 +116,8 @@ List of Cookbooks
     loading_molecules
     creating_atom_mappings
     dumping_transformation
+    generate_ligand_network
+    load_ligand_network
     under_the_hood
 
     
