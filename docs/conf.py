@@ -189,12 +189,40 @@ nbsphinx_prolog = cleandoc(r"""
     {%- set gh_repo = "OpenFreeEnergy/openfe" -%}
     {%- set gh_branch = "main" -%}
     {%- set path = env.doc2path(env.docname, base=None) -%}
+    {# Follow .nblink files to the source notebook. #}
     {%- if path.endswith(".nblink") -%}
-        {%- set path = env.dependencies[env.docname] | first -%}
-        {%- if path.startswith("docs/ExampleNotebooks/") -%}
-            {%- set path = path.replace("docs/ExampleNotebooks/", "", 1) -%}
-            {%- set gh_repo = "OpenFreeEnergy/ExampleNotebooks" -%}
-        {%- endif -%}
+        {%- set ns = namespace(path=path, gh_repo=gh_repo) -%}
+        {#
+            The notebook that a .nblink file points to is stored in its
+            dependencies, but so are any asset files needed by the notebook.
+            Luckily, asset files are stored with absolute paths, while the
+            source notebook is stored with a relative path.
+        #}
+        {%- for dep in env.dependencies[env.docname]
+            if
+                dep.endswith(".ipynb")
+                and not dep.startswith("/")
+        -%}
+            {#
+                Check if the notebook comes from another repository.
+            #}
+            {%- if dep.startswith("docs/ExampleNotebooks") -%}
+                {%- set ns.path = dep.replace("docs/ExampleNotebooks/", "", 1) -%}
+                {%- set ns.gh_repo = "OpenFreeEnergy/ExampleNotebooks" -%}
+            {%- else -%}
+                {%- set ns.path = dep -%}
+                {#
+                    ns.gh_repo should already be gh_repo, but just in case one
+                    day we have multiple files in this for loop, at least
+                    make sure that the repo and notebook match.
+                #}
+                {%- set ns.gh_repo = gh_repo -%}
+            {%- endif -%}
+            {# No break keyword in Jinja, so we still have to finish looping. #}
+        {%- endfor -%}
+        {# Set the global variables according to the namespace. #}
+        {%- set path = ns.path -%}
+        {%- set gh_repo = ns.gh_repo -%}
     {%- endif -%}
     {%- set gh_url =
         "https://www.github.com/"
