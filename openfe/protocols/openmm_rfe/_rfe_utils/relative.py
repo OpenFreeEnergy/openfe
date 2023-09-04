@@ -86,9 +86,6 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 softcore_electrostatics=True,
-                 softcore_electrostatics_alpha=0.3,
-                 softcore_sigma_Q=1.0,
                  interpolate_old_and_new_14s=False,
                  flatten_torsions=False,
                  **kwargs):
@@ -125,12 +122,6 @@ class HybridTopologyFactory:
             Implement the softcore LJ as defined by Gapsys et al. JCTC 2012.
         softcore_LJ_v2_alpha : float, default 0.85
             Softcore alpha parameter for LJ v2
-        softcore_electrostatics : bool, default True
-            Use softcore electrostatics as defined by Gapsys et al. JCTC 2021.
-        softcore_electrostatics_alpha : float, default 0.3
-            Softcore alpha parameter for softcore electrostatics.
-        softcore_sigma_Q : float, default 1.0
-            Softcore sigma parameter for softcore electrostatics.
         interpolate_old_and_new_14s : bool, default False
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
@@ -171,14 +162,6 @@ class HybridTopologyFactory:
         if self._softcore_LJ_v2:
             self._check_bounds(softcore_LJ_v2_alpha, "softcore_LJ_v2_alpha")
             self._softcore_LJ_v2_alpha = softcore_LJ_v2_alpha
-
-        self._softcore_electrostatics = softcore_electrostatics
-        if self._softcore_electrostatics:
-            self._softcore_electrostatics_alpha = softcore_electrostatics_alpha
-            self._check_bounds(softcore_electrostatics_alpha,
-                               "softcore_electrostatics_alpha")
-            self._softcore_sigma_Q = softcore_sigma_Q
-            self._check_bounds(softcore_sigma_Q, "softcore_sigma_Q")
 
         # TODO: end __init__ here and move everything else to
         # create_hybrid_system() or equivalent

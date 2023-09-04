@@ -627,9 +627,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
-            softcore_electrostatics=alchem_settings.softcore_electrostatics,
-            softcore_electrostatics_alpha=alchem_settings.softcore_electrostatics_alpha,
-            softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
             flatten_torsions=alchem_settings.flatten_torsions,
         )
