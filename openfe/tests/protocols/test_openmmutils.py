@@ -255,7 +255,7 @@ class TestFEAnalysis:
     def test_plot_convergence_bad_units(self, analyzer):
         
         with pytest.raises(ValueError, match='Unknown plotting units'):
-            multistate_analysis.plot_convergence(
+            openfe.analysis.plotting.plot_convergence(
                 analyzer.forward_and_reverse_free_energies,
                 unit.nanometer,
             )
