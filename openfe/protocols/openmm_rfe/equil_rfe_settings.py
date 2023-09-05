@@ -8,20 +8,31 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 """
 from __future__ import annotations
 
-import abc
-from typing import Optional, Union
-from pydantic import Extra, validator, BaseModel, PositiveFloat, Field
+from typing import Optional
 from openff.units import unit
-from openfe.protocols.openmm_utils.omm_settings import (
-    Settings, SettingsBaseModel, ThermoSettings,
-    OpenMMSystemGeneratorFFSettings, SystemSettings,
-    SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings,
-    SimulationSettings
+import os
+
+from gufe.settings import (
+    Settings,
+    SettingsBaseModel,
+    OpenMMSystemGeneratorFFSettings,
+    ThermoSettings,
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
+    OpenMMEngineSettings, IntegratorSettings, SimulationSettings
+)
+
+try:
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator  # type: ignore[assignment]
 
 
 class AlchemicalSettings(SettingsBaseModel):
+    class Config:
+        extra = 'ignore'
+
     """Settings for the alchemical protocol
 
     This describes the lambda schedule and the creation of the
@@ -52,16 +63,8 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to use the LJ softcore function as defined by
     Gapsys et al. JCTC 2012 Default True.
     """
-    softcore_electrostatics = True
-    """Whether to use softcore electrostatics. Default True."""
     softcore_alpha = 0.85
     """Softcore alpha parameter. Default 0.85"""
-    softcore_electrostatics_alpha = 0.3
-    """Softcore alpha parameter for electrostatics. Default 0.3"""
-    softcore_sigma_Q = 1.0
-    """
-    Softcore sigma parameter for softcore electrostatics. Default 1.0.
-    """
     interpolate_old_and_new_14s = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
@@ -80,19 +83,39 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 
+    # Inherited things
+
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields."""
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters."""
+
     # Things for creating the systems
     system_settings: SystemSettings
+    """Simulation system settings including the long-range non-bonded method."""
     solvation_settings: SolvationSettings
+    """Settings for solvating the system."""
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings including lambda windows and soft core scaling.
+    """
     alchemical_sampler_settings: AlchemicalSamplerSettings
+    """
+    Settings for sampling alchemical space, including the number of repeats.
+    """
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
+    """Settings specific to the OpenMM engine such as the compute platform."""
 
     # Sampling State defining things
     integrator_settings: IntegratorSettings
+    """Settings for the integrator such as timestep and barostat settings."""
 
     # Simulation run settings
     simulation_settings: SimulationSettings
+    """
+    Simulation control settings, including simulation lengths and record-keeping.
+    """

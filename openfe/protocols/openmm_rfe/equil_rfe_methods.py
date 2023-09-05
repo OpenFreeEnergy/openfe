@@ -29,9 +29,11 @@ from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
+from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable
 import openmmtools
+import mdtraj
 
 import gufe
 from gufe import (
@@ -49,9 +51,9 @@ from ..openmm_utils import (
     system_validation, settings_validation, system_creation
 )
 from . import _rfe_utils
+from ...utils import without_oechem_backend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def _get_resname(off_mol) -> str:
@@ -127,8 +129,8 @@ def _validate_alchemical_components(
             if atomA.GetAtomicNum() != atomB.GetAtomicNum():
                 wmsg = (
                     f"Element change in mapping between atoms "
-                    f"Ligand A: {i} (element {atomA.GetAtomicNum()} and "
-                    f"Ligand B: {j} (element {atomB.GetAtomicNum()}\n"
+                    f"Ligand A: {i} (element {atomA.GetAtomicNum()}) and "
+                    f"Ligand B: {j} (element {atomB.GetAtomicNum()})\n"
                     "No mass scaling is attempted in the hybrid topology, "
                     "the average mass of the two atoms will be used in the "
                     "simulation")
@@ -352,7 +354,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           Exception if anything failed
         """
         if verbose:
-            logger.info("creating hybrid system")
+            self.logger.info("Preparing the hybrid topology simulation")
         if scratch_basepath is None:
             scratch_basepath = pathlib.Path('.')
         if shared_basepath is None:
@@ -409,6 +411,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # solvating the system.
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
+        self.logger.info("Parameterizing molecules")
         for comp in small_mols:
             offmol = comp.to_openff()
             system_generator.create_system(offmol.to_topology().to_openmm(),
@@ -486,9 +489,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
-            softcore_electrostatics=alchem_settings.softcore_electrostatics,
-            softcore_electrostatics_alpha=alchem_settings.softcore_electrostatics_alpha,
-            softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
             flatten_torsions=alchem_settings.flatten_torsions,
         )
@@ -523,6 +523,21 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             checkpoint_storage=sim_settings.checkpoint_storage,
         )
 
+        #  b. Write out a PDB containing the subsampled hybrid state
+        bfactors = np.zeros_like(selection_indices, dtype=float)  # solvent
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_old_atoms']))] = 0.25  # lig A
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['core_atoms']))] = 0.50  # core
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
+        # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
+
+        traj = mdtraj.Trajectory(
+                hybrid_factory.hybrid_positions[selection_indices, :],
+                hybrid_factory.hybrid_topology.subset(selection_indices),
+        ).save_pdb(
+            shared_basepath / sim_settings.output_structure,
+            bfactors=bfactors,
+        )
+
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
             protocol_settings.engine_settings.compute_platform
@@ -552,6 +567,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 12. Create sampler
+        self.logger.info("Creating and setting up the sampler")
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
@@ -606,22 +622,25 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             if not dry:  # pragma: no-cover
                 # minimize
                 if verbose:
-                    logger.info("minimizing systems")
+                    self.logger.info("Running minimization")
 
                 sampler.minimize(max_iterations=sim_settings.minimization_steps)
 
                 # equilibrate
                 if verbose:
-                    logger.info("equilibrating systems")
+                    self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
                 # production
                 if verbose:
-                    logger.info("running production phase")
+                    self.logger.info("Running production phase")
 
                 sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
+                self.logger.info("Production phase complete")
+
+                self.logger.info("Obtaining estimate of results")
                 # calculate estimate of results from this individual unit
                 ana = multistate.MultiStateSamplerAnalyzer(reporter)
                 est, _ = ana.get_free_energy()
@@ -671,7 +690,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        with without_oechem_backend():
+            outputs = self.run(scratch_basepath=ctx.scratch,
+                               shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],

@@ -1,114 +1,30 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""
-Standardised set of settings for OpenMM based Protocols.
+"""Equilibrium Free Energy Protocols input settings.
+
+This module implements base settings necessary to run
+free energy calculations using OpenMM +/- Tools, such
+as :mod:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
+and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-import abc
-from typing import Optional, Union
-from pydantic import Extra, validator, BaseModel, PositiveFloat, Field
+from typing import Optional
 from openff.units import unit
 import os
 
-
-if os.environ.get('SPHINX', False):  #pragma: no cover
-    class SettingsBaseModel(BaseModel):
-        class Config:
-            extra = Extra.forbid
-            validate_assignment = True
-            arbitrary_types_allowed = True
-            smart_union = True
+from gufe.settings import (
+    Settings,
+    SettingsBaseModel,
+    OpenMMSystemGeneratorFFSettings,
+    ThermoSettings,
+)
 
 
-    class ThermoSettings(SettingsBaseModel):
-        """Settings for thermodynamic parameters.
-
-        .. note::
-           No checking is done to ensure a valid thermodynamic ensemble is
-           possible.
-        """
-
-        temperature = 298.15 * unit.kelvin
-        """Simulation temperature, default units kelvin"""
-
-        pressure = 1.0 * unit.bar
-        """Simulation pressure, default units standard atmosphere (atm)"""
-
-        ph: Union[PositiveFloat, None] = Field(None, description="Simulation pH")
-        redox_potential: Optional[float] = Field(
-            None, description="Simulation redox potential"
-        )
-
-
-    class BaseForceFieldSettings(SettingsBaseModel, abc.ABC):
-        """Base class for ForceFieldSettings objects"""
-        ...
-
-
-    class OpenMMSystemGeneratorFFSettings(SettingsBaseModel):
-        """Parameters to set up the force field with OpenMM ForceFields
-
-        .. note::
-           Right now we just basically just grab what we need for the
-           :class:`openmmforcefields.system_generators.SystemGenerator`
-           signature. See the `OpenMMForceField SystemGenerator documentation`_
-           for more details.
-
-
-        .. _`OpenMMForceField SystemGenerator documentation`:
-           https://github.com/openmm/openmmforcefields#automating-force-field-management-with-systemgenerator
-        """
-        constraints: Optional[str] = 'hbonds'
-        """Constraints to be applied to system.
-           One of 'hbonds', 'allbonds', 'hangles' or None, default 'hbonds'"""
-
-        rigid_water: bool = True
-        remove_com: bool = False
-        hydrogen_mass: float = 3.0
-        """Mass to be repartitioned to hydrogens from neighbouring
-           heavy atoms (in amu), default 3.0"""
-
-        forcefields: list[str] = [
-            "amber/ff14SB.xml",  # ff14SB protein force field
-            "amber/tip3p_standard.xml",  # TIP3P and recommended monovalent ion parameters
-            "amber/tip3p_HFE_multivalent.xml",  # for divalent ions
-            "amber/phosaa10.xml",  # Handles THE TPO
-        ]
-        """List of force field paths for all components except :class:`SmallMoleculeComponent` """
-
-        small_molecule_forcefield: str = "openff-2.0.0"  # other default ideas 'openff-2.0.0', 'gaff-2.11', 'espaloma-0.2.0'
-        """Name of the force field to be used for :class:`SmallMoleculeComponent` """
-
-        @validator('constraints')
-        def constraint_check(cls, v):
-            allowed = {'hbonds', 'hangles', 'allbonds'}
-
-            if not (v is None or v.lower() in allowed):
-                raise ValueError(f"Bad constraints value, use one of {allowed}")
-
-            return v
-
-
-    class Settings(SettingsBaseModel):
-        """
-        Container for all settings needed by a protocol
-
-        This represents the minimal surface that all settings objects will have.
-
-        Protocols can subclass this to extend this to cater for their additional settings.
-        """
-        forcefield_settings: BaseForceFieldSettings
-        thermo_settings: ThermoSettings
-
-        @classmethod
-        def get_defaults(cls):
-            return cls(
-                forcefield_settings=OpenMMSystemGeneratorFFSettings(),
-                thermo_settings=ThermoSettings(temperature=300 * unit.kelvin),
-            )
-else:
-    from gufe.settings import Settings, SettingsBaseModel, ThermoSettings, OpenMMSystemGeneratorFFSettings  # type: ignore
+try:
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator  # type: ignore[assignment]
 
 
 class SystemSettings(SettingsBaseModel):
@@ -413,7 +329,13 @@ class SimulationSettings(SettingsBaseModel):
 
     # reporter settings
     output_filename = 'simulation.nc'
-    """Path to the storage file for analysis. Default 'simulation.nc'."""
+    """Path to the trajectory storage file. Default 'simulation.nc'."""
+    output_structure = 'hybrid_system.pdb'
+    """
+    Path of the output hybrid topology structure file. This is used
+    to visualise and further manipulate the system.
+    Default 'hybrid_system.pdb'.
+    """
     output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.

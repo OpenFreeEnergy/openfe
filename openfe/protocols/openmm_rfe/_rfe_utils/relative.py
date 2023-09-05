@@ -5,7 +5,7 @@
 
 import logging
 import openmm
-from openmm import unit
+from openmm import unit, app
 import numpy as np
 import copy
 import itertools
@@ -15,7 +15,6 @@ import mdtraj as mdt
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class HybridTopologyFactory:
@@ -87,9 +86,6 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 softcore_electrostatics=True,
-                 softcore_electrostatics_alpha=0.3,
-                 softcore_sigma_Q=1.0,
                  interpolate_old_and_new_14s=False,
                  flatten_torsions=False,
                  **kwargs):
@@ -126,12 +122,6 @@ class HybridTopologyFactory:
             Implement the softcore LJ as defined by Gapsys et al. JCTC 2012.
         softcore_LJ_v2_alpha : float, default 0.85
             Softcore alpha parameter for LJ v2
-        softcore_electrostatics : bool, default True
-            Use softcore electrostatics as defined by Gapsys et al. JCTC 2021.
-        softcore_electrostatics_alpha : float, default 0.3
-            Softcore alpha parameter for softcore electrostatics.
-        softcore_sigma_Q : float, default 1.0
-            Softcore sigma parameter for softcore electrostatics.
         interpolate_old_and_new_14s : bool, default False
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
@@ -173,20 +163,12 @@ class HybridTopologyFactory:
             self._check_bounds(softcore_LJ_v2_alpha, "softcore_LJ_v2_alpha")
             self._softcore_LJ_v2_alpha = softcore_LJ_v2_alpha
 
-        self._softcore_electrostatics = softcore_electrostatics
-        if self._softcore_electrostatics:
-            self._softcore_electrostatics_alpha = softcore_electrostatics_alpha
-            self._check_bounds(softcore_electrostatics_alpha,
-                               "softcore_electrostatics_alpha")
-            self._softcore_sigma_Q = softcore_sigma_Q
-            self._check_bounds(softcore_sigma_Q, "softcore_sigma_Q")
-
         # TODO: end __init__ here and move everything else to
         # create_hybrid_system() or equivalent
 
         self._check_and_store_system_forces()
 
-        logger.info("creating hybrid system")
+        logger.info("Creating hybrid system")
         # Create empty system that will become the hybrid system
         self._hybrid_system = openmm.System()
 
@@ -209,7 +191,7 @@ class HybridTopologyFactory:
         # check for exceptions clashes between unique and env atoms
         self._validate_disjoint_sets()
 
-        logger.info("setting force field terms")
+        logger.info("Setting force field terms")
         # Copy constraints, checking to make sure they are not changing
         self._handle_constraints()
 
@@ -233,7 +215,7 @@ class HybridTopologyFactory:
 
         # Call each force preparation method to generate the actual
         # interactions that we need:
-        logger.info("adding forces")
+        logger.info("Adding forces")
         self._handle_harmonic_bonds()
 
         self._handle_harmonic_angles()
@@ -251,7 +233,8 @@ class HybridTopologyFactory:
 
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
-        logger.info("DONE")
+        self._omm_hybrid_topology = self._create_hybrid_topology()
+        logger.info("Hybrid system created")
 
     @staticmethod
     def _check_bounds(value, varname, minmax=(0, 1)):
@@ -451,7 +434,6 @@ class HybridTopologyFactory:
             self._atom_classes['unique_new_atoms'].add(hybrid_idx)
 
         # The core atoms:
-        core_atoms = []
         for new_idx, old_idx in self._core_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -459,10 +441,9 @@ class HybridTopologyFactory:
                 errmsg = (f"there is an index collision in hybrid indices of "
                           f"the core atom map: {self._core_new_to_old_map}")
                 raise AssertionError(errmsg)
-            core_atoms.append(new_to_hybrid_idx)
+            self._atom_classes['core_atoms'].add(new_to_hybrid_idx)
 
         # The environment atoms:
-        env_atoms = []
         for new_idx, old_idx in self._env_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -471,11 +452,7 @@ class HybridTopologyFactory:
                           f"the environment atom map: "
                           f"{self._env_new_to_old_map}")
                 raise AssertionError(errmsg)
-            env_atoms.append(new_to_hybrid_idx)
-
-        # TODO - this is weirdly done and double assignments - fix
-        self._atom_classes['core_atoms'] = set(core_atoms)
-        self._atom_classes['environment_atoms'] = set(env_atoms)
+            self._atom_classes['environment_atoms'].add(new_to_hybrid_idx)
 
     @staticmethod
     def _generate_dict_from_exceptions(force):
@@ -2346,20 +2323,98 @@ class HybridTopologyFactory:
             at1_uniq = at1_hybrid_idx in self._atom_classes['unique_new_atoms']
             at2_uniq = at2_hybrid_idx in self._atom_classes['unique_new_atoms']
             if at1_uniq or at2_uniq:
-                if atom1.index in self._atom_classes['unique_new_atoms']:
-                    atom1_to_bond = added_atoms[atom1.index]
+                if at1_uniq:
+                    atom1_to_bond = added_atoms[at1_hybrid_idx]
                 else:
-                    atom1_to_bond = atom1
+                    old_idx = self._hybrid_to_old_map[at1_hybrid_idx]
+                    atom1_to_bond = hybrid_topology.atom(old_idx)
 
-                if atom2.index in self._atom_classes['unique_new_atoms']:
-                    atom2_to_bond = added_atoms[atom2.index]
+                if at2_uniq:
+                    atom2_to_bond = added_atoms[at2_hybrid_idx]
                 else:
-                    atom2_to_bond = atom2
+                    old_idx = self._hybrid_to_old_map[at2_hybrid_idx]
+                    atom2_to_bond = hybrid_topology.atom(old_idx)
 
                 hybrid_topology.add_bond(atom1_to_bond, atom2_to_bond)
 
         return hybrid_topology
 
+
+    def _create_hybrid_topology(self):
+        """
+        Create a hybrid openmm.app.Topology from the input old and new
+        Topologies.
+
+        Note
+        ----
+        * This is not intended for parameterisation purposes, but instead
+          for system visualisation.
+        * Unlike the MDTraj Topology object, the residues of the alchemical
+          species are not squashed.
+        """
+
+        hybrid_top = app.Topology()
+
+        # In the first instance, create a list of necessary atoms from
+        # both old & new Topologies
+        atom_list = []
+
+        for pidx in range(self.hybrid_system.getNumParticles()):
+            if pidx in self._hybrid_to_old_map:
+                idx = self._hybrid_to_old_map[pidx]
+                atom_list.append(list(self._old_topology.atoms())[idx])
+            else:
+                idx = self._hybrid_to_new_map[pidx]
+                atom_list.append(list(self._new_topology.atoms())[idx])
+
+        # Now we loop over the atoms and add them in alongside chains & resids
+        
+        # Non ideal variables to track the previous set of residues & chains
+        # without having to constantly search backwards
+        prev_res = None
+        prev_chain = None
+
+        for at in atom_list:
+            if at.residue.chain != prev_chain:
+                hybrid_chain = hybrid_top.addChain()
+                prev_chain = at.residue.chain
+
+            if at.residue != prev_res:
+                hybrid_residue = hybrid_top.addResidue(
+                    at.residue.name, hybrid_chain, at.residue.id
+                )
+                prev_res = at.residue
+
+            hybrid_atom = hybrid_top.addAtom(
+                at.name, at.element, hybrid_residue, at.id
+            )
+
+        # Next we deal with bonds
+        # First we add in all the old topology bonds
+        for bond in self._old_topology.bonds():
+            at1 = self.old_to_hybrid_atom_map[bond.atom1.index]
+            at2 = self.old_to_hybrid_atom_map[bond.atom2.index]
+
+            hybrid_top.addBond(
+                list(hybrid_top.atoms())[at1],
+                list(hybrid_top.atoms())[at2],
+                bond.type, bond.order,
+            )
+
+        # Finally we add in all the bonds from the unique atoms in the
+        # new Topology
+        for bond in self._new_topology.bonds():
+            at1 = self.new_to_hybrid_atom_map[bond.atom1.index]
+            at2 = self.new_to_hybrid_atom_map[bond.atom2.index]
+            if ((at1 in self._atom_classes['unique_new_atoms']) or
+                (at2 in self._atom_classes['unique_new_atoms'])):
+                hybrid_top.addBond(
+                    list(hybrid_top.atoms())[at1],
+                    list(hybrid_top.atoms())[at2],
+                    bond.type, bond.order,
+                )
+
+        return hybrid_top
 
     def old_positions(self, hybrid_positions):
         """
@@ -2489,8 +2544,14 @@ class HybridTopologyFactory:
         Returns
         -------
         hybrid_topology : simtk.openmm.app.Topology
+
+
+        .. versionchanged:: OpenFE 0.11
+           Now returns a Topology directly constructed from the input
+           old / new Topologies, instead of trying to roundtrip an
+           mdtraj topology.
         """
-        return mdt.Topology.to_openmm(self._hybrid_topology)
+        return self._omm_hybrid_topology
 
     @property
     def has_virtual_sites(self):
