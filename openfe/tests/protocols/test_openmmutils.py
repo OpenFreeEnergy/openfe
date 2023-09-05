@@ -208,37 +208,37 @@ class TestFEAnalysis:
         )
     
     def test_free_energies(self, analyzer):
-        ret_dict = analyzer._unit_results_dict
+        ret_dict = analyzer.unit_results_dict
         assert len(ret_dict.items()) == 8
         assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
         assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
         # forward and reverse (since we do this ourselves)
         assert_allclose(
-            ret_dict['_forward_and_reverse_energies']['fractions'],
+            ret_dict['forward_and_reverse_energies']['fractions'],
             np.array([0.08988764, 0.17977528, 0.26966292, 0.35955056, 0.4494382,
                      0.53932584, 0.62921348, 0.71910112, 0.80898876, 0.8988764]),
             rtol=1e-04,
         )
         assert_allclose(
-            ret_dict['_forward_and_reverse_energies']['forward_DGs'].m,
+            ret_dict['forward_and_reverse_energies']['forward_DGs'].m,
             np.array([-48.05732596, -48.03598096, -48.02926475, -48.0329885,  -48.04036105,
                       -48.03218503, -48.01091554, -48.00193127, -47.98884721, -47.97213771]),
             rtol=1e-04,
         )
         assert_allclose(
-            ret_dict['_forward_and_reverse_energies']['forward_dDGs'].m,
+            ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
             np.array([0.0747102,  0.05446276, 0.04358038, 0.03775871, 0.03439217, 0.03253223,
                       0.0297394, 0.02804004, 0.026407,  0.0252841]),
             rtol=1e-04,
         )
         assert_allclose(
-            ret_dict['_forward_and_reverse_energies']['reverse_DGs'].m,
+            ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
             np.array([-47.8238391, -47.85691656, -47.84240611, -47.87927058, -47.87322987,
                       -47.8919423,  -47.92179435, -47.93318988, -47.94132888, -47.94901565]),
             rtol=1e-04,
         )
         assert_allclose(
-            ret_dict['_forward_and_reverse_energies']['reverse_dDGs'].m,
+            ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
             np.array([0.08120887, 0.05780535, 0.04694628, 0.04084552, 0.03557856, 0.0334605,
                       0.03103121, 0.02892107, 0.02679909, 0.0253164]),
             rtol=1e-04,
