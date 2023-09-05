@@ -415,9 +415,6 @@ class MultistateEquilFEAnalysis:
 
         return results_dict
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         self.analyzer.clear()
 
