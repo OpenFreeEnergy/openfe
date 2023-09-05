@@ -187,7 +187,8 @@ def get_settings():
 
 class TestFEAnalysis:
 
-    @pytest.fixture()
+    # Note: class scope _will_ cause this to segfault - the reporter has to close
+    @pytest.fixture(scope='function')
     def reporter(self):
         with resources.path('openfe.tests.data.openmm_rfe', 'vacuum_nocoord.nc') as f:
             ncfile = str(f)
@@ -250,6 +251,25 @@ class TestFEAnalysis:
             assert Path('mbar_overlap_matrix.png').is_file()
             assert Path('replica_exchange_matrix.png').is_file()
             assert Path('replica_state_timeseries.png').is_file()
+
+    def test_plot_convergence_bad_units(self, analyzer):
+        
+        with pytest.raises(ValueError, match='Unknown plotting units'):
+            multistate_analysis.plot_convergence(
+                analyzer.forward_and_reverse_free_energies,
+                unit.nanometer,
+            )
+
+    def test_analyze_unknown_method_warning_and_error(self, reporter):
+
+        with pytest.warns(UserWarning, match='Unknown sampling method'):
+            ana = multistate_analysis.MultistateEquilFEAnalysis(
+                      reporter, sampling_method='replex',
+                      result_units=unit.kilocalorie_per_mole,
+                  )
+
+        with pytest.raises(ValueError, match="Exchange matrix"):
+            ana.replica_exchange_statistics
 
 
 class TestSystemCreation:
