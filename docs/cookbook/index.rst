@@ -20,12 +20,16 @@ The typical way to use the Python API is to load a number of molecules you want 
     * Setup
         - .. container:: flowchart-sidebyside
 
-            -   -  Chemical component definition
+            -   -
+                    .. rst-class:: width-8
+                -  Chemical component definition
                     SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
 
                 - .. container:: flowchart-sidebyside
 
-                    -   -
+                    - .. rst-class:: width-3
+
+                        -
 
                             .. rst-class:: arrow-down arrow-multiple
                         - :any:`Loading proteins`, :any:`Defining solvents`
@@ -36,60 +40,56 @@ The typical way to use the Python API is to load a number of molecules you want 
                             .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
                         -
 
-                    -   -
+                    -   - .. container:: flowchart-sidebyside
 
-                            .. rst-class:: arrow-down arrow-multiple
-                        - :any:`Loading small molecules`
+                            - .. rst-class:: width-5
 
-                        - :class:`SmallMoleculeComponent`
-                            The ligands that will be mutated.
+                                -
+                                    .. rst-class:: arrow-down arrow-multiple
+                                - :any:`Loading small molecules`
+
+
+                                - :class:`SmallMoleculeComponent`
+                                    The ligands that will be mutated.
+
+                            - .. rst-class:: width-3
+
+                                -
+                                    .. rst-class:: flowchart-spacer
+                                -
+
+                                - Orion/FEP+
+                                    Network from another tool.
+
 
                         - .. container:: flowchart-sidebyside
 
-                            -   - .. container:: flowchart-sidebyside
+                            - .. rst-class:: width-2
 
-                                    -   -
-                                            .. rst-class:: flowchart-spacer
-                                        -
-
-                                        - :any:`Mapper <Atom Mappers>`, :any:`Scorer <Atom Map Scorers>`, and :any:`Planner <Ligand Network Planners>`
-                                            Network planning strategy.
-
-                                            .. rst-class:: arrow-down arrow-tail arrow-combine-right
-                                        -
-
-                                    - .. rst-class:: width-1
-
-                                        -
-
-                                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-left
-                                        -
-
-                                    .. rst-class:: arrow-down arrow-head
+                                -
+                                    .. rst-class:: arrow-down arrow-multiple
                                 - :any:`generate_ligand_network`
 
-                            -   -
+                            - .. rst-class:: width-2
 
+                                -
                                     .. rst-class:: arrow-down arrow-multiple
                                 - :any:`hand_write_ligand_network`
 
-                            -   - .. container:: flowchart-sidebyside
+                            - .. rst-class:: width-1
 
-                                    - .. rst-class:: width-1
+                                -
+                                    .. rst-class:: arrow-down arrow-tail arrow-multiple arrow-combine-right
+                                -
 
-                                        -
-                                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
-                                        -
+                                    .. rst-class:: flowchart-spacer
+                                -
 
-                                    -   -
-                                            .. rst-class:: flowchart-spacer
-                                        -
+                            - .. rst-class:: width-3
 
-                                        - Orion/FEP+
-                                            Network from another tool.
-
-                                            .. rst-class:: arrow-down arrow-tail arrow-combine-left
-                                        -
+                                -
+                                    .. rst-class:: arrow-down arrow-tail arrow-combine-left
+                                -
 
                                     .. rst-class:: arrow-down arrow-head
                                 - :any:`load_ligand_network`
