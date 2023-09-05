@@ -401,18 +401,18 @@ class MultistateEquilFEAnalysis:
             raise ValueError(errmsg)
 
     @property
-    def _unit_results_dict(self):
+    def unit_results_dict(self):
         results_dict = {
             'unit_estimate': self.free_energy,
             'unit_estimate_error': self.free_energy_error,
-            '_unit_mbar_overlap': self.free_energy_overlaps,
-            '_forward_and_reverse_energies': self.forward_and_reverse_free_energies,
-            '_production_iterations': self.production_iterations,
-            '_equilibration_iterations': self.equilibration_iterations,
-            '_replica_states': self.replica_states}
+            'unit_mbar_overlap': self.free_energy_overlaps,
+            'forward_and_reverse_energies': self.forward_and_reverse_free_energies,
+            'production_iterations': self.production_iterations,
+            'equilibration_iterations': self.equilibration_iterations,
+            'replica_states': self.replica_states}
 
         if hasattr(self, '_exchange_matrix'):
-            results_dict['_replica_exchange_statistics'] = self.replica_exchange_statistics
+            results_dict['replica_exchange_statistics'] = self.replica_exchange_statistics
 
         return results_dict
 

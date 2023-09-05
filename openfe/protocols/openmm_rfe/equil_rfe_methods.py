@@ -825,7 +825,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
-                **analyzer._unit_results_dict
+                **analyzer.unit_results_dict
             }
         else:
             return {'debug': {'sampler': sampler}}
