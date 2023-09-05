@@ -91,7 +91,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                                     .. rst-class:: arrow-down arrow-tail arrow-combine-left
                                 -
 
-                                    .. rst-class:: arrow-down arrow-head
+                                    .. rst-class:: arrow-down arrow-head flowchart-spacer
                                 - :any:`load_ligand_network`
 
                         - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
