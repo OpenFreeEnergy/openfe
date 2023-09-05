@@ -18,68 +18,89 @@ The typical way to use the Python API is to load a number of molecules you want 
 .. container:: deflist-flowchart
 
     * Setup
-        - .. container:: width-7
-
-            -  Chemical component definition
-                SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
-
         - .. container:: flowchart-sidebyside
 
-            -   -
+            -   -  Chemical component definition
+                    SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
 
-                    .. rst-class:: arrow-down arrow-multiple
-                - :any:`Loading proteins`, :any:`Defining solvents`
+                - .. container:: flowchart-sidebyside
 
-                    .. rst-class:: width-3
-                - :class:`SolventComponent` and :class:`ProteinComponent`
-                    Other chemical components needed to simulate the ligand.
+                    -   -
 
-                    .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
-                -
+                            .. rst-class:: arrow-down arrow-multiple
+                        - :any:`Loading proteins`, :any:`Defining solvents`
 
-            -   - .. container:: flowchart-sidebyside
+                        - :class:`SolventComponent` and :class:`ProteinComponent`
+                            Other chemical components needed to simulate the ligand.
+
+                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
+                        -
 
                     -   -
 
                             .. rst-class:: arrow-down arrow-multiple
                         - :any:`Loading small molecules`
 
-                            .. rst-class:: width-4
                         - :class:`SmallMoleculeComponent`
                             The ligands that will be mutated.
 
+                        - .. container:: flowchart-sidebyside
 
-                            .. rst-class:: arrow-down arrow-multiple
-                        - :any:`generate_ligand_network`
+                            -   - .. container:: flowchart-sidebyside
 
-                    -   -
-                            .. rst-class:: flowchart-spacer
+                                    -   -
+                                            .. rst-class:: flowchart-spacer
+                                        -
+
+                                        - :any:`Mapper <Atom Mappers>`, :any:`Scorer <Atom Map Scorers>`, and :any:`Planner <Ligand Network Planners>`
+                                            Network planning strategy.
+
+                                            .. rst-class:: arrow-down arrow-tail arrow-combine-right
+                                        -
+
+                                    - .. rst-class:: width-1
+
+                                        -
+
+                                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-left
+                                        -
+
+                                    .. rst-class:: arrow-down arrow-head
+                                - :any:`generate_ligand_network`
+
+                            -   -
+
+                                    .. rst-class:: arrow-down arrow-multiple
+                                - :any:`hand_write_ligand_network`
+
+                            -   - .. container:: flowchart-sidebyside
+
+                                    - .. rst-class:: width-1
+
+                                        -
+                                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
+                                        -
+
+                                    -   -
+                                            .. rst-class:: flowchart-spacer
+                                        -
+
+                                        - Orion/FEP+
+                                            Network from another tool.
+
+                                            .. rst-class:: arrow-down arrow-tail arrow-combine-left
+                                        -
+
+                                    .. rst-class:: arrow-down arrow-head
+                                - :any:`load_ligand_network`
+
+                        - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
+                            A network of ligand transformations.
+
+                            .. rst-class:: arrow-down arrow-tail arrow-combine
                         -
 
-                        - Orion/FEP+
-                            Atom mappings from another tool.
-
-                            .. rst-class:: arrow-down
-                        - :any:`load_ligand_network`
-
-                    -   -
-                            .. rst-class:: flowchart-spacer
-                        -
-
-                        - :class:`dict` or :class:`list`
-                            Hand-write an atom mapping.
-
-                            .. rst-class:: arrow-down
-                        - :any:`Ligand Network Loaders`
-
-                - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
-                    A network of ligand transformations.
-
-                    .. rst-class:: arrow-down arrow-tail arrow-combine
-                -
-
-            -
-                -
+            -   -
                     .. rst-class:: flowchart-spacer
                 -
 
@@ -88,6 +109,7 @@ The typical way to use the Python API is to load a number of molecules you want 
 
                     .. rst-class:: arrow-down arrow-tail arrow-combine-left
                 -
+
 
             .. rst-class:: arrow-down arrow-head
         - :meth:`LigandNetwork.to_rbfe_alchemical_network() <openfe.setup.LigandNetwork.to_rbfe_alchemical_network>`
@@ -118,6 +140,7 @@ List of Cookbooks
     dumping_transformation
     generate_ligand_network
     load_ligand_network
+    hand_write_ligand_network
     under_the_hood
 
     

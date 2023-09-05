@@ -4,6 +4,7 @@
     --arrow-length: 2em;
     --arrow-multiple-gap: 20px;
     --arrow-color: var(--pst-color-text-muted);
+    --arrow-fade-dist: 0px;
     --flowchart-def-bg-color: var(--pst-color-surface);
     --flowchart-bg-color: var(--pst-color-background);
     --flowchart-def-border-color: var(--pst-color-border);
@@ -121,7 +122,12 @@ ul.deflist-flowchart {
     }
 
     > p {
-      background: var(--flowchart-bg-color);
+      background: linear-gradient(
+        transparent,
+        var(--flowchart-bg-color) var(--arrow-fade-dist),
+        var(--flowchart-bg-color) calc(100% - var(--arrow-fade-dist)),
+        transparent,
+      );
       line-height: 1.5;
       z-index: 10;
     }
@@ -238,8 +244,6 @@ ul.deflist-flowchart {
 
     &.arrow-combine-left, &.arrow-combine-right {
       background-size: 50%;
-      width: calc(100% + var(--flowchart-column-gap));
-      margin-left: calc(-0.5 * var(--flowchart-column-gap));
 
       &.arrow-multiple {
         background-size: calc(50% + 0.5 * var(--arrow-multiple-gap));
@@ -318,6 +322,7 @@ ul.deflist-flowchart {
     width: fit-content;
     padding: var(--flowchart-spacing);
     margin: 0 auto;
+    overflow: hidden;
   }
 
   dd dd > ul {
@@ -340,8 +345,12 @@ ul.deflist-flowchart {
   .flowchart-spacer {
     height: 100%;
     flex-shrink: 9999;
+    min-height: calc(2 * var(--flowchart-spacing))
   }
 
+  .width-1 {
+    width: calc(var(--flowchart-unit-width));
+  }
   .width-2 {
     width: calc(2 * var(--flowchart-unit-width) + var(--flowchart-column-gap));
   }

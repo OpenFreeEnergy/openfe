@@ -1,7 +1,7 @@
 {
    "path": "../ExampleNotebooks/openmm_rbfe/OpenFE_showcase_1_RBFE_of_T4lysozyme.ipynb",
    "extra-media": [
-      "../ExampleNotebooks/openmm_rbfe/assets",
-      "../ExampleNotebooks/openmm_rbfe/inputs"
+      "../ExampleNotebooks/openmm_rbfe/assets/",
+      "../ExampleNotebooks/openmm_rbfe/inputs/"
    ]
 }
