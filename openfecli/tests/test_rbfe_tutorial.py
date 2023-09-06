@@ -19,16 +19,14 @@ from openfecli.commands.gather import gather
 
 @pytest.fixture
 def tyk2_ligands():
-    with resources.path('openfecli.tests.data.rbfe_tutorial',
-                        'tyk2_ligands.sdf') as f:
-        yield str(f)
+    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+        yield str(d / 'tyk2_ligands.sdf')
 
 
 @pytest.fixture
 def tyk2_protein():
-    with resources.path('openfecli.tests.data.rbfe_tutorial',
-                        'tyk2_protein.pdb') as f:
-        yield str(f)
+    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+        yield str(d / 'tyk2_protein.pdb')
 
 
 @pytest.fixture
