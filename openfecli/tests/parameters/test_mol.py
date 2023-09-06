@@ -1,4 +1,3 @@
-import importlib
 from importlib import resources
 
 import pytest
@@ -17,8 +16,8 @@ def test_get_molecule_smiles():
 
 
 def test_get_molecule_sdf():
-    with importlib.resources.path("openfe.tests.data.serialization",
-                                  "ethane_template.sdf") as filename:
+    with resources.files("openfe.tests.data.serialization") as d:
+        filename = d / "ethane_template.sdf"
         # Note: the template doesn't include a valid version, but it loads
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
@@ -28,8 +27,8 @@ def test_get_molecule_sdf():
 
 
 def test_get_molecule_mol2():
-    with importlib.resources.path("openfe.tests.data.lomap_basic",
-                                  "toluene.mol2") as f:
+    with resources.files("openfe.tests.data.lomap_basic") as d:
+        f = d / "toluene.mol2"
         mol = get_molecule(str(f))
 
         assert mol.smiles == 'Cc1ccccc1'
