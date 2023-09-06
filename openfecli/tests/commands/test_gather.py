@@ -27,8 +27,8 @@ def test_get_column(val, col):
 @pytest.fixture
 def results_dir(tmpdir):
     with tmpdir.as_cwd():
-        with resources.path('openfecli.tests.data', 'rbfe_results.tar.gz') as f:
-            t = tarfile.open(f, mode='r')
+        with resources.files('openfecli.tests.data') as d:
+            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
             t.extractall('.')
 
         yield
