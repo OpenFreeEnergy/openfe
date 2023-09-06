@@ -252,7 +252,7 @@ class MultistateEquilFEAnalysis:
 
         # Get the chunks of N_l going from 10% to ~ 100%
         # Note: you always lose out a few data points but it's fine
-        chunks = [N_l[0] // num_samples * i
+        chunks = [max(int(N_l[0] / num_samples * i), 1)
                   for i in range(1, num_samples + 1)]
 
         forward_DGs = []
