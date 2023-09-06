@@ -802,7 +802,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             # close reporter when you're done, prevent
             # file handle clashes
             reporter.close()
-            del reporter
 
             # clear GPU contexts
             # TODO: use cache.empty() calls when openmmtools #690 is resolved
