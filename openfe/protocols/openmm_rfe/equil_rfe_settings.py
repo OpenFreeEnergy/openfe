@@ -26,7 +26,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 try:
     from pydantic.v1 import validator
 except ImportError:
-    from pydantic import validator
+    from pydantic import validator  # type: ignore[assignment]
 
 
 class AlchemicalSettings(SettingsBaseModel):
