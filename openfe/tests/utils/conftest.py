@@ -53,9 +53,9 @@ def simple_network(mols, std_edges):
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.path('openfe.tests.data',
-                        'benzene_modifications.sdf') as fn:
-        supplier = Chem.SDMolSupplier(str(fn), removeHs=False)
+    with resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
+        supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
             mols[mol.GetProp('_Name')] = SmallMoleculeComponent(mol)
     return mols
