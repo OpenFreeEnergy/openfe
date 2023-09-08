@@ -13,7 +13,7 @@ Relative Free Energies CLI tutorial
 
 The `Relative Free Energies with the OpenFE CLI <https://github.com/OpenFreeEnergy/ExampleNotebooks/blob/main/rbfe_tutorial/cli_tutorial.md>`_
 tutorial walks users through how to use the OpenFE command line to calculate
-relative hydration free energies from a small set of benzene modifications.
+relative binding free energies of various ligands against the TYK2 target.
 
 Associated with it is also a `notebook <https://github.com/OpenFreeEnergy/ExampleNotebooks/blob/main/rbfe_tutorial/python_tutorial.ipynb>`_
 for how to achieve the same outcomes using the Python API.

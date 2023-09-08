@@ -9,7 +9,6 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 from __future__ import annotations
 
 from typing import Optional
-from pydantic import validator
 from openff.units import unit
 import os
 
@@ -20,6 +19,10 @@ from gufe.settings import (
     ThermoSettings,
 )
 
+try:
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator  # type: ignore[assignment]
 
 class SystemSettings(SettingsBaseModel):
     """Settings describing the simulation system settings."""

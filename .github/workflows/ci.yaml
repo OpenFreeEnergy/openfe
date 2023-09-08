@@ -23,19 +23,24 @@ defaults:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.OS }}-latest
-    name: "tests"
+    runs-on: ${{ matrix.os }}-latest
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu']
+        os: ["ubuntu"]
+        pydantic-version: [">1"]
         python-version:
           - "3.9"
           - "3.10"
           - "3.11"
         include:
-          - os: 'macos'
+          - os: "macos"
             python-version: "3.11"
+            pydantic-version: ">1"
+          - os: "ubuntu"
+            python-version: "3.11"
+            pydantic-version: "<2"
 
     steps:
       - uses: actions/checkout@v3
@@ -52,6 +57,7 @@ jobs:
           cache-downloads: true
           extra-specs: |
             python==${{ matrix.python-version }}
+            pydantic=${{ matrix.pydantic-version }}
 
       - name: "Install GUFE from main@HEAD"
         run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
@@ -74,7 +80,7 @@ jobs:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
         run: |
-          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
       - name: codecov
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'

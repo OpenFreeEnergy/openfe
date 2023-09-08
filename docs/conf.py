@@ -45,6 +45,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
     "docs._ext.sass",
+    "sphinx.ext.mathjax",
 ]
 
 intersphinx_mapping = {
@@ -70,6 +71,9 @@ autodoc_pydantic_model_show_json = False
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
+    "inherited-members": "GufeTokenizable,BaseModel",
+    "undoc-members": True,
+    "special-members": "__call__",
 }
 toc_object_entries_show_parents = "hide"
 
@@ -127,6 +131,7 @@ html_static_path = ["_static"]
 html_css_files = [
     "css/custom.css",
     "css/custom-api.css",
+    "css/deflist-flowchart.css",
 ]
 
 # custom-api.css is compiled from custom-api.scss

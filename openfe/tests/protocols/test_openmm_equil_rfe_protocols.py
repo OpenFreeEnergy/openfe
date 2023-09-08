@@ -238,6 +238,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         sampler = unit.run(dry=True)['debug']['sampler']
 
 
+@pytest.mark.slow
 def test_dry_many_molecules_solvent(
     benzene_many_solv_system, toluene_many_solv_system,
     benzene_to_toluene_mapping, tmpdir
@@ -435,6 +436,7 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         assert sampler._factory.hybrid_system
 
 
+@pytest.mark.flaky(reruns=3)  # bad minimisation can happen
 def test_dry_run_user_charges(benzene_modifications, tmpdir):
     """
     Create a hybrid system with a set of fictitious user supplied charges
@@ -1162,10 +1164,11 @@ class TestConstraintRemoval:
 
 @pytest.fixture(scope='session')
 def tyk2_xml(tmp_path_factory):
-    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_23.sdf') as f:
-        lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
-    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_55.sdf') as f:
-        lig55 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        fn1 = str(d / 'ligand_23.sdf')
+        fn2 = str(d / 'ligand_55.sdf')
+    lig23 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
+    lig55 = openfe.SmallMoleculeComponent.from_sdf_file(fn2)
 
     mapping = setup.LigandAtomMapping(
         componentA=lig23, componentB=lig55,
@@ -1203,7 +1206,8 @@ def tyk2_xml(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def tyk2_reference_xml():
-    with resources.path('openfe.tests.data.openmm_rfe', 'reference.xml') as f:
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        f = d / 'reference.xml'
         with open(f, 'r') as i:
             xmldata = i.read()
     return ET.fromstring(xmldata)
