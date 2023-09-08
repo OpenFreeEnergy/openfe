@@ -832,7 +832,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        log_system_probe(logging.INFO)
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
         with without_oechem_backend():
             outputs = self.run(scratch_basepath=ctx.scratch,
                                shared_basepath=ctx.shared)
