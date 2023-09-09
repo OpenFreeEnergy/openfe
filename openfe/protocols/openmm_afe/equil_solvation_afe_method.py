@@ -1,142 +1,20 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_afe_methods`
-===========================================================================================
+"""OpenMM Equilibrium Solvation AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_solvation_afe_methods`
+===============================================================================================================
 
-This module implements the necessary methodology toolking to run calculate an
-absolute free energy transformation using OpenMM tools and one of the
-following alchemical sampling methods:
+This module implements the necessary methodology tooling to run calculate an
+absolute solvation free energy using OpenMM tools and one of the following
+alchemical sampling methods:
 
 * Hamiltonian Replica Exchange
 * Self-adjusted mixture sampling
 * Independent window sampling
 
-
-.. versionadded:: 0.10.2
-
-
-Running a Solvation Free Energy Calculation
--------------------------------------------
-
-One use case of this Protocol is to carry out absolute solvation free energy
-calculations. This involves capturing the free energy cost associated with
-taking a small molecule from a solvent environment to gas phase.
-
-In practice, because OpenMM currently only allows for charge annhilation when
-using an exact treatment of charges using PME, this ends up requiring two
-transformations. The first is carried out in solvent, where we annhilate the
-charges of the ligand, and then decouple the LJ interactions. The second is
-done in gas phase and involves recharging the ligand.
-
-Here we provide a short overview on how such a thermodynamic cycle would be
-achieved using this protocol.
-
-Assuming we have a ligand of interest contained within an SDF file named
-`ligands.sdf`, we can start by loading it into a SmallMoleculeComponent.
-
-
-.. code-block::
-
-    from gufe import SmallMoleculeComponent
-
-    mol = SmallMoleculeComponent.from_sdf_file('ligand.sdf')
-
-
-With this, we can next create ChemicalSystem objects for the four
-different end states of our thermodynamic cycle.
-
-
-.. code-block::
-
-    from gufe import ChemicalSystem
-
-    # State with a ligand in solvent
-    ligand_solvent = ChemicalSystem({
-        'ligand': mol, 'solvent': SolventComponent()
-    })
-
-    # State with only solvent
-    solvent = ChemicalSystem({'solvent': SolventComponent()})
-
-    # State with only the ligand in gas phase
-    ligand_gas = ChemicalSystem({'ligand': mol})
-
-    # State that is purely gas phase
-    gas = ChemicalSystem({'ligand': mol})
-
-
-Next we generate settings to run both solvent and gas phase transformations.
-Aside form unique file names for the trajectory & checkpoint files, the main
-difference in the settings is that we have to set the nonbonded method to be
-`nocutoff` for gas phase and `pme` (the default) for periodic solvated systems.
-Note: for everything else we use the default settings, howeve rin practice you
-may find that much shorter simulation times may be adequate for gas phase
-simulations.
-
-
-.. code-block::
-
-    solvent_settings = AbsoluteTransformProtocol._default_settings()
-    solvent_settings.simulation_settings.output_filename = "ligand_solvent.nc"
-    solvent_settings.simulation_settings.checkpoint_storage = "ligand_solvent_checkpoint.nc"
-
-    gas_setttings = AbsoluteTransformProtocol._default_settings()
-    gas_settings.simulation_settings.output_filename = "ligand_gas.nc"
-    gas_settings.simulation_settings.checkpoint_storage = "ligand_gas_checkpoint.nc"
-
-    # By default the nonbonded method is PME, this needs to be nocutoff for gas phase
-    gas_settings.system_settings.nonbonded_method = 'nocutoff'
-
-
-With this, we can create protocols and simulation DAGs for each leg of the
-cycle. We pass to create the corresponding chemical end states of each leg
-(e.g. ligand in solvent and pure solvent for the solvent transformation leg)
-We note that no mapping is passed through to the Protocol. The Protocol
-automatically compares the components present in the ChemicalSystems passed to
-stateA and stateB and identifies any components missing either either of the
-end states as undergoing an alchemical transformation.
-
-
-.. code-block::
-
-    solvent_transform = AbsoluteTransformProtocol(settings=solvent_settings)
-    solvent_dag = solvent_transform.create(stateA=ligand_solvent, stateB=solvent, mapping=None)
-    gas_transform = AbsoluteTransformProtocol(settings=gas_settings)
-    gas_dag = solvent_transform.create(stateA=ligand_gas, stateB=gas, mapping=None)
-
-
-Next we execute the transformations. By default, this will simulate 3 repeats
-of both the ligand in solvent and ligand in gas transformations. Note: this
-will take a while to run.
-
-
-.. code-block::
-
-    from gufe.protocols import execute_DAG
-    solvent_data = execute_DAG(solvent_dag, shared='./solvent')
-    gas_data = execute_DAG(gas_dag, shared='./gas')
-
-
-Once completed, we gather the results and then get our estimate as the
-difference between the gas and solvent transformations.
-
-
-.. code-block::
-
-    solvent_results = solvent_transform.gather([solvent_data,])
-    gas_results = gas_transform.gather([gas_data,])
-    dG = gas_results.get_estimate() - solvent_results.get_estimate()
-    print(dG)
-
-
 Current limitations
 -------------------
 * Disapearing molecules are only allowed in state A. Support for
   appearing molecules will be added in due course.
-* Only one protein component is allowed per state. We ask that,
-  users input all molecules intended to use an additive force field
-  in the one ProteinComponent. This will likely change once OpenFF
-  rosemary is released.
 * Only small molecules are allowed to act as alchemical molecules.
   Alchemically changing protein or solvent components would induce
   perturbations which are too large to be handled by this Protocol.
@@ -203,7 +81,6 @@ from ..openmm_utils import (
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class AbsoluteTransformProtocolResult(gufe.ProtocolResult):
@@ -610,7 +487,11 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         minimized_positions = state.getPositions(asNumpy=True)
         return minimized_positions
 
-    def _prepare(self, verbose: bool, basepath: Optional[pathlib.Path]):
+    def _prepare(
+        self, verbose: bool, 
+        scratch_basepath: Optional[pathlib.Path],
+        shared_basepath: Optional[pathlib.Path],
+    ):
         """
         Set basepaths and do some initial logging.
 
@@ -622,14 +503,19 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         basepath : Optional[pathlib.Path]
           Optional base path to write files to.
         """
-        if verbose:
+        self.verbose = verbose
+
+        if self.verbose:
             logger.info("setting up alchemical system")
 
-        # set basepath
-        if basepath is None:
-            self.basepath = pathlib.Path('.')
-        else:
-            self.basepath = basepath
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path('.')
+            return basepath
+        
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
 
     def _get_components(self):
         """
@@ -671,6 +557,28 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         """
         raise NotImplementedError
     
+    def _get_system_generator(self, settings, solvent_comp):
+        """
+        Get a system generator through the system creation
+        utilities
+
+        Parameters
+        ----------
+        settings :
+        solv_comp :
+        """
+        ffcache = settings.simulation_settings.forcefield_cache
+        if ffcache is not None:
+            ffcache = self.shared_basepath / ffcache
+
+        system_generator = system_creation.get_system_generator(
+            forcefield_settings=settings.forcefield_settings,
+            thermo_settings=settings.thermo_settings,
+            cache=ffcache,
+            has_solvent=solvent_comp is not None,
+        )
+        return system_generator
+    
     def _get_modeller(self, protein_component, solvent_component,
                       smc_components, system_generator, settings):
         """
@@ -687,9 +595,33 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         )
 
         """
-        ...
+        if self.verbose:
+            logger.info("Parameterizing molecules")
 
-    def _get_omm_objects(self, ...):
+        # force the creation of parameters for the small molecules
+        # this is necessary because we need to have the FF generated ahead
+        # of solvating the system.
+        # Note by default this is cached to ctx.shared/db.json which should
+        # reduce some of the costs.
+        for comp in smc_components:
+            offmol = comp.to_openff()
+            system_generator.create_system(
+                offmol.to_topology().to_openmm(), molecules=[offmol]
+            )
+
+        # get OpenMM modeller + dictionary of resids for each component
+        system_modeller, comp_resids = system_creation.get_omm_modeller(
+            protein_comp=protein_component,
+            solvent_comp=solvent_component,
+            small_mols=smc_components,
+            omm_forcefield=system_generator.forcefield,
+            solvent_settings=settings.solvation_settings,
+        )
+
+        return system_modeller, comp_resids
+
+    def _get_omm_objects(self, system_modeller, system_generator,
+                         smc_components):
         """
         system_topology = system_modeller.getTopology()
 
@@ -701,17 +633,25 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             molecules=list(off_mols.values())
         )
         """
-        ...
+        topology = system_modeller.getTopology()
+        # roundtrip positions to remove vec3 issues
+        positions = to_openmm(from_openmm(system_modeller.getPositions()))
+        system = system_generator.create_system(
+            system_modeller.topology,
+            molecules=[s.to_openff() for s in smc_components]
+        )
+        return topology, positions, system
 
     def _get_lambda_schedule(self, settings):
         """
-        # c. Create the lambda schedule
-        # TODO: do this properly using LambdaProtocol
-        # TODO: double check we definitely don't need to define
-        #       temperature & pressure (pressure sure that's the case)
+        Create the lambda schedule
+          TODO: do this properly using LambdaProtocol
+          TODO: double check we definitely don't need to define
+                temperature & pressure (pressure sure that's the case)
+        """
         lambdas = dict()
-        n_elec = alchem_settings.lambda_elec_windows
-        n_vdw = alchem_settings.lambda_vdw_windows + 1
+        n_elec = settings.alchemical_settings.lambda_elec_windows
+        n_vdw = settings.alchemical_settings.lambda_vdw_windows + 1
         lambdas['lambda_electrostatics'] = np.concatenate(
                 [np.linspace(1, 0, n_elec), np.linspace(0, 0, n_vdw)[1:]]
         )
@@ -719,66 +659,61 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
                 [np.linspace(1, 1, n_elec), np.linspace(1, 0, n_vdw)[1:]]
         )
 
-        # d. Check that the lambda schedule matches n_replicas
-        # TODO: undo for SAMS
-        n_replicas = settings.alchemsampler_settings.n_replicas
+        n_replicas = settings.alchemical_sampler_settings.n_replicas
 
         if n_replicas != (len(lambdas['lambda_sterics'])):
             errmsg = (f"Number of replicas {n_replicas} "
                       "does not equal the number of lambda windows ")
             raise ValueError(errmsg)
+        
+        return lambdas
+
+    def _get_alchemical_system(self, topology, system, comp_resids,
+                               alchem_comps):
         """
-        ...
-
-    def _get_alchemical_system(self, omm_topology, comp_resids, alchem_comps):
-        """
-        alchemical_indices = self._get_alchemical_indices(
-            omm_topology, comp_resids, alchem_comps
-        )
-
-
-        # 3. Create the alchemical system
-        # a. Get alchemical settings
-        alchem_settings = settings.alchemical_settings
-
-        # b. Set the alchemical region & alchemical factory
         # TODO: add support for all the variants here
         # TODO: check that adding indices this way works
-        alchemical_region = AlchemicalRegion(
-                alchemical_atoms=alchemical_indices,
+        """
+        alchemical_indices = self._get_alchemical_indices(
+            topology, comp_resids, alchem_comps
         )
+
+        alchemical_region = AlchemicalRegion(
+            alchemical_atoms=alchemical_indices,
+        )
+
         alchemical_factory = AbsoluteAlchemicalFactory()
         alchemical_system = alchemical_factory.create_alchemical_system(
-                omm_system, alchemical_region
+            system, alchemical_region
         )
-        """
-        ...
 
-    def _get_states(self, ...):
+        return alchemical_factory, alchemical_system, alchemical_indices
+
+    def _get_states(self, alchemical_system, positions, settings, lambdas, solvent_comp):
         """
-        # 4. Create compound states
+        """
         alchemical_state = AlchemicalState.from_system(alchemical_system)
+        # Set up the system constants
+        temperature = settings.thermo_settings.temperature
+        pressure = settings.thermo_settings.pressure
         constants = dict()
         constants['temperature'] = ensure_quantity(temperature, 'openmm')
         if solvent_comp is not None:
             constants['pressure'] = ensure_quantity(pressure, 'openmm')
+        
         cmp_states = create_thermodynamic_state_protocol(
-                alchemical_system,
-                protocol=lambdas,
-                constants=constants,
-                composable_states=[alchemical_state],
+            alchemical_system, protocol=lambdas,
+            consatnts=constants, composable_states=[alchemical_state],
         )
 
-        # 5. Create the sampler states
-        # Fill up a list of sampler states all with the same starting state
         sampler_state = SamplerState(positions=positions)
-        if omm_system.usesPeriodicBoundaryConditions():
-            box = omm_system.getDefaultPeriodicBoxVectors()
+        if alchemical_system.usesPeriodicBoundaryConditions():
+            box = alchemical_system.getDefaultPeriodicBoxVectors()
             sampler_state.box_vectors = box
 
         sampler_states = [sampler_state for _ in cmp_states]
-        """
-        ...
+
+        return sampler_states, cmp_states
 
     def _get_reporter(self, ...):
         """
@@ -796,7 +731,17 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             checkpoint_storage=basepath / sim_settings.checkpoint_storage,
         )
         """
-        ...
+        mdt_top = mdt.Topology.from_openmm(system_topology)
+        selection_indices = mdt_top.select(
+                sim_settings.output_indices
+        )
+        sim_settings = settings.simulation_settings
+        reporter = multistate.MultiStateReporter(
+            storage=self.shared_basepathbasepath / sim_settings.output_filename,
+            analysis_particle_indices=selection_indices,
+            checkpoint_interval=sim_settings.checkpoint_interval.m,
+            checkpoint_storage=basepath / sim_settings.checkpoint_storage,
+        )
 
     def _get_ctx_caches(self, ...):
         """
@@ -963,7 +908,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         settings = self._handle_settings()
 
         # 3. Get system generator
-        system_generator = self._handle_system_generation(settings, solv_comp)
+        system_generator = self._get_system_generator(settings, solv_comp)
 
         # 4. Get modeller
         system_modeller, comp_resids = self._get_modeller(
