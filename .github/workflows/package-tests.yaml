@@ -13,14 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     name: "package install tests"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Micromamba
-        uses: mamba-org/provision-with-micromamba@main
+      - name: "Setup Micromamba"
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment.yml
           environment-name: openfe_env
-          extra-specs: python==3.10
+          cache-environment: true
+          cache-downloads: true
+          create-args: >-
+            python=3.10
+          init-shell: bash
 
       - name: "install extra deps"
         run: pip install pipx wheel twine readme-renderer
