@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import gzip
 import pytest
-import importlib
+from importlib import resources
 from rdkit import Chem
 from rdkit.Geometry import Point3D
 import openfe
@@ -139,3 +140,12 @@ def toluene_many_solv_system(benzene_modifications):
          "bar": benzo,
          "solvent": openfe.SolventComponent()},
     )
+
+
+@pytest.fixture
+def transformation_json() -> str:
+    """string of a result of quickrun"""
+    d = resources.files('openfe.tests.data.openmm_rfe')
+
+    with gzip.open((d / 'vac_results.json.gz').as_posix(), 'r') as f:
+        return f.read().decode()
