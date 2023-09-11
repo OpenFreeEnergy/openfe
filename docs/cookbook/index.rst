@@ -21,6 +21,19 @@ The typical way to use the Python API is to load a number of molecules you want 
         - .. container:: flowchart-sidebyside
 
             -   -
+                    .. rst-class:: flowchart-spacer
+                -
+
+                    .. rst-class:: arrow-down arrow-from-nothing
+                - :any:`choose_protocol`
+
+                - :class:`Protocol`
+                    Simulation procedure for an alchemic mutation.
+
+                    .. rst-class:: arrow-down arrow-tail arrow-combine-right
+                -
+
+            -   -
                     .. rst-class:: width-8
                 -  Chemical component definition
                     SDF, PDB, RDKit, OpenFF Molecule, solvent spec, etc.
@@ -37,7 +50,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                         - :class:`SolventComponent` and :class:`ProteinComponent`
                             Other chemical components needed to simulate the ligand.
 
-                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine-right
+                            .. rst-class:: arrow-down arrow-multiple arrow-tail arrow-combine
                         -
 
                     -   - .. container:: flowchart-sidebyside
@@ -97,18 +110,17 @@ The typical way to use the Python API is to load a number of molecules you want 
                         - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
                             A network of ligand transformations.
 
-                            .. rst-class:: arrow-down arrow-tail arrow-combine
-                        -
+                        - .. container:: flowchart-sidebyside
 
-            -   -
-                    .. rst-class:: flowchart-spacer
-                -
+                            -   -
+                                    .. rst-class:: arrow-down arrow-tail arrow-combine-left width-4
+                                -
 
-                - :class:`Protocol`
-                    Simulation procedure for an alchemic mutation.
+                            -   -
+                                    .. rst-class:: arrow-cycle width-4
+                                -
 
-                    .. rst-class:: arrow-down arrow-tail arrow-combine-left
-                -
+                                - :any:`ligandnetwork_vis`
 
 
             .. rst-class:: arrow-down arrow-head
@@ -138,9 +150,11 @@ List of Cookbooks
     loading_molecules
     creating_atom_mappings
     dumping_transformation
+    choose_protocol
     generate_ligand_network
     load_ligand_network
     hand_write_ligand_network
+    ligandnetwork_vis
     under_the_hood
 
     

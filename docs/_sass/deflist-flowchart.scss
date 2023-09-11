@@ -163,7 +163,7 @@ ul.deflist-flowchart {
   .arrow-cycle::before {
     translate:
       calc(-0.5 * var(--arrow-multiple-gap))
-      calc(var(--actual-arrow-length) + 2 * var(--flowchart-spacing) + var(--arrow-head-size-clamped) / 2);
+      140%;
   }
 
   .arrow-aside {
@@ -239,7 +239,7 @@ ul.deflist-flowchart {
       );
     background-repeat: no-repeat;
 
-    width: calc(100% + 2 * var(--flowchart-column-gap));
+    width: calc(max(100% + 2 * var(--flowchart-column-gap), var(--flowchart-unit-width)));
     margin-left: calc(-1 * var(--flowchart-column-gap));
 
     &.arrow-combine-left, &.arrow-combine-right {
@@ -339,7 +339,7 @@ ul.deflist-flowchart {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    justify-content: center;
+    justify-content: space-between;
   }
 
   .flowchart-spacer {
