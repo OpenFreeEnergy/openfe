@@ -144,6 +144,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a RelativeHybridTopologyProtocol"""
     def __init__(self, **data):
         super().__init__(**data)
+        self._data = self.data['data']  # this is the hack that makes this work, fix this in gufe!
         # data is mapping of str(repeat_id): list[protocolunitresults]
         # TODO: Detect when we have extensions and stitch these together?
         if any(len(pur_list) > 2 for pur_list in self.data.values()):
