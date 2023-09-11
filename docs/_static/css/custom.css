@@ -86,6 +86,27 @@ Links bar at top of notebooks
 }
 
 /*
+Move break point for secondary sidebar
+*/
+@media (max-width: 1500px) {
+  .bd-sidebar-secondary {
+    flex-grow: .75;
+    height: 100vh;
+    margin-right: -75%;
+    max-height: 100vh;
+    max-width: 350px;
+    position: fixed;
+    right: 0;
+    top: 0;
+    transition: visibility .2s ease-out,margin .2s ease-out;
+    visibility: hidden;
+    width: 75%;
+    z-index: 1055;
+    font-size: var(--pst-sidebar-font-size-mobile);
+  }
+}
+
+/*
 Themes - Deviating Colors are ofe-colorVars rest is original scipyData theme.
 */
 
