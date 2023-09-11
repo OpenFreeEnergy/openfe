@@ -147,5 +147,5 @@ def transformation_json() -> str:
     """string of a result of quickrun"""
     d = resources.files('openfe.tests.data.openmm_rfe')
 
-    with gzip.open((d / 'vac_results.json.gz').as_posix(), 'r') as f:
-        return f.read().decode()
+    with gzip.open((d / 'vac_results.json.gz').as_posix(), 'r') as f:  # type: ignore
+        return f.read().decode()  # type: ignore
