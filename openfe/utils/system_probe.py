@@ -492,14 +492,14 @@ def log_system_probe(level=logging.DEBUG,
     """
     if paths is None:
         paths = []
-    paths = (pathlib.Path(p) for p in paths)
+    pl_paths = (pathlib.Path(p) for p in paths)
     basename = __name__ + ".log"
     base = logging.getLogger(basename)
     gpu = logging.getLogger(basename + ".gpu")
     hostname = logging.getLogger(basename + ".hostname")
     loggers = [base, gpu, hostname]
     if any(l.isEnabledFor(level) for l in loggers):
-        sysinfo = _probe_system(paths)['system information']
+        sysinfo = _probe_system(pl_paths)['system information']
         base.log(level, "SYSTEM CONFIG DETAILS:")
         hostname.log(level, f"hostname: '{sysinfo['hostname']}'")
         if gpuinfo := sysinfo['gpu information']:
@@ -508,7 +508,7 @@ def log_system_probe(level=logging.DEBUG,
                         f"mode={gpu_card['compute_mode']}")
             # gpu.log(level, f"CUDA driver: {...}")
             # gpu.log(level, f"CUDA toolkit: {...}")
-        else:
+        else:  # -no-cov-
             gpu.log(level, f"CUDA-based GPU not found")
 
         psutilinfo = sysinfo["psutil information"]
