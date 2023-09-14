@@ -312,6 +312,8 @@ class MultistateEquilFEAnalysis:
         try:
             # pymbar 3
             overlap_matrix = self.analyzer.mbar.computeOverlap()
+            # convert matrix to np array
+            overlap_matrix['matrix'] = np.array(overlap_matrix['matrix'])
         except AttributeError:
             overlap_matrix = self.analyzer.mbar.compute_overlap()
 
