@@ -125,8 +125,9 @@ class MultistateEquilFEAnalysis:
         """
         # Do things that get badly cached later
         self._replica_states = self.analyzer.reporter.read_replica_thermodynamic_states()
-        self._equil_iters = self.analyzer.n_equilibration_iterations
-        self._prod_iters = self.analyzer._equilibration_data[2]
+        # float conversions to avoid having to deal with numpy dtype serialization
+        self._equil_iters = float(self.analyzer.n_equilibration_iterations)
+        self._prod_iters = float(self.analyzer._equilibration_data[2])
 
         # Gather estimate of free energy
         self._free_energy, self._free_energy_err = self.get_equil_free_energy()

@@ -5,6 +5,7 @@ from io import StringIO
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+import json
 import pytest
 from unittest import mock
 from openff.units import unit
@@ -1238,3 +1239,12 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+def test_reload_protocol_result(transformation_json):
+    d = json.loads(transformation_json,
+                   cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+    pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+
+    assert pr
