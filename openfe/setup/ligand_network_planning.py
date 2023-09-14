@@ -86,6 +86,10 @@ def generate_radial_network(
 
     for ligand in ligands:
         if ligand == central_ligand:
+            wmsg = (f"The central_ligand {ligand.name} was also found in "
+                    "the list of ligands to arrange around the "
+                    "central_ligand this will be ignored.")
+            warnings.warn(wmsg)
             continue
         best_score = 0.0
         best_mapping = None
