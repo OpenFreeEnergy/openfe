@@ -125,6 +125,9 @@ class MultistateEquilFEAnalysis:
         """
         # Do things that get badly cached later
         self._replica_states = self.analyzer.reporter.read_replica_thermodynamic_states()
+        # convert full masked array to simple array
+        # downcast to int32, we don't have more than 4 billion states thankfully
+        self._replica_states = np.asarray(self._replica_states, dtype=np.int32)
         # float conversions to avoid having to deal with numpy dtype serialization
         self._equil_iters = float(self.analyzer.n_equilibration_iterations)
         self._prod_iters = float(self.analyzer._equilibration_data[2])
