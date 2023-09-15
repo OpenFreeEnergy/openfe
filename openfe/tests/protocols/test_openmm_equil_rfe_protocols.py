@@ -1306,7 +1306,7 @@ class TestProtocolResult:
 
         ovp1 = ovp[0]
         assert isinstance(ovp1['matrix'], np.ndarray)
-        assert ovp1['matrix'].shape == (11,)
+        assert ovp1['matrix'].shape == (11,11)
 
     def test_get_replica_transition_statistics(self, protocolresult):
         rpx = protocolresult.get_replica_transition_statistics()
@@ -1324,7 +1324,7 @@ class TestProtocolResult:
 
         assert isinstance(rep, list)
         assert len(rep) == 3
-        assert rep[0].shape == (11,)
+        assert rep[0].shape == (6, 11)
 
     def test_equilibration_iterations(self, protocolresult):
         eq = protocolresult.equilibration_iterations()
