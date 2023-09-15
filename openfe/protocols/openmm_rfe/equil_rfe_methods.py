@@ -239,9 +239,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return overlap_stats
 
     def get_replica_transition_statistics(self) -> list[dict[str, npt.NDArray]]:
-        """
-        Returns the replica lambda state transition statistics for each
-        repeat.
+        """The replica lambda state transition statistics for each repeat.
 
         Note
         ----
@@ -254,7 +252,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
           A list of dictionaries containing the following:
             * ``eigenvalues``: The sorted (descending) eigenvalues of the
               lambda state transition matrix
-            * ``matrix``: The transition matrix estimate of a replica switchin
+            * ``matrix``: The transition matrix estimate of a replica switching
               from state i to state j.
         """
         try:
