@@ -74,7 +74,8 @@ def mock_execute(expected_transformations):
             'generation': kwargs['generation'],
             'nc': 'file.nc',
             'last_checkpoint': 'checkpoint.nc',
-            'unit_estimate': 4.2 * unit.kilocalories_per_mole
+            'unit_estimate': 4.2 * unit.kilocalories_per_mole,
+            'unit_estimate_error': 0.6 * unit.kilocalories_per_mole,
         }
 
     with mock.patch('openfe.protocols.openmm_rfe.equil_rfe_methods.'
@@ -87,25 +88,61 @@ def mock_execute(expected_transformations):
 @pytest.fixture
 def ref_gather():
     return """\
-leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
-complex	lig_ejm_31	lig_ejm_42	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_42	4.2	0.0
-complex	lig_ejm_31	lig_ejm_46	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_46	4.2	0.0
-complex	lig_ejm_31	lig_ejm_47	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_47	4.2	0.0
-complex	lig_ejm_31	lig_ejm_48	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_48	4.2	0.0
-complex	lig_ejm_31	lig_ejm_50	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_50	4.2	0.0
-complex	lig_ejm_42	lig_ejm_43	4.2	0.0
-solvent	lig_ejm_42	lig_ejm_43	4.2	0.0
-complex	lig_ejm_46	lig_jmc_23	4.2	0.0
-solvent	lig_ejm_46	lig_jmc_23	4.2	0.0
-complex	lig_ejm_46	lig_jmc_27	4.2	0.0
-solvent	lig_ejm_46	lig_jmc_27	4.2	0.0
-complex	lig_ejm_46	lig_jmc_28	4.2	0.0
-solvent	lig_ejm_46	lig_jmc_28	4.2	0.0
+leg	ligand_i	ligand_j	repeat	generation	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
+complex\tlig_ejm_31\tlig_ejm_42\t0\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_42\t1\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_42\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_42\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_42\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_42\t2\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_46\t0\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_46\t1\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_46\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_46\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_46\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_46\t2\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_47\t0\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_47\t1\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_47\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_47\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_47\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_47\t2\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_48\t0\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_48\t1\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_48\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_48\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_48\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_48\t2\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_50\t0\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_50\t1\t0\t4.2\t0.6
+complex\tlig_ejm_31\tlig_ejm_50\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_50\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_50\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_31\tlig_ejm_50\t2\t0\t4.2\t0.6
+complex\tlig_ejm_42\tlig_ejm_43\t0\t0\t4.2\t0.6
+complex\tlig_ejm_42\tlig_ejm_43\t1\t0\t4.2\t0.6
+complex\tlig_ejm_42\tlig_ejm_43\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_42\tlig_ejm_43\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_42\tlig_ejm_43\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_42\tlig_ejm_43\t2\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_23\t0\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_23\t1\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_23\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_23\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_23\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_23\t2\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_27\t0\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_27\t1\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_27\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_27\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_27\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_27\t2\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_28\t0\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_28\t1\t0\t4.2\t0.6
+complex\tlig_ejm_46\tlig_jmc_28\t2\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_28\t0\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_28\t1\t0\t4.2\t0.6
+solvent\tlig_ejm_46\tlig_jmc_28\t2\t0\t4.2\t0.6
 """
 
 
