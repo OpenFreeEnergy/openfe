@@ -198,7 +198,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
     def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
         """
         Get a list of forward and reverse analysis of the free energies
-        for each repeat using uncorrolated production samples.
+        for each repeat using uncorrelated production samples.
+
+        The returned dicts have keys:
+        'fractions' - the fraction of data used for this estimate
+        'forward_DGs', 'reverse_DGs' - for each fraction of data, the estimate
+        'forward_dDGs', 'reverse_dDGs' - for each estimate, the uncertainty
+
+        The 'fractions' values are a numpy array, while the other arrays are
+        Quantity arrays, with units attached.
 
         Returns
         -------
