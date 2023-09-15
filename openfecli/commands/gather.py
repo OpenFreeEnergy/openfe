@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+from collections import defaultdict
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 import pathlib
@@ -76,6 +77,21 @@ def get_type(res):
         return 'solvent'
 
 
+def get_unit_results(res):
+    unit_results = defaultdict(dict)
+
+    for key in res['unit_results']:
+        dg = res['unit_results'][key]['outputs']['unit_estimate']
+        mbar_error = res['unit_results'][key]['outputs']['unit_estimate_error']
+        gen = res['unit_results'][key]['outputs']['generation']
+        repeat_id = res['unit_results'][key]['outputs']['repeat_id']
+        unit_results[repeat_id][gen] = {
+            'estimate': dg, 'mbar_error': mbar_error, 'generation': gen,
+        }
+
+    return unit_results
+
+
 def legacy_get_type(res_fn):
     if 'solvent' in res_fn:
         return 'solvent'
@@ -95,15 +111,15 @@ def _get_ddgs(legs):
         hyd_unc = None
 
         if 'complex' in vals and 'solvent' in vals:
-            DG1_mag, DG1_unc = vals['complex']
-            DG2_mag, DG2_unc = vals['solvent']
+            DG1_mag, DG1_unc, _ = vals['complex']
+            DG2_mag, DG2_unc, _ = vals['solvent']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
         elif 'solvent' in vals and 'vacuum' in vals:
-            DG1_mag, DG1_unc = vals['solvent']
-            DG2_mag, DG2_unc = vals['vacuum']
+            DG1_mag, DG1_unc, _ = vals['solvent']
+            DG2_mag, DG2_unc, _ = vals['vacuum']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
@@ -132,16 +148,21 @@ def _write_ddg(legs, writer):
 
 
 def _write_dg_raw(legs, writer):
-    writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+    writer.writerow(["leg", "ligand_i", "ligand_j", "repeat", "generation",
+                     "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
         name = ', '.join(ligpair)
-        for simtype, (m, u) in sorted(vals.items()):
-            if m is None:
-                m, u = 'NaN', 'NaN'
-            else:
-                m, u = format_estimate_uncertainty(m.m, u.m)
-            writer.writerow([simtype, *ligpair, m, u])
+        for simtype, (m, u, unit_res) in sorted(vals.items()):
+            for repeat_num, entry in enumerate(unit_res):
+                for gen in unit_res[entry].keys():
+                    m = unit_res[entry][gen]['estimate']
+                    u = unit_res[entry][gen]['mbar_error']
+
+                if m is None:
+                    m, u = 'NaN', 'NaN'
+                else:
+                    m, u = format_estimate_uncertainty(m.m, u.m)
+                writer.writerow([simtype, *ligpair, repeat_num, gen, m, u])
 
 
 def _write_dg_mle(legs, writer):
@@ -239,7 +260,6 @@ def gather(rootdir, output, report):
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    from collections import defaultdict
     import glob
     import csv
 
@@ -269,7 +289,10 @@ def gather(rootdir, output, report):
         except KeyError:
             simtype = legacy_get_type(result_fn)
 
-        legs[names][simtype] = result['estimate'], result['uncertainty']
+        legs[names][simtype] = (
+            result['estimate'], result['uncertainty'],
+            get_unit_results(result)
+        )
 
     writer = csv.writer(
         output,
