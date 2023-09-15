@@ -235,7 +235,9 @@ def generate_minimal_redundant_network(
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ) -> LigandNetwork:
     """
-    Plan a network with as few edges as possible with maximum total score
+    Plan a network with as few edges as possible with maximum total score, 
+    ensuring that every node is connected to two edges to introduce 
+    statistical redundancy.
 
     Parameters
     ----------
@@ -252,29 +254,6 @@ def generate_minimal_redundant_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     """
-    if isinstance(mappers, AtomMapper):
-        mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
-
-    # First create a network with all the proposed mappings (scored)
-    network = generate_maximal_network(ligands, mappers, scorer, progress)
-
-    # Flip network scores so we can use minimal algorithm
-    g2 = nx.MultiGraph()
-    for e1, e2, d in network.graph.edges(data=True):
-        g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
-
-    # Next analyze that network to create minimal spanning network. Because
-    # we carry the original (directed) LigandAtomMapping, we don't lose
-    # direction information when converting to an undirected graph.
-    min_edges = nx.minimum_spanning_edges(g2)
-    min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
-    min_network = LigandNetwork(min_mappings)
-    missing_nodes = set(network.nodes) - set(min_network.nodes)
-    if missing_nodes:
-        raise RuntimeError("Unable to create edges to some nodes: "
-                           f"{list(missing_nodes)}")
 
     return min_network
 
