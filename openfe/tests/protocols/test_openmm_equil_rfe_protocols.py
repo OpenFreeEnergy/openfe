@@ -1263,6 +1263,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
+        assert est.m == pytest.approx(-15.768768285032115)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1270,6 +1271,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
+        assert est.m == pytest.approx(0.03662634237353985)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
