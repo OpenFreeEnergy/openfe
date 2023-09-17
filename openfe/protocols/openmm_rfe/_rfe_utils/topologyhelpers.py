@@ -4,14 +4,68 @@
 # building toolsets.
 # LICENSE: MIT
 
-import warnings
-import itertools
 from copy import deepcopy
-import numpy as np
-from openmm import app, unit
+import itertools
 import logging
+import warnings
+
+import mdtraj as mdt
+from mdtraj.core.residue_names import _SOLVENT_TYPES
+import numpy as np
+from openmm import app
+from openmm import unit as omm_unit
+from openff.unit import unit
+
 
 logger = logging.getLogger(__name__)
+
+
+def get_alchemical_water(topology, positions,
+                         charge_correction,
+                         distance_cutoff=0.8 * unit.nanometer):
+    """
+    Based off perses.ultils.charge_changing.get_water_indices.
+
+    Parameters
+    ----------
+    topology : ??
+    positions : ??
+    charge_correction: bool
+    """
+    # Exit early and return Nones if you don't actually want to do this
+    if not charge_correction:
+        return None, None
+
+    # construct a new 
+    traj = mdt.Trajectory(
+        positions[np.newaxis, ...],
+        mdt.Topology.from_openmm(topology)
+    )
+
+    water_atoms = traj.topology.select("water")
+    solvent_residue_names = list(_SOLVENT_TYPES)
+    solute_atoms = [atom.index for atom in traj.topology.atom
+                    if atom.residue.name not in solvent_residue_names]
+
+    excluded_waters = mdt.compute_neighbors(
+        traj, distance_cutoff.to(unit.nanometer).m,
+        solute_atoms, haystack_indices=water_atoms
+    )[0]
+
+    solvent_indices = set([
+        atom.residue.index for atom in traj.topology.atoms
+        if (atom.index in water_atoms) and (atom.index not in excluded_waters)
+    ])
+
+    if len(sovlent_indices) < 0:
+        errmsg = ("There are no waters outside of a "
+                  f"{distance_cutoff.to(unit.nanometer) nanometer distance "
+                  "of the system solutes to be used as alchemical waters")
+        raise ValueError(errmsg)
+
+    # choose the water further away
+    
+    
 
 
 def combined_topology(topology1, topology2, exclude_resids=None):
@@ -397,8 +451,8 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
         atoms between the "old" and "new" positions. Default 1.0.
     """
     # Get the positions in Angstrom as raw numpy arrays
-    old_pos_array = old_positions.value_in_unit(unit.angstrom)
-    add_pos_array = insert_positions.value_in_unit(unit.angstrom)
+    old_pos_array = old_positions.value_in_unit(omm_unit.angstrom)
+    add_pos_array = insert_positions.value_in_unit(omm_unit.angstrom)
 
     # Create empty ndarray of size atoms to hold the positions
     new_pos_array = np.zeros((new_topology.getNumAtoms(), 3))
@@ -422,4 +476,4 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
             warnings.warn(wmsg)
             logging.warning(wmsg)
 
-    return new_pos_array * unit.angstrom
+    return new_pos_array * omm_unit.angstrom

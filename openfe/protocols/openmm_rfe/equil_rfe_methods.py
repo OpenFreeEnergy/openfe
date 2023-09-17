@@ -70,17 +70,32 @@ def _get_resname(off_mol) -> str:
 
 def _get_alchemical_charge_difference(
     mapping: Optional[dict[str, ComponentMapping]],
-    explicit_charge_change: bool,
+    nonbonded_method: str,
+    explicit_charge_correction: bool,
 ) -> int:
     """
-    Returns the difference in formal charge between the
-    components mapped in stateA and those of stateB
+    Checks and returns the difference in formal charge between
+    the components mapped in stateA and those of stateB
     (i.e. sum(charge_stateA) - sum(charge_stateB).
+
+    Raises
+    ------
+    ValueError
+      * If an explicit charge correction is attempted and the
+        nonbonded method is not PME.
+      * If the absolute charge difference is greater than one
+        and an explicit charge correction is attempted.
+    UserWarning
+      If there is any charge difference.
 
     Parameters
     ----------
     mapping : dict[str, ComponentMapping]
       Dictionary of mappings between transforming components.
+    nonbonded_method : str
+      The OpenMM nonbonded method used for the simulation.
+    explicit_charge_correction : bool
+      Whether or not to use an explicit charge correction.
 
     Returns
     -------
@@ -94,7 +109,35 @@ def _get_alchemical_charge_difference(
         sum_chg_A += Chem.rdmolops.GetFormalCharge(m.componentA.to_rdkit())
         sum_chg_B += Chem.rdmolops.GetFormalCharge(m.componentB.to_rdkit())
 
-    return sum_chgA - sum_chgB
+    difference = sum_chgA - sum_chgB
+
+    if abs(difference) > 0:
+        if explicit_charge_correction:
+            if nonbonded_method.lower() != "pme":
+                errmsg = ("Explicit charge correction when not using PME is "
+                          "not currently supported.")
+                raise ValueError(errmsg)
+            if abs(difference) > 1:
+                errmsg = (f"A charge difference of {difference} is observed "
+                          "between the end states and an explicit charge  "
+                          "correction has been requested. Unfortunately "
+                          "only absolute differences of 1 are supported.")
+                raise ValueError(errmsg)
+            ion = {-1: 'Na+', 1: 'Cl-'}[difference]
+            wmsg = (f"A charge difference of {difference} is observed "
+                    "between the end states. This will be addressed by "
+                    f"transforming a water into a {ion} ion")
+            logger.warn(wmsg)
+            warnings.warn(wmsg)
+        else:
+            wmsg = (f"A charge difference of {difference} is observed "
+                    "between the end states. No charge correction has "
+                    "been requested, please account for this in your "
+                    "final results".)
+            logger.warn(wmsg)
+            warnings.warn(wmsg)
+
+    return difference
 
 
 def _validate_alchemical_components(
@@ -547,7 +590,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
         charge_change = _get_alchemical_charge_difference(
-            mapping, alchem_settings.explicit_charge_correction
+            mapping,
+            self.settings.system_settings.nonbonded_method,
+            alchem_settings.explicit_charge_correction,
         )
 
         # 1. Create stateA system
@@ -602,6 +647,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             molecules=[s.to_openff() for s in small_mols],
         )
 
+        # f. if a charge correction is necessary, select the alchemical water
+        alchem_water_resid, alchem_water_pos = _rfe_utils.topologyhelpers.get_alchemical_water(
+            stateA_topology, stateA_positions,
+            alchem_settings.explicit_charge_correction,
+        )
 
         # 2. Get stateB system
         # a. get the topology
