@@ -77,6 +77,15 @@ class AlchemicalSettings(SettingsBaseModel):
     endstate the torsion term is turned off/on depending on the state the
     unique atoms belong to. Default False.
     """
+    explicit_charge_correction = True
+    """
+    Whether to explicitly account for a charge difference during the
+    alchemical transformation by transforming a water to a counterion
+    of the opposite charge of the formal charge difference.
+
+    Please note that absolute charge changes greater than 1 are
+    currently not supported.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):

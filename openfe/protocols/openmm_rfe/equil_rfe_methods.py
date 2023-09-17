@@ -35,6 +35,7 @@ import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
 import mdtraj
+from rdkit import Chem
 
 import gufe
 from gufe import (
@@ -67,9 +68,38 @@ def _get_resname(off_mol) -> str:
     return names[0]
 
 
+def _get_alchemical_charge_difference(
+    mapping: Optional[dict[str, ComponentMapping]],
+    explicit_charge_change: bool,
+) -> int:
+    """
+    Returns the difference in formal charge between the
+    components mapped in stateA and those of stateB
+    (i.e. sum(charge_stateA) - sum(charge_stateB).
+
+    Parameters
+    ----------
+    mapping : dict[str, ComponentMapping]
+      Dictionary of mappings between transforming components.
+
+    Returns
+    -------
+    int
+      The formal charge difference between states A and B.
+    """
+    sum_chg_A = 0
+    sum_chg_B = 0 
+
+    for m in mapping.values():
+        sum_chg_A += Chem.rdmolops.GetFormalCharge(m.componentA.to_rdkit())
+        sum_chg_B += Chem.rdmolops.GetFormalCharge(m.componentB.to_rdkit())
+
+    return sum_chgA - sum_chgB
+
+
 def _validate_alchemical_components(
-        alchemical_components: dict[str, list[Component]],
-        mapping: Optional[dict[str, ComponentMapping]],
+    alchemical_components: dict[str, list[Component]],
+    mapping: Optional[dict[str, ComponentMapping]],
 ):
     """
     Checks that the alchemical components are suitable for the RFE protocol.
@@ -516,6 +546,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+        charge_change = _get_alchemical_charge_difference(
+            mapping, alchem_settings.explicit_charge_correction
+        )
 
         # 1. Create stateA system
         # a. get a system generator
