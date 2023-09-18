@@ -254,8 +254,38 @@ def generate_minimal_redundant_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     """
+    if isinstance(mappers, AtomMapper):
+        mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
 
-    return min_network
+    # First create a network with all the proposed mappings (scored)
+    network = generate_maximal_network(ligands, mappers, scorer, progress)
+
+    # Flip network scores so we can use minimal algorithm
+    g2 = nx.MultiGraph()
+    for e1, e2, d in network.graph.edges(data=True):
+        g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
+ 
+    # As in .generate_minimal_spanning_network(), use nx to get the minimal 
+    # network. But now also remove those edges from the fully-connected
+    # network, then get the minimal network again. Add mappings from all
+    # minimal networks together.
+    mappings = []
+    for _ in range(2): # can increase range here for more redundancy
+        # get list from generator so that we don't adjust network by calling it:
+        current_best_edges = list(nx.minimum_spanning_edges(g2))
+
+        g2.remove_edges_from(current_best_edges)
+        [mappings.append(edge_data['object']) for _, _, _, edge_data in current_best_edges]
+
+    redund_network = LigandNetwork(mappings)
+    missing_nodes = set(network.nodes) - set(redund_network.nodes)
+    if missing_nodes:
+        raise RuntimeError("Unable to create edges to some nodes: "
+                           f"{list(missing_nodes)}")
+
+    return redund_network
 
 def generate_network_from_names(
         ligands: list[SmallMoleculeComponent],
