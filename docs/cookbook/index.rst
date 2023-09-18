@@ -124,7 +124,7 @@ The typical way to use the Python API is to load a number of molecules you want 
 
 
             .. rst-class:: arrow-down arrow-head
-        - :meth:`LigandNetwork.to_rbfe_alchemical_network() <openfe.setup.LigandNetwork.to_rbfe_alchemical_network>`
+        - :any:`create_alchemical_network`
 
         - :class:`AlchemicalNetwork`
             A complete simulation campaign.
@@ -147,6 +147,8 @@ List of Cookbooks
 -----------------
 
 .. toctree::
+    :maxdepth: 1
+
     loading_molecules
     creating_atom_mappings
     dumping_transformation
@@ -155,6 +157,7 @@ List of Cookbooks
     load_ligand_network
     hand_write_ligand_network
     ligandnetwork_vis
+    create_alchemical_network
     under_the_hood
 
     
