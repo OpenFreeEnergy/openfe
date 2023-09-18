@@ -51,7 +51,8 @@ def generate_radial_network(
     Parameters
     ----------
     ligands : iterable of SmallMoleculeComponents
-      the ligands to arrange around the central ligand
+      the ligands to arrange around the central ligand.  If the central ligand
+      is present it will be ignored (i.e. avoiding a self edge)
     central_ligand : SmallMoleculeComponent
       the ligand to use as the hub/central ligand
     mappers : AtomMapper or iterable of AtomMappers
@@ -84,6 +85,12 @@ def generate_radial_network(
     edges = []
 
     for ligand in ligands:
+        if ligand == central_ligand:
+            wmsg = (f"The central_ligand {ligand.name} was also found in "
+                    "the list of ligands to arrange around the "
+                    "central_ligand this will be ignored.")
+            warnings.warn(wmsg)
+            continue
         best_score = 0.0
         best_mapping = None
 

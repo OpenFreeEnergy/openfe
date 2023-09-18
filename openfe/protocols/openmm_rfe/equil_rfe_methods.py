@@ -24,6 +24,7 @@ import uuid
 import warnings
 
 import numpy as np
+import numpy.typing as npt
 from openff.units import unit
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openmmtools import multistate
@@ -31,7 +32,7 @@ from typing import Optional
 from openmm import unit as omm_unit
 from openmm.app import PDBFile
 import pathlib
-from typing import Any, Iterable
+from typing import Any, Iterable, Union
 import openmmtools
 import mdtraj
 
@@ -48,10 +49,11 @@ from .equil_rfe_settings import (
     IntegratorSettings, SimulationSettings
 )
 from ..openmm_utils import (
-    system_validation, settings_validation, system_creation
+    system_validation, settings_validation, system_creation,
+    multistate_analysis
 )
 from . import _rfe_utils
-from ...utils import without_oechem_backend
+from ...utils import without_oechem_backend, log_system_probe
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +149,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
-    def get_estimate(self):
+    def get_estimate(self) -> unit.Quantity:
         """Average free energy difference of this transformation
 
         Returns
@@ -165,8 +167,10 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.average(vals) * u
 
-    def get_uncertainty(self):
-        """The uncertainty/error in the dG value: The std of the estimates of each independent repeat"""
+    def get_uncertainty(self) -> unit.Quantity:
+        """The uncertainty/error in the dG value: The std of the estimates of
+        each independent repeat
+        """
         dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
@@ -174,6 +178,128 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         vals = [dG.to(u).m for dG in dGs]
 
         return np.std(vals) * u
+
+    def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+        """Return a list of tuples containing the individual free energy
+        estimates and associated MBAR errors for each repeat.
+
+        Returns
+        -------
+        dGs : list[tuple[unit.Quantity]]
+          n_replicate simulation list of tuples containing the free energy
+          estimates (first entry) and associated MBAR estimate errors
+          (second entry).
+        """
+        dGs = [(pus[0].outputs['unit_estimate'],
+                pus[0].outputs['unit_estimate_error'])
+               for pus in self.data.values()]
+        return dGs
+
+    def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
+        """
+        Get a list of forward and reverse analysis of the free energies
+        for each repeat using uncorrolated production samples.
+
+        Returns
+        -------
+        forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
+        """
+        forward_reverse = [pus[0].outputs['forward_and_reverse_energies']
+                           for pus in self.data.values()]
+
+        return forward_reverse
+
+    def get_overlap_matrices(self) -> list[dict[str, npt.NDArray]]:
+        """
+        Return a list of dictionary containing the MBAR overlap estimates
+        calculated for each repeat.
+
+        Returns
+        -------
+        overlap_stats : list[dict[str, npt.NDArray]]
+          A list of dictionaries containing the following keys:
+            * ``scalar``: One minus the largest nontrivial eigenvalue
+            * ``eigenvalues``: The sorted (descending) eigenvalues of the
+              overlap matrix
+            * ``matrix``: Estimated overlap matrix of observing a sample from
+              state i in state j
+        """
+        # Loop through and get the repeats and get the matrices
+        overlap_stats = [pus[0].outputs['unit_mbar_overlap']
+                         for pus in self.data.values()]
+
+        return overlap_stats
+
+    def get_replica_transition_statistics(self) -> list[dict[str, npt.NDArray]]:
+        """
+        Returns the replica lambda state transition statistics for each
+        repeat.
+
+        Note
+        ----
+        This is currently only available in cases where a replica exchange
+        simulation was run.
+
+        Returns
+        -------
+        repex_stats : list[dict[str, npt.NDArray]]
+          A list of dictionaries containing the following:
+            * ``eigenvalues``: The sorted (descending) eigenvalues of the
+              lambda state transition matrix
+            * ``matrix``: The transition matrix estimate of a replica switchin
+              from state i to state j.
+        """
+        try:
+            repex_stats = [pus[0].outputs['replica_exchange_statistics']
+                           for pus in self.data.values()]
+        except KeyError:
+            errmsg = ("Replica exchange statistics were not found, "
+                      "did you run a repex calculation?")
+            raise ValueError(errmsg)
+
+        return repex_stats
+
+    def get_replica_states(self) -> list[npt.NDArray]:
+        """
+        Returns the timeseries of replica states for each repeat.
+
+        Returns
+        -------
+        replica_states : List[npt.NDArray]
+          List of replica states for each repeat
+        """
+        replica_states = [pus[0].outputs['replica_states']
+                          for pus in self.data.values()]
+
+        return replica_states
+
+    def equilibration_iterations(self) -> list[float]:
+        """
+        Returns the number of equilibration iterations for each repeat
+        of the calculation.
+
+        Returns
+        -------
+        equilibration_lengths : list[float]
+        """
+        equilibration_lengths = [pus[0].outputs['equilibration_iterations']
+                                 for pus in self.data.values()]
+
+        return equilibration_lengths
+
+    def production_iterations(self) -> list[float]:
+        """
+        Returns the number of uncorrelated production samples for each
+        repeat of the calculation.
+
+        Returns
+        -------
+        production_lengths : list[float]
+        """
+        production_lengths = [pus[0].outputs['production_iterations']
+                              for pus in self.data.values()]
+
+        return production_lengths
 
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
@@ -516,11 +642,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
+        nc = shared_basepath / sim_settings.output_filename
+        chk = shared_basepath / sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
-            storage=shared_basepath / sim_settings.output_filename,
+            storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=sim_settings.checkpoint_interval.m,
-            checkpoint_storage=sim_settings.checkpoint_storage,
+            checkpoint_storage=chk,
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
@@ -530,13 +658,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
         # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
 
-        traj = mdtraj.Trajectory(
-                hybrid_factory.hybrid_positions[selection_indices, :],
-                hybrid_factory.hybrid_topology.subset(selection_indices),
-        ).save_pdb(
-            shared_basepath / sim_settings.output_structure,
-            bfactors=bfactors,
-        )
+        if len(selection_indices) > 0:
+            traj = mdtraj.Trajectory(
+                    hybrid_factory.hybrid_positions[selection_indices, :],
+                    hybrid_factory.hybrid_topology.subset(selection_indices),
+            ).save_pdb(
+                shared_basepath / sim_settings.output_structure,
+                bfactors=bfactors,
+            )
 
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
@@ -640,16 +769,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
                 self.logger.info("Production phase complete")
 
-                self.logger.info("Obtaining estimate of results")
-                # calculate estimate of results from this individual unit
-                ana = multistate.MultiStateSamplerAnalyzer(reporter)
-                est, _ = ana.get_free_energy()
-                est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
-                est = ensure_quantity(est, 'openff')
-                ana.clear()  # clean up cached values
+                self.logger.info("Post-simulation analysis of results")
+                # calculate relevant analyses of the free energies & sampling
+                # First close & reload the reporter to avoid netcdf clashes
+                analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+                    reporter,
+                    sampling_method=sampler_settings.sampler_method.lower(),
+                    result_units=unit.kilocalorie_per_mole,
+                )
+                analyzer.plot(filepath=shared_basepath, filename_prefix="")
+                analyzer.close()
 
-                nc = shared_basepath / sim_settings.output_filename
-                chk = shared_basepath / sim_settings.checkpoint_storage
             else:
                 # clean up the reporter file
                 fns = [shared_basepath / sim_settings.output_filename,
@@ -657,9 +787,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 for fn in fns:
                     os.remove(fn)
         finally:
-            # close reporter when you're done, prevent file handle clashes
+            # close reporter when you're done, prevent
+            # file handle clashes
             reporter.close()
-            del reporter
 
             # clear GPU contexts
             # TODO: use cache.empty() calls when openmmtools #690 is resolved
@@ -682,7 +812,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
-                'unit_estimate': est,
+                **analyzer.unit_results_dict
             }
         else:
             return {'debug': {'sampler': sampler}}
@@ -690,9 +820,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
         with without_oechem_backend():
             outputs = self.run(scratch_basepath=ctx.scratch,
                                shared_basepath=ctx.shared)
+
 
         return {
             'repeat_id': self._inputs['repeat_id'],

@@ -5,6 +5,7 @@ from io import StringIO
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+import json
 import pytest
 from unittest import mock
 from openff.units import unit
@@ -1164,10 +1165,11 @@ class TestConstraintRemoval:
 
 @pytest.fixture(scope='session')
 def tyk2_xml(tmp_path_factory):
-    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_23.sdf') as f:
-        lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
-    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_55.sdf') as f:
-        lig55 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        fn1 = str(d / 'ligand_23.sdf')
+        fn2 = str(d / 'ligand_55.sdf')
+    lig23 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
+    lig55 = openfe.SmallMoleculeComponent.from_sdf_file(fn2)
 
     mapping = setup.LigandAtomMapping(
         componentA=lig23, componentB=lig55,
@@ -1205,7 +1207,8 @@ def tyk2_xml(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def tyk2_reference_xml():
-    with resources.path('openfe.tests.data.openmm_rfe', 'reference.xml') as f:
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        f = d / 'reference.xml'
         with open(f, 'r') as i:
             xmldata = i.read()
     return ET.fromstring(xmldata)
@@ -1236,3 +1239,12 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+def test_reload_protocol_result(transformation_json):
+    d = json.loads(transformation_json,
+                   cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+    pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+
+    assert pr

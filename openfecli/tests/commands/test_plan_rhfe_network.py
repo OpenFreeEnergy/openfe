@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-import importlib
+from importlib import resources
 import os
 from click.testing import CliRunner
 
@@ -13,12 +13,8 @@ from openfecli.commands.plan_rhfe_network import (
 
 @pytest.fixture
 def mol_dir_args():
-    with importlib.resources.path(
-        "openfe.tests.data.openmm_rfe", "__init__.py"
-    ) as file_path:
-        ofe_dir_path = os.path.dirname(file_path)
-
-    return ["--molecules", ofe_dir_path]
+    with resources.files("openfe.tests.data.openmm_rfe") as d:
+        return ["--molecules", str(d)]
 
 
 def print_test_with_file(
@@ -39,12 +35,10 @@ def test_plan_rhfe_network_main():
         ligand_network_planning,
     )
 
-    with importlib.resources.path(
-        "openfe.tests.data.openmm_rfe", "__init__.py"
-    ) as file_path:
+    with resources.files("openfe.tests.data.openmm_rfe") as d:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(f)
-            for f in glob.glob(os.path.dirname(file_path) + "/*.sdf")
+            for f in glob.glob(str(d / "*.sdf"))
         ]
 
     solvent_component = SolventComponent()

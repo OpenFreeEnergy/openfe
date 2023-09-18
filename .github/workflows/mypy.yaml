@@ -19,17 +19,18 @@ jobs:
   mypy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Setup Micromamba
-        uses: mamba-org/provision-with-micromamba@main
+      - name: "Setup Micromamba"
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment.yml
           environment-name: openfe_env
-          cache-env: true
+          cache-environment: true
           cache-downloads: true
-          extra-specs: |
-            python==3.9
+          create-args: >-
+            python=3.9
+          init-shell: bash
 
       - name: "Install steps"
         run: |
