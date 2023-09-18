@@ -244,6 +244,83 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
             scorer=scorer
         )
 
+@pytest.fixture(scope='session')
+def generate_minimal_redundant_network(toluene_vs_others):
+    toluene, others = toluene_vs_others
+    mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
+
+    def scorer(mapping):
+        return len(mapping.componentA_to_componentB)
+
+    network = openfe.setup.ligand_network_planning.generate_generate_minimal_redundant_network(
+        ligands=others + [toluene],
+        mappers=mappers,
+        scorer=scorer
+    )
+    return network
+
+def test_generate_minimal_redundant_network(generate_minimal_redundant_network, toluene_vs_others):
+    tol, others = toluene_vs_others
+    assert len(generate_minimal_redundant_network.nodes) == len(others) + 1
+    for edge in generate_minimal_redundant_network.edges:
+        assert edge.componentA_to_componentB != {0: 0}  # lomap should find something
+
+
+def test_generate_minimal_redundant_network_connectedness(minimal_redundant_network):
+    found_pairs = set()
+    for edge in generate_minimal_redundant_network.edges:
+        pair = frozenset([edge.componentA, edge.componentB])
+        assert pair not in found_pairs
+        found_pairs.add(pair)
+
+    assert nx.is_connected(nx.MultiGraph(generate_minimal_redundant_network.graph))
+
+
+def generate_minimal_redundant_network(generate_minimal_redundant_network):
+    # issue #244, this was previously giving non-reproducible (yet valid)
+    # networks when scores were tied.
+    edge_ids = sorted(
+        (edge.componentA.name, edge.componentB.name)
+        for edge in generate_minimal_redundant_network.edges
+    )
+    ref = sorted([
+        ('2-naftanol', '2-methyl-6-propylnaphthalene'),
+        ('2-naftanol', 'methylcyclohexane'),
+        ('2-methyl-6-propylnaphthalene', 'toluene'),
+        ('2-naftanol', 'toluene'),
+        ('2-naftanol', '1-butyl-4-methylbenzene'),
+        ('2-methyl-6-propylnaphthalene', '1-butyl-4-methylbenzene'),
+        ('2-naftanol', '1,3,7-trimethylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-naftanol'),
+        ('2-methylnaphthalene', '2-methyl-6-propylnaphthalene'),
+        ('methylcyclohexane', '2-methyl-6-propylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+        ('2-naftanol', '2-methylnaphthalene'),
+        ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+    ])
+
+    assert len(edge_ids) == len(ref)
+    assert edge_ids == ref
+
+def test_minimal_redundant_network_redundant(generate_minimal_redundant_network):
+    # test that each node is connected to 2 edges.
+    network = generate_minimal_redundant_network
+    for node in network.nodes:
+        assert len(network.graph.in_edges(node)) + len(network.graph.out_edges(node)) >= 2
+     
+def test_minimal_redundant_network_unreachable(toluene_vs_others):
+    toluene, others = toluene_vs_others
+    nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
+
+    def scorer(mapping):
+        return len(mapping.componentA_to_componentB)
+
+    with pytest.raises(RuntimeError, match="Unable to create edges"):
+        network = openfe.setup.ligand_network_planning.generate_generate_minimal_redundant_network(
+            ligands=others + [toluene, nimrod],
+            mappers=[openfe.setup.atom_mapping.LomapAtomMapper()],
+            scorer=scorer
+        )
 
 def test_network_from_names(atom_mapping_basic_test_files):
     ligs = list(atom_mapping_basic_test_files.values())
