@@ -204,10 +204,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
         """
-        forward_reverse = [
-            pus[0].outputs['_forward_and_reverse_energies']
-            for pus in self.data.values()
-        ]
+        forward_reverse = [pus[0].outputs['forward_and_reverse_energies']
+                           for pus in self.data.values()]
 
         return forward_reverse
 
@@ -227,10 +225,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
               state i in state j
         """
         # Loop through and get the repeats and get the matrices
-        overlap_stats = [
-            pus[0].outputs['_unit_mbar_overlap']
-            for pus in self.data.values()
-        ]
+        overlap_stats = [pus[0].outputs['unit_mbar_overlap']
+                         for pus in self.data.values()]
 
         return overlap_stats
 
@@ -254,10 +250,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
               from state i to state j.
         """
         try:
-            repex_stats = [
-                pus[0].outputs['_replica_exchange_statistics']
-                for pus in self.data.values()
-            ]
+            repex_stats = [pus[0].outputs['replica_exchange_statistics']
+                           for pus in self.data.values()]
         except KeyError:
             errmsg = ("Replica exchange statistics were not found, "
                       "did you run a repex calculation?")
@@ -274,10 +268,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         replica_states : List[npt.NDArray]
           List of replica states for each repeat
         """
-        replica_states = [
-            pus[0].outputs['_replica_states']
-            for pus in self.data.values()
-        ]
+        replica_states = [pus[0].outputs['replica_states']
+                          for pus in self.data.values()]
 
         return replica_states
 
@@ -290,10 +282,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         equilibration_lengths : list[float]
         """
-        equilibration_lengths = [
-            pus[0].outputs['_equilibration_iterations']
-            for pus in self.data.values()
-        ]
+        equilibration_lengths = [pus[0].outputs['equilibration_iterations']
+                                 for pus in self.data.values()]
 
         return equilibration_lengths
 
@@ -306,10 +296,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         production_lengths : list[float]
         """
-        production_lengths = [
-            pus[0].outputs['_production_iterations']
-            for pus in self.data.values()
-        ]
+        production_lengths = [pus[0].outputs['production_iterations']
+                              for pus in self.data.values()]
 
         return production_lengths
 
