@@ -246,6 +246,7 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
             scorer=scorer
         )
 
+
 @pytest.fixture(scope='session')
 def minimal_redundant_network(toluene_vs_others, mst_num=2):
     toluene, others = toluene_vs_others
@@ -303,19 +304,19 @@ def test_minimal_redundant_network(minimal_redundant_network):
         for edge in minimal_redundant_network.edges
     )
     ref = sorted([
-        ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'), 
-        ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'), 
-        ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'), 
-        ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'), 
-        ('1-butyl-4-methylbenzene', 'toluene'), 
-        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'), 
-        ('2,6-dimethylnaphthalene', '2-methylnaphthalene'), 
-        ('2,6-dimethylnaphthalene', '2-naftanol'), 
-        ('2,6-dimethylnaphthalene', 'methylcyclohexane'), 
-        ('2,6-dimethylnaphthalene', 'toluene'), 
-        ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'), 
-        ('2-methylnaphthalene', '2-naftanol'), 
-        ('2-methylnaphthalene', 'methylcyclohexane'), 
+        ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
+        ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+        ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'),
+        ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
+        ('1-butyl-4-methylbenzene', 'toluene'),
+        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-methylnaphthalene'),
+        ('2,6-dimethylnaphthalene', '2-naftanol'),
+        ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
+        ('2,6-dimethylnaphthalene', 'toluene'),
+        ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'),
+        ('2-methylnaphthalene', '2-naftanol'),
+        ('2-methylnaphthalene', 'methylcyclohexane'),
         ('2-methylnaphthalene', 'toluene')
     ])
 
