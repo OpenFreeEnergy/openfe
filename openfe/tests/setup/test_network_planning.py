@@ -261,7 +261,13 @@ def generate_minimal_redundant_network(toluene_vs_others):
 
 def test_generate_minimal_redundant_network(generate_minimal_redundant_network, toluene_vs_others):
     tol, others = toluene_vs_others
+
+    # test for correct number of nodes
     assert len(generate_minimal_redundant_network.nodes) == len(others) + 1
+
+    # test for correct number of edges
+    assert len(generate_minimal_redundant_network.edges) == 2 * (len(generate_minimal_redundant_network.nodes) -1)
+
     for edge in generate_minimal_redundant_network.edges:
         assert edge.componentA_to_componentB != {0: 0}  # lomap should find something
 
