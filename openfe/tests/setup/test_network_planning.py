@@ -176,7 +176,7 @@ def test_minimal_spanning_network_mappers(atom_mapping_basic_test_files, multi_m
     assert list(network.edges)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='minimal_redundant_network')
 def minimal_spanning_network(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
