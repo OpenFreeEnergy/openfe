@@ -176,7 +176,7 @@ def test_minimal_spanning_network_mappers(atom_mapping_basic_test_files, multi_m
     assert list(network.edges)
 
 
-@pytest.fixture(scope='minimal_redundant_network')
+@pytest.fixture(scope='session')
 def minimal_spanning_network(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
@@ -244,7 +244,7 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
             scorer=scorer
         )
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='minimal_redundant_network')
 def generate_minimal_redundant_network(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
@@ -276,7 +276,7 @@ def test_generate_minimal_redundant_network_connectedness(minimal_redundant_netw
     assert nx.is_connected(nx.MultiGraph(generate_minimal_redundant_network.graph))
 
 
-def generate_minimal_redundant_network(generate_minimal_redundant_network):
+def test_generate_minimal_redundant_network(generate_minimal_redundant_network):
     # issue #244, this was previously giving non-reproducible (yet valid)
     # networks when scores were tied.
     edge_ids = sorted(
