@@ -246,8 +246,6 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
             scorer=scorer
         )
 
-
-@pytest.fixture(scope='minimal_redundant_network')
 def minimal_redundant_network(toluene_vs_others, mst_num=2):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
