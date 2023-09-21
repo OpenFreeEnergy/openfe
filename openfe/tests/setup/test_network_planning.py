@@ -76,7 +76,8 @@ def test_radial_network_with_scorer(toluene_vs_others):
     assert len(network.edges) == len(others)
 
     for edge in network.edges:
-        assert len(edge.componentA_to_componentB) > 1  # we didn't take the bad mapper
+        # we didn't take the bad mapper
+        assert len(edge.componentA_to_componentB) > 1
         assert 'score' in edge.annotations
         assert edge.annotations['score'] == len(edge.componentA_to_componentB)
 
@@ -196,7 +197,8 @@ def test_minimal_spanning_network(minimal_spanning_network, toluene_vs_others):
     tol, others = toluene_vs_others
     assert len(minimal_spanning_network.nodes) == len(others) + 1
     for edge in minimal_spanning_network.edges:
-        assert edge.componentA_to_componentB != {0: 0}  # lomap should find something
+        assert edge.componentA_to_componentB != {
+            0: 0}  # lomap should find something
 
 
 def test_minimal_spanning_network_connectedness(minimal_spanning_network):
@@ -244,6 +246,7 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
             scorer=scorer
         )
 
+
 @pytest.fixture(scope='minimal_redundant_network')
 def minimal_redundant_network(toluene_vs_others, mst_num=2):
     toluene, others = toluene_vs_others
@@ -260,6 +263,7 @@ def minimal_redundant_network(toluene_vs_others, mst_num=2):
     )
     return network
 
+
 def test_minimal_redundant_network(minimal_redundant_network, toluene_vs_others):
     tol, others = toluene_vs_others
 
@@ -267,10 +271,13 @@ def test_minimal_redundant_network(minimal_redundant_network, toluene_vs_others)
     assert len(minimal_redundant_network.nodes) == len(others) + 1
 
     # test for correct number of edges
-    assert len(minimal_redundant_network.edges) == 2 * (len(minimal_redundant_network.nodes) -1)
+    assert len(minimal_redundant_network.edges) == 2 * \
+        (len(minimal_redundant_network.nodes) - 1)
 
     for edge in minimal_redundant_network.edges:
-        assert edge.componentA_to_componentB != {0: 0}  # lomap should find something
+        assert edge.componentA_to_componentB != {
+            0: 0}  # lomap should find something
+
 
 def test_minimal_redundant_network_connectedness(minimal_redundant_network):
     found_pairs = set()
@@ -281,11 +288,13 @@ def test_minimal_redundant_network_connectedness(minimal_redundant_network):
 
     assert nx.is_connected(nx.MultiGraph(minimal_redundant_network.graph))
 
+
 def test_redundant_vs_spanning_network(minimal_redundant_network, minimal_spanning_network):
     # when setting minimal redundant network to only take one MST, it should have as many
     # edges as the regular minimum spanning network
-    assert len(minimal_spanning_network) == len(minimal_redundant_network(mst_num=1))
-    
+    assert len(minimal_spanning_network) == len(
+        minimal_redundant_network(mst_num=1))
+
 
 def test_minimal_redundant_network(minimal_redundant_network):
     # issue #244, this was previously giving non-reproducible (yet valid)
@@ -313,12 +322,15 @@ def test_minimal_redundant_network(minimal_redundant_network):
     assert len(edge_ids) == len(ref)
     assert edge_ids == ref
 
+
 def test_minimal_redundant_network_redundant(minimal_redundant_network):
     # test that each node is connected to 2 edges.
     network = minimal_redundant_network
     for node in network.nodes:
-        assert len(network.graph.in_edges(node)) + len(network.graph.out_edges(node)) >= 2
-     
+        assert len(network.graph.in_edges(node)) + \
+            len(network.graph.out_edges(node)) >= 2
+
+
 def test_minimal_redundant_network_unreachable(toluene_vs_others):
     toluene, others = toluene_vs_others
     nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
@@ -332,6 +344,7 @@ def test_minimal_redundant_network_unreachable(toluene_vs_others):
             mappers=[openfe.setup.atom_mapping.LomapAtomMapper()],
             scorer=scorer
         )
+
 
 def test_network_from_names(atom_mapping_basic_test_files):
     ligs = list(atom_mapping_basic_test_files.values())
@@ -454,10 +467,12 @@ def test_network_from_external(file_fixture, loader, request,
     expected_edges = {
         (benzene_modifications['benzene'], benzene_modifications['toluene']),
         (benzene_modifications['benzene'], benzene_modifications['phenol']),
-        (benzene_modifications['benzene'], benzene_modifications['benzonitrile']),
+        (benzene_modifications['benzene'],
+         benzene_modifications['benzonitrile']),
         (benzene_modifications['benzene'], benzene_modifications['anisole']),
         (benzene_modifications['benzene'], benzene_modifications['styrene']),
-        (benzene_modifications['benzene'], benzene_modifications['benzaldehyde']),
+        (benzene_modifications['benzene'],
+         benzene_modifications['benzaldehyde']),
     }
 
     actual_edges = {(e.componentA, e.componentB) for e in list(network.edges)}
@@ -509,7 +524,6 @@ def test_bad_orion_network(benzene_modifications, tmpdir):
                 mapper=openfe.LomapAtomMapper(),
                 network_file='bad_orion_net.dat',
             )
-
 
 
 BAD_EDGES = """\

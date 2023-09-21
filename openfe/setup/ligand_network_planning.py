@@ -160,7 +160,7 @@ def generate_maximal_network(
         total = len(nodes) * (len(nodes) - 1) // 2
         progress = functools.partial(tqdm, total=total, delay=1.5)
     elif progress is False:
-        progress = lambda x: x
+        def progress(x): return x
     # otherwise, it should be a user-defined callable
 
     mapping_generator = itertools.chain.from_iterable(
@@ -228,6 +228,7 @@ def generate_minimal_spanning_network(
 
     return min_network
 
+
 def generate_minimal_redundant_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
@@ -271,13 +272,13 @@ def generate_minimal_redundant_network(
     g2 = nx.MultiGraph()
     for e1, e2, d in network.graph.edges(data=True):
         g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
- 
-    # As in .generate_minimal_spanning_network(), use nx to get the minimal 
+
+    # As in .generate_minimal_spanning_network(), use nx to get the minimal
     # network. But now also remove those edges from the fully-connected
     # network, then get the minimal network again. Add mappings from all
     # minimal networks together.
     mappings = []
-    for _ in range(mst_num): # can increase range here for more redundancy
+    for _ in range(mst_num):  # can increase range here for more redundancy
         # get list from generator so that we don't adjust network by calling it:
         current_best_edges = list(nx.minimum_spanning_edges(g2))
 
@@ -292,6 +293,7 @@ def generate_minimal_redundant_network(
                            f"{list(missing_nodes)}")
 
     return redund_network
+
 
 def generate_network_from_names(
         ligands: list[SmallMoleculeComponent],
@@ -417,7 +419,7 @@ def load_orion_network(
     KeyError
       If an unexpected line format is encountered.
     """
-    
+
     with open(network_file, 'r') as f:
         network_lines = [l.strip().split(' ') for l in f
                          if not l.startswith('#')]
