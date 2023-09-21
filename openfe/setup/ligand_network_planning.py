@@ -233,6 +233,7 @@ def generate_minimal_redundant_network(
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    mst_num: int = 2,
 ) -> LigandNetwork:
     """
     Plan a network with as few edges as possible with maximum total score, 
@@ -253,6 +254,10 @@ def generate_minimal_redundant_network(
       progress bar: if False, no progress bar will be shown. If True, use a
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
+    mst_num: int
+      Minimum Spanning Tree number: the number of minimum spanning trees to
+      generate. If two, the second-best edges are included in the returned
+      network. If three, the third-best edges are also included, etc.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
@@ -272,7 +277,7 @@ def generate_minimal_redundant_network(
     # network, then get the minimal network again. Add mappings from all
     # minimal networks together.
     mappings = []
-    for _ in range(2): # can increase range here for more redundancy
+    for _ in range(mst_num): # can increase range here for more redundancy
         # get list from generator so that we don't adjust network by calling it:
         current_best_edges = list(nx.minimum_spanning_edges(g2))
 
