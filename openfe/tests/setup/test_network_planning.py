@@ -303,19 +303,20 @@ def test_minimal_redundant_network(minimal_redundant_network):
         for edge in minimal_redundant_network.edges
     )
     ref = sorted([
-        ('2-naftanol', '2-methyl-6-propylnaphthalene'),
-        ('2-naftanol', 'methylcyclohexane'),
-        ('2-methyl-6-propylnaphthalene', 'toluene'),
-        ('2-naftanol', 'toluene'),
-        ('2-naftanol', '1-butyl-4-methylbenzene'),
-        ('2-methyl-6-propylnaphthalene', '1-butyl-4-methylbenzene'),
-        ('2-naftanol', '1,3,7-trimethylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-naftanol'),
-        ('2-methylnaphthalene', '2-methyl-6-propylnaphthalene'),
-        ('methylcyclohexane', '2-methyl-6-propylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
-        ('2-naftanol', '2-methylnaphthalene'),
-        ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+        ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'), 
+        ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'), 
+        ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'), 
+        ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'), 
+        ('1-butyl-4-methylbenzene', 'toluene'), 
+        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'), 
+        ('2,6-dimethylnaphthalene', '2-methylnaphthalene'), 
+        ('2,6-dimethylnaphthalene', '2-naftanol'), 
+        ('2,6-dimethylnaphthalene', 'methylcyclohexane'), 
+        ('2,6-dimethylnaphthalene', 'toluene'), 
+        ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'), 
+        ('2-methylnaphthalene', '2-naftanol'), 
+        ('2-methylnaphthalene', 'methylcyclohexane'), 
+        ('2-methylnaphthalene', 'toluene')
     ])
 
     assert len(edge_ids) == len(ref)
