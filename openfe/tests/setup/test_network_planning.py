@@ -281,10 +281,11 @@ def test_minimal_redundant_network_connectedness(minimal_redundant_network):
 
     assert nx.is_connected(nx.MultiGraph(minimal_redundant_network.graph))
 
-def test_redundant_vs_spanning_network(minimal_redundant_network, toluene_vs_others):
+def test_redundant_vs_spanning_network(minimal_redundant_network, minimal_spanning_network):
+    # when setting minimal redundant network to only take one MST, it should have as many
+    # edges as the regular minimum spanning network
+    assert len(minimal_spanning_network) == len(minimal_redundant_network(mst_num=1))
     
-    # test for correct number of edges
-    assert len(minimal_redundant_network.edges) == 2 * (len(minimal_redundant_network.nodes) -1)
 
 def test_minimal_redundant_network(minimal_redundant_network):
     # issue #244, this was previously giving non-reproducible (yet valid)
