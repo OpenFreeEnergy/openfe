@@ -277,7 +277,8 @@ def generate_minimal_redundant_network(
         current_best_edges = list(nx.minimum_spanning_edges(g2))
 
         g2.remove_edges_from(current_best_edges)
-        [mappings.append(edge_data['object']) for _, _, _, edge_data in current_best_edges]
+        for _, _, _, edge_data in current_best_edges:
+            mappings.append(edge_data['object'])
 
     redund_network = LigandNetwork(mappings)
     missing_nodes = set(network.nodes) - set(redund_network.nodes)
