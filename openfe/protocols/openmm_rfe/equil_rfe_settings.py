@@ -86,6 +86,11 @@ class AlchemicalSettings(SettingsBaseModel):
     Please note that absolute charge changes greater than 1 are
     currently not supported.
     """
+    explicit_charge_correction_cutoff = 0.8 * unit.nanometer
+    """
+    The minimum distance from the system solutes from which an
+    alchemical water can be chosen. Default 0.8 * unit.nanometer.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):

@@ -589,6 +589,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+
+        # Get the change difference between the end states
+        # and check if the charge correction used is appropriate
         charge_change = _get_alchemical_charge_difference(
             mapping,
             self.settings.system_settings.nonbonded_method,
@@ -648,9 +651,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # f. if a charge correction is necessary, select the alchemical water
-        alchem_water_resid, alchem_water_pos = _rfe_utils.topologyhelpers.get_alchemical_water(
+        alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_water(
             stateA_topology, stateA_positions,
-            alchem_settings.explicit_charge_correction,
+            charge_difference,
+            alchem_settings.explicit_charge_correction_cutoff,
         )
 
         # 2. Get stateB system
@@ -679,6 +683,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             stateB_system, stateB_topology, stateB_alchem_resids,
             # These are non-optional settings for this method
             fix_constraints=True,
+        )
+
+        _rfe_utils.topologyhelpers.handle_alchemical_waters(
         )
 
         #  d. Finally get the positions

@@ -7,11 +7,13 @@
 from copy import deepcopy
 import itertools
 import logging
+from typing import Union, Optional
 import warnings
 
 import mdtraj as mdt
 from mdtraj.core.residue_names import _SOLVENT_TYPES
 import numpy as np
+import numpy.typing as npt
 from openmm import app
 from openmm import unit as omm_unit
 from openff.unit import unit
@@ -20,17 +22,37 @@ from openff.unit import unit
 logger = logging.getLogger(__name__)
 
 
-def get_alchemical_water(topology, positions,
-                         charge_correction,
-                         distance_cutoff=0.8 * unit.nanometer):
+def get_alchemical_waters(
+    topology: app.Topology,
+    positions: npt.NDArray,
+    absolue_charge_difference: Optional[int],
+    distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
+) -> Optional[list[int]]:
     """
-    Based off perses.ultils.charge_changing.get_water_indices.
+    Based off perses.utils.charge_changing.get_water_indices.
 
     Parameters
     ----------
-    topology : ??
-    positions : ??
-    charge_correction: bool
+    topology : openmm.app.Topology
+      The topology to search for an alchemical water.
+    positions : npt.NDArray
+      The coordinates of the atoms associated with the ``topology``.
+    charge_difference : Optional[int]
+      The absolute charge difference between the two end states
+      calculated as abs(stateA_formal_charge - stateB_formal_charge).
+      If ``None``, this will be treated as an explicit charge
+      correction not being necessary and a tuple of ``None`` will be
+      returned.
+    distance_cutoff : unit.Quantity
+      The minimum distance away from the solutes from which an alchemical
+      water can be chosen.
+
+
+    Returns
+    -------
+    chosen_residues : Optional[list[int]]
+        A list of residue indices for each chosen alchemical water.
+        ``None`` if charge_difference is ``None``.
     """
     # Exit early and return Nones if you don't actually want to do this
     if not charge_correction:
@@ -49,7 +71,8 @@ def get_alchemical_water(topology, positions,
 
     excluded_waters = mdt.compute_neighbors(
         traj, distance_cutoff.to(unit.nanometer).m,
-        solute_atoms, haystack_indices=water_atoms
+        solute_atoms, haystack_indices=water_atoms,
+        periodic=True,
     )[0]
 
     solvent_indices = set([
@@ -59,16 +82,20 @@ def get_alchemical_water(topology, positions,
 
     if len(sovlent_indices) < 0:
         errmsg = ("There are no waters outside of a "
-                  f"{distance_cutoff.to(unit.nanometer) nanometer distance "
+                  f"{distance_cutoff.to(unit.nanometer)} nanometer distance "
                   "of the system solutes to be used as alchemical waters")
         raise ValueError(errmsg)
 
-    # choose the water further away
-    
-    
+    # unlike the original perses approach, we stick to the first water index
+    # in order to make sure we somewhat reproducibily pick the same water
+    chosen_residues = list(solvent_indices)[:abs(charge_difference)]
+
+    return chosen_residues, water_oxygen_indices
 
 
-def combined_topology(topology1, topology2, exclude_resids=None):
+def combined_topology(topology1: app.Topology,
+                      topology2: app.Topology,
+                      exclude_resids: Optional[npt.NDArray]=None,)
     """
     Create a new topology combining these two topologies.
 
@@ -77,7 +104,9 @@ def combined_topology(topology1, topology2, exclude_resids=None):
     Parameters
     ----------
     topology1 : openmm.app.Topology
+      Topology of the template system to graft topology2 into.
     topology2 : openmm.app.Topology
+      Topology to combine (not in place) with topology1.
     exclude_resids : npt.NDArray
       Residue indices in topology 1 to exclude from the combined topology.
 
