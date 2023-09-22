@@ -248,7 +248,7 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others):
 
 
 @pytest.fixture(scope='session')
-def minimal_redundant_network(toluene_vs_others, mst_num=2):
+def minimal_redundant_network(toluene_vs_others):
     toluene, others = toluene_vs_others
     mappers = [BadMapper(), openfe.setup.atom_mapping.LomapAtomMapper()]
 
@@ -259,7 +259,7 @@ def minimal_redundant_network(toluene_vs_others, mst_num=2):
         ligands=others + [toluene],
         mappers=mappers,
         scorer=scorer,
-        mst_num=mst_num
+        mst_num=2
     )
     return network
 
@@ -292,8 +292,8 @@ def test_minimal_redundant_network_connectedness(minimal_redundant_network):
 def test_redundant_vs_spanning_network(minimal_redundant_network, minimal_spanning_network):
     # when setting minimal redundant network to only take one MST, it should have as many
     # edges as the regular minimum spanning network
-    assert len(minimal_spanning_network) == len(
-        minimal_redundant_network(mst_num=1))
+    assert 2 * len(minimal_spanning_network.edges) == len(
+        minimal_redundant_network.edges)
 
 
 def test_minimal_redundant_network(minimal_redundant_network):
