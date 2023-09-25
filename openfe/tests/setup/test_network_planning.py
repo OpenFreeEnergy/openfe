@@ -296,7 +296,7 @@ def test_redundant_vs_spanning_network(minimal_redundant_network, minimal_spanni
         minimal_redundant_network.edges)
 
 
-def test_minimal_redundant_network(minimal_redundant_network):
+def test_minimal_redundant_network_edges(minimal_redundant_network):
     # issue #244, this was previously giving non-reproducible (yet valid)
     # networks when scores were tied.
     edge_ids = sorted(
