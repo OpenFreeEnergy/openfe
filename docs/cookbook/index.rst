@@ -105,7 +105,7 @@ The typical way to use the Python API is to load a number of molecules you want 
                                 -
 
                                     .. rst-class:: arrow-down arrow-head flowchart-spacer
-                                - :any:`load_ligand_network`
+                                - :any:`network_from_orion_fepp`
 
                         - :class:`LigandNetwork <openfe.setup.LigandNetwork>`
                             A network of ligand transformations.
@@ -154,7 +154,7 @@ List of Cookbooks
     dumping_transformation
     choose_protocol
     generate_ligand_network
-    load_ligand_network
+    network_from_orion_fepp
     hand_write_ligand_network
     ligandnetwork_vis
     create_alchemical_network
