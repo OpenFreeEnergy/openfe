@@ -6,10 +6,19 @@ packages that integrate with ``openfe``, and testing that your ``openfe``
 installation is working.
 
 ``openfe`` currently only works on POSIX system (macOS and UNIX/Linux). It
-is tested against Python 3.9 and 3.10.
+is tested against Python 3.9, 3.10, and 3.11.
 
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
+
+If you already have a Mamba or MicroMamba installation, you can install ``openfe`` with:
+
+.. parsed-literal::
+
+  mamba create -c conda-forge -n openfe_env openfe=\ |version|
+  mamba activate openfe_env
+
+Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba or MicroMamba package managers for most users as they are orders of magnitude faster than the default Conda package manager. In most cases, they are used identically to Conda.
 
 Installation with ``mambaforge`` (recommended)
 ----------------------------------------------
@@ -98,11 +107,11 @@ Next we will create an environment called ``openfe_env`` with the ``openfe`` pac
 
 .. parsed-literal::
 
-  $ mamba create -n openfe_env openfe=\ |version|
+  mamba create -n openfe_env openfe=\ |version|
 
 Now we need to activate our new environment ::
 
-  $ mamba activate openfe_env
+  mamba activate openfe_env
 
 
 .. warning::
@@ -119,7 +128,7 @@ Now we need to activate our new environment ::
 
 To make sure everything is working, run the tests ::
 
-  $ openfe test --long
+  openfe test --long
 
 The test suite contains several hundred individual tests. This may take up to
 an hour, and all tests should complete with status either passed,
