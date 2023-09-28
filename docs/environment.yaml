@@ -20,7 +20,7 @@ dependencies:
   - sphinx-toolbox
   - sphinx<7
   - git+https://github.com/OpenFreeEnergy/gufe@main
-  - git+https://github.com/yoshanuikabundi/ofe_sphinx_theme@main
+  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@main
 
 # These are added automatically by RTD, so we include them here
 # for a consistent environment.
