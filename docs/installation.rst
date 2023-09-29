@@ -11,14 +11,14 @@ is tested against Python 3.9, 3.10, and 3.11.
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
 
-If you already have a Mamba or MicroMamba installation, you can install ``openfe`` with:
+If you already have a Mamba installation, you can install ``openfe`` with:
 
 .. parsed-literal::
 
   mamba create -c conda-forge -n openfe_env openfe=\ |version|
   mamba activate openfe_env
 
-Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba or MicroMamba package managers for most users as they are orders of magnitude faster than the default Conda package manager. In most cases, they are used identically to Conda.
+Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
 Installation with ``mambaforge`` (recommended)
 ----------------------------------------------
@@ -453,9 +453,9 @@ We recommend using `Apptainer (formerly Singularity) <https://apptainer.org/>`_ 
 This images provide a software environment that is isolated from the host which can make workflow execution easier to setup and more reproducible.
 See our guide on :ref:`containers <installation:containers>` for how to get started using Apptainer/Singularity.
 
-.. _installation:micromamba_hpc:
+.. _installation:mamba_hpc:
 
-``micromamba`` in HPC Environments
+``mamba`` in HPC Environments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _virtual packages: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-virtual.html#managing-virtual-packages
@@ -465,68 +465,74 @@ Nonetheless, ``openfe`` can be installed via Conda Forge on these environments a
 Conda Forge distributes its own CUDA binaries for interfacing with the GPU, rather than use the host drivers.
 ``conda``, ``mamba`` and ``micromamba`` all use `virtual packages`_ to detect and specify which version of CUDA should be installed.
 This is a common point of difference in hardware between the login and job nodes in an HPC environment.
-For example, on a login node where there likely is not a GPU or a CUDA environment, ``micromamba info`` may produce output that looks like this ::
+For example, on a login node where there likely is not a GPU or a CUDA environment, ``mamba info`` may produce output that looks like this ::
 
-  $ micromamba info
+  $ mamba info
 
-                                            __
-           __  ______ ___  ____ _____ ___  / /_  ____ _
-          / / / / __ `__ \/ __ `/ __ `__ \/ __ \/ __ `/
-         / /_/ / / / / / / /_/ / / / / / / /_/ / /_/ /
-        / .___/_/ /_/ /_/\__,_/_/ /_/ /_/_.___/\__,_/
-       /_/
-
-
-             environment : openfe_env (active)
-            env location : /lila/home/henrym3/micromamba/envs/openfe_env
-       user config files : /home/henrym3/.mambarc
-  populated config files : /home/henrym3/.condarc
-        libmamba version : 1.2.0
-      micromamba version : 1.2.0
-            curl version : libcurl/7.87.0 OpenSSL/1.1.1s zlib/1.2.13 libssh2/1.10.0 nghttp2/1.47.0
-      libarchive version : libarchive 3.6.2 zlib/1.2.13 bz2lib/1.0.8 libzstd/1.5.2
-        virtual packages : __unix=0=0
-                           __linux=3.10.0=0
-                           __glibc=2.17=0
-                           __archspec=1=x86_64
-                channels : https://conda.anaconda.org/conda-forge/linux-64
-                           https://conda.anaconda.org/conda-forge/noarch
-        base environment : /lila/home/henrym3/micromamba
-                platform : linux-64
-
+              mamba version : 1.5.1
+         active environment : base
+        active env location : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0
+                shell level : 1
+           user config file : /home/henrym3/.condarc
+     populated config files : /lila/home/henrym3/.condarc
+              conda version : 23.7.4
+        conda-build version : not installed
+             python version : 3.11.5.final.0
+           virtual packages : __archspec=1=x86_64
+                              __glibc=2.17=0
+                              __linux=3.10.0=0
+                              __unix=0=0
+           base environment : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0  (writable)
+          conda av data dir : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/etc/conda
+      conda av metadata url : None
+               channel URLs : https://conda.anaconda.org/conda-forge/linux-64
+                              https://conda.anaconda.org/conda-forge/noarch
+              package cache : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/pkgs
+                              /home/henrym3/.conda/pkgs
+           envs directories : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/envs
+                              /home/henrym3/.conda/envs
+                   platform : linux-64
+                 user-agent : conda/23.7.4 requests/2.31.0 CPython/3.11.5 Linux/3.10.0-957.12.2.el7.x86_64 centos/7.6.1810 glibc/2.17
+                    UID:GID : 1987:3008
+                 netrc file : None
+               offline mode : False
 
 Now if we run the same command on a HPC node that has a GPU ::
 
-  $ micromamba info
+  $ mamba info
+    
+                mamba version : 1.5.1
+         active environment : base
+        active env location : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0
+                shell level : 1
+           user config file : /home/henrym3/.condarc
+     populated config files : /lila/home/henrym3/.condarc
+              conda version : 23.7.4
+        conda-build version : not installed
+             python version : 3.11.5.final.0
+           virtual packages : __archspec=1=x86_64
+                              __cuda=11.7=0
+                              __glibc=2.17=0
+                              __linux=3.10.0=0
+                              __unix=0=0
+           base environment : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0  (writable)
+          conda av data dir : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/etc/conda
+      conda av metadata url : None
+               channel URLs : https://conda.anaconda.org/conda-forge/linux-64
+                              https://conda.anaconda.org/conda-forge/noarch
+              package cache : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/pkgs
+                              /home/henrym3/.conda/pkgs
+           envs directories : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0/envs
+                              /home/henrym3/.conda/envs
+                   platform : linux-64
+                 user-agent : conda/23.7.4 requests/2.31.0 CPython/3.11.5 Linux/3.10.0-1160.45.1.el7.x86_64 centos/7.9.2009 glibc/2.17
+                    UID:GID : 1987:3008
+                 netrc file : None
+               offline mode : False
 
-                                            __
-           __  ______ ___  ____ _____ ___  / /_  ____ _
-          / / / / __ `__ \/ __ `/ __ `__ \/ __ \/ __ `/
-         / /_/ / / / / / / /_/ / / / / / / /_/ / /_/ /
-        / .___/_/ /_/ /_/\__,_/_/ /_/ /_/_.___/\__,_/
-       /_/
-
-
-             environment : openfe_env (active)
-            env location : /lila/home/henrym3/micromamba/envs/openfe_env
-       user config files : /home/henrym3/.mambarc
-  populated config files : /home/henrym3/.condarc
-        libmamba version : 1.2.0
-      micromamba version : 1.2.0
-            curl version : libcurl/7.87.0 OpenSSL/1.1.1s zlib/1.2.13 libssh2/1.10.0 nghttp2/1.47.0
-      libarchive version : libarchive 3.6.2 zlib/1.2.13 bz2lib/1.0.8 libzstd/1.5.2
-        virtual packages : __unix=0=0
-                           __linux=3.10.0=0
-                           __glibc=2.17=0
-                           __archspec=1=x86_64
-                           __cuda=11.7=0
-                channels : https://conda.anaconda.org/conda-forge/linux-64
-                           https://conda.anaconda.org/conda-forge/noarch
-        base environment : /lila/home/henrym3/micromamba
-                platform : linux-64
 
 We can see that there is a virtual package ``__cuda=11.7=0``.
-This means that if we run a ``micromamba install`` command on a node with a GPU, the solver will install the correct version of the ``cudatoolkit``.
+This means that if we run a ``mamba install`` command on a node with a GPU, the solver will install the correct version of the ``cudatoolkit``.
 However, if we ran the same command on the login node, the solver may install the wrong version of the ``cudatoolkit``, or depending on how the Conda packages are setup, a CPU only version of the package.
 We can control the virtual package with the environmental variable ``CONDA_OVERRIDE_CUDA``.
 
@@ -570,4 +576,4 @@ Common Errors
 openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VERSION (222)
   This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
   Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
-  See :ref:`installation:micromamba_hpc` for more details.
+  See :ref:`installation:mamba_hpc` for more details.
