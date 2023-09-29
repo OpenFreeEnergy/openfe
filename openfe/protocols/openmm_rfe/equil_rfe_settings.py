@@ -32,6 +32,7 @@ except ImportError:
 class AlchemicalSettings(SettingsBaseModel):
     class Config:
         extra = 'ignore'
+        arbitrary_types_allowed = True
 
     """Settings for the alchemical protocol
 
