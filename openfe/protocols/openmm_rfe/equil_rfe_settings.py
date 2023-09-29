@@ -91,6 +91,24 @@ class AlchemicalSettings(SettingsBaseModel):
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
+    alchemical_water_ion_positive_resname = 'NA'
+    """
+    Name of the positive ion used to replace the alchemical water with
+    if ``explicit_charge_correction`` is ``True`` and the absolute charge
+    difference is negative.
+    """
+    alchemical_water_ion_negative_resname = 'CL'
+    """
+    Name of the negative ion used to replace the alchemical water if
+    ``explicit_charge_correction`` is ``True`` and the absolute charge
+    difference is positive.
+    """
+    alchemical_water_resname = 'HOH'
+    """
+    Residue name of the water to replace with an ion if
+    ``explicit_charge_correction`` is ``True`` and there is a charge
+    difference between the two end states.
+    """
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):

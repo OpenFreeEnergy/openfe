@@ -14,18 +14,194 @@ import mdtraj as mdt
 from mdtraj.core.residue_names import _SOLVENT_TYPES
 import numpy as np
 import numpy.typing as npt
-from openmm import app
+from openmm import app, System
 from openmm import unit as omm_unit
-from openff.unit import unit
+from openff.units import unit
 
 
 logger = logging.getLogger(__name__)
 
 
+def _get_ion_and_water_parameters(
+    topology: app.Topology,
+    system: System,
+    ion_resname: str,
+    water_resname: str = 'HOH',
+):
+    """
+    Return parameters for a defined ion (defined by ``ion_resname``) and
+    water oxygen and hydrogen.
+
+    Parameters
+    ----------
+    topology : app.Topology
+      The topology to search for the ion and water
+    system : app.System
+      The system associated with the input topology object.
+    ion_resname : str
+      The residue name of the ion to get parameters for
+    water_resname : str
+      The residue name of the water to get parameters for. Default 'HOH'.
+
+    Returns
+    -------
+    ion_charge : float
+      The partial charge of the ion atom
+    ion_sigma : float
+      The NonBondedForce sigma parameter of the ion atom
+    ion_epsilon : float
+      The NonBondedForce epsilon parameter of the ion atom
+    o_charge : float
+      The partial charge of the water oxygen.
+    h_charge : float
+      The partial charge of the water hydrogen.
+
+    Raises
+    ------
+    ValueError
+      If there are no ``ion_resname`` or ``water_resname`` named residues in
+      the input ``topology``.
+
+    Attribution
+    -----------
+    Based on `perses.utils.charge_changing.get_ion_and_water_parameters`.
+    """
+    def _find_atom(topology, resname, elementname):
+        for atom in topology.atoms():
+            if atom.residue.name == resname:
+                if elementname is None or atom.element == elementname:
+                    return atom.index
+        errmsg = ("Error encountered when attempting to explicitly handle "
+                  "charge changes using an alchemical water. No residue "
+                  f"named: {resname} found")
+        raise ValueError(errmsg)
+
+    ion_index = _find_atom(topology, ion_resname, None)
+    oxygen_index = _find_atom(topology, water_resname, 'O')
+    hydrogen_index = _find_atom(topology, water_resname, 'H')
+
+    nbf = [i for i in system.getForces()
+           if isinstance(i, app.NonBondedForce)][0]
+
+    ion_charge, ion_sigma, ion_epsilon = nbf.getParticleParameters(ion_index)
+    o_charge, _, _ = nbf.getParticleParameters(oxygen_index)
+    h_charge, _, _ = nbf.getParticleParameters(hydrogen_index)
+
+    return ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge
+
+
+def _fix_alchemical_water_atom_mapping(system_mapping, b_idx):
+    """
+    In-place fix system atom mapping to account for
+    added alchemical water atom.
+
+    Parameters
+    ----------
+    system_mapping : dict
+      Dictionary of system mappings.
+    b_idx : int
+      The index of the state B particle.
+    """
+    a_ix = mapping.new_to_old_atom_map[b_idx]
+
+    # remove atom from the environment atom map
+    mapping['old_to_new_env_atom_map'].pop(a_idx)
+    mapping['new_to_old_env_atom_map'].pop(b_idx)
+
+    # add atom to the new_to_old_core atom maps
+    mapping['old_to_new_core_atom_map'][a_idx] = b_idx
+    mapping['new_to_old_core_atom_map'][b_idx] = a_idx
+
+
+def handle_alchemical_waters(
+    water_resids: list[int], topology: app.Topology,
+    system: System, system_mapping: dict,
+    charge_difference: int,
+    positive_ion_resname: str = 'CL',
+    negative_ion_resname: str = 'NA',
+    water_resname: str = 'HOH',
+):
+    """
+    Parameters
+    ----------
+    water_resids : list[int]
+      A list of alchemical water residues.
+    topology : app.Topology
+      The topology to search for the ion and water
+    system : app.System
+      The system associated with the input topology object.
+    system_mapping : dictionary
+      A dictionary of system mappings between the stateA and stateB systems
+    charge_difference : int
+      The charge difference between state A and state B.
+    positive_ion_resname : str
+      The name of a positive ion to replace the water with if the absolute
+      charge difference is positive.
+    negative_ion_resname : str
+      The name of a negative ion to replace the water with if the absolute
+      charge difference is negative.
+    water_resname : str
+      The residue name of the water to get parameters for. Default 'HOH'.
+
+    Raises
+    ------
+    ValueError
+      If the absolute charge difference is not equalent to the number of
+      alchemical water resids.
+
+    Attribution
+    -----------
+    Based on `perses.utils.charge_changing.transform_waters_into_ions`.
+    """
+
+    if len(abs(charge_difference)) != len(water_resids):
+        errmsg = ("There should be as many alchemical residues: "
+                  f"{len(water_resids)} as the absolute charge "
+                  f"difference: {abs(charge_difference)}")
+        raise ValueError(errmsg)
+
+    if charge_difference > 0:
+        ion_resname = negative_ion_resname
+    elif charge_difference < 0:
+        ion_resname = posititve_ion_resname
+    else:
+        return None
+
+    ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = _get_ion_and_water_parameters(
+        topology, system, ion_resname, water_resname,
+    )
+
+    # get the nonbonded forces
+    nbf = [i for i in system.getForces()
+           if isinstance(i, app.NonBondedForce)][0]
+
+    # Loop through residues, check if they match the residue index
+    # mutate the atom as necessary
+    for res in topology.residues():
+        if res.index in water_resids:
+            for at in res.atoms():
+                idx = at.index
+                charge, sigma, epsilon = nbf.getParticleParameters(idx)
+                _fix_alchemical_water_atom_mapping(system_mapping, idx)
+
+                if charge == o_charge:
+                    nbf.setParticleParameters(
+                        idx, ion_charge, ion_sigma, ion_epsilon
+                    )
+                else:
+                    if charge != h_charge:
+                        errmsg = ("modifying an atom that doesn't match known "
+                                  "water parameters")
+                        raise ValueError(errmsg)
+
+                    nbf.setParticleParameters(idx, 0.0, sigma, epsilon)
+
+
 def get_alchemical_waters(
     topology: app.Topology,
     positions: npt.NDArray,
-    absolue_charge_difference: Optional[int],
+    absolute_charge_difference: int,
+    charge_correction: bool,
     distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
 ) -> Optional[list[int]]:
     """
@@ -43,6 +219,8 @@ def get_alchemical_waters(
       If ``None``, this will be treated as an explicit charge
       correction not being necessary and a tuple of ``None`` will be
       returned.
+    charge_correction : bool
+      If a charge correction should be applied. If not will return ``None``.
     distance_cutoff : unit.Quantity
       The minimum distance away from the solutes from which an alchemical
       water can be chosen.
@@ -52,11 +230,11 @@ def get_alchemical_waters(
     -------
     chosen_residues : Optional[list[int]]
         A list of residue indices for each chosen alchemical water.
-        ``None`` if charge_difference is ``None``.
+        ``None`` if charge_correction is ``None``.
     """
     # Exit early and return Nones if you don't actually want to do this
     if not charge_correction:
-        return None, None
+        return None
 
     # construct a new 
     traj = mdt.Trajectory(
@@ -90,12 +268,12 @@ def get_alchemical_waters(
     # in order to make sure we somewhat reproducibily pick the same water
     chosen_residues = list(solvent_indices)[:abs(charge_difference)]
 
-    return chosen_residues, water_oxygen_indices
+    return chosen_residues
 
 
 def combined_topology(topology1: app.Topology,
                       topology2: app.Topology,
-                      exclude_resids: Optional[npt.NDArray]=None,)
+                      exclude_resids: Optional[npt.NDArray] = None,):
     """
     Create a new topology combining these two topologies.
 

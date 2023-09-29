@@ -592,7 +592,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # Get the change difference between the end states
         # and check if the charge correction used is appropriate
-        charge_change = _get_alchemical_charge_difference(
+        charge_difference = _get_alchemical_charge_difference(
             mapping,
             self.settings.system_settings.nonbonded_method,
             alchem_settings.explicit_charge_correction,
@@ -650,13 +650,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             molecules=[s.to_openff() for s in small_mols],
         )
 
-        # f. if a charge correction is necessary, select the alchemical water
-        alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_water(
-            stateA_topology, stateA_positions,
-            charge_difference,
-            alchem_settings.explicit_charge_correction_cutoff,
-        )
-
         # 2. Get stateB system
         # a. get the topology
         stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
@@ -685,10 +678,24 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             fix_constraints=True,
         )
 
-        _rfe_utils.topologyhelpers.handle_alchemical_waters(
-        )
 
-        #  d. Finally get the positions
+        # d. if a charge correction is necessary, select alchemical waters
+        #    and transform them
+        if alchem_settings.explicit_charge_correction:
+            alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
+                stateA_topology, stateA_positions,
+                charge_difference,
+                alchem_settings.explicit_charge_correction_cutoff,
+            )
+            _rfe_utils.topologyhelpers.handle_alchemical_waters(
+                alchem_water_resids, stateB_topology, stateB_system,
+                ligand_mappings, charge_difference,
+                alchemical_water_ion_positive_resname,
+                alchemical_water_ion_negative_resname,
+                alchemical_water_resname,
+            )
+
+        #  e. Finally get the positions
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
