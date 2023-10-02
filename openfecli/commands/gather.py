@@ -107,8 +107,10 @@ def _get_ddgs(legs):
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        else:  # -no-cov-
-            raise RuntimeError(f"Unknown DDG type for {vals}")
+        else:
+            raise RuntimeError("Unable to determine type of RFE calculation "
+                               f"for edges with labels {list(vals)} for "
+                               f"ligands {ligpair}")
 
         DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 

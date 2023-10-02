@@ -198,7 +198,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
     def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
         """
         Get a list of forward and reverse analysis of the free energies
-        for each repeat using uncorrolated production samples.
+        for each repeat using uncorrelated production samples.
+
+        The returned dicts have keys:
+        'fractions' - the fraction of data used for this estimate
+        'forward_DGs', 'reverse_DGs' - for each fraction of data, the estimate
+        'forward_dDGs', 'reverse_dDGs' - for each estimate, the uncertainty
+
+        The 'fractions' values are a numpy array, while the other arrays are
+        Quantity arrays, with units attached.
 
         Returns
         -------
@@ -231,9 +239,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return overlap_stats
 
     def get_replica_transition_statistics(self) -> list[dict[str, npt.NDArray]]:
-        """
-        Returns the replica lambda state transition statistics for each
-        repeat.
+        """The replica lambda state transition statistics for each repeat.
 
         Note
         ----
@@ -246,7 +252,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
           A list of dictionaries containing the following:
             * ``eigenvalues``: The sorted (descending) eigenvalues of the
               lambda state transition matrix
-            * ``matrix``: The transition matrix estimate of a replica switchin
+            * ``matrix``: The transition matrix estimate of a replica switching
               from state i to state j.
         """
         try:
