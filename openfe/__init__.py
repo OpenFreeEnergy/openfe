@@ -1,22 +1,16 @@
-from gufe import (
-    ChemicalSystem,
-    Component,
-    ProteinComponent,
-    SmallMoleculeComponent,
-    SolventComponent,
-    Transformation,
-    AlchemicalNetwork,
-    LigandAtomMapping,
-)
-from gufe.protocols import (
+"""
+Open source free energy calculation via molecular mechanics.
+"""
+
+from .protocols import (
     Protocol,
     ProtocolDAG,
     ProtocolUnit,
     ProtocolUnitResult, ProtocolUnitFailure,
     ProtocolDAGResult,
     ProtocolResult,
-    execute_DAG,
 )
+from .orchestration import execute_DAG
 
 from . import utils
 from . import setup
@@ -28,6 +22,16 @@ from .setup import (
     ligand_network_planning,
     LigandNetwork,
     LigandAtomMapper,
+    LigandAtomMapping,
+    Transformation,
+    AlchemicalNetwork,
+)
+from .setup.system import (
+    ChemicalSystem,
+    Component,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
 )
 from . import orchestration
 from . import analysis

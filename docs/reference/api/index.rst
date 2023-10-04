@@ -3,19 +3,23 @@
 OpenFE API Reference
 ====================
 
-.. toctree::
-    :maxdepth: 2
+``openfe``
+----------
 
-    data
-    systems_and_components
-    ligand_network
-    alchemical_network_planning
-    defining_and_executing_simulations
-    openmm_rfe
+.. automodule:: openfe
+    :no-members:
 
-.. autosummary::
-    :nosignatures:
-    :toctree: generated/
-    :recursive:
+    .. rubric:: Modules
 
-    openfe
+    .. autosummary::
+        :nosignatures:
+        :toctree: generated/
+        :recursive:
+        :template: autosummary/top-level-module.rst
+
+        setup
+        orchestration
+        analysis
+        protocols
+        storage
+        utils

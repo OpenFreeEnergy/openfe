@@ -71,9 +71,10 @@ autodoc_pydantic_model_show_json = False
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "inherited-members": "GufeTokenizable,BaseModel",
+    "inherited-members": "GufeTokenizable,BaseModel,SettingsBaseModel",
     "undoc-members": True,
     "special-members": "__call__",
+    "exclude-members": "get_defaults",
 }
 toc_object_entries_show_parents = "hide"
 
@@ -91,6 +92,8 @@ autodoc_mock_imports = [
     "openmmtools",
     "mdtraj",
     "openmmforcefields",
+    "netCDF4",
+    "py3Dmol",
 ]
 
 # API docs settings
@@ -102,6 +105,7 @@ autosummary_ignore_module_all = False
 autosummary_context = {
     # Modules to exclude from API docs
     "exclude_modules": [
+        "openfe.tests",
     ],
     "show_inheritance": True,
     "show_inherited_members": False,
@@ -117,6 +121,15 @@ autodoc_class_signature = "mixed"
 # Workaround for autodoc_typehints_format not working for attributes
 # see https://github.com/sphinx-doc/sphinx/issues/10290#issuecomment-1079740009
 python_use_unqualified_type_names = True
+
+
+autodoc_pydantic_model_show_json=False
+autodoc_pydantic_model_show_field_summary=False
+autodoc_pydantic_model_show_config_member=False
+autodoc_pydantic_model_show_config_summary=False
+autodoc_pydantic_model_show_validator_members=False
+autodoc_pydantic_model_show_validator_summary=False
+autodoc_pydantic_field_list_validators=False
 
 # -- Options for HTML output -------------------------------------------------
 
