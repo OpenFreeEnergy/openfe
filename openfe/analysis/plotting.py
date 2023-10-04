@@ -1,7 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from itertools import chain
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from typing import Optional, Union
@@ -202,3 +204,45 @@ def plot_replica_timeseries(
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     return ax
+
+
+def plot_2D_rmsd(data: list[list[float]],
+                 vmax=5.0) -> plt.Figure:
+    """Plots 2D RMSD for many states
+
+    Parameters
+    ----------
+    data : list[list[float]]
+      for each state, the 2D RMSD
+    vmax : float, optional
+      the value to consider "high" in the colourmap to flag bad values,
+      defaults to 5.0 (A)
+
+    Returns
+    -------
+    matplotlib Figure
+    """
+    twod_rmsd_arrs = []
+    for state in data:
+        # unpack 2D RMSD data
+        # we store N(N-1)//2 values, so find N then make symmetric array
+        N = int((1 + np.sqrt(8 * len(state) + 1)) / 2)
+        arr = np.zeros((N, N))
+        arr[np.triu_indices_from(arr, k=1)] = state
+        arr += arr.T
+
+        twod_rmsd_arrs.append(arr)
+
+    nplots = len(data)
+
+    # plot on 4 x n grid
+    nrows = nplots // 4 + (1 if nplots % 4 else 0)
+
+    fig, axes = plt.subplots(nrows, 4, sharex='all', sharey='all')
+
+    for i, (arr, ax) in enumerate(
+            zip(twod_rmsd_arrs, chain.from_iterable(axes))):
+        ax.imshow(arr, vmin=0, vmax=vmax)
+        ax.set_title(f'State={i}')
+
+    return fig
