@@ -26,6 +26,7 @@ import logging
 from collections import defaultdict
 import uuid
 import warnings
+import json
 from itertools import chain
 import numpy as np
 import numpy.typing as npt
@@ -40,6 +41,7 @@ import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
 import mdtraj
+import subprocess
 from rdkit import Chem
 
 import gufe
@@ -980,6 +982,20 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         else:
             return {'debug': {'sampler': sampler}}
 
+    @staticmethod
+    def analyse(where) -> dict:
+        # don't put energy analysis in here, it uses the open file reporter
+        # whereas structural stuff requires that the file handle is closed
+        ret = subprocess.run(['openfe_analysis', str(where)],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        if ret.returncode:
+            return {}
+
+        data = json.loads(ret.stdout)
+
+        return {'structural_analysis': data}
+
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
@@ -988,9 +1004,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             outputs = self.run(scratch_basepath=ctx.scratch,
                                shared_basepath=ctx.shared)
 
+        analysis_outputs = self.analyse(ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
-            **outputs
+            **outputs,
+            **analysis_outputs,
         }
