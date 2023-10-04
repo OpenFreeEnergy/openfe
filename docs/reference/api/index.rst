@@ -12,3 +12,10 @@ OpenFE API Reference
     alchemical_network_planning
     defining_and_executing_simulations
     openmm_rfe
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+    :recursive:
+
+    openfe

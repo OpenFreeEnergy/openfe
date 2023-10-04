@@ -15,6 +15,7 @@ dependencies:
 - sphinx-click
 - tqdm
 - libsass
+- cinnabar
 - pip:
   - sphinx-design
   - sphinx-toolbox

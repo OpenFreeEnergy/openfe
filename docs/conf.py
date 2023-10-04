@@ -93,6 +93,30 @@ autodoc_mock_imports = [
     "openmmforcefields",
 ]
 
+# API docs settings
+autosummary_generate = True
+# Document imported items iff they're in __all__
+autosummary_imported_members = False
+autosummary_ignore_module_all = False
+# Autosummary template configuration
+autosummary_context = {
+    # Modules to exclude from API docs
+    "exclude_modules": [
+    ],
+    "show_inheritance": True,
+    "show_inherited_members": False,
+    "show_undoc_members": True,
+}
+
+autodoc_preserve_defaults = True
+autodoc_inherit_docstrings = True
+autodoc_typehints_format = "short"
+# Fold the __init__ or __new__ methods' signature into class documentation
+autoclass_content = "class"
+autodoc_class_signature = "mixed"
+# Workaround for autodoc_typehints_format not working for attributes
+# see https://github.com/sphinx-doc/sphinx/issues/10290#issuecomment-1079740009
+python_use_unqualified_type_names = True
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -111,6 +135,7 @@ html_theme_options = {
         }
     ],
     "accent_color": "DarkGoldenYellow",
+    "navigation_depth": 8,
 }
 html_logo = "_static/Squaredcircle.svg"
 
