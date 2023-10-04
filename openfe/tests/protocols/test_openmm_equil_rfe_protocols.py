@@ -24,7 +24,7 @@ import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe.equil_rfe_methods import (
-        _validate_alchemical_components,
+        _validate_alchemical_components, _get_alchemical_charge_difference
 )
 from openfe.protocols.openmm_utils import system_creation
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -510,6 +510,12 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
                    if isinstance(f, NonbondedForce)]
         assert len(nonbond) == 1
 
+        # get the particle parameter offsets
+        c_offsets = {}
+        for i in range(nonbond[0].getNumParticleParameterOffsets()):
+            offset = nonbond[0].getParticleParameterOffset(i)
+            c_offsets[offset[1]] = ensure_quantity(offset[2], 'openff')
+
         # Here is a bit of exposition on what we're doing
         # HTF creates two sets of nonbonded forces, a standard one (for the
         # PME) and a custom one (for sterics).
@@ -536,30 +542,28 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
         #    particle charge).
         for i in range(hybrid_system.getNumParticles()):
             c, s, e = nonbond[0].getParticleParameters(i)
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            # get the particle charge (c) and the chargeScale offset (c_offset)
+            # get the particle charge (c)
             c = ensure_quantity(c, 'openff')
-            c_offset = ensure_quantity(offsets[2], 'openff')
             # particle charge (c) is equal to molA particle charge
-            # offset (c_offset) is equal to -(molA particle charge)
+            # offset (c_offsets) is equal to -(molA particle charge)
             if i in htf._atom_classes['unique_old_atoms']:
                 idx = htf._hybrid_to_old_map[i]
                 np.testing.assert_allclose(c, benzene_rand_chg[idx])
-                np.testing.assert_allclose(c_offset, -benzene_rand_chg[idx])
+                np.testing.assert_allclose(c_offsets[i], -benzene_rand_chg[idx])
             # particle charge (c) is equal to 0
-            # offset (c_offset) is equal to molB particle charge
+            # offset (c_offsets) is equal to molB particle charge
             elif i in htf._atom_classes['unique_new_atoms']:
                 idx = htf._hybrid_to_new_map[i]
                 np.testing.assert_allclose(c, 0 * unit.elementary_charge)
-                np.testing.assert_allclose(c_offset, toluene_rand_chg[idx])
+                np.testing.assert_allclose(c_offsets[i], toluene_rand_chg[idx])
             # particle charge (c) is equal to molA particle charge
-            # offset (c_offset) is equalt to difference between molB and molA
+            # offset (c_offsets) is equal to difference between molB and molA
             elif i in htf._atom_classes['core_atoms']:
                 old_i = htf._hybrid_to_old_map[i]
                 new_i = htf._hybrid_to_new_map[i]
                 c_exp = toluene_rand_chg[new_i] - benzene_rand_chg[old_i]
                 np.testing.assert_allclose(c, benzene_rand_chg[old_i])
-                np.testing.assert_allclose(c_offset, c_exp)
+                np.testing.assert_allclose(c_offsets[i], c_exp)
 
 
 def test_virtual_sites_no_reassign(benzene_system, toluene_system,
@@ -1341,3 +1345,132 @@ class TestProtocolResult:
         assert isinstance(prod, list)
         assert len(prod) == 3
         assert all(isinstance(v, float) for v in prod)
+
+
+@pytest.mark.parametrize('mapping_name,result', [
+    ["benzene_to_toluene_mapping", 0],
+    ["benzene_to_benzoic_mapping", 1],
+    ["benzene_to_aniline_mapping", -1],
+    ["aniline_to_benzene_mapping", 1],
+])
+def test_get_charge_difference(mapping_name, result, request):
+    mapping = request.getfixturevalue(mapping_name)
+    if result != 0:
+        ion = 'NA' if result == -1 else 'CL'
+        wmsg = (f"A charge difference of {result} is observed "
+                "between the end states. This will be addressed by "
+                f"transforming a water into a {ion} ion")
+        with pytest.warns(UserWarning, match=wmsg):
+            val = _get_alchemical_charge_difference(mapping, 'pme', True)
+            assert result == pytest.approx(result)
+
+
+def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
+    errmsg = "Explicit charge correction when not using PME"
+    with pytest.raises(ValueError, match=errmsg):
+        _get_alchemical_charge_difference(
+            benzene_to_benzoic_mapping,
+            'nocutoff', True
+        )
+
+
+def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
+    wmsg = ("A charge difference of 1 is observed between the end states. "
+            "No charge correction has been requested")
+    with pytest.warns(UserWarning, match=wmsg):
+        _get_alchemical_charge_difference(
+            benzene_to_benzoic_mapping,
+            'pme', False
+        )
+
+
+def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
+    errmsg = "A charge difference of 2"
+    with pytest.raises(ValueError, match=errmsg):
+        _get_alchemical_charge_difference(
+            aniline_to_benzoic_mapping,
+            'pme', True,
+        )
+
+
+def _assert_total_charge(system, atom_classes, chgA, chgB):
+    nonbond = [
+        f for f in system.getForces() if isinstance(f, NonbondedForce)
+    ]
+
+    offsets = {}
+    for i in range(nonbond[0].getNumParticleParameterOffsets()):
+        offset = nonbond[0].getParticleParameterOffset(i)
+        assert len(offset) == 5
+        offsets[offset[1]] = ensure_quantity(offset[2], 'openff')
+
+    stateA_charges = np.zeros(system.getNumParticles())
+    stateB_charges = np.zeros(system.getNumParticles())
+
+    for i in range(system.getNumParticles()):
+        # get the particle charge (c) and the chargeScale offset (c_offset)
+        c, s, e = nonbond[0].getParticleParameters(i)
+        c = ensure_quantity(c, 'openff')
+
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offset) is equal to -(molA particle charge)
+        if i in atom_classes['unique_old_atoms']:
+            stateA_charges[i] = c.m
+        # particle charge (c) is equal to 0
+        # offset (c_offset) is equal to molB particle charge
+        elif i in atom_classes['unique_new_atoms']:
+            stateB_charges[i] = offsets[i].m
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offset) is equal to difference between molB and molA
+        elif i in atom_classes['core_atoms']:
+            stateA_charges[i] = c.m
+            stateB_charges[i] = c.m + offsets[i].m
+        # an environment atom
+        else:
+            assert i in atom_classes['environment_atoms']
+            stateA_charges[i] = c.m
+            stateB_charges[i] = c.m
+
+    assert chgA == pytest.approx(np.sum(stateA_charges))
+    assert chgB == pytest.approx(np.sum(stateB_charges))
+
+
+@pytest.mark.parametrize('mapping_name,chgA,chgB,correction', [
+    ['benzene_to_aniline_mapping', 0, 1, False],
+    ['aniline_to_benzene_mapping', 0, 0, True],
+    ['benzene_to_benzoic_mapping', 0, 0, True],
+])
+def test_dry_run_alchemwater_totcharge(
+    mapping_name, chgA, chgB, correction, tmpdir, request
+):
+
+    mapping = request.getfixturevalue(mapping_name)
+    stateA_system = openfe.ChemicalSystem(
+        {'ligand': mapping.componentA,
+         'solvent': openfe.SolventComponent(),}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {'ligand': mapping.componentB,
+         'solvent': openfe.SolventComponent(),}
+    )
+
+    solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    solv_settings.alchemical_settings.explicit_charge_correction = correction
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=solv_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=stateA_system,
+        stateB=stateB_system,
+        mapping={'ligand': mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+        htf = sampler._factory
+        _assert_total_charge(htf.hybrid_system,
+                             htf._atom_classes, chgA, chgB)

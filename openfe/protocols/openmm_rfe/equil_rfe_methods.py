@@ -69,9 +69,11 @@ def _get_resname(off_mol) -> str:
 
 
 def _get_alchemical_charge_difference(
-    mapping: Optional[dict[str, ComponentMapping]],
+    mapping: LigandAtomMapping,
     nonbonded_method: str,
     explicit_charge_correction: bool,
+    positive_ion_resname: str = 'NA',
+    negative_ion_resname: str = 'CL',
 ) -> int:
     """
     Checks and returns the difference in formal charge between
@@ -96,20 +98,24 @@ def _get_alchemical_charge_difference(
       The OpenMM nonbonded method used for the simulation.
     explicit_charge_correction : bool
       Whether or not to use an explicit charge correction.
+    positive_ion_resname : str
+      The name of the positive ion residue. Default NA.
+    negative_ion_resname : str
+      The name of the negative ion residue. Default CL.
 
     Returns
     -------
     int
       The formal charge difference between states A and B.
     """
-    sum_chg_A = 0
-    sum_chg_B = 0 
+    chg_A = Chem.rdmolops.GetFormalCharge(
+        mapping.componentA.to_rdkit()
+    )
+    chg_B = Chem.rdmolops.GetFormalCharge(
+        mapping.componentB.to_rdkit()
+    )
 
-    for m in mapping.values():
-        sum_chg_A += Chem.rdmolops.GetFormalCharge(m.componentA.to_rdkit())
-        sum_chg_B += Chem.rdmolops.GetFormalCharge(m.componentB.to_rdkit())
-
-    difference = sum_chgA - sum_chgB
+    difference = chg_A - chg_B
 
     if abs(difference) > 0:
         if explicit_charge_correction:
@@ -123,7 +129,8 @@ def _get_alchemical_charge_difference(
                           "correction has been requested. Unfortunately "
                           "only absolute differences of 1 are supported.")
                 raise ValueError(errmsg)
-            ion = {-1: 'Na+', 1: 'Cl-'}[difference]
+            ion = {-1: positive_ion_resname,
+                   1: negative_ion_resname}[difference]
             wmsg = (f"A charge difference of {difference} is observed "
                     "between the end states. This will be addressed by "
                     f"transforming a water into a {ion} ion")
@@ -133,7 +140,7 @@ def _get_alchemical_charge_difference(
             wmsg = (f"A charge difference of {difference} is observed "
                     "between the end states. No charge correction has "
                     "been requested, please account for this in your "
-                    "final results".)
+                    "final results.")
             logger.warn(wmsg)
             warnings.warn(wmsg)
 
@@ -600,8 +607,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # and check if the charge correction used is appropriate
         charge_difference = _get_alchemical_charge_difference(
             mapping,
-            self.settings.system_settings.nonbonded_method,
+            system_settings.nonbonded_method,
             alchem_settings.explicit_charge_correction,
+            positive_ion_resname=alchem_settings.alchemical_water_ion_positive_resname,
+            negative_ion_resname=alchem_settings.alchemical_water_ion_negative_resname,
         )
 
         # 1. Create stateA system
@@ -696,9 +705,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             _rfe_utils.topologyhelpers.handle_alchemical_waters(
                 alchem_water_resids, stateB_topology, stateB_system,
                 ligand_mappings, charge_difference,
-                alchemical_water_ion_positive_resname,
-                alchemical_water_ion_negative_resname,
-                alchemical_water_resname,
+                alchem_settings.alchemical_water_ion_positive_resname,
+                alchem_settings.alchemical_water_ion_negative_resname,
+                alchem_settings.alchemical_water_resname,
             )
 
         #  e. Finally get the positions

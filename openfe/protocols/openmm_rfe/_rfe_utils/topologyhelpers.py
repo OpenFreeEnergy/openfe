@@ -14,7 +14,7 @@ import mdtraj as mdt
 from mdtraj.core.residue_names import _SOLVENT_TYPES
 import numpy as np
 import numpy.typing as npt
-from openmm import app, System
+from openmm import app, System, NonbondedForce
 from openmm import unit as omm_unit
 from openff.units import unit
 
@@ -48,9 +48,9 @@ def _get_ion_and_water_parameters(
     ion_charge : float
       The partial charge of the ion atom
     ion_sigma : float
-      The NonBondedForce sigma parameter of the ion atom
+      The NonbondedForce sigma parameter of the ion atom
     ion_epsilon : float
-      The NonBondedForce epsilon parameter of the ion atom
+      The NonbondedForce epsilon parameter of the ion atom
     o_charge : float
       The partial charge of the water oxygen.
     h_charge : float
@@ -69,11 +69,12 @@ def _get_ion_and_water_parameters(
     def _find_atom(topology, resname, elementname):
         for atom in topology.atoms():
             if atom.residue.name == resname:
-                if elementname is None or atom.element == elementname:
+                if (elementname is None or
+                    atom.element.symbol == elementname):
                     return atom.index
         errmsg = ("Error encountered when attempting to explicitly handle "
                   "charge changes using an alchemical water. No residue "
-                  f"named: {resname} found")
+                  f"named: {resname} found, with element {elementname}")
         raise ValueError(errmsg)
 
     ion_index = _find_atom(topology, ion_resname, None)
@@ -81,7 +82,10 @@ def _get_ion_and_water_parameters(
     hydrogen_index = _find_atom(topology, water_resname, 'H')
 
     nbf = [i for i in system.getForces()
-           if isinstance(i, app.NonBondedForce)][0]
+           if isinstance(i, NonbondedForce)]
+    if len(nbf) > 1:
+        raise ValueError("Too many NonbondedForce forces found")
+    nbf = nbf[0]
 
     ion_charge, ion_sigma, ion_epsilon = nbf.getParticleParameters(ion_index)
     o_charge, _, _ = nbf.getParticleParameters(oxygen_index)
@@ -102,23 +106,23 @@ def _fix_alchemical_water_atom_mapping(system_mapping, b_idx):
     b_idx : int
       The index of the state B particle.
     """
-    a_ix = mapping.new_to_old_atom_map[b_idx]
+    a_idx = system_mapping['new_to_old_atom_map'][b_idx]
 
     # remove atom from the environment atom map
-    mapping['old_to_new_env_atom_map'].pop(a_idx)
-    mapping['new_to_old_env_atom_map'].pop(b_idx)
+    system_mapping['old_to_new_env_atom_map'].pop(a_idx)
+    system_mapping['new_to_old_env_atom_map'].pop(b_idx)
 
     # add atom to the new_to_old_core atom maps
-    mapping['old_to_new_core_atom_map'][a_idx] = b_idx
-    mapping['new_to_old_core_atom_map'][b_idx] = a_idx
+    system_mapping['old_to_new_core_atom_map'][a_idx] = b_idx
+    system_mapping['new_to_old_core_atom_map'][b_idx] = a_idx
 
 
 def handle_alchemical_waters(
     water_resids: list[int], topology: app.Topology,
     system: System, system_mapping: dict,
     charge_difference: int,
-    positive_ion_resname: str = 'CL',
-    negative_ion_resname: str = 'NA',
+    positive_ion_resname: str = 'NA',
+    negative_ion_resname: str = 'CL',
     water_resname: str = 'HOH',
 ):
     """
@@ -154,16 +158,16 @@ def handle_alchemical_waters(
     Based on `perses.utils.charge_changing.transform_waters_into_ions`.
     """
 
-    if len(abs(charge_difference)) != len(water_resids):
+    if abs(charge_difference) != len(water_resids):
         errmsg = ("There should be as many alchemical residues: "
                   f"{len(water_resids)} as the absolute charge "
                   f"difference: {abs(charge_difference)}")
         raise ValueError(errmsg)
 
     if charge_difference > 0:
-        ion_resname = negative_ion_resname
+        ion_resname = positive_ion_resname
     elif charge_difference < 0:
-        ion_resname = posititve_ion_resname
+        ion_resname = negative_ion_resname
     else:
         return None
 
@@ -173,7 +177,10 @@ def handle_alchemical_waters(
 
     # get the nonbonded forces
     nbf = [i for i in system.getForces()
-           if isinstance(i, app.NonBondedForce)][0]
+           if isinstance(i, NonbondedForce)]
+    if len(nbf) > 1:
+        raise ValueError("Too many NonbondedForce forces found")
+    nbf = nbf[0]
 
     # Loop through residues, check if they match the residue index
     # mutate the atom as necessary
@@ -200,7 +207,7 @@ def handle_alchemical_waters(
 def get_alchemical_waters(
     topology: app.Topology,
     positions: npt.NDArray,
-    absolute_charge_difference: int,
+    charge_difference: int,
     charge_correction: bool,
     distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
 ) -> Optional[list[int]]:
@@ -214,8 +221,8 @@ def get_alchemical_waters(
     positions : npt.NDArray
       The coordinates of the atoms associated with the ``topology``.
     charge_difference : Optional[int]
-      The absolute charge difference between the two end states
-      calculated as abs(stateA_formal_charge - stateB_formal_charge).
+      The charge difference between the two end states
+      calculated as stateA_formal_charge - stateB_formal_charge.
       If ``None``, this will be treated as an explicit charge
       correction not being necessary and a tuple of ``None`` will be
       returned.
@@ -244,7 +251,7 @@ def get_alchemical_waters(
 
     water_atoms = traj.topology.select("water")
     solvent_residue_names = list(_SOLVENT_TYPES)
-    solute_atoms = [atom.index for atom in traj.topology.atom
+    solute_atoms = [atom.index for atom in traj.topology.atoms
                     if atom.residue.name not in solvent_residue_names]
 
     excluded_waters = mdt.compute_neighbors(
@@ -258,7 +265,7 @@ def get_alchemical_waters(
         if (atom.index in water_atoms) and (atom.index not in excluded_waters)
     ])
 
-    if len(sovlent_indices) < 0:
+    if len(solvent_indices) < 0:
         errmsg = ("There are no waters outside of a "
                   f"{distance_cutoff.to(unit.nanometer)} nanometer distance "
                   "of the system solutes to be used as alchemical waters")
