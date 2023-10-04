@@ -1435,6 +1435,7 @@ def _assert_total_charge(system, atom_classes, chgA, chgB):
     assert chgB == pytest.approx(np.sum(stateB_charges))
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('mapping_name,chgA,chgB,correction', [
     ['benzene_to_aniline_mapping', 0, 1, False],
     ['aniline_to_benzene_mapping', 0, 0, True],

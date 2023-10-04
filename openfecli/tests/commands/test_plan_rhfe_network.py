@@ -27,7 +27,7 @@ def print_test_with_file(
 
 
 def test_plan_rhfe_network_main():
-    import os, glob
+    import os
     from gufe import SmallMoleculeComponent, SolventComponent
     from openfe.setup import (
         LomapAtomMapper,
@@ -37,8 +37,8 @@ def test_plan_rhfe_network_main():
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
         smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(f)
-            for f in glob.glob(str(d / "*.sdf"))
+            SmallMoleculeComponent.from_sdf_file(d / f)
+            for f in ['ligand_23.sdf', 'ligand_55.sdf']
         ]
 
     solvent_component = SolventComponent()
