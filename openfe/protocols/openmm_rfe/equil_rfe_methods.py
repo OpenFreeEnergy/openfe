@@ -62,6 +62,7 @@ from ..openmm_utils import (
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
+from ...analysis import plotting
 from openfe.due import due, Doi
 
 
@@ -993,6 +994,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {}
 
         data = json.loads(ret.stdout)
+
+        f1 = plotting.plot_2D_rmsd(data['protein_2D_RMSD'])
+        f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
+        f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
+
+        savedir = pathlib.Path(where)
+        f1.savefig(savedir / "protein_2D_RMSD.png")
+        f2.savefig(savedir / "ligand_COM_drift.png")
+        f3.savefig(savedir / "ligand_RMSD.png")
 
         return {'structural_analysis': data}
 
