@@ -243,6 +243,34 @@ def plot_2D_rmsd(data: list[list[float]],
     for i, (arr, ax) in enumerate(
             zip(twod_rmsd_arrs, chain.from_iterable(axes))):
         ax.imshow(arr, vmin=0, vmax=vmax)
-        ax.set_title(f'State={i}')
+        ax.set_title(f'State {i}')
 
     return fig
+
+
+def plot_ligand_COM_drift(time: list[float], data: list[list[float]]):
+    fig, ax = plt.subplots()
+
+    for i, s in enumerate(data):
+        ax.plot(time, s, label=f'State {i}')
+
+    ax.legend(loc='upper left')
+    ax.set_xlabel('Time (ps)')
+    ax.set_ylabel('Distance (A)')
+    ax.set_title('Ligand COM drift')
+
+    return ax
+
+
+def plot_ligand_RMSD(time: list[float], data: list[list[float]]):
+    fig, ax = plt.subplots()
+
+    for i, s in enumerate(data):
+        ax.plot(time, s, label=f'State {i}')
+
+    ax.legend(loc='upper left')
+    ax.set_xlabel('Time (ps)')
+    ax.set_ylabel('RMSD (A)')
+    ax.set_title('Ligand RMSD')
+
+    return ax
