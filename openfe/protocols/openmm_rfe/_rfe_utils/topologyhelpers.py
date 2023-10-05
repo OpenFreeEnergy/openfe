@@ -91,7 +91,10 @@ def _get_ion_and_water_parameters(
     return ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge
 
 
-def _fix_alchemical_water_atom_mapping(system_mapping, b_idx):
+def _fix_alchemical_water_atom_mapping(
+    system_mapping: dict[str, Union[dict[int, int], list[int]]],
+    b_idx: int,
+) -> None:
     """
     In-place fix system atom mapping to account for
     added alchemical water atom.
@@ -104,6 +107,10 @@ def _fix_alchemical_water_atom_mapping(system_mapping, b_idx):
       The index of the state B particle.
     """
     a_idx = system_mapping['new_to_old_atom_map'][b_idx]
+
+    # Note, because these are already shared positions, we don't
+    # append alchemical molecule indices in the new & old molecule
+    # i.e. the `old_mol_indices` and `new_mol_indices` lists
 
     # remove atom from the environment atom map
     system_mapping['old_to_new_env_atom_map'].pop(a_idx)
@@ -546,8 +553,10 @@ def get_system_mappings(old_to_new_atom_map,
               The inverted dictionaryu of old_to_new_env_atom_map.
             7. old_mol_indices
               Indices of the alchemical molecule in the old system.
+              Note: This will not contain the indices of any alchemical waters!
             8. new_mol_indices
               Indices of the alchemical molecule in the new system.
+              Note: This will not contain the indices of any alchemical waters!
     """
     # Get the indices of the atoms in the alchemical residue of interest for
     # both the old and new systems
