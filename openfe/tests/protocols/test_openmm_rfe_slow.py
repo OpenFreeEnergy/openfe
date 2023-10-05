@@ -128,15 +128,3 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
                     keep_shared=True)
 
     assert r.ok()
-
-
-@pytest.mark.integration  # takes ~7 minutes to run
-def test_positive_charge_transforms():
-    """
-    Test that a 0 -> -1 -> 0 and a 1 -> 0 -> 1
-    transformation lead to the same value.
-
-    This roundtrip ensures that the energies are consistent
-    on both sides.
-    """
-    pass

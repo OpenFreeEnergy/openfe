@@ -1440,6 +1440,7 @@ def _assert_total_charge(system, atom_classes, chgA, chgB):
     ['benzene_to_aniline_mapping', 0, 1, False],
     ['aniline_to_benzene_mapping', 0, 0, True],
     ['benzene_to_benzoic_mapping', 0, 0, True],
+    ['benzoic_to_benzene_mapping', 0, 0, True],
 ])
 def test_dry_run_alchemwater_totcharge(
     mapping_name, chgA, chgB, correction, tmpdir, request

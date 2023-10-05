@@ -82,10 +82,7 @@ def _get_ion_and_water_parameters(
     hydrogen_index = _find_atom(topology, water_resname, 'H')
 
     nbf = [i for i in system.getForces()
-           if isinstance(i, NonbondedForce)]
-    if len(nbf) > 1:
-        raise ValueError("Too many NonbondedForce forces found")
-    nbf = nbf[0]
+           if isinstance(i, NonbondedForce)][0]
 
     ion_charge, ion_sigma, ion_epsilon = nbf.getParticleParameters(ion_index)
     o_charge, _, _ = nbf.getParticleParameters(oxygen_index)

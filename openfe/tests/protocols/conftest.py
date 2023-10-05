@@ -97,6 +97,14 @@ def benzene_to_benzoic_mapping(benzene_charges):
 
 
 @pytest.fixture
+def benzoic_to_benzene_mapping(benzene_charges):
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    molA = benzene_charges['benzoic_acid']
+    molB = benzene_charges['benzene']
+    return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
 def benzene_to_aniline_mapping(benzene_charges):
     mapper = openfe.setup.LomapAtomMapper(element_change=False)
     molA = benzene_charges['benzene']
