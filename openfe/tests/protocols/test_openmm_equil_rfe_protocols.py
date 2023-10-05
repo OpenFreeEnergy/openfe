@@ -1436,14 +1436,18 @@ def _assert_total_charge(system, atom_classes, chgA, chgB):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('mapping_name,chgA,chgB,correction', [
-    ['benzene_to_aniline_mapping', 0, 1, False],
-    ['aniline_to_benzene_mapping', 0, 0, True],
-    ['benzene_to_benzoic_mapping', 0, 0, True],
-    ['benzoic_to_benzene_mapping', 0, 0, True],
+@pytest.mark.parametrize('mapping_name,chgA,chgB,correction,core_atoms,new_uniq,old_uniq', [
+    ['benzene_to_aniline_mapping', 0, 1, False, 11, 4, 1],
+    ['aniline_to_benzene_mapping', 0, 0, True, 14, 1, 4],
+    ['aniline_to_benzene_mapping', 0, -1, False, 11, 1, 4],
+    ['benzene_to_benzoic_mapping', 0, 0, True, 14, 3, 1],
+    ['benzene_to_benzoic_mapping', 0, -1, False, 11, 3, 1],
+    ['benzoic_to_benzene_mapping', 0, 0, True, 14, 1, 3],
+    ['benzoic_to_benzene_mapping', 0, 1, False, 11, 1, 3],
 ])
 def test_dry_run_alchemwater_totcharge(
-    mapping_name, chgA, chgB, correction, tmpdir, request
+    mapping_name, chgA, chgB, correction, core_atoms,
+    new_uniq, old_uniq, tmpdir, request,
 ):
 
     mapping = request.getfixturevalue(mapping_name)
@@ -1476,3 +1480,7 @@ def test_dry_run_alchemwater_totcharge(
         htf = sampler._factory
         _assert_total_charge(htf.hybrid_system,
                              htf._atom_classes, chgA, chgB)
+
+        assert len(htf._atom_classes['core_atoms']) == core_atoms
+        assert len(htf._atom_classes['unique_new_atoms']) == new_uniq
+        assert len(htf._atom_classes['unique_old_atoms']) == old_uniq
