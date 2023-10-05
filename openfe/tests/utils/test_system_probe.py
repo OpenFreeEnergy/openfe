@@ -1,5 +1,6 @@
 import contextlib
 from collections import namedtuple
+import logging
 import pathlib
 import sys
 from unittest.mock import Mock, patch
@@ -14,6 +15,7 @@ from openfe.utils.system_probe import (
     _get_hostname,
     _get_psutil_info,
     _probe_system,
+    log_system_probe,
 )
 
 
@@ -38,6 +40,84 @@ pfullmem = namedtuple(
     "pfullmem",
     ["rss", "vms", "shared", "text", "lib", "data", "dirty", "uss", "pss", "swap"],
 )
+
+
+EXPECTED_SYSTEM_INFO = {
+    "system information": {
+        "hostname": "mock-hostname",
+        "gpu information": {
+            "GPU-UUID-1": {
+                "name": "NVIDIA GeForce RTX 2060",
+                "compute_mode": "Default",
+                "pstate": "P8",
+                "temperature.gpu": "47",
+                "utilization.memory [%]": "6 %",
+                "memory.total [MiB]": "6144 MiB",
+                "driver_version": "525.116.04",
+            },
+            "GPU-UUID-2": {
+                "name": "NVIDIA GeForce RTX 2060",
+                "compute_mode": "Default",
+                "pstate": "P8",
+                "temperature.gpu": "47",
+                "utilization.memory [%]": "6 %",
+                "memory.total [MiB]": "6144 MiB",
+                "driver_version": "525.116.04",
+            },
+        },
+        "psutil information": {
+            "pid": 1590579,
+            "status": "running",
+            "exe": "/home/winry/micromamba/envs/openfe/bin/python3.10",
+            "cpu_percent": 0.0,
+            "num_fds": 4,
+            "create_time": 1690999298.62,
+            "memory_percent": 0.02006491389254216,
+            "memory_full_info": {
+                "rss": 13500416,
+                "vms": 31858688,
+                "shared": 6946816,
+                "text": 2121728,
+                "lib": 0,
+                "data": 7852032,
+                "dirty": 0,
+                "uss": 10764288,
+                "pss": 10777600,
+                "swap": 0,
+            },
+            "RLIMIT_AS": (-1, -1),
+            "virtual_memory": {
+                "total": 67283697664,
+                "available": 31731806208,
+                "percent": 52.8,
+                "used": 29899350016,
+                "free": 3136847872,
+                "active": 25971789824,
+                "inactive": 34514595840,
+                "buffers": 136404992,
+                "cached": 34111094784,
+                "shared": 1021571072,
+                "slab": 1518297088,
+            },
+        },
+        "disk usage information": {
+            "/dev/mapper/data-root": {
+                "size": "1.8T",
+                "used": "626G",
+                "available": "1.1T",
+                "percent_used": "37%",
+                "mount_point": "/",
+            },
+            "/dev/dm-3": {
+                "size": "3.7T",
+                "used": "1.6T",
+                "available": "2.2T",
+                "percent_used": "42%",
+                "mount_point": "/mnt/data",
+            },
+        },
+    }
+}
 
 
 def fake_disk_usage(path):
@@ -359,3 +439,48 @@ def test_probe_system():
 def test_probe_system_smoke_test():
     _probe_system()
     _probe_system(paths=[pathlib.Path("/")])
+
+
+def test_log_system_probe_unconfigured():
+    # if probe loggers aren't configured to run, then we shouldn't even call
+    # _probe_system()
+    logger_names = [
+        'openfe.utils.system_probe.log',
+        'openfe.utils.system_probe.log.gpu',
+        'openfe.utils.system_probe.log.hostname',
+    ]
+    # check that initial conditions are as expected
+    for logger_name in logger_names:
+        logger = logging.getLogger(logger_name)
+        assert not logger.isEnabledFor(logging.DEBUG)
+
+    sysprobe_mock = Mock(return_value=EXPECTED_SYSTEM_INFO)
+    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+        log_system_probe(logging.DEBUG)
+        assert sysprobe_mock.call_count == 0
+
+    # now check that it does get called if we use a level that will emit
+    # (this is effectively tests that the previous assert isn't a false
+    # positive)
+    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+        log_system_probe(logging.WARNING)
+        assert sysprobe_mock.call_count == 1
+
+
+def test_log_system_probe(caplog):
+    # this checks that the expected contents show up in log_system_probe
+    sysprobe_mock = Mock(return_value=EXPECTED_SYSTEM_INFO)
+    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+        with caplog.at_level(logging.DEBUG):
+            log_system_probe()
+
+    expected = [
+        "hostname: 'mock-hostname'",
+        "GPU: uuid='GPU-UUID-1' NVIDIA GeForce RTX 2060 mode=Default",
+        "GPU: uuid='GPU-UUID-2' NVIDIA GeForce RTX 2060 mode=Default",
+        "Memory used: 27.8G (52.8%)",
+        "/dev/mapper/data-root: 37% full (1.1T free)",
+        "/dev/dm-3: 42% full (2.2T free)"
+    ]
+    for line in expected:
+        assert line in caplog.text

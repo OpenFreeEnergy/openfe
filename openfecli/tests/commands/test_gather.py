@@ -2,6 +2,7 @@ from click.testing import CliRunner
 import glob
 from importlib import resources
 import tarfile
+import pathlib
 import pytest
 
 from openfecli.commands.gather import (
@@ -27,8 +28,8 @@ def test_get_column(val, col):
 @pytest.fixture
 def results_dir(tmpdir):
     with tmpdir.as_cwd():
-        with resources.path('openfecli.tests.data', 'rbfe_results.tar.gz') as f:
-            t = tarfile.open(f, mode='r')
+        with resources.files('openfecli.tests.data') as d:
+            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
             t.extractall('.')
 
         yield
@@ -106,3 +107,15 @@ def test_gather(results_dir, report):
 
     assert set(expected.split(b'\n')) == actual_lines
 
+
+def test_missing_leg_error(results_dir):
+    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+    (pathlib.Path("results") / file_to_remove).unlink()
+
+    runner = CliRunner()
+    result = runner.invoke(gather, ['results'] + ['-o', '-'])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, RuntimeError)
+    assert "labels ['solvent']" in str(result.exception)
+    assert "'lig_ejm_31'" in str(result.exception)
+    assert "'lig_ejm_42'" in str(result.exception)

@@ -1,16 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from importlib import resources
 from pathlib import Path
 import pytest
 import numpy as np
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_allclose
 from openmm import app, MonteCarloBarostat
 from openmm import unit as ommunit
+from openmmtools import multistate
 from openff.units import unit
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
-    settings_validation, system_validation, system_creation
+    settings_validation, system_validation, system_creation,
+    multistate_analysis
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     SystemSettings, SolvationSettings,
@@ -180,6 +183,97 @@ def get_settings():
     system_settings = SystemSettings()
 
     return forcefield_settings, thermo_settings, system_settings
+
+
+class TestFEAnalysis:
+
+    # Note: class scope _will_ cause this to segfault - the reporter has to close
+    @pytest.fixture(scope='function')
+    def reporter(self):
+        with resources.files('openfe.tests.data.openmm_rfe') as d:
+            ncfile = str(d / 'vacuum_nocoord.nc')
+
+        with resources.files('openfe.tests.data.openmm_rfe') as d:
+            chkfile = str(d / 'vacuum_nocoord_checkpoint.nc')
+
+        r = multistate.MultiStateReporter(
+            storage=ncfile, checkpoint_storage=chkfile
+        )
+        try:
+            yield r
+        finally:
+            r.close()
+    
+    @pytest.fixture()
+    def analyzer(self, reporter):
+        return multistate_analysis.MultistateEquilFEAnalysis(
+            reporter, sampling_method='repex',
+            result_units=unit.kilocalorie_per_mole,
+        )
+    
+    def test_free_energies(self, analyzer):
+        ret_dict = analyzer.unit_results_dict
+        assert len(ret_dict.items()) == 8
+        assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
+        assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
+        # forward and reverse (since we do this ourselves)
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['fractions'],
+            np.array([0.08988764, 0.191011, 0.292135, 0.393258, 0.494382,
+                      0.595506, 0.696629, 0.797753, 0.898876, 1.0]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['forward_DGs'].m,
+            np.array([-48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
+                      -48.025258, -48.006349, -47.986304, -47.972138, -47.960623]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
+            np.array([0.07471 , 0.052914, 0.041508, 0.036613, 0.032827, 0.030489,
+                      0.028154, 0.026529, 0.025284, 0.023968]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
+            np.array([-47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
+                      -47.915963, -47.93319, -47.939125, -47.949016, -47.960623]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
+            np.array([0.081209, 0.055975, 0.044693, 0.038691, 0.034603, 0.031894,
+                      0.029417, 0.027082, 0.025316, 0.023968]),
+            rtol=1e-04,
+        )
+
+    def test_plots(self, analyzer, tmpdir):
+        with tmpdir.as_cwd():
+            analyzer.plot(filepath=Path('.'), filename_prefix='')
+            assert Path('forward_reverse_convergence.png').is_file()
+            assert Path('mbar_overlap_matrix.png').is_file()
+            assert Path('replica_exchange_matrix.png').is_file()
+            assert Path('replica_state_timeseries.png').is_file()
+
+    def test_plot_convergence_bad_units(self, analyzer):
+        
+        with pytest.raises(ValueError, match='Unknown plotting units'):
+            openfe.analysis.plotting.plot_convergence(
+                analyzer.forward_and_reverse_free_energies,
+                unit.nanometer,
+            )
+
+    def test_analyze_unknown_method_warning_and_error(self, reporter):
+
+        with pytest.warns(UserWarning, match='Unknown sampling method'):
+            ana = multistate_analysis.MultistateEquilFEAnalysis(
+                      reporter, sampling_method='replex',
+                      result_units=unit.kilocalorie_per_mole,
+                  )
+
+        with pytest.raises(ValueError, match="Exchange matrix"):
+            ana.replica_exchange_statistics
 
 
 class TestSystemCreation:

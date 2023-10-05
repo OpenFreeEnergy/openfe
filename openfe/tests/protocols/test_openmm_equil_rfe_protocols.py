@@ -5,6 +5,7 @@ from io import StringIO
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+import json
 import pytest
 from unittest import mock
 from openff.units import unit
@@ -1164,10 +1165,11 @@ class TestConstraintRemoval:
 
 @pytest.fixture(scope='session')
 def tyk2_xml(tmp_path_factory):
-    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_23.sdf') as f:
-        lig23 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
-    with resources.path('openfe.tests.data.openmm_rfe', 'ligand_55.sdf') as f:
-        lig55 = openfe.SmallMoleculeComponent.from_sdf_file(str(f))
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        fn1 = str(d / 'ligand_23.sdf')
+        fn2 = str(d / 'ligand_55.sdf')
+    lig23 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
+    lig55 = openfe.SmallMoleculeComponent.from_sdf_file(fn2)
 
     mapping = setup.LigandAtomMapping(
         componentA=lig23, componentB=lig55,
@@ -1205,7 +1207,8 @@ def tyk2_xml(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def tyk2_reference_xml():
-    with resources.path('openfe.tests.data.openmm_rfe', 'reference.xml') as f:
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        f = d / 'reference.xml'
         with open(f, 'r') as i:
             xmldata = i.read()
     return ET.fromstring(xmldata)
@@ -1236,3 +1239,105 @@ class TestTyk2XmlRegression:
             assert a.get('p1') == b.get('p1')
             assert a.get('p2') == b.get('p2')
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
+
+
+class TestProtocolResult:
+    @pytest.fixture()
+    def protocolresult(self, transformation_json):
+        d = json.loads(transformation_json,
+                       cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+        pr = openfe.ProtocolResult.from_dict(d['protocol_result'])
+
+        return pr
+
+    def test_reload_protocol_result(self, transformation_json):
+        d = json.loads(transformation_json,
+                       cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+        pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+
+        assert pr
+
+    def test_get_estimate(self, protocolresult):
+        est = protocolresult.get_estimate()
+
+        assert est
+        assert est.m == pytest.approx(-15.768768285032115)
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_uncertainty(self, protocolresult):
+        est = protocolresult.get_uncertainty()
+
+        assert est
+        assert est.m == pytest.approx(0.03662634237353985)
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_individual(self, protocolresult):
+        inds = protocolresult.get_individual_estimates()
+
+        assert isinstance(inds, list)
+        assert len(inds) == 3
+        for e, u in inds:
+            assert e.is_compatible_with(unit.kilojoule_per_mole)
+            assert u.is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_forwards_etc(self, protocolresult):
+        far = protocolresult.get_forward_and_reverse_energy_analysis()
+
+        assert isinstance(far, list)
+        far1 = far[0]
+        assert isinstance(far1, dict)
+        for k in ['fractions', 'forward_DGs', 'forward_dDGs',
+                  'reverse_DGs', 'reverse_dDGs']:
+            assert k in far1
+
+            if k == 'fractions':
+                assert isinstance(far1[k], np.ndarray)
+            else:
+                assert isinstance(far1[k], unit.Quantity)
+                assert far1[k].is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_overlap_matrices(self, protocolresult):
+        ovp = protocolresult.get_overlap_matrices()
+
+        assert isinstance(ovp, list)
+        assert len(ovp) == 3
+
+        ovp1 = ovp[0]
+        assert isinstance(ovp1['matrix'], np.ndarray)
+        assert ovp1['matrix'].shape == (11,11)
+
+    def test_get_replica_transition_statistics(self, protocolresult):
+        rpx = protocolresult.get_replica_transition_statistics()
+
+        assert isinstance(rpx, list)
+        assert len(rpx) == 3
+        rpx1 = rpx[0]
+        assert 'eigenvalues' in rpx1
+        assert 'matrix' in rpx1
+        assert rpx1['eigenvalues'].shape == (11,)
+        assert rpx1['matrix'].shape == (11, 11)
+
+    def test_get_replica_states(self, protocolresult):
+        rep = protocolresult.get_replica_states()
+
+        assert isinstance(rep, list)
+        assert len(rep) == 3
+        assert rep[0].shape == (6, 11)
+
+    def test_equilibration_iterations(self, protocolresult):
+        eq = protocolresult.equilibration_iterations()
+
+        assert isinstance(eq, list)
+        assert len(eq) == 3
+        assert all(isinstance(v, float) for v in eq)
+
+    def test_production_iterations(self, protocolresult):
+        prod = protocolresult.production_iterations()
+
+        assert isinstance(prod, list)
+        assert len(prod) == 3
+        assert all(isinstance(v, float) for v in prod)

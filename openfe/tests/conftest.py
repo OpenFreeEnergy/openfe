@@ -172,9 +172,9 @@ def atom_mapping_basic_test_files():
         '2-naftanol',
         'methylcyclohexane',
         'toluene']:
-        with importlib.resources.path('openfe.tests.data.lomap_basic',
-                                      f + '.mol2') as fn:
-            mol = Chem.MolFromMol2File(str(fn), removeHs=False)
+        with importlib.resources.files('openfe.tests.data.lomap_basic') as d:
+            fn = str(d / (f + '.mol2'))
+            mol = Chem.MolFromMol2File(fn, removeHs=False)
             files[f] = SmallMoleculeComponent(mol, name=f)
 
     return files
@@ -183,8 +183,8 @@ def atom_mapping_basic_test_files():
 @pytest.fixture(scope='session')
 def benzene_modifications():
     files = {}
-    with importlib.resources.path('openfe.tests.data',
-                                  'benzene_modifications.sdf') as fn:
+    with importlib.resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
             files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
@@ -205,9 +205,9 @@ def serialization_template():
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.path('openfe.tests.data',
-                        'benzene_modifications.sdf') as fn:
-        supplier = Chem.SDMolSupplier(str(fn), removeHs=False)
+    with resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
+        supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
             mols[mol.GetProp('_Name')] = SmallMoleculeComponent(mol)
     return mols
@@ -215,28 +215,29 @@ def benzene_transforms():
 
 @pytest.fixture(scope='session')
 def T4_protein_component():
-    with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
-        comp = gufe.ProteinComponent.from_pdb_file(str(fn), name="T4_protein")
+    with resources.files('openfe.tests.data') as d:
+        fn = str(d / '181l_only.pdb')
+        comp = gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
     return comp
 
 
 @pytest.fixture()
 def eg5_protein_pdb():
-    with resources.path('openfe.tests.data.eg5', 'eg5_protein.pdb') as fn:
-        yield str(fn)
+    with resources.files('openfe.tests.data.eg5') as d:
+        yield str(d / 'eg5_protein.pdb')
 
 
 @pytest.fixture()
 def eg5_ligands_sdf():
-    with resources.path('openfe.tests.data.eg5', 'eg5_ligands.sdf') as fn:
-        yield str(fn)
+    with resources.files('openfe.tests.data.eg5') as d:
+        yield str(d / 'eg5_ligands.sdf')
 
 
 @pytest.fixture()
 def eg5_cofactor_sdf():
-    with resources.path('openfe.tests.data.eg5', 'eg5_cofactor.sdf') as fn:
-        yield str(fn)
+    with resources.files('openfe.tests.data.eg5') as d:
+        yield str(d / 'eg5_cofactor.sdf')
 
 
 @pytest.fixture()
@@ -257,13 +258,11 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 @pytest.fixture()
 def orion_network():
-    with resources.path('openfe.tests.data.external_formats',
-                        'somebenzenes_nes.dat') as fn:
-        yield fn
+    with resources.files('openfe.tests.data.external_formats') as d:
+        yield str(d / 'somebenzenes_nes.dat')
 
 
 @pytest.fixture()
 def fepplus_network():
-    with resources.path('openfe.tests.data.external_formats',
-                        'somebenzenes_edges.edge') as fn:
-        yield fn
+    with resources.files('openfe.tests.data.external_formats') as d:
+        yield str(d / 'somebenzenes_edges.edge')
