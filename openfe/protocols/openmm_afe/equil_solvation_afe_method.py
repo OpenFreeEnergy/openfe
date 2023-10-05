@@ -668,6 +668,12 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         
         return lambdas
 
+    def _add_restraints(self, system, topology, settings):
+        """
+        Placeholder method to add restraints if necessary
+        """
+        return
+
     def _get_alchemical_system(self, topology, system, comp_resids,
                                alchem_comps):
         """
@@ -715,76 +721,60 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
         return sampler_states, cmp_states
 
-    def _get_reporter(self, ...):
+    def _get_reporter(self, topology, simulation_settings):
         """
-        # a. Get the sub selection of the system to print coords for
-        mdt_top = mdt.Topology.from_openmm(system_topology)
+        """
+        mdt_top = mdt.Topology.from_openmm(topology)
+
         selection_indices = mdt_top.select(
-                sim_settings.output_indices
+                simulation_settings.output_indices
         )
 
-        # b. Create the multistate reporter
         reporter = multistate.MultiStateReporter(
-            storage=basepath / sim_settings.output_filename,
+            storage=self.shared_basepathbasepath / simulation_settings.output_filename,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=sim_settings.checkpoint_interval.m,
-            checkpoint_storage=basepath / sim_settings.checkpoint_storage,
-        )
-        """
-        mdt_top = mdt.Topology.from_openmm(system_topology)
-        selection_indices = mdt_top.select(
-                sim_settings.output_indices
-        )
-        sim_settings = settings.simulation_settings
-        reporter = multistate.MultiStateReporter(
-            storage=self.shared_basepathbasepath / sim_settings.output_filename,
-            analysis_particle_indices=selection_indices,
-            checkpoint_interval=sim_settings.checkpoint_interval.m,
-            checkpoint_storage=basepath / sim_settings.checkpoint_storage,
+            checkpoint_interval=simultation_settings.checkpoint_interval.m,
+            checkpoint_storage=basepath / simultation_settings.checkpoint_storage,
         )
 
-    def _get_ctx_caches(self, ...):
+        return reporter
+
+    def _get_ctx_caches(self, engine_settings):
         """
-        # 7. Get platform and context caches
+        """
         platform = compute.get_openmm_platform(
-            settings.engine_settings.compute_platform
+            engine_settings.compute_platform,
         )
 
-        # a. Create context caches (energy + sampler)
-        #    Note: these needs to exist on the compute node
         energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_live=None, platform=platform,
+            capacity=None, time_to_line=None, platform=platform,
         )
 
         sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_live=None, platform=platform,
+            capacity=None, time_to_line=None, platform=platform,
         )
-        """
-        ...
+        
+        return energy_context_cache, sampler_context_cache
 
     def _get_integrator(self, integrator_settings):
         """
-        # 8. Set the integrator
-        # a. get integrator settings
-        integrator_settings = settings.integrator_settings
-
-        # b. create langevin integrator
-        integrator = openmmtools.mcmc.LangevinSplittingDynamicsMove(
+        """
+        integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
             collision_rate=to_openmm(integrator_settings.collision_rate),
             n_steps=integrator_settings.n_steps.m,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
-            splitting=integrator_settings.splitting
         )
-        """
-        ...
 
-    def _get_sampler(self, ...):
+        return integrator
+        
+
+    def _get_sampler(self, integrator, alchemsampler_settings,
+                     energy_context_cache, sampler_context_cache):
         """
-        # 9. Create sampler
-        sampler_settings = settings.alchemsampler_settings
+        """
 
         # Select the right sampler
         # Note: doesn't need else, settings already validates choices
@@ -819,11 +809,11 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
         sampler.energy_context_cache = energy_context_cache
         sampler.sampler_context_cache = sampler_context_cache
-        """
-        ...
 
-    def _run_simulation(self, ...):
-        """
+        return sampler
+
+    def _run_simulation(self, sampler, dry, minimization_steps, equil_steps,
+                        prod_steps, mc_steps, output_filename, checkpoint_storage):
         if not dry:  # pragma: no-cover
             # minimize
             if verbose:
@@ -864,8 +854,6 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             for fn in fns:
                 os.remove(fn)
             return {'debug': {'sampler': sampler}}
-        """
-        ...
 
     def run(self, dry=False, verbose=True, basepath=None) -> Dict[str, Any]:
         """Run the absolute free energy calculation.
@@ -921,44 +909,45 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             system_generator, system_modeller, smc_comps
         )
 
-        # Probably will need to handle restraints somewhere here
-
         # 6. Pre-minimize System (Test + Avoid NaNs)
         positions = self._pre_minimize(omm_system, positions)
 
         # 7. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
 
-        # 8. Get alchemical system
+        # 8. Add restraints
+        self._add_restraints(omm_system, omm_topology, settings)
+
+        # 9. Get alchemical system
         alchem_system, alchem_factory = self._get_alchemical_system(
             omm_topology, comp_resids, alchem_comps
         )
 
-        # 9. Get compound and sampler states
+        # 10. Get compound and sampler states
         cmp_states, sampler_states = self._get_states(
             alchem_system, solvent_comp, settings
         )
 
-        # 10. Create the multistate reporter & create PDB
+        # 11. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
                 omm_topology, settings.simulation_setttings
         )
 
-        # 11. Get context caches
+        # 12. Get context caches
         energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
                 settings.engine_settings
         )
 
-        # 12. Get integrator
+        # 13. Get integrator
         integrator = self._get_integrator(settings.integrator_settings)
 
-        # 13. Get sampler
+        # 14. Get sampler
         sampler = self._get_sampler(
             integrator, settings.sampler_settings, cmp_states, sampler_states,
             reporter, energy_ctx_cache, sampler_ctx_cache
         )
 
-        # 14. Run simulation
+        # 15. Run simulation
         self._run_simulation(
             dry, verbose, sampler, reporter, settings.simulation_settings
         )
