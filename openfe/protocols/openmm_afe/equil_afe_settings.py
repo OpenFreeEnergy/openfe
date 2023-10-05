@@ -13,17 +13,26 @@ TODO
 * Improve this docstring by adding an example use case.
 
 """
-from typing import Optional
-from pydantic import validator
-from openff.units import unit
+from gufe.settings import (
+    Settings,
+    SettingsBaseModel,
+    OpenMMSystemGeneratorFFSettings,
+    ThermoSettings,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
-    Settings, SettingsBaseModel, ThermoSettings,
-    OpenMMSystemGeneratorFFSettings, SystemSettings,
-    SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings,
+    SystemSettings,
+    SolvationSettings,
+    AlchemicalSamplerSettings,
+    OpenMMEngineSettings,
+    IntegratorSettings,
     SimulationSettings
 )
 
+
+try:
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator  # type: ignore[assignment]
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -50,19 +59,48 @@ class AbsoluteTransformSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 
+    # Inherited things
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields"""
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters"""
+
     # Things for creating the systems
     system_settings: SystemSettings
+    """
+    Simulation system settings including the
+    long-range non-bonded methods.
+    """
     solvation_settings: SolvationSettings
+    """Settings for solvating the system."""
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings including lambda windows.
+    """
     alchemsampler_settings: AlchemicalSamplerSettings
+    """
+    Settings for controling how we sample alchemical space, including the
+    number of repeats.
+    """
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
+    """
+    Settings specific to the OpenMM engine, such as the compute platform.
+    """
 
     # Sampling State defining things
     integrator_settings: IntegratorSettings
+    """
+    Settings for controlling the integrator, such as the timestep and
+    barostat settings.
+    """
 
     # Simulation run settings
     simulation_settings: SimulationSettings
+    """
+    Simulation control settings, including simulation lengths and
+    record-keeping.
+    """

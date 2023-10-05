@@ -46,15 +46,15 @@ from gufe.components import Component
 import numpy as np
 import numpy.typing as npt
 import openmm
-from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openmmtools import multistate
 from openmmtools.states import (SamplerState,
+                                ThermodynamicState,
                                 create_thermodynamic_state_protocol,)
 from openmmtools.alchemy import (AlchemicalRegion, AbsoluteAlchemicalFactory,
                                  AlchemicalState,)
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
@@ -67,6 +67,9 @@ import mdtraj as mdt
 from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
+)
+from openfe.protocols.openmm_utils.omm_settings import (
+    SettingsBaseModel,
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteTransformSettings, SystemSettings,
@@ -218,7 +221,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
           If stateA contains a ProteinComponent
         """
         if ((len(stateB) != 1) or
-            (not isinstance(stateB.values()[0], SolventComponent))):
+           (not isinstance(stateB.values()[0], SolventComponent))):
             errmsg = "Only a single SolventComponent is allowed in stateB"
             raise ValueError(errmsg)
 
@@ -262,7 +265,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             errmsg = ("Components appearing in state B are not "
                       "currently supported")
             raise ValueError(errmsg)
-        
+
         if len(alchemical_components['stateA']) > 1:
             errmsg = ("More than one alchemical components is not supported "
                       "for absolute solvation free energies")
@@ -310,7 +313,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             AbsoluteSolventTransformUnit(
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
-                alchemical_components=alchemical_comps,
+                alchemical_components=alchem_comps,
                 generation=0, repeat_id=i,
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
@@ -324,7 +327,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
-                alchemical_components=alchemical_comps,
+                alchemical_components=alchem_comps,
                 generation=0, repeat_id=i,
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
@@ -488,7 +491,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         return minimized_positions
 
     def _prepare(
-        self, verbose: bool, 
+        self, verbose: bool,
         scratch_basepath: Optional[pathlib.Path],
         shared_basepath: Optional[pathlib.Path],
     ):
@@ -513,7 +516,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             if basepath is None:
                 return pathlib.Path('.')
             return basepath
-        
+
         self.scratch_basepath = _set_optional_path(scratch_basepath)
         self.shared_basepath = _set_optional_path(shared_basepath)
 
@@ -532,7 +535,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         solvent_comp, protein_comp, off_mols = self._parse_components(stateA)
         """
         raise NotImplementedError
-    
+
     def _handle_settings(self):
         """
         Get a dictionary with the following entries:
@@ -558,10 +561,11 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         )
         """
         raise NotImplementedError
-    
+
     def _get_system_generator(
         self, settings: dict[str, SettingsBaseModel],
-        solvent_comp: Optional[SolventComponent]) -> SystemGenerator:
+        solvent_comp: Optional[SolventComponent]
+    ) -> SystemGenerator:
         """
         Get a system generator through the system creation
         utilities
@@ -589,7 +593,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             has_solvent=solvent_comp is not None,
         )
         return system_generator
-    
+
     def _get_modeller(
         self,
         protein_component: Optional[ProteinComponent],
@@ -722,7 +726,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             errmsg = (f"Number of replicas {n_replicas} "
                       "does not equal the number of lambda windows ")
             raise ValueError(errmsg)
-        
+
         return lambdas
 
     def _add_restraints(self, system, topology, settings):
@@ -822,7 +826,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         constants['temperature'] = ensure_quantity(temperature, 'openmm')
         if solvent_comp is not None:
             constants['pressure'] = ensure_quantity(pressure, 'openmm')
-        
+
         cmp_states = create_thermodynamic_state_protocol(
             alchemical_system, protocol=lambdas,
             consatnts=constants, composable_states=[alchemical_state],
@@ -863,11 +867,14 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
                 simulation_settings.output_indices
         )
 
+        nc = self.shared_basepath / simulation_settings.output_filename
+        chk = self.shared_basepath / simulation_settings.checkpoint_storage
+
         reporter = multistate.MultiStateReporter(
-            storage=self.shared_basepathbasepath / simulation_settings.output_filename,
+            storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=simultation_settings.checkpoint_interval.m,
-            checkpoint_storage=basepath / simultation_settings.checkpoint_storage,
+            checkpoint_interval=simulation_settings.checkpoint_interval.m,
+            checkpoint_storage=chk,
         )
 
         return reporter
@@ -901,7 +908,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         sampler_context_cache = openmmtools.cache.ContextCache(
             capacity=None, time_to_line=None, platform=platform,
         )
-        
+
         return energy_context_cache, sampler_context_cache
 
     def _get_integrator(
@@ -930,14 +937,14 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         )
 
         return integrator
-        
+
     def _get_sampler(
         self,
         integrator: openmmtools.mcmc.LangevinDynamicsMove,
         reporter: openmmtools.multistate.MultiStateReporter,
         sampler_settings: AlchemicalSamplerSettings,
         cmp_states: list[ThermodynamicState],
-        sampler_states: list[SamplerState], 
+        sampler_states: list[SamplerState],
         energy_context_cache: openmmtools.cache.ContextCache,
         sampler_context_cache: openmmtools.cache.ContextCache
     ) -> multistate.MultiStateSampler:
@@ -1007,8 +1014,9 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         self,
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
-        settings: dict[str, SettingsBaseModel]
-        dry: bool):
+        settings: dict[str, SettingsBaseModel],
+        dry: bool
+    ):
         """
         Run the simulation.
 
@@ -1039,7 +1047,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
                 self.logger.info("minimizing systems")
 
             sampler.minimize(
-                max_iterations=sim_settings.minimization_steps
+                max_iterations=settings['sim_settings'].minimization_steps
             )
 
             # equilibrate
@@ -1057,8 +1065,8 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             # close reporter when you're done
             reporter.close()
 
-            nc = basepath / sim_settings.output_filename
-            chk = basepath / sim_settings.checkpoint_storage
+            nc = self.shared_basepath / settings['simulation_settings'].output_filename
+            chk = self.shared_basepath / settings['simulation_settings'].checkpoint_storage
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
@@ -1068,8 +1076,8 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clean up the reporter file
-            fns = [basepath / sim_settings.output_filename,
-                   basepath / sim_settings.checkpoint_storage]
+            fns = [self.shared_basepath / settings['simulation_settings'].output_filename,
+                   self.shared_basepath / settings['simulation_settings'].checkpoint_storage]
             for fn in fns:
                 os.remove(fn)
             return {'debug': {'sampler': sampler}}
@@ -1145,7 +1153,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         # 10. Get compound and sampler states
         cmp_states, sampler_states = self._get_states(
             alchem_system, positions, settings,
-            lambdas, solvent_comp
+            lambdas, solv_comp
         )
 
         # 11. Create the multistate reporter & create PDB
