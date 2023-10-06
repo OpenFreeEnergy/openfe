@@ -34,9 +34,7 @@ import gufe
 from gufe.components import Component
 import numpy as np
 from openff.units import unit
-from openmmtools import multistate
 from typing import Dict, Optional
-from openmm import unit as omm_unit
 from typing import Any, Iterable
 
 from gufe import (
@@ -57,72 +55,109 @@ logger = logging.getLogger(__name__)
 
 
 class AbsoluteTransformProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a AbsoluteTransform"""
+    """Dict-like container for the output of a AbsoluteTransform
+
+    TODO
+    ----
+    * Add in methods to retreive forward/backwards analyses
+    * Add in methods to retreive the overlap matrices
+    * Add in method to get replica transition stats
+    * Add in method to get replica states
+    * Add in method to get equilibration and production iterations
+    """
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
-        if any(len(files['nc_paths']) > 2 for files in self.data['nc_files']):
+        if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
-        self._analyzers = []
-        for f in self.data['nc_files']:
-            nc = f['nc_paths'][0]
-            chk = f['checkpoint_paths'][0]
-            reporter = multistate.MultiStateReporter(
-                           storage=nc,
-                           checkpoint_storage=chk)
-            analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
-            self._analyzers.append(analyzer)
+    def get_vacuum_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+        """
+        Return a list of tuples containing the individual free energy
+        estimates and associated MBAR errors for each repeat of the vacuum
+        calculation.
+
+        Returns
+        -------
+        dGs : list[tuple[unit.Quantity, unit.Quantity]]
+        """
+        dGs = []
+
+        for pus in self.data.values():
+            if pus[0].outputs['simtype'] == 'vacuum':
+                dGs.append((
+                    pus[0].outputs['unit_estimate'],
+                    pus[0].outputs['unit_estimate_error']
+                ))
+
+        return dGs
+
+    def get_solvent_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+        """
+        Return a list of tuples containing the individual free energy
+        estimates and associated MBAR errors for each repeat of the solvent
+        calculation.
+
+        Returns
+        -------
+        dGs : list[tuple[unit.Quantity, unit.Quantity]]
+        """
+        dGs = []
+
+        for pus in self.data.values():
+            if pus[0].outputs['simtype'] == 'solvent':
+                dGs.append((
+                    pus[0].outputs['unit_estimate'],
+                    pus[0].outputs['unit_estimate_error']
+                ))
+
+        return dGs
 
     def get_estimate(self):
-        """Free energy difference of this transformation
+        """Get the solvation free energy estimate for this calculation.
 
         Returns
         -------
         dG : unit.Quantity
-          The free energy difference between the first and last states. This is
-          a Quantity defined with units.
-
-        TODO
-        ----
-        * Check this holds up completely for SAMS.
+          The solvation free energy. This is a Quantity defined with units.
         """
-        dGs = []
+        def _get_average(estimates):
+            # Get the unit value of the first value in the estimates
+            u = estimates[0][0].u
+            # Loop through estimates and get the free energy values
+            # in the unit of the first estimate
+            dGs = [i[0].to(u).m for i in estimates]
 
-        for analyzer in self._analyzers:
-            # this returns:
-            # (matrix of) estimated free energy difference
-            # (matrix of) estimated statistical uncertainty (one S.D.)
-            dG, _ = analyzer.get_free_energy()
-            dG = (dG[0, -1] * analyzer.kT).in_units_of(
-                omm_unit.kilocalories_per_mole)
+            return np.average(dGs) * u
 
-            dGs.append(dG)
+        vac_dG = _get_average(self.get_vacuum_individual_estimates(self))
+        solv_dG = _get_average(self.get_solvent_individual_estimates(self))
 
-        avg_val = np.average([i.value_in_unit(dGs[0].unit) for i in dGs])
-
-        return avg_val * dGs[0].unit
+        return vac_dG - solv_dG
 
     def get_uncertainty(self):
-        """The uncertainty/error in the dG value"""
-        dGs = []
+        """Get the solvation free energy error for this calculation.
 
-        for analyzer in self._analyzers:
-            # this returns:
-            # (matrix of) estimated free energy difference
-            # (matrix of) estimated statistical uncertainty (one S.D.)
-            dG, _ = analyzer.get_free_energy()
-            dG = (dG[0, -1] * analyzer.kT).in_units_of(
-                omm_unit.kilocalories_per_mole)
+        Returns
+        -------
+        err : unit.Quantity
+          The standard deviation between estimates of the solvation free
+          energy. This is a Quantity defined with units.
+        """
+        def _get_stdev(estimates):
+            # Get the unit value of the first value in the estimates
+            u = estimates[0][0].u
+            # Loop through estimates and get the free energy values
+            # in the unit of the first estimate
+            dGs = [i[0].to(u).m for i in estimates]
 
-            dGs.append(dG)
+            return np.std(dGs) * u
 
-        std_val = np.std([i.value_in_unit(dGs[0].unit) for i in dGs])
+        vac_err = _get_stdev(self.get_vacuum_individual_estimates(self))
+        solv_err = _get_stdev(self.get_solvent_individual_estimates(self))
 
-        return std_val * dGs[0].unit
-
-    def get_rate_of_convergence(self):  # pragma: no-cover
-        raise NotImplementedError
+        # return the combined error
+        return np.sqrt(vac_err**2 + solv_err**2)
 
 
 class AbsoluteSolvationProtocol(gufe.Protocol):
@@ -318,24 +353,12 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             for pu in d.protocol_unit_results:
                 if not pu.ok():
                     continue
-                rep = pu.outputs['repeat_id']
-                unsorted_repeats[rep].append(pu)
+                unsorted_repeats[pu.outputs['repeat_id']].append(pu)
 
-        data = []
-        for rep_id, rep_data in sorted(repeats.items()):
-            # then sort within a repeat according to generation
-            nc_paths = [
-                ncpath for gen, ncpath, nc_check in sorted(rep_data)
-            ]
-            chk_files = [
-                nc_check for gen, ncpath, nc_check in sorted(rep_data)
-            ]
-            data.append({'nc_paths': nc_paths,
-                         'checkpoint_paths': chk_files})
-
-        return {
-            'nc_files': data,
-        }
+        repeats: dict[str, list[gufe.ProtocolUnitResult]] = {}
+        for k, v in unsorted_repeats.items():
+            repeats[str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
+        return repeats
 
 
 class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
@@ -499,6 +522,6 @@ class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
-            'simtype': 'vacuum',
+            'simtype': 'solvent',
             **outputs
         }
