@@ -3,6 +3,10 @@ Mappings from atoms in one molecule to those in another.
 
 :class:`LigandAtomMapper` defines the interface of atom mappers, and is
 implemented by :class:`LomapAtomMapper` and :class:`PersesAtomMapper`.
+:class:`LigandAtomMapping` is a simple container for an atom maping. It
+ describes which atoms in one molecule should be transformed into which atoms
+ in the other, and which atoms should be destroyed or created over the
+ transformation.
 
 The :mod:`.perses_scorers` and :mod:`.lomap_scorers` modules provide scoring
 functions used for both atom mappings and transformations. A scorer takes

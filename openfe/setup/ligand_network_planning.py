@@ -1,5 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+"""
+Functions for planning a :class:`LigandNetwork` from small molecules.
+"""
+
 import math
 from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
