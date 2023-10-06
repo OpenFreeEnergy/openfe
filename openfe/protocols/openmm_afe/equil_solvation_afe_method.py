@@ -32,6 +32,7 @@ import logging
 from collections import defaultdict
 import gufe
 from gufe.components import Component
+import itertools
 import numpy as np
 from openff.units import unit
 from typing import Dict, Optional
@@ -42,7 +43,7 @@ from gufe import (
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteTransformSettings, SystemSettings,
+    AbsoluteSolvationSettings, SystemSettings,
     SolvationSettings, AlchemicalSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings,
@@ -54,8 +55,8 @@ from openfe.utils import without_oechem_backend, log_system_probe
 logger = logging.getLogger(__name__)
 
 
-class AbsoluteTransformProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a AbsoluteTransform
+class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
+    """Dict-like container for the output of a AbsoluteSolventTransform
 
     TODO
     ----
@@ -161,8 +162,8 @@ class AbsoluteTransformProtocolResult(gufe.ProtocolResult):
 
 
 class AbsoluteSolvationProtocol(gufe.Protocol):
-    result_cls = AbsoluteTransformProtocolResult
-    _settings: AbsoluteTransformSettings
+    result_cls = AbsoluteSolvationProtocolResult
+    _settings: AbsoluteSolvationSettings
 
     @classmethod
     def _default_settings(cls):
@@ -177,7 +178,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         Settings
           a set of default settings
         """
-        return AbsoluteTransformSettings(
+        return AbsoluteSolvationSettings(
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
@@ -186,7 +187,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             solvent_system_settings=SystemSettings(),
             vacuum_system_settings=SystemSettings(nonbonded_method='nocutoff'),
             alchemical_settings=AlchemicalSettings(),
-            alchemsampler_settings=AlchemicalSamplerSettings(),
+            alchemsampler_settings=AlchemicalSamplerSettings(
+                n_replicas=24,
+            ),
             solvation_settings=SolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -210,7 +213,10 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
     ) -> None:
         """
         A solvent transformation is defined (in terms of gufe components)
-        as starting from a ligand in solvent and ending up just in solvent.
+        as starting from one or more ligands in solvent and
+        ending up in a state with one less ligand.
+
+        No protein components are allowed.
 
         Parameters
         ----------
@@ -222,19 +228,28 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          If stateB contains anything else but a SolventComponent.
-          If stateA contains a ProteinComponent
+          If stateA or stateB contains a ProteinComponent
+          If there is no SolventComponent in either stateA or stateB
         """
-        if ((len(stateB) != 1) or
-           (not isinstance(stateB.values()[0], SolventComponent))):
-            errmsg = "Only a single SolventComponent is allowed in stateB"
-            raise ValueError(errmsg)
-
-        for comp in stateA.values():
+        # Check that there are no protein components
+        for comp in itertools.chain(stateA.values(), stateB.values()):
             if isinstance(comp, ProteinComponent):
-                errmsg = ("Protein components are not allow for "
+                errmsg = ("Protein components are not allowed for "
                           "absolute solvation free energies")
                 raise ValueError(errmsg)
+
+        # check that there is a solvent component
+        if not any(
+            isinstance(comp, SolventComponent) for comp in stateA.values()
+        ):
+            errmsg = "No SolventComponent found in stateA"
+            raise ValueError(errmsg)
+
+        if not any(
+            isinstance(comp, SolventComponent) for comp in stateB.values()
+        ):
+            errmsg = "No SolventComponent found in stateB"
+            raise ValueError(errmsg)
 
     @staticmethod
     def _validate_alchemical_components(
@@ -274,6 +289,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         if len(alchemical_components['stateA']) > 1:
             errmsg = ("More than one alchemical components is not supported "
                       "for absolute solvation free energies")
+            raise ValueError(errmsg)
 
         # Crash out if any of the alchemical components are not
         # SmallMoleculeComponent
@@ -295,7 +311,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate components and get alchemical components
-        self._validate_solvation_endstates(stateA, stateB)
+        self._validate_solvent_endstates(stateA, stateB)
         alchem_comps = system_validation.get_alchemical_components(
             stateA, stateB,
         )
@@ -307,7 +323,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, solv_nonbonded_method)
         # Gas phase is always gas phase
-        assert vac_nonbonded_method.lower() != 'pme'
+        if vac_nonbonded_method.lower() != 'nocutoff':
+            errmsg = ("Only the nocutoff nonbonded_method is supported for "
+                      f"vacuum calculations, {vac_nonbonded_method} was "
+                      "passed")
+            raise ValueError(errmsg)
 
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
@@ -383,10 +403,6 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
 
         _, prot_comp, small_mols = system_validation.get_components(stateA)
 
-        # Should we validate prot_comp here? What if we want to do
-        # a gas phase simulation of a small peptide?
-        # Keeping it flexible for now!
-
         # Note our input state will contain a solvent, we ``None`` that out
         # since this is the gas phase unit.
         return alchem_comps, None, prot_comp, small_mols
@@ -418,14 +434,16 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
-        settings['engine_setttings'] = prot_settings.engine_settings
+        settings['engine_settings'] = prot_settings.engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
 
         settings_validation.validate_timestep(
-            settings['forcefield_settings'].hyrodgen_mass,
+            settings['forcefield_settings'].hydrogen_mass,
             settings['integrator_settings'].timestep
         )
+
+        return settings
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
@@ -465,13 +483,11 @@ class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
 
-        # Should we validate prot_comp here? What if we want to do
-        # a solvent phase simulation of a small peptide?
-        # Keeping it flexible for now!
-
         # We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
+        # Similarly we don't need to check prot_comp since that's also
+        # disallowed on create
         return alchem_comps, solv_comp, prot_comp, small_mols
 
     def _handle_settings(self):
@@ -501,14 +517,16 @@ class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
-        settings['engine_setttings'] = prot_settings.engine_settings
+        settings['engine_settings'] = prot_settings.engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
 
         settings_validation.validate_timestep(
-            settings['forcefield_settings'].hyrodgen_mass,
+            settings['forcefield_settings'].hydrogen_mass,
             settings['integrator_settings'].timestep
         )
+
+        return settings
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,

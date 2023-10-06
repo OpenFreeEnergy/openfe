@@ -73,7 +73,6 @@ from ..openmm_utils import (
     settings_validation, system_creation,
     multistate_analysis
 )
-from openfe.utils import without_oechem_backend, log_system_probe
 
 logger = logging.getLogger(__name__)
 
@@ -183,13 +182,13 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         """
         integrator = openmm.VerletIntegrator(0.001)
         context = openmm.Context(
-                system, integrator,
-                openmm.Platform.getPlatformByName('CPU'),
+            system, integrator,
+            openmm.Platform.getPlatformByName('CPU'),
         )
         context.setPositions(positions)
         # Do a quick 100 steps minimization, usually avoids NaNs
         openmm.LocalEnergyMinimizer.minimize(
-                context, maxIterations=100
+            context, maxIterations=100
         )
         state = context.getState(getPositions=True)
         minimized_positions = state.getPositions(asNumpy=True)
@@ -231,13 +230,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
         Note
         ----
-        Must be implemented in child class.
-
-        To move:
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
-        # Get the relevant solvent & protein components & openff molecules
-        solvent_comp, protein_comp, off_mols = self._parse_components(stateA)
+        Must be implemented in the child class.
         """
         raise NotImplementedError
 
@@ -259,11 +252,9 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
         This method should also add various validation checks as necessary.
 
-        # a. Validation checks
-        settings_validation.validate_timestep(
-            settings.forcefield_settings.hydrogen_mass,
-            settings.integrator_settings.timestep
-        )
+        Note
+        ----
+        Must be implemented in the child class.
         """
         raise NotImplementedError
 
@@ -294,6 +285,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         system_generator = system_creation.get_system_generator(
             forcefield_settings=settings['forcefield_settings'],
             thermo_settings=settings['thermo_settings'],
+            system_settings=settings['system_settings'],
             cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
@@ -381,10 +373,10 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         -------
         topology : app.Topology
           Topology object describing the parameterized system
-        positionns : openmm.unit.Quantity
-          Positions of the system.
         system : openmm.System
           An OpenMM System of the alchemical system.
+        positionns : openmm.unit.Quantity
+          Positions of the system.
         """
         topology = system_modeller.getTopology()
         # roundtrip positions to remove vec3 issues
@@ -393,7 +385,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             system_modeller.topology,
             molecules=[s.to_openff() for s in smc_components]
         )
-        return topology, positions, system
+        return topology, system, positions
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
@@ -525,8 +517,8 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         """
         alchemical_state = AlchemicalState.from_system(alchemical_system)
         # Set up the system constants
-        temperature = settings.thermo_settings.temperature
-        pressure = settings.thermo_settings.pressure
+        temperature = settings['thermo_settings'].temperature
+        pressure = settings['thermo_settings'].pressure
         constants = dict()
         constants['temperature'] = ensure_quantity(temperature, 'openmm')
         if solvent_comp is not None:
@@ -534,7 +526,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
         cmp_states = create_thermodynamic_state_protocol(
             alchemical_system, protocol=lambdas,
-            consatnts=constants, composable_states=[alchemical_state],
+            constants=constants, composable_states=[alchemical_state],
         )
 
         sampler_state = SamplerState(positions=positions)
@@ -587,9 +579,9 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         if len(selection_indices) > 0:
             traj = mdt.Trajectory(
                 positions[selection_indices, :],
-                mdt_top,
+                mdt_top.subset(selection_indices),
             )
-            traj.savepdb(
+            traj.save_pdb(
                 self.shared_basepath / simulation_settings.output_structure
             )
 
@@ -618,11 +610,11 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         )
 
         energy_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_line=None, platform=platform,
+            capacity=None, time_to_live=None, platform=platform,
         )
 
         sampler_context_cache = openmmtools.cache.ContextCache(
-            capacity=None, time_to_line=None, platform=platform,
+            capacity=None, time_to_live=None, platform=platform,
         )
 
         return energy_context_cache, sampler_context_cache
@@ -812,7 +804,8 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
             return None
 
-    def run(self, dry=False, verbose=True, basepath=None) -> Dict[str, Any]:
+    def run(self, dry=False, verbose=True,
+            scratch_basepath=None, shared_basepath=None) -> Dict[str, Any]:
         """Run the absolute free energy calculation.
 
         Parameters
@@ -844,7 +837,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
           the stateA ChemicalSystem
         """
         # 0. Generaly preparation tasks
-        self._prepare(verbose, basepath)
+        self._prepare(verbose, scratch_basepath, shared_basepath)
 
         # 1. Get components
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
@@ -863,7 +856,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
 
         # 5. Get OpenMM topology, positions and system
         omm_topology, omm_system, positions = self._get_omm_objects(
-            system_generator, system_modeller, smc_comps
+            system_modeller, system_generator, smc_comps
         )
 
         # 6. Pre-minimize System (Test + Avoid NaNs)
@@ -876,27 +869,27 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         self._add_restraints(omm_system, omm_topology, settings)
 
         # 9. Get alchemical system
-        alchem_system, alchem_factory = self._get_alchemical_system(
+        alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
             omm_topology, omm_system, comp_resids, alchem_comps
         )
 
         # 10. Get compound and sampler states
-        cmp_states, sampler_states = self._get_states(
+        sampler_states, cmp_states = self._get_states(
             alchem_system, positions, settings,
             lambdas, solv_comp
         )
 
         # 11. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
-            omm_topology, settings['simulation_setttings'],
-            positions,
+            omm_topology, positions,
+            settings['simulation_settings'],
         )
 
         # Wrap in try/finally to avoid memory leak issues
         try:
             # 12. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
-                    settings['engine_settings']
+                settings['engine_settings']
             )
 
             # 13. Get integrator
@@ -945,18 +938,3 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             }
         else:
             return {'debug': {'sampler': sampler}}
-
-    def _execute(
-        self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
-
-        return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            **outputs
-        }

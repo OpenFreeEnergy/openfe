@@ -55,7 +55,7 @@ class AlchemicalSettings(SettingsBaseModel):
         return v
 
 
-class AbsoluteTransformSettings(Settings):
+class AbsoluteSolvationSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 
@@ -66,7 +66,8 @@ class AbsoluteTransformSettings(Settings):
     """Settings for thermodynamic parameters"""
 
     # Things for creating the systems
-    system_settings: SystemSettings
+    vacuum_system_settings: SystemSettings
+    solvent_system_settings: SystemSettings
     """
     Simulation system settings including the
     long-range non-bonded methods.
@@ -99,7 +100,8 @@ class AbsoluteTransformSettings(Settings):
     """
 
     # Simulation run settings
-    simulation_settings: SimulationSettings
+    vacuum_simulation_settings: SimulationSettings
+    solvent_simulation_settings: SimulationSettings
     """
     Simulation control settings, including simulation lengths and
     record-keeping.
