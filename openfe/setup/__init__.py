@@ -21,11 +21,11 @@ mappings automatically by optimising over a scorer function
 from :mod:`.lomap_scorers` or :mod:`.perses_scorers`; these and other atom
 mapping utilities are found in the :mod:`.atom_mapping` module.
 
-An ``AlchemicalNetwork`` additionally needs a :class:`Protocol<openfe.protocols.Protocol>`
-for each transformation, though it usually uses
-the same protocol for all transformations. A protocol describes and implements
-the process of computing the free energy from the two chemical systems
-described by a transformation.
+An ``AlchemicalNetwork`` additionally needs
+a :class:`Protocol<openfe.protocols.Protocol>` for each transformation, though
+it usually uses the same protocol for all transformations. A protocol describes
+and implements the process of computing the free energy from the two chemical
+systems described by a transformation.
 
 """
 

@@ -16,7 +16,7 @@ from importlib.metadata import version
 from packaging.version import parse
 
 
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath("../"))
 
 
 os.environ["SPHINX"] = "True"
@@ -123,13 +123,13 @@ autodoc_class_signature = "mixed"
 python_use_unqualified_type_names = True
 
 
-autodoc_pydantic_model_show_json=False
-autodoc_pydantic_model_show_field_summary=False
-autodoc_pydantic_model_show_config_member=False
-autodoc_pydantic_model_show_config_summary=False
-autodoc_pydantic_model_show_validator_members=False
-autodoc_pydantic_model_show_validator_summary=False
-autodoc_pydantic_field_list_validators=False
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_model_show_field_summary = False
+autodoc_pydantic_model_show_config_member = False
+autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_show_validator_members = False
+autodoc_pydantic_model_show_validator_summary = False
+autodoc_pydantic_field_list_validators = False
 
 # -- Options for HTML output -------------------------------------------------
 
