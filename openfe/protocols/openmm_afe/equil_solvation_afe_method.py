@@ -191,7 +191,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 n_replicas=24,
             ),
             solvation_settings=SolvationSettings(),
-            engine_settings=OpenMMEngineSettings(),
+            vacuum_engine_settings=OpenMMEngineSettings(),
+            solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             solvent_simulation_settings=SimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
@@ -434,7 +435,7 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
-        settings['engine_settings'] = prot_settings.engine_settings
+        settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
 
@@ -517,7 +518,7 @@ class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
-        settings['engine_settings'] = prot_settings.engine_settings
+        settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
 

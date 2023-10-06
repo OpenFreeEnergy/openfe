@@ -67,10 +67,14 @@ class AbsoluteSolvationSettings(Settings):
 
     # Things for creating the systems
     vacuum_system_settings: SystemSettings
+    """
+    Simulation system settings including the
+    long-range non-bonded methods for the vacuum transformation.
+    """
     solvent_system_settings: SystemSettings
     """
     Simulation system settings including the
-    long-range non-bonded methods.
+    long-range non-bonded methods for the solvent transformation.
     """
     solvation_settings: SolvationSettings
     """Settings for solvating the system."""
@@ -87,9 +91,15 @@ class AbsoluteSolvationSettings(Settings):
     """
 
     # MD Engine things
-    engine_settings: OpenMMEngineSettings
+    vacuum_engine_settings: OpenMMEngineSettings
     """
-    Settings specific to the OpenMM engine, such as the compute platform.
+    Settings specific to the OpenMM engine, such as the compute platform
+    for the vacuum transformation.
+    """
+    solvent_engine_settings: OpenMMEngineSettings
+    """
+    Settings specific to the OpenMM engine, such as the compute platform
+    for the solvent transformation.
     """
 
     # Sampling State defining things
@@ -101,8 +111,12 @@ class AbsoluteSolvationSettings(Settings):
 
     # Simulation run settings
     vacuum_simulation_settings: SimulationSettings
+    """
+    Simulation control settings, including simulation lengths and
+    record-keeping for the vacuum transformation.
+    """
     solvent_simulation_settings: SimulationSettings
     """
     Simulation control settings, including simulation lengths and
-    record-keeping.
+    record-keeping for the solvent transformation.
     """

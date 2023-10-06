@@ -761,7 +761,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
                 self.logger.info("minimizing systems")
 
             sampler.minimize(
-                max_iterations=settings['sim_settings'].minimization_steps
+                max_iterations=settings['simulation_settings'].minimization_steps
             )
 
             # equilibrate
