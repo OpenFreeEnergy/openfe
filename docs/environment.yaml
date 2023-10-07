@@ -10,8 +10,7 @@ dependencies:
 - openmm
 - packaging
 - plugcli
-- pydata-sphinx-theme
-- python=3.9
+- python=3.10
 - sphinx<7
 - sphinx-click
 - tqdm
@@ -21,6 +20,7 @@ dependencies:
   - sphinx-toolbox
   - sphinx<7
   - git+https://github.com/OpenFreeEnergy/gufe@main
+  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@main
 
 # These are added automatically by RTD, so we include them here
 # for a consistent environment.
