@@ -69,7 +69,8 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
-        if any(len(pur_list) > 2 for pur_list in self.data.values()):
+        if any(len(pur_list) > 2 for pur_list
+               in itertools.chain(self.data['solvent'].values(), self.data['vacuum'].values())):
             raise NotImplementedError("Can't stitch together results yet")
 
     def get_vacuum_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
@@ -84,12 +85,11 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         """
         dGs = []
 
-        for pus in self.data.values():
-            if pus[0].outputs['simtype'] == 'vacuum':
-                dGs.append((
-                    pus[0].outputs['unit_estimate'],
-                    pus[0].outputs['unit_estimate_error']
-                ))
+        for pus in self.data['vacuum'].values():
+            dGs.append((
+                pus[0].outputs['unit_estimate'],
+                pus[0].outputs['unit_estimate_error']
+            ))
 
         return dGs
 
@@ -105,12 +105,11 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         """
         dGs = []
 
-        for pus in self.data.values():
-            if pus[0].outputs['simtype'] == 'solvent':
-                dGs.append((
-                    pus[0].outputs['unit_estimate'],
-                    pus[0].outputs['unit_estimate_error']
-                ))
+        for pus in self.data['solvent'].values():
+            dGs.append((
+                pus[0].outputs['unit_estimate'],
+                pus[0].outputs['unit_estimate_error']
+            ))
 
         return dGs
 
@@ -131,8 +130,8 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
             return np.average(dGs) * u
 
-        vac_dG = _get_average(self.get_vacuum_individual_estimates(self))
-        solv_dG = _get_average(self.get_solvent_individual_estimates(self))
+        vac_dG = _get_average(self.get_vacuum_individual_estimates())
+        solv_dG = _get_average(self.get_solvent_individual_estimates())
 
         return vac_dG - solv_dG
 
@@ -154,8 +153,8 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
             return np.std(dGs) * u
 
-        vac_err = _get_stdev(self.get_vacuum_individual_estimates(self))
-        solv_err = _get_stdev(self.get_solvent_individual_estimates(self))
+        vac_err = _get_stdev(self.get_vacuum_individual_estimates())
+        solv_err = _get_stdev(self.get_solvent_individual_estimates())
 
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
@@ -365,20 +364,29 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
-        unsorted_repeats = defaultdict(list)
+        unsorted_solvent_repeats = defaultdict(list)
+        unsorted_vacuum_repeats = defaultdict(list)
         for d in protocol_dag_results:
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
                 if not pu.ok():
                     continue
-                unsorted_repeats[pu.outputs['repeat_id']].append(pu)
+                if pu.outputs['simtype'] == 'solvent':
+                    unsorted_solvent_repeats[pu.outputs['repeat_id']].append(pu)
+                else:
+                    unsorted_vacuum_repeats[pu.outputs['repeat_id']].append(pu)
 
-        repeats: dict[str, list[gufe.ProtocolUnitResult]] = {}
-        for k, v in unsorted_repeats.items():
-            repeats[str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
+        repeats: dict[str, list[gufe.ProtocolUnitResult]] = {
+            'solvent': {}, 'vacuum': {},
+        }
+        for k, v in unsorted_solvent_repeats.items():
+            repeats['solvent'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
+
+        for k, v in unsorted_vacuum_repeats.items():
+            repeats['vacuum'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
         return repeats
 
 
