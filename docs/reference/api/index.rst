@@ -8,6 +8,7 @@ OpenFE API Reference
 
 .. automodule:: openfe
     :no-members:
+    :noindex:
 
     .. rubric:: Modules
 
