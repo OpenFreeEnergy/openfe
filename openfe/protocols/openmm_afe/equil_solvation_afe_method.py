@@ -58,13 +58,14 @@ logger = logging.getLogger(__name__)
 class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a AbsoluteSolventTransform
 
-    TODO
+    NOTE
     ----
-    * Add in methods to retreive forward/backwards analyses
-    * Add in methods to retreive the overlap matrices
-    * Add in method to get replica transition stats
-    * Add in method to get replica states
-    * Add in method to get equilibration and production iterations
+    The following items have yet to be implemented:
+    * Methods to retreive forward/backwards analyses
+    * Methods to retreive the overlap matrices
+    * Method to get replica transition stats
+    * Method to get replica states
+    * Method to get equilibration and production iterations
     """
     def __init__(self, **data):
         super().__init__(**data)
