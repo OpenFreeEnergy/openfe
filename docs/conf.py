@@ -116,7 +116,7 @@ autodoc_preserve_defaults = True
 autodoc_inherit_docstrings = True
 autodoc_typehints_format = "short"
 # Fold the __init__ or __new__ methods' signature into class documentation
-autoclass_content = "class"
+autoclass_content = "both"
 autodoc_class_signature = "mixed"
 # Workaround for autodoc_typehints_format not working for attributes
 # see https://github.com/sphinx-doc/sphinx/issues/10290#issuecomment-1079740009

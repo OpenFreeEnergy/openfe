@@ -1,5 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+"""
+Functions from LOMAP for scoring atom mappings.
+"""
+
 from collections import defaultdict
 from lomap import dbmol as _dbmol
 from lomap import mcs as lomap_mcs

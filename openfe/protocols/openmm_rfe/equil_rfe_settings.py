@@ -80,6 +80,14 @@ class AlchemicalSettings(SettingsBaseModel):
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
+    """
+    Configuration object for ``RelativeHybridTopologyProtocol``
+
+    See Also
+    --------
+    openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol
+    """
+
     class Config:
         arbitrary_types_allowed = True
 

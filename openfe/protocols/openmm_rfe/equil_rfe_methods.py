@@ -309,6 +309,16 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
+    """
+    Relative free energy calculations with a hybrid topology in OpenMM.
+
+    See Also
+    --------
+    openfe.protocols
+    openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolSettings
+    openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolResult
+    openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit
+    """
     result_cls = RelativeHybridTopologyProtocolResult
     _settings: RelativeHybridTopologyProtocolSettings
 
