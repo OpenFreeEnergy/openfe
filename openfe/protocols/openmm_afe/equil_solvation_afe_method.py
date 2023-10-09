@@ -379,7 +379,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 else:
                     unsorted_vacuum_repeats[pu.outputs['repeat_id']].append(pu)
 
-        repeats: dict[str, list[gufe.ProtocolUnitResult]] = {
+        repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
             'solvent': {}, 'vacuum': {},
         }
         for k, v in unsorted_solvent_repeats.items():
