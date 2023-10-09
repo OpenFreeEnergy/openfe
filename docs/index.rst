@@ -68,7 +68,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card:: Relative Free Energy Protocol
         :img-top: _static/Rocket.svg
         :text-align: center
-        :link: reference/api/openmm_rfe
+        :link: reference/api/generated/openfe.protocols.openmm_rfe
         :link-type: doc
 
         Documentation for OpenFE's OpenMM-based Hybrid Topology Relative Free

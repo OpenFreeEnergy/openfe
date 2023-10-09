@@ -145,8 +145,8 @@ class ResultClient(_ResultContainer):
     def store_transformation(self, transformation):
         """Store a :class:`.Transformation`.
 
-        Parmeters
-        ---------
+        Parameters
+        ----------
         transformation: :class:`.Transformation`
             the transformation to store
         """

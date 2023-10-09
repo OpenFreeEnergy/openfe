@@ -20,7 +20,7 @@ DEFAULT_ANS_DIFFICULTY = {
     # Br to element
     35: {53: 0.85},
 }
-
+"""Default ``difficulty`` argument for :func:`.atomic_number_score`."""
 
 def ecr_score(mapping: LigandAtomMapping) -> float:
     """
