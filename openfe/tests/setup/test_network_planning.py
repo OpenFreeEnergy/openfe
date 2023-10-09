@@ -47,6 +47,20 @@ def test_radial_network(atom_mapping_basic_test_files, toluene_vs_others,
                for mapping in network.edges)
 
 
+def test_radial_network_self_central(toluene_vs_others):
+    # issue #544, include the central ligand in "ligands",
+    # shouldn't get self edge
+    ligs = [toluene_vs_others[0]] + toluene_vs_others[1]
+
+    with pytest.warns(UserWarning, match="The central_ligand"):
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=ligs, central_ligand=ligs[0],
+            mappers=openfe.setup.atom_mapping.LomapAtomMapper(), scorer=None
+        )
+
+    assert len(network.edges) == len(ligs) - 1
+
+
 def test_radial_network_with_scorer(toluene_vs_others):
     toluene, others = toluene_vs_others
 

@@ -53,7 +53,7 @@ from ..openmm_utils import (
     multistate_analysis
 )
 from . import _rfe_utils
-from ...utils import without_oechem_backend
+from ...utils import without_oechem_backend, log_system_probe
 
 logger = logging.getLogger(__name__)
 
@@ -198,16 +198,22 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
     def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
         """
         Get a list of forward and reverse analysis of the free energies
-        for each repeat using uncorrolated production samples.
+        for each repeat using uncorrelated production samples.
+
+        The returned dicts have keys:
+        'fractions' - the fraction of data used for this estimate
+        'forward_DGs', 'reverse_DGs' - for each fraction of data, the estimate
+        'forward_dDGs', 'reverse_dDGs' - for each estimate, the uncertainty
+
+        The 'fractions' values are a numpy array, while the other arrays are
+        Quantity arrays, with units attached.
 
         Returns
         -------
         forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
         """
-        forward_reverse = [
-            pus[0].outputs['_forward_and_reverse_energies']
-            for pus in self.data.values()
-        ]
+        forward_reverse = [pus[0].outputs['forward_and_reverse_energies']
+                           for pus in self.data.values()]
 
         return forward_reverse
 
@@ -227,17 +233,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
               state i in state j
         """
         # Loop through and get the repeats and get the matrices
-        overlap_stats = [
-            pus[0].outputs['_unit_mbar_overlap']
-            for pus in self.data.values()
-        ]
+        overlap_stats = [pus[0].outputs['unit_mbar_overlap']
+                         for pus in self.data.values()]
 
         return overlap_stats
 
     def get_replica_transition_statistics(self) -> list[dict[str, npt.NDArray]]:
-        """
-        Returns the replica lambda state transition statistics for each
-        repeat.
+        """The replica lambda state transition statistics for each repeat.
 
         Note
         ----
@@ -250,14 +252,12 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
           A list of dictionaries containing the following:
             * ``eigenvalues``: The sorted (descending) eigenvalues of the
               lambda state transition matrix
-            * ``matrix``: The transition matrix estimate of a replica switchin
+            * ``matrix``: The transition matrix estimate of a replica switching
               from state i to state j.
         """
         try:
-            repex_stats = [
-                pus[0].outputs['_replica_exchange_statistics']
-                for pus in self.data.values()
-            ]
+            repex_stats = [pus[0].outputs['replica_exchange_statistics']
+                           for pus in self.data.values()]
         except KeyError:
             errmsg = ("Replica exchange statistics were not found, "
                       "did you run a repex calculation?")
@@ -274,10 +274,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         replica_states : List[npt.NDArray]
           List of replica states for each repeat
         """
-        replica_states = [
-            pus[0].outputs['_replica_states']
-            for pus in self.data.values()
-        ]
+        replica_states = [pus[0].outputs['replica_states']
+                          for pus in self.data.values()]
 
         return replica_states
 
@@ -290,10 +288,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         equilibration_lengths : list[float]
         """
-        equilibration_lengths = [
-            pus[0].outputs['_equilibration_iterations']
-            for pus in self.data.values()
-        ]
+        equilibration_lengths = [pus[0].outputs['equilibration_iterations']
+                                 for pus in self.data.values()]
 
         return equilibration_lengths
 
@@ -306,10 +302,8 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         -------
         production_lengths : list[float]
         """
-        production_lengths = [
-            pus[0].outputs['_production_iterations']
-            for pus in self.data.values()
-        ]
+        production_lengths = [pus[0].outputs['production_iterations']
+                              for pus in self.data.values()]
 
         return production_lengths
 
@@ -832,9 +826,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
         with without_oechem_backend():
             outputs = self.run(scratch_basepath=ctx.scratch,
                                shared_basepath=ctx.shared)
+
 
         return {
             'repeat_id': self._inputs['repeat_id'],
