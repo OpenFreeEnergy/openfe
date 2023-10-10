@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import numpy.typing as npt
 from openff.units import unit
 from typing import Optional, Union
 
 
-def plot_lambda_transition_matrix(matrix: npt.NDArray) -> plt.Axes:
+def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     """
     Plot out a transition matrix.
 
@@ -17,7 +18,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> plt.Axes:
 
     Returns
     -------
-    ax : matplotlib.pyplot.Axes
+    ax : matplotlib.axes.Axes
       An Axes object to plot.
     """
     num_states = len(matrix)
@@ -79,7 +80,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> plt.Axes:
 def plot_convergence(
     forward_and_reverse: dict[str, Union[npt.NDArray, unit.Quantity]],
     units: unit.Quantity
-) -> plt.Axes:
+) -> Axes:
     """
     Plot a Reverse and Forward convergence analysis of the
     free energies.
@@ -95,7 +96,7 @@ def plot_convergence(
 
     Returns
     -------
-    ax : matplotlib.pyplot.Axes
+    ax : matplotlib.axes.Axes
       An Axes object to plot.
     """
     known_units = {
@@ -165,7 +166,7 @@ def plot_convergence(
 def plot_replica_timeseries(
     state_timeseries: npt.NDArray,
     equilibration_iterations: Optional[int] = None,
-) -> plt.Axes:
+) -> Axes:
     """
     Plot a the state timeseries of a set of replicas.
 
@@ -178,7 +179,7 @@ def plot_replica_timeseries(
 
     Returns
     -------
-    ax : matplotlib.pyplot.Axes
+    ax : matplotlib.axes.Axes
       An Axes object to plot.
     """
     num_states = len(state_timeseries.T)
