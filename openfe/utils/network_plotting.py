@@ -238,7 +238,7 @@ class EventHandler:
     selected : Optional[Union[Node, Edge]]
         Object selected by a mouse click (after mouse is up), or None if no
         object has been selected in the graph.
-    click_location : tuple[Optional[float], Optional[float]]
+    click_location : Optional[tuple[Optional[float], Optional[float]]]
         Cached location of the mousedown event, or None if mouse is up
     connections : List[int]
         list of IDs for connections to matplotlib canvas
@@ -247,7 +247,7 @@ class EventHandler:
         self.graph = graph
         self.active: Optional[Union[Node, Edge]] = None
         self.selected: Optional[Union[Node, Edge]] = None
-        self.click_location: tuple[Optional[float], Optional[float]] = None, None
+        self.click_location: Optional[tuple[Optional[float], Optional[float]]] = None
         self.connections: list[int] = []
 
     def connect(self, canvas: MPL_FigureCanvasBase):
@@ -319,7 +319,7 @@ class EventHandler:
             self.active.on_mouseup(event, self.graph)
 
         self.active = None
-        self.click_location = None, None
+        self.click_location = None
         self.graph.draw()
 
 
