@@ -237,7 +237,9 @@ def generate_minimal_redundant_network(
     mst_num: int = 2,
 ) -> LigandNetwork:
     """
-    Plan a network with as few edges as possible with maximum total score, 
+    Plan a network with a specified amount of redundancy for each node
+    
+    Creates a network with as few edges as possible with maximum total score, 
     ensuring that every node is connected to two edges to introduce 
     statistical redundancy.
 
