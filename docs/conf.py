@@ -125,17 +125,18 @@ myst_heading_anchors = 3
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "pydata_sphinx_theme"
+html_theme = "ofe_sphinx_theme"
 html_theme_options = {
     "logo": {"text": "OpenFE Documentation"},
     "icon_links": [
         {
-            "name": "Github",
+            "name": "GitHub",
             "url": "https://github.com/OpenFreeEnergy/openfe",
             "icon": "fa-brands fa-square-github",
             "type": "fontawesome",
         }
     ],
+    "accent_color": "DarkGoldenYellow",
 }
 html_logo = "_static/Squaredcircle.svg"
 
