@@ -34,8 +34,9 @@ import gufe
 from gufe.components import Component
 import itertools
 import numpy as np
+import numpy.typing as npt
 from openff.units import unit
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from typing import Any, Iterable
 
 from gufe import (
@@ -149,7 +150,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
 
-    def get_forward_and_reverse_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, units.Quantity]]]]:
+    def get_forward_and_reverse_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
         """
         Get a dictionary (keyed `solvent` and `vacuum`) with lists of the
         reverse and forward analysis of the free energies for each repeat
