@@ -14,17 +14,41 @@ from openfe.protocols.openmm_afe import (
 from openfe.protocols.openmm_utils import system_validation
 
 
-def test_create_default_protocol():
+@pytest.fixture()
+def default_settings():
+    return openmm_afe.AbsoluteSolvationProtocol.default_settings()
+
+
+def test_create_default_settings():
+    settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    assert settings
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': 0, 'vdw': 5},
+    {'elec': -2, 'vdw': 5},
+    {'elec': 5, 'vdw': -2},
+    {'elec': 5, 'vdw': 0},
+])
+def test_incorrect_window_settings(val, default_settings):
+    errmsg = "lambda steps must be positive"
+    alchem_settings = default_settings.alchemical_settings
+    with pytest.raises(ValueError, match=errmsg):
+        alchem_settings.lambda_elec_windows = val['elec']
+        alchem_settings.lambda_vdw_windows = val['vdw']
+
+
+def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings(),
+        settings=default_settings,
     )
     assert protocol
 
 
-def test_serialize_protocol():
+def test_serialize_protocol(default_settings):
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings(),
+        settings=default_settings,
     )
 
     ser = protocol.to_dict()
