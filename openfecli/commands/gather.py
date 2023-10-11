@@ -230,7 +230,7 @@ def gather(rootdir, output, report):
     The results reported depend on ``--report`` flag:
 
     \b
-    * 'dg' (default) reports the ligand, its absolute free energy and
+    * 'dg' (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
       from DDG replica averages and standard deviations.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
