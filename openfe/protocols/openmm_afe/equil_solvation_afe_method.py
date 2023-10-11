@@ -92,13 +92,12 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
             ))
-        
+
         for pus in self.data['solvent'].values():
             solv_dGs.append((
                 pus[0].outputs['unit_esitmate'],
                 pus[0].outputs['unit_estimate_error']
             ))
-
 
         return {'solvent': solv_dGs, 'vacuum': vac_dGs}
 
