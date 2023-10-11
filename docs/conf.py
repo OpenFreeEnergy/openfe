@@ -14,7 +14,12 @@ import os
 import sys
 from importlib.metadata import version
 from packaging.version import parse
+from pathlib import Path
+from inspect import cleandoc
 
+from git import Repo
+import nbsphinx
+import nbformat
 
 sys.path.insert(0, os.path.abspath("../"))
 
@@ -45,6 +50,9 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
     "docs._ext.sass",
+    "myst_parser",
+    "nbsphinx",
+    "nbsphinx_link",
     "sphinx.ext.mathjax",
 ]
 
@@ -84,7 +92,15 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_ext", "_sass"]
+exclude_patterns = [
+    "_build",
+    "**/Thumbs.db",
+    "**/.DS_Store",
+    "_ext",
+    "_sass",
+    "**/README.md",
+    "ExampleNotebooks",
+]
 
 autodoc_mock_imports = [
     "matplotlib",
@@ -131,6 +147,17 @@ autodoc_pydantic_model_show_validator_members = False
 autodoc_pydantic_model_show_validator_summary = False
 autodoc_pydantic_field_list_validators = False
 
+# Extensions for the myst parser
+myst_enable_extensions = [
+    "dollarmath",
+    "colon_fence",
+    "smartquotes",
+    "replacements",
+    "deflist",
+    "attrs_inline",
+]
+myst_heading_anchors = 3
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -176,3 +203,85 @@ html_css_files = [
 # custom-api.css is compiled from custom-api.scss
 sass_src_dir = "_sass"
 sass_out_dir = "_static/css"
+
+# Clone or update ExampleNotebooks
+example_notebooks_path = Path("ExampleNotebooks")
+try:
+    if example_notebooks_path.exists():
+        repo = Repo(example_notebooks_path)
+        repo.remote('origin').pull()
+    else:
+        repo = Repo.clone_from(
+            "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+            to_path=example_notebooks_path,
+        )
+except Exception as e:
+    from sphinx.util.logging import getLogger
+
+    filename = e.__traceback__.tb_frame.f_code.co_filename
+    lineno = e.__traceback__.tb_lineno
+    getLogger('sphinx.ext.openfe_git').warning(
+        f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
+    )
+
+nbsphinx_prolog = cleandoc(r"""
+    {%- set path = env.doc2path(env.docname, base="ExampleNotebooks") -%}
+    {%- set gh_repo = "OpenFreeEnergy/openfe" -%}
+    {%- set gh_branch = "main" -%}
+    {%- set path = env.doc2path(env.docname, base=None) -%}
+    {%- if path.endswith(".nblink") -%}
+        {%- set path = env.metadata[env.docname]["nbsphinx-link-target"] -%}
+    {%- endif -%}
+    {%- if path.startswith("docs/ExampleNotebooks") -%}
+        {%- set path = path.replace("docs/ExampleNotebooks/", "", 1) -%}
+        {%- set gh_repo = "OpenFreeEnergy/ExampleNotebooks" -%}
+    {%- endif -%}
+    {%- set gh_url =
+        "https://www.github.com/"
+        ~ gh_repo
+        ~ "/blob/"
+        ~ gh_branch
+        ~ "/"
+        ~ path
+    -%}
+    {%- set dl_url =
+        "https://raw.githubusercontent.com/"
+        ~ gh_repo
+        ~ "/"
+        ~ gh_branch
+        ~ "/"
+        ~ path
+    -%}
+    {%- set colab_url =
+        "http://colab.research.google.com/github/"
+        ~ gh_repo
+        ~ "/blob/"
+        ~ gh_branch
+        ~ "/"
+        ~ path
+    -%}
+
+    .. container:: ofe-top-of-notebook
+
+        .. button-link:: {{gh_url}}
+            :color: primary
+            :shadow:
+            :outline:
+
+            :octicon:`mark-github` View on GitHub
+
+        .. button-link:: {{dl_url}}
+            :color: primary
+            :shadow:
+            :outline:
+
+            :octicon:`download` Download Notebook
+
+        .. button-link:: {{colab_url}}
+            :color: primary
+            :shadow:
+            :outline:
+
+            :octicon:`rocket` Run in Colab
+
+""")

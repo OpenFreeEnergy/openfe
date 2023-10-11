@@ -164,7 +164,7 @@ def generate_maximal_network(
         total = len(nodes) * (len(nodes) - 1) // 2
         progress = functools.partial(tqdm, total=total, delay=1.5)
     elif progress is False:
-        progress = lambda x: x
+        def progress(x): return x
     # otherwise, it should be a user-defined callable
 
     mapping_generator = itertools.chain.from_iterable(
@@ -231,6 +231,74 @@ def generate_minimal_spanning_network(
                            f"{list(missing_nodes)}")
 
     return min_network
+
+
+def generate_minimal_redundant_network(
+    ligands: Iterable[SmallMoleculeComponent],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    scorer: Callable[[LigandAtomMapping], float],
+    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    mst_num: int = 2,
+) -> LigandNetwork:
+    """
+    Plan a network with a specified amount of redundancy for each node
+    
+    Creates a network with as few edges as possible with maximum total score, 
+    ensuring that every node is connected to two edges to introduce 
+    statistical redundancy.
+
+    Parameters
+    ----------
+    ligands : Iterable[SmallMoleculeComponent]
+      the ligands to include in the LigandNetwork
+    mappers : AtomMapper or Iterable[AtomMapper]
+      the AtomMapper(s) to use to propose mappings.  At least 1 required,
+      but many can be given, in which case all will be tried to find the
+      highest score edges
+    scorer : Scoring function
+      any callable which takes a LigandAtomMapping and returns a float
+    progress : Union[bool, Callable[Iterable], Iterable]
+      progress bar: if False, no progress bar will be shown. If True, use a
+      tqdm progress bar that only appears after 1.5 seconds. You can also
+      provide a custom progress bar wrapper as a callable.
+    mst_num: int
+      Minimum Spanning Tree number: the number of minimum spanning trees to
+      generate. If two, the second-best edges are included in the returned
+      network. If three, the third-best edges are also included, etc.
+    """
+    if isinstance(mappers, AtomMapper):
+        mappers = [mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
+
+    # First create a network with all the proposed mappings (scored)
+    network = generate_maximal_network(ligands, mappers, scorer, progress)
+
+    # Flip network scores so we can use minimal algorithm
+    g2 = nx.MultiGraph()
+    for e1, e2, d in network.graph.edges(data=True):
+        g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
+
+    # As in .generate_minimal_spanning_network(), use nx to get the minimal
+    # network. But now also remove those edges from the fully-connected
+    # network, then get the minimal network again. Add mappings from all
+    # minimal networks together.
+    mappings = []
+    for _ in range(mst_num):  # can increase range here for more redundancy
+        # get list from generator so that we don't adjust network by calling it:
+        current_best_edges = list(nx.minimum_spanning_edges(g2))
+
+        g2.remove_edges_from(current_best_edges)
+        for _, _, _, edge_data in current_best_edges:
+            mappings.append(edge_data['object'])
+
+    redund_network = LigandNetwork(mappings)
+    missing_nodes = set(network.nodes) - set(redund_network.nodes)
+    if missing_nodes:
+        raise RuntimeError("Unable to create edges to some nodes: "
+                           f"{list(missing_nodes)}")
+
+    return redund_network
 
 
 def generate_network_from_names(
@@ -357,7 +425,7 @@ def load_orion_network(
     KeyError
       If an unexpected line format is encountered.
     """
-    
+
     with open(network_file, 'r') as f:
         network_lines = [l.strip().split(' ') for l in f
                          if not l.startswith('#')]

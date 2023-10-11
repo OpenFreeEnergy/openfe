@@ -13,9 +13,13 @@ dependencies:
 - python=3.10
 - sphinx<7
 - sphinx-click
+- gitpython
 - tqdm
 - libsass
 - cinnabar
+- nbsphinx
+- nbsphinx-link
+- myst-parser
 - pip:
   - sphinx-design
   - sphinx-toolbox
