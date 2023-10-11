@@ -33,6 +33,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
    :member-order: bysource
+   :noindex:
 
 .. module:: openfe.protocols.openmm_afe.equil_afe_settings
 
@@ -46,6 +47,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: ThermoSettings
    :model-show-json: False
@@ -57,6 +59,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: AlchemicalSamplerSettings
    :model-show-json: False
@@ -68,6 +71,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: AlchemicalSettings
    :model-show-json: False
@@ -79,6 +83,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: OpenMMEngineSettings
    :model-show-json: False
@@ -90,6 +95,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: IntegratorSettings
    :model-show-json: False
@@ -101,6 +107,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: SimulationSettings
    :model-show-json: False
@@ -112,6 +119,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: SolvationSettings
    :model-show-json: False
@@ -123,6 +131,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
 
 .. autopydantic_model:: SystemSettings
    :model-show-json: False
@@ -134,3 +143,4 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
+   :noindex:
