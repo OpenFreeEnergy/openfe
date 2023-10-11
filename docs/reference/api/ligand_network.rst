@@ -49,6 +49,8 @@ Functions to load a :class:`.LigandNetwork` from equivalent classes in other pac
     load_orion_network
     load_fepplus_network
 
+.. _Atom Mappers:
+
 Atom Mappings
 -------------
 

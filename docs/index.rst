@@ -64,6 +64,14 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link-type: doc
 
         Reference guide on using the OpenFE CLI.
+
+    .. grid-item-card:: OpenFE Showcase
+        :img-top: _static/Showcase.svg
+        :text-align: center
+        :link: tutorials/showcase_notebook
+        :link-type: doc
+
+        Tutorial notebook showing the sorts of things OpenFE can do.
         
     .. grid-item-card:: Relative Free Energy Protocol
         :img-top: _static/Rocket.svg
