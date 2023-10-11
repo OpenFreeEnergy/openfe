@@ -230,10 +230,9 @@ def gather(rootdir, output, report):
     The results reported depend on ``--report`` flag:
 
     \b
-    * 'dg' (default) reports the ligand and the results as the maximum
-      likelihood estimate of the replica average absolute free energy,
-      and the associated uncertainty based on the standard deviation
-      between replciates.
+    * 'dg' (default) reports the ligand, its absolute free energy and
+      the associated uncertainty as the maximum likelihood estimate obtained
+      from DDG replica averages and standard deviations.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
     * 'dg-raw' reports the raw results, giving the leg (vacuum, solvent, or
