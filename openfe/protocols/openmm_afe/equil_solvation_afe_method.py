@@ -61,7 +61,6 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
     NOTE
     ----
     The following items have yet to be implemented:
-    * Methods to retreive forward/backwards analyses
     * Methods to retreive the overlap matrices
     * Method to get replica transition stats
     * Method to get replica states
@@ -74,45 +73,34 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
                in itertools.chain(self.data['solvent'].values(), self.data['vacuum'].values())):
             raise NotImplementedError("Can't stitch together results yet")
 
-    def get_vacuum_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+    def get_individual_estimates(self) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
         """
-        Return a list of tuples containing the individual free energy
-        estimates and associated MBAR errors for each repeat of the vacuum
-        calculation.
+        Return a dictionary (keyed as `solvent` and `vacuum`) with list
+        of tuples containing the individual free energy estimates and
+        associated MBAR errors for each repeat of the vacuum and solvent
+        calculations.
 
         Returns
         -------
-        dGs : list[tuple[unit.Quantity, unit.Quantity]]
+        dGs : dict[str, list[tuple[unit.Quantity, unit.Quantity]]]
         """
-        dGs = []
+        vac_dGs = []
+        solv_dGs = []
 
         for pus in self.data['vacuum'].values():
-            dGs.append((
+            vac_dGs.append((
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
             ))
-
-        return dGs
-
-    def get_solvent_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
-        """
-        Return a list of tuples containing the individual free energy
-        estimates and associated MBAR errors for each repeat of the solvent
-        calculation.
-
-        Returns
-        -------
-        dGs : list[tuple[unit.Quantity, unit.Quantity]]
-        """
-        dGs = []
-
+        
         for pus in self.data['solvent'].values():
-            dGs.append((
-                pus[0].outputs['unit_estimate'],
+            solv_dGs.append((
+                pus[0].outputs['unit_esitmate'],
                 pus[0].outputs['unit_estimate_error']
             ))
 
-        return dGs
+
+        return {'solvent': solv_dGs, 'vacuum': vac_dGs}
 
     def get_estimate(self):
         """Get the solvation free energy estimate for this calculation.
@@ -131,8 +119,9 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
             return np.average(dGs) * u
 
-        vac_dG = _get_average(self.get_vacuum_individual_estimates())
-        solv_dG = _get_average(self.get_solvent_individual_estimates())
+        individual_estimates = self.get_individual_estimates()
+        vac_dG = _get_average(individual_estimates['vacuum'])
+        solv_dG = _get_average(individual_estimates['solvent'])
 
         return vac_dG - solv_dG
 
@@ -154,11 +143,42 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
             return np.std(dGs) * u
 
-        vac_err = _get_stdev(self.get_vacuum_individual_estimates())
-        solv_err = _get_stdev(self.get_solvent_individual_estimates())
+        individual_estimates = self.get_individual_estimates()
+        vac_err = _get_stdev(individual_estimates['vacuum'])
+        solv_err = _get_stdev(individual_estimates['solvent'])
 
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
+
+    def get_forward_and_reverse_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, units.Quantity]]]]:
+        """
+        Get a dictionary (keyed `solvent` and `vacuum`) with lists of the
+        reverse and forward analysis of the free energies for each repeat
+        of the vacuum and solvent calculations using uncorrelated production
+        samples.
+
+        The returned forward and reverse analysis dictionaries have keys:
+        'fractions' - the fraction of data used for this estimate
+        'forward_DGs', 'reverse_DGs' - for each fraction of data, the estimate
+        'forward_dDGs', 'reverse_dDGs' - for each estimate, the uncertainty
+
+        The 'fractions' values are a numpy array, while the other arrays are
+        Quantity arrays, with units attached.
+
+        Returns
+        -------
+        forward_reverse : dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        """
+
+        forward_reverse = {}
+
+        for key in ['solvent', 'vacuum']:
+            forward_reverse[key] = [
+                pus[0].outputs['forward_and_reverse_energies']
+                for pus in self.data[key].values()
+            ]
+
+        return forward_reverse
 
 
 class AbsoluteSolvationProtocol(gufe.Protocol):
