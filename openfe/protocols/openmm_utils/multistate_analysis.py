@@ -74,7 +74,7 @@ class MultistateEquilFEAnalysis:
         # MBAR overlap matrix
         ax = plotting.plot_lambda_transition_matrix(self.free_energy_overlaps['matrix'])
         ax.set_title('MBAR overlap matrix')
-        ax.figure.savefig(
+        ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'mbar_overlap_matrix.png')
         )
 
@@ -83,7 +83,7 @@ class MultistateEquilFEAnalysis:
             self.forward_and_reverse_free_energies, self.units
         )
         ax.set_title('Forward and Reverse free energy convergence')
-        ax.figure.savefig(
+        ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'forward_reverse_convergence.png')
         )
 
@@ -92,7 +92,7 @@ class MultistateEquilFEAnalysis:
             self.replica_states, self.equilibration_iterations
         )
         ax.set_title('Change in replica state over time')
-        ax.figure.savefig(
+        ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'replica_state_timeseries.png')
         )
 
@@ -102,7 +102,7 @@ class MultistateEquilFEAnalysis:
                 self.replica_exchange_statistics['matrix']
             )
             ax.set_title('Replica exchange transition matrix')
-            ax.figure.savefig(
+            ax.figure.savefig(  # type: ignore
                 filepath / (filename_prefix + 'replica_exchange_matrix.png')
             )
 
