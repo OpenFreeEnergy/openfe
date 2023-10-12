@@ -39,6 +39,7 @@ from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProt
 PROTOCOL_GENERATOR = {
     RelativeHybridTopologyProtocol: EasyChemicalSystemGenerator,
 }
+"""Mapping from a RFE protocol to the corresponding system generator"""
 
 
 class RelativeAlchemicalNetworkPlanner(

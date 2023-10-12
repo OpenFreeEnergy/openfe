@@ -16,6 +16,7 @@ dependencies:
 - gitpython
 - tqdm
 - libsass
+- cinnabar
 - nbsphinx
 - nbsphinx-link
 - myst-parser

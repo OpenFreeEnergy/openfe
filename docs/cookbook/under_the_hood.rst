@@ -104,7 +104,7 @@ If you want to implement your own atom mapper or free energy procedure, or you w
             -
                 -
                     .. rst-class:: arrow-down
-                - :any:`executors`
+                - :any:`openfe.orchestration`
 
         - :class:`ProtocolDAGResult`
             A completed transformation.

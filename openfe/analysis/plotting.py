@@ -1,5 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+"""
+Best-practices graphs for visualising free energy results.
+"""
+
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import numpy.typing as npt
