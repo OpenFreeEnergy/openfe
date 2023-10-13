@@ -556,8 +556,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
         self.logger.info("Parameterizing molecules")
-        for mol in chain(off_small_mols['stateA'], off_small_mols['stateB'],
-                         *off_small_mols['both']):
+        for mol in chain([off_small_mols['stateA'], off_small_mols['stateB'],
+                         *off_small_mols['both']]):
             # robustly calculate partial charges;
             try:
                 # try and follow official spec method
@@ -597,8 +597,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # a. get the topology
         stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
-            mapping.componentB.to_openff().to_topology().to_openmm(),
-            exclude_resids=comp_resids[mapping.componentA],
+            off_small_mols['stateB'].to_topology().to_openmm(),
+            exclude_resids=comp_resids[mapping.componentA],  # TODO: Fix this
         )
 
         # b. get a list of small molecules for stateB
