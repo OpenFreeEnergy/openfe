@@ -22,7 +22,7 @@ import logging
 from collections import defaultdict
 import uuid
 import warnings
-
+from itertools import chain
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
@@ -538,26 +538,43 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             has_solvent=solvent_comp is not None,
         )
 
+        # workaround for conformer generation failures
+        # see openfe issue #576
+        # calculate partial charges manually if not already given
+        # convert to OpenFF here,
+        # and keep the molecule around to maintain the partial charges
+        off_small_mols = {
+            'stateA': mapping.componentA.to_openff(),
+            'stateB': mapping.componentB.to_openff(),
+            'both': [m.to_openff() for m in small_mols
+                     if (m != mapping.componentA and m != mapping.componentB)]
+        }
+
         # b. force the creation of parameters
         # This is necessary because we need to have the FF generated ahead of
         # solvating the system.
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
         self.logger.info("Parameterizing molecules")
-        for comp in small_mols:
-            offmol = comp.to_openff()
-            system_generator.create_system(offmol.to_topology().to_openmm(),
-                                           molecules=[offmol])
-            if comp == mapping.componentA:
-                molB = mapping.componentB.to_openff()
-                system_generator.create_system(molB.to_topology().to_openmm(),
-                                               molecules=[molB])
+        for mol in chain(off_small_mols['stateA'], off_small_mols['stateB'],
+                         *off_small_mols['both']):
+            # robustly calculate partial charges;
+            try:
+                # try and follow official spec method
+                mol.assign_partial_charges('am1bcc')
+            except ValueError:  # this is what a confgen failure yields
+                # but fallback to using existing conformer
+                mol.assign_partial_charges('am1bcc',
+                                           use_conformers=mol.conformers)
+
+            system_generator.create_system(mol.to_topology().to_openmm(),
+                                           molecules=[mol])
 
         # c. get OpenMM Modeller + a dictionary of resids for each component
         stateA_modeller, comp_resids = system_creation.get_omm_modeller(
             protein_comp=protein_comp,
             solvent_comp=solvent_comp,
-            small_mols=small_mols,
+            small_mols=[off_small_mols['stateA']] + off_small_mols['both'],
             omm_forcefield=system_generator.forcefield,
             solvent_settings=solvation_settings,
         )
@@ -572,7 +589,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # e. create the stateA System
         stateA_system = system_generator.create_system(
             stateA_modeller.topology,
-            molecules=[s.to_openff() for s in small_mols],
+            molecules=[off_small_mols['stateA']] + off_small_mols['both'],
         )
 
 
@@ -585,14 +602,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # b. get a list of small molecules for stateB
-        off_mols_stateB = [mapping.componentB.to_openff(),]
-        for comp in small_mols:
-            if comp != mapping.componentA:
-                off_mols_stateB.append(comp.to_openff())
-
         stateB_system = system_generator.create_system(
             stateB_topology,
-            molecules=off_mols_stateB,
+            molecules=[off_small_mols['stateB']] + off_small_mols['both']
         )
 
         #  c. Define correspondence mappings between the two systems
