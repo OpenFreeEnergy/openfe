@@ -592,13 +592,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             molecules=[off_small_mols['stateA']] + off_small_mols['both'],
         )
 
-
         # 2. Get stateB system
         # a. get the topology
         stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
             off_small_mols['stateB'].to_topology().to_openmm(),
-            exclude_resids=comp_resids[mapping.componentA],  # TODO: Fix this
+            exclude_resids=comp_resids[off_small_mols['stateA']],
         )
 
         # b. get a list of small molecules for stateB
@@ -610,7 +609,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
             mapping.componentA_to_componentB,
-            stateA_system, stateA_topology, comp_resids[mapping.componentA],
+            stateA_system, stateA_topology, comp_resids[off_small_mols['stateA']],
             stateB_system, stateB_topology, stateB_alchem_resids,
             # These are non-optional settings for this method
             fix_constraints=True,
@@ -620,7 +619,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
-            insert_positions=ensure_quantity(mapping.componentB.to_openff().conformers[0], 'openmm'),
+            insert_positions=ensure_quantity(off_small_mols['stateB'].conformers[0], 'openmm'),
         )
 
         # 3. Create the hybrid topology
