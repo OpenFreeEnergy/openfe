@@ -16,3 +16,10 @@ OUTPUT_DIR = Option(
     getter=get_dir,
     type=click.Path(file_okay=False, resolve_path=True),
 )
+
+NEW_STORAGE_OUTPUT = Option(
+    "--new-storage",
+    help="use the new storage",
+    is_flag=True,
+    hidden=True,
+)

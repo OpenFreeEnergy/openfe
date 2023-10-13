@@ -4,6 +4,6 @@
 from .mol import MOL
 from .mapper import MAPPER
 from .output import OUTPUT_FILE_AND_EXT
-from .output_dir import OUTPUT_DIR
+from .output_dir import OUTPUT_DIR, NEW_STORAGE_OUTPUT
 from .protein import PROTEIN
 from .molecules import MOL_DIR, COFACTORS
