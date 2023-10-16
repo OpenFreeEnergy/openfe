@@ -206,7 +206,8 @@ def test_dry_run_vac_benzene(benzene_modifications,
         'solvent': SolventComponent(),
     })
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first vacuum unit
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
@@ -247,7 +248,8 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
         'solvent': SolventComponent(),
     })
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
@@ -297,7 +299,8 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
         'solvent': SolventComponent(),
     })
 
-    # create DAG from protocol and take first (and only) work unit from within
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
@@ -331,7 +334,6 @@ def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
         'solvent': SolventComponent(),
     })
 
-    # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
@@ -363,7 +365,6 @@ def test_high_timestep(benzene_modifications, tmpdir):
         'solvent': SolventComponent(),
     })
 
-    # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
