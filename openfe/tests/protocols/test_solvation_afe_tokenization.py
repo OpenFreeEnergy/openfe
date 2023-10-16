@@ -9,8 +9,6 @@ import pytest
 """
 todo:
 - AbsoluteSolvationProtocolResult
-- AbsoluteSolvationProtocol
-- AbsoluteSolvationProtocolUnit
 """
 
 @pytest.fixture

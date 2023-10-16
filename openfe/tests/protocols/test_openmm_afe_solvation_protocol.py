@@ -9,18 +9,19 @@ import gufe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
-    AbsoluteSolventTransformUnit, AbsoluteVacuumTransformUnit
+    AbsoluteSolventTransformUnit, AbsoluteVacuumTransformUnit,
+    AbsoluteSolvationProtocol,
 )
 from openfe.protocols.openmm_utils import system_validation
 
 
 @pytest.fixture()
 def default_settings():
-    return openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    return AbsoluteSolvationProtocol.default_settings()
 
 
 def test_create_default_settings():
-    settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    settings = AbsoluteSolvationProtocol.default_settings()
     assert settings
 
 
@@ -40,19 +41,19 @@ def test_incorrect_window_settings(val, default_settings):
 
 def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
+    protocol = AbsoluteSolvationProtocol(
         settings=default_settings,
     )
     assert protocol
 
 
 def test_serialize_protocol(default_settings):
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
+    protocol = AbsoluteSolvationProtocol(
         settings=default_settings,
     )
 
     ser = protocol.to_dict()
-    ret = openmm_afe.AbsoluteSolvationProtocol.from_dict(ser)
+    ret = AbsoluteSolvationProtocol.from_dict(ser)
     assert protocol == ret
 
 
@@ -71,10 +72,8 @@ def test_validate_solvent_endstates_protcomp(
         'solvent': SolventComponent(),
     })
 
-    func = openmm_afe.AbsoluteSolvationProtocol._validate_solvent_endstates
-
     with pytest.raises(ValueError, match="Protein components are not allowed"):
-        comps = func(stateA, stateB)
+        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_solvent_endstates_nosolvcomp_stateA(
@@ -90,12 +89,10 @@ def test_validate_solvent_endstates_nosolvcomp_stateA(
         'solvent': SolventComponent(),
     })
 
-    func = openmm_afe.AbsoluteSolvationProtocol._validate_solvent_endstates
-
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateA"
     ):
-        comps = func(stateA, stateB)
+        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_solvent_endstates_nosolvcomp_stateB(
@@ -111,12 +108,10 @@ def test_validate_solvent_endstates_nosolvcomp_stateB(
         'phenol': benzene_modifications['phenol'],
     })
 
-    func = openmm_afe.AbsoluteSolvationProtocol._validate_solvent_endstates
-
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateB"
     ):
-        comps = func(stateA, stateB)
+        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 def test_validate_alchem_comps_appearingB(benzene_modifications):
     stateA = ChemicalSystem({
@@ -130,10 +125,8 @@ def test_validate_alchem_comps_appearingB(benzene_modifications):
 
     alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
 
-    func = openmm_afe.AbsoluteSolvationProtocol._validate_alchemical_components
-
     with pytest.raises(ValueError, match='Components appearing in state B'):
-        func(alchem_comps)
+        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
 
 
 def test_validate_alchem_comps_multi(benzene_modifications):
@@ -151,10 +144,8 @@ def test_validate_alchem_comps_multi(benzene_modifications):
 
     assert len(alchem_comps['stateA']) == 2
 
-    func = openmm_afe.AbsoluteSolvationProtocol._validate_alchemical_components
-
     with pytest.raises(ValueError, match='More than one alchemical'):
-        func(alchem_comps)
+        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
 
 
 def test_validate_alchem_nonsmc(benzene_modifications):
@@ -169,10 +160,8 @@ def test_validate_alchem_nonsmc(benzene_modifications):
 
     alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
 
-    func = openmm_afe.AbsoluteSolvationProtocol._validate_alchemical_components
-
     with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
-        func(alchem_comps)
+        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
 
 
 def test_vac_bad_nonbonded(benzene_modifications):
@@ -285,7 +274,7 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
 
 
 def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
-    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s = AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
     s.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
@@ -295,7 +284,7 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     s.solvation_settings.solvent_model = 'tip4pew'
     s.integrator_settings.reassign_velocities = True
 
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
+    protocol = AbsoluteSolvationProtocol(
             settings=s,
     )
 
@@ -325,11 +314,11 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
 
 
 def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
-    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s = AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
     s.alchemsampler_settings.n_replicas = 12
 
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
+    protocol = AbsoluteSolvationProtocol(
             settings=s,
     )
 
@@ -357,11 +346,11 @@ def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
 
 
 def test_high_timestep(benzene_modifications, tmpdir):
-    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s = AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
     s.forcefield_settings.hydrogen_mass = 1.0
 
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
+    protocol = AbsoluteSolvationProtocol(
             settings=s,
     )
 
@@ -390,7 +379,7 @@ def test_high_timestep(benzene_modifications, tmpdir):
 
 @pytest.fixture
 def benzene_solvation_dag(benzene_modifications):
-    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s = AbsoluteSolvationProtocol.default_settings()
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -450,8 +439,8 @@ def test_gather(benzene_solvation_dag, tmpdir):
                                             scratch_basedir=tmpdir,
                                             keep_shared=True)
 
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
-        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings(),
+    protocol = AbsoluteSolvationProtocol(
+        settings=AbsoluteSolvationProtocol.default_settings(),
     )
 
     res = protocol.gather([dagres])
