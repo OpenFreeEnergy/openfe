@@ -375,7 +375,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 settings=self.settings,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=i,
-                name=(f"Absolute Solvation, {alchname} solvent leg: "
+                name=(f"Absolute Solvation, {alchname} vacuum leg: "
                       f"repeat {i} generation 0"),
             )
             for i in range(self.settings.alchemsampler_settings.n_repeats)
