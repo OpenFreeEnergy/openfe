@@ -40,7 +40,7 @@ from typing import Dict, Optional, Union
 from typing import Any, Iterable
 
 from gufe import (
-    settings, SettingsBaseModel,
+    settings,
     ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
@@ -49,6 +49,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     SolvationSettings, AlchemicalSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings,
+    SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteTransformUnit
@@ -501,7 +502,7 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
 
 
 class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
-    def _get_components(self) -> tuple[list[Components], SolventComponent, 
+    def _get_components(self) -> tuple[list[Component], SolventComponent, 
                                        Optional[ProteinComponent],
                                        list[SmallMoleculeComponent]]:
         """
