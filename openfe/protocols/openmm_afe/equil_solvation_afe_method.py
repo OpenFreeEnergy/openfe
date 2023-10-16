@@ -40,7 +40,8 @@ from typing import Dict, Optional, Union
 from typing import Any, Iterable
 
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
+    settings, SettingsBaseModel,
+    ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
@@ -412,13 +413,15 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
 
 class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
-    def _get_components(self):
+    def _get_components(self) -> tuple[dict[str, list[Component]], None,
+                                       Optional[ProteinComponent],
+                                       list[SmallMoleculeComponent]]:
         """
         Get the relevant components for a vacuum transformation.
 
         Returns
         -------
-        alchem_comps : list[Component]
+        alchem_comps : dict[str, list[Component]]
           A list of alchemical components
         solv_comp : None
           For the gas phase transformation, None will always be returned
@@ -426,18 +429,23 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
         prot_comp : Optional[ProteinComponent]
           The protein component of the system, if it exists.
         small_mols : list[SmallMoleculeComponent]
-          A list of SmallMoleculeComponents to add to the system.
+          A list of SmallMoleculeComponents to add to the system. This
+          is equivalent to the alchemical components in stateA (since
+          we only allow for disappearing ligands).
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
 
-        _, prot_comp, small_mols = system_validation.get_components(stateA)
+        _, prot_comp, _ = system_validation.get_components(stateA)
 
-        # Note our input state will contain a solvent, we ``None`` that out
+        # Notes:
+        # 1. Our input state will contain a solvent, we ``None`` that out
         # since this is the gas phase unit.
-        return alchem_comps, None, prot_comp, small_mols
+        # 2. Our small molecules will always just be the alchemical components
+        # (of stateA since we enforce only one disappearing ligand)
+        return alchem_comps, None, prot_comp, alchem_comps['stateA']
 
-    def _handle_settings(self):
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a vacuum transformation.
 
@@ -493,7 +501,9 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
 
 
 class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
-    def _get_components(self):
+    def _get_components(self) -> tuple[list[Components], SolventComponent, 
+                                       Optional[ProteinComponent],
+                                       list[SmallMoleculeComponent]]:
         """
         Get the relevant components for a vacuum transformation.
 
@@ -520,7 +530,7 @@ class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
         # disallowed on create
         return alchem_comps, solv_comp, prot_comp, small_mols
 
-    def _handle_settings(self):
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a vacuum transformation.
 
