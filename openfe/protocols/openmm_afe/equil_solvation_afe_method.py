@@ -309,7 +309,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           thermodynamic cycle, with lists with the number
           of production iterations for each repeat of that simulation
           type.
-        """a
+        """
         production_lengths = {}
 
          for key in ['solvent', 'vacuum']:
