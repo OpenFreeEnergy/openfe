@@ -12,3 +12,4 @@ OpenFE API Reference
     alchemical_network_planning
     defining_and_executing_simulations
     openmm_rfe
+    openmm_solvation_afe
