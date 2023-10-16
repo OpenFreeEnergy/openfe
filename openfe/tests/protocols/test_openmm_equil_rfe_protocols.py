@@ -1243,16 +1243,16 @@ class TestTyk2XmlRegression:
 
 class TestProtocolResult:
     @pytest.fixture()
-    def protocolresult(self, transformation_json):
-        d = json.loads(transformation_json,
+    def protocolresult(self, rfe_transformation_json):
+        d = json.loads(rfe_transformation_json,
                        cls=gufe.tokenization.JSON_HANDLER.decoder)
 
         pr = openfe.ProtocolResult.from_dict(d['protocol_result'])
 
         return pr
 
-    def test_reload_protocol_result(self, transformation_json):
-        d = json.loads(transformation_json,
+    def test_reload_protocol_result(self, rfe_transformation_json):
+        d = json.loads(rfe_transformation_json,
                        cls=gufe.tokenization.JSON_HANDLER.decoder)
 
         pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])

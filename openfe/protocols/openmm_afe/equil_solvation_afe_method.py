@@ -268,7 +268,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         replica_states: dict[str, list[npt.NDArray]] = {}
 
         for key in ['solvent', 'vacuum']:
-            replicate_states[key] = [
+            replica_states[key] = [
                 pus[0].output['replica_states']
                 for pus in self.data[key].values()
             ]
@@ -313,7 +313,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         production_lengths: dict[str, list[float]] = {}
 
         for key in ['solvent', 'vacuum']:
-            equilibration_lengths[key] = [
+            production_lengths[key] = [
                 pus[0].output['production_iterations']
                 for pus in self.data[key].values()
             ]
