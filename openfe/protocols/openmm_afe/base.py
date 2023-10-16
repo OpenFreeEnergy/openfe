@@ -31,6 +31,7 @@ TODO
 """
 from __future__ import annotations
 
+import abc
 import os
 import logging
 
@@ -221,6 +222,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         self.scratch_basepath = _set_optional_path(scratch_basepath)
         self.shared_basepath = _set_optional_path(shared_basepath)
 
+    @abc.abstractmethod
     def _get_components(self):
         """
         Get the relevant components to create the alchemical system with.
@@ -229,8 +231,9 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         ----
         Must be implemented in the child class.
         """
-        raise NotImplementedError
+        ...
 
+    @abc.abstractmethod
     def _handle_settings(self):
         """
         Get a dictionary with the following entries:
@@ -253,7 +256,7 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
         ----
         Must be implemented in the child class.
         """
-        raise NotImplementedError
+        ...
 
     def _get_system_generator(
         self, settings: dict[str, SettingsBaseModel],
