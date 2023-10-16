@@ -24,6 +24,7 @@ Acknowledgements
 ----------------
 * Originally based on hydration.py in
   `espaloma <https://github.com/choderalab/espaloma_charge>`_
+
 """
 from __future__ import annotations
 
@@ -184,6 +185,17 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
 
 class AbsoluteSolvationProtocol(gufe.Protocol):
+    """
+    Absolute solvation free energy calculations using OpenMM and OpenMMTools.
+
+    See Also
+    --------
+    openfe.protocols
+    openfe.protocols.openmm_afe.AbsoluteSolvationSettings
+    openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult
+    openfe.protocols.openmm_afe.AbsoluteVacuumTransformUnit
+    openfe.protocols.openmm_afe.AbsoluteSolventTransformUnit
+    """
     result_cls = AbsoluteSolvationProtocolResult
     _settings: AbsoluteSolvationSettings
 

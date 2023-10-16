@@ -3,9 +3,10 @@
 """OpenMM Equilibrium AFE Protocol base classes
 ===============================================
 
-Base classes for the equilibrium OpenMM absolute free energy classes.
+Base classes for the equilibrium OpenMM absolute free energy ProtocolUnits.
 
-This module mostly implements a base unit class for AFE transformations.
+Thist mostly implements BaseAbsoluteTransformUnit whose methods can be
+overriden to define different types of alchemical transformations.
 
 TODO
 ----

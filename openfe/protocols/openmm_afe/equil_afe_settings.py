@@ -56,6 +56,13 @@ class AlchemicalSettings(SettingsBaseModel):
 
 
 class AbsoluteSolvationSettings(Settings):
+    """
+    Configuration object for ``AbsoluteSolvationProtocol``.
+
+    See Also
+    --------
+    openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
+    """
     class Config:
         arbitrary_types_allowed = True
 
