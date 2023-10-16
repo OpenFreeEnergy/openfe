@@ -176,7 +176,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
                   fraction of data.
         """
 
-        forward_reverse = {}
+        forward_reverse: dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]] = {}
 
         for key in ['solvent', 'vacuum']:
             forward_reverse[key] = [
@@ -206,7 +206,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
               state i in state j
         """
         # Loop through and get the repeats and get the matrices
-        overlap_stats = {}
+        overlap_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
 
         for key in ['solvent', 'vacuum']:
             overlap_stats[key] = [
@@ -240,7 +240,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
             * ``matrix``: The transition matrix estimate of a replica switching
               from state i to state j.
         """
-        repex_stats = {}
+        repex_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
         try:
             for key in ['solvent', 'vacuum']:
                 repex_stats[key] = [
@@ -265,7 +265,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           the thermodynamic cycle, with lists of replica states
           timeseries for each repeat of that simulation type.
         """
-        replica_states = {}
+        replica_states: dict[str, list[npt.NDArray]] = {}
 
         for key in ['solvent', 'vacuum']:
             replicate_states[key] = [
@@ -286,7 +286,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           number of equilibration iterations for each repeat
           of that simulation type.
         """
-        equilibration_lengths = {}
+        equilibration_lengths: dict[str, list[float]] = {}
 
         for key in ['solvent', 'vacuum']:
             equilibration_lengths[key] = [
@@ -310,7 +310,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           of production iterations for each repeat of that simulation
           type.
         """
-        production_lengths = {}
+        production_lengths: dict[str, list[float]] = {}
 
         for key in ['solvent', 'vacuum']:
             equilibration_lengths[key] = [
