@@ -150,15 +150,12 @@ class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
             [comp_resids[key] for key in alchem_comps['stateA']]
         )
 
-        # get the alchemicical residues from the topology
-        alchres = [
-            r for r in omm_top.residues() if r.index in residxs
-        ]
-
+        # get the alchemicical atom ids
         atom_ids = []
 
-        for res in alchres:
-            atom_ids.extend([at.index for at in res.atoms()])
+        for r in omm_top.residues():
+            if r.index in residxs:
+                atom_ids.extend([at.index for at in r.atoms()])
 
         return atom_ids
 
