@@ -312,7 +312,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         """
         production_lengths = {}
 
-         for key in ['solvent', 'vacuum']:
+        for key in ['solvent', 'vacuum']:
             equilibration_lengths[key] = [
                 pus[0].output['production_iterations']
                 for pus in self.data[key].values()
