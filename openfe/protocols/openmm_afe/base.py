@@ -7,27 +7,11 @@ Base classes for the equilibrium OpenMM absolute free energy classes.
 
 This module mostly implements a base unit class for AFE transformations.
 
-Current limitations
--------------------
-* Disapearing molecules are only allowed in state A. Support for
-  appearing molecules will be added in due course.
-* Only small molecules are allowed to act as alchemical molecules.
-  Alchemically changing protein or solvent components would induce
-  perturbations which are too large to be handled by this Protocol.
-
-
-Acknowledgements
-----------------
-* Originally based on hydration.py in
-  `espaloma <https://github.com/choderalab/espaloma_charge>`_
-
-
 TODO
 ----
 * Add in all the AlchemicalFactory and AlchemicalRegion kwargs
   as settings.
 * Allow for a more flexible setting of Lambda regions.
-* Add support for restraints.
 """
 from __future__ import annotations
 
