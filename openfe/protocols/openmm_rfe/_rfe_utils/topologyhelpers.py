@@ -180,11 +180,13 @@ def handle_alchemical_waters(
     )
 
     # get the nonbonded forces
-    nbf = [i for i in system.getForces()
-           if isinstance(i, NonbondedForce)]
-    if len(nbf) > 1:
+    nbfrcs = [i for i in system.getForces()
+              if isinstance(i, NonbondedForce)]
+    if len(nbfrcs) > 1:
         raise ValueError("Too many NonbondedForce forces found")
-    nbf = nbf[0]
+
+    # for convenience just grab the first & only entry
+    nbf = nbfrcs[0]
 
     # Loop through residues, check if they match the residue index
     # mutate the atom as necessary
@@ -307,7 +309,7 @@ def combined_topology(topology1: app.Topology,
       topology.
     """
     if exclude_resids is None:
-        exclude_resids = []
+        exclude_resids = np.array([])
 
     top = app.Topology()
 
