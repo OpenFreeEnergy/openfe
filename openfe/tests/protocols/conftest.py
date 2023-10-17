@@ -160,4 +160,4 @@ def afe_solv_transformation_json() -> str:
     fname = "CN_absolute_solvation_transformation.json.gz"
     
     with gzip.open((d / fname).as_posix(), 'r') as f:  # type: ignore
-        return f.read().decode()  # type ignore
+        return f.read().decode()  # type: ignore
