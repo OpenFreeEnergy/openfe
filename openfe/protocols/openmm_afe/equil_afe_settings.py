@@ -4,13 +4,15 @@
 """Settings class for equilibrium AFE Protocols using OpenMM + OpenMMTools
 
 This module implements the necessary settings necessary to run absolute free
-energies using :class:`openfe.protocols.openmm_abfe.equil_abfe_methods.py`
+energies using OpenMM.
 
+See Also
+--------
+openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
 
 TODO
 ----
 * Add support for restraints
-* Improve this docstring by adding an example use case.
 
 """
 from gufe.settings import (
