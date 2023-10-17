@@ -172,6 +172,7 @@ def handle_alchemical_waters(
         ion_resname = positive_ion_resname
     elif charge_difference < 0:
         ion_resname = negative_ion_resname
+    # if there's no charge difference then just skip altogether
     else:
         return None
 
@@ -214,9 +215,8 @@ def get_alchemical_waters(
     topology: app.Topology,
     positions: npt.NDArray,
     charge_difference: int,
-    charge_correction: bool,
     distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
-) -> Optional[list[int]]:
+) -> list[int]:
     """
     Based off perses.utils.charge_changing.get_water_indices.
 
@@ -226,14 +226,9 @@ def get_alchemical_waters(
       The topology to search for an alchemical water.
     positions : npt.NDArray
       The coordinates of the atoms associated with the ``topology``.
-    charge_difference : Optional[int]
+    charge_difference : int
       The charge difference between the two end states
       calculated as stateA_formal_charge - stateB_formal_charge.
-      If ``None``, this will be treated as an explicit charge
-      correction not being necessary and a tuple of ``None`` will be
-      returned.
-    charge_correction : bool
-      If a charge correction should be applied. If not will return ``None``.
     distance_cutoff : unit.Quantity
       The minimum distance away from the solutes from which an alchemical
       water can be chosen.
@@ -241,15 +236,15 @@ def get_alchemical_waters(
 
     Returns
     -------
-    chosen_residues : Optional[list[int]]
+    chosen_residues : list[int]
         A list of residue indices for each chosen alchemical water.
-        ``None`` if charge_correction is ``None``.
     """
-    # Exit early and return Nones if you don't actually want to do this
-    if not charge_correction:
-        return None
+    # if the charge difference is 0 then no waters are needed
+    # return early with an empty list
+    if charge_difference == 0:
+        return []
 
-    # construct a new 
+    # construct a new mdt trajectory
     traj = mdt.Trajectory(
         positions[np.newaxis, ...],
         mdt.Topology.from_openmm(topology)
