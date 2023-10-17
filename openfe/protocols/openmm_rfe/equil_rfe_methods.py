@@ -693,7 +693,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             fix_constraints=True,
         )
 
-
         # d. if a charge correction is necessary, select alchemical waters
         #    and transform them
         if alchem_settings.explicit_charge_correction:

@@ -69,8 +69,7 @@ def _get_ion_and_water_parameters(
     def _find_atom(topology, resname, elementname):
         for atom in topology.atoms():
             if atom.residue.name == resname:
-                if (elementname is None or
-                    atom.element.symbol == elementname):
+                if (elementname is None or atom.element.symbol == elementname):
                     return atom.index
         errmsg = ("Error encountered when attempting to explicitly handle "
                   "charge changes using an alchemical water. No residue "

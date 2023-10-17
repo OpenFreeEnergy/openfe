@@ -1453,11 +1453,11 @@ def test_dry_run_alchemwater_totcharge(
     mapping = request.getfixturevalue(mapping_name)
     stateA_system = openfe.ChemicalSystem(
         {'ligand': mapping.componentA,
-         'solvent': openfe.SolventComponent(),}
+         'solvent': openfe.SolventComponent()}
     )
     stateB_system = openfe.ChemicalSystem(
         {'ligand': mapping.componentB,
-         'solvent': openfe.SolventComponent(),}
+         'solvent': openfe.SolventComponent()}
     )
 
     solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()

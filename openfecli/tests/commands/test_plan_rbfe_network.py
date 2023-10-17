@@ -18,7 +18,7 @@ def mol_dir_args(tmpdir_factory):
 
     with resources.files('openfe.tests.data.openmm_rfe') as d:
         for f in ['ligand_23.sdf', 'ligand_55.sdf']:
-            shutil.copyfile(d /f, ofe_dir_path / f)
+            shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
 
