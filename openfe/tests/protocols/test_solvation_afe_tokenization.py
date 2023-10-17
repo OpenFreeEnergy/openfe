@@ -83,7 +83,7 @@ class TestAbsoluteVacuumTransformUnit(GufeTokenizableTestsMixin):
         pytest.skip()
 
 
-class TestAbsoluteVacuumTransformUnit(GufeTokenizableTestsMixin):
+class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocolResult
     key = "AbsoluteSolvationProtocolResult-8caab27e7ad1bd544a787ac639f5f447"
     repr = f"<{key}>"
@@ -91,6 +91,3 @@ class TestAbsoluteVacuumTransformUnit(GufeTokenizableTestsMixin):
     @pytest.fixture()
     def instance(self, protocol_result):
         return protocol_result
-
-#    def test_key_stable(self):
-#        pytest.skip()
