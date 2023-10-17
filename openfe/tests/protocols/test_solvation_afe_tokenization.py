@@ -7,10 +7,6 @@ import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
 
-"""
-todo:
-- AbsoluteSolvationProtocolResult
-"""
 
 @pytest.fixture
 def protocol():
