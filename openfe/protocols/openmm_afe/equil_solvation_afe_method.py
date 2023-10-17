@@ -100,7 +100,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         for pus in self.data['solvent'].values():
             solv_dGs.append((
-                pus[0].outputs['unit_esitmate'],
+                pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
             ))
 
@@ -154,7 +154,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
 
-    def get_forward_and_reverse_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
@@ -269,7 +269,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         for key in ['solvent', 'vacuum']:
             replica_states[key] = [
-                pus[0].output['replica_states']
+                pus[0].outputs['replica_states']
                 for pus in self.data[key].values()
             ]
         return replica_states
@@ -290,7 +290,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         for key in ['solvent', 'vacuum']:
             equilibration_lengths[key] = [
-                pus[0].output['equilibration_iterations']
+                pus[0].outputs['equilibration_iterations']
                 for pus in self.data[key].values()
             ]
 
@@ -314,7 +314,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         for key in ['solvent', 'vacuum']:
             production_lengths[key] = [
-                pus[0].output['production_iterations']
+                pus[0].outputs['production_iterations']
                 for pus in self.data[key].values()
             ]
 

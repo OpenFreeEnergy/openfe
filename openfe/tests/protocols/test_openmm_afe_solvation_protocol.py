@@ -1,12 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import itertools
+import json
 import pytest
 from unittest import mock
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openff.units import unit as offunit
 import mdtraj as mdt
+import numpy as np
 import gufe
+import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
@@ -472,17 +475,17 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-15.768768285032115)
-        assert isinstance(est, unit.Quantity)
-        assert est.is_compatible_with(unit.kilojoule_per_mole)
+        assert est.m == pytest.approx(-3.00208997)
+        assert isinstance(est, offunit.Quantity)
+        assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
     def test_get_uncertainty(self, protocolresult):
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.03662634237353985)
-        assert isinstance(est, unit.Quantity)
-        assert est.is_compatible_with(unit.kilojoule_per_mole)
+        assert est.m == pytest.approx(0.1577349)
+        assert isinstance(est, offunit.Quantity)
+        assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
     def test_get_individual(self, protocolresult):
         inds = protocolresult.get_individual_estimates()
@@ -492,8 +495,8 @@ class TestProtocolResult:
         assert isinstance(inds['vacuum'], list)
         assert len(inds['solvent']) == len(inds['vacuum']) == 3
         for e, u in itertools.chain(inds['solvent'], inds['vacuum']):
-            assert e.is_compatible_with(unit.kilojoule_per_mole)
-            assert u.is_compatible_with(unit.kilojoule_per_mole)
+            assert e.is_compatible_with(offunit.kilojoule_per_mole)
+            assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_forwards_etc(self, key, protocolresult):
@@ -521,7 +524,7 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1['matrix'], np.ndarray)
-        assert ovp1['matrix'].shape == (11,11)
+        assert ovp1['matrix'].shape == (15, 15)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_replica_transition_statistics(self, key, protocolresult):
@@ -533,8 +536,8 @@ class TestProtocolResult:
         rpx1 = rpx[key][0]
         assert 'eigenvalues' in rpx1
         assert 'matrix' in rpx1
-        assert rpx1['eigenvalues'].shape == (24,)
-        assert rpx1['matrix'].shape == (24, 24)
+        assert rpx1['eigenvalues'].shape == (15,)
+        assert rpx1['matrix'].shape == (15, 15)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_replica_states(self, key, protocolresult):
@@ -543,7 +546,7 @@ class TestProtocolResult:
         assert isinstance(rep, dict)
         assert isinstance(rep[key], list)
         assert len(rep[key]) == 3
-        assert rep[key][0].shape == (6, 24)
+        assert rep[key][0].shape == (251, 15)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_equilibration_iterations(self, key, protocolresult):
