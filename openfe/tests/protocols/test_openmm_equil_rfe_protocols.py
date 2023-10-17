@@ -1374,7 +1374,7 @@ def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
         )
 
 
-def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
+def test_get_charge_difference_no_corr(benzene_to_benzoic_mapping):
     wmsg = ("A charge difference of 1 is observed between the end states. "
             "No charge correction has been requested")
     with pytest.warns(UserWarning, match=wmsg):
