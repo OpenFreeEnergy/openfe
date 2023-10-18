@@ -8,6 +8,7 @@ from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import json
 import pytest
 from unittest import mock
+from openff.units.openmm import to_openmm, from_openmm
 from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
@@ -26,6 +27,7 @@ from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe.equil_rfe_methods import (
         _validate_alchemical_components, _get_alchemical_charge_difference
 )
+from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
 from openfe.protocols.openmm_utils import system_creation
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
@@ -1393,6 +1395,72 @@ def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
         _get_alchemical_charge_difference(
             aniline_to_benzoic_mapping,
             'pme', True,
+        )
+
+
+@pytest.fixture(scope='session')
+def benzene_solvent_openmm_system(benzene_modifications):
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    system_generator = system_creation.get_system_generator(
+        forcefield_settings=settings.forcefield_settings,
+        thermo_settings=settings.thermo_settings,
+        system_settings=settings.system_settings,
+        cache=None,
+        has_solvent=True,
+    )
+
+    system_generator.create_system(
+        benzene_modifications['benzene'].to_openff().to_topology().to_openmm(),
+        molecules=[benzene_modifications['benzene'].to_openff()],
+    )
+
+    modeller, _ = system_creation.get_omm_modeller(
+        protein_comp=None,
+        solvent_comp=openfe.SolventComponent(),
+        small_mols=[benzene_modifications['benzene'],],
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+
+    topology = modeller.getTopology()
+    positions = to_openmm(from_openmm(modeller.getPositions()))
+    system = system_generator.create_system(
+        topology,
+        molecules=[benzene_modifications['benzene'].to_openff()]
+    )
+
+    return system, topology, positions
+
+
+@pytest.mark.parametrize('ion, water', [
+    ['NA', 'SOL'],
+    ['NX', 'WAT'],
+])
+def test_get_ion_water_parameters_unknownresname(
+    ion, water, benzene_solvent_openmm_system
+):
+    system, topology, positions = benzene_solvent_openmm_system
+
+    errmsg = "Error encountered when attempting to explicitly handle"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers._get_ion_and_water_parameters(
+            topology, system,
+            ion_resname=ion, water_resname=water
+        )
+
+
+def test_get_alchemical_waters_no_waters(
+    benzene_solvent_openmm_system,
+):
+    system, topology, positions = benzene_solvent_openmm_system
+
+    errmsg = "There are no waters"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.get_alchemical_waters(
+            topology, positions, charge_difference=1,
+            distance_cutoff=2.0 * unit.nanometer
         )
 
 

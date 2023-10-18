@@ -265,7 +265,7 @@ def get_alchemical_waters(
         if (atom.index in water_atoms) and (atom.index not in excluded_waters)
     ])
 
-    if len(solvent_indices) < 0:
+    if len(solvent_indices) < 1:
         errmsg = ("There are no waters outside of a "
                   f"{distance_cutoff.to(unit.nanometer)} nanometer distance "
                   "of the system solutes to be used as alchemical waters")
