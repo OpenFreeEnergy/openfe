@@ -53,7 +53,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
-from .base import BaseAbsoluteTransformUnit
+from .base import BaseAbsoluteUnit
 from openfe.utils import without_oechem_backend, log_system_probe
 
 logger = logging.getLogger(__name__)
@@ -322,8 +322,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
     openfe.protocols
     openfe.protocols.openmm_afe.AbsoluteSolvationSettings
     openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult
-    openfe.protocols.openmm_afe.AbsoluteVacuumTransformUnit
-    openfe.protocols.openmm_afe.AbsoluteSolventTransformUnit
+    openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit
+    openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit
     """
     result_cls = AbsoluteSolvationProtocolResult
     _settings: AbsoluteSolvationSettings
@@ -499,7 +499,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Create list units for vacuum and solvent transforms
 
         solvent_units = [
-            AbsoluteSolventTransformUnit(
+            AbsoluteSolvationSolventUnit(
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
                 alchemical_components=alchem_comps,
@@ -511,7 +511,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         ]
 
         vacuum_units = [
-            AbsoluteVacuumTransformUnit(
+            AbsoluteSolvationVacuumUnit(
                 # These don't really reflect the actual transform
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
                 stateA=stateA, stateB=stateB,
@@ -554,7 +554,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         return repeats
 
 
-class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
+class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
     def _get_components(self) -> tuple[dict[str, list[Component]], None,
                                        Optional[ProteinComponent],
                                        list[SmallMoleculeComponent]]:
@@ -642,7 +642,7 @@ class AbsoluteVacuumTransformUnit(BaseAbsoluteTransformUnit):
         }
 
 
-class AbsoluteSolventTransformUnit(BaseAbsoluteTransformUnit):
+class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
     def _get_components(self) -> tuple[list[Component], SolventComponent, 
                                        Optional[ProteinComponent],
                                        list[SmallMoleculeComponent]]:

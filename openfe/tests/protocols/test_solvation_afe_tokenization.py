@@ -28,14 +28,14 @@ def protocol_units(protocol, benzene_system):
 @pytest.fixture
 def solvent_protocol_unit(protocol_units):
     for pu in protocol_units:
-        if isinstance(pu, openmm_afe.AbsoluteSolventTransformUnit):
+        if isinstance(pu, openmm_afe.AbsoluteSolvationSolventUnit):
             return pu
 
 
 @pytest.fixture
 def vacuum_protocol_unit(protocol_units):
     for pu in protocol_units:
-        if isinstance(pu, openmm_afe.AbsoluteVacuumTransformUnit):
+        if isinstance(pu, openmm_afe.AbsoluteSolvationVacuumUnit):
             return pu
 
 
@@ -57,9 +57,9 @@ class TestAbsoluteSolvationProtocol(GufeTokenizableTestsMixin):
         return protocol
 
 
-class TestAbsoluteSolventTransformUnit(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteSolventTransformUnit
-    repr = "AbsoluteSolventTransformUnit(Absolute Solvation, benzene solvent leg: repeat 2 generation 0)"
+class TestAbsoluteSolvationSolventUnit(GufeTokenizableTestsMixin):
+    cls = openmm_afe.AbsoluteSolvationSolventUnit
+    repr = "AbsoluteSolvationSolventUnit(Absolute Solvation, benzene solvent leg: repeat 2 generation 0)"
     key = None
 
     @pytest.fixture()
@@ -70,9 +70,9 @@ class TestAbsoluteSolventTransformUnit(GufeTokenizableTestsMixin):
         pytest.skip()
 
 
-class TestAbsoluteVacuumTransformUnit(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteVacuumTransformUnit
-    repr = "AbsoluteVacuumTransformUnit(Absolute Solvation, benzene vacuum leg: repeat 2 generation 0)"
+class TestAbsoluteSolvationVacuumUnit(GufeTokenizableTestsMixin):
+    cls = openmm_afe.AbsoluteSolvationVacuumUnit
+    repr = "AbsoluteSolvationVacuumUnit(Absolute Solvation, benzene vacuum leg: repeat 2 generation 0)"
     key = None
 
     @pytest.fixture()

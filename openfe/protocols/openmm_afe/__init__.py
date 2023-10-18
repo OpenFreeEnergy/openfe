@@ -9,14 +9,14 @@ from .equil_solvation_afe_method import (
     AbsoluteSolvationProtocol,
     AbsoluteSolvationSettings,
     AbsoluteSolvationProtocolResult,
-    AbsoluteVacuumTransformUnit,
-    AbsoluteSolventTransformUnit,
+    AbsoluteSolvationVacuumUnit,
+    AbsoluteSolvationSolventUnit,
 )
 
 __all__ = [
     "AbsoluteSolvationProtocol",
     "AbsoluteSolvationSettings",
     "AbsoluteSolvationProtocolResult",
-    "AbsoluteVacuumTransformUnit",
-    "AbsoluteSolventTransformUnit",
+    "AbsoluteVacuumUnit",
+    "AbsoluteSolventUnit",
 ]

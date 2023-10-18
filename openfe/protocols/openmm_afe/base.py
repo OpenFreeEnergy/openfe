@@ -5,7 +5,7 @@
 
 Base classes for the equilibrium OpenMM absolute free energy ProtocolUnits.
 
-Thist mostly implements BaseAbsoluteTransformUnit whose methods can be
+Thist mostly implements BaseAbsoluteUnit whose methods can be
 overriden to define different types of alchemical transformations.
 
 TODO
@@ -63,7 +63,7 @@ from ..openmm_utils import (
 logger = logging.getLogger(__name__)
 
 
-class BaseAbsoluteTransformUnit(gufe.ProtocolUnit):
+class BaseAbsoluteUnit(gufe.ProtocolUnit):
     """
     Base class for ligand absolute free energy transformations.
     """

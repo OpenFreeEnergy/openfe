@@ -13,7 +13,8 @@ import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
-    AbsoluteSolventTransformUnit, AbsoluteVacuumTransformUnit,
+    AbsoluteSolvationSolventUnit,
+    AbsoluteSolvationVacuumUnit,
     AbsoluteSolvationProtocol,
 )
 from openfe.protocols.openmm_utils import system_validation
@@ -222,9 +223,9 @@ def test_dry_run_vac_benzene(benzene_modifications,
     assert len(prot_units) == 2
 
     vac_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteVacuumTransformUnit)]
+                if isinstance(u, AbsoluteSolvationVacuumUnit)]
     sol_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteSolventTransformUnit)]
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
 
     assert len(vac_unit) == 1
     assert len(sol_unit) == 1
@@ -264,9 +265,9 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
     assert len(prot_units) == 2
 
     vac_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteVacuumTransformUnit)]
+                if isinstance(u, AbsoluteSolvationVacuumUnit)]
     sol_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteSolventTransformUnit)]
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
 
     assert len(vac_unit) == 1
     assert len(sol_unit) == 1
@@ -313,7 +314,7 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     prot_units = list(dag.protocol_units)
 
     sol_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteSolventTransformUnit)]
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
 
     with tmpdir.as_cwd():
         sol_sampler = sol_unit[0].run(dry=True)['debug']['sampler']
@@ -408,9 +409,9 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
     dag_units = benzene_solvation_dag.protocol_units
 
     with (
-        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolventTransformUnit.run',
+        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run',
                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
-        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteVacuumTransformUnit.run',
+        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run',
                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
     ):
         results = []
@@ -434,9 +435,9 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
 def test_gather(benzene_solvation_dag, tmpdir):
     # check that .gather behaves as expected
     with (
-        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolventTransformUnit.run',
+        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run',
                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
-        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteVacuumTransformUnit.run',
+        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run',
                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
     ):
         dagres = gufe.protocols.execute_DAG(benzene_solvation_dag,
