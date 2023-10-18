@@ -1,10 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Equilibrium Relative Free Energy Protocol input settings.
+"""Equilibrium Free Energy Protocols input settings.
 
-This module implements the necessary settings necessary to run absolute free
-energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
-
+This module implements base settings necessary to run
+free energy calculations using OpenMM +/- Tools, such
+as :mod:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
+and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
@@ -19,10 +20,12 @@ from gufe.settings import (
     ThermoSettings,
 )
 
+
 try:
     from pydantic.v1 import validator
 except ImportError:
     from pydantic import validator  # type: ignore[assignment]
+
 
 class SystemSettings(SettingsBaseModel):
     """Settings describing the simulation system settings."""

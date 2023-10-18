@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 """Equilibrium Relative Free Energy Protocol input settings.
 
-This module implements the necessary settings necessary to run absolute free
+This module implements the necessary settings necessary to run relative free
 energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 
 """
