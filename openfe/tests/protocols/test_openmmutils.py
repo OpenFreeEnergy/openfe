@@ -331,7 +331,7 @@ class TestSystemCreation:
 
         model, comp_resids = system_creation.get_omm_modeller(
                 T4_protein_component, openfe.SolventComponent(),
-                [benzene_modifications['toluene'],],
+                [mol],
                 generator.forcefield,
                 SolvationSettings())
 
@@ -340,6 +340,6 @@ class TestSystemCreation:
         assert resids[164].name == 'UNK'
         assert resids[165].name == 'HOH'
         assert_equal(comp_resids[T4_protein_component], np.linspace(0, 163, 164))
-        assert_equal(comp_resids[benzene_modifications['toluene']], np.array([164]))
+        assert_equal(comp_resids[mol], np.array([164]))
         assert_equal(comp_resids[openfe.SolventComponent()],
                      np.linspace(165, len(resids)-1, len(resids)-165))
