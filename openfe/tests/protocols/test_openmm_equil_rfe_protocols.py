@@ -1363,6 +1363,9 @@ def test_get_charge_difference(mapping_name, result, request):
         with pytest.warns(UserWarning, match=wmsg):
             val = _get_alchemical_charge_difference(mapping, 'pme', True)
             assert result == pytest.approx(result)
+    else:
+        val = _get_alchemical_charge_difference(mapping, 'pme', True)
+        assert result == pytest.approx(result)
 
 
 def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
