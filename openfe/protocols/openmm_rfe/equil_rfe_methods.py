@@ -560,7 +560,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                          *off_small_mols['both']]):
             # robustly calculate partial charges;
             if mol.partial_charges is not None and np.any(mol.partial_charges):
-                # skip if we have existing partial charges
+                # skip if we have existing partial charges unless they are zero (see openmmforcefields)
                 continue
             try:
                 # try and follow official spec method
