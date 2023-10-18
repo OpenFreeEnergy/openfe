@@ -559,6 +559,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         for mol in chain([off_small_mols['stateA'], off_small_mols['stateB'],
                          *off_small_mols['both']]):
             # robustly calculate partial charges;
+            if mol.partial_charges is not None and np.any(mol.partial_charges):
+                # skip if we have existing partial charges
+                continue
             try:
                 # try and follow official spec method
                 mol.assign_partial_charges('am1bcc')
