@@ -991,7 +991,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if ret.returncode:
-            return {'error': ret.stderr}
+            return {'structural_analysis_error': ret.stderr}
 
         data = json.loads(ret.stdout)
 
