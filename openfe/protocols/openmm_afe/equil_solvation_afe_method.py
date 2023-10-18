@@ -60,15 +60,7 @@ logger = logging.getLogger(__name__)
 
 
 class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a AbsoluteSolventTransform
-
-    NOTE
-    ----
-    The following items have yet to be implemented:
-    * Methods to retreive the overlap matrices
-    * Method to get replica transition stats
-    * Method to get replica states
-    * Method to get equilibration and production iterations
+    """Dict-like container for the output of a AbsoluteSolvationProtocol
     """
     def __init__(self, **data):
         super().__init__(**data)
