@@ -33,6 +33,7 @@ import logging
 from collections import defaultdict
 import gufe
 from gufe.components import Component
+from openff.toolkit.topology import Molecule as OFFMolecule
 import itertools
 import numpy as np
 import numpy.typing as npt
@@ -555,9 +556,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
 
 class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
-    def _get_components(self) -> tuple[dict[str, list[Component]], None,
-                                       Optional[ProteinComponent],
-                                       list[SmallMoleculeComponent]]:
+    def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
 
@@ -570,13 +569,22 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           for the solvent component of the chemical system.
         prot_comp : Optional[ProteinComponent]
           The protein component of the system, if it exists.
-        small_mols : list[SmallMoleculeComponent]
-          A list of SmallMoleculeComponents to add to the system. This
+        small_mols : list
+          A list of openff Molecules to add to the system. This
           is equivalent to the alchemical components in stateA (since
           we only allow for disappearing ligands).
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
+        # convert SMC in alchem_comps to OpenFF Molecules
+        # this makes them align with later dict usage
+        alchem_comps = {k: [m.to_openff()
+                            if isinstance(m, gufe.SmallMoleculeComponent)
+                            else m
+                            for m in v]
+                        for k, v in alchem_comps.items()}
+
+        off_comps = [m for m in alchem_comps['stateA']]
 
         _, prot_comp, _ = system_validation.get_components(stateA)
 
@@ -585,7 +593,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         # since this is the gas phase unit.
         # 2. Our small molecules will always just be the alchemical components
         # (of stateA since we enforce only one disappearing ligand)
-        return alchem_comps, None, prot_comp, alchem_comps['stateA']
+        return alchem_comps, None, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
@@ -643,15 +651,13 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
-    def _get_components(self) -> tuple[list[Component], SolventComponent, 
-                                       Optional[ProteinComponent],
-                                       list[SmallMoleculeComponent]]:
+    def _get_components(self):
         """
-        Get the relevant components for a vacuum transformation.
+        Get the relevant components for a solvent transformation.
 
         Returns
         -------
-        alchem_comps : list[Component]
+        alchem_comps : dict[str, OFFMolecule | Component]
           A list of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
@@ -662,15 +668,23 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
+        # convert SMC in alchem_comps to OpenFF Molecules
+        # this makes them align with later dict usage
+        alchem_comps = {k: [m.to_openff()
+                            if isinstance(m, gufe.SmallMoleculeComponent)
+                            else m
+                            for m in v]
+                        for k, v in alchem_comps.items()}
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
+        off_comps = [m.to_openff() for m in small_mols]
 
         # We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp since that's also
         # disallowed on create
-        return alchem_comps, solv_comp, prot_comp, small_mols
+        return alchem_comps, solv_comp, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
