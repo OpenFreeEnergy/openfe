@@ -27,6 +27,7 @@ import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
+from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
@@ -543,10 +544,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # calculate partial charges manually if not already given
         # convert to OpenFF here,
         # and keep the molecule around to maintain the partial charges
+        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
         off_small_mols = {
-            'stateA': mapping.componentA.to_openff(),
-            'stateB': mapping.componentB.to_openff(),
-            'both': [m.to_openff() for m in small_mols
+            'stateA': [(mapping.componentA, mapping.componentA.to_openff())],
+            'stateB': [(mapping.componentB, mapping.componentB.to_openff())],
+            'both': [(m, m.to_openff()) for m in small_mols
                      if (m != mapping.componentA and m != mapping.componentB)]
         }
 
@@ -556,8 +558,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
         self.logger.info("Parameterizing molecules")
-        for mol in chain([off_small_mols['stateA'], off_small_mols['stateB'],
-                         *off_small_mols['both']]):
+        for smc, mol in chain(off_small_mols['stateA'],
+                              off_small_mols['stateB'],
+                              off_small_mols['both']):
             # robustly calculate partial charges;
             if mol.partial_charges is not None and np.any(mol.partial_charges):
                 # skip if we have existing partial charges unless they are zero (see openmmforcefields)
@@ -577,7 +580,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         stateA_modeller, comp_resids = system_creation.get_omm_modeller(
             protein_comp=protein_comp,
             solvent_comp=solvent_comp,
-            small_mols=[off_small_mols['stateA']] + off_small_mols['both'],
+            small_mols=dict(chain(off_small_mols['stateA'],
+                                  off_small_mols['both'])),
             omm_forcefield=system_generator.forcefield,
             solvent_settings=solvation_settings,
         )
@@ -592,27 +596,30 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # e. create the stateA System
         stateA_system = system_generator.create_system(
             stateA_modeller.topology,
-            molecules=[off_small_mols['stateA']] + off_small_mols['both'],
+            molecules=[m for _, m in chain(off_small_mols['stateA'],
+                                           off_small_mols['both'])],
         )
 
         # 2. Get stateB system
         # a. get the topology
         stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
-            off_small_mols['stateB'].to_topology().to_openmm(),
-            exclude_resids=comp_resids[off_small_mols['stateA']],
+            # zeroth item (there's only one) then get the OFF representation
+            off_small_mols['stateB'][0][1].to_topology().to_openmm(),
+            exclude_resids=comp_resids[mapping.componentA],
         )
 
         # b. get a list of small molecules for stateB
         stateB_system = system_generator.create_system(
             stateB_topology,
-            molecules=[off_small_mols['stateB']] + off_small_mols['both']
+            molecules=[m for _, m in chain(off_small_mols['stateB'],
+                                           off_small_mols['both'])],
         )
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
             mapping.componentA_to_componentB,
-            stateA_system, stateA_topology, comp_resids[off_small_mols['stateA']],
+            stateA_system, stateA_topology, comp_resids[mapping.componentA],
             stateB_system, stateB_topology, stateB_alchem_resids,
             # These are non-optional settings for this method
             fix_constraints=True,
@@ -622,7 +629,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
-            insert_positions=ensure_quantity(off_small_mols['stateB'].conformers[0], 'openmm'),
+            insert_positions=ensure_quantity(off_small_mols['stateB'][0][1].conformers[0], 'openmm'),
         )
 
         # 3. Create the hybrid topology
