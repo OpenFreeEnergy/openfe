@@ -569,22 +569,16 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           for the solvent component of the chemical system.
         prot_comp : Optional[ProteinComponent]
           The protein component of the system, if it exists.
-        small_mols : list
-          A list of openff Molecules to add to the system. This
+        small_mols : dict[Component, OpenFF Molecule]
+          The openff Molecules to add to the system. This
           is equivalent to the alchemical components in stateA (since
           we only allow for disappearing ligands).
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
-        # convert SMC in alchem_comps to OpenFF Molecules
-        # this makes them align with later dict usage
-        alchem_comps = {k: [m.to_openff()
-                            if isinstance(m, gufe.SmallMoleculeComponent)
-                            else m
-                            for m in v]
-                        for k, v in alchem_comps.items()}
 
-        off_comps = [m for m in alchem_comps['stateA']]
+        off_comps = {m: m.to_openff()
+                     for m in alchem_comps['stateA']}
 
         _, prot_comp, _ = system_validation.get_components(stateA)
 
@@ -657,27 +651,20 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
 
         Returns
         -------
-        alchem_comps : dict[str, OFFMolecule | Component]
+        alchem_comps : dict[str, Component]
           A list of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
         prot_comp : Optional[ProteinComponent]
           The protein component of the system, if it exists.
-        small_mols : list[SmallMoleculeComponent]
-          A list of SmallMoleculeComponents to add to the system.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
-        # convert SMC in alchem_comps to OpenFF Molecules
-        # this makes them align with later dict usage
-        alchem_comps = {k: [m.to_openff()
-                            if isinstance(m, gufe.SmallMoleculeComponent)
-                            else m
-                            for m in v]
-                        for k, v in alchem_comps.items()}
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        off_comps = [m.to_openff() for m in small_mols]
+        off_comps = {m: m.to_openff() for m in small_mols}
 
         # We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`

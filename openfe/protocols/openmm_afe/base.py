@@ -72,7 +72,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  settings: settings.Settings,
-                 alchemical_components: dict[str, list[Component | OFFMolecule]],
+                 alchemical_components: dict[str, list[Component]],
                  generation: int = 0,
                  repeat_id: int = 0,
                  name: Optional[str] = None,):
@@ -90,8 +90,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           constructed by calling the
           :class:`AbsoluteTransformProtocol.get_default_settings` method
           to get a default set of settings.
-        alchemical_components : list[Component | OFFMolecule]
-          the alchemical components for this Unit
+        alchemical_components : dict[str, Component]
+          the alchemical components for each state in this Unit
         name : str, optional
           Human-readable identifier for this Unit
         repeat_id : int, optional
@@ -113,8 +113,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_alchemical_indices(omm_top: openmm.Topology,
-                                comp_resids: dict[str, npt.NDArray],
-                                alchem_comps: dict[str, List[Component | OFFMolecule]]
+                                comp_resids: dict[Component, npt.NDArray],
+                                alchem_comps: dict[str, list[Component]]
                                 ) -> list[int]:
         """
         Get a list of atom indices for all the alchemical species
@@ -123,14 +123,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         omm_top : openmm.Topology
           Topology of OpenMM System.
-        comp_resids : Dict[str, npt.NDArray]
+        comp_resids : dict[Component, npt.NDArray]
           A dictionary of residues for each component in the System.
-        alchem_comps : Dict[str, List[Component]]
+        alchem_comps : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
 
         Return
         ------
-        atom_ids : List[int]
+        atom_ids : list[int]
           A list of atom indices for the alchemical species
         """
 
@@ -214,7 +214,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
     def _get_components(self) -> tuple[dict[str, list[Component]],
                                        Optional[gufe.SolventComponent],
                                        Optional[gufe.ProteinComponent],
-                                       list[OFFMolecule]]:
+                                       dict[SmallMoleculeComponent, OFFMolecule]]:
         """
         Get the relevant components to create the alchemical system with.
 
@@ -286,7 +286,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         protein_component: Optional[ProteinComponent],
         solvent_component: Optional[SolventComponent],
-        smc_components: list[OFFMolecule],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: SolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
@@ -323,7 +323,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # of solvating the system.
         # Note by default this is cached to ctx.shared/db.json which should
         # reduce some of the costs.
-        for mol in smc_components:
+        for mol in smc_components.values():
             if mol.partial_charges is not None and np.any(mol.partial_charges):
                 # skip if we have existing partial charges
                 continue
@@ -437,8 +437,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         topology: app.Topology,
         system: openmm.System,
-        comp_resids: dict[Component | OFFMolecule, npt.NDArray],
-        alchem_comps: dict[str, list[Component | OFFMolecule]]
+        comp_resids: dict[Component, npt.NDArray],
+        alchem_comps: dict[str, list[Component]]
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
         """
         Get an alchemically modified system and its associated factory
@@ -857,7 +857,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 5. Get OpenMM topology, positions and system
         omm_topology, omm_system, positions = self._get_omm_objects(
-            system_modeller, system_generator, smc_comps
+            system_modeller, system_generator, list(smc_comps.values())
         )
 
         # 6. Pre-minimize System (Test + Avoid NaNs)
