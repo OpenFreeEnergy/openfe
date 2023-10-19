@@ -235,6 +235,42 @@ def test_dry_run_vac_benzene(benzene_modifications,
         assert not vac_sampler.is_periodic
 
 
+def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
+    # check system parametrisation works even if confgen fails
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.alchemsampler_settings.n_repeats = 1
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first vacuum unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    vac_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationVacuumUnit)]
+
+    with tmpdir.as_cwd():
+        with mock.patch('rdkit.Chem.AllChem.EmbedMultipleConfs', return_value=0):
+            vac_sampler = vac_unit[0].run(dry=True)['debug']['sampler']
+
+            assert vac_sampler
+
+
 def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
