@@ -1422,7 +1422,10 @@ def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
 
 @pytest.fixture(scope='session')
 def benzene_solvent_openmm_system(benzene_modifications):
+    smc = benzene_modifications['benzene']
+    offmol = smc.to_openff()
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
         thermo_settings=settings.thermo_settings,
@@ -1432,14 +1435,14 @@ def benzene_solvent_openmm_system(benzene_modifications):
     )
 
     system_generator.create_system(
-        benzene_modifications['benzene'].to_openff().to_topology().to_openmm(),
-        molecules=[benzene_modifications['benzene'].to_openff()],
+        offmol.to_topology().to_openmm(),
+        molecules=[offmol],
     )
 
     modeller, _ = system_creation.get_omm_modeller(
         protein_comp=None,
         solvent_comp=openfe.SolventComponent(),
-        small_mols=[benzene_modifications['benzene'],],
+        small_mols={smc: offmol},
         omm_forcefield=system_generator.forcefield,
         solvent_settings=settings.solvation_settings,
     )
@@ -1448,7 +1451,7 @@ def benzene_solvent_openmm_system(benzene_modifications):
     positions = to_openmm(from_openmm(modeller.getPositions()))
     system = system_generator.create_system(
         topology,
-        molecules=[benzene_modifications['benzene'].to_openff()]
+        molecules=[offmol]
     )
 
     return system, topology, positions
