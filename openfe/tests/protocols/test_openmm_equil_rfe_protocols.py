@@ -1632,16 +1632,16 @@ def test_handle_alchemwats_incorrect_atom(
     """
     system, topology, positions = benzene_solvent_openmm_system
 
-    # modify the mapping to include an extra environment atom at position 0
-    benzene_self_system_mapping['old_to_new_env_atom_map'][0] = 0
-    benzene_self_system_mapping['new_to_old_env_atom_map'][0] = 0
-
+    # modify the charge of hydrogen atom 25
+    nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
+    c, s, e = nbf.getParticleParameters(25)
+    nbf.setParticleParameters(25, 1 * omm_unit.elementary_charge, s, e)
 
     errmsg = "modifying an atom that doesn't match"
 
     with pytest.raises(ValueError, match=errmsg):
         topologyhelpers.handle_alchemical_waters(
-            water_resids=[0,],
+            water_resids=[5,],
             topology=topology,
             system=system,
             system_mapping=benzene_self_system_mapping,
