@@ -1,0 +1,43 @@
+# things behind a "method" key have to match up to a known thing in openfe
+
+network:
+  method: plan_radial_network
+  scorer: default_lomap_score
+
+# Question:
+# use settings here, to match Protocol
+
+mappers:
+  - method: LomapAtomMapper
+    settings:
+      timeout: 60
+  - method: LomapAtomMapper
+    settings:
+      timeout: 120
+
+# OR not nesting settings, anything without the "method" key gets put into kwargs
+
+mappers:
+  - method: LomapAtomMapper
+    timeout: 60
+  - method: LomapAtomMapper
+    timeout: 120
+
+
+# Question:
+# is mapper*s* always a list and mapper always a single item
+# or do we allow mapper to define either a list or single item behind it?
+
+mapper:
+  method: LomapAtomMapper
+  settings:
+    timeout: 120
+
+
+protocol:
+  method: OpenMM_RFE
+  settings:
+    alchemical_sampler_settings:
+      n_repeats: 5
+    simulation_settings:
+      production_length: 11 ns
