@@ -155,6 +155,8 @@ def handle_alchemical_waters(
     ValueError
       If the absolute charge difference is not equalent to the number of
       alchemical water resids.
+      If the chosen alchemical water has virtual sites (i.e. is not
+      a 3 site water molecule).
 
     Attribution
     -----------
@@ -192,6 +194,13 @@ def handle_alchemical_waters(
     # mutate the atom as necessary
     for res in topology.residues():
         if res.index in water_resids:
+            # if the number of atoms > 3, then we have virtual sites which are
+            # not supported currently
+            if len([at for at in res.atoms()]) > 3:
+                errmsg = ("Non 3-site waters (i.e. waters with virtual sites) "
+                          "are not currently supported as alchemical waters")
+                raise ValueError(errmsg)
+
             for at in res.atoms():
                 idx = at.index
                 charge, sigma, epsilon = nbf.getParticleParameters(idx)

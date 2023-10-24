@@ -428,7 +428,6 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
             assert sampler
 
 
-
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
                               benzene_to_toluene_mapping, tmpdir):
     """
@@ -1458,6 +1457,47 @@ def benzene_solvent_openmm_system(benzene_modifications):
     return system, topology, positions
 
 
+@pytest.fixture(scope='session')
+def benzene_tip4p_solvent_openmm_system(benzene_modifications):
+    smc = benzene_modifications['benzene']
+    offmol = smc.to_openff()
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.forcefield_settings.forcefields = [
+        'amber/ff14SB.xml', 'amber/tip4pew_standard.xml', 'amber/phosaa10.xml'
+    ]
+    settings.solvation_settings.solvent_model = 'tip4pew'
+
+    system_generator = system_creation.get_system_generator(
+        forcefield_settings=settings.forcefield_settings,
+        thermo_settings=settings.thermo_settings,
+        system_settings=settings.system_settings,
+        cache=None,
+        has_solvent=True,
+    )
+
+    system_generator.create_system(
+        offmol.to_topology().to_openmm(),
+        molecules=[offmol],
+    )
+
+    modeller, _ = system_creation.get_omm_modeller(
+        protein_comp=None,
+        solvent_comp=openfe.SolventComponent(),
+        small_mols={smc: offmol},
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+
+    topology = modeller.getTopology()
+    positions = to_openmm(from_openmm(modeller.getPositions()))
+    system = system_generator.create_system(
+        topology,
+        molecules=[offmol]
+    )
+
+    return system, topology, positions
+
+
 @pytest.fixture
 def benzene_self_system_mapping(benzene_solvent_openmm_system):
     """
@@ -1557,6 +1597,27 @@ def test_handle_alchemwats_too_many_nbf(
             water_resids=[1,],
             topology=topology,
             system=new_system,
+            system_mapping={},
+            charge_difference=1,
+        )
+
+
+def test_handle_alchemwats_vsite_water(
+    benzene_tip4p_solvent_openmm_system,
+):
+    """
+    Check that an error is thrown when trying to use a 4 site
+    water as an alchemical species
+    """
+    system, topology, positions = benzene_tip4p_solvent_openmm_system
+
+    errmsg = "Non 3-site waters"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[1,],
+            topology=topology,
+            system=system,
             system_mapping={},
             charge_difference=1,
         )
