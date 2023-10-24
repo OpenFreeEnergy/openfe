@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
 from io import StringIO
+import copy
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
@@ -1457,6 +1458,35 @@ def benzene_solvent_openmm_system(benzene_modifications):
     return system, topology, positions
 
 
+@pytest.fixture
+def benzene_self_system_mapping(benzene_solvent_openmm_system):
+    """
+    A fictitious mapping of benzene to benzene where there is no
+    alchemical transformation (this technically doesn't work in practice
+    because the RFE protocol expects an alchemical component).
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    res = [r for r in topology.residues()]
+    benzene_res = [r for r in res if r.name == 'UNK'][0]
+    benzene_ids = [a.index for a in benzene_res.atoms()]
+    env_ids = [a.index for a in topology.atoms() if a.index not in benzene_ids]
+    all_ids = [a.index for a in topology.atoms()]
+
+    system_mapping = {
+        'new_to_old_atom_map': {i: i for i in all_ids},
+        'old_to_new_atom_map': {i: i for i in all_ids},
+        'new_to_old_core_atom_map': {i: i for i in benzene_ids},
+        'old_to_new_core_atom_map': {i: i for i in benzene_ids},
+        'old_to_new_env_atom_map': {i: i for i in env_ids},
+        'new_to_old_env_atom_map': {i: i for i in env_ids},
+        'old_mol_indices': benzene_ids,
+        'new_mol_indices': benzene_ids,
+    }
+
+    return system_mapping
+
+
 @pytest.mark.parametrize('ion, water', [
     ['NA', 'SOL'],
     ['NX', 'WAT'],
@@ -1487,6 +1517,120 @@ def test_get_alchemical_waters_no_waters(
             topology, positions, charge_difference=1,
             distance_cutoff=2.0 * unit.nanometer
         )
+
+
+def test_handle_alchemwats_incorrect_count(
+    benzene_solvent_openmm_system,
+):
+    """
+    Check that an error is thrown when charge_difference != len(water_resids)
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    errmsg = "There should be as many alchemical water residues:"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[1, 2, 3],
+            topology=topology,
+            system=system,
+            system_mapping={},
+            charge_difference=1,
+        )
+
+
+def test_handle_alchemwats_incorrect_count(
+    benzene_solvent_openmm_system,
+):
+    """
+    Check that an error is thrown when charge_difference != len(water_resids)
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    new_system = copy.deepcopy(system)
+    new_system.addForce(NonbondedForce())
+
+    errmsg = "Too many NonbondedForce forces"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[1,],
+            topology=topology,
+            system=new_system,
+            system_mapping={},
+            charge_difference=1,
+        )
+
+
+def test_handle_alchemwats_incorrect_atom(
+    benzene_solvent_openmm_system,
+    benzene_self_system_mapping,
+):
+    """
+    Check that an error is thrown when charge_difference != len(water_resids)
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    # modify the mapping to include an extra environment atom at position 0
+    benzene_self_system_mapping['old_to_new_env_atom_map'][0] = 0
+    benzene_self_system_mapping['new_to_old_env_atom_map'][0] = 0
+
+
+    errmsg = "modifying an atom that doesn't match"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[0,],
+            topology=topology,
+            system=system,
+            system_mapping=benzene_self_system_mapping,
+            charge_difference=1,
+        )
+
+
+def test_handle_alchemical_wats(
+    benzene_solvent_openmm_system,
+    benzene_self_system_mapping,
+):
+    system, topology, positions = benzene_solvent_openmm_system
+
+    n_env = len(benzene_self_system_mapping['old_to_new_env_atom_map'])
+    n_core = len(benzene_self_system_mapping['old_to_new_core_atom_map'])
+
+    topologyhelpers.handle_alchemical_waters(
+        water_resids=[5,],
+        topology=topology,
+        system=system,
+        system_mapping=benzene_self_system_mapping,
+        charge_difference=1,
+    )
+
+    # check the mappings
+    old_new_env = benzene_self_system_mapping['old_to_new_env_atom_map']
+    old_new_core = benzene_self_system_mapping['old_to_new_core_atom_map']
+    assert len(old_new_env) == n_env - 3
+    assert old_new_env == benzene_self_system_mapping['new_to_old_env_atom_map']
+    assert len(old_new_core) == n_core + 3
+    assert old_new_core == benzene_self_system_mapping['new_to_old_core_atom_map']
+    expected_old_new_core = {i: i for i in range(12)} | {24: 24, 25: 25, 26: 26}
+    assert old_new_core == expected_old_new_core
+
+    # system parameters checks
+    nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
+    # check the oxygen parameters
+    i_chg, i_sig, i_eps, o_chg, h_chg = topologyhelpers._get_ion_and_water_parameters(
+        topology, system, 'NA', 'HOH',
+    )
+
+    charge, sigma, epsilon = nbf.getParticleParameters(24)
+    assert charge == 1.0 * omm_unit.elementary_charge == i_chg
+    assert sigma == i_sig
+    assert epsilon == i_eps
+
+    # check the hydrogen parameters
+    for i in [25, 26]:
+        charge, _, _ = nbf.getParticleParameters(i)
+        assert charge == 0.0 * omm_unit.elementary_charge
 
 
 def _assert_total_charge(system, atom_classes, chgA, chgB):

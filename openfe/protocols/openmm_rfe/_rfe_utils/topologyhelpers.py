@@ -162,7 +162,7 @@ def handle_alchemical_waters(
     """
 
     if abs(charge_difference) != len(water_resids):
-        errmsg = ("There should be as many alchemical residues: "
+        errmsg = ("There should be as many alchemical water residues: "
                   f"{len(water_resids)} as the absolute charge "
                   f"difference: {abs(charge_difference)}")
         raise ValueError(errmsg)
