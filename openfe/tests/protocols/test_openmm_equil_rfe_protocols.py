@@ -1539,11 +1539,11 @@ def test_handle_alchemwats_incorrect_count(
         )
 
 
-def test_handle_alchemwats_incorrect_count(
+def test_handle_alchemwats_too_many_nbf(
     benzene_solvent_openmm_system,
 ):
     """
-    Check that an error is thrown when charge_difference != len(water_resids)
+    Check that an error is thrown when there are multiple NonbondedForces
     """
     system, topology, positions = benzene_solvent_openmm_system
 
