@@ -1633,7 +1633,8 @@ def test_handle_alchemwats_incorrect_atom(
     system, topology, positions = benzene_solvent_openmm_system
 
     # modify the charge of hydrogen atom 25
-    nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
+    new_system = copy.deepcopy(system)  # protect the session scoped object
+    nbf = [i for i in new_system.getForces() if isinstance(i, NonbondedForce)][0]
     c, s, e = nbf.getParticleParameters(25)
     nbf.setParticleParameters(25, 1 * omm_unit.elementary_charge, s, e)
 
@@ -1643,7 +1644,7 @@ def test_handle_alchemwats_incorrect_atom(
         topologyhelpers.handle_alchemical_waters(
             water_resids=[5,],
             topology=topology,
-            system=system,
+            system=new_system,
             system_mapping=benzene_self_system_mapping,
             charge_difference=1,
         )
