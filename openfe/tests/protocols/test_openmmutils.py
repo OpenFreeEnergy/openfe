@@ -325,13 +325,14 @@ class TestSystemCreation:
         generator = system_creation.get_system_generator(
                 ffsets, thermosets, systemsets, None, True)
 
-        mol = benzene_modifications['toluene'].to_openff()
+        smc = benzene_modifications['toluene']
+        mol = smc.to_openff()
         generator.create_system(mol.to_topology().to_openmm(),
                                 molecules=[mol])
 
         model, comp_resids = system_creation.get_omm_modeller(
                 T4_protein_component, openfe.SolventComponent(),
-                [benzene_modifications['toluene'],],
+                {smc: mol},
                 generator.forcefield,
                 SolvationSettings())
 
@@ -340,6 +341,6 @@ class TestSystemCreation:
         assert resids[164].name == 'UNK'
         assert resids[165].name == 'HOH'
         assert_equal(comp_resids[T4_protein_component], np.linspace(0, 163, 164))
-        assert_equal(comp_resids[benzene_modifications['toluene']], np.array([164]))
+        assert_equal(comp_resids[smc], np.array([164]))
         assert_equal(comp_resids[openfe.SolventComponent()],
                      np.linspace(165, len(resids)-1, len(resids)-165))

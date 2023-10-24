@@ -406,6 +406,28 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert pdb.n_atoms == 16
 
 
+def test_confgen_mocked_fail(benzene_system, toluene_system,
+                             benzene_to_toluene_mapping, tmpdir):
+    """
+    Check that even if conformer generation fails, we can still perform a sim
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.alchemical_sampler_settings.n_repeats = 1
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    dag = protocol.create(stateA=benzene_system, stateB=toluene_system,
+                          mapping={'ligand': benzene_to_toluene_mapping})
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        with mock.patch('rdkit.Chem.AllChem.EmbedMultipleConfs', return_value=0):
+            sampler = dag_unit.run(dry=True)
+
+            assert sampler
+
+
+
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
                               benzene_to_toluene_mapping, tmpdir):
     """
