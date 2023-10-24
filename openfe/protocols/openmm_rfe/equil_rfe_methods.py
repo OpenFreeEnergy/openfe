@@ -77,9 +77,7 @@ def _get_alchemical_charge_difference(
     negative_ion_resname: str = 'CL',
 ) -> int:
     """
-    Checks and returns the difference in formal charge between
-    the components mapped in stateA and those of stateB
-    (i.e. sum(charge_stateA) - sum(charge_stateB).
+    Checks and returns the difference in formal charge between state A and B.
 
     Raises
     ------
@@ -108,6 +106,7 @@ def _get_alchemical_charge_difference(
     -------
     int
       The formal charge difference between states A and B.
+      This is defined as sum(charge state A) - sum(charge state B)
     """
     chg_A = Chem.rdmolops.GetFormalCharge(
         mapping.componentA.to_rdkit()

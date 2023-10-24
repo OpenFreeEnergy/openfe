@@ -29,8 +29,7 @@ def _get_ion_and_water_parameters(
     water_resname: str = 'HOH',
 ):
     """
-    Return parameters for a defined ion (defined by ``ion_resname``) and
-    water oxygen and hydrogen.
+    Get ion, and water (oxygen and hydrogen) atoms parameters.
 
     Parameters
     ----------
@@ -95,8 +94,7 @@ def _fix_alchemical_water_atom_mapping(
     b_idx: int,
 ) -> None:
     """
-    In-place fix system atom mapping to account for
-    added alchemical water atom.
+    In-place fix atom mapping to account for alchemical water.
 
     Parameters
     ----------
@@ -129,6 +127,8 @@ def handle_alchemical_waters(
     water_resname: str = 'HOH',
 ):
     """
+    Add alchemical waters from a pre-defined list.
+
     Parameters
     ----------
     water_resids : list[int]
@@ -217,7 +217,7 @@ def get_alchemical_waters(
     distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
 ) -> list[int]:
     """
-    Based off perses.utils.charge_changing.get_water_indices.
+    Pick a list of waters to be used for alchemical charge correction.
 
     Parameters
     ----------
@@ -237,6 +237,10 @@ def get_alchemical_waters(
     -------
     chosen_residues : list[int]
         A list of residue indices for each chosen alchemical water.
+
+    Notes
+    -----
+    Based off perses.utils.charge_changing.get_water_indices.
     """
     # if the charge difference is 0 then no waters are needed
     # return early with an empty list
