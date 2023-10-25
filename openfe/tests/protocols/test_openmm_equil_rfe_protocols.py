@@ -497,12 +497,10 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
     # Create new smc with overriden charges
     benzene_offmol = benzene_modifications['benzene'].to_openff()
     toluene_offmol = benzene_modifications['toluene'].to_openff()
-    benzene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
-    toluene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
     benzene_rand_chg = assign_fictitious_charges(benzene_offmol)
     toluene_rand_chg = assign_fictitious_charges(toluene_offmol)
-    benzene_offmol.partial_charges[:] = benzene_rand_chg
-    toluene_offmol.partial_charges[:] = toluene_rand_chg
+    benzene_offmol.partial_charges = benzene_rand_chg
+    toluene_offmol.partial_charges = toluene_rand_chg
     benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
     toluene_smc = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
 

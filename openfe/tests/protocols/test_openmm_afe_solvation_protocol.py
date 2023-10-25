@@ -4,8 +4,10 @@ import itertools
 import json
 import pytest
 from unittest import mock
+from openmm import NonbondedForce, CustomNonbondedForce
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity
 import mdtraj as mdt
 import numpy as np
 import gufe
@@ -358,16 +360,39 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
 
 
 def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
+    """
+    Create a test system with fictitious user supplied charges and
+    ensure that they are properly passed through to the constructed
+    alchemical system.
+    """
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
-    s.solvent_simulation_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
     )
 
+    def assign_fictitious_charges(offmol):
+        """
+        Get a random array of fake partial charges for your offmol.
+        """
+        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
+        rand_arr[-1] = -sum(rand_arr[:-1])
+        return rand_arr * offunit.elementary_charge
+
+    benzene_offmol = benzene_modifications['benzene'].to_openff()
+    offmol_pchgs = assign_fictitious_charges(benzene_offmol)
+    benzene_offmol.partial_charges = offmol_pchgs
+    benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    ## check propchgs
+    prop_chgs = benzene_smc.to_dict()['molprops']['atom.dprop.PartialCharge']
+    prop_chgs = np.array(prop_chgs.split(), dtype=float)
+    np.testing.assert_allclose(prop_chgs, offmol_pchgs)
+
+    # Create ChemicalSystems
     stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
+        'benzene': benzene_smc,
         'solvent': SolventComponent()
     })
 
@@ -377,29 +402,47 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None,)
     prot_units = list(dag.protocol_units)
 
-    assert len(prot_units) == 2
-
     vac_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteSolvationVacuumUnit)]
+                if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
     sol_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteSolvationSolventUnit)]
+                if isinstance(u, AbsoluteSolvationSolventUnit)][0]
 
-    assert len(vac_unit) == 1
-    assert len(sol_unit) == 1
-
+    # check sol_unit charges
     with tmpdir.as_cwd():
-        sol_sampler = sol_unit[0].run(dry=True)['debug']['sampler']
-        assert sol_sampler.is_periodic
+        sampler = sol_unit.run(dry=True)['debug']['sampler']
+        system = sampler._thermodynamic_states[0].system
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, NonbondedForce)]
 
-        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert len(nonbond) == 1
 
+        # loop through the 12 benzene atoms
+        # partial charge is stored in the offset
+        for i in range(12):
+            offsets = nonbond[0].getParticleParameterOffset(i)
+            c = ensure_quantity(offsets[2], 'openff')
+            assert pytest.approx(c) == prop_chgs[i]
+
+    # check vac_unit charges
+    with tmpdir.as_cwd():
+        sampler = vac_unit.run(dry=True)['debug']['sampler']
+        system = sampler._thermodynamic_states[0].system
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, CustomNonbondedForce)]
+        assert len(nonbond) == 4
+
+        custom_elec = [
+            n for n in nonbond if
+            n.getGlobalParameterName(0) == 'lambda_electrostatics'][0]
+
+        # loop through the 12 benzene atoms
+        for i in range(12):
+            c, s = custom_elec.getParticleParameters(i)
+            c = ensure_quantity(c, 'openff')
+            assert pytest.approx(c) == prop_chgs[i]
 
 
 def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
