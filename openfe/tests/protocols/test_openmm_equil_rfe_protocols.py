@@ -1380,15 +1380,19 @@ class TestProtocolResult:
 def test_get_charge_difference(mapping_name, result, request):
     mapping = request.getfixturevalue(mapping_name)
     if result != 0:
-        ion = 'NA' if result == -1 else 'CL'
+        ion = 'Na\+' if result == -1 else 'Cl\-'
         wmsg = (f"A charge difference of {result} is observed "
                 "between the end states. This will be addressed by "
                 f"transforming a water into a {ion} ion")
         with pytest.warns(UserWarning, match=wmsg):
-            val = _get_alchemical_charge_difference(mapping, 'pme', True)
+            val = _get_alchemical_charge_difference(
+                mapping, 'pme', True, openfe.SolventComponent()
+            )
             assert result == pytest.approx(result)
     else:
-        val = _get_alchemical_charge_difference(mapping, 'pme', True)
+        val = _get_alchemical_charge_difference(
+            mapping, 'pme', True, openfe.SolventComponent()
+        )
         assert result == pytest.approx(result)
 
 
@@ -1397,7 +1401,7 @@ def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
     with pytest.raises(ValueError, match=errmsg):
         _get_alchemical_charge_difference(
             benzene_to_benzoic_mapping,
-            'nocutoff', True
+            'nocutoff', True, openfe.SolventComponent(),
         )
 
 
@@ -1407,7 +1411,7 @@ def test_get_charge_difference_no_corr(benzene_to_benzoic_mapping):
     with pytest.warns(UserWarning, match=wmsg):
         _get_alchemical_charge_difference(
             benzene_to_benzoic_mapping,
-            'pme', False
+            'pme', False, openfe.SolventComponent(),
         )
 
 
@@ -1416,7 +1420,7 @@ def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
     with pytest.raises(ValueError, match=errmsg):
         _get_alchemical_charge_difference(
             aniline_to_benzoic_mapping,
-            'pme', True,
+            'pme', True, openfe.SolventComponent(),
         )
 
 
@@ -1576,6 +1580,7 @@ def test_handle_alchemwats_incorrect_count(
             system=system,
             system_mapping={},
             charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
         )
 
 
@@ -1599,6 +1604,7 @@ def test_handle_alchemwats_too_many_nbf(
             system=new_system,
             system_mapping={},
             charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
         )
 
 
@@ -1620,6 +1626,7 @@ def test_handle_alchemwats_vsite_water(
             system=system,
             system_mapping={},
             charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
         )
 
 
@@ -1647,6 +1654,7 @@ def test_handle_alchemwats_incorrect_atom(
             system=new_system,
             system_mapping=benzene_self_system_mapping,
             charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
         )
 
 
@@ -1665,6 +1673,7 @@ def test_handle_alchemical_wats(
         system=system,
         system_mapping=benzene_self_system_mapping,
         charge_difference=1,
+        solvent_component=openfe.SolventComponent(),
     )
 
     # check the mappings

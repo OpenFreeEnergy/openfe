@@ -73,8 +73,7 @@ def _get_alchemical_charge_difference(
     mapping: LigandAtomMapping,
     nonbonded_method: str,
     explicit_charge_correction: bool,
-    positive_ion_resname: str = 'NA',
-    negative_ion_resname: str = 'CL',
+    solvent_component: openfe.SolventComponent
 ) -> int:
     """
     Checks and returns the difference in formal charge between state A and B.
@@ -97,10 +96,8 @@ def _get_alchemical_charge_difference(
       The OpenMM nonbonded method used for the simulation.
     explicit_charge_correction : bool
       Whether or not to use an explicit charge correction.
-    positive_ion_resname : str
-      The name of the positive ion residue. Default NA.
-    negative_ion_resname : str
-      The name of the negative ion residue. Default CL.
+    solvent_component : openfe.SolventComponent
+      The SolventComponent of the simulation.
 
     Returns
     -------
@@ -129,19 +126,20 @@ def _get_alchemical_charge_difference(
                           "correction has been requested. Unfortunately "
                           "only absolute differences of 1 are supported.")
                 raise ValueError(errmsg)
-            ion = {-1: positive_ion_resname,
-                   1: negative_ion_resname}[difference]
+
+            ion = {-1: solvent_component.positive_ion,
+                   1: solvent_component.negative_ion}[difference]
             wmsg = (f"A charge difference of {difference} is observed "
                     "between the end states. This will be addressed by "
                     f"transforming a water into a {ion} ion")
-            logger.warn(wmsg)
+            logger.warning(wmsg)
             warnings.warn(wmsg)
         else:
             wmsg = (f"A charge difference of {difference} is observed "
                     "between the end states. No charge correction has "
                     "been requested, please account for this in your "
                     "final results.")
-            logger.warn(wmsg)
+            logger.warning(wmsg)
             warnings.warn(wmsg)
 
     return difference
@@ -216,7 +214,7 @@ def _validate_alchemical_components(
                     "No mass scaling is attempted in the hybrid topology, "
                     "the average mass of the two atoms will be used in the "
                     "simulation")
-                logger.warn(wmsg)
+                logger.warning(wmsg)
                 warnings.warn(wmsg)  # TODO: remove this once logging is fixed
 
 
@@ -609,8 +607,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             mapping,
             system_settings.nonbonded_method,
             alchem_settings.explicit_charge_correction,
-            positive_ion_resname=alchem_settings.alchemical_water_ion_positive_resname,
-            negative_ion_resname=alchem_settings.alchemical_water_ion_negative_resname,
+            solvent_comp,
         )
 
         # 1. Create stateA system
@@ -725,9 +722,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             _rfe_utils.topologyhelpers.handle_alchemical_waters(
                 alchem_water_resids, stateB_topology, stateB_system,
                 ligand_mappings, charge_difference,
-                alchem_settings.alchemical_water_ion_positive_resname,
-                alchem_settings.alchemical_water_ion_negative_resname,
-                alchem_settings.alchemical_water_resname,
+                solvent_comp,
             )
 
         #  e. Finally get the positions

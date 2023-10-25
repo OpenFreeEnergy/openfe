@@ -17,6 +17,7 @@ import numpy.typing as npt
 from openmm import app, System, NonbondedForce
 from openmm import unit as omm_unit
 from openff.units import unit
+from openfe import SolventComponent
 
 
 logger = logging.getLogger(__name__)
@@ -122,9 +123,7 @@ def handle_alchemical_waters(
     water_resids: list[int], topology: app.Topology,
     system: System, system_mapping: dict,
     charge_difference: int,
-    positive_ion_resname: str = 'NA',
-    negative_ion_resname: str = 'CL',
-    water_resname: str = 'HOH',
+    solvent_component: SolventComponent,
 ):
     """
     Add alchemical waters from a pre-defined list.
@@ -170,15 +169,16 @@ def handle_alchemical_waters(
         raise ValueError(errmsg)
 
     if charge_difference > 0:
-        ion_resname = positive_ion_resname
+        ion_resname = solvent_component.positive_ion.strip('-+').upper()
     elif charge_difference < 0:
-        ion_resname = negative_ion_resname
+        ion_resname = solvent_component.negative_ion.strip('-+').upper()
     # if there's no charge difference then just skip altogether
     else:
         return None
 
     ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = _get_ion_and_water_parameters(
-        topology, system, ion_resname, water_resname,
+        topology, system, ion_resname,
+        'HOH',  # Modeller always adds HOH waters
     )
 
     # get the nonbonded forces
