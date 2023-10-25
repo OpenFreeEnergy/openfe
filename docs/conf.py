@@ -137,6 +137,7 @@ html_theme_options = {
         }
     ],
     "accent_color": "DarkGoldenYellow",
+    "navigation_with_keys": False,
 }
 html_logo = "_static/Squaredcircle.svg"
 
