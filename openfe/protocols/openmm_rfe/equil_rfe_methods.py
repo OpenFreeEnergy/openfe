@@ -41,7 +41,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, ProteinComponent,
+    SmallMoleculeComponent, ProteinComponent, SolventComponent,
 )
 
 from .equil_rfe_settings import (
@@ -73,7 +73,7 @@ def _get_alchemical_charge_difference(
     mapping: LigandAtomMapping,
     nonbonded_method: str,
     explicit_charge_correction: bool,
-    solvent_component: openfe.SolventComponent
+    solvent_component: SolventComponent
 ) -> int:
     """
     Checks and returns the difference in formal charge between state A and B.
