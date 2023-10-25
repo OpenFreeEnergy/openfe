@@ -324,20 +324,19 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # Note by default this is cached to ctx.shared/db.json which should
         # reduce some of the costs.
         for mol in smc_components.values():
-            if mol.partial_charges is not None and np.any(mol.partial_charges):
-                # skip if we have existing partial charges
-                continue
-            try:
-                # try and follow official spec method
-                mol.assign_partial_charges('am1bcc')
-            except ValueError:  # this is what a confgen failure yields
-                # but fallback to using existing conformer
-                mol.assign_partial_charges('am1bcc',
-                                           use_conformers=mol.conformers)
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                try:
+                    # try and follow official spec method
+                    mol.assign_partial_charges('am1bcc')
+                except ValueError:  # this is what a confgen failure yields
+                    # but fallback to using existing conformer
+                    mol.assign_partial_charges('am1bcc',
+                                               use_conformers=mol.conformers)
 
-        system_generator.create_system(
-            mol.to_topology().to_openmm(), molecules=[mol]
-        )
+          system_generator.create_system(
+              mol.to_topology().to_openmm(), molecules=[mol]
+          )
 
         # get OpenMM modeller + dictionary of resids for each component
         system_modeller, comp_resids = system_creation.get_omm_modeller(
