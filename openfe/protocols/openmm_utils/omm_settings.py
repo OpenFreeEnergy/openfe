@@ -83,6 +83,22 @@ class SolvationSettings(SettingsBaseModel):
     solvent_padding = 1.2 * unit.nanometer
     """Minimum distance from any solute atoms to the solvent box edge."""
 
+    backend = 'openmm'
+    """
+    The backend for solvating a system. Current allowed backends
+    are `openmm` and `packmol`.
+
+    Please note that the `packmol` is currently available in
+    the AbsoluteSolvationProtocol.
+    """
+
+    @validator('backend')
+    def allowed_backends(cls, v):
+        backends = ['openmm', 'packmol']
+        if v.lower() not in backends:
+            errmsg = f"Only {backends} are allowed backend selections"
+            raise ValueError(errmsg)
+
     @validator('solvent_model')
     def allowed_solvent(cls, v):
         allowed_models = ['tip3p', 'spce', 'tip4pew', 'tip5p']

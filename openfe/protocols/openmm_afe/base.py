@@ -387,6 +387,99 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
         return topology, system, positions
 
+    def _get_packmol_system(
+        self,
+        protein_component: Optional[ProteinComponent],
+        solvent_component: Optional[SolventComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        system_generator: SystemGenerator,
+        solvation_settings: SolvationSettings,
+    ) -> tuple[openmm.System, app.Topology, openmm.unit.Quantity, dict[Component, npt.NDArray]]:
+        """
+        Generate an OpenMM system using packmol.
+
+        Parameters
+        ----------
+        protein_component : Optional[ProteinComponent]
+          Protein Component, if it exists.
+        solvent_component : Optional[ProteinCompoinent]
+          Solvent Component, if it exists.
+        smc_components : list[openff.toolkit.topology.Molecule]
+          List of openff Molecules to add.
+        system_generator : openmmforcefields.generator.SystemGenerator
+          System Generator to parameterise this unit.
+        solvation_settings : SolvationSettings
+          Settings detailing how to solvate the system.
+
+        Returns
+        -------
+        system : openmm.System
+          An OpenMM System of the alchemical system.
+        topology : app.Topology
+          Topology object describing the parameterized system
+        positionns : openmm.unit.Quantity
+          Positions of the system.
+        comp_resids : dict[Component, npt.NDArray]
+          Dictionary of residue indices for each component in system.
+        """
+        errmsg = "Packmol system generation is not implemented for this method"
+        raise NotImplementedError(errmsg)
+
+    def _get_omm_system(
+        self,
+        protein_component: Optional[ProteinComponent],
+        solvent_component: Optional[SolventComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        system_generator: SystemGenerator,
+        solvation_settings: SolvationSettings,
+    ) -> tuple[openmm.System, app.Topology, openmm.unit.Quantity, dict[Component, npt.NDArray]]:
+        """
+        Get an OpenMM system and related components.
+
+        Parameters
+        ----------
+        protein_component : Optional[ProteinComponent]
+          Protein Component, if it exists.
+        solvent_component : Optional[ProteinCompoinent]
+          Solvent Component, if it exists.
+        smc_components : list[openff.toolkit.topology.Molecule]
+          List of openff Molecules to add.
+        system_generator : openmmforcefields.generator.SystemGenerator
+          System Generator to parameterise this unit.
+        solvation_settings : SolvationSettings
+          Settings detailing how to solvate the system.
+
+        Returns
+        -------
+        system : openmm.System
+          An OpenMM System of the alchemical system.
+        topology : app.Topology
+          Topology object describing the parameterized system
+        positionns : openmm.unit.Quantity
+          Positions of the system.
+        comp_resids : dict[Component, npt.NDArray]
+          Dictionary of residue indices for each component in system.
+        """
+        if solvation_settings.backend.lower() == 'openmm':
+            system_modeller, comp_resids = self._get_modeller(
+                protein_component, solvent_component, smc_components,
+                system_generator, solvation_settings,
+            )
+
+            topology, system, positions = self._get_omm_objects(
+                system_modeller, system_generator,
+                list(smc_components.values()),
+            )
+        elif solvation_settings.backend.lower() == 'packmol':
+            system, topology, positions, comp_resids = self._get_packmol_system(
+                protein_component, solvent_component, smc_components,
+                system_generator, solvation_settings,
+            )
+        else:
+            errmsg = "Selected backend is not implemented for this method"
+            raise NotImplementedError(errmsg)
+        return system, topology, positions, comp_resids
+
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, npt.NDArray]:
@@ -848,38 +941,33 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 3. Get system generator
         system_generator = self._get_system_generator(settings, solv_comp)
 
-        # 4. Get modeller
-        system_modeller, comp_resids = self._get_modeller(
+        # 4. Get the openmm system
+        omm_system, omm_topology, positions, comp_resids = self._get_omm_system(
             prot_comp, solv_comp, smc_comps, system_generator,
             settings['solvation_settings']
         )
 
-        # 5. Get OpenMM topology, positions and system
-        omm_topology, omm_system, positions = self._get_omm_objects(
-            system_modeller, system_generator, list(smc_comps.values())
-        )
-
-        # 6. Pre-minimize System (Test + Avoid NaNs)
+        # 5. Pre-minimize System (Test + Avoid NaNs)
         positions = self._pre_minimize(omm_system, positions)
 
-        # 7. Get lambdas
+        # 6. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
 
-        # 8. Add restraints
+        # 7. Add restraints
         self._add_restraints(omm_system, omm_topology, settings)
 
-        # 9. Get alchemical system
+        # 8. Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
             omm_topology, omm_system, comp_resids, alchem_comps
         )
 
-        # 10. Get compound and sampler states
+        # 9. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
             alchem_system, positions, settings,
             lambdas, solv_comp
         )
 
-        # 11. Create the multistate reporter & create PDB
+        # 10. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology, positions,
             settings['simulation_settings'],
@@ -887,22 +975,22 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # Wrap in try/finally to avoid memory leak issues
         try:
-            # 12. Get context caches
+            # 11. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
                 settings['engine_settings']
             )
 
-            # 13. Get integrator
+            # 12. Get integrator
             integrator = self._get_integrator(settings['integrator_settings'])
 
-            # 14. Get sampler
+            # 13. Get sampler
             sampler = self._get_sampler(
                 integrator, reporter, settings['sampler_settings'],
                 cmp_states, sampler_states,
                 energy_ctx_cache, sampler_ctx_cache
             )
 
-            # 15. Run simulation
+            # 14. Run simulation
             unit_result_dict = self._run_simulation(
                 sampler, reporter, settings, dry
             )
