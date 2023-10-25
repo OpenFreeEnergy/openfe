@@ -160,11 +160,31 @@ def test_validate_alchemical_components_wrong_mappings(mapping):
 
 
 def test_validate_alchemical_components_missing_alchem_comp(
-        benzene_to_toluene_mapping):
+    benzene_to_toluene_mapping
+):
     alchem_comps = {'stateA': [openfe.SolventComponent(),], 'stateB': []}
     with pytest.raises(ValueError, match="Unmapped alchemical component"):
         _validate_alchemical_components(
             alchem_comps, {'ligand': benzene_to_toluene_mapping},
+        )
+
+
+def test_bad_solvent_backend_packmol(
+    benzene_system, toluene_system, benzene_to_toluene_mapping
+):
+    # this is roughly how it should be created
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    assert settings.solvation_settings.backend == 'openmm'
+    settings.solvation_settings.backend = 'packmol'
+    assert settings.solvation_settings.backend == 'packmol'
+
+    p = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    errmsg = "non openmm solvation backend is not supported"
+    with pytest.raises(ValueError, match=errmsg):
+        _ = p.create(
+            stateA=benzene_system, stateB=toluene_system,
+            mapping={'ligand': benzene_to_toluene_mapping},
         )
 
 

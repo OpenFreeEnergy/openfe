@@ -368,6 +368,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         nonbond = self.settings.system_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
+        # make sure that the solvation backend is correct
+        if self.settings.solvation_settings.backend.lower() != 'openmm':
+            errmsg = "non openmm solvation backend is not supported"
+            raise ValueError(errmsg)
+
         # Validate protein component
         system_validation.validate_protein(stateA)
 
@@ -516,6 +521,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep
         )
+
+        # get the simulation steps
         equil_steps, prod_steps = settings_validation.get_simsteps(
             equil_length=sim_settings.equilibration_length,
             prod_length=sim_settings.production_length,

@@ -98,6 +98,7 @@ class SolvationSettings(SettingsBaseModel):
         if v.lower() not in backends:
             errmsg = f"Only {backends} are allowed backend selections"
             raise ValueError(errmsg)
+        return v
 
     @validator('solvent_model')
     def allowed_solvent(cls, v):
