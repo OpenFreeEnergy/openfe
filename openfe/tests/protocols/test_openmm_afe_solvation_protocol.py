@@ -357,6 +357,51 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
         assert sol_sampler.is_periodic
 
 
+def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.alchemsampler_settings.n_repeats = 1
+    s.solvent_simulation_settings.output_indices = "resname UNK"
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+            settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 2
+
+    vac_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationVacuumUnit)]
+    sol_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
+
+    assert len(vac_unit) == 1
+    assert len(sol_unit) == 1
+
+    with tmpdir.as_cwd():
+        sol_sampler = sol_unit[0].run(dry=True)['debug']['sampler']
+        assert sol_sampler.is_periodic
+
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+
+
+
 def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1

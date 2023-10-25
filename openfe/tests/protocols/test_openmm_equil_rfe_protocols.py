@@ -481,7 +481,7 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
         create a molecule that has a total charge that is different from
         the expected formal charge, hence we enforce a zero charge here.
         """
-        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms)
+        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
         rand_arr[-1] = -sum(rand_arr[:-1])
         return rand_arr * unit.elementary_charge
 
