@@ -334,9 +334,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                     mol.assign_partial_charges('am1bcc',
                                                use_conformers=mol.conformers)
 
-          system_generator.create_system(
-              mol.to_topology().to_openmm(), molecules=[mol]
-          )
+            system_generator.create_system(
+                mol.to_topology().to_openmm(), molecules=[mol]
+            )
 
         # get OpenMM modeller + dictionary of resids for each component
         system_modeller, comp_resids = system_creation.get_omm_modeller(
