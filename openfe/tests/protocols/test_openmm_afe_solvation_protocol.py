@@ -385,7 +385,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     benzene_offmol.partial_charges = offmol_pchgs
     benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
 
-    ## check propchgs
+    # check propchgs
     prop_chgs = benzene_smc.to_dict()['molprops']['atom.dprop.PartialCharge']
     prop_chgs = np.array(prop_chgs.split(), dtype=float)
     np.testing.assert_allclose(prop_chgs, offmol_pchgs)
