@@ -85,32 +85,77 @@ def legacy_get_type(res_fn):
         return 'complex'
 
 
-def _get_ddgs(legs):
+def _generate_bad_legs_error_message(set_vals, ligpair):
+    expected_rbfe = {'complex', 'solvent'}
+    expected_rhfe = {'solvent', 'vacuum'}
+    maybe_rhfe = bool(set_vals & expected_rhfe)
+    maybe_rbfe = bool(set_vals & expected_rbfe)
+    if maybe_rhfe and not maybe_rbfe:
+        msg = (
+                "This appears to be an RHFE calculation, but we're "
+                f"missing {expected_rhfe - set_vals} runs for the "
+                f"edge with ligands {ligpair}."
+            )
+    elif maybe_rbfe and not maybe_rhfe:
+        msg = (
+            "This appears to be an RBFE calculation, but we're "
+            f"missing {expected_rbfe - set_vals} runs for the "
+            f"edge with ligands {ligpair}."
+        )
+    elif maybe_rbfe and maybe_rhfe:
+        msg = (
+            "Unable to determine whether this is an RBFE "
+            f"or an RHFE calculation. Found legs {set_vals} "
+            f"for ligands {ligpair}. Those ligands are missing one "
+            f"of: {expected_rhfe | expected_rbfe - set_vals}."
+        )
+    else:
+        # this should never happen
+        msg = (
+            "Something went very wrong while determining the type "
+            f"of RFE calculation. For the ligand pair {ligpair}, "
+            f"we found legs labelled {set_vals}. We expected either "
+            f"{expected_rhfe} or {expected_rbfe}."
+        )
+
+    msg += (
+        "\n\nYou can force partial gathering of results, without "
+        "problematic edges, by using the --allow-partial flag of the gather "
+        "command. Note that this may cause problems with predicting "
+        "absolute free energies from the relative free energies."
+    )
+    return msg
+
+
+def _get_ddgs(legs, error_on_missing=True):
     import numpy as np
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
+        set_vals = set(vals)
         DDGbind = None
         DDGhyd = None
         bind_unc = None
         hyd_unc = None
 
-        if 'complex' in vals and 'solvent' in vals:
+        if set_vals == {'complex', 'solvent'}:
             DG1_mag, DG1_unc = vals['complex']
             DG2_mag, DG2_unc = vals['solvent']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        elif 'solvent' in vals and 'vacuum' in vals:
+        elif set_vals == {'vacuum', 'solvent'}:
             DG1_mag, DG1_unc = vals['solvent']
             DG2_mag, DG2_unc = vals['vacuum']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
         else:
-            raise RuntimeError("Unable to determine type of RFE calculation "
-                               f"for edges with labels {list(vals)} for "
-                               f"ligands {ligpair}")
+            msg = _generate_bad_legs_error_message(set_vals, ligpair)
+            if error_on_missing:
+                raise RuntimeError(msg)
+            else:
+                warning.warn(msg)
 
         DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
