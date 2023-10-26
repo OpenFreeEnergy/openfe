@@ -24,8 +24,8 @@ def plan_rbfe_network_main(
 
     Parameters
     ----------
-    mapper : LigandAtomMapper
-        the mapper to use to generate the mapping
+    mapper : list[LigandAtomMapper]
+        list of mappers to use to generate the mapping
     mapping_scorer : Callable
         scorer, that evaluates the generated mappings
     ligand_network_planner : Callable
@@ -51,7 +51,7 @@ def plan_rbfe_network_main(
     )
 
     network_planner = RBFEAlchemicalNetworkPlanner(
-        mappers=[mapper],
+        mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
     )
@@ -162,7 +162,7 @@ def plan_rbfe_network(
     # DO
     write("Planning RBFE-Campaign:")
     alchemical_network, ligand_network = plan_rbfe_network_main(
-        mapper=mapper_obj,
+        mapper=[mapper_obj],
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
