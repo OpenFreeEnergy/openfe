@@ -180,7 +180,7 @@ def test_bad_solvent_backend_packmol(
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
-    errmsg = "non openmm solvation backend is not supported"
+    errmsg = "Solvation backend packmol is not supported"
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_system, stateB=toluene_system,

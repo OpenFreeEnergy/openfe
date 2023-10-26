@@ -366,9 +366,15 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         # Validate solvent component
         nonbond = self.settings.system_settings.nonbonded_method
-        system_validation.validate_solvent(stateA, nonbond)
+        solv_comp = system_validation.validate_solvent(stateA, nonbond)
 
         # make sure that the solvation backend is correct
+        settings_validation.validate_solvent_settings(
+            self.settings.solvation_settings,
+            solv_comp,
+            allowed_backends=['openmm']
+        )
+
         if self.settings.solvation_settings.backend.lower() != 'openmm':
             errmsg = "non openmm solvation backend is not supported"
             raise ValueError(errmsg)

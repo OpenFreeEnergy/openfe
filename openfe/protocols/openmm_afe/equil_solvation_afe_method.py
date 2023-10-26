@@ -486,7 +486,17 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method
         vac_nonbonded_method = self.settings.vacuum_system_settings.nonbonded_method
         # Use the more complete system validation solvent checks
-        system_validation.validate_solvent(stateA, solv_nonbonded_method)
+        solv_comp = system_validation.validate_solvent(
+            stateA, solv_nonbonded_method
+        )
+
+        # make sure that the solvation backend is correct
+        settings_validation.validate_solvent_settings(
+            self.settings.solvation_settings,
+            solv_comp,
+            allowed_backends=['openmm', 'packmol']
+        )
+
         # Gas phase is always gas phase
         if vac_nonbonded_method.lower() != 'nocutoff':
             errmsg = ("Only the nocutoff nonbonded_method is supported for "

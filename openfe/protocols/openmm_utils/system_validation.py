@@ -106,6 +106,8 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         errmsg = "Non water solvent is not currently supported"
         raise ValueError(errmsg)
 
+    return solv
+
 
 def validate_protein(state: ChemicalSystem):
     """
