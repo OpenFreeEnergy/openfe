@@ -11,13 +11,9 @@ from __future__ import annotations
 
 from typing import Optional
 from openff.units import unit
-import os
 
 from gufe.settings import (
-    Settings,
     SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
 )
 
 
@@ -82,6 +78,12 @@ class SolvationSettings(SettingsBaseModel):
 
     solvent_padding = 1.2 * unit.nanometer
     """Minimum distance from any solute atoms to the solvent box edge."""
+
+    num_solvent_molecules = 500
+    """**Packmol backend only:** number of solvent molecules to add."""
+
+    box_mass_density = 950 * unit.kilogram / unit.meter**3
+    """**Packmol backend only:** target mass density of solvated box."""
 
     backend = 'openmm'
     """
@@ -238,7 +240,6 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
 
 class OpenMMEngineSettings(SettingsBaseModel):
     """OpenMM MD engine settings"""
-
 
     """
     TODO

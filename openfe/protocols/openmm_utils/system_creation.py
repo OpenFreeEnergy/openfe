@@ -4,11 +4,16 @@
 Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
+from itertools import product
+import logging
+from string import ascii_uppercase
 import numpy as np
 import numpy.typing as npt
+import openmm
 from openmm import app, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
+from openff.interchange.components._packmol import UNIT_CUBE, pack_box
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
 from typing import Optional
@@ -18,8 +23,11 @@ from gufe import (
     Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
 )
 from ..openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SimulationSettings, SolvationSettings
+    SystemSettings, SolvationSettings
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_system_generator(
@@ -133,8 +141,8 @@ ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 def get_omm_modeller(protein_comp: Optional[ProteinComponent],
                      solvent_comp: Optional[SolventComponent],
                      small_mols: dict[SmallMoleculeComponent, OFFMol],
-                     omm_forcefield : app.ForceField,
-                     solvent_settings : SolvationSettings) -> ModellerReturn:
+                     omm_forcefield: app.ForceField,
+                     solvent_settings: SolvationSettings) -> ModellerReturn:
     """
     Generate an OpenMM Modeller class based on a potential input ProteinComponent,
     SolventComponent, and a set of small molecules.
@@ -235,3 +243,147 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
 
     return system_modeller, component_resids
 
+
+def create_packmol_system(
+    protein_component: Optional[ProteinComponent],
+    solvent_component: Optional[SolventComponent],
+    smc_components: dict[SmallMoleculeComponent, OFFMol],
+    system_generator: SystemGenerator,
+    solvation_settings: SolvationSettings,
+) -> tuple[openmm.System, app.Topology, omm_unit.Quantity, dict[Component, npt.NDArray]]:
+    """
+    Generate an OpenMM system using packmol.
+
+    Parameters
+    ----------
+    protein_component : Optional[ProteinComponent]
+      Protein Component, if it exists.
+    solvent_component : Optional[ProteinCompoinent]
+      Solvent Component, if it exists.
+    smc_components : dict[SmallMoleculeComponent, openff.toolkit.topology.Molecule]
+      Dictionary of openff Molecules to add.
+    system_generator : openmmforcefields.generator.SystemGenerator
+      System Generator to parameterise this unit.
+    solvation_settings : SolvationSettings
+      Settings detailing how to solvate the system.
+
+    Returns
+    -------
+    system : openmm.System
+      An OpenMM System of the alchemical system.
+    topology : app.Topology
+      Topology object describing the parameterized system
+    positionns : openmm.unit.Quantity
+      Positions of the system.
+    comp_resids : dict[Component, npt.NDArray]
+      Dictionary of residue indices for each component in system.
+     """
+    def _set_offmol_resname(offmol, resname):
+        for a in offmol.atoms:
+            a.metadata['residue_name'] = resname
+
+    def _get_offmol_resname(offmol: OFFMol) -> Optional[str]:
+        resname: Optional[str] = None
+        for a in offmol.atoms:
+            if resname is None:
+                try:
+                    resname = a.metadata['residue_name']
+                except KeyError:
+                    return None
+
+            if resname != a.metadata['residue_name']:
+                wmsg = (f"Inconsistent residue name in OFFMol: {offmol} "
+                        "residue name will be overriden")
+                logger.warning(wmsg)
+                return None
+
+        return resname
+
+    # 0. Do any validation
+    if protein_component is not None:
+        errmsg = ("This backend is not available for simulations "
+                  "involving ProteinComponents")
+        raise ValueError(errmsg)
+
+    # 1. Get the solvent components out
+    if solvent_component is not None:
+        solvent_offmol = OFFMol.from_smiles(solvent_component.smiles)
+        solvent_offmol.generate_conformers()
+        _set_offmol_resname(solvent_offmol, 'SOL')
+        solvent_copies = [solvation_settings.num_solvent_molecules]
+    else:
+        solvent_offmol = []
+        solvent_copies = []
+
+    # 2. Asisgn residue names so we can track our components in the generated
+    # topology.
+
+    # Note: comp_resnames is dict[str, list[Component, list]] where the final list
+    # is to append residues later on
+    comp_resnames = {'SOL': [solvent_component, []]}
+    resnames_store = [''.join(i) for i in product(ascii_uppercase, repeat=3)]
+
+    for comp, offmol in enumerate(smc_components.items()):
+        off_resname = _get_offmol_resname(offmol)
+        if off_resname in comp_resnames is None:
+            # just loop through and pick up a name that doesn't exist
+            while (off_resname in comp_resnames) or (comp_resnames is None):
+                off_resname = resnames_store.pop(0)
+
+        wmsg = "Setting component {comp} residue name to {off_resname}"
+        logger.warning(wmsg)
+        _set_offmol_resname(offmol, off_resname)
+        comp_resnames[comp] = off_resname
+
+    # 3. Create the packmol topology
+    offmols = list(smc_components.values()) + solvent_offmol
+    offmol_copies = [1 for _ in smc_components] + solvent_copies
+
+    off_topology = pack_box(
+        molecules=offmols,
+        num_copies=offmol_copies,
+        mass_density=solvation_settings.box_mass_density,
+        box_shape=UNIT_CUBE,  # One day move away from this
+    )
+
+    # 4. Extract OpenMM objects
+    omm_topology = off_topology.to_openmm()
+    omm_positions = to_openmm(off_topology.get_positions())
+
+    # 5. Assign component resids
+    # Get all the matching residue indices
+    for res in omm_topology.residues():
+        comp_resnames[res.name][1].append(res.index)
+
+    # Now create comp_resids dictionary
+    comp_resids = {}
+    for entry in comp_resnames.values():
+        comp = entry[0]
+        indices = np.array(entry[1])
+        comp_resids[comp] = indices
+
+    # force the creation of parameters for the small molecules
+    # this is necessary because we need to have the FF generated ahead
+    # of solvating the system.
+    # Note by default this is cached to ctx.shared/db.json which should
+    # reduce some of the costs.
+    for mol in offmols:
+        # don't do this if we have user charges
+        if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+            try:
+                # try and follow official spec method
+                mol.assign_partial_charges('am1bcc')
+            except ValueError:  # this is what a confgen failure yields
+                # but fallback to using existing conformer
+                mol.assign_partial_charges('am1bcc',
+                                           use_conformers=mol.conformers)
+
+        system_generator.create_system(
+            mol.to_topology().to_openmm(), molecules=[mol]
+        )
+
+    system = system_generator.create_system(
+        omm_topology, molecules=offmols
+    )
+
+    return system, omm_topology, omm_positions, comp_resids

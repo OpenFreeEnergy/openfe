@@ -33,7 +33,7 @@ import logging
 from collections import defaultdict
 import gufe
 from gufe.components import Component
-from openff.toolkit.topology import Molecule as OFFMolecule
+
 import itertools
 import numpy as np
 import numpy.typing as npt
