@@ -132,6 +132,16 @@ def test_missing_leg_error(results_dir):
     result = runner.invoke(gather, ['results'] + ['-o', '-'])
     assert result.exit_code == 1
     assert isinstance(result.exception, RuntimeError)
-    assert "labels ['solvent']" in str(result.exception)
+    assert "Unable to determine" in str(result.exception)
     assert "'lig_ejm_31'" in str(result.exception)
     assert "'lig_ejm_42'" in str(result.exception)
+
+
+def test_missing_leg_allow_partial(results_dir):
+    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+    (pathlib.Path("results") / file_to_remove).unlink()
+
+    runner = CliRunner()
+    result = runner.invoke(gather,
+                           ['results'] + ['--allow-partial', '-o', '-'])
+    assert result.exit_code == 0

@@ -5,6 +5,7 @@ import click
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 import pathlib
+import warnings
 
 
 def _get_column(val):
@@ -107,7 +108,7 @@ def _generate_bad_legs_error_message(set_vals, ligpair):
             "Unable to determine whether this is an RBFE "
             f"or an RHFE calculation. Found legs {set_vals} "
             f"for ligands {ligpair}. Those ligands are missing one "
-            f"of: {expected_rhfe | expected_rbfe - set_vals}."
+            f"of: {(expected_rhfe | expected_rbfe) - set_vals}."
         )
     else:
         # this should never happen
@@ -155,14 +156,14 @@ def _get_ddgs(legs, error_on_missing=True):
             if error_on_missing:
                 raise RuntimeError(msg)
             else:
-                warning.warn(msg)
+                warnings.warn(msg)
 
         DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     return DDGs
 
 
-def _write_ddg(legs, writer):
+def _write_ddg(legs, writer, allow_partial):
     DDGs = _get_ddgs(legs)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                       "uncertainty (kcal/mol)"])
@@ -178,7 +179,7 @@ def _write_ddg(legs, writer):
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
-def _write_dg_raw(legs, writer):
+def _write_dg_raw(legs, writer, allow_partial):
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
@@ -191,11 +192,11 @@ def _write_dg_raw(legs, writer):
             writer.writerow([simtype, *ligpair, m, u])
 
 
-def _write_dg_mle(legs, writer):
+def _write_dg_mle(legs, writer, allow_partial):
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
-    DDGs = _get_ddgs(legs)
+    DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     MLEs = []
     # 4b) perform MLE
     g = nx.DiGraph()
@@ -264,7 +265,14 @@ def _write_dg_mle(legs, writer):
 @click.option('output', '-o',
               type=click.File(mode='w'),
               default='-')
-def gather(rootdir, output, report):
+@click.option(
+    '--allow-partial', is_flag=True, default=False,
+    help=(
+        "Do not raise errors is results are missing parts for some edges. "
+        "(Skip those edges and issue warning instead.)"
+    )
+)
+def gather(rootdir, output, report, allow_partial):
     """Gather simulation result jsons of relative calculations to a tsv file
 
     This walks ROOTDIR recursively and finds all result JSON files from the
@@ -332,7 +340,7 @@ def gather(rootdir, output, report):
         'ddg': _write_ddg,
         'dg-raw': _write_dg_raw,
     }[report.lower()]
-    writing_func(legs, writer)
+    writing_func(legs, writer, allow_partial)
 
 
 PLUGIN = OFECommandPlugin(
