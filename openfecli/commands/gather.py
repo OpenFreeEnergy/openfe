@@ -164,7 +164,7 @@ def _get_ddgs(legs, error_on_missing=True):
 
 
 def _write_ddg(legs, writer, allow_partial):
-    DDGs = _get_ddgs(legs)
+    DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                       "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
