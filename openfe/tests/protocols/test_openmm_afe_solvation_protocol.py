@@ -318,6 +318,54 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
         assert pdb.n_atoms == 12
 
 
+def test_dry_run_solv_benzene_packmol(benzene_modifications, tmpdir):
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.alchemsampler_settings.n_repeats = 1
+    s.solvent_simulation_settings.output_indices = "not resname SOL"
+    s.solvation_settings.backend = 'packmol'
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+            settings=s,
+    )
+
+    solvent = SolventComponent(
+        neutralize=False, ion_concentration=0*offunit.molar
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': solvent,
+    })
+
+    stateB = ChemicalSystem({'solvent': solvent,})
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 2
+
+    vac_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationVacuumUnit)]
+    sol_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
+
+    assert len(vac_unit) == 1
+    assert len(sol_unit) == 1
+
+    with tmpdir.as_cwd():
+        sol_sampler = sol_unit[0].run(dry=True)['debug']['sampler']
+        assert sol_sampler.is_periodic
+
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 12
+
+
 def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1

@@ -324,25 +324,31 @@ def create_packmol_system(
     comp_resnames = {'SOL': [solvent_component, []]}
     resnames_store = [''.join(i) for i in product(ascii_uppercase, repeat=3)]
 
-    for comp, offmol in enumerate(smc_components.items()):
+    for comp, offmol in smc_components.items():
         off_resname = _get_offmol_resname(offmol)
-        if off_resname in comp_resnames is None:
+        if off_resname is None or off_resname in comp_resnames:
+            # warn that we are overriding clashing molecule resnames
+            if off_resname in comp_resnames:
+                wmsg = (f"Duplicate residue name {off_resnames}, "
+                        "duplicate will be renamed")
+                logger.warning(wmsg)
+
             # just loop through and pick up a name that doesn't exist
-            while (off_resname in comp_resnames) or (comp_resnames is None):
+            while (off_resname in comp_resnames) or (off_resname is None):
                 off_resname = resnames_store.pop(0)
 
-        wmsg = "Setting component {comp} residue name to {off_resname}"
+        wmsg = f"Setting component {comp} residue name to {off_resname}"
         logger.warning(wmsg)
         _set_offmol_resname(offmol, off_resname)
-        comp_resnames[comp] = off_resname
+        comp_resnames[off_resname] = [comp, []]
 
     # 3. Create the packmol topology
-    offmols = list(smc_components.values()) + solvent_offmol
+    offmols = list(smc_components.values()) + [solvent_offmol]
     offmol_copies = [1 for _ in smc_components] + solvent_copies
 
     off_topology = pack_box(
         molecules=offmols,
-        num_copies=offmol_copies,
+        number_of_copies=offmol_copies,
         mass_density=solvation_settings.box_mass_density,
         box_shape=UNIT_CUBE,  # One day move away from this
     )
