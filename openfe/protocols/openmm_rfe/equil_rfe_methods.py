@@ -561,17 +561,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         for smc, mol in chain(off_small_mols['stateA'],
                               off_small_mols['stateB'],
                               off_small_mols['both']):
-            # robustly calculate partial charges;
-            if mol.partial_charges is not None and np.any(mol.partial_charges):
-                # skip if we have existing partial charges unless they are zero (see openmmforcefields)
-                continue
-            try:
-                # try and follow official spec method
-                mol.assign_partial_charges('am1bcc')
-            except ValueError:  # this is what a confgen failure yields
-                # but fallback to using existing conformer
-                mol.assign_partial_charges('am1bcc',
-                                           use_conformers=mol.conformers)
+            # skip if we already have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
 
             system_generator.create_system(mol.to_topology().to_openmm(),
                                            molecules=[mol])
