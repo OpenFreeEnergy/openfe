@@ -79,7 +79,7 @@ def plan_rbfe_network_main(
     multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
 )
 @YAML_OPTIONS.parameter(
-    required=False, default=None,
+    multiple=False, required=False, default=None,
     help=YAML_OPTIONS.kwargs["help"],
 )
 @OUTPUT_DIR.parameter(
@@ -157,7 +157,9 @@ def plan_rbfe_network(
     solvent = None
 
     if yaml_settings is not None:
-        pass
+        yaml_options = YAML_OPTIONS.get(yaml_settings)
+        mapper_obj = yaml_options.get('mapper', None)
+        ligand_network_planner = yaml_options.get('network', None)
 
     if mapper_obj is None:
         mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False,
