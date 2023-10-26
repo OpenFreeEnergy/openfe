@@ -110,7 +110,7 @@ def _generate_bad_legs_error_message(set_vals, ligpair):
             f"for ligands {ligpair}. Those ligands are missing one "
             f"of: {(expected_rhfe | expected_rbfe) - set_vals}."
         )
-    else:
+    else:  # -no-cov-
         # this should never happen
         msg = (
             "Something went very wrong while determining the type "
