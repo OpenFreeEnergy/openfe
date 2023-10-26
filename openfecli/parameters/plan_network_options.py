@@ -57,6 +57,6 @@ def parse_yaml_planner_options(contents: str) -> CliOptions:
         for field in raw:
             if field in expected:
                 continue
-            warnings.warn(f"Unexpected attribute {field}")
+            warnings.warn(f"Ignoring unexpected section: '{field}'")
 
     return CliOptions(**raw)
