@@ -12,17 +12,17 @@ import warnings
 
 
 class MapperSelection(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: str = 'LomapAtomMapper'
-    settings: Optional[dict[str, Any]] = None
+    settings: dict[str, Any] = {}
 
 
 class NetworkSelection(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: str = 'generate_minimal_spanning_network'
-    settings: Optional[dict[str, Any]] = None
+    settings: dict[str, Any] = {}
 
 
 class CliOptions(BaseModel):
@@ -63,12 +63,56 @@ def parse_yaml_planner_options(contents: str) -> CliOptions:
     return CliOptions(**raw)
 
 
-def load_yaml_planner_options(path) -> CliOptions:
-    """Load cli options from yaml file path"""
+def load_yaml_planner_options(path, *args, **kwargs) -> dict:
+    """Load cli options from yaml file path and resolve these"""
+    from openfe.setup.ligand_network_planning import (
+        generate_radial_network,
+        generate_minimal_spanning_network,
+        generate_maximal_network,
+        generate_minimal_redundant_network,
+    )
+    from openfe.setup import (
+        LomapAtomMapper,
+    )
+    from functools import partial
+
     with open(path, 'r') as f:
         raw = f.read()
 
-    return parse_yaml_planner_options(raw)
+    opt = parse_yaml_planner_options(raw)
+
+    choices = {}
+
+    if opt.mapper:
+        mapper_choices = {
+            'lomap': LomapAtomMapper,
+            'lomapatommapper': LomapAtomMapper,
+        }
+
+        try:
+            cls = mapper_choices[opt.mapper.method]
+        except KeyError:
+            raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
+
+        choices['mapper'] = cls(**opt.mapper.settings)
+    if opt.network:
+        network_choices = {
+            'generate_radial_network': generate_radial_network,
+            'radial': generate_radial_network,
+            'generate_minimal_spanning_network': generate_minimal_spanning_network,
+            'mst': generate_minimal_spanning_network,
+            'generate_minimal_redundant_network': generate_minimal_redundant_network,
+            'generate_maximal_network': generate_maximal_network,
+        }
+
+        try:
+            func = network_choices[opt.network.method]
+        except KeyError:
+            raise KeyError(f"Bad network algorithm choice: '{opt.network.method}'")
+
+        choices['network'] = partial(func, **opt.network.settings)
+
+    return choices
 
 
 YAML_OPTIONS = Option(
