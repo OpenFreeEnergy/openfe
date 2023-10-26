@@ -3,8 +3,9 @@
 """Pydantic models for the definition of advanced CLI options
 
 """
-
+import click
 from pydantic import BaseModel, ConfigDict
+from plugcli.params import Option
 from typing import Any, Optional
 import yaml
 import warnings
@@ -60,3 +61,19 @@ def parse_yaml_planner_options(contents: str) -> CliOptions:
             warnings.warn(f"Ignoring unexpected section: '{field}'")
 
     return CliOptions(**raw)
+
+
+def load_yaml_planner_options(path) -> CliOptions:
+    """Load cli options from yaml file path"""
+    with open(path, 'r') as f:
+        raw = f.read()
+
+    return parse_yaml_planner_options(raw)
+
+
+YAML_OPTIONS = Option(
+    '-s', "--settings", "yaml_settings",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to planning settings yaml file.",
+    getter=load_yaml_planner_options,
+)
