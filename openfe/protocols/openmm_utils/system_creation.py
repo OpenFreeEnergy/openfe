@@ -14,6 +14,7 @@ from openmm import app, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
 from openff.interchange.components._packmol import UNIT_CUBE, pack_box
+from openff.units import unit
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
 from typing import Optional
@@ -308,9 +309,10 @@ def create_packmol_system(
 
     # 1. Get the solvent components out
     if solvent_component is not None:
-        solvent_offmol = OFFMol.from_smiles(solvent_component.smiles)
-        solvent_offmol.generate_conformers()
-        _set_offmol_resname(solvent_offmol, 'SOL')
+        offmol = OFFMol.from_smiles(solvent_component.smiles)
+        #offmol.generate_conformers()
+        _set_offmol_resname(offmol, 'SOL')
+        solvent_offmol = [offmol]
         solvent_copies = [solvation_settings.num_solvent_molecules]
     else:
         solvent_offmol = []
@@ -343,14 +345,18 @@ def create_packmol_system(
         comp_resnames[off_resname] = [comp, []]
 
     # 3. Create the packmol topology
-    offmols = list(smc_components.values()) + [solvent_offmol]
+    offmols = list(smc_components.values()) + solvent_offmol
+    print(offmols)
     offmol_copies = [1 for _ in smc_components] + solvent_copies
+    print(offmol_copies)
 
     off_topology = pack_box(
         molecules=offmols,
         number_of_copies=offmol_copies,
         mass_density=solvation_settings.box_mass_density,
         box_shape=UNIT_CUBE,  # One day move away from this
+        tolerance=solvation_settings.packmol_tolerance,
+        center_solute=True,
     )
 
     # 4. Extract OpenMM objects

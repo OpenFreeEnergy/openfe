@@ -487,7 +487,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         vac_nonbonded_method = self.settings.vacuum_system_settings.nonbonded_method
         # Use the more complete system validation solvent checks
         solv_comp = system_validation.validate_solvent(
-            stateA, solv_nonbonded_method
+            stateA, solv_nonbonded_method,
+            self.settings.solvation_settings.backend,
         )
 
         # make sure that the solvation backend is correct

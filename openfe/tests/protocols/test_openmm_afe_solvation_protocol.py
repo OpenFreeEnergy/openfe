@@ -318,7 +318,7 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
         assert pdb.n_atoms == 12
 
 
-def test_dry_run_solv_benzene_packmol(benzene_modifications, tmpdir):
+def test_dry_run_benzene_packmol(benzene_modifications, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
     s.solvent_simulation_settings.output_indices = "not resname SOL"
@@ -329,6 +329,7 @@ def test_dry_run_solv_benzene_packmol(benzene_modifications, tmpdir):
     )
 
     solvent = SolventComponent(
+        smiles='CCC',
         neutralize=False, ion_concentration=0*offunit.molar
     )
 
@@ -361,6 +362,13 @@ def test_dry_run_solv_benzene_packmol(benzene_modifications, tmpdir):
     with tmpdir.as_cwd():
         sol_sampler = sol_unit[0].run(dry=True)['debug']['sampler']
         assert sol_sampler.is_periodic
+
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 12
+
+    with tmpdir.as_cwd():
+        vac_sampler = vac_unit[0].run(dry=True)['debug']['sampler']
+        assert not vac_sampler.is_periodic
 
         pdb = mdt.load_pdb('hybrid_system.pdb')
         assert pdb.n_atoms == 12
@@ -407,7 +415,10 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
         assert sol_sampler.is_periodic
 
 
-def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
+@pytest.mark.parametrize('backend', ['openmm', 'packmol'])
+def test_dry_run_solv_user_charges_benzene(
+    benzene_modifications, backend, tmpdir
+):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
@@ -415,6 +426,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     """
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
+    s.solvation_settings.backend = backend
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -438,14 +450,22 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     prop_chgs = np.array(prop_chgs.split(), dtype=float)
     np.testing.assert_allclose(prop_chgs, offmol_pchgs)
 
+    if backend == 'packmol':
+        solvent = SolventComponent(
+            smiles="CCC", neutralize=False,
+            ion_concentration=0*offunit.molar
+        )
+    else:
+        solvent = SolventComponent()
+
     # Create ChemicalSystems
     stateA = ChemicalSystem({
         'benzene': benzene_smc,
-        'solvent': SolventComponent()
+        'solvent': solvent,
     })
 
     stateB = ChemicalSystem({
-        'solvent': SolventComponent(),
+        'solvent': solvent,
     })
 
     # Create DAG from protocol, get the vacuum and solvent units

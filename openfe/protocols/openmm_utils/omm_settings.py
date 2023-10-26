@@ -85,6 +85,13 @@ class SolvationSettings(SettingsBaseModel):
     box_mass_density = 950 * unit.kilogram / unit.meter**3
     """**Packmol backend only:** target mass density of solvated box."""
 
+    packmol_tolerance = 0.5 * unit.angstrom
+    """
+    **Packmol backend only:** Minimum spacing between molecules during
+    packing. A lower value will converge faster but may not be be suitable
+    for protein simulations.
+    """
+
     backend = 'openmm'
     """
     The backend for solvating a system. Current allowed backends

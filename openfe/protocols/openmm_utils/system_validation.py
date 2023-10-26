@@ -67,7 +67,8 @@ def get_alchemical_components(
     return alchemical_components
 
 
-def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
+def validate_solvent(state: ChemicalSystem, nonbonded_method: str,
+                     solvation_backend: str = 'openmm'):
     """
     Checks that the ChemicalSystem component has the right solvent
     composition for an input nonbonded_methtod.
@@ -102,7 +103,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         errmsg = "Multiple SolventComponent found, only one is supported"
         raise ValueError(errmsg)
 
-    if len(solv) > 0 and solv[0].smiles != 'O':
+    if len(solv) > 0 and solv[0].smiles != 'O' and solvation_backend == 'openmm':
         errmsg = "Non water solvent is not currently supported"
         raise ValueError(errmsg)
 

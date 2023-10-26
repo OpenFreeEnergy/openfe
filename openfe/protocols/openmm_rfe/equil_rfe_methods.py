@@ -366,7 +366,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
         # Validate solvent component
         nonbond = self.settings.system_settings.nonbonded_method
-        solv_comp = system_validation.validate_solvent(stateA, nonbond)
+        solv_comp = system_validation.validate_solvent(
+            stateA, nonbond,
+            self.settings.solvation_settings.backend
+        )
 
         # make sure that the solvation backend is correct
         settings_validation.validate_solvent_settings(
