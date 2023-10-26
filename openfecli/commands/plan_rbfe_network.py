@@ -6,7 +6,7 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS,
+    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -78,13 +78,19 @@ def plan_rbfe_network_main(
 @COFACTORS.parameter(
     multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
 )
+@YAML_OPTIONS.parameter(
+    required=False, default=None,
+    help=YAML_OPTIONS.kwargs["help"],
+)
 @OUTPUT_DIR.parameter(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str], protein: str, cofactors: tuple[str], output_dir: str
+        molecules: List[str], protein: str, cofactors: tuple[str],
+        yaml_settings: str,
+        output_dir: str,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -142,20 +148,37 @@ def plan_rbfe_network(
         cofactors = []
     write("\t\tCofactors: " + str(cofactors))
 
-    solvent = SolventComponent()
+    # Initially set these to None,
+    # possible changed via yaml input
+    # otherwise given default values
+    mapper_obj = None
+    mapping_scorer = None
+    ligand_network_planner = None
+    solvent = None
+
+    if yaml_settings is not None:
+        pass
+
+    if mapper_obj is None:
+        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False,
+                                     max3d=1)
+    if mapping_scorer is None:
+        mapping_scorer = default_lomap_score
+    if ligand_network_planner is None:
+        ligand_network_planner = generate_minimal_spanning_network
+    if solvent is None:
+        solvent = SolventComponent()
+
     write("\t\tSolvent: " + str(solvent))
     write("")
 
     write("Using Options:")
-    mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
     write("\tMapper: " + str(mapper_obj))
 
     # TODO:  write nice parameter
-    mapping_scorer = default_lomap_score
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO:  write nice parameter
-    ligand_network_planner = generate_minimal_spanning_network
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 
