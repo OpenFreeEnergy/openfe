@@ -138,20 +138,25 @@ def _get_ddgs(legs, error_on_missing=True):
         bind_unc = None
         hyd_unc = None
 
-        if set_vals == {'complex', 'solvent'}:
+        do_rbfe = (len(set_vals & {'complex', 'solvent'}) == 2)
+        do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
+
+        if do_rbfe:
             DG1_mag, DG1_unc = vals['complex']
             DG2_mag, DG2_unc = vals['solvent']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        elif set_vals == {'vacuum', 'solvent'}:
+
+        if do_rhfe:
             DG1_mag, DG1_unc = vals['solvent']
             DG2_mag, DG2_unc = vals['vacuum']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        else:
+
+        if not do_rbfe and not do_rhfe:
             msg = _generate_bad_legs_error_message(set_vals, ligpair)
             if error_on_missing:
                 raise RuntimeError(msg)
