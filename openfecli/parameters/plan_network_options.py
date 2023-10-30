@@ -63,8 +63,24 @@ def parse_yaml_planner_options(contents: str) -> CliOptions:
     return CliOptions(**raw)
 
 
-def load_yaml_planner_options(path, *args, **kwargs) -> dict:
-    """Load cli options from yaml file path and resolve these"""
+def load_yaml_planner_options(path: str, context) -> dict:
+    """Load cli options from yaml file path and resolve these to objects
+
+    Parameters
+    ----------
+    path : str
+      path to the yaml file
+    context
+      unused
+
+    Returns
+    -------
+    options : dict
+      dict optionally containing 'mapper' and 'network' keys:
+      'mapper' key holds a AtomMapper object.
+      'network' key holds a curried network planner function, whose signature
+      matches generate_minimum_spanning_network.
+    """
     from openfe.setup.ligand_network_planning import (
         generate_radial_network,
         generate_minimal_spanning_network,
