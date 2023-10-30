@@ -404,6 +404,28 @@ def test_dry_run_ligand(benzene_system, toluene_system,
         assert pdb.n_atoms == 16
 
 
+def test_confgen_mocked_fail(benzene_system, toluene_system,
+                             benzene_to_toluene_mapping, tmpdir):
+    """
+    Check that even if conformer generation fails, we can still perform a sim
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.alchemical_sampler_settings.n_repeats = 1
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    dag = protocol.create(stateA=benzene_system, stateB=toluene_system,
+                          mapping={'ligand': benzene_to_toluene_mapping})
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        with mock.patch('rdkit.Chem.AllChem.EmbedMultipleConfs', return_value=0):
+            sampler = dag_unit.run(dry=True)
+
+            assert sampler
+
+
+
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
                               benzene_to_toluene_mapping, tmpdir):
     """
@@ -459,7 +481,7 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
         create a molecule that has a total charge that is different from
         the expected formal charge, hence we enforce a zero charge here.
         """
-        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms)
+        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
         rand_arr[-1] = -sum(rand_arr[:-1])
         return rand_arr * unit.elementary_charge
 
@@ -475,12 +497,10 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
     # Create new smc with overriden charges
     benzene_offmol = benzene_modifications['benzene'].to_openff()
     toluene_offmol = benzene_modifications['toluene'].to_openff()
-    benzene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
-    toluene_offmol.assign_partial_charges(partial_charge_method='am1bcc')
     benzene_rand_chg = assign_fictitious_charges(benzene_offmol)
     toluene_rand_chg = assign_fictitious_charges(toluene_offmol)
-    benzene_offmol.partial_charges[:] = benzene_rand_chg
-    toluene_offmol.partial_charges[:] = toluene_rand_chg
+    benzene_offmol.partial_charges = benzene_rand_chg
+    toluene_offmol.partial_charges = toluene_rand_chg
     benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
     toluene_smc = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
 
@@ -1241,10 +1261,103 @@ class TestTyk2XmlRegression:
             assert float(a.get('d')) == pytest.approx(float(b.get('d')))
 
 
-def test_reload_protocol_result(transformation_json):
-    d = json.loads(transformation_json,
-                   cls=gufe.tokenization.JSON_HANDLER.decoder)
+class TestProtocolResult:
+    @pytest.fixture()
+    def protocolresult(self, rfe_transformation_json):
+        d = json.loads(rfe_transformation_json,
+                       cls=gufe.tokenization.JSON_HANDLER.decoder)
 
-    pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+        pr = openfe.ProtocolResult.from_dict(d['protocol_result'])
 
-    assert pr
+        return pr
+
+    def test_reload_protocol_result(self, rfe_transformation_json):
+        d = json.loads(rfe_transformation_json,
+                       cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+        pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+
+        assert pr
+
+    def test_get_estimate(self, protocolresult):
+        est = protocolresult.get_estimate()
+
+        assert est
+        assert est.m == pytest.approx(-15.768768285032115)
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_uncertainty(self, protocolresult):
+        est = protocolresult.get_uncertainty()
+
+        assert est
+        assert est.m == pytest.approx(0.03662634237353985)
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_individual(self, protocolresult):
+        inds = protocolresult.get_individual_estimates()
+
+        assert isinstance(inds, list)
+        assert len(inds) == 3
+        for e, u in inds:
+            assert e.is_compatible_with(unit.kilojoule_per_mole)
+            assert u.is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_forwards_etc(self, protocolresult):
+        far = protocolresult.get_forward_and_reverse_energy_analysis()
+
+        assert isinstance(far, list)
+        far1 = far[0]
+        assert isinstance(far1, dict)
+        for k in ['fractions', 'forward_DGs', 'forward_dDGs',
+                  'reverse_DGs', 'reverse_dDGs']:
+            assert k in far1
+
+            if k == 'fractions':
+                assert isinstance(far1[k], np.ndarray)
+            else:
+                assert isinstance(far1[k], unit.Quantity)
+                assert far1[k].is_compatible_with(unit.kilojoule_per_mole)
+
+    def test_get_overlap_matrices(self, protocolresult):
+        ovp = protocolresult.get_overlap_matrices()
+
+        assert isinstance(ovp, list)
+        assert len(ovp) == 3
+
+        ovp1 = ovp[0]
+        assert isinstance(ovp1['matrix'], np.ndarray)
+        assert ovp1['matrix'].shape == (11,11)
+
+    def test_get_replica_transition_statistics(self, protocolresult):
+        rpx = protocolresult.get_replica_transition_statistics()
+
+        assert isinstance(rpx, list)
+        assert len(rpx) == 3
+        rpx1 = rpx[0]
+        assert 'eigenvalues' in rpx1
+        assert 'matrix' in rpx1
+        assert rpx1['eigenvalues'].shape == (11,)
+        assert rpx1['matrix'].shape == (11, 11)
+
+    def test_get_replica_states(self, protocolresult):
+        rep = protocolresult.get_replica_states()
+
+        assert isinstance(rep, list)
+        assert len(rep) == 3
+        assert rep[0].shape == (6, 11)
+
+    def test_equilibration_iterations(self, protocolresult):
+        eq = protocolresult.equilibration_iterations()
+
+        assert isinstance(eq, list)
+        assert len(eq) == 3
+        assert all(isinstance(v, float) for v in eq)
+
+    def test_production_iterations(self, protocolresult):
+        prod = protocolresult.production_iterations()
+
+        assert isinstance(prod, list)
+        assert len(prod) == 3
+        assert all(isinstance(v, float) for v in prod)

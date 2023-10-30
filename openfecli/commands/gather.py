@@ -6,6 +6,7 @@ from collections import defaultdict
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 import pathlib
+import warnings
 
 
 def _get_column(val):
@@ -101,38 +102,90 @@ def legacy_get_type(res_fn):
         return 'complex'
 
 
-def _get_ddgs(legs):
+def _generate_bad_legs_error_message(set_vals, ligpair):
+    expected_rbfe = {'complex', 'solvent'}
+    expected_rhfe = {'solvent', 'vacuum'}
+    maybe_rhfe = bool(set_vals & expected_rhfe)
+    maybe_rbfe = bool(set_vals & expected_rbfe)
+    if maybe_rhfe and not maybe_rbfe:
+        msg = (
+                "This appears to be an RHFE calculation, but we're "
+                f"missing {expected_rhfe - set_vals} runs for the "
+                f"edge with ligands {ligpair}."
+            )
+    elif maybe_rbfe and not maybe_rhfe:
+        msg = (
+            "This appears to be an RBFE calculation, but we're "
+            f"missing {expected_rbfe - set_vals} runs for the "
+            f"edge with ligands {ligpair}."
+        )
+    elif maybe_rbfe and maybe_rhfe:
+        msg = (
+            "Unable to determine whether this is an RBFE "
+            f"or an RHFE calculation. Found legs {set_vals} "
+            f"for ligands {ligpair}. Those ligands are missing one "
+            f"of: {(expected_rhfe | expected_rbfe) - set_vals}."
+        )
+    else:  # -no-cov-
+        # this should never happen
+        msg = (
+            "Something went very wrong while determining the type "
+            f"of RFE calculation. For the ligand pair {ligpair}, "
+            f"we found legs labelled {set_vals}. We expected either "
+            f"{expected_rhfe} or {expected_rbfe}."
+        )
+
+    msg += (
+        "\n\nYou can force partial gathering of results, without "
+        "problematic edges, by using the --allow-partial flag of the gather "
+        "command. Note that this may cause problems with predicting "
+        "absolute free energies from the relative free energies."
+    )
+    return msg
+
+
+def _get_ddgs(legs, error_on_missing=True):
     import numpy as np
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
+        set_vals = set(vals)
         DDGbind = None
         DDGhyd = None
         bind_unc = None
         hyd_unc = None
 
-        if 'complex' in vals and 'solvent' in vals:
+        do_rbfe = (len(set_vals & {'complex', 'solvent'}) == 2)
+        do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
+
+        if do_rbfe:
             DG1_mag, DG1_unc, _ = vals['complex']
             DG2_mag, DG2_unc, _ = vals['solvent']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        elif 'solvent' in vals and 'vacuum' in vals:
+
+        if do_rhfe:
             DG1_mag, DG1_unc, _ = vals['solvent']
             DG2_mag, DG2_unc, _ = vals['vacuum']
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
-        else:  # -no-cov-
-            raise RuntimeError(f"Unknown DDG type for {vals}")
+
+        if not do_rbfe and not do_rhfe:
+            msg = _generate_bad_legs_error_message(set_vals, ligpair)
+            if error_on_missing:
+                raise RuntimeError(msg)
+            else:
+                warnings.warn(msg)
 
         DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     return DDGs
 
 
-def _write_ddg(legs, writer):
-    DDGs = _get_ddgs(legs)
+def _write_ddg(legs, writer, allow_partial):
+    DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                       "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
@@ -147,7 +200,7 @@ def _write_ddg(legs, writer):
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
-def _write_dg_raw(legs, writer):
+def _write_dg_raw(legs, writer, allow_partial):
     writer.writerow(["leg", "ligand_i", "ligand_j", "repeat", "generation",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
@@ -165,11 +218,11 @@ def _write_dg_raw(legs, writer):
                 writer.writerow([simtype, *ligpair, repeat_num, gen, m, u])
 
 
-def _write_dg_mle(legs, writer):
+def _write_dg_mle(legs, writer, allow_partial):
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
-    DDGs = _get_ddgs(legs)
+    DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     MLEs = []
     # 4b) perform MLE
     g = nx.DiGraph()
@@ -238,7 +291,14 @@ def _write_dg_mle(legs, writer):
 @click.option('output', '-o',
               type=click.File(mode='w'),
               default='-')
-def gather(rootdir, output, report):
+@click.option(
+    '--allow-partial', is_flag=True, default=False,
+    help=(
+        "Do not raise errors is results are missing parts for some edges. "
+        "(Skip those edges and issue warning instead.)"
+    )
+)
+def gather(rootdir, output, report, allow_partial):
     """Gather simulation result jsons of relative calculations to a tsv file
 
     This walks ROOTDIR recursively and finds all result JSON files from the
@@ -249,11 +309,11 @@ def gather(rootdir, output, report):
     The results reported depend on ``--report`` flag:
 
     \b
-    * 'dg' (default) reports the ligand and the results are the maximum
-      likelihood estimate of its absolute free, and the uncertainty in
-      that.
+    * 'dg' (default) reports the ligand, its absolute free energy, and
+      the associated uncertainty as the maximum likelihood estimate obtained
+      from DDG replica averages and standard deviations.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
-      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty
+      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
     * 'dg-raw' reports the raw results, giving the leg (vacuum, solvent, or
       complex), ligand_i, ligand_j, the raw DG(i->j) associated with it.
 
@@ -308,7 +368,7 @@ def gather(rootdir, output, report):
         'ddg': _write_ddg,
         'dg-raw': _write_dg_raw,
     }[report.lower()]
-    writing_func(legs, writer)
+    writing_func(legs, writer, allow_partial)
 
 
 PLUGIN = OFECommandPlugin(

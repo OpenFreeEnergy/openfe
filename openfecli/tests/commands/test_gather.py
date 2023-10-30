@@ -2,10 +2,12 @@ from click.testing import CliRunner
 import glob
 from importlib import resources
 import tarfile
+import pathlib
 import pytest
 
 from openfecli.commands.gather import (
-    gather, format_estimate_uncertainty, _get_column
+    gather, format_estimate_uncertainty, _get_column,
+    _generate_bad_legs_error_message,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -106,3 +108,40 @@ def test_gather(results_dir, report):
 
     assert set(expected.split(b'\n')) == actual_lines
 
+
+@pytest.mark.parametrize('include', ['complex', 'solvent', 'vacuum'])
+def test_generate_bad_legs_error_message(include):
+    expected = {
+        'complex': ("appears to be an RBFE", "missing {'solvent'}"),
+        'vacuum': ("appears to be an RHFE", "missing {'solvent'}"),
+        'solvent': ("whether this is an RBFE or an RHFE",
+                    "'complex'", "'solvent'"),
+    }[include]
+    set_vals = {include}
+    ligpair = {'lig1', 'lig2'}
+    msg = _generate_bad_legs_error_message(set_vals, ligpair)
+    for string in expected:
+        assert string in msg
+
+
+def test_missing_leg_error(results_dir):
+    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+    (pathlib.Path("results") / file_to_remove).unlink()
+
+    runner = CliRunner()
+    result = runner.invoke(gather, ['results'] + ['-o', '-'])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, RuntimeError)
+    assert "Unable to determine" in str(result.exception)
+    assert "'lig_ejm_31'" in str(result.exception)
+    assert "'lig_ejm_42'" in str(result.exception)
+
+
+def test_missing_leg_allow_partial(results_dir):
+    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+    (pathlib.Path("results") / file_to_remove).unlink()
+
+    runner = CliRunner()
+    result = runner.invoke(gather,
+                           ['results'] + ['--allow-partial', '-o', '-'])
+    assert result.exit_code == 0

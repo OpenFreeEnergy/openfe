@@ -160,3 +160,9 @@ cython_debug/
 
 # vim
 *.swp
+
+# vscode
+.vscode/
+
+# Example notebooks
+docs/ExampleNotebooks/
