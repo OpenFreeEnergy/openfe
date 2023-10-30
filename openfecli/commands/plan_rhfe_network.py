@@ -8,7 +8,7 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR,
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -64,12 +64,16 @@ def plan_rhfe_network_main(
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
 )
+@YAML_OPTIONS.parameter(
+    multiple=False, required=False, default=None,
+    help=YAML_OPTIONS.kwargs["help"],
+)
 @OUTPUT_DIR.parameter(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
 @print_duration
-def plan_rhfe_network(molecules: List[str], output_dir: str):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -120,20 +124,35 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
         + " ".join([str(sm) for sm in small_molecules])
     )
 
-    solvent = SolventComponent()
+    mapper_obj = None
+    mapping_scorer = None
+    ligand_network_planner = None
+    solvent = None
+
+    if yaml_settings is not None:
+        yaml_options = YAML_OPTIONS.get(yaml_settings)
+        mapper_obj = yaml_options.get('mapper', None)
+        ligand_network_planner = yaml_options.get('network', None)
+
+    if mapper_obj is None:
+        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
+    if mapping_scorer is None:
+        mapping_scorer = default_lomap_score
+    if ligand_network_planner is None:
+        ligand_network_planner = generate_minimal_spanning_network
+    if solvent is None:
+        solvent = SolventComponent()
+
     write("\t\tSolvent: " + str(solvent))
     write("")
 
     write("Using Options:")
-    mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
     write("\tMapper: " + str(mapper_obj))
 
     # TODO:  write nice parameter
-    mapping_scorer = default_lomap_score
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO: write nice parameter
-    ligand_network_planner = generate_minimal_spanning_network
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 
