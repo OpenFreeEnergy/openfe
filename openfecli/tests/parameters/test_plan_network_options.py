@@ -41,7 +41,7 @@ def test_loading_full_yaml(full_yaml):
 
     assert d
     assert d.mapper
-    assert d.mapper.method == 'LomapAtomMapper'
+    assert d.mapper.method == 'LomapAtomMapper'.lower()
     assert d.mapper.settings['timeout'] == 120
     assert d.network
     assert d.network.method == 'generate_radial_network'
@@ -52,7 +52,7 @@ def test_loading_mapper_yaml(partial_mapper_yaml):
 
     assert d
     assert d.mapper
-    assert d.mapper.method == 'KartografAtomMapper'
+    assert d.mapper.method == 'KartografAtomMapper'.lower()
     assert d.network is None
 
 
