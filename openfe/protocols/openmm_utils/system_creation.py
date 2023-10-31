@@ -277,7 +277,7 @@ def _get_toolkit_wrapper_charge_backend(selection: str):
 
 def assign_am1bcc_charges(
     offmol: OFFMol,
-    charge_backend: str = 'amber',
+    charge_backend: str = 'ambertools',
     conformer: Optional[Iterable[offunit.Quantity]] = None
 ) -> None:
     """
@@ -419,7 +419,7 @@ def assign_partial_charges(
       The Molecule to assign charges for.
     method : str
       The method to use for charge assignement.
-      Supported methods include: `am1bcc`, `amb1ccelf10`, and `nagl`.
+      Supported methods include: `am1bcc`, `am1bccelf10`, and `nagl`.
     charge_backend : str
       The charge backend used for `am1bcc` or `am1bccelf10` charges.
       Default is `ambertools`.
@@ -457,5 +457,5 @@ def assign_partial_charges(
         assign_nagl_am1bcc_charges(offmol, nagl_model)
     else:
         errmsg = (f"Unknown charge method: {method} requested. "
-                  "Available methods are: `am1bcc`, `amb1ccelf10`, and `nagl`")
+                  "Available methods are: `am1bcc`, `am1bccelf10`, and `nagl`")
         raise ValueError(errmsg)
