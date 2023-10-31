@@ -129,3 +129,66 @@ class AbsoluteSolvationSettings(Settings):
     Simulation control settings, including simulation lengths and
     record-keeping for the solvent transformation.
     """
+
+
+class AbsoluteBindingSettings(Settings):
+    """
+    Configuration object for ``AbsoluteBindingProtocol``.
+
+    See Also
+    --------
+    openfe.protocols.openmm_afe.AbsoluteBindingProtocol
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    # Inherited things
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields"""
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters"""
+
+    # Things for creating the systems
+    system_settings: SystemSettings
+    """
+    Simulation system settings including the
+    long-range non-bonded methods for the transformations.
+    """
+    solvation_settings: SolvationSettings
+    """Settings for solvating the system."""
+
+    # Alchemical settings
+    alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings including lambda windows.
+    """
+    alchemsampler_settings: AlchemicalSamplerSettings
+    """
+    Settings for controling how we sample alchemical space, including the
+    number of repeats.
+    """
+
+    # MD Engine things
+    engine_settings: OpenMMEngineSettings
+    """
+    Settings specific to the OpenMM engine, such as the compute platform.
+    """
+
+    # Sampling State defining things
+    integrator_settings: IntegratorSettings
+    """
+    Settings for controlling the integrator, such as the timestep and
+    barostat settings.
+    """
+
+    # Simulation run settings
+    solvent_simulation_settings: SimulationSettings
+    """
+    Simulation control settings, including simulation lengths and
+    record-keeping for the solvent transformation.
+    """
+    complex_simulation_settings: SimulationSettings
+    """
+    Simulation control settings, including simulation lengths and
+    record-keeping for the complex transformation.
+    """
