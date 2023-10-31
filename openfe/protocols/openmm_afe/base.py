@@ -568,7 +568,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         nc = self.shared_basepath / simulation_settings.output_filename
-        chk = self.shared_basepath / simulation_settings.checkpoint_storage
+        chk = simulation_settings.checkpoint_storage
 
         reporter = multistate.MultiStateReporter(
             storage=nc,

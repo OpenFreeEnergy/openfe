@@ -670,7 +670,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         #  a. Create the multistate reporter
         nc = shared_basepath / sim_settings.output_filename
-        chk = shared_basepath / sim_settings.checkpoint_storage
+        chk = sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
