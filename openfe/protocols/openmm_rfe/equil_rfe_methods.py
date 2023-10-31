@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Equilibrium Relative Free Energy methods using OpenMM in a
+"""Equilibrium Relative Free Energy methods using OpenMM and OpenMMTools in a
 Perses-like manner.
 
 This module implements the necessary methodology toolking to run calculate a
@@ -14,6 +14,10 @@ TODO
 ----
 * Improve this docstring by adding an example use case.
 
+Acknowledgements
+----------------
+This Protocol is based on, and leverages components originating from
+the Perses toolkit (https://github.com/choderalab/perses).
 """
 from __future__ import annotations
 
@@ -55,8 +59,26 @@ from ..openmm_utils import (
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
+from openfe.due import due, Doi
+
 
 logger = logging.getLogger(__name__)
+
+
+due.cite(Doi("10.5281/zenodo.1297683"),
+         description="Perses",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
+
+due.cite(Doi("10.5281/zenodo.596622"),
+         description="OpenMMTools",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
+
+due.cite(Doi("10.1371/journal.pcbi.1005659"),
+         description="OpenMM",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
 
 
 def _get_resname(off_mol) -> str:
