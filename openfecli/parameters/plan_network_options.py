@@ -4,7 +4,7 @@
 
 """
 import click
-from pydantic import BaseModel, ConfigDict
+from pydantic.v1 import BaseModel  # , ConfigDict
 from plugcli.params import Option
 from typing import Any, Optional
 import yaml
@@ -12,21 +12,29 @@ import warnings
 
 
 class MapperSelection(BaseModel):
-    model_config = ConfigDict(extra='allow', str_to_lower=True)
+    # model_config = ConfigDict(extra='allow', str_to_lower=True)
+    class Config:
+        extra = 'allow'
+        anystr_lower = True
 
     method: str = 'LomapAtomMapper'
     settings: dict[str, Any] = {}
 
 
 class NetworkSelection(BaseModel):
-    model_config = ConfigDict(extra='allow', str_to_lower=True)
+    # model_config = ConfigDict(extra='allow', str_to_lower=True)
+    class Config:
+        extra = 'allow'
+        anystr_lower = True
 
     method: str = 'generate_minimal_spanning_network'
     settings: dict[str, Any] = {}
 
 
 class CliOptions(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    # model_config = ConfigDict(extra='allow')
+    class Config:
+        extra = 'allow'
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
