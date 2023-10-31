@@ -267,7 +267,7 @@ def _get_toolkit_wrapper_charge_backend(selection: str):
     }
     try:
         toolkitwrapper = available_backends[selection.lower()]
-    except:
+    except KeyError:
         errmsg = (f"An unknown charge backend was requested {selection} "
                   "available backend options are: {available_backends.keys()}")
         raise ValueError(errmsg)
@@ -297,7 +297,7 @@ def assign_am1bcc_charges(
 
     try:
         offmol.assign_partial_charges(
-            partial_charge_method='am1bcc', 
+            partial_charge_method='am1bcc',
             use_conformers=conformer,
             toolkit_registry=backend(),
         )
@@ -327,8 +327,8 @@ def assign_nagl_am1bcc_charges(
     """
 
     if nagl_model is None:
-        # It's not fully clear that the models will always be sort
-        # ordered - see: https://github.com/openforcefield/openff-nagl-models/issues/12
+        # It's not fully clear that the models will always be sort ordered
+        # see: https://github.com/openforcefield/openff-nagl-models/issues/12
         from openff.nagl_models import list_available_nagl_models
         nagl_model = list_available_models()[-1]
 
@@ -342,7 +342,7 @@ def assign_am1bccelf10_charges(
     offmol: OFFMol,
     charge_backend: Optional[str] = 'ambertools',
     ambertools_generate_n_conformers: int = 500,
-):
+) -> None:
     """
     Assign AM1BCC charges using a given toolkit.
 
@@ -407,7 +407,8 @@ def assign_partial_charges(
     charge_backend: str = "ambertools",
     use_conformer: bool = True,
     ambertools_elf_generate_n_conformers: int = 500,
-    nagl_model: Optional[str] = "openff-gnn-am1bcc-0.0.1-rc.1.pt"):
+    nagl_model: Optional[str] = "openff-gnn-am1bcc-0.0.1-rc.1.pt"
+) -> None:
     """
     Assign partial charges to an OpenFF Molecule based on selected method.
 
