@@ -328,8 +328,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
                 # due to issues with partial charge generation in ambertools
                 # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
+
+                # TODO: pass through user selection for partial charges
+                system_creation.assign_partial_charges(
+                    method='am1bcc', 
+                    charge_backend='ambertools',
+                    use_conformer=True,
                 )
 
             system_generator.create_system(

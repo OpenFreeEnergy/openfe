@@ -9,9 +9,16 @@ import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
+from openff.toolkit.utils.toolkits import (
+    AmberToolsToolkitWrapper,
+    OpenEyeToolkitWrapper,
+    RDKitToolkitWrapper,
+)
+from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
 from openff.units.openmm import to_openmm, ensure_quantity
+from openff.units import offunit
 from openmmforcefields.generators import SystemGenerator
-from typing import Optional
+from typing import Optional, Iterable
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
@@ -20,6 +27,9 @@ from gufe import (
 from ..openmm_rfe.equil_rfe_settings import (
     SystemSettings, SimulationSettings, SolvationSettings
 )
+
+
+TOOLKITREGISTRY: TypeAlias = Union[ToolkitRegistry, ToolkitWrapper]
 
 
 def get_system_generator(
@@ -235,3 +245,216 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
 
     return system_modeller, component_resids
 
+
+def _get_toolkit_wrapper_charge_backend(selection: str):
+    """
+    Get a ToolkitWrapper for a given charge backend selection.
+
+    Parameters
+    ----------
+    selection : str
+      The charge backend selected. Supported entries are
+      `oechem` and `ambertools`.
+
+    Raises
+    ------
+    ValueError
+      If an unrecognised charge backend selection is passed.
+    """
+    available_backends = {
+        'oechem': OpenEyeToolkitWrapper,
+        'ambertools': AmberToolsTookitWrapper,
+    }
+    try:
+        toolkitwrapper = available_backends[selection.lower()]
+    except:
+        errmsg = (f"An unknown charge backend was requested {selection} "
+                  "available backend options are: {available_backends.keys()}")
+        raise ValueError(errmsg)
+
+    return toolkitwrapper
+
+
+def assign_am1bcc_charges(
+    offmol: OFFMol,
+    charge_backend: str = 'amber',
+    conformer: Optional[Iterable[offunit.Quantity]] = None
+) -> None:
+    """
+    Assign AM1BCC charges using a given toolkit.
+
+    Parameters
+    ----------
+    offmol: openff.toolkit.Molecule
+      The Molecule to assign AM1BCC charges for.
+    charge_backend : str
+      Which backend to use to generate charges. Available options are:
+
+      * `ambertools`: Use AmberTools' antechamber to generate charges.
+      * `oechem`: Use the OpenEye toolkit to generate charges.
+    """
+    backend = _get_toolkit_wrapper_charge_backend(charge_backend)
+
+    try:
+        offmol.assign_partial_charges(
+            partial_charge_method='am1bcc', 
+            use_conformers=conformer,
+            toolkit_registry=backend(),
+        )
+    # if we get a confgen failure fallback to using the existing conformer
+    except ValueError:
+        offmol.assign_partial_charges(
+            partial_charge_method='am1bcc',
+            use_conformers=offmol.conformers,
+            toolkit_registry=backend(),
+        )
+
+
+def assign_nagl_am1bcc_charges(
+    offmol: OFFMol,
+    nagl_model: Optional[str] = "openff-gnn-am1bcc-0.0.1-rc.1.pt"
+) -> None:
+    """
+    Assign partial charges using the NAGL ML Model.
+
+    Parameters
+    ----------
+    offmol: openff.toolkit.Molecule
+      The Molecule to assign AM1BCC charges for.
+    nagl_model : Optional[str]
+      The nagl model to use for partial charge assignment.
+      If None, will use latest available model.
+    """
+
+    if nagl_model is None:
+        # It's not fully clear that the models will always be sort
+        # ordered - see: https://github.com/openforcefield/openff-nagl-models/issues/12
+        from openff.nagl_models import list_available_nagl_models
+        nagl_model = list_available_models()[-1]
+
+    offmol.assign_partial_charges(
+        partial_charge_method=nagl_model,
+        toolkit_registry=NAGLToolkitWrapper(),
+    )
+
+
+def assign_am1bccelf10_charges(
+    offmol: OFFMol,
+    charge_backend: Optional[str] = 'ambertools',
+    ambertools_generate_n_conformers: int = 500,
+):
+    """
+    Assign AM1BCC charges using a given toolkit.
+
+    Parameters
+    ----------
+    offmol : openff.toolkit.Molecule
+      The Molecule to assign AM1BCCELF10 charges for.
+    charge_backend : str
+      Which backend to use to generate charges. Available options are:
+
+      * `ambertools`: Use AmberTools' antechamber to generate charges.
+      * `oechem`: Use the OpenEye toolkit to generate charges.
+
+    ambertools_generate_n_conformers : int
+      The number of conformers to initially generate for elf10 selection.
+      Note: this is only used by the `ambertools` backend option.
+    """
+    backend = _get_toolkit_wrapper_charge_backend(charge_backend)
+
+    if charge_backend.lower() == 'oechem':
+        offmol.assign_partial_charges(
+            partial_charge_method='am1bccelf10',
+            toolkit_registry=backend(),
+        )
+
+    else:
+        # make a copy of the offmol to avoid overwriting conformers
+        # TODO: in tests ensure that the offmol conformer doesn't change
+        # after charge asisgnment for any of these methods!
+        offmol_copy = OFFMol(offmol)
+
+        # We generate conformers using RDKit to be consistent
+        offmol_copy.generate_conformers(
+            # The OFF recommended default for OpenEye is 500
+            n_conformers=ambertools_generate_n_conformers,
+            rms_cutoff=0.25 * offunit.angstrom,
+            toolkit_registry=RDKitToolkitWrapper()
+        )
+
+        # Next we apply the elf10 conformer selection
+        offmol_copy.apply_elf_conformer_selection(
+            percentage=2,
+            limit=10,
+            rms_tolerance=0.05 * offunit.angstrom,  # Should this be an option?
+        )
+
+        # Then we loop over the selected conformers
+        charges = np.zeros([offmol_copy.n_atoms])
+
+        for conf in offmol_copy.conformers:
+            offmol_copy.assign_partial_charges('am1bcc', use_conformers=[conf])
+            charges += offmol_copy.partial_charges
+
+        charges /= len(offmol_copy.conformers)
+
+        offmol.partial_charges = charges
+
+
+def assign_partial_charges(
+    offmol,
+    method: str,
+    charge_backend: str = "ambertools",
+    use_conformer: bool = True,
+    ambertools_elf_generate_n_conformers: int = 500,
+    nagl_model: Optional[str] = "openff-gnn-am1bcc-0.0.1-rc.1.pt"):
+    """
+    Assign partial charges to an OpenFF Molecule based on selected method.
+
+
+    Parameters
+    ----------
+    offmol : openff.toolkit.Molecule
+      The Molecule to assign charges for.
+    method : str
+      The method to use for charge assignement.
+      Supported methods include: `am1bcc`, `amb1ccelf10`, and `nagl`.
+    charge_backend : str
+      The charge backend used for `am1bcc` or `am1bccelf10` charges.
+      Default is `ambertools`.
+    use_conformer : bool
+      If method is `am1bcc`, whether or not to use the existing
+      conformer for charge generation. Default True.
+    ambertools_elf_generate_n_conformers : int
+      If method is `am1bccelf10` and charge_backend is `ambertools`,
+      the number of initial conformers to generate prior to ELF10
+      filtering. Default 500.
+    nagl_model : Optional[str]
+      The NAGL model to use for charge assignment if method is `nagl`.
+      If None, the last model returned by
+      openff.nagl_model.list_available_models will be used.
+      Default to openff-gnn-am1bcc-0.0.1-rc.1.pt
+
+    Raises
+    ------
+    ValueError
+      If an unknown charge method is provided.
+    """
+    if method.lower() == 'am1bcc':
+        if use_conformer:
+            conformer = offmol.conformers
+        else:
+            conformer = None
+
+        assign_am1bcc_charges(offmol, charge_backend, conformer)
+
+    elif method.lower() == 'am1bccelf10':
+        assign_am1bccelf10_charges(
+            offmol, charge_backend, ambertools_elf_generate_n_conformers
+        )
+    elif method.lower() == 'nagl':
+        assign_nagl_am1bcc_charges(offmol, nagl_model)
+    else:
+        errmsg = (f"Unknown charge method: {method} requested. "
+                  "Available methods are: `am1bcc`, `amb1ccelf10`, and `nagl`")
+        raise ValueError(errmsg)
