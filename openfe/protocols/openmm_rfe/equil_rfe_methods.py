@@ -275,8 +275,25 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         replica_states : List[npt.NDArray]
           List of replica states for each repeat
         """
-        replica_states = [pus[0].outputs['replica_states']
-                          for pus in self.data.values()]
+        def is_file(filename: str):
+            p = pathlib.Path(filename)
+            if not p.exists():
+                errmsg = f"File could not be found {p}"
+                raise ValueError(p)
+            return p
+
+        replica_states = []
+
+        for pus in self.data.values():
+            nc = is_file(pus[0].outputs['nc']).as_posix()
+            chk = is_file(pus[0].outputs['last_checkpoint']).name
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode='r'
+            )
+            replica_states.append(
+                np.asarray(reporter.read_replica_thermodynamic_states())
+            )
+            reporter.close()
 
         return replica_states
 

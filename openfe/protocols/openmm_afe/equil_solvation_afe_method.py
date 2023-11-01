@@ -258,13 +258,40 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           the thermodynamic cycle, with lists of replica states
           timeseries for each repeat of that simulation type.
         """
-        replica_states: dict[str, list[npt.NDArray]] = {}
+        replica_states: dict[str, list[npt.NDArray]] = {
+            'solvent': [], 'vacuum': []
+        }
+
+        def is_file(filename: str):
+            p = pathlib.Path(filename)
+
+            if not p.exists():
+                errmsg = f"File could not be found {p}"
+                raise ValueError(p)
+
+            return p
+
+        def get_replica_state(nc, chk):
+            nc = is_file(nc).as_posix()
+            chk = is_file(chk).name
+
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode='r'
+            )
+
+            retval = np.asarray(reporter.read_replica_thermodynamic_states())
+            reporter.close()
+
+            return retval
 
         for key in ['solvent', 'vacuum']:
-            replica_states[key] = [
-                pus[0].outputs['replica_states']
-                for pus in self.data[key].values()
-            ]
+            for pus in self.data[key].values():
+                states = get_replica_state(
+                    pus[0].outputs['nc'],
+                    pus[0].outputs['chk'],
+                )
+                replica_states[key].append(states)
+
         return replica_states
 
     def equilibration_iterations(self) -> dict[str, list[float]]:
