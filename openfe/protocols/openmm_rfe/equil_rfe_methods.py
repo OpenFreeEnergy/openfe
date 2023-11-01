@@ -77,7 +77,7 @@ due.cite(Doi("10.5281/zenodo.596622"),
 
 due.cite(Doi("10.1371/journal.pcbi.1005659"),
          description="OpenMM",
-         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
          cite_module=True)
 
 
