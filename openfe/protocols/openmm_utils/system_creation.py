@@ -15,7 +15,7 @@ from openff.toolkit.utils.toolkits import (
     RDKitToolkitWrapper,
 )
 from openff.units.openmm import to_openmm, ensure_quantity
-from openff.units import offunit
+from openff.units import unit as offunit
 from openmmforcefields.generators import SystemGenerator
 from typing import Optional, Iterable
 from pathlib import Path
