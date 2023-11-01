@@ -8,7 +8,7 @@ import openfe
 pytest.importorskip('duecredit')
 
 
-@pytest.mark.skipif((os.environ.get('DUECREDIT_ENABLE', 'yes').lower()
+@pytest.mark.skipif((os.environ.get('DUECREDIT_ENABLE', 'no').lower()
                      in ('no', '0', 'false')),
                      reason="duecredit is disabled")
 class TestDuecredit:
