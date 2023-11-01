@@ -4,6 +4,8 @@
 Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
+import warnings
+import logger
 import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
@@ -34,6 +36,9 @@ except ImportError:
     HAS_NAGL = False
 else:
     HAS_NAGL = True
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_system_generator(
@@ -400,12 +405,24 @@ def assign_am1bccelf10_charges(
 
         # Then we loop over the selected conformers
         charges = np.zeros([offmol_copy.n_atoms])
+        skipped_confs = 0
 
         for conf in offmol_copy.conformers:
-            offmol_copy.assign_partial_charges('am1bcc', use_conformers=[conf])
-            charges += offmol_copy.partial_charges
+            try:
+                offmol_copy.assign_partial_charges('am1bcc', use_conformers=[conf])
+            except ValueError:
+                skipped_confs += 1
+                wmsg = f"ELF10 warning: could not generate charges for conformer {conf}"
+                warnings.warn(wmsg)
+                logger.warning(wmsg)
+            else:
+                charges += offmol_copy.partial_charges
 
-        charges /= len(offmol_copy.conformers)
+        if skipped_confs == len(offmol_copy.conformers):
+            errmsg = f"Could not generate charges for molecule {offmol}"
+            raise RuntimeError(errmsg)
+
+        charges /= (len(offmol_copy.conformers) - skipped_confs)
 
         offmol.partial_charges = charges
 
