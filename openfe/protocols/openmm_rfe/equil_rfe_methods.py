@@ -567,7 +567,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 # we default to using the input conformer for charge generation
 
                 # TODO: pass user selection for charge generation
-                system_creation.assign_partial_charges(
+                system_creation.assign_offmol_partial_charges(
                     method='am1bcc',
                     charge_backend='ambertools',
                     use_conformer=True,

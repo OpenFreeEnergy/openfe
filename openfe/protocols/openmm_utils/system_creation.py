@@ -411,7 +411,7 @@ def assign_am1bccelf10_charges(
         offmol.partial_charges = charges
 
 
-def assign_partial_charges(
+def assign_offmol_partial_charges(
     offmol,
     method: str,
     charge_backend: str = "ambertools",
