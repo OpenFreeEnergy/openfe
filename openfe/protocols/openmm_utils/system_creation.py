@@ -29,7 +29,12 @@ from ..openmm_rfe.equil_rfe_settings import (
 )
 
 
-TOOLKITREGISTRY: TypeAlias = Union[ToolkitRegistry, ToolkitWrapper]
+try:
+    from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
+except ImportError:
+    HAS_NAGL = False
+else:
+    HAS_NAGL = True
 
 
 def get_system_generator(
@@ -325,6 +330,11 @@ def assign_nagl_am1bcc_charges(
       The nagl model to use for partial charge assignment.
       If None, will use latest available model.
     """
+    if not HAS_NAGL:
+        errmsg = ("The NAGLToolkitWrapper is not available, you may be using "
+                  "and older version of the OpenFF toolkit - you need 0.14.4 "
+                  "or above.")
+        raise ImportError(errmsg)
 
     if nagl_model is None:
         # It's not fully clear that the models will always be sort ordered
