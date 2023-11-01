@@ -35,5 +35,6 @@ dependencies:
   - pydata-sphinx-theme
   - sphinx-click
   - pip:
+    - duecredit
     - sphinx-toolbox
     - git+https://github.com/OpenFreeEnergy/gufe@main
