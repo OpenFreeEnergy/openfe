@@ -14,7 +14,6 @@ from openff.toolkit.utils.toolkits import (
     OpenEyeToolkitWrapper,
     RDKitToolkitWrapper,
 )
-from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
 from openff.units.openmm import to_openmm, ensure_quantity
 from openff.units import offunit
 from openmmforcefields.generators import SystemGenerator
