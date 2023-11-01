@@ -267,7 +267,7 @@ def _get_toolkit_wrapper_charge_backend(selection: str):
     """
     available_backends = {
         'oechem': OpenEyeToolkitWrapper,
-        'ambertools': AmberToolsTookitWrapper,
+        'ambertools': AmberToolsToolkitWrapper,
     }
     try:
         toolkitwrapper = available_backends[selection.lower()]
