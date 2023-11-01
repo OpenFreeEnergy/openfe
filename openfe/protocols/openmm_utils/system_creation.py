@@ -5,7 +5,7 @@ Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
 import warnings
-import logger
+import logging
 import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
