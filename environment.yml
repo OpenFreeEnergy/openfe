@@ -3,6 +3,7 @@ channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
+  - duecredit
   - numpy<1.24
   - networkx
   - rdkit
@@ -35,6 +36,5 @@ dependencies:
   - pydata-sphinx-theme
   - sphinx-click
   - pip:
-    - duecredit
     - sphinx-toolbox
     - git+https://github.com/OpenFreeEnergy/gufe@main
