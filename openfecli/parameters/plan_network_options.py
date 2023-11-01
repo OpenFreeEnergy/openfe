@@ -4,7 +4,11 @@
 
 """
 import click
-from pydantic.v1 import BaseModel  # , ConfigDict
+try:
+    # todo; once we're fully v2, we can use ConfigDict not nested class
+    from pydantic.v1 import BaseModel  # , ConfigDict
+except ImportError:
+    from pydantic import BaseModel
 from plugcli.params import Option
 from typing import Any, Optional
 import yaml
