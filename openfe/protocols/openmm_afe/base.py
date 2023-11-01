@@ -331,6 +331,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
                 # TODO: pass through user selection for partial charges
                 system_creation.assign_offmol_partial_charges(
+                    mol,
                     method='am1bcc', 
                     charge_backend='ambertools',
                     use_conformer=True,

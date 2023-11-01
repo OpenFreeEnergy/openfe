@@ -568,6 +568,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
                 # TODO: pass user selection for charge generation
                 system_creation.assign_offmol_partial_charges(
+                    mol,
                     method='am1bcc',
                     charge_backend='ambertools',
                     use_conformer=True,
