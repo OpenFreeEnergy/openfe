@@ -339,7 +339,7 @@ def assign_nagl_am1bcc_charges(
         # It's not fully clear that the models will always be sort ordered
         # see: https://github.com/openforcefield/openff-nagl-models/issues/12
         from openff.nagl_models import list_available_nagl_models
-        nagl_model = list_available_models()[-1]
+        nagl_model = list_available_nagl_models()[-1]
 
     offmol.assign_partial_charges(
         partial_charge_method=nagl_model,
@@ -349,7 +349,7 @@ def assign_nagl_am1bcc_charges(
 
 def assign_am1bccelf10_charges(
     offmol: OFFMol,
-    charge_backend: Optional[str] = 'ambertools',
+    charge_backend: str = 'ambertools',
     ambertools_generate_n_conformers: int = 500,
 ) -> None:
     """
