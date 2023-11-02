@@ -38,6 +38,7 @@ import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
+from openmmtools import multistate
 from typing import Dict, Optional, Union
 from typing import Any, Iterable
 
