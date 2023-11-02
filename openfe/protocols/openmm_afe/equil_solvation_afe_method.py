@@ -23,7 +23,7 @@ Current limitations
 Acknowledgements
 ----------------
 * Originally based on hydration.py in
-  `espaloma <https://github.com/choderalab/espaloma_charge>`_
+  `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
 
 """
 from __future__ import annotations
@@ -56,6 +56,29 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
 from openfe.utils import without_oechem_backend, log_system_probe
+from openfe.due import due, Doi
+
+
+due.cite(Doi("10.5281/zenodo.596504"),
+         description="Yank",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
+due.cite(Doi("10.48550/ARXIV.2302.06758"),
+         description="EspalomaCharge",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
+due.cite(Doi("10.5281/zenodo.596622"),
+         description="OpenMMTools",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
+due.cite(Doi("10.1371/journal.pcbi.1005659"),
+         description="OpenMM",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
 
 logger = logging.getLogger(__name__)
 
