@@ -1354,3 +1354,9 @@ class TestProtocolResult:
         assert isinstance(prod, list)
         assert len(prod) == 3
         assert all(isinstance(v, float) for v in prod)
+
+    def test_filenotfound_replica_states(self, protocolresult):
+        errmsg = "File could not be found"
+
+        with pytest.raises(ValueError, match=errmsg):
+            protocolresult.get_replica_state()
