@@ -154,7 +154,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology: openmm.app.Topology,
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
-        dry: bool) -> npt.NDArray:
+        dry: bool
+    ) -> npt.NDArray:
         """
         Run an equilibration to make sure the system is stable
         before we throw it at the alchemical world.
