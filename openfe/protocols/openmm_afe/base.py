@@ -184,8 +184,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         integrator = openmm.LangevinMiddleIntegrator(
-            to_openmm(settings['thermo_settings'].temperature,
-            to_openmm(settings['integrator_settings'].collision_rate,
+            to_openmm(settings['thermo_settings'].temperature),
+            to_openmm(settings['integrator_settings'].collision_rate),
             to_openmm(settings['integrator_settings'].timestep),
         )
 
@@ -897,7 +897,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # 6. Pre-minimize System (Test + Avoid NaNs)
-        positions = self._pre_minimize(omm_system, positions)
+        positions = self._pre_equilibrate(
+            omm_system, omm_topology, positions, settings, dry
+        )
 
         # 7. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
