@@ -324,16 +324,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # Note by default this is cached to ctx.shared/db.json which should
         # reduce some of the costs.
         for mol in smc_components.values():
-            if mol.partial_charges is not None and np.any(mol.partial_charges):
-                # skip if we have existing partial charges
-                continue
-            try:
-                # try and follow official spec method
-                mol.assign_partial_charges('am1bcc')
-            except ValueError:  # this is what a confgen failure yields
-                # but fallback to using existing conformer
-                mol.assign_partial_charges('am1bcc',
-                                           use_conformers=mol.conformers)
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
 
             system_generator.create_system(
                 mol.to_topology().to_openmm(), molecules=[mol]
@@ -567,7 +564,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         nc = self.shared_basepath / simulation_settings.output_filename
-        chk = self.shared_basepath / simulation_settings.checkpoint_storage
+        chk = simulation_settings.checkpoint_storage
 
         reporter = multistate.MultiStateReporter(
             storage=nc,

@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Equilibrium Relative Free Energy methods using OpenMM in a
+"""Equilibrium Relative Free Energy methods using OpenMM and OpenMMTools in a
 Perses-like manner.
 
 This module implements the necessary methodology toolking to run calculate a
@@ -14,6 +14,10 @@ TODO
 ----
 * Improve this docstring by adding an example use case.
 
+Acknowledgements
+----------------
+This Protocol is based on, and leverages components originating from
+the Perses toolkit (https://github.com/choderalab/perses).
 """
 from __future__ import annotations
 
@@ -56,8 +60,26 @@ from ..openmm_utils import (
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
+from openfe.due import due, Doi
+
 
 logger = logging.getLogger(__name__)
+
+
+due.cite(Doi("10.5281/zenodo.1297683"),
+         description="Perses",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
+
+due.cite(Doi("10.5281/zenodo.596622"),
+         description="OpenMMTools",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
+
+due.cite(Doi("10.1371/journal.pcbi.1005659"),
+         description="OpenMM",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
 
 
 def _get_resname(off_mol) -> str:
@@ -647,17 +669,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         for smc, mol in chain(off_small_mols['stateA'],
                               off_small_mols['stateB'],
                               off_small_mols['both']):
-            # robustly calculate partial charges;
-            if mol.partial_charges is not None and np.any(mol.partial_charges):
-                # skip if we have existing partial charges unless they are zero (see openmmforcefields)
-                continue
-            try:
-                # try and follow official spec method
-                mol.assign_partial_charges('am1bcc')
-            except ValueError:  # this is what a confgen failure yields
-                # but fallback to using existing conformer
-                mol.assign_partial_charges('am1bcc',
-                                           use_conformers=mol.conformers)
+            # skip if we already have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
 
             system_generator.create_system(mol.to_topology().to_openmm(),
                                            molecules=[mol])
@@ -770,7 +788,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         #  a. Create the multistate reporter
         nc = shared_basepath / sim_settings.output_filename
-        chk = shared_basepath / sim_settings.checkpoint_storage
+        chk = sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
