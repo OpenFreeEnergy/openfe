@@ -301,7 +301,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
             p = pathlib.Path(filename)
             if not p.exists():
                 errmsg = f"File could not be found {p}"
-                raise ValueError(p)
+                raise ValueError(errmsg)
             return p
 
         replica_states = []

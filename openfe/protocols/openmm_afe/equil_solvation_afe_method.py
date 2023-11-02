@@ -290,7 +290,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
             if not p.exists():
                 errmsg = f"File could not be found {p}"
-                raise ValueError(p)
+                raise ValueError(errmsg)
 
             return p
 
