@@ -150,7 +150,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _pre_minimize(system: openmm.System,
-                      positions: omm_unit.Quantity) -> npt.NDArray:
+                      positions: omm_unit.Quantity,
+                      iterations=100) -> npt.NDArray:
         """
         Short CPU minization of System to avoid GPU NaNs
 
@@ -174,11 +175,81 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         context.setPositions(positions)
         # Do a quick 100 steps minimization, usually avoids NaNs
         openmm.LocalEnergyMinimizer.minimize(
-            context, maxIterations=100
+            context, maxIterations=iterations
         )
         state = context.getState(getPositions=True)
         minimized_positions = state.getPositions(asNumpy=True)
+
+        del context, integrator
+
         return minimized_positions
+
+    def _pre_equilibrate(self,
+                         system: openmm.System,
+                         topology: openmm.app.Topology,
+                         positions: omm_unit.Quantity,
+                         settings: dict[str, SettingsBaseModel],
+                         dry: bool) -> npt.NDArray:
+        """
+        Run an equilibration to make sure the system
+        is stable before we throw it at the alchemical world.
+
+        Parameters
+        ----------
+        system : openmm.System
+          An OpenMM System to equilibrate
+        topology : openmm.app.Topology
+        positions : openmm.unit.Quantity
+          Initial positions for the system
+        settings : dict[str, SettingsBaseModel]
+        dry : bool
+
+        Returns
+        -------
+        equilibrated_positions : npt.NDArray
+          Equilibrated positions
+        """
+
+        if dry:
+            return positions
+
+        # First run a short CPU equilibration to avoid NaNs
+        min_pos = self._pre_minimize(system, positions)
+
+        # Next we set up the proper equilibration
+        platform = compute.get_openmm_platform(
+            settings['engine_settings'].compute_platform,
+        )
+
+        integrator = openmm.LangevinMiddleIntegrator(
+            to_openmm(settings['thermo_settings'].temperature),
+            to_openmm(settings['integrator_settings'].collision_rate),
+            to_openmm(settings['integrator_settings'].timestep),
+        )
+
+        simulation = openmm.app.Simulation(
+            topology=topology,
+            system=system,
+            integrator=integrator,
+            platform=platform
+        )
+
+        simulation.context.setPositions(min_pos)
+
+        # TODO: Add settings in
+
+        # Minimize
+        simulation.minimizeEnergy(maxIterations=50000)
+
+        # equilibrate
+        simulation.step(250000)
+
+        state = simulation.context.getState(getPositions=True)
+        equil_positions = state.getPositions(asNumpy=True)
+
+        del simulation.context, integrator
+
+        return equil_positions
 
     def _prepare(
         self, verbose: bool,
@@ -876,8 +947,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             settings['solvation_settings']
         )
 
-        # 5. Pre-minimize System (Test + Avoid NaNs)
-        positions = self._pre_minimize(omm_system, positions)
+        # 5. Pre-equilibrate System (Test + Avoid NaNs)
+        positions = self._pre_equilibrate(
+                        omm_system, omm_topology, positions, settings, dry
+                    )
 
         # 6. Get lambdas
         lambdas = self._get_lambda_schedule(settings)

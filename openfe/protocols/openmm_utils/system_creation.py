@@ -346,16 +346,21 @@ def create_packmol_system(
 
     # 3. Create the packmol topology
     offmols = list(smc_components.values()) + solvent_offmol
-    print(offmols)
     offmol_copies = [1 for _ in smc_components] + solvent_copies
-    print(offmol_copies)
+
+    # we're being lazy and passing a gas phase system to
+    # packmol, and it does not like that - so we set a tiny tolerance
+    if len(offmol_copies) == 1 and offmol_copies[0] == 1:
+        tolerance=0.1*unit.angstrom
+    else:
+        tolerance=solvation_settings.packmol_tolerance
 
     off_topology = pack_box(
         molecules=offmols,
         number_of_copies=offmol_copies,
         mass_density=solvation_settings.box_mass_density,
         box_shape=UNIT_CUBE,  # One day move away from this
-        tolerance=solvation_settings.packmol_tolerance,
+        tolerance=tolerance,
         center_solute=True,
     )
 
