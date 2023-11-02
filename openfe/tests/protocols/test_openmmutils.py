@@ -361,7 +361,7 @@ class TestSystemCreation:
                                 molecules=[offmol])
         model, comp_resids = system_creation.get_omm_modeller(
             None,
-            openfe.SolventComponent(neutralize=False),#
+            openfe.SolventComponent(neutralize=False),
             {smc: offmol},
             generator.forcefield,
             SolvationSettings(),
@@ -385,4 +385,3 @@ class TestSystemCreation:
         charge = ensure_quantity(charge, 'openff')
 
         assert pytest.approx(charge.m) == -1.0
-
