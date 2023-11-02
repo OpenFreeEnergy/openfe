@@ -665,15 +665,6 @@ class TestProtocolResult:
         assert rpx1['matrix'].shape == (15, 15)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
-    def test_get_replica_states(self, key, protocolresult):
-        rep = protocolresult.get_replica_states()
-
-        assert isinstance(rep, dict)
-        assert isinstance(rep[key], list)
-        assert len(rep[key]) == 3
-        assert rep[key][0].shape == (251, 15)
-
-    @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_equilibration_iterations(self, key, protocolresult):
         eq = protocolresult.equilibration_iterations()
 

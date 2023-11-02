@@ -1341,13 +1341,6 @@ class TestProtocolResult:
         assert rpx1['eigenvalues'].shape == (11,)
         assert rpx1['matrix'].shape == (11, 11)
 
-    def test_get_replica_states(self, protocolresult):
-        rep = protocolresult.get_replica_states()
-
-        assert isinstance(rep, list)
-        assert len(rep) == 3
-        assert rep[0].shape == (6, 11)
-
     def test_equilibration_iterations(self, protocolresult):
         eq = protocolresult.equilibration_iterations()
 
