@@ -686,5 +686,5 @@ class TestProtocolResult:
         errmsg = "File could not be found"
 
         with pytest.raises(ValueError, match=errmsg):
-            protocolresult.get_replica_state()
+            protocolresult.get_replica_states()
 
