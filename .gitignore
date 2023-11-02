@@ -1,4 +1,5 @@
 # custom ignores
+.duecredit.p
 .xxrun
 .idea/
 .vscode/

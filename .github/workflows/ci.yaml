@@ -79,6 +79,7 @@ jobs:
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
+          DUECREDIT_ENABLE: 'yes'
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
