@@ -1754,6 +1754,7 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, tmpdir):
          'solvent': openfe.SolventComponent()}
     )
     solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    solv_settings.alchemical_settings.explicit_charge_correction = True
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=solv_settings,
     )
