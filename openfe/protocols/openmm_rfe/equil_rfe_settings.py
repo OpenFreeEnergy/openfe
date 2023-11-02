@@ -32,6 +32,7 @@ except ImportError:
 class AlchemicalSettings(SettingsBaseModel):
     class Config:
         extra = 'ignore'
+        arbitrary_types_allowed = True
 
     """Settings for the alchemical protocol
 
@@ -76,6 +77,24 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to scale torsion terms involving unique atoms, such that at the
     endstate the torsion term is turned off/on depending on the state the
     unique atoms belong to. Default False.
+    """
+    explicit_charge_correction = False
+    """
+    Whether to explicitly account for a charge difference during the
+    alchemical transformation by transforming a water to a counterion
+    of the opposite charge of the formal charge difference.
+
+    Please note that this feature is currently in beta and poorly tested.
+
+    Absolute charge changes greater than 1 are
+    currently not supported.
+
+    Default False.
+    """
+    explicit_charge_correction_cutoff = 0.8 * unit.nanometer
+    """
+    The minimum distance from the system solutes from which an
+    alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
 
 
