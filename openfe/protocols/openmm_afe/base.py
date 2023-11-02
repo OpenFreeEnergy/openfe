@@ -148,37 +148,76 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return atom_ids
 
-    @staticmethod
-    def _pre_minimize(system: openmm.System,
-                      positions: omm_unit.Quantity) -> npt.NDArray:
+    def _pre_equilibrate(
+        self,
+        system: openmm.System,
+        topology: openmm.app.Topology,
+        positions: omm_unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+        dry: bool) -> npt.NDArray:
         """
-        Short CPU minization of System to avoid GPU NaNs
+        Run an equilibration to make sure the system is stable
+        before we throw it at the alchemical world.
 
         Parameters
         ----------
         system : openmm.System
-          An OpenMM System to minimize.
-        positionns : openmm.unit.Quantity
-          Initial positions for the system.
+          An OpenMM System to equilibrate
+        topology : openmm.app.Topology
+        positions : openmm.unit.Quantity
+          Initial positions for the system
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings object for the unit.
+        dry : bool
+          Whether or not this is a dry run.
 
         Returns
         -------
-        minimized_positions : npt.NDArray
-          Minimized positions
+        equilibrated_positions : npt.NDArray
+          Equilibrated system positions
         """
-        integrator = openmm.VerletIntegrator(0.001)
-        context = openmm.Context(
-            system, integrator,
-            openmm.Platform.getPlatformByName('CPU'),
+        if dry:
+            return positions
+
+        platform = compute.get_openmm_platform(
+            settings['engine_settings'].compute_platform,
         )
-        context.setPositions(positions)
-        # Do a quick 100 steps minimization, usually avoids NaNs
-        openmm.LocalEnergyMinimizer.minimize(
-            context, maxIterations=100
+
+        integrator = openmm.LangevinMiddleIntegrator(
+            to_openmm(settings['thermo_settings'].temperature,
+            to_openmm(settings['integrator_settings'].collision_rate,
+            to_openmm(settings['integrator_settings'].timestep),
         )
-        state = context.getState(getPositions=True)
-        minimized_positions = state.getPositions(asNumpy=True)
-        return minimized_positions
+
+        simulation = openmm.app.Simulation(
+            topology=topology,
+            system=system,
+            integrator=integrator,
+            platform=platform,
+        )
+
+        simulation.context.setPositions(positions)
+
+        # TODO: serialize out a PDB of the minimized system
+        # TODO: actually pass through user settings here
+        # Minimize
+        simulation.minimizeEnergy(
+            maxIterations=100000,
+        )
+
+        # TODO: write out an XTC of the equilibrated MD?
+        # TODO: actually pass through user settings here
+        # Equilibrate
+        simulation.step(250000)
+
+        # Get the positions out
+        state = simulation.context.getState(getPositions=True)
+        equilibrated_positions = state.getPositions(asNumpy=True)
+
+        # Cautiously delete out the context & integrator
+        del simulation.context, integrator
+
+        return equilibrated_positions
 
     def _prepare(
         self, verbose: bool,
