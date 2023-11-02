@@ -28,8 +28,8 @@ Acknowledgements
 """
 from __future__ import annotations
 
+import pathlib
 import logging
-
 from collections import defaultdict
 import gufe
 from gufe.components import Component
