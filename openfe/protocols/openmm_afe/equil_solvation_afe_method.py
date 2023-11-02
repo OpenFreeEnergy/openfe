@@ -295,8 +295,9 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
             return p
 
         def get_replica_state(nc, chk):
-            nc = is_file(nc).as_posix()
-            chk = is_file(chk).name
+            nc = is_file(nc)
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / chk).name
 
             reporter = multistate.MultiStateReporter(
                 storage=nc, checkpoint_storage=chk, open_mode='r'

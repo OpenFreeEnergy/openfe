@@ -307,8 +307,9 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         replica_states = []
 
         for pus in self.data.values():
-            nc = is_file(pus[0].outputs['nc']).as_posix()
-            chk = is_file(pus[0].outputs['last_checkpoint']).name
+            nc = is_file(pus[0].outputs['nc'])
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / pus[0].outputs['last_checkpoint']).name
             reporter = multistate.MultiStateReporter(
                 storage=nc, checkpoint_storage=chk, open_mode='r'
             )
