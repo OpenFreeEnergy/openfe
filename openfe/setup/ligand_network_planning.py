@@ -14,7 +14,8 @@ from tqdm.auto import tqdm
 from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
-from openfe.setup import LomapAtomMapper
+
+from lomap import generate_lomap_network, LomapAtomMapper
 from lomap.dbmol import _find_common_core
 
 
@@ -238,9 +239,9 @@ def generate_minimal_redundant_network(
 ) -> LigandNetwork:
     """
     Plan a network with a specified amount of redundancy for each node
-    
-    Creates a network with as few edges as possible with maximum total score, 
-    ensuring that every node is connected to two edges to introduce 
+
+    Creates a network with as few edges as possible with maximum total score,
+    ensuring that every node is connected to two edges to introduce
     statistical redundancy.
 
     Parameters

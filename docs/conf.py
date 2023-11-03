@@ -103,7 +103,6 @@ exclude_patterns = [
 
 autodoc_mock_imports = [
     "matplotlib",
-    "lomap",
     "openmmtools",
     "mdtraj",
     "openmmforcefields",
