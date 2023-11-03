@@ -3,6 +3,7 @@ channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
+  - lomap2>=3.0.0
   - numpy<1.24
   - networkx
   - rdkit
@@ -37,4 +38,3 @@ dependencies:
   - pip:
     - sphinx-toolbox
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/OpenFreeEnergy/Lomap@main
