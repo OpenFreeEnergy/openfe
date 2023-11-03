@@ -198,7 +198,7 @@ def rfe_transformation_json() -> str:
     """string of a RFE result of quickrun"""
     d = resources.files('openfe.tests.data.openmm_rfe')
 
-    with gzip.open((d / 'Transformation-e1702a3efc0fa735d5c14fc7572b5278_results.json.gz').as_posix(), 'r') as f:  # type: ignore
+    with gzip.open((d / 'RFE-ProtocolUnitResult-0f3457edf947483aa03d0f4fe88bf566.json.gz').as_posix(), 'r') as f:  # type: ignore
         return f.read().decode()  # type: ignore
 
 

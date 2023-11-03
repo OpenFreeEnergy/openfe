@@ -215,7 +215,7 @@ class TestFEAnalysis:
     
     def test_free_energies(self, analyzer):
         ret_dict = analyzer.unit_results_dict
-        assert len(ret_dict.items()) == 8
+        assert len(ret_dict.items()) == 7
         assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
         assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
         # forward and reverse (since we do this ourselves)

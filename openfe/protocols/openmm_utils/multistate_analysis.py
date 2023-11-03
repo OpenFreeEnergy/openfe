@@ -415,7 +415,7 @@ class MultistateEquilFEAnalysis:
             'forward_and_reverse_energies': self.forward_and_reverse_free_energies,
             'production_iterations': self.production_iterations,
             'equilibration_iterations': self.equilibration_iterations,
-            'replica_states': self.replica_states}
+        }
 
         if hasattr(self, '_exchange_matrix'):
             results_dict['replica_exchange_statistics'] = self.replica_exchange_statistics
