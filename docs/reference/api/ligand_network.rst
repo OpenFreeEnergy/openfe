@@ -92,6 +92,32 @@ Atom Map Scorers
 Scoring functions for a mapping between ligands. These are used as objective functions for :any:`Ligand Network Planners`.
 
 
+Lomap Scorers
+~~~~~~~~~~~~~
+
+Scorers implemented by the `LOMAP <https://github.com/OpenFreeEnergy/Lomap>`_ package.
+
+.. apparently we need the atom_mapping because internally autofunction is
+    trying ``import openfe.setup.lomap_scorers``, which doesn't work (whereas
+    ``from openfe.setup import lomap_scorers`` does)
+.. module:: openfe.setup.atom_mapping.lomap_scorers
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    default_lomap_score
+    ecr_score
+    mcsr_score
+    mncar_score
+    atomic_number_score
+    hybridization_score
+    sulfonamides_score
+    heterocycles_score
+    transmuting_methyl_into_ring_score
+    transmuting_ring_sizes_score
+
+
 Perses Scorers
 ~~~~~~~~~~~~~~
 
