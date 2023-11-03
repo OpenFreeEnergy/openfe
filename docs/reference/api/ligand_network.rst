@@ -32,6 +32,8 @@ Functions that build a :class:`.LigandNetwork` from a collection of :class:`Smal
     generate_radial_network
     generate_maximal_network
     generate_minimal_spanning_network
+    generate_minimal_redundant_network
+    generate_lomap_network
 
 
 .. _Ligand Network Loaders:
