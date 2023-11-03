@@ -124,8 +124,7 @@ class PlainMDProtocol(gufe.Protocol):
         system_validation.validate_protein(stateA)
 
         # actually create and return Units
-        solvent_comp, protein_comp, small_mols = \
-            system_validation.get_components(stateA)
+        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
         lig_name = small_mols[0].name
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.repeat_settings.n_repeats
