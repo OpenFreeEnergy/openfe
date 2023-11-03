@@ -5,10 +5,12 @@ from pathlib import Path
 import pytest
 import numpy as np
 from numpy.testing import assert_equal, assert_allclose
-from openmm import app, MonteCarloBarostat
+from openmm import app, MonteCarloBarostat, NonbondedForce
 from openmm import unit as ommunit
 from openmmtools import multistate
+from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
+from openff.units.openmm import ensure_quantity
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
@@ -325,13 +327,14 @@ class TestSystemCreation:
         generator = system_creation.get_system_generator(
                 ffsets, thermosets, systemsets, None, True)
 
-        mol = benzene_modifications['toluene'].to_openff()
+        smc = benzene_modifications['toluene']
+        mol = smc.to_openff()
         generator.create_system(mol.to_topology().to_openmm(),
                                 molecules=[mol])
 
         model, comp_resids = system_creation.get_omm_modeller(
                 T4_protein_component, openfe.SolventComponent(),
-                [benzene_modifications['toluene'],],
+                {smc: mol},
                 generator.forcefield,
                 SolvationSettings())
 
@@ -340,6 +343,45 @@ class TestSystemCreation:
         assert resids[164].name == 'UNK'
         assert resids[165].name == 'HOH'
         assert_equal(comp_resids[T4_protein_component], np.linspace(0, 163, 164))
-        assert_equal(comp_resids[benzene_modifications['toluene']], np.array([164]))
+        assert_equal(comp_resids[smc], np.array([164]))
         assert_equal(comp_resids[openfe.SolventComponent()],
                      np.linspace(165, len(resids)-1, len(resids)-165))
+
+    def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
+        ffsets, thermosets, systemsets = get_settings
+        generator = system_creation.get_system_generator(
+            ffsets, thermosets, systemsets, None, True
+        )
+
+        offmol = OFFMol.from_smiles('[O-]C=O')
+        offmol.generate_conformers()
+        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+        generator.create_system(offmol.to_topology().to_openmm(),
+                                molecules=[offmol])
+        model, comp_resids = system_creation.get_omm_modeller(
+            None,
+            openfe.SolventComponent(neutralize=False),
+            {smc: offmol},
+            generator.forcefield,
+            SolvationSettings(),
+        )
+
+        system = generator.create_system(
+            model.topology,
+            molecules=[offmol]
+        )
+
+        # Now let's check the total charge
+        nonbonded = [f for f in system.getForces()
+                     if isinstance(f, NonbondedForce)][0]
+
+        charge = 0 * ommunit.elementary_charge
+
+        for i in range(system.getNumParticles()):
+            c, s, e = nonbonded.getParticleParameters(i)
+            charge += c
+
+        charge = ensure_quantity(charge, 'openff')
+
+        assert pytest.approx(charge.m) == -1.0

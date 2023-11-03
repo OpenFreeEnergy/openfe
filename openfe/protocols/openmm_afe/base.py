@@ -27,6 +27,7 @@ import numpy.typing as npt
 import openmm
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
+from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from openmmtools.states import (SamplerState,
                                 ThermodynamicState,
@@ -71,7 +72,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
                  settings: settings.Settings,
-                 alchemical_components: Dict[str, List[str]],
+                 alchemical_components: dict[str, list[Component]],
                  generation: int = 0,
                  repeat_id: int = 0,
                  name: Optional[str] = None,):
@@ -89,6 +90,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           constructed by calling the
           :class:`AbsoluteTransformProtocol.get_default_settings` method
           to get a default set of settings.
+        alchemical_components : dict[str, Component]
+          the alchemical components for each state in this Unit
         name : str, optional
           Human-readable identifier for this Unit
         repeat_id : int, optional
@@ -110,9 +113,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_alchemical_indices(omm_top: openmm.Topology,
-                                comp_resids: Dict[str, npt.NDArray],
-                                alchem_comps: Dict[str, List[Component]]
-                                ) -> List[int]:
+                                comp_resids: dict[Component, npt.NDArray],
+                                alchem_comps: dict[str, list[Component]]
+                                ) -> list[int]:
         """
         Get a list of atom indices for all the alchemical species
 
@@ -120,14 +123,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         omm_top : openmm.Topology
           Topology of OpenMM System.
-        comp_resids : Dict[str, npt.NDArray]
+        comp_resids : dict[Component, npt.NDArray]
           A dictionary of residues for each component in the System.
-        alchem_comps : Dict[str, List[Component]]
+        alchem_comps : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
 
         Return
         ------
-        atom_ids : List[int]
+        atom_ids : list[int]
           A list of atom indices for the alchemical species
         """
 
@@ -208,7 +211,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self.shared_basepath = _set_optional_path(shared_basepath)
 
     @abc.abstractmethod
-    def _get_components(self):
+    def _get_components(self) -> tuple[dict[str, list[Component]],
+                                       Optional[gufe.SolventComponent],
+                                       Optional[gufe.ProteinComponent],
+                                       dict[SmallMoleculeComponent, OFFMolecule]]:
         """
         Get the relevant components to create the alchemical system with.
 
@@ -280,7 +286,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         protein_component: Optional[ProteinComponent],
         solvent_component: Optional[SolventComponent],
-        smc_components: list[SmallMoleculeComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: SolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
@@ -294,8 +300,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Protein Component, if it exists.
         solvent_component : Optional[ProteinCompoinent]
           Solvent Component, if it exists.
-        smc_components : list[SmallMoleculeComponents]
-          List of SmallMoleculeComponents to add.
+        smc_components : list[openff.toolkit.topology.Molecule]
+          List of openff Molecules to add.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
         solvation_settings : SolvationSettings
@@ -317,10 +323,17 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # of solvating the system.
         # Note by default this is cached to ctx.shared/db.json which should
         # reduce some of the costs.
-        for comp in smc_components:
-            offmol = comp.to_openff()
+        for mol in smc_components.values():
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
+
             system_generator.create_system(
-                offmol.to_topology().to_openmm(), molecules=[offmol]
+                mol.to_topology().to_openmm(), molecules=[mol]
             )
 
         # get OpenMM modeller + dictionary of resids for each component
@@ -338,7 +351,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         system_modeller: app.Modeller,
         system_generator: SystemGenerator,
-        smc_components: list[SmallMoleculeComponent],
+        smc_components: list[OFFMolecule],
     ) -> tuple[app.Topology, openmm.unit.Quantity, openmm.System]:
         """
         Get the OpenMM Topology, Positions and System of the
@@ -351,8 +364,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           parametrized.
         system_generator : SystemGenerator
           SystemGenerator object to create a System with.
-        smc_components : list[SmallMoleculeComponent]
-          A list of SmallMoleculeComponents to add to the system.
+        smc_components : list
+          A list of openff Molecules to add to the system.
 
         Returns
         -------
@@ -368,7 +381,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions = to_openmm(from_openmm(system_modeller.getPositions()))
         system = system_generator.create_system(
             system_modeller.topology,
-            molecules=[s.to_openff() for s in smc_components]
+            molecules=smc_components,
         )
         return topology, system, positions
 
@@ -551,7 +564,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         nc = self.shared_basepath / simulation_settings.output_filename
-        chk = self.shared_basepath / simulation_settings.checkpoint_storage
+        chk = simulation_settings.checkpoint_storage
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
@@ -841,7 +854,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 5. Get OpenMM topology, positions and system
         omm_topology, omm_system, positions = self._get_omm_objects(
-            system_modeller, system_generator, smc_comps
+            system_modeller, system_generator, list(smc_comps.values())
         )
 
         # 6. Pre-minimize System (Test + Avoid NaNs)

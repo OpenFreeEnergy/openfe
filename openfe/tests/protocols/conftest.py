@@ -78,6 +78,57 @@ def benzene_to_toluene_mapping(benzene_modifications):
 
 
 @pytest.fixture
+def benzene_charges():
+    files = {}
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        fn = str(d / 'charged_benzenes.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = openfe.SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture
+def benzene_to_benzoic_mapping(benzene_charges):
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    molA = benzene_charges['benzene']
+    molB = benzene_charges['benzoic_acid']
+    return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
+def benzoic_to_benzene_mapping(benzene_charges):
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    molA = benzene_charges['benzoic_acid']
+    molB = benzene_charges['benzene']
+    return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
+def benzene_to_aniline_mapping(benzene_charges):
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    molA = benzene_charges['benzene']
+    molB = benzene_charges['aniline']
+    return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
+def aniline_to_benzene_mapping(benzene_charges):
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    molA = benzene_charges['aniline']
+    molB = benzene_charges['benzene']
+    return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
+def aniline_to_benzoic_mapping(benzene_charges):
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    molA = benzene_charges['aniline']
+    molB = benzene_charges['benzoic_acid']
+    return next(mapper.suggest_mappings(molA, molB))
+
+
+@pytest.fixture
 def benzene_many_solv_system(benzene_modifications):
 
     rdmol_phenol = benzene_modifications['phenol'].to_rdkit()
