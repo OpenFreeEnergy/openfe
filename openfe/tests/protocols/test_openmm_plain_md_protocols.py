@@ -96,20 +96,6 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
         assert ThermodynamicState(sim, temperature=to_openmm(
             protocol.settings.thermo_settings.temperature)).barostat is None
 
-        # Check MDTtraj Topologies
-        # 16 atoms:
-        # 11 common atoms, 1 extra hydrogen in benzene, 4 extra in toluene
-        # 12 bonds in benzene + 4 extra tolunee bonds
-        # assert len(list(.atoms)) == 16
-        # assert len(list(htf.omm_hybrid_topology.atoms())) == 16
-        # assert len(list(htf.hybrid_topology.bonds)) == 16
-        # assert len(list(htf.omm_hybrid_topology.bonds())) == 16
-
-        # # smoke test - can convert back the mdtraj topology
-        # ret_top = mdt.Topology.to_openmm(htf.hybrid_topology)
-        # assert len(list(ret_top.atoms())) == 16
-        # assert len(list(ret_top.bonds())) == 16
-
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     vac_settings = PlainMDProtocol.default_settings()

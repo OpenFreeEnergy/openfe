@@ -125,14 +125,17 @@ class PlainMDProtocol(gufe.Protocol):
 
         # actually create and return Units
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
-        lig_name = small_mols[0].name
+        if len(small_mols) == 0:
+            system_name = f'{protein_comp.name} {solvent_comp.name}'
+        else:
+            system_name = f'{protein_comp.name} {small_mols[0].name} {solvent_comp.name}'
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
             stateA=stateA, stateB=stateB,
             settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
-            name=f'{lig_name} repeat {i} generation 0')
+            name=f'{system_name} repeat {i} generation 0')
             for i in range(n_repeats)]
 
         return units
@@ -205,37 +208,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             generation=generation
         )
 
-    @staticmethod
-    def _pre_minimize(system: openmm.System,
-                      positions: omm_unit.Quantity) -> npt.NDArray:
-        """
-        Short CPU minization of System to avoid GPU NaNs
-
-        Parameters
-        ----------
-        system : openmm.System
-          An OpenMM System to minimize.
-        positions : openmm.unit.Quantity
-          Initial positions for the system.
-
-        Returns
-        -------
-        minimized_positions : npt.NDArray
-          Minimized positions
-        """
-        integrator = openmm.VerletIntegrator(0.001)
-        context = openmm.Context(
-            system, integrator,
-            openmm.Platform.getPlatformByName('CPU'),
-        )
-        context.setPositions(positions)
-        # Do a quick 100 steps minimization, usually avoids NaNs
-        openmm.LocalEnergyMinimizer.minimize(
-            context, maxIterations=100
-        )
-        state = context.getState(getPositions=True)
-        minimized_positions = state.getPositions(asNumpy=True)
-        return minimized_positions
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -322,15 +294,22 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             has_solvent=solvent_comp is not None,
         )
 
-        # b. force the creation of parameters
-        # This is necessary because we need to have the FF generated ahead of
-        # solvating the system.
-        # Note: by default this is cached to ctx.shared/db.json so shouldn't
-        # incur too large a cost
-        for comp in small_mols:
-            offmol = comp.to_openff()
-            system_generator.create_system(offmol.to_topology().to_openmm(),
-                                           molecules=[offmol])
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule]
+
+        smc_components = {small_mols[0]: small_mols[0].to_openff()}
+        for mol in smc_components.values():
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(
+                    mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
+
+            system_generator.create_system(
+                mol.to_topology().to_openmm(), molecules=[mol]
+            )
 
         # c. get OpenMM Modeller + a dictionary of resids for each component
         stateA_modeller, comp_resids = system_creation.get_omm_modeller(
