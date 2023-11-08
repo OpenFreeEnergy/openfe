@@ -126,9 +126,9 @@ class PlainMDProtocol(gufe.Protocol):
         # actually create and return Units
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
         if len(small_mols) == 0:
-            system_name = f'{protein_comp.name} {solvent_comp.name}'
+            system_name = 'MD'
         else:
-            system_name = f'{protein_comp.name} {small_mols[0].name} {solvent_comp.name}'
+            system_name = f'MD {small_mols[0].name}'
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
@@ -166,7 +166,7 @@ class PlainMDProtocol(gufe.Protocol):
 
 class PlainMDProtocolUnit(gufe.ProtocolUnit):
     """
-    Base class for plain MD simulations (NonTransformation.
+    Base class for plain MD simulations (NonTransformation).
     """
 
     def __init__(self, *,
