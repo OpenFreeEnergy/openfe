@@ -12,30 +12,89 @@ import openfe
 from gufe import SmallMoleculeComponent, LigandAtomMapping
 
 
+class SlowTests:
+    """Plugin for handling fixtures that skips slow tests
+
+    Fixtures
+    --------
+
+    Currently two fixture types are handled:
+      * `integration`:
+        Extremely slow tests that are meant to be run to truly put the code
+        through a real run.
+
+      * `slow`:
+        Unit tests that just take too long to be running regularly.
+
+
+    How to use the fixtures
+    -----------------------
+
+    To add these fixtures simply add `@pytest.mark.integration` or
+    `@pytest.mark.slow` decorator to the relevant function or class.
+
+
+    How to run tests marked by these fixtures
+    -----------------------------------------
+
+    To run the `integration` tests, either use the `--integration` flag
+    when invoking pytest, or set the environment variable
+    `OFE_INTEGRATION_TESTS` to `true`. Note: triggering `integration` will
+    automatically also trigger tests marked as `slow`.
+
+    To run the `slow` tests, either use the `--runslow` flag when invoking
+    pytest, or set the environment variable `OFE_SLOW_TESTS` to `true`
+    """
+    def __init__(self, config):
+        self.config = config
+
+    @staticmethod
+    def _modify_slow(items, config):
+        msg = ("need --runslow pytest cli option or the environment variable "
+               "`OFE_SLOW_TESTS` set to `True` to run")
+        skip_slow = pytest.mark.skip(reason=msg)
+        for item in items:
+            if "slow" in item.keywords:
+                item.add_marker(skip_slow)
+
+    @staticmethod
+    def _modify_integration(items, config):
+        msg = ("need --integration pytest cli option or the environment "
+               "variable `OFE_INTEGRATION_TESTS` set to `True` to run")
+        skip_int = pytest.mark.skip(reason=msg)
+        for item in items:
+            if "integration" in item.keywords:
+                item.add_marker(skip_int)
+
+    def pytest_collection_modifyitems(self, items, config):
+        if (config.getoption('--integration') or
+            os.getenv("OFE_INTEGRATION_TESTS", default="false").lower() == 'true'):
+            return
+        elif (config.getoption('--runslow') or
+              os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
+            self._modify_integration(items, config)
+        else:
+            self._modify_integration(items, config)
+            self._modify_slow(items, config)
+
+
 # allow for optional slow tests
 # See: https://docs.pytest.org/en/latest/example/simple.html
 def pytest_addoption(parser):
     parser.addoption(
         "--runslow", action="store_true", default=False, help="run slow tests"
     )
+    parser.addoption(
+        "--integration", action="store_true", default=False,
+        help="run long integration tests",
+    )
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "slow: mark test as slow to run")
-
-
-def pytest_collection_modifyitems(config, items):
-    if (config.getoption("--runslow") or
-        os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
-        # --runslow given in cli or OFE_SLOW_TESTS set to True in env vars
-        # do not skip slow tests
-        return
-    msg = ("need --runslow pytest cli option or the environment variable "
-           "`OFE_SLOW_TESTS` set to `True` to run")
-    skip_slow = pytest.mark.skip(reason=msg)
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
+    config.pluginmanager.register(SlowTests(config), "slow")
+    config.addinivalue_line("markers", "slow: mark test as slow")
+    config.addinivalue_line(
+            "markers", "integration: mark test as long integration test")
 
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:
@@ -113,9 +172,9 @@ def atom_mapping_basic_test_files():
         '2-naftanol',
         'methylcyclohexane',
         'toluene']:
-        with importlib.resources.path('openfe.tests.data.lomap_basic',
-                                      f + '.mol2') as fn:
-            mol = Chem.MolFromMol2File(str(fn), removeHs=False)
+        with importlib.resources.files('openfe.tests.data.lomap_basic') as d:
+            fn = str(d / (f + '.mol2'))
+            mol = Chem.MolFromMol2File(fn, removeHs=False)
             files[f] = SmallMoleculeComponent(mol, name=f)
 
     return files
@@ -124,8 +183,8 @@ def atom_mapping_basic_test_files():
 @pytest.fixture(scope='session')
 def benzene_modifications():
     files = {}
-    with importlib.resources.path('openfe.tests.data',
-                                  'benzene_modifications.sdf') as fn:
+    with importlib.resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
             files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
@@ -146,9 +205,9 @@ def serialization_template():
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.path('openfe.tests.data',
-                        'benzene_modifications.sdf') as fn:
-        supplier = Chem.SDMolSupplier(str(fn), removeHs=False)
+    with resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
+        supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
             mols[mol.GetProp('_Name')] = SmallMoleculeComponent(mol)
     return mols
@@ -156,28 +215,29 @@ def benzene_transforms():
 
 @pytest.fixture(scope='session')
 def T4_protein_component():
-    with resources.path('openfe.tests.data', '181l_only.pdb') as fn:
-        comp = gufe.ProteinComponent.from_pdb_file(str(fn), name="T4_protein")
+    with resources.files('openfe.tests.data') as d:
+        fn = str(d / '181l_only.pdb')
+        comp = gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
     return comp
 
 
 @pytest.fixture()
 def eg5_protein_pdb():
-    with resources.path('openfe.tests.data.eg5', 'eg5_protein.pdb') as fn:
-        yield str(fn)
+    with resources.files('openfe.tests.data.eg5') as d:
+        yield str(d / 'eg5_protein.pdb')
 
 
 @pytest.fixture()
 def eg5_ligands_sdf():
-    with resources.path('openfe.tests.data.eg5', 'eg5_ligands.sdf') as fn:
-        yield str(fn)
+    with resources.files('openfe.tests.data.eg5') as d:
+        yield str(d / 'eg5_ligands.sdf')
 
 
 @pytest.fixture()
 def eg5_cofactor_sdf():
-    with resources.path('openfe.tests.data.eg5', 'eg5_cofactor.sdf') as fn:
-        yield str(fn)
+    with resources.files('openfe.tests.data.eg5') as d:
+        yield str(d / 'eg5_cofactor.sdf')
 
 
 @pytest.fixture()
@@ -194,3 +254,15 @@ def eg5_ligands(eg5_ligands_sdf) -> list[SmallMoleculeComponent]:
 @pytest.fixture()
 def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
     return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)
+
+
+@pytest.fixture()
+def orion_network():
+    with resources.files('openfe.tests.data.external_formats') as d:
+        yield str(d / 'somebenzenes_nes.dat')
+
+
+@pytest.fixture()
+def fepplus_network():
+    with resources.files('openfe.tests.data.external_formats') as d:
+        yield str(d / 'somebenzenes_edges.edge')

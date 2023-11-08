@@ -19,16 +19,14 @@ from openfecli.commands.gather import gather
 
 @pytest.fixture
 def tyk2_ligands():
-    with resources.path('openfecli.tests.data.rbfe_tutorial',
-                        'tyk2_ligands.sdf') as f:
-        yield str(f)
+    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+        yield str(d / 'tyk2_ligands.sdf')
 
 
 @pytest.fixture
 def tyk2_protein():
-    with resources.path('openfecli.tests.data.rbfe_tutorial',
-                        'tyk2_protein.pdb') as f:
-        yield str(f)
+    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+        yield str(d / 'tyk2_protein.pdb')
 
 
 @pytest.fixture
@@ -89,34 +87,25 @@ def mock_execute(expected_transformations):
 @pytest.fixture
 def ref_gather():
     return """\
-measurement\ttype\tligand_i\tligand_j\testimate (kcal/mol)\tuncertainty (kcal/mol)
-DDGbind(lig_ejm_42, lig_ejm_31)\tRBFE\tlig_ejm_31\tlig_ejm_42\t0.0\t0.0
-DDGbind(lig_ejm_46, lig_ejm_31)\tRBFE\tlig_ejm_31\tlig_ejm_46\t0.0\t0.0
-DDGbind(lig_ejm_47, lig_ejm_31)\tRBFE\tlig_ejm_31\tlig_ejm_47\t0.0\t0.0
-DDGbind(lig_ejm_48, lig_ejm_31)\tRBFE\tlig_ejm_31\tlig_ejm_48\t0.0\t0.0
-DDGbind(lig_ejm_50, lig_ejm_31)\tRBFE\tlig_ejm_31\tlig_ejm_50\t0.0\t0.0
-DDGbind(lig_ejm_43, lig_ejm_42)\tRBFE\tlig_ejm_42\tlig_ejm_43\t0.0\t0.0
-DDGbind(lig_jmc_23, lig_ejm_46)\tRBFE\tlig_ejm_46\tlig_jmc_23\t0.0\t0.0
-DDGbind(lig_jmc_27, lig_ejm_46)\tRBFE\tlig_ejm_46\tlig_jmc_27\t0.0\t0.0
-DDGbind(lig_jmc_28, lig_ejm_46)\tRBFE\tlig_ejm_46\tlig_jmc_28\t0.0\t0.0
-DGcomplex(lig_ejm_31, lig_ejm_42)\tcomplex\tlig_ejm_31\tlig_ejm_42\t4.2\t0.0
-DGsolvent(lig_ejm_31, lig_ejm_42)\tsolvent\tlig_ejm_31\tlig_ejm_42\t4.2\t0.0
-DGcomplex(lig_ejm_31, lig_ejm_46)\tcomplex\tlig_ejm_31\tlig_ejm_46\t4.2\t0.0
-DGsolvent(lig_ejm_31, lig_ejm_46)\tsolvent\tlig_ejm_31\tlig_ejm_46\t4.2\t0.0
-DGcomplex(lig_ejm_31, lig_ejm_47)\tcomplex\tlig_ejm_31\tlig_ejm_47\t4.2\t0.0
-DGsolvent(lig_ejm_31, lig_ejm_47)\tsolvent\tlig_ejm_31\tlig_ejm_47\t4.2\t0.0
-DGcomplex(lig_ejm_31, lig_ejm_48)\tcomplex\tlig_ejm_31\tlig_ejm_48\t4.2\t0.0
-DGsolvent(lig_ejm_31, lig_ejm_48)\tsolvent\tlig_ejm_31\tlig_ejm_48\t4.2\t0.0
-DGcomplex(lig_ejm_31, lig_ejm_50)\tcomplex\tlig_ejm_31\tlig_ejm_50\t4.2\t0.0
-DGsolvent(lig_ejm_31, lig_ejm_50)\tsolvent\tlig_ejm_31\tlig_ejm_50\t4.2\t0.0
-DGcomplex(lig_ejm_42, lig_ejm_43)\tcomplex\tlig_ejm_42\tlig_ejm_43\t4.2\t0.0
-DGsolvent(lig_ejm_42, lig_ejm_43)\tsolvent\tlig_ejm_42\tlig_ejm_43\t4.2\t0.0
-DGcomplex(lig_ejm_46, lig_jmc_23)\tcomplex\tlig_ejm_46\tlig_jmc_23\t4.2\t0.0
-DGsolvent(lig_ejm_46, lig_jmc_23)\tsolvent\tlig_ejm_46\tlig_jmc_23\t4.2\t0.0
-DGcomplex(lig_ejm_46, lig_jmc_27)\tcomplex\tlig_ejm_46\tlig_jmc_27\t4.2\t0.0
-DGsolvent(lig_ejm_46, lig_jmc_27)\tsolvent\tlig_ejm_46\tlig_jmc_27\t4.2\t0.0
-DGcomplex(lig_ejm_46, lig_jmc_28)\tcomplex\tlig_ejm_46\tlig_jmc_28\t4.2\t0.0
-DGsolvent(lig_ejm_46, lig_jmc_28)\tsolvent\tlig_ejm_46\tlig_jmc_28\t4.2\t0.0
+leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+complex	lig_ejm_31	lig_ejm_42	4.2	0.0
+solvent	lig_ejm_31	lig_ejm_42	4.2	0.0
+complex	lig_ejm_31	lig_ejm_46	4.2	0.0
+solvent	lig_ejm_31	lig_ejm_46	4.2	0.0
+complex	lig_ejm_31	lig_ejm_47	4.2	0.0
+solvent	lig_ejm_31	lig_ejm_47	4.2	0.0
+complex	lig_ejm_31	lig_ejm_48	4.2	0.0
+solvent	lig_ejm_31	lig_ejm_48	4.2	0.0
+complex	lig_ejm_31	lig_ejm_50	4.2	0.0
+solvent	lig_ejm_31	lig_ejm_50	4.2	0.0
+complex	lig_ejm_42	lig_ejm_43	4.2	0.0
+solvent	lig_ejm_42	lig_ejm_43	4.2	0.0
+complex	lig_ejm_46	lig_jmc_23	4.2	0.0
+solvent	lig_ejm_46	lig_jmc_23	4.2	0.0
+complex	lig_ejm_46	lig_jmc_27	4.2	0.0
+solvent	lig_ejm_46	lig_jmc_27	4.2	0.0
+complex	lig_ejm_46	lig_jmc_28	4.2	0.0
+solvent	lig_ejm_46	lig_jmc_28	4.2	0.0
 """
 
 
@@ -134,7 +123,7 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
             result2 = runner.invoke(quickrun, [fn])
             assert result2.exit_code == 0
 
-        gather_result = runner.invoke(gather, ['.'])
+        gather_result = runner.invoke(gather, ["--report", "dg-raw", '.'])
 
         assert gather_result.exit_code == 0
         assert gather_result.stdout == ref_gather

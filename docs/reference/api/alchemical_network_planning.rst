@@ -1,20 +1,41 @@
-Alchemical Network Planning
-===========================
+.. _Alchemical Network Planning:
 
-Alchemical network planners are objects that pull all the ideas in OpenFE
-into a quick setup for simulation. The goal is to create the
-:class:`.AlchemicalNetwork` that represents an entire simulation campaign,
-starting from a bare amount of user input. This also requries several helper
-classes along the way.
+Simulation Campaign Planning
+============================
+
+While a :class:`LigandNetwork` describes a network of ligands and their atom
+mappings, a :class:`AlchemicalNetwork` describes a single replicate of a
+simulation campaign. It includes all the information needed to perform the
+simulation, and so implicitly includes the :class:`LigandNetwork`.
+
+Alchemical Simulations
+~~~~~~~~~~~~~~~~~~~~~~
+
+Descriptions of anticipated alchemical simulation campaigns.
+
+.. module:: openfe
+    :noindex:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    Transformation
+    AlchemicalNetwork
 
 Alchemical Network Planners
 ---------------------------
+Alchemical network planners are objects that pull all the ideas in OpenFE
+into a quick setup for simulation. The goal is to create the
+:class:`.AlchemicalNetwork` that represents an entire simulation campaign,
+starting from a bare amount of user input.
 
-.. autoclass:: openfe.setup.RBFEAlchemicalNetworkPlanner
-.. autoclass:: openfe.setup.RHFEAlchemicalNetworkPlanner
+.. module:: openfe.setup
+    :noindex:
 
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
 
-Chemical System Generators
---------------------------
-
-.. autoclass:: openfe.setup.chemicalsystem_generator.EasyChemicalSystemGenerator
+    RBFEAlchemicalNetworkPlanner
+    RHFEAlchemicalNetworkPlanner

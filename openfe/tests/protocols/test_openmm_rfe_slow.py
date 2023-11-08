@@ -79,14 +79,20 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
         checkpoint = pur.outputs['last_checkpoint']
-        assert checkpoint == unit_shared / "checkpoint.nc"
-        assert checkpoint.exists()
+        assert checkpoint == "checkpoint.nc"
+        assert (unit_shared / checkpoint).exists()
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
 
+    # Test results methods that need files present
+    results = p.gather([r])
+    states = results.get_replica_states()
+    assert len(states) == 1
+    assert states[0].shape[1] == 11
 
-@pytest.mark.slow  # takes ~7 minutes to run
+
+@pytest.mark.integration  # takes ~7 minutes to run
 @pytest.mark.flaky(reruns=3)
 def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     # this runs a very short eg5 complex leg

@@ -1,8 +1,9 @@
 from unittest import mock
 
 import pytest
-import importlib
+from importlib import resources
 import os
+import shutil
 from click.testing import CliRunner
 
 from openfecli.commands.plan_rhfe_network import (
@@ -11,12 +12,13 @@ from openfecli.commands.plan_rhfe_network import (
 )
 
 
-@pytest.fixture
-def mol_dir_args():
-    with importlib.resources.path(
-        "openfe.tests.data.openmm_rfe", "__init__.py"
-    ) as file_path:
-        ofe_dir_path = os.path.dirname(file_path)
+@pytest.fixture(scope='session')
+def mol_dir_args(tmpdir_factory):
+    ofe_dir_path = tmpdir_factory.mktemp('moldir')
+
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+            shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
 
@@ -31,7 +33,7 @@ def print_test_with_file(
 
 
 def test_plan_rhfe_network_main():
-    import os, glob
+    import os
     from gufe import SmallMoleculeComponent, SolventComponent
     from openfe.setup import (
         LomapAtomMapper,
@@ -39,12 +41,10 @@ def test_plan_rhfe_network_main():
         ligand_network_planning,
     )
 
-    with importlib.resources.path(
-        "openfe.tests.data.openmm_rfe", "__init__.py"
-    ) as file_path:
+    with resources.files("openfe.tests.data.openmm_rfe") as d:
         smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(f)
-            for f in glob.glob(os.path.dirname(file_path) + "/*.sdf")
+            SmallMoleculeComponent.from_sdf_file(d / f)
+            for f in ['ligand_23.sdf', 'ligand_55.sdf']
         ]
 
     solvent_component = SolventComponent()

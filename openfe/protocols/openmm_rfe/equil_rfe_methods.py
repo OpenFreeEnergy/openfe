@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Equilibrium Relative Free Energy methods using OpenMM in a
+"""Equilibrium Relative Free Energy methods using OpenMM and OpenMMTools in a
 Perses-like manner.
 
 This module implements the necessary methodology toolking to run calculate a
@@ -14,6 +14,10 @@ TODO
 ----
 * Improve this docstring by adding an example use case.
 
+Acknowledgements
+----------------
+This Protocol is based on, and leverages components originating from
+the Perses toolkit (https://github.com/choderalab/perses).
 """
 from __future__ import annotations
 
@@ -22,23 +26,26 @@ import logging
 from collections import defaultdict
 import uuid
 import warnings
-
+from itertools import chain
 import numpy as np
+import numpy.typing as npt
 from openff.units import unit
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
+from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
 from openmm.app import PDBFile
 import pathlib
-from typing import Any, Iterable
+from typing import Any, Iterable, Union
 import openmmtools
 import mdtraj
+from rdkit import Chem
 
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, ProteinComponent,
+    SmallMoleculeComponent, ProteinComponent, SolventComponent,
 )
 
 from .equil_rfe_settings import (
@@ -48,12 +55,31 @@ from .equil_rfe_settings import (
     IntegratorSettings, SimulationSettings
 )
 from ..openmm_utils import (
-    system_validation, settings_validation, system_creation
+    system_validation, settings_validation, system_creation,
+    multistate_analysis
 )
 from . import _rfe_utils
+from ...utils import without_oechem_backend, log_system_probe
+from openfe.due import due, Doi
+
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
+
+due.cite(Doi("10.5281/zenodo.1297683"),
+         description="Perses",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
+
+due.cite(Doi("10.5281/zenodo.596622"),
+         description="OpenMMTools",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
+
+due.cite(Doi("10.1371/journal.pcbi.1005659"),
+         description="OpenMM",
+         path="openfe.protocols.openmm_rfe.equil_rfe_methods",
+         cite_module=True)
 
 
 def _get_resname(off_mol) -> str:
@@ -65,9 +91,85 @@ def _get_resname(off_mol) -> str:
     return names[0]
 
 
+def _get_alchemical_charge_difference(
+    mapping: LigandAtomMapping,
+    nonbonded_method: str,
+    explicit_charge_correction: bool,
+    solvent_component: SolventComponent
+) -> int:
+    """
+    Checks and returns the difference in formal charge between state A and B.
+
+    Raises
+    ------
+    ValueError
+      * If an explicit charge correction is attempted and the
+        nonbonded method is not PME.
+      * If the absolute charge difference is greater than one
+        and an explicit charge correction is attempted.
+    UserWarning
+      If there is any charge difference.
+
+    Parameters
+    ----------
+    mapping : dict[str, ComponentMapping]
+      Dictionary of mappings between transforming components.
+    nonbonded_method : str
+      The OpenMM nonbonded method used for the simulation.
+    explicit_charge_correction : bool
+      Whether or not to use an explicit charge correction.
+    solvent_component : openfe.SolventComponent
+      The SolventComponent of the simulation.
+
+    Returns
+    -------
+    int
+      The formal charge difference between states A and B.
+      This is defined as sum(charge state A) - sum(charge state B)
+    """
+    chg_A = Chem.rdmolops.GetFormalCharge(
+        mapping.componentA.to_rdkit()
+    )
+    chg_B = Chem.rdmolops.GetFormalCharge(
+        mapping.componentB.to_rdkit()
+    )
+
+    difference = chg_A - chg_B
+
+    if abs(difference) > 0:
+        if explicit_charge_correction:
+            if nonbonded_method.lower() != "pme":
+                errmsg = ("Explicit charge correction when not using PME is "
+                          "not currently supported.")
+                raise ValueError(errmsg)
+            if abs(difference) > 1:
+                errmsg = (f"A charge difference of {difference} is observed "
+                          "between the end states and an explicit charge  "
+                          "correction has been requested. Unfortunately "
+                          "only absolute differences of 1 are supported.")
+                raise ValueError(errmsg)
+
+            ion = {-1: solvent_component.positive_ion,
+                   1: solvent_component.negative_ion}[difference]
+            wmsg = (f"A charge difference of {difference} is observed "
+                    "between the end states. This will be addressed by "
+                    f"transforming a water into a {ion} ion")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+        else:
+            wmsg = (f"A charge difference of {difference} is observed "
+                    "between the end states. No charge correction has "
+                    "been requested, please account for this in your "
+                    "final results.")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+
+    return difference
+
+
 def _validate_alchemical_components(
-        alchemical_components: dict[str, list[Component]],
-        mapping: Optional[dict[str, ComponentMapping]],
+    alchemical_components: dict[str, list[Component]],
+    mapping: Optional[dict[str, ComponentMapping]],
 ):
     """
     Checks that the alchemical components are suitable for the RFE protocol.
@@ -134,7 +236,7 @@ def _validate_alchemical_components(
                     "No mass scaling is attempted in the hybrid topology, "
                     "the average mass of the two atoms will be used in the "
                     "simulation")
-                logger.warn(wmsg)
+                logger.warning(wmsg)
                 warnings.warn(wmsg)  # TODO: remove this once logging is fixed
 
 
@@ -147,7 +249,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
-    def get_estimate(self):
+    def get_estimate(self) -> unit.Quantity:
         """Average free energy difference of this transformation
 
         Returns
@@ -165,8 +267,10 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.average(vals) * u
 
-    def get_uncertainty(self):
-        """The uncertainty/error in the dG value: The std of the estimates of each independent repeat"""
+    def get_uncertainty(self) -> unit.Quantity:
+        """The uncertainty/error in the dG value: The std of the estimates of
+        each independent repeat
+        """
         dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
@@ -174,6 +278,152 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         vals = [dG.to(u).m for dG in dGs]
 
         return np.std(vals) * u
+
+    def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+        """Return a list of tuples containing the individual free energy
+        estimates and associated MBAR errors for each repeat.
+
+        Returns
+        -------
+        dGs : list[tuple[unit.Quantity]]
+          n_replicate simulation list of tuples containing the free energy
+          estimates (first entry) and associated MBAR estimate errors
+          (second entry).
+        """
+        dGs = [(pus[0].outputs['unit_estimate'],
+                pus[0].outputs['unit_estimate_error'])
+               for pus in self.data.values()]
+        return dGs
+
+    def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
+        """
+        Get a list of forward and reverse analysis of the free energies
+        for each repeat using uncorrelated production samples.
+
+        The returned dicts have keys:
+        'fractions' - the fraction of data used for this estimate
+        'forward_DGs', 'reverse_DGs' - for each fraction of data, the estimate
+        'forward_dDGs', 'reverse_dDGs' - for each estimate, the uncertainty
+
+        The 'fractions' values are a numpy array, while the other arrays are
+        Quantity arrays, with units attached.
+
+        Returns
+        -------
+        forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
+        """
+        forward_reverse = [pus[0].outputs['forward_and_reverse_energies']
+                           for pus in self.data.values()]
+
+        return forward_reverse
+
+    def get_overlap_matrices(self) -> list[dict[str, npt.NDArray]]:
+        """
+        Return a list of dictionary containing the MBAR overlap estimates
+        calculated for each repeat.
+
+        Returns
+        -------
+        overlap_stats : list[dict[str, npt.NDArray]]
+          A list of dictionaries containing the following keys:
+            * ``scalar``: One minus the largest nontrivial eigenvalue
+            * ``eigenvalues``: The sorted (descending) eigenvalues of the
+              overlap matrix
+            * ``matrix``: Estimated overlap matrix of observing a sample from
+              state i in state j
+        """
+        # Loop through and get the repeats and get the matrices
+        overlap_stats = [pus[0].outputs['unit_mbar_overlap']
+                         for pus in self.data.values()]
+
+        return overlap_stats
+
+    def get_replica_transition_statistics(self) -> list[dict[str, npt.NDArray]]:
+        """The replica lambda state transition statistics for each repeat.
+
+        Note
+        ----
+        This is currently only available in cases where a replica exchange
+        simulation was run.
+
+        Returns
+        -------
+        repex_stats : list[dict[str, npt.NDArray]]
+          A list of dictionaries containing the following:
+            * ``eigenvalues``: The sorted (descending) eigenvalues of the
+              lambda state transition matrix
+            * ``matrix``: The transition matrix estimate of a replica switching
+              from state i to state j.
+        """
+        try:
+            repex_stats = [pus[0].outputs['replica_exchange_statistics']
+                           for pus in self.data.values()]
+        except KeyError:
+            errmsg = ("Replica exchange statistics were not found, "
+                      "did you run a repex calculation?")
+            raise ValueError(errmsg)
+
+        return repex_stats
+
+    def get_replica_states(self) -> list[npt.NDArray]:
+        """
+        Returns the timeseries of replica states for each repeat.
+
+        Returns
+        -------
+        replica_states : List[npt.NDArray]
+          List of replica states for each repeat
+        """
+        def is_file(filename: str):
+            p = pathlib.Path(filename)
+            if not p.exists():
+                errmsg = f"File could not be found {p}"
+                raise ValueError(errmsg)
+            return p
+
+        replica_states = []
+
+        for pus in self.data.values():
+            nc = is_file(pus[0].outputs['nc'])
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / pus[0].outputs['last_checkpoint']).name
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode='r'
+            )
+            replica_states.append(
+                np.asarray(reporter.read_replica_thermodynamic_states())
+            )
+            reporter.close()
+
+        return replica_states
+
+    def equilibration_iterations(self) -> list[float]:
+        """
+        Returns the number of equilibration iterations for each repeat
+        of the calculation.
+
+        Returns
+        -------
+        equilibration_lengths : list[float]
+        """
+        equilibration_lengths = [pus[0].outputs['equilibration_iterations']
+                                 for pus in self.data.values()]
+
+        return equilibration_lengths
+
+    def production_iterations(self) -> list[float]:
+        """
+        Returns the number of uncorrelated production samples for each
+        repeat of the calculation.
+
+        Returns
+        -------
+        production_lengths : list[float]
+        """
+        production_lengths = [pus[0].outputs['production_iterations']
+                              for pus in self.data.values()]
+
+        return production_lengths
 
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
@@ -354,7 +604,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
           Exception if anything failed
         """
         if verbose:
-            logger.info("creating hybrid system")
+            self.logger.info("Preparing the hybrid topology simulation")
         if scratch_basepath is None:
             scratch_basepath = pathlib.Path('.')
         if shared_basepath is None:
@@ -391,6 +641,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
+        # Get the change difference between the end states
+        # and check if the charge correction used is appropriate
+        charge_difference = _get_alchemical_charge_difference(
+            mapping,
+            system_settings.nonbonded_method,
+            alchem_settings.explicit_charge_correction,
+            solvent_comp,
+        )
+
         # 1. Create stateA system
         # a. get a system generator
         if sim_settings.forcefield_cache is not None:
@@ -406,25 +665,45 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             has_solvent=solvent_comp is not None,
         )
 
+        # workaround for conformer generation failures
+        # see openfe issue #576
+        # calculate partial charges manually if not already given
+        # convert to OpenFF here,
+        # and keep the molecule around to maintain the partial charges
+        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
+        off_small_mols = {
+            'stateA': [(mapping.componentA, mapping.componentA.to_openff())],
+            'stateB': [(mapping.componentB, mapping.componentB.to_openff())],
+            'both': [(m, m.to_openff()) for m in small_mols
+                     if (m != mapping.componentA and m != mapping.componentB)]
+        }
+
         # b. force the creation of parameters
         # This is necessary because we need to have the FF generated ahead of
         # solvating the system.
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
-        for comp in small_mols:
-            offmol = comp.to_openff()
-            system_generator.create_system(offmol.to_topology().to_openmm(),
-                                           molecules=[offmol])
-            if comp == mapping.componentA:
-                molB = mapping.componentB.to_openff()
-                system_generator.create_system(molB.to_topology().to_openmm(),
-                                               molecules=[molB])
+        self.logger.info("Parameterizing molecules")
+        for smc, mol in chain(off_small_mols['stateA'],
+                              off_small_mols['stateB'],
+                              off_small_mols['both']):
+            # skip if we already have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
+
+            system_generator.create_system(mol.to_topology().to_openmm(),
+                                           molecules=[mol])
 
         # c. get OpenMM Modeller + a dictionary of resids for each component
         stateA_modeller, comp_resids = system_creation.get_omm_modeller(
             protein_comp=protein_comp,
             solvent_comp=solvent_comp,
-            small_mols=small_mols,
+            small_mols=dict(chain(off_small_mols['stateA'],
+                                  off_small_mols['both'])),
             omm_forcefield=system_generator.forcefield,
             solvent_settings=solvation_settings,
         )
@@ -439,27 +718,24 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # e. create the stateA System
         stateA_system = system_generator.create_system(
             stateA_modeller.topology,
-            molecules=[s.to_openff() for s in small_mols],
+            molecules=[m for _, m in chain(off_small_mols['stateA'],
+                                           off_small_mols['both'])],
         )
-
 
         # 2. Get stateB system
         # a. get the topology
         stateB_topology, stateB_alchem_resids = _rfe_utils.topologyhelpers.combined_topology(
             stateA_topology,
-            mapping.componentB.to_openff().to_topology().to_openmm(),
+            # zeroth item (there's only one) then get the OFF representation
+            off_small_mols['stateB'][0][1].to_topology().to_openmm(),
             exclude_resids=comp_resids[mapping.componentA],
         )
 
         # b. get a list of small molecules for stateB
-        off_mols_stateB = [mapping.componentB.to_openff(),]
-        for comp in small_mols:
-            if comp != mapping.componentA:
-                off_mols_stateB.append(comp.to_openff())
-
         stateB_system = system_generator.create_system(
             stateB_topology,
-            molecules=off_mols_stateB,
+            molecules=[m for _, m in chain(off_small_mols['stateB'],
+                                           off_small_mols['both'])],
         )
 
         #  c. Define correspondence mappings between the two systems
@@ -471,11 +747,25 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             fix_constraints=True,
         )
 
-        #  d. Finally get the positions
+        # d. if a charge correction is necessary, select alchemical waters
+        #    and transform them
+        if alchem_settings.explicit_charge_correction:
+            alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
+                stateA_topology, stateA_positions,
+                charge_difference,
+                alchem_settings.explicit_charge_correction_cutoff,
+            )
+            _rfe_utils.topologyhelpers.handle_alchemical_waters(
+                alchem_water_resids, stateB_topology, stateB_system,
+                ligand_mappings, charge_difference,
+                solvent_comp,
+            )
+
+        #  e. Finally get the positions
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
-            insert_positions=ensure_quantity(mapping.componentB.to_openff().conformers[0], 'openmm'),
+            insert_positions=ensure_quantity(off_small_mols['stateB'][0][1].conformers[0], 'openmm'),
         )
 
         # 3. Create the hybrid topology
@@ -488,9 +778,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
-            softcore_electrostatics=alchem_settings.softcore_electrostatics,
-            softcore_electrostatics_alpha=alchem_settings.softcore_electrostatics_alpha,
-            softcore_sigma_Q=alchem_settings.softcore_sigma_Q,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
             flatten_torsions=alchem_settings.flatten_torsions,
         )
@@ -518,18 +805,30 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
+        nc = shared_basepath / sim_settings.output_filename
+        chk = sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
-            storage=shared_basepath / sim_settings.output_filename,
+            storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=sim_settings.checkpoint_interval.m,
-            checkpoint_storage=sim_settings.checkpoint_storage,
+            checkpoint_storage=chk,
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
-        traj = mdtraj.Trajectory(
-                hybrid_factory.hybrid_positions[selection_indices, :],
-                hybrid_factory.hybrid_topology.subset(selection_indices),
-        ).save_pdb(shared_basepath / sim_settings.output_structure)
+        bfactors = np.zeros_like(selection_indices, dtype=float)  # solvent
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_old_atoms']))] = 0.25  # lig A
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['core_atoms']))] = 0.50  # core
+        bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
+        # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
+
+        if len(selection_indices) > 0:
+            traj = mdtraj.Trajectory(
+                    hybrid_factory.hybrid_positions[selection_indices, :],
+                    hybrid_factory.hybrid_topology.subset(selection_indices),
+            ).save_pdb(
+                shared_basepath / sim_settings.output_structure,
+                bfactors=bfactors,
+            )
 
         # 10. Get platform
         platform = _rfe_utils.compute.get_openmm_platform(
@@ -560,6 +859,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 12. Create sampler
+        self.logger.info("Creating and setting up the sampler")
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
@@ -614,31 +914,35 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             if not dry:  # pragma: no-cover
                 # minimize
                 if verbose:
-                    logger.info("minimizing systems")
+                    self.logger.info("Running minimization")
 
                 sampler.minimize(max_iterations=sim_settings.minimization_steps)
 
                 # equilibrate
                 if verbose:
-                    logger.info("equilibrating systems")
+                    self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
 
                 # production
                 if verbose:
-                    logger.info("running production phase")
+                    self.logger.info("Running production phase")
 
                 sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
-                # calculate estimate of results from this individual unit
-                ana = multistate.MultiStateSamplerAnalyzer(reporter)
-                est, _ = ana.get_free_energy()
-                est = (est[0, -1] * ana.kT).in_units_of(omm_unit.kilocalories_per_mole)
-                est = ensure_quantity(est, 'openff')
-                ana.clear()  # clean up cached values
+                self.logger.info("Production phase complete")
 
-                nc = shared_basepath / sim_settings.output_filename
-                chk = shared_basepath / sim_settings.checkpoint_storage
+                self.logger.info("Post-simulation analysis of results")
+                # calculate relevant analyses of the free energies & sampling
+                # First close & reload the reporter to avoid netcdf clashes
+                analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+                    reporter,
+                    sampling_method=sampler_settings.sampler_method.lower(),
+                    result_units=unit.kilocalorie_per_mole,
+                )
+                analyzer.plot(filepath=shared_basepath, filename_prefix="")
+                analyzer.close()
+
             else:
                 # clean up the reporter file
                 fns = [shared_basepath / sim_settings.output_filename,
@@ -646,9 +950,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 for fn in fns:
                     os.remove(fn)
         finally:
-            # close reporter when you're done, prevent file handle clashes
+            # close reporter when you're done, prevent
+            # file handle clashes
             reporter.close()
-            del reporter
 
             # clear GPU contexts
             # TODO: use cache.empty() calls when openmmtools #690 is resolved
@@ -671,7 +975,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
-                'unit_estimate': est,
+                **analyzer.unit_results_dict
             }
         else:
             return {'debug': {'sampler': sampler}}
@@ -679,7 +983,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+        with without_oechem_backend():
+            outputs = self.run(scratch_basepath=ctx.scratch,
+                               shared_basepath=ctx.shared)
+
 
         return {
             'repeat_id': self._inputs['repeat_id'],

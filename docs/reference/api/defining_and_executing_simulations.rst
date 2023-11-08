@@ -1,36 +1,47 @@
 Defining and Executing Simulations
 ==================================
 
+.. _executors:
+
 Executing Simulations
 ---------------------
 
-.. autofunction:: openfe.execute_DAG
+.. module:: openfe
+    :noindex:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    execute_DAG
 
 General classes
 ---------------
 
-.. autoclass:: openfe.ProtocolDAG
-   :members:
+.. module:: openfe
+    :noindex:
 
-.. autoclass:: openfe.ProtocolUnitResult
-   :members:
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
 
-.. autoclass:: openfe.ProtocolUnitFailure
-   :members:
-
-.. autoclass:: openfe.ProtocolDAGResult
-   :members:
+    ProtocolDAG
+    ProtocolUnitResult
+    ProtocolUnitFailure
+    ProtocolDAGResult
 
 Specialised classes
 -------------------
 
 These classes are abstract classes that are specialised (subclassed) for an individual Protocol.
 
-.. autoclass:: openfe.Protocol
-   :members:
+.. module:: openfe
+    :noindex:
 
-.. autoclass:: openfe.ProtocolUnit
-   :members:
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
 
-.. autoclass:: openfe.ProtocolResult
-   :members:
+    Protocol
+    ProtocolUnit
+    ProtocolResult
