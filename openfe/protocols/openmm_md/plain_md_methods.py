@@ -44,11 +44,11 @@ from openfe.protocols.openmm_utils import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class PlainMDProtocolResult(gufe.ProtocolResult):
-    """EMPTY, Dict-like container for the output of a PlainMDProtocol"""
+    """Dict-like container for the output of a PlainMDProtocol
+    outputs filenames for the pdb file and trajectory"""
     def __init__(self, **data):
         super().__init__(**data)
         # data is mapping of str(repeat_id): list[protocolunitresults]
@@ -69,6 +69,20 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
         """Since no results as output --> returns None"""
 
         return None
+
+    def get_traj_filename(self):
+        """String of trajectory file name"""
+        protocol_settings: PlainMDProtocolSettings = self._inputs[
+            'settings']
+
+        return protocol_settings.simulation_settings.output_filename
+
+    def get_pdb_filename(self):
+        """String of pdb file name"""
+        protocol_settings: PlainMDProtocolSettings = self._inputs[
+            'settings']
+
+        return protocol_settings.simulation_settings.output_structure
 
 
 class PlainMDProtocol(gufe.Protocol):
@@ -124,6 +138,7 @@ class PlainMDProtocol(gufe.Protocol):
         system_validation.validate_protein(stateA)
 
         # actually create and return Units
+        # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
         if len(small_mols) == 0:
             system_name = 'MD'
@@ -296,7 +311,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
-        smc_components = {small_mols[0]: small_mols[0].to_openff()}
+        smc_components = {i: i.to_openff() for i in small_mols}
         for mol in smc_components.values():
             # don't do this if we have user charges
             if not (mol.partial_charges is not None and np.any(
@@ -333,6 +348,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             molecules=[s.to_openff() for s in small_mols],
         )
 
+        # f. Save pdb of entire system
+        with open(shared_basepath / sim_settings.output_structure, "w") as f:
+            openmm.app.PDBFile.writeFile(
+                stateA_topology, stateA_positions, file=f, keepIds=True
+            )
+
         # 10. Get platform
         platform = compute.get_openmm_platform(
             protocol_settings.engine_settings.compute_platform
@@ -365,13 +386,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 simulation.minimizeEnergy(
                     maxIterations=sim_settings.minimization_steps
                 )
-                min_pdb_file = "minimized.pdb"
+
+                # Get the sub selection of the system to print coords for
+                selection_indices = mdtraj.Topology.from_openmm(
+                    stateA_topology).select(sim_settings.output_indices)
+
                 positions = simulation.context.getState(
                     getPositions=True, enforcePeriodicBox=False
                 ).getPositions()
-                with open(shared_basepath / min_pdb_file, "w") as f:
+                # Store subset of atoms, specified in input, as PDB file
+                with open(shared_basepath / sim_settings.minimized_structure, "w") as f:
                     openmm.app.PDBFile.writeFile(
-                        simulation.topology, positions, file=f, keepIds=True
+                        simulation.topology.subset(selection_indices),
+                        positions[selection_indices, :],
+                        file=f, keepIds=True,
                     )
                 # equilibrate
                 if verbose:
@@ -383,10 +411,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # production
                 if verbose:
                     logger.info("running production phase")
-
-                # Get the sub selection of the system to print coords for
-                selection_indices = mdtraj.Topology.from_openmm(
-                    stateA_topology).select(sim_settings.output_indices)
 
                 # Setup the reporters
                 simulation.reporters.append(XTCReporter(

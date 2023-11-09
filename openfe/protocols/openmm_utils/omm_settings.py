@@ -385,6 +385,15 @@ class SimulationSettingsMD(SimulationSettings):
     # reporter settings
     output_filename = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
+    trajectory_interval = 250 * unit.timestep
+    """
+    Frequency to write the xtc file. Default 5000 * unit.timestep.
+    """
+    output_structure = 'system.pdb'
+    """Path to the pdb file of the full system. Default 'system.pdb'."""
+    minimized_structure = 'minimized.pdb'
+    """Path to the pdb file of the system after minimization. 
+    Only the specified atom subset is saved. Default 'minimized.pdb'."""
     checkpoint_storage = 'checkpoint.chk'
     """
     Separate filename for the checkpoint file. Note, this should
