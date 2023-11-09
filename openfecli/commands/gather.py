@@ -316,6 +316,8 @@ def gather(rootdir, output, report, allow_partial):
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
     * 'dg-raw' reports the raw results, giving the leg (vacuum, solvent, or
       complex), ligand_i, ligand_j, the raw DG(i->j) associated with it.
+    * 'raw' reports the raw results, which each repeat simulation given
+      separately (i.e. no combining of redundant simulations is performed)
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
