@@ -171,16 +171,13 @@ def _get_ddgs(legs, error_on_missing=True):
 def _write_ddg(legs, writer, allow_partial):
     DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
-                      "uncertainty (kcal/mol)"])
+                     "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        name = f"{ligB}, {ligA}"
         if DDGbind is not None:
-            DDGbind, bind_unc = format_estimate_uncertainty(DDGbind,
-                                                            bind_unc)
+            DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             writer.writerow([ligA, ligB, DDGbind, bind_unc])
         if DDGhyd is not None:
-            DDGhyd, hyd_unc = format_estimate_uncertainty(DDGbind,
-                                                          bind_unc)
+            DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
@@ -188,7 +185,6 @@ def _write_dg_raw(legs, writer, allow_partial):
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
-        name = ', '.join(ligpair)
         for simtype, (m, u) in sorted(vals.items()):
             if m is None:
                 m, u = 'NaN', 'NaN'
@@ -255,7 +251,7 @@ def _write_dg_mle(legs, writer, allow_partial):
 )
 @click.argument('rootdir',
                 type=click.Path(dir_okay=True, file_okay=False,
-                                         path_type=pathlib.Path),
+                                path_type=pathlib.Path),
                 required=True)
 @click.option(
     '--report',
@@ -317,7 +313,7 @@ def gather(rootdir, output, report, allow_partial):
         if result is None:
             continue
         elif result['estimate'] is None or result['uncertainty'] is None:
-            click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
+            click.echo(f"WARNING: Calculations for {result_fn} did not finish successfully!",
                        err=True)
 
         try:
