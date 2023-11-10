@@ -3,6 +3,8 @@ channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
+  - duecredit
+  - lomap2>=3.0.0
   - numpy<1.24
   - networkx
   - rdkit

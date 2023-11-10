@@ -7,6 +7,7 @@ import json
 import pathlib
 from openfecli.utils import write
 import typing
+from openfe import AlchemicalNetwork, LigandNetwork
 
 
 def plan_alchemical_network_output(

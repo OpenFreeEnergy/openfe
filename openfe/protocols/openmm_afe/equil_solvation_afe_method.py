@@ -23,20 +23,22 @@ Current limitations
 Acknowledgements
 ----------------
 * Originally based on hydration.py in
-  `espaloma <https://github.com/choderalab/espaloma_charge>`_
+  `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
 
 """
 from __future__ import annotations
 
+import pathlib
 import logging
-
 from collections import defaultdict
 import gufe
 from gufe.components import Component
+from openff.toolkit.topology import Molecule as OFFMolecule
 import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
+from openmmtools import multistate
 from typing import Dict, Optional, Union
 from typing import Any, Iterable
 
@@ -55,6 +57,29 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
 from openfe.utils import without_oechem_backend, log_system_probe
+from openfe.due import due, Doi
+
+
+due.cite(Doi("10.5281/zenodo.596504"),
+         description="Yank",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
+due.cite(Doi("10.48550/ARXIV.2302.06758"),
+         description="EspalomaCharge",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
+due.cite(Doi("10.5281/zenodo.596622"),
+         description="OpenMMTools",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
+due.cite(Doi("10.1371/journal.pcbi.1005659"),
+         description="OpenMM",
+         path="openfe.protocols.openmm_afe.equil_solvation_afe_method",
+         cite_module=True)
+
 
 logger = logging.getLogger(__name__)
 
@@ -257,13 +282,41 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           the thermodynamic cycle, with lists of replica states
           timeseries for each repeat of that simulation type.
         """
-        replica_states: dict[str, list[npt.NDArray]] = {}
+        replica_states: dict[str, list[npt.NDArray]] = {
+            'solvent': [], 'vacuum': []
+        }
+
+        def is_file(filename: str):
+            p = pathlib.Path(filename)
+
+            if not p.exists():
+                errmsg = f"File could not be found {p}"
+                raise ValueError(errmsg)
+
+            return p
+
+        def get_replica_state(nc, chk):
+            nc = is_file(nc)
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / chk).name
+
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode='r'
+            )
+
+            retval = np.asarray(reporter.read_replica_thermodynamic_states())
+            reporter.close()
+
+            return retval
 
         for key in ['solvent', 'vacuum']:
-            replica_states[key] = [
-                pus[0].outputs['replica_states']
-                for pus in self.data[key].values()
-            ]
+            for pus in self.data[key].values():
+                states = get_replica_state(
+                    pus[0].outputs['nc'],
+                    pus[0].outputs['last_checkpoint'],
+                )
+                replica_states[key].append(states)
+
         return replica_states
 
     def equilibration_iterations(self) -> dict[str, list[float]]:
@@ -555,9 +608,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
 
 class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
-    def _get_components(self) -> tuple[dict[str, list[Component]], None,
-                                       Optional[ProteinComponent],
-                                       list[SmallMoleculeComponent]]:
+    def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
 
@@ -570,13 +621,16 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           for the solvent component of the chemical system.
         prot_comp : Optional[ProteinComponent]
           The protein component of the system, if it exists.
-        small_mols : list[SmallMoleculeComponent]
-          A list of SmallMoleculeComponents to add to the system. This
+        small_mols : dict[Component, OpenFF Molecule]
+          The openff Molecules to add to the system. This
           is equivalent to the alchemical components in stateA (since
           we only allow for disappearing ligands).
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
+
+        off_comps = {m: m.to_openff()
+                     for m in alchem_comps['stateA']}
 
         _, prot_comp, _ = system_validation.get_components(stateA)
 
@@ -585,7 +639,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         # since this is the gas phase unit.
         # 2. Our small molecules will always just be the alchemical components
         # (of stateA since we enforce only one disappearing ligand)
-        return alchem_comps, None, prot_comp, alchem_comps['stateA']
+        return alchem_comps, None, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
@@ -643,34 +697,33 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
-    def _get_components(self) -> tuple[list[Component], SolventComponent, 
-                                       Optional[ProteinComponent],
-                                       list[SmallMoleculeComponent]]:
+    def _get_components(self):
         """
-        Get the relevant components for a vacuum transformation.
+        Get the relevant components for a solvent transformation.
 
         Returns
         -------
-        alchem_comps : list[Component]
+        alchem_comps : dict[str, Component]
           A list of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
         prot_comp : Optional[ProteinComponent]
           The protein component of the system, if it exists.
-        small_mols : list[SmallMoleculeComponent]
-          A list of SmallMoleculeComponents to add to the system.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
+        off_comps = {m: m.to_openff() for m in small_mols}
 
         # We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
         # Similarly we don't need to check prot_comp since that's also
         # disallowed on create
-        return alchem_comps, solv_comp, prot_comp, small_mols
+        return alchem_comps, solv_comp, prot_comp, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
