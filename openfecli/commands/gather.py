@@ -190,7 +190,7 @@ def _write_ddg(legs, writer, allow_partial):
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
-def _write_raw(legs, writer):
+def _write_raw(legs, writer, allow_partial=True):
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
 
