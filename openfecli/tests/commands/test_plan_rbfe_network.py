@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 from importlib import resources
 import os
+import shutil
 from click.testing import CliRunner
 
 from openfecli.commands.plan_rbfe_network import (
@@ -11,10 +12,13 @@ from openfecli.commands.plan_rbfe_network import (
 )
 
 
-@pytest.fixture
-def mol_dir_args():
-    with resources.files("openfe.tests.data.openmm_rfe") as d:
-        ofe_dir_path = str(d)
+@pytest.fixture(scope='session')
+def mol_dir_args(tmpdir_factory):
+    ofe_dir_path = tmpdir_factory.mktemp('moldir')
+
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+            shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
 
@@ -40,7 +44,6 @@ def print_test_with_file(
 
 
 def test_plan_rbfe_network_main():
-    import os, glob
     from gufe import (
         ProteinComponent,
         SmallMoleculeComponent,
@@ -54,8 +57,8 @@ def test_plan_rbfe_network_main():
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
         smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(f)
-            for f in glob.glob(str(d / "/*.sdf"))
+            SmallMoleculeComponent.from_sdf_file(d / f)
+            for f in ['ligand_23.sdf', 'ligand_55.sdf']
         ]
     with resources.files("openfe.tests.data") as d:
         protein_compontent = ProteinComponent.from_pdb_file(

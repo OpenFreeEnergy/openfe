@@ -103,7 +103,6 @@ exclude_patterns = [
 
 autodoc_mock_imports = [
     "matplotlib",
-    "lomap",
     "openmmtools",
     "mdtraj",
     "openmmforcefields",
@@ -137,6 +136,7 @@ html_theme_options = {
         }
     ],
     "accent_color": "DarkGoldenYellow",
+    "navigation_with_keys": False,
 }
 html_logo = "_static/Squaredcircle.svg"
 

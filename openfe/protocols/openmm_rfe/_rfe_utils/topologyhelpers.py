@@ -4,17 +4,296 @@
 # building toolsets.
 # LICENSE: MIT
 
-import warnings
-import itertools
 from copy import deepcopy
-import numpy as np
-from openmm import app, unit
+import itertools
 import logging
+from typing import Union, Optional
+import warnings
+
+import mdtraj as mdt
+from mdtraj.core.residue_names import _SOLVENT_TYPES
+import numpy as np
+import numpy.typing as npt
+from openmm import app, System, NonbondedForce
+from openmm import unit as omm_unit
+from openff.units import unit
+from openfe import SolventComponent
+
 
 logger = logging.getLogger(__name__)
 
 
-def combined_topology(topology1, topology2, exclude_resids=None):
+def _get_ion_and_water_parameters(
+    topology: app.Topology,
+    system: System,
+    ion_resname: str,
+    water_resname: str = 'HOH',
+):
+    """
+    Get ion, and water (oxygen and hydrogen) atoms parameters.
+
+    Parameters
+    ----------
+    topology : app.Topology
+      The topology to search for the ion and water
+    system : app.System
+      The system associated with the input topology object.
+    ion_resname : str
+      The residue name of the ion to get parameters for
+    water_resname : str
+      The residue name of the water to get parameters for. Default 'HOH'.
+
+    Returns
+    -------
+    ion_charge : float
+      The partial charge of the ion atom
+    ion_sigma : float
+      The NonbondedForce sigma parameter of the ion atom
+    ion_epsilon : float
+      The NonbondedForce epsilon parameter of the ion atom
+    o_charge : float
+      The partial charge of the water oxygen.
+    h_charge : float
+      The partial charge of the water hydrogen.
+
+    Raises
+    ------
+    ValueError
+      If there are no ``ion_resname`` or ``water_resname`` named residues in
+      the input ``topology``.
+
+    Attribution
+    -----------
+    Based on `perses.utils.charge_changing.get_ion_and_water_parameters`.
+    """
+    def _find_atom(topology, resname, elementname):
+        for atom in topology.atoms():
+            if atom.residue.name == resname:
+                if (elementname is None or atom.element.symbol == elementname):
+                    return atom.index
+        errmsg = ("Error encountered when attempting to explicitly handle "
+                  "charge changes using an alchemical water. No residue "
+                  f"named: {resname} found, with element {elementname}")
+        raise ValueError(errmsg)
+
+    ion_index = _find_atom(topology, ion_resname, None)
+    oxygen_index = _find_atom(topology, water_resname, 'O')
+    hydrogen_index = _find_atom(topology, water_resname, 'H')
+
+    nbf = [i for i in system.getForces()
+           if isinstance(i, NonbondedForce)][0]
+
+    ion_charge, ion_sigma, ion_epsilon = nbf.getParticleParameters(ion_index)
+    o_charge, _, _ = nbf.getParticleParameters(oxygen_index)
+    h_charge, _, _ = nbf.getParticleParameters(hydrogen_index)
+
+    return ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge
+
+
+def _fix_alchemical_water_atom_mapping(
+    system_mapping: dict[str, Union[dict[int, int], list[int]]],
+    b_idx: int,
+) -> None:
+    """
+    In-place fix atom mapping to account for alchemical water.
+
+    Parameters
+    ----------
+    system_mapping : dict
+      Dictionary of system mappings.
+    b_idx : int
+      The index of the state B particle.
+    """
+    a_idx = system_mapping['new_to_old_atom_map'][b_idx]
+
+    # Note, because these are already shared positions, we don't
+    # append alchemical molecule indices in the new & old molecule
+    # i.e. the `old_mol_indices` and `new_mol_indices` lists
+
+    # remove atom from the environment atom map
+    system_mapping['old_to_new_env_atom_map'].pop(a_idx)
+    system_mapping['new_to_old_env_atom_map'].pop(b_idx)
+
+    # add atom to the new_to_old_core atom maps
+    system_mapping['old_to_new_core_atom_map'][a_idx] = b_idx
+    system_mapping['new_to_old_core_atom_map'][b_idx] = a_idx
+
+
+def handle_alchemical_waters(
+    water_resids: list[int], topology: app.Topology,
+    system: System, system_mapping: dict,
+    charge_difference: int,
+    solvent_component: SolventComponent,
+):
+    """
+    Add alchemical waters from a pre-defined list.
+
+    Parameters
+    ----------
+    water_resids : list[int]
+      A list of alchemical water residues.
+    topology : app.Topology
+      The topology to search for the ion and water
+    system : app.System
+      The system associated with the input topology object.
+    system_mapping : dictionary
+      A dictionary of system mappings between the stateA and stateB systems
+    charge_difference : int
+      The charge difference between state A and state B.
+    positive_ion_resname : str
+      The name of a positive ion to replace the water with if the absolute
+      charge difference is positive.
+    negative_ion_resname : str
+      The name of a negative ion to replace the water with if the absolute
+      charge difference is negative.
+    water_resname : str
+      The residue name of the water to get parameters for. Default 'HOH'.
+
+    Raises
+    ------
+    ValueError
+      If the absolute charge difference is not equalent to the number of
+      alchemical water resids.
+      If the chosen alchemical water has virtual sites (i.e. is not
+      a 3 site water molecule).
+
+    Attribution
+    -----------
+    Based on `perses.utils.charge_changing.transform_waters_into_ions`.
+    """
+
+    if abs(charge_difference) != len(water_resids):
+        errmsg = ("There should be as many alchemical water residues: "
+                  f"{len(water_resids)} as the absolute charge "
+                  f"difference: {abs(charge_difference)}")
+        raise ValueError(errmsg)
+
+    if charge_difference > 0:
+        ion_resname = solvent_component.positive_ion.strip('-+').upper()
+    elif charge_difference < 0:
+        ion_resname = solvent_component.negative_ion.strip('-+').upper()
+    # if there's no charge difference then just skip altogether
+    else:
+        return None
+
+    ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = _get_ion_and_water_parameters(
+        topology, system, ion_resname,
+        'HOH',  # Modeller always adds HOH waters
+    )
+
+    # get the nonbonded forces
+    nbfrcs = [i for i in system.getForces()
+              if isinstance(i, NonbondedForce)]
+    if len(nbfrcs) > 1:
+        raise ValueError("Too many NonbondedForce forces found")
+
+    # for convenience just grab the first & only entry
+    nbf = nbfrcs[0]
+
+    # Loop through residues, check if they match the residue index
+    # mutate the atom as necessary
+    for res in topology.residues():
+        if res.index in water_resids:
+            # if the number of atoms > 3, then we have virtual sites which are
+            # not supported currently
+            if len([at for at in res.atoms()]) > 3:
+                errmsg = ("Non 3-site waters (i.e. waters with virtual sites) "
+                          "are not currently supported as alchemical waters")
+                raise ValueError(errmsg)
+
+            for at in res.atoms():
+                idx = at.index
+                charge, sigma, epsilon = nbf.getParticleParameters(idx)
+                _fix_alchemical_water_atom_mapping(system_mapping, idx)
+
+                if charge == o_charge:
+                    nbf.setParticleParameters(
+                        idx, ion_charge, ion_sigma, ion_epsilon
+                    )
+                else:
+                    if charge != h_charge:
+                        errmsg = ("modifying an atom that doesn't match known "
+                                  "water parameters")
+                        raise ValueError(errmsg)
+
+                    nbf.setParticleParameters(idx, 0.0, sigma, epsilon)
+
+
+def get_alchemical_waters(
+    topology: app.Topology,
+    positions: npt.NDArray,
+    charge_difference: int,
+    distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
+) -> list[int]:
+    """
+    Pick a list of waters to be used for alchemical charge correction.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+      The topology to search for an alchemical water.
+    positions : npt.NDArray
+      The coordinates of the atoms associated with the ``topology``.
+    charge_difference : int
+      The charge difference between the two end states
+      calculated as stateA_formal_charge - stateB_formal_charge.
+    distance_cutoff : unit.Quantity
+      The minimum distance away from the solutes from which an alchemical
+      water can be chosen.
+
+
+    Returns
+    -------
+    chosen_residues : list[int]
+        A list of residue indices for each chosen alchemical water.
+
+    Notes
+    -----
+    Based off perses.utils.charge_changing.get_water_indices.
+    """
+    # if the charge difference is 0 then no waters are needed
+    # return early with an empty list
+    if charge_difference == 0:
+        return []
+
+    # construct a new mdt trajectory
+    traj = mdt.Trajectory(
+        positions[np.newaxis, ...],
+        mdt.Topology.from_openmm(topology)
+    )
+
+    water_atoms = traj.topology.select("water")
+    solvent_residue_names = list(_SOLVENT_TYPES)
+    solute_atoms = [atom.index for atom in traj.topology.atoms
+                    if atom.residue.name not in solvent_residue_names]
+
+    excluded_waters = mdt.compute_neighbors(
+        traj, distance_cutoff.to(unit.nanometer).m,
+        solute_atoms, haystack_indices=water_atoms,
+        periodic=True,
+    )[0]
+
+    solvent_indices = set([
+        atom.residue.index for atom in traj.topology.atoms
+        if (atom.index in water_atoms) and (atom.index not in excluded_waters)
+    ])
+
+    if len(solvent_indices) < 1:
+        errmsg = ("There are no waters outside of a "
+                  f"{distance_cutoff.to(unit.nanometer)} nanometer distance "
+                  "of the system solutes to be used as alchemical waters")
+        raise ValueError(errmsg)
+
+    # unlike the original perses approach, we stick to the first water index
+    # in order to make sure we somewhat reproducibily pick the same water
+    chosen_residues = list(solvent_indices)[:abs(charge_difference)]
+
+    return chosen_residues
+
+
+def combined_topology(topology1: app.Topology,
+                      topology2: app.Topology,
+                      exclude_resids: Optional[npt.NDArray] = None,):
     """
     Create a new topology combining these two topologies.
 
@@ -23,7 +302,9 @@ def combined_topology(topology1, topology2, exclude_resids=None):
     Parameters
     ----------
     topology1 : openmm.app.Topology
+      Topology of the template system to graft topology2 into.
     topology2 : openmm.app.Topology
+      Topology to combine (not in place) with topology1.
     exclude_resids : npt.NDArray
       Residue indices in topology 1 to exclude from the combined topology.
 
@@ -35,7 +316,7 @@ def combined_topology(topology1, topology2, exclude_resids=None):
       topology.
     """
     if exclude_resids is None:
-        exclude_resids = []
+        exclude_resids = np.array([])
 
     top = app.Topology()
 
@@ -281,8 +562,10 @@ def get_system_mappings(old_to_new_atom_map,
               The inverted dictionaryu of old_to_new_env_atom_map.
             7. old_mol_indices
               Indices of the alchemical molecule in the old system.
+              Note: This will not contain the indices of any alchemical waters!
             8. new_mol_indices
               Indices of the alchemical molecule in the new system.
+              Note: This will not contain the indices of any alchemical waters!
     """
     # Get the indices of the atoms in the alchemical residue of interest for
     # both the old and new systems
@@ -397,8 +680,8 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
         atoms between the "old" and "new" positions. Default 1.0.
     """
     # Get the positions in Angstrom as raw numpy arrays
-    old_pos_array = old_positions.value_in_unit(unit.angstrom)
-    add_pos_array = insert_positions.value_in_unit(unit.angstrom)
+    old_pos_array = old_positions.value_in_unit(omm_unit.angstrom)
+    add_pos_array = insert_positions.value_in_unit(omm_unit.angstrom)
 
     # Create empty ndarray of size atoms to hold the positions
     new_pos_array = np.zeros((new_topology.getNumAtoms(), 3))
@@ -422,4 +705,4 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
             warnings.warn(wmsg)
             logging.warning(wmsg)
 
-    return new_pos_array * unit.angstrom
+    return new_pos_array * omm_unit.angstrom
