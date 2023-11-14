@@ -5,6 +5,7 @@ channels:
 dependencies:
 - autodoc-pydantic<2.0
 - lomap2>=3.0.0
+- kartograf
 - openff-models>=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
