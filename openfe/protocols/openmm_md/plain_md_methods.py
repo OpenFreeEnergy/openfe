@@ -395,17 +395,21 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                     getPositions=True, enforcePeriodicBox=False
                 ).getPositions()
                 # Store subset of atoms, specified in input, as PDB file
-                with open(shared_basepath / sim_settings.minimized_structure, "w") as f:
-                    openmm.app.PDBFile.writeFile(
-                        simulation.topology.subset(selection_indices),
-                        positions[selection_indices, :],
-                        file=f, keepIds=True,
-                    )
+                mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
+                traj = mdtraj.Trajectory(
+                    positions[selection_indices, :],
+                    mdtraj_top.subset(selection_indices),
+                )
+                traj.save_pdb(
+                    shared_basepath / sim_settings.minimized_structure
+                )
                 # equilibrate
+                # NVT equilibration
                 if verbose:
                     logger.info("equilibrating systems")
                 simulation.context.setVelocitiesToTemperature(
                     to_openmm(thermo_settings.temperature))
+                simulation.context.setParameter(MonteCarloBarostat.setFrequency(), 0)
                 simulation.step(equil_steps)
 
                 # production
