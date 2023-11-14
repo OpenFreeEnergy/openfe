@@ -121,15 +121,6 @@ def plan_rbfe_network(
 
     write("Parsing in Files: ")
 
-    from gufe import SolventComponent
-    from openfe.setup.atom_mapping.lomap_scorers import (
-        default_lomap_score,
-    )
-    from openfe.setup import LomapAtomMapper
-    from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network,
-    )
-
     # INPUT
     write("\tGot input: ")
 
@@ -148,28 +139,11 @@ def plan_rbfe_network(
         cofactors = []
     write("\t\tCofactors: " + str(cofactors))
 
-    # Initially set these to None,
-    # possible changed via yaml input
-    # otherwise given default values
-    mapper_obj = None
-    mapping_scorer = None
-    ligand_network_planner = None
-    solvent = None
-
-    if yaml_settings is not None:
-        yaml_options = YAML_OPTIONS.get(yaml_settings)
-        mapper_obj = yaml_options.get('mapper', None)
-        ligand_network_planner = yaml_options.get('network', None)
-
-    if mapper_obj is None:
-        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False,
-                                     max3d=1)
-    if mapping_scorer is None:
-        mapping_scorer = default_lomap_score
-    if ligand_network_planner is None:
-        ligand_network_planner = generate_minimal_spanning_network
-    if solvent is None:
-        solvent = SolventComponent()
+    yaml_options = YAML_OPTIONS.get(yaml_settings)
+    mapper_obj = yaml_options.mapper
+    mapping_scorer = yaml_options.scorer
+    ligand_network_planner = yaml_options.ligand_network_planner
+    solvent = yaml_options.solvent
 
     write("\t\tSolvent: " + str(solvent))
     write("")
