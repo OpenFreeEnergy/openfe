@@ -12,6 +12,7 @@ dependencies:
   - pytest-cov
   - pytest-rerunfailures
   - pydantic >1
+  - pyyaml
   - coverage
   - cinnabar ==0.3.0
   - openff-toolkit>=0.13.0
