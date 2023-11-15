@@ -32,6 +32,9 @@ Functions that build a :class:`.LigandNetwork` from a collection of :class:`Smal
     generate_radial_network
     generate_maximal_network
     generate_minimal_spanning_network
+    generate_minimal_redundant_network
+    generate_lomap_network
+
 
 .. _Ligand Network Loaders:
 
@@ -90,7 +93,8 @@ Atom Map Scorers
 
 Scoring functions for a mapping between ligands. These are used as objective functions for :any:`Ligand Network Planners`.
 
-LOMAP Scorers
+
+Lomap Scorers
 ~~~~~~~~~~~~~
 
 Scorers implemented by the `LOMAP <https://github.com/OpenFreeEnergy/Lomap>`_ package.
@@ -98,7 +102,6 @@ Scorers implemented by the `LOMAP <https://github.com/OpenFreeEnergy/Lomap>`_ pa
 .. apparently we need the atom_mapping because internally autofunction is
     trying ``import openfe.setup.lomap_scorers``, which doesn't work (whereas
     ``from openfe.setup import lomap_scorers`` does)
-
 .. module:: openfe.setup.atom_mapping.lomap_scorers
 
 .. autosummary::

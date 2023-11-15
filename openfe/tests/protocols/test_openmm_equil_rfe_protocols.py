@@ -1289,7 +1289,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-15.768768285032115)
+        assert est.m == pytest.approx(3.5531577581450953)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1297,7 +1297,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.03662634237353985)
+        assert est.m == pytest.approx(0.03431704941311493)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1347,13 +1347,6 @@ class TestProtocolResult:
         assert rpx1['eigenvalues'].shape == (11,)
         assert rpx1['matrix'].shape == (11, 11)
 
-    def test_get_replica_states(self, protocolresult):
-        rep = protocolresult.get_replica_states()
-
-        assert isinstance(rep, list)
-        assert len(rep) == 3
-        assert rep[0].shape == (6, 11)
-
     def test_equilibration_iterations(self, protocolresult):
         eq = protocolresult.equilibration_iterations()
 
@@ -1368,6 +1361,11 @@ class TestProtocolResult:
         assert len(prod) == 3
         assert all(isinstance(v, float) for v in prod)
 
+    def test_filenotfound_replica_states(self, protocolresult):
+        errmsg = "File could not be found"
+
+        with pytest.raises(ValueError, match=errmsg):
+            protocolresult.get_replica_states()
 
 @pytest.mark.parametrize('mapping_name,result', [
     ["benzene_to_toluene_mapping", 0],

@@ -970,7 +970,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         if not dry:
             nc = self.shared_basepath / settings['simulation_settings'].output_filename
-            chk = self.shared_basepath / settings['simulation_settings'].checkpoint_storage
+            chk = settings['simulation_settings'].checkpoint_storage
             return {
                 'nc': nc,
                 'last_checkpoint': chk,
