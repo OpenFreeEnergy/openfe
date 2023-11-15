@@ -192,7 +192,7 @@ def _write_ddg(legs, writer, allow_partial):
 
 def _write_raw(legs, writer, allow_partial=True):
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+                     "MBAR uncertainty (kcal/mol)"])
 
     for ligpair, vals in sorted(legs.items()):
         for simtype, repeats in sorted(vals.items()):
