@@ -26,6 +26,7 @@ dependencies:
   - openmmtools
   - openmmforcefields>=0.11.2
   - perses
+  - pooch
   - py3dmol
   - plugcli
   - tqdm
