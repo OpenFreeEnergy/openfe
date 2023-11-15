@@ -4,6 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - duecredit
+  - kartograf
   - lomap2>=3.0.0
   - numpy<1.24
   - networkx
@@ -41,4 +42,3 @@ dependencies:
   - pip:
     - sphinx-toolbox
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/OpenFreeEnergy/kartograf@main
