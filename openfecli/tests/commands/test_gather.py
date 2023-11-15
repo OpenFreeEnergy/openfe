@@ -145,7 +145,7 @@ solvent	lig_ejm_46	lig_jmc_28	23.65	0.03
 """
 
 
-@pytest.mark.parametrize('report', ["", "dg", "ddg", "dg-raw"])
+@pytest.mark.parametrize('report', ["", "dg", "ddg"])
 def test_gather(results_dir, report):
     expected = {
         "": _EXPECTED_DG,

@@ -205,7 +205,7 @@ def _write_raw(legs, writer, allow_partial=True):
                 writer.writerow([simtype, *ligpair, m, u])
 
 
-def _write_dg_raw(legs, writer, allow_partial):
+def _write_dg_raw(legs, writer, allow_partial):  # pragma: no-cover
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
@@ -279,7 +279,7 @@ def _write_dg_mle(legs, writer, allow_partial):
                 required=True)
 @click.option(
     '--report',
-    type=HyphenAwareChoice(['dg', 'ddg', 'dg-raw', 'raw'],
+    type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
                            case_sensitive=False),
     default="dg", show_default=True,
     help=(
@@ -314,8 +314,6 @@ def gather(rootdir, output, report, allow_partial):
       from DDG replica averages and standard deviations.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * 'dg-raw' reports the raw results, giving the leg (vacuum, solvent, or
-      complex), ligand_i, ligand_j, the raw DG(i->j) associated with it.
     * 'raw' reports the raw results, which each repeat simulation given
       separately (i.e. no combining of redundant simulations is performed)
 
@@ -369,7 +367,7 @@ def gather(rootdir, output, report, allow_partial):
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
-        'dg-raw': _write_dg_raw,
+        #  'dg-raw': _write_dg_raw,
         'raw': _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
