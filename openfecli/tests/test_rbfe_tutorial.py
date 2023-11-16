@@ -87,25 +87,16 @@ def mock_execute(expected_transformations):
 @pytest.fixture
 def ref_gather():
     return """\
-leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
-complex	lig_ejm_31	lig_ejm_42	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_42	4.2	0.0
-complex	lig_ejm_31	lig_ejm_46	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_46	4.2	0.0
-complex	lig_ejm_31	lig_ejm_47	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_47	4.2	0.0
-complex	lig_ejm_31	lig_ejm_48	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_48	4.2	0.0
-complex	lig_ejm_31	lig_ejm_50	4.2	0.0
-solvent	lig_ejm_31	lig_ejm_50	4.2	0.0
-complex	lig_ejm_42	lig_ejm_43	4.2	0.0
-solvent	lig_ejm_42	lig_ejm_43	4.2	0.0
-complex	lig_ejm_46	lig_jmc_23	4.2	0.0
-solvent	lig_ejm_46	lig_jmc_23	4.2	0.0
-complex	lig_ejm_46	lig_jmc_27	4.2	0.0
-solvent	lig_ejm_46	lig_jmc_27	4.2	0.0
-complex	lig_ejm_46	lig_jmc_28	4.2	0.0
-solvent	lig_ejm_46	lig_jmc_28	4.2	0.0
+ligand_i\tligand_j\tDDG(i->j) (kcal/mol)\tuncertainty (kcal/mol)
+lig_ejm_31\tlig_ejm_42\t0.0\t0.0
+lig_ejm_31\tlig_ejm_46\t0.0\t0.0
+lig_ejm_31\tlig_ejm_47\t0.0\t0.0
+lig_ejm_31\tlig_ejm_48\t0.0\t0.0
+lig_ejm_31\tlig_ejm_50\t0.0\t0.0
+lig_ejm_42\tlig_ejm_43\t0.0\t0.0
+lig_ejm_46\tlig_jmc_23\t0.0\t0.0
+lig_ejm_46\tlig_jmc_27\t0.0\t0.0
+lig_ejm_46\tlig_jmc_28\t0.0\t0.0
 """
 
 
@@ -123,7 +114,7 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
             result2 = runner.invoke(quickrun, [fn])
             assert result2.exit_code == 0
 
-        gather_result = runner.invoke(gather, ["--report", "dg-raw", '.'])
+        gather_result = runner.invoke(gather, ["--report", "ddg", '.'])
 
         assert gather_result.exit_code == 0
         assert gather_result.stdout == ref_gather
