@@ -233,17 +233,28 @@ def plot_2D_rmsd(data: list[list[float]],
 
         twod_rmsd_arrs.append(arr)
 
-    nplots = len(data)
+    nplots = len(data) + 1  # + colorbar
 
     # plot on 4 x n grid
     nrows = nplots // 4 + (1 if nplots % 4 else 0)
 
-    fig, axes = plt.subplots(nrows, 4, sharex='all', sharey='all')
+    fig, axes = plt.subplots(nrows, 4)
 
     for i, (arr, ax) in enumerate(
             zip(twod_rmsd_arrs, chain.from_iterable(axes))):
-        ax.imshow(arr, vmin=0, vmax=vmax)
+        ax.imshow(arr,
+                  vmin=0, vmax=vmax,
+                  cmap=plt.get_cmap('cividis'))
+        ax.axis('off')  # turn off ticks/labels
         ax.set_title(f'State {i}')
+
+    plt.colorbar(axes[0][0].images[0],
+                 cax=axes[-1][-1],
+                 label="RMSD scale (A)",
+                 orientation="horizontal")
+
+    fig.suptitle('Protein 2D RMSD')
+    fig.tight_layout()
 
     return fig
 
