@@ -77,7 +77,7 @@ class MultistateEquilFEAnalysis:
         ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'mbar_overlap_matrix.png')
         )
-        plt.close(ax.figure)
+        plt.close(ax.figure)  # type: ignore
 
         # Reverse and forward analysis
         ax = plotting.plot_convergence(
@@ -87,7 +87,7 @@ class MultistateEquilFEAnalysis:
         ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'forward_reverse_convergence.png')
         )
-        plt.close(ax.figure)
+        plt.close(ax.figure)  # type: ignore
 
         # Replica state timeseries plot
         ax = plotting.plot_replica_timeseries(
@@ -97,7 +97,7 @@ class MultistateEquilFEAnalysis:
         ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'replica_state_timeseries.png')
         )
-        plt.close(ax.figure)
+        plt.close(ax.figure)  # type: ignore
 
         # Replica exchange transition matrix
         if self.sampling_method == 'repex':
@@ -108,7 +108,7 @@ class MultistateEquilFEAnalysis:
             ax.figure.savefig(  # type: ignore
                 filepath / (filename_prefix + 'replica_exchange_matrix.png')
             )
-            plt.close(ax.figure)
+            plt.close(ax.figure)  # type: ignore
 
     def _analyze(self, forward_reverse_samples: int):
         """
