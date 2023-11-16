@@ -6,7 +6,7 @@ Reusable utility methods to analyze results from multistate calculations.
 from pathlib import Path
 from typing import Union
 import warnings
-
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openmmtools import multistate
@@ -77,6 +77,7 @@ class MultistateEquilFEAnalysis:
         ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'mbar_overlap_matrix.png')
         )
+        plt.close(ax.figure)
 
         # Reverse and forward analysis
         ax = plotting.plot_convergence(
@@ -86,6 +87,7 @@ class MultistateEquilFEAnalysis:
         ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'forward_reverse_convergence.png')
         )
+        plt.close(ax.figure)
 
         # Replica state timeseries plot
         ax = plotting.plot_replica_timeseries(
@@ -95,6 +97,7 @@ class MultistateEquilFEAnalysis:
         ax.figure.savefig(  # type: ignore
             filepath / (filename_prefix + 'replica_state_timeseries.png')
         )
+        plt.close(ax.figure)
 
         # Replica exchange transition matrix
         if self.sampling_method == 'repex':
@@ -105,6 +108,7 @@ class MultistateEquilFEAnalysis:
             ax.figure.savefig(  # type: ignore
                 filepath / (filename_prefix + 'replica_exchange_matrix.png')
             )
+            plt.close(ax.figure)
 
     def _analyze(self, forward_reverse_samples: int):
         """

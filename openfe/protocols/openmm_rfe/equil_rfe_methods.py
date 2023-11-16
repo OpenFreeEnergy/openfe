@@ -28,6 +28,7 @@ import uuid
 import warnings
 import json
 from itertools import chain
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
@@ -999,11 +1000,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         if d := data['protein_2D_RMSD']:
             fig = plotting.plot_2D_rmsd(d)
             fig.savefig(savedir / "protein_2D_RMSD.png")
+            plt.close(fig)
             f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
             f2.savefig(savedir / "ligand_COM_drift.png")
+            plt.close(f2)
 
         f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
         f3.savefig(savedir / "ligand_RMSD.png")
+        plt.close(f3)
 
         return {'structural_analysis': data}
 
