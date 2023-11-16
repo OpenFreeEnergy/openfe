@@ -87,7 +87,7 @@ solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
 
 
 _EXPECTED_RAW = b"""\
-leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	lig_ejm_31	lig_ejm_42	-14.77	0.04
 complex	lig_ejm_31	lig_ejm_42	-14.74	0.04
 complex	lig_ejm_31	lig_ejm_42	-14.94	0.04
