@@ -49,7 +49,7 @@ def test_plan_rhfe_network_main():
 
     solvent_component = SolventComponent()
     alchemical_network, ligand_network = plan_rhfe_network_main(
-        mapper=LomapAtomMapper(),
+        mapper=[LomapAtomMapper()],
         mapping_scorer=lomap_scorers.default_lomap_score,
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
@@ -101,3 +101,36 @@ def test_plan_rhfe_network(mol_dir_args):
 
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
+
+
+@pytest.fixture
+def custom_yaml_settings():
+    return """\
+network:
+  method: generate_minimal_redundant_network
+  settings:
+    mst_num: 2
+
+mapper:
+  method: LomapAtomMapper
+  settings:
+    time: 45
+    element_change: True
+"""
+
+
+def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tmpdir):
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(custom_yaml_settings)
+
+    assert settings_path.exists()
+
+    args = mol_dir_args + ['-s', settings_path]
+
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rhfe_network, args)
+
+        assert result.exit_code == 0
