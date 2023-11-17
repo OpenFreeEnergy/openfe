@@ -5,6 +5,7 @@ channels:
 dependencies:
 - autodoc-pydantic<2.0
 - lomap2>=3.0.0
+- kartograf>=1.0.0
 - openff-models>=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
@@ -27,7 +28,7 @@ dependencies:
   - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@main
 
-# These are added automatically by RTD, so we include them here
+# These are added automatically by RTD, so we include them here 
 # for a consistent environment.
 - mock
 - pillow

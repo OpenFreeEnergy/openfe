@@ -107,6 +107,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     )
     from openfe.setup import (
         LomapAtomMapper,
+        KartografAtomMapper,
     )
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
@@ -127,6 +128,8 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         mapper_choices = {
             'lomap': LomapAtomMapper,
             'lomapatommapper': LomapAtomMapper,
+            'kartograf': KartografAtomMapper,
+            'kartografatommapper': KartografAtomMapper,
         }
 
         try:
