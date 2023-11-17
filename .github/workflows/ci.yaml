@@ -94,7 +94,7 @@ jobs:
           verbose: True
           flags: fast-tests
 
-      - name: codecov-schedule
+      - name: codecov-merge
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'  # we only want to upload a slow report if
                 && github.event_name != 'schedule'            # 1) it isn't a schedule run
                 && github.event_name != 'pull_request' }}     # 2) it wasn't from a PR (we don't run slow tests on PRs)
