@@ -1,7 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from itertools import chain
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from typing import Optional, Union
@@ -202,3 +204,84 @@ def plot_replica_timeseries(
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     return ax
+
+
+def plot_2D_rmsd(data: list[list[float]],
+                 vmax=5.0) -> plt.Figure:
+    """Plots 2D RMSD for many states
+
+    Parameters
+    ----------
+    data : list[list[float]]
+      for each state, the 2D RMSD
+    vmax : float, optional
+      the value to consider "high" in the colourmap to flag bad values,
+      defaults to 5.0 (A)
+
+    Returns
+    -------
+    matplotlib Figure
+    """
+    twod_rmsd_arrs = []
+    for state in data:
+        # unpack 2D RMSD data
+        # we store N(N-1)//2 values, so find N then make symmetric array
+        N = int((1 + np.sqrt(8 * len(state) + 1)) / 2)
+        arr = np.zeros((N, N))
+        arr[np.triu_indices_from(arr, k=1)] = state
+        arr += arr.T
+
+        twod_rmsd_arrs.append(arr)
+
+    nplots = len(data) + 1  # + colorbar
+
+    # plot on 4 x n grid
+    nrows = nplots // 4 + (1 if nplots % 4 else 0)
+
+    fig, axes = plt.subplots(nrows, 4)
+
+    for i, (arr, ax) in enumerate(
+            zip(twod_rmsd_arrs, chain.from_iterable(axes))):
+        ax.imshow(arr,
+                  vmin=0, vmax=vmax,
+                  cmap=plt.get_cmap('cividis'))
+        ax.axis('off')  # turn off ticks/labels
+        ax.set_title(f'State {i}')
+
+    plt.colorbar(axes[0][0].images[0],
+                 cax=axes[-1][-1],
+                 label="RMSD scale (A)",
+                 orientation="horizontal")
+
+    fig.suptitle('Protein 2D RMSD')
+    fig.tight_layout()
+
+    return fig
+
+
+def plot_ligand_COM_drift(time: list[float], data: list[list[float]]):
+    fig, ax = plt.subplots()
+
+    for i, s in enumerate(data):
+        ax.plot(time, s, label=f'State {i}')
+
+    ax.legend(loc='upper left')
+    ax.set_xlabel('Time (ps)')
+    ax.set_ylabel('Distance (A)')
+    ax.set_title('Ligand COM drift')
+
+    return fig
+
+
+def plot_ligand_RMSD(time: list[float], data: list[list[float]]):
+    fig, ax = plt.subplots()
+
+    for i, s in enumerate(data):
+        ax.plot(time, s, label=f'State {i}')
+
+    ax.legend(loc='upper left')
+    ax.set_xlabel('Time (ps)')
+    ax.set_ylabel('RMSD (A)')
+    ax.set_title('Ligand RMSD')
+
+    return fig
