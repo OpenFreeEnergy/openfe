@@ -106,7 +106,7 @@ def generate_radial_network(
             score = scorer(mapping)
             mapping = mapping.with_annotations({"score": score})
 
-            if score < best_score:
+            if score > best_score:
                 best_mapping = mapping
                 best_score = score
 
