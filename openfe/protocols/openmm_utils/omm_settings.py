@@ -371,7 +371,7 @@ class RepeatSettings(SettingsBaseModel):
 
     n_repeats: int = 1
     """
-    Number of independent repeats to run.  Default 3
+    Number of independent repeats to run.  Default 1
     """
 
 class SimulationSettingsMD(SimulationSettings):
@@ -387,10 +387,10 @@ class SimulationSettingsMD(SimulationSettings):
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
     trajectory_interval = 250 * unit.timestep
     """
-    Frequency to write the xtc file. Default 5000 * unit.timestep.
+    Frequency to write the xtc file. Default 250 * unit.timestep.
     """
     output_structure = 'system.pdb'
-    """Path to the pdb file of the full system. Default 'system.pdb'."""
+    """Path to the pdb file of the full pre-minimized system. Default 'system.pdb'."""
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
