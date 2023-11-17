@@ -96,6 +96,32 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
         assert ThermodynamicState(sim, temperature=to_openmm(
             protocol.settings.thermo_settings.temperature)).barostat is None
 
+def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
+
+    vac_settings = PlainMDProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.simulation_settings.forcefield_cache = None
+
+    protocol = PlainMDProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=benzene_vacuum_system,
+        mapping=None,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sim = dag_unit.run(dry=True)['debug']['system']
+        print(sim)
+        assert not ThermodynamicState(sim, temperature=to_openmm(
+            protocol.settings.thermo_settings.temperature)).is_periodic
+        assert ThermodynamicState(sim, temperature=to_openmm(
+            protocol.settings.thermo_settings.temperature)).barostat is None
+
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     vac_settings = PlainMDProtocol.default_settings()
@@ -352,3 +378,6 @@ def test_gather(solvent_protocol_dag, tmpdir):
     res = prot.gather([dagres])
 
     assert isinstance(res, PlainMDProtocolResult)
+
+def test_ffcache_none():
+    dryrun = pu.run(dry=True, shared_basepath=tmp)
