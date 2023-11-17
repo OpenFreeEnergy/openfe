@@ -128,6 +128,15 @@ def _generate_bad_legs_error_message(set_vals, ligpair):
     return msg
 
 
+def _parse_raw_units(results: dict) -> list[tuple]:
+    # grab individual unit results from master results dict
+    # returns list of (estimate, uncertainty) tuples
+    pus = list(results['unit_results'].values())
+    return [(pu['outputs']['unit_estimate'],
+             pu['outputs']['unit_estimate_error'])
+            for pu in pus]
+
+
 def _get_ddgs(legs, error_on_missing=True):
     import numpy as np
     DDGs = []
@@ -171,24 +180,35 @@ def _get_ddgs(legs, error_on_missing=True):
 def _write_ddg(legs, writer, allow_partial):
     DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
-                      "uncertainty (kcal/mol)"])
+                     "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        name = f"{ligB}, {ligA}"
         if DDGbind is not None:
-            DDGbind, bind_unc = format_estimate_uncertainty(DDGbind,
-                                                            bind_unc)
+            DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             writer.writerow([ligA, ligB, DDGbind, bind_unc])
         if DDGhyd is not None:
-            DDGhyd, hyd_unc = format_estimate_uncertainty(DDGbind,
-                                                          bind_unc)
+            DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
-def _write_dg_raw(legs, writer, allow_partial):
+def _write_raw(legs, writer, allow_partial=True):
+    writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
+                     "MBAR uncertainty (kcal/mol)"])
+
+    for ligpair, vals in sorted(legs.items()):
+        for simtype, repeats in sorted(vals.items()):
+            for m, u in repeats:
+                if m is None:
+                    m, u = 'NaN', 'NaN'
+                else:
+                    m, u = format_estimate_uncertainty(m.m, u.m)
+
+                writer.writerow([simtype, *ligpair, m, u])
+
+
+def _write_dg_raw(legs, writer, allow_partial):  # pragma: no-cover
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
-        name = ', '.join(ligpair)
         for simtype, (m, u) in sorted(vals.items()):
             if m is None:
                 m, u = 'NaN', 'NaN'
@@ -255,11 +275,12 @@ def _write_dg_mle(legs, writer, allow_partial):
 )
 @click.argument('rootdir',
                 type=click.Path(dir_okay=True, file_okay=False,
-                                         path_type=pathlib.Path),
+                                path_type=pathlib.Path),
                 required=True)
 @click.option(
     '--report',
-    type=HyphenAwareChoice(['dg', 'ddg', 'dg-raw'], case_sensitive=False),
+    type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
+                           case_sensitive=False),
     default="dg", show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
@@ -293,8 +314,8 @@ def gather(rootdir, output, report, allow_partial):
       from DDG replica averages and standard deviations.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * 'dg-raw' reports the raw results, giving the leg (vacuum, solvent, or
-      complex), ligand_i, ligand_j, the raw DG(i->j) associated with it.
+    * 'raw' reports the raw results, which each repeat simulation given
+      separately (i.e. no combining of redundant simulations is performed)
 
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
@@ -317,7 +338,7 @@ def gather(rootdir, output, report, allow_partial):
         if result is None:
             continue
         elif result['estimate'] is None or result['uncertainty'] is None:
-            click.echo(f"WARNING: Calculations for {result_fn} did not finish succesfully!",
+            click.echo(f"WARNING: Calculations for {result_fn} did not finish successfully!",
                        err=True)
 
         try:
@@ -329,7 +350,10 @@ def gather(rootdir, output, report, allow_partial):
         except KeyError:
             simtype = legacy_get_type(result_fn)
 
-        legs[names][simtype] = result['estimate'], result['uncertainty']
+        if report.lower() == 'raw':
+            legs[names][simtype] = _parse_raw_units(result)
+        else:
+            legs[names][simtype] = result['estimate'], result['uncertainty']
 
     writer = csv.writer(
         output,
@@ -343,7 +367,8 @@ def gather(rootdir, output, report, allow_partial):
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
-        'dg-raw': _write_dg_raw,
+        #  'dg-raw': _write_dg_raw,
+        'raw': _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
 
