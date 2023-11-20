@@ -66,7 +66,7 @@ def get_simsteps(sim_length: unit.Quantity,
 
     var = ["Simulation", sim_steps, sim_time]
     if (var[1] % mc_steps) != 0:
-        errmsg =  (f"{var[0]} time {var[2]/1000000} ps should contain a "
+        errmsg = (f"{var[0]} time {var[2]/1000000} ps should contain a "
                    "number of steps divisible by the number of integrator "
                    f"timesteps between MC moves {mc_steps}")
         raise ValueError(errmsg)

@@ -398,20 +398,24 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
                 # Get the sub selection of the system to print coords for
                 selection_indices = mdtraj.Topology.from_openmm(
-                    stateA_topology).select(sim_settings.output_indices)
+                    simulation.topology).select(sim_settings.output_indices)
 
-                positions = simulation.context.getState(
+                positions = to_openmm(
+                    from_openmm(simulation.context.getState(
                     getPositions=True, enforcePeriodicBox=False
-                ).getPositions()
+                ).getPositions()))
                 # Store subset of atoms, specified in input, as PDB file
                 mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
+
                 traj = mdtraj.Trajectory(
                     positions[selection_indices, :],
                     mdtraj_top.subset(selection_indices),
                 )
+                print('here1')
                 traj.save_pdb(
                     shared_basepath / sim_settings.minimized_structure
                 )
+                print('here2')
                 # equilibrate
                 # NVT equilibration
                 if verbose:
