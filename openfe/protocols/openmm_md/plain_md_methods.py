@@ -287,10 +287,17 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep
         )
-        equil_steps_nvt, equil_steps_npt, prod_steps = settings_validation.get_simsteps(
-            equil_length_nvt=sim_settings.equilibration_length_nvt,
-            equil_length=sim_settings.equilibration_length,
-            prod_length=sim_settings.production_length,
+
+        equil_steps_nvt = settings_validation.get_simsteps(
+            sim_length=sim_settings.equilibration_length_nvt,
+            timestep=timestep, mc_steps=mc_steps
+        )
+        equil_steps_npt = settings_validation.get_simsteps(
+            sim_length=sim_settings.equilibration_length,
+            timestep=timestep, mc_steps=mc_steps
+        )
+        prod_steps = settings_validation.get_simsteps(
+            sim_length=sim_settings.production_length,
             timestep=timestep, mc_steps=mc_steps
         )
 
