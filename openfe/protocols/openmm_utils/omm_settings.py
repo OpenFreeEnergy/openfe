@@ -382,12 +382,28 @@ class SimulationSettingsMD(SimulationSettings):
     class Config:
         arbitrary_types_allowed = True
 
+    equilibration_length_nvt: unit.Quantity
+    """
+    Length of the equilibration phase in the NVT ensemble in units of time. 
+    The total number of steps from this equilibration length
+    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
+    must be a multiple of the value defined for
+    :class:`IntegratorSettings.n_steps`.
+    """
+    equilibration_length_npt: unit.Quantity
+    """
+    Length of the equilibration phase in the NPT ensemble in units of time. 
+    The total number of steps from this equilibration length
+    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
+    must be a multiple of the value defined for
+    :class:`IntegratorSettings.n_steps`.
+    """
     # reporter settings
     output_filename = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
-    trajectory_interval = 250 * unit.timestep
+    trajectory_interval = 5000 * unit.timestep
     """
-    Frequency to write the xtc file. Default 250 * unit.timestep.
+    Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
     output_structure = 'system.pdb'
     """Path to the pdb file of the full pre-minimized system. Default 'system.pdb'."""

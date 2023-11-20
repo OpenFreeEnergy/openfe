@@ -286,8 +286,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep
         )
-        equil_steps, prod_steps = settings_validation.get_simsteps(
-            equil_length=sim_settings.equilibration_length,
+        equil_steps_nvt, equil_steps_npt, prod_steps = settings_validation.get_simsteps(
+            equil_length_nvt=sim_settings.equilibration_length_nvt,
+            equil_length_npt=sim_settings.equilibration_length_npt,
             prod_length=sim_settings.production_length,
             timestep=timestep, mc_steps=mc_steps
         )
@@ -406,11 +407,31 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # equilibrate
                 # NVT equilibration
                 if verbose:
-                    logger.info("equilibrating systems")
+                    logger.info("Running NVT equilibration")
                 simulation.context.setVelocitiesToTemperature(
                     to_openmm(thermo_settings.temperature))
                 simulation.context.setParameter(MonteCarloBarostat.setFrequency(), 0)
-                simulation.step(equil_steps)
+
+                t0 = time.time()
+                simulation.step(equil_steps_nvt)
+                t1 = time.time()
+                logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
+
+                # NPT equilibration
+                if verbose:
+                    logger.info("Running NPT equilibration")
+                simulation.context.setVelocitiesToTemperature(
+                    to_openmm(thermo_settings.temperature))
+                simulation.context.setParameter(
+                    MonteCarloBarostat.setFrequency(),
+                    integrator_settings.barostat_frequency,
+                )
+
+                t0 = time.time()
+                simulation.step(equil_steps_npt)
+                t1 = time.time()
+                logger.info(
+                    f"Completed NPT equilibration in {t1 - t0} seconds")
 
                 # production
                 if verbose:
@@ -419,7 +440,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # Setup the reporters
                 simulation.reporters.append(XTCReporter(
                     file=str(shared_basepath / sim_settings.output_filename),
-                    reportInterval=sim_settings.checkpoint_interval.m,
+                    reportInterval=sim_settings.trajectory_interval.m,
                     atomSubset=selection_indices))
                 simulation.reporters.append(openmm.app.CheckpointReporter(
                     file=str(shared_basepath / sim_settings.checkpoint_storage),
