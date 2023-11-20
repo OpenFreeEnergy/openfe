@@ -26,7 +26,9 @@ import logging
 from collections import defaultdict
 import uuid
 import warnings
+import json
 from itertools import chain
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
@@ -40,6 +42,7 @@ import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
 import mdtraj
+import subprocess
 from rdkit import Chem
 
 import gufe
@@ -60,6 +63,7 @@ from ..openmm_utils import (
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
+from ...analysis import plotting
 from openfe.due import due, Doi
 
 
@@ -980,6 +984,33 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         else:
             return {'debug': {'sampler': sampler}}
 
+    @staticmethod
+    def analyse(where) -> dict:
+        # don't put energy analysis in here, it uses the open file reporter
+        # whereas structural stuff requires that the file handle is closed
+        ret = subprocess.run(['openfe_analysis', str(where)],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        if ret.returncode:
+            return {'structural_analysis_error': ret.stderr}
+
+        data = json.loads(ret.stdout)
+
+        savedir = pathlib.Path(where)
+        if d := data['protein_2D_RMSD']:
+            fig = plotting.plot_2D_rmsd(d)
+            fig.savefig(savedir / "protein_2D_RMSD.png")
+            plt.close(fig)
+            f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
+            f2.savefig(savedir / "ligand_COM_drift.png")
+            plt.close(f2)
+
+        f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
+        f3.savefig(savedir / "ligand_RMSD.png")
+        plt.close(f3)
+
+        return {'structural_analysis': data}
+
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
@@ -988,9 +1019,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             outputs = self.run(scratch_basepath=ctx.scratch,
                                shared_basepath=ctx.shared)
 
+        analysis_outputs = self.analyse(ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
-            **outputs
+            **outputs,
+            **analysis_outputs,
         }
