@@ -386,15 +386,7 @@ class SimulationSettingsMD(SimulationSettings):
     """
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
-    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
-    must be a multiple of the value defined for
-    :class:`IntegratorSettings.n_steps`.
-    """
-    equilibration_length_npt: unit.Quantity
-    """
-    Length of the equilibration phase in the NPT ensemble in units of time. 
-    The total number of steps from this equilibration length
-    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
+    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`)
     must be a multiple of the value defined for
     :class:`IntegratorSettings.n_steps`.
     """

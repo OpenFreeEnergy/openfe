@@ -113,6 +113,7 @@ class PlainMDProtocol(gufe.Protocol):
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettingsMD(
+                equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
@@ -288,7 +289,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
         equil_steps_nvt, equil_steps_npt, prod_steps = settings_validation.get_simsteps(
             equil_length_nvt=sim_settings.equilibration_length_nvt,
-            equil_length_npt=sim_settings.equilibration_length_npt,
+            equil_length=sim_settings.equilibration_length,
             prod_length=sim_settings.production_length,
             timestep=timestep, mc_steps=mc_steps
         )

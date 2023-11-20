@@ -378,6 +378,3 @@ def test_gather(solvent_protocol_dag, tmpdir):
     res = prot.gather([dagres])
 
     assert isinstance(res, PlainMDProtocolResult)
-
-def test_ffcache_none():
-    dryrun = pu.run(dry=True, shared_basepath=tmp)
