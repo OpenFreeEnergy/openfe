@@ -28,12 +28,9 @@ def test_validate_timestep():
 
 
 @pytest.mark.parametrize('s,ts,mc,es', [
-    [5 * unit.nanoseconds, 4 * unit.femtoseconds,
-     250, 1250000],
-    [1 * unit.nanoseconds, 4 * unit.femtoseconds,
-     250, 250000],
-    [1 * unit.picoseconds, 2 * unit.femtoseconds,
-     250, 500],
+    [5 * unit.nanoseconds, 4 * unit.femtoseconds, 250, 1250000],
+    [1 * unit.nanoseconds, 4 * unit.femtoseconds, 250, 250000],
+    [1 * unit.picoseconds, 2 * unit.femtoseconds, 250, 500],
 ])
 def test_get_simsteps(s, ts, mc, es):
     sim_steps = settings_validation.get_simsteps(s, ts, mc)
