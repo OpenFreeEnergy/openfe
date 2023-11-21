@@ -33,4 +33,3 @@ class PlainMDProtocolSettings(Settings):
 
     # Setting number of repeats of md simulation
     repeat_settings: RepeatSettings
-    

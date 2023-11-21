@@ -142,10 +142,22 @@ class PlainMDProtocol(gufe.Protocol):
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
-        if len(small_mols) == 0:
-            system_name = 'MD'
-        else:
-            system_name = f'MD {small_mols[0].name}'
+        # if len(small_mols) == 0:
+        #     system_name = 'MD'
+        # else:
+        #     system_name = f'MD {small_mols[0].name}'
+
+        system_name = "Solvent MD" if solvent_comp is not None else "Vacuum MD"
+
+        for comp in [protein_comp] + small_mols:
+            if comp is not None:
+                comp_type = comp.key.split('-')[0]
+                if len(comp.name) == 0:
+                    comp_name = 'NoName'
+                else:
+                    comp_name = comp.name
+                system_name += f" {comp_type}:{comp_name}"
+
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
