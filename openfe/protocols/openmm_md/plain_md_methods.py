@@ -375,6 +375,14 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             to_openmm(integrator_settings.timestep),
         )
 
+        # forces = stateA_system.getForces()
+        # for x in forces:
+        #     if x.getName() == 'MonteCarloBarostat':
+        #         stateA_system.removeForce(forces.index(x))
+        # barostat = openmm.MonteCarloBarostat(to_openmm(thermo_settings.pressure),
+        #                                      to_openmm(thermo_settings.temperature), 0)
+        # stateA_system.addForce(barostat)
+
         simulation = openmm.app.Simulation(
             stateA_modeller.topology,
             stateA_system,
@@ -411,18 +419,21 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                     positions[selection_indices, :],
                     mdtraj_top.subset(selection_indices),
                 )
-                print('here1')
                 traj.save_pdb(
                     shared_basepath / sim_settings.minimized_structure
                 )
-                print('here2')
                 # equilibrate
                 # NVT equilibration
                 if verbose:
                     logger.info("Running NVT equilibration")
+
+                # Set barostat frequency to zero for NVT
+                for x in simulation.context.getSystem().getForces():
+                    if x.getName() == 'MonteCarloBarostat':
+                        x.setFrequency(0)
+                        print(x.getFrequency())
                 simulation.context.setVelocitiesToTemperature(
                     to_openmm(thermo_settings.temperature))
-                simulation.context.setParameter(MonteCarloBarostat.setFrequency(), 0)
 
                 t0 = time.time()
                 simulation.step(equil_steps_nvt)
@@ -434,10 +445,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                     logger.info("Running NPT equilibration")
                 simulation.context.setVelocitiesToTemperature(
                     to_openmm(thermo_settings.temperature))
-                simulation.context.setParameter(
-                    MonteCarloBarostat.setFrequency(),
-                    integrator_settings.barostat_frequency,
-                )
+
+                # Enable the barostat for NPT
+                for x in simulation.context.getSystem().getForces():
+                    if x.getName() == 'MonteCarloBarostat':
+                        x.setFrequency(integrator_settings.barostat_frequency.m)
 
                 t0 = time.time()
                 simulation.step(equil_steps_npt)
