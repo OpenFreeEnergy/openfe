@@ -257,7 +257,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Exception if anything failed
         """
         if verbose:
-            logger.info("creating system")
+            self.logger.info("Creating system")
         if scratch_basepath is None:
             scratch_basepath = pathlib.Path('.')
         if shared_basepath is None:
@@ -391,7 +391,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
                 # minimize
                 if verbose:
-                    logger.info("minimizing systems")
+                    self.logger.info("minimizing systems")
 
                 simulation.minimizeEnergy(
                     maxIterations=sim_settings.minimization_steps
@@ -418,7 +418,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 # equilibrate
                 # NVT equilibration
                 if verbose:
-                    logger.info("Running NVT equilibration")
+                    self.logger.info("Running NVT equilibration")
 
                 # Set barostat frequency to zero for NVT
                 for x in simulation.context.getSystem().getForces():
@@ -431,7 +431,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 t0 = time.time()
                 simulation.step(equil_steps_nvt)
                 t1 = time.time()
-                logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
+                if verbose:
+                    self.logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
 
                 # Save last frame NVT equilibration
                 positions = to_openmm(
@@ -449,7 +450,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
                 # NPT equilibration
                 if verbose:
-                    logger.info("Running NPT equilibration")
+                    self.logger.info("Running NPT equilibration")
                 simulation.context.setVelocitiesToTemperature(
                     to_openmm(thermo_settings.temperature))
 
@@ -461,7 +462,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 t0 = time.time()
                 simulation.step(equil_steps_npt)
                 t1 = time.time()
-                logger.info(f"Completed NPT equilibration in {t1 - t0} seconds")
+                if verbose:
+                    self.logger.info(f"Completed NPT equilibration in {t1 - t0} seconds")
 
                 # Save last frame NPT equilibration
                 positions = to_openmm(
@@ -479,7 +481,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
                 # production
                 if verbose:
-                    logger.info("running production phase")
+                    self.logger.info("running production phase")
 
                 # Setup the reporters
                 simulation.reporters.append(XTCReporter(
@@ -504,7 +506,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 t0 = time.time()
                 simulation.step(prod_steps)
                 t1 = time.time()
-                logger.info(f"Completed simulation in {t1 - t0} seconds")
+                if verbose:
+                    self.logger.info(f"Completed simulation in {t1 - t0} seconds")
 
                 nc = shared_basepath / sim_settings.output_filename
                 chk = shared_basepath / sim_settings.checkpoint_storage
