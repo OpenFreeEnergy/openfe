@@ -14,23 +14,22 @@ import logging
 
 from collections import defaultdict
 import gufe
-import numpy.typing as npt
 import openmm
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
 from typing import Optional
 from openmm import app
-from openmm import unit as omm_unit
 import pathlib
 from typing import Any, Iterable
 import uuid
 import time
+import numpy as np
 import mdtraj
 from mdtraj.reporters import XTCReporter
 from openfe.utils import without_oechem_backend, log_system_probe
-
 from gufe import (
-    settings, ChemicalSystem,
+    settings, ChemicalSystem, SmallMoleculeComponent,
+    ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
@@ -38,6 +37,7 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     IntegratorSettings, SimulationSettingsMD,
     RepeatSettings
 )
+from openff.toolkit.topology import Molecule as OFFMolecule
 
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
@@ -225,7 +225,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             generation=generation
         )
 
-
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
             shared_basepath=None) -> dict[str, Any]:
@@ -401,10 +400,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 selection_indices = mdtraj.Topology.from_openmm(
                     simulation.topology).select(sim_settings.output_indices)
 
-                positions = to_openmm(
-                    from_openmm(simulation.context.getState(
-                    getPositions=True, enforcePeriodicBox=False
-                ).getPositions()))
+                positions = to_openmm(from_openmm(
+                    simulation.context.getState(getPositions=True,
+                                                enforcePeriodicBox=False
+                                                ).getPositions()))
                 # Store subset of atoms, specified in input, as PDB file
                 mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
 
