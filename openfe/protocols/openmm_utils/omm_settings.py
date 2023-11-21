@@ -216,7 +216,6 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
 class OpenMMEngineSettings(SettingsBaseModel):
     """OpenMM MD engine settings"""
 
-
     """
     TODO
     ----
@@ -366,6 +365,7 @@ class SimulationSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
+
 class RepeatSettings(SettingsBaseModel):
     """Settings for how many independent MD runs to perform."""
 
@@ -373,6 +373,7 @@ class RepeatSettings(SettingsBaseModel):
     """
     Number of independent repeats to run.  Default 1
     """
+
 
 class SimulationSettingsMD(SimulationSettings):
     """
@@ -418,4 +419,3 @@ class SimulationSettingsMD(SimulationSettings):
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.
     """
-
