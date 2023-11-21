@@ -375,14 +375,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             to_openmm(integrator_settings.timestep),
         )
 
-        # forces = stateA_system.getForces()
-        # for x in forces:
-        #     if x.getName() == 'MonteCarloBarostat':
-        #         stateA_system.removeForce(forces.index(x))
-        # barostat = openmm.MonteCarloBarostat(to_openmm(thermo_settings.pressure),
-        #                                      to_openmm(thermo_settings.temperature), 0)
-        # stateA_system.addForce(barostat)
-
         simulation = openmm.app.Simulation(
             stateA_modeller.topology,
             stateA_system,
@@ -404,7 +396,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                     maxIterations=sim_settings.minimization_steps
                 )
 
-                # Get the sub selection of the system to print coords for
+                # Get the sub selection of the system to save coords for
                 selection_indices = mdtraj.Topology.from_openmm(
                     simulation.topology).select(sim_settings.output_indices)
 
@@ -431,7 +423,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 for x in simulation.context.getSystem().getForces():
                     if x.getName() == 'MonteCarloBarostat':
                         x.setFrequency(0)
-                        print(x.getFrequency())
+
                 simulation.context.setVelocitiesToTemperature(
                     to_openmm(thermo_settings.temperature))
 
@@ -439,6 +431,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 simulation.step(equil_steps_nvt)
                 t1 = time.time()
                 logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
+
+                # Save last frame NVT equilibration
+                positions = to_openmm(
+                    from_openmm(simulation.context.getState(
+                        getPositions=True, enforcePeriodicBox=False
+                    ).getPositions()))
+
+                traj = mdtraj.Trajectory(
+                    positions[selection_indices, :],
+                    mdtraj_top.subset(selection_indices),
+                )
+                traj.save_pdb(
+                    shared_basepath / sim_settings.equ_NVT_structure
+                )
 
                 # NPT equilibration
                 if verbose:
@@ -454,8 +460,21 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 t0 = time.time()
                 simulation.step(equil_steps_npt)
                 t1 = time.time()
-                logger.info(
-                    f"Completed NPT equilibration in {t1 - t0} seconds")
+                logger.info(f"Completed NPT equilibration in {t1 - t0} seconds")
+
+                # Save last frame NPT equilibration
+                positions = to_openmm(
+                    from_openmm(simulation.context.getState(
+                        getPositions=True, enforcePeriodicBox=False
+                    ).getPositions()))
+
+                traj = mdtraj.Trajectory(
+                    positions[selection_indices, :],
+                    mdtraj_top.subset(selection_indices),
+                )
+                traj.save_pdb(
+                    shared_basepath / sim_settings.equ_NPT_structure
+                )
 
                 # production
                 if verbose:

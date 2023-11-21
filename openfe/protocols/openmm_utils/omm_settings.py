@@ -402,6 +402,12 @@ class SimulationSettingsMD(SimulationSettings):
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
+    equ_NVT_structure = 'equ_NVT.pdb'
+    """Path to the pdb file of the system after NVT equilibration. 
+    Only the specified atom subset is saved. Default 'equ_NVT.pdb'."""
+    equ_NPT_structure = 'equ_NPT.pdb'
+    """Path to the pdb file of the system after NPT equilibration. 
+    Only the specified atom subset is saved. Default 'equ_NPT.pdb'."""
     checkpoint_storage = 'checkpoint.chk'
     """
     Separate filename for the checkpoint file. Note, this should
