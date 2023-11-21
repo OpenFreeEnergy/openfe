@@ -27,6 +27,7 @@ import uuid
 import time
 import mdtraj
 from mdtraj.reporters import XTCReporter
+from openfe.utils import without_oechem_backend, log_system_probe
 
 from gufe import (
     settings, ChemicalSystem,
@@ -524,8 +525,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     def _execute(
             self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        with without_oechem_backend():
+            outputs = self.run(scratch_basepath=ctx.scratch,
+                               shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
