@@ -74,7 +74,6 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
     def get_traj_filename(self):
         """String of trajectory file name"""
-        print(self.data.values())
         traj = [pus[0].outputs['nc'] for pus in self.data.values()]
 
         return traj
@@ -378,6 +377,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             temperature=True,
             volume=True,
             density=True,
+            speed=True,
         ))
         t0 = time.time()
         simulation.step(prod_steps)
