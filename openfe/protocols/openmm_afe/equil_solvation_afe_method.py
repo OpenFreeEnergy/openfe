@@ -41,6 +41,7 @@ from openff.units import unit
 from openmmtools import multistate
 from typing import Dict, Optional, Union
 from typing import Any, Iterable
+import uuid
 
 from gufe import (
     settings,
@@ -556,7 +557,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
                 alchemical_components=alchem_comps,
-                generation=0, repeat_id=i,
+                generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
             )
@@ -570,7 +571,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
                 alchemical_components=alchem_comps,
-                generation=0, repeat_id=i,
+                generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
                       f"repeat {i} generation 0"),
             )
