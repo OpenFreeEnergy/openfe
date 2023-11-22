@@ -132,7 +132,7 @@ class PlainMDProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate solvent component
-        nonbond = self._settings.system_settings.nonbonded_method
+        nonbond = self.settings.system_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
         # Validate protein component
@@ -154,10 +154,10 @@ class PlainMDProtocol(gufe.Protocol):
                 system_name += f" {comp_type}:{comp_name}"
 
         # our DAG has no dependencies, so just list units
-        n_repeats = self._settings.repeat_settings.n_repeats
+        n_repeats = self.settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
             stateA=stateA,
-            settings=self._settings,
+            settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{system_name} repeat {i} generation 0')
             for i in range(n_repeats)]
