@@ -5,9 +5,10 @@
 from .atom_mapping import (LigandAtomMapping,
                            LigandAtomMapper,
                            LomapAtomMapper, lomap_scorers,
-                           PersesAtomMapper, perses_scorers)
+                           PersesAtomMapper, perses_scorers,
+                           KartografAtomMapper,)
 
-from .ligand_network import LigandNetwork
+from gufe import LigandNetwork
 from . import ligand_network_planning
 
 from .alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner
