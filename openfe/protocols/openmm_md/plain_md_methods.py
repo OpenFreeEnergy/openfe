@@ -156,7 +156,7 @@ class PlainMDProtocol(gufe.Protocol):
         # our DAG has no dependencies, so just list units
         n_repeats = self._settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
-            stateA=stateA, stateB=stateB,
+            stateA=stateA,
             settings=self._settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{system_name} repeat {i} generation 0')
@@ -195,7 +195,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
     def __init__(self, *,
                  stateA: ChemicalSystem,
-                 stateB: ChemicalSystem,
                  settings: PlainMDProtocolSettings,
                  generation: int,
                  repeat_id: int,
@@ -204,9 +203,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         """
         Parameters
         ----------
-        stateA, stateB : ChemicalSystem
-          the two ligand SmallMoleculeComponents to transform between.  The
-          transformation will go from ligandA to ligandB.
+        stateA : ChemicalSystem
+          the chemical system for the MD simulation
         settings : settings.Settings
           the settings for the Method.  This can be constructed using the
           get_default_settings classmethod to give a starting point that
@@ -226,7 +224,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         super().__init__(
             name=name,
             stateA=stateA,
-            stateB=stateB,
             settings=settings,
             repeat_id=repeat_id,
             generation=generation
