@@ -637,10 +637,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep
         )
-        equil_steps, prod_steps = settings_validation.get_simsteps(
-            equil_length=sim_settings.equilibration_length,
-            prod_length=sim_settings.production_length,
-            timestep=timestep, mc_steps=mc_steps
+        equil_steps = settings_validation.get_simsteps(
+            sim_length=sim_settings.equilibration_length,
+            timestep=timestep, mc_steps=mc_steps,
+        )
+        prod_steps = settings_validation.get_simsteps(
+            sim_length=sim_settings.production_length,
+            timestep=timestep, mc_steps=mc_steps,
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
