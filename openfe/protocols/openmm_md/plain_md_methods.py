@@ -36,7 +36,7 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
     SolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettingsMD,
-    RepeatSettings
+    RepeatSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
@@ -232,7 +232,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     @staticmethod
     def _run_MD(simulation: openmm.app.Simulation,
                 positions: omm_unit.Quantity,
-                settings: PlainMDProtocolSettings,
+                simulation_settings: SimulationSettingsMD,
+                thermo_settings: settings.ThermoSettings,
+                integrator_settings: IntegratorSettings,
                 equil_steps_nvt: int,
                 equil_steps_npt: int,
                 prod_steps: int,
@@ -249,8 +251,24 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           An OpenMM simulation to simulate.
         positions : openmm.unit.Quantity
           Initial positions for the system.
-        settings : PlainMDProtocolSettings
-          Settings for Plain MD protocol
+        simulation_settings : SimulationSettingsMD
+          Settings for MD simulation
+        thermo_settings: settings.ThermoSettings
+          temperature settings
+        integrator_settings: IntegratorSettings
+          Settings for the MD integrator
+        equil_steps_nvt: int
+          number of steps for NVT equilibration
+        equil_steps_npt: int
+          number of steps for NPT equilibration
+        prod_steps: int
+          number of steps for the production run
+        verbose: bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        shared_basepath : Pathlike, optional
+          Where to run the calculation, defaults to current working directory
+
         Returns
         -------
 
@@ -263,12 +281,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             logger.info("minimizing systems")
 
         simulation.minimizeEnergy(
-            maxIterations=settings.simulation_settings.minimization_steps
+            maxIterations=simulation_settings.minimization_steps
         )
 
         # Get the sub selection of the system to save coords for
         selection_indices = mdtraj.Topology.from_openmm(
-            simulation.topology).select(settings.simulation_settings.output_indices)
+            simulation.topology).select(simulation_settings.output_indices)
 
         positions = to_openmm(from_openmm(
             simulation.context.getState(getPositions=True,
@@ -282,7 +300,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         traj.save_pdb(
-            shared_basepath / settings.simulation_settings.minimized_structure
+            shared_basepath / simulation_settings.minimized_structure
         )
         # equilibrate
         # NVT equilibration
@@ -296,7 +314,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 x.setFrequency(0)
 
         simulation.context.setVelocitiesToTemperature(
-            to_openmm(settings.thermo_settings.temperature))
+            to_openmm(thermo_settings.temperature))
 
         t0 = time.time()
         simulation.step(equil_steps_nvt)
@@ -316,19 +334,19 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
         traj.save_pdb(
-            shared_basepath / settings.simulation_settings.equil_NVT_structure
+            shared_basepath / simulation_settings.equil_NVT_structure
         )
 
         # NPT equilibration
         if verbose:
             logger.info("Running NPT equilibration")
         simulation.context.setVelocitiesToTemperature(
-            to_openmm(settings.thermo_settings.temperature))
+            to_openmm(thermo_settings.temperature))
 
         # Enable the barostat for NPT
         for x in simulation.context.getSystem().getForces():
             if x.getName() == 'MonteCarloBarostat':
-                x.setFrequency(settings.integrator_settings.barostat_frequency.m)
+                x.setFrequency(integrator_settings.barostat_frequency.m)
 
         t0 = time.time()
         simulation.step(equil_steps_npt)
@@ -348,7 +366,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
         traj.save_pdb(
-            shared_basepath / settings.simulation_settings.equil_NPT_structure
+            shared_basepath / simulation_settings.equil_NPT_structure
         )
 
         # production
@@ -357,15 +375,15 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Setup the reporters
         simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / settings.simulation_settings.output_filename),
-            reportInterval=settings.simulation_settings.trajectory_interval.m,
+            file=str(shared_basepath / simulation_settings.output_filename),
+            reportInterval=simulation_settings.trajectory_interval.m,
             atomSubset=selection_indices))
         simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / settings.simulation_settings.checkpoint_storage),
-            reportInterval=settings.simulation_settings.checkpoint_interval.m))
+            file=str(shared_basepath / simulation_settings.checkpoint_storage),
+            reportInterval=simulation_settings.checkpoint_interval.m))
         simulation.reporters.append(openmm.app.StateDataReporter(
-            str(shared_basepath / settings.simulation_settings.log_output),
-            settings.simulation_settings.checkpoint_interval.m,
+            str(shared_basepath / simulation_settings.log_output),
+            simulation_settings.checkpoint_interval.m,
             step=True,
             time=True,
             potentialEnergy=True,
@@ -544,7 +562,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             if not dry:  # pragma: no-cover
                 self._run_MD(simulation,
                              stateA_positions,
-                             protocol_settings,
+                             sim_settings,
+                             thermo_settings,
+                             integrator_settings,
                              equil_steps_nvt,
                              equil_steps_npt,
                              prod_steps,
