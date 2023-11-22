@@ -37,17 +37,15 @@ def validate_timestep(hmass: float, timestep: unit.Quantity):
             raise ValueError(errmsg)
 
 
-def get_simsteps(equil_length: unit.Quantity, prod_length: unit.Quantity,
-                 timestep: unit.Quantity, mc_steps: int) -> Tuple[int, int]:
+def get_simsteps(sim_length: unit.Quantity,
+                 timestep: unit.Quantity, mc_steps: int) -> int:
     """
-    Gets and validates the number of equilibration and production steps.
+    Gets and validates the number of simulation steps.
 
     Parameters
     ----------
-    equil_length : unit.Quantity
-      Simulation equilibration length.
-    prod_length : unit.Quantity
-      Simulation production length.
+    sim_length : unit.Quantity
+      Simulation length.
     timestep : unit.Quantity
       Integration timestep.
     mc_steps : int
@@ -55,29 +53,21 @@ def get_simsteps(equil_length: unit.Quantity, prod_length: unit.Quantity,
 
     Returns
     -------
-    equil_steps : int
-      The number of equilibration timesteps.
-    prod_steps : int
-      The number of production timesteps.
+    sim_steps : int
+      The number of simulation timesteps.
     """
 
-    equil_time = round(equil_length.to('attosecond').m)
-    prod_time = round(prod_length.to('attosecond').m)
+    sim_time = round(sim_length.to('attosecond').m)
     ts = round(timestep.to('attosecond').m)
 
-    equil_steps, mod = divmod(equil_time, ts)
+    sim_steps, mod = divmod(sim_time, ts)
     if mod != 0:
-        raise ValueError("Equilibration time not divisible by timestep")
-    prod_steps, mod = divmod(prod_time, ts)
-    if mod != 0:
-        raise ValueError("Production time not divisible by timestep")
+        raise ValueError("Simulation time not divisible by timestep")
 
-    for var in [("Equilibration", equil_steps, equil_time),
-                ("Production", prod_steps, prod_time)]:
-        if (var[1] % mc_steps) != 0:
-            errmsg =  (f"{var[0]} time {var[2]/1000000} ps should contain a "
-                       "number of steps divisible by the number of integrator "
-                       f"timesteps between MC moves {mc_steps}")
-            raise ValueError(errmsg)
+    if (sim_steps % mc_steps) != 0:
+        errmsg =  (f"Simulation time {sim_time/1000000} ps should contain a "
+                   "number of steps divisible by the number of integrator "
+                   f"timesteps between MC moves {mc_steps}")
+        raise ValueError(errmsg)
 
-    return equil_steps, prod_steps
+    return sim_steps
