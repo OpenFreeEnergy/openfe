@@ -10,8 +10,18 @@ This module implements the settings necessary to run MD simulations using
 from openfe.protocols.openmm_utils.omm_settings import (
     Settings, SystemSettings,
     SolvationSettings, OpenMMEngineSettings, SimulationSettingsMD,
-    IntegratorSettings, RepeatSettings
+    IntegratorSettings
 )
+from gufe.settings import SettingsBaseModel
+
+
+class RepeatSettings(SettingsBaseModel):
+    """Settings for how many independent MD runs to perform."""
+
+    n_repeats: int = 1
+    """
+    Number of independent repeats to run.  Default 1
+    """
 
 
 class PlainMDProtocolSettings(Settings):

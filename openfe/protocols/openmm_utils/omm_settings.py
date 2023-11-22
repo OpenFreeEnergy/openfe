@@ -372,15 +372,6 @@ class SimulationSettings(SettingsBaseModel):
         return v
 
 
-class RepeatSettings(SettingsBaseModel):
-    """Settings for how many independent MD runs to perform."""
-
-    n_repeats: int = 1
-    """
-    Number of independent repeats to run.  Default 1
-    """
-
-
 class SimulationSettingsMD(SimulationSettings):
     """
     Settings for simulation control for plain MD simulations, including
