@@ -401,7 +401,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
 
-        return
+        return None
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
