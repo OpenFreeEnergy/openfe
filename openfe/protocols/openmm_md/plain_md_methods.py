@@ -146,7 +146,7 @@ class PlainMDProtocol(gufe.Protocol):
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:
-                comp_type = comp.key.split('-')[0]
+                comp_type = comp.__class__.__name__
                 if len(comp.name) == 0:
                     comp_name = 'NoName'
                 else:

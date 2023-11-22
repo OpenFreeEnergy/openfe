@@ -402,10 +402,10 @@ class SimulationSettingsMD(SimulationSettings):
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
     equil_NVT_structure = 'equil_NVT.pdb'
     """Path to the pdb file of the system after NVT equilibration. 
-    Only the specified atom subset is saved. Default 'equ_NVT.pdb'."""
+    Only the specified atom subset is saved. Default 'equil_NVT.pdb'."""
     equil_NPT_structure = 'equil_NPT.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
-    Only the specified atom subset is saved. Default 'equ_NPT.pdb'."""
+    Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
     checkpoint_storage = 'checkpoint.chk'
     """
     Separate filename for the checkpoint file. Note, this should
