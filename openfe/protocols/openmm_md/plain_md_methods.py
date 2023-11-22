@@ -499,7 +499,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         stateA_modeller, comp_resids = system_creation.get_omm_modeller(
             protein_comp=protein_comp,
             solvent_comp=solvent_comp,
-            small_mols=small_mols,
+            small_mols=smc_components,
             omm_forcefield=system_generator.forcefield,
             solvent_settings=solvation_settings,
         )
