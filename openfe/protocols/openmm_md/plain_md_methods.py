@@ -73,17 +73,16 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
     def get_traj_filename(self):
         """String of trajectory file name"""
-        protocol_settings: PlainMDProtocolSettings = self._inputs[
-            'settings']
+        print(self.data.values())
+        traj = [pus[0].outputs['nc'] for pus in self.data.values()]
 
-        return protocol_settings.simulation_settings.output_filename
+        return traj
 
     def get_pdb_filename(self):
         """String of pdb file name"""
-        protocol_settings: PlainMDProtocolSettings = self._inputs[
-            'settings']
+        pdbs = [pus[0].outputs['system_pdb'] for pus in self.data.values()]
 
-        return protocol_settings.simulation_settings.output_structure
+        return pdbs
 
 
 class PlainMDProtocol(gufe.Protocol):
@@ -142,10 +141,6 @@ class PlainMDProtocol(gufe.Protocol):
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
-        # if len(small_mols) == 0:
-        #     system_name = 'MD'
-        # else:
-        #     system_name = f'MD {small_mols[0].name}'
 
         system_name = "Solvent MD" if solvent_comp is not None else "Vacuum MD"
 
@@ -236,6 +231,158 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             repeat_id=repeat_id,
             generation=generation
         )
+
+    @staticmethod
+    def _run_MD(simulation: openmm.app.Simulation,
+                positions: omm_unit.Quantity,
+                settings: PlainMDProtocolSettings,
+                equil_steps_nvt: int,
+                equil_steps_npt: int,
+                prod_steps: int,
+                verbose=True,
+                shared_basepath=None) -> npt.NDArray:
+
+        """
+        Energy minimization, Equilibration and Production MD to be reused
+        in multiple protocols
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+          An OpenMM simulation to simulate.
+        positions : openmm.unit.Quantity
+          Initial positions for the system.
+        sim_settings : SimulationSettingsMD
+          Settings for MD simulation
+        Returns
+        -------
+
+        """
+        if shared_basepath is None:
+            shared_basepath = pathlib.Path('.')
+        simulation.context.setPositions(positions)
+        # minimize
+        if verbose:
+            logger.info("minimizing systems")
+
+        simulation.minimizeEnergy(
+            maxIterations=settings.simulation_settings.minimization_steps
+        )
+
+        # Get the sub selection of the system to save coords for
+        selection_indices = mdtraj.Topology.from_openmm(
+            simulation.topology).select(settings.simulation_settings.output_indices)
+
+        positions = to_openmm(from_openmm(
+            simulation.context.getState(getPositions=True,
+                                        enforcePeriodicBox=False
+                                        ).getPositions()))
+        # Store subset of atoms, specified in input, as PDB file
+        mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
+        traj = mdtraj.Trajectory(
+            positions[selection_indices, :],
+            mdtraj_top.subset(selection_indices),
+        )
+
+        traj.save_pdb(
+            shared_basepath / settings.simulation_settings.minimized_structure
+        )
+        # equilibrate
+        # NVT equilibration
+
+        if verbose:
+            logger.info("Running NVT equilibration")
+
+        # Set barostat frequency to zero for NVT
+        for x in simulation.context.getSystem().getForces():
+            if x.getName() == 'MonteCarloBarostat':
+                x.setFrequency(0)
+
+        simulation.context.setVelocitiesToTemperature(
+            to_openmm(settings.thermo_settings.temperature))
+
+        t0 = time.time()
+        simulation.step(equil_steps_nvt)
+        t1 = time.time()
+        if verbose:
+            logger.info(
+                f"Completed NVT equilibration in {t1 - t0} seconds")
+
+        # Save last frame NVT equilibration
+        positions = to_openmm(
+            from_openmm(simulation.context.getState(
+                getPositions=True, enforcePeriodicBox=False
+            ).getPositions()))
+
+        traj = mdtraj.Trajectory(
+            positions[selection_indices, :],
+            mdtraj_top.subset(selection_indices),
+        )
+        traj.save_pdb(
+            shared_basepath / settings.simulation_settings.equ_NVT_structure
+        )
+
+        # NPT equilibration
+        if verbose:
+            logger.info("Running NPT equilibration")
+        simulation.context.setVelocitiesToTemperature(
+            to_openmm(settings.thermo_settings.temperature))
+
+        # Enable the barostat for NPT
+        for x in simulation.context.getSystem().getForces():
+            if x.getName() == 'MonteCarloBarostat':
+                x.setFrequency(settings.integrator_settings.barostat_frequency.m)
+
+        t0 = time.time()
+        simulation.step(equil_steps_npt)
+        t1 = time.time()
+        if verbose:
+            logger.info(
+                f"Completed NPT equilibration in {t1 - t0} seconds")
+
+        # Save last frame NPT equilibration
+        positions = to_openmm(
+            from_openmm(simulation.context.getState(
+                getPositions=True, enforcePeriodicBox=False
+            ).getPositions()))
+
+        traj = mdtraj.Trajectory(
+            positions[selection_indices, :],
+            mdtraj_top.subset(selection_indices),
+        )
+        traj.save_pdb(
+            shared_basepath / settings.simulation_settings.equ_NPT_structure
+        )
+
+        # production
+        if verbose:
+            logger.info("running production phase")
+
+        # Setup the reporters
+        simulation.reporters.append(XTCReporter(
+            file=str(shared_basepath / settings.simulation_settings.output_filename),
+            reportInterval=settings.simulation_settings.trajectory_interval.m,
+            atomSubset=selection_indices))
+        simulation.reporters.append(openmm.app.CheckpointReporter(
+            file=str(shared_basepath / settings.simulation_settings.checkpoint_storage),
+            reportInterval=settings.simulation_settings.checkpoint_interval.m))
+        simulation.reporters.append(openmm.app.StateDataReporter(
+            str(shared_basepath / settings.simulation_settings.log_output),
+            settings.simulation_settings.checkpoint_interval.m,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+            density=True,
+        ))
+        t0 = time.time()
+        simulation.step(prod_steps)
+        t1 = time.time()
+        if verbose:
+            logger.info(f"Completed simulation in {t1 - t0} seconds")
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -397,131 +544,134 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         try:
 
             if not dry:  # pragma: no-cover
-
-                simulation.context.setPositions(stateA_positions)
-
-                # minimize
-                if verbose:
-                    self.logger.info("minimizing systems")
-
-                simulation.minimizeEnergy(
-                    maxIterations=sim_settings.minimization_steps
-                )
-
-                # Get the sub selection of the system to save coords for
-                selection_indices = mdtraj.Topology.from_openmm(
-                    simulation.topology).select(sim_settings.output_indices)
-
-                positions = to_openmm(from_openmm(
-                    simulation.context.getState(getPositions=True,
-                                                enforcePeriodicBox=False
-                                                ).getPositions()))
-                # Store subset of atoms, specified in input, as PDB file
-                mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
-
-                traj = mdtraj.Trajectory(
-                    positions[selection_indices, :],
-                    mdtraj_top.subset(selection_indices),
-                )
-                traj.save_pdb(
-                    shared_basepath / sim_settings.minimized_structure
-                )
-                # equilibrate
-                # NVT equilibration
-                if verbose:
-                    self.logger.info("Running NVT equilibration")
-
-                # Set barostat frequency to zero for NVT
-                for x in simulation.context.getSystem().getForces():
-                    if x.getName() == 'MonteCarloBarostat':
-                        x.setFrequency(0)
-
-                simulation.context.setVelocitiesToTemperature(
-                    to_openmm(thermo_settings.temperature))
-
-                t0 = time.time()
-                simulation.step(equil_steps_nvt)
-                t1 = time.time()
-                if verbose:
-                    self.logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
-
-                # Save last frame NVT equilibration
-                positions = to_openmm(
-                    from_openmm(simulation.context.getState(
-                        getPositions=True, enforcePeriodicBox=False
-                    ).getPositions()))
-
-                traj = mdtraj.Trajectory(
-                    positions[selection_indices, :],
-                    mdtraj_top.subset(selection_indices),
-                )
-                traj.save_pdb(
-                    shared_basepath / sim_settings.equ_NVT_structure
-                )
-
-                # NPT equilibration
-                if verbose:
-                    self.logger.info("Running NPT equilibration")
-                simulation.context.setVelocitiesToTemperature(
-                    to_openmm(thermo_settings.temperature))
-
-                # Enable the barostat for NPT
-                for x in simulation.context.getSystem().getForces():
-                    if x.getName() == 'MonteCarloBarostat':
-                        x.setFrequency(integrator_settings.barostat_frequency.m)
-
-                t0 = time.time()
-                simulation.step(equil_steps_npt)
-                t1 = time.time()
-                if verbose:
-                    self.logger.info(f"Completed NPT equilibration in {t1 - t0} seconds")
-
-                # Save last frame NPT equilibration
-                positions = to_openmm(
-                    from_openmm(simulation.context.getState(
-                        getPositions=True, enforcePeriodicBox=False
-                    ).getPositions()))
-
-                traj = mdtraj.Trajectory(
-                    positions[selection_indices, :],
-                    mdtraj_top.subset(selection_indices),
-                )
-                traj.save_pdb(
-                    shared_basepath / sim_settings.equ_NPT_structure
-                )
-
-                # production
-                if verbose:
-                    self.logger.info("running production phase")
-
-                # Setup the reporters
-                simulation.reporters.append(XTCReporter(
-                    file=str(shared_basepath / sim_settings.output_filename),
-                    reportInterval=sim_settings.trajectory_interval.m,
-                    atomSubset=selection_indices))
-                simulation.reporters.append(openmm.app.CheckpointReporter(
-                    file=str(shared_basepath / sim_settings.checkpoint_storage),
-                    reportInterval=sim_settings.checkpoint_interval.m))
-                simulation.reporters.append(openmm.app.StateDataReporter(
-                    str(shared_basepath / sim_settings.log_output),
-                    sim_settings.checkpoint_interval.m,
-                    step=True,
-                    time=True,
-                    potentialEnergy=True,
-                    kineticEnergy=True,
-                    totalEnergy=True,
-                    temperature=True,
-                    volume=True,
-                    density=True,
-                ))
-                t0 = time.time()
-                simulation.step(prod_steps)
-                t1 = time.time()
-                if verbose:
-                    self.logger.info(f"Completed simulation in {t1 - t0} seconds")
-
-                nc = shared_basepath / sim_settings.output_filename
-                chk = shared_basepath / sim_settings.checkpoint_storage
+                self._run_MD(simulation,
+                             stateA_positions,
+                             protocol_settings,
+                             equil_steps_nvt,
+                             equil_steps_npt,
+                             prod_steps,
+                             )
+                # simulation.context.setPositions(stateA_positions)
+                #
+                # # minimize
+                # if verbose:
+                #     self.logger.info("minimizing systems")
+                #
+                # simulation.minimizeEnergy(
+                #     maxIterations=sim_settings.minimization_steps
+                # )
+                #
+                # # Get the sub selection of the system to save coords for
+                # selection_indices = mdtraj.Topology.from_openmm(
+                #     simulation.topology).select(sim_settings.output_indices)
+                #
+                # positions = to_openmm(from_openmm(
+                #     simulation.context.getState(getPositions=True,
+                #                                 enforcePeriodicBox=False
+                #                                 ).getPositions()))
+                # # Store subset of atoms, specified in input, as PDB file
+                # mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
+                #
+                # traj = mdtraj.Trajectory(
+                #     positions[selection_indices, :],
+                #     mdtraj_top.subset(selection_indices),
+                # )
+                # traj.save_pdb(
+                #     shared_basepath / sim_settings.minimized_structure
+                # )
+                # # equilibrate
+                # # NVT equilibration
+                # if verbose:
+                #     self.logger.info("Running NVT equilibration")
+                #
+                # # Set barostat frequency to zero for NVT
+                # for x in simulation.context.getSystem().getForces():
+                #     if x.getName() == 'MonteCarloBarostat':
+                #         x.setFrequency(0)
+                #
+                # simulation.context.setVelocitiesToTemperature(
+                #     to_openmm(thermo_settings.temperature))
+                #
+                # t0 = time.time()
+                # simulation.step(equil_steps_nvt)
+                # t1 = time.time()
+                # if verbose:
+                #     self.logger.info(f"Completed NVT equilibration in {t1 - t0} seconds")
+                #
+                # # Save last frame NVT equilibration
+                # positions = to_openmm(
+                #     from_openmm(simulation.context.getState(
+                #         getPositions=True, enforcePeriodicBox=False
+                #     ).getPositions()))
+                #
+                # traj = mdtraj.Trajectory(
+                #     positions[selection_indices, :],
+                #     mdtraj_top.subset(selection_indices),
+                # )
+                # traj.save_pdb(
+                #     shared_basepath / sim_settings.equ_NVT_structure
+                # )
+                #
+                # # NPT equilibration
+                # if verbose:
+                #     self.logger.info("Running NPT equilibration")
+                # simulation.context.setVelocitiesToTemperature(
+                #     to_openmm(thermo_settings.temperature))
+                #
+                # # Enable the barostat for NPT
+                # for x in simulation.context.getSystem().getForces():
+                #     if x.getName() == 'MonteCarloBarostat':
+                #         x.setFrequency(integrator_settings.barostat_frequency.m)
+                #
+                # t0 = time.time()
+                # simulation.step(equil_steps_npt)
+                # t1 = time.time()
+                # if verbose:
+                #     self.logger.info(f"Completed NPT equilibration in {t1 - t0} seconds")
+                #
+                # # Save last frame NPT equilibration
+                # positions = to_openmm(
+                #     from_openmm(simulation.context.getState(
+                #         getPositions=True, enforcePeriodicBox=False
+                #     ).getPositions()))
+                #
+                # traj = mdtraj.Trajectory(
+                #     positions[selection_indices, :],
+                #     mdtraj_top.subset(selection_indices),
+                # )
+                # traj.save_pdb(
+                #     shared_basepath / sim_settings.equ_NPT_structure
+                # )
+                #
+                # # production
+                # if verbose:
+                #     self.logger.info("running production phase")
+                #
+                # # Setup the reporters
+                # simulation.reporters.append(XTCReporter(
+                #     file=str(shared_basepath / sim_settings.output_filename),
+                #     reportInterval=sim_settings.trajectory_interval.m,
+                #     atomSubset=selection_indices))
+                # simulation.reporters.append(openmm.app.CheckpointReporter(
+                #     file=str(shared_basepath / sim_settings.checkpoint_storage),
+                #     reportInterval=sim_settings.checkpoint_interval.m))
+                # simulation.reporters.append(openmm.app.StateDataReporter(
+                #     str(shared_basepath / sim_settings.log_output),
+                #     sim_settings.checkpoint_interval.m,
+                #     step=True,
+                #     time=True,
+                #     potentialEnergy=True,
+                #     kineticEnergy=True,
+                #     totalEnergy=True,
+                #     temperature=True,
+                #     volume=True,
+                #     density=True,
+                # ))
+                # t0 = time.time()
+                # simulation.step(prod_steps)
+                # t1 = time.time()
+                # if verbose:
+                #     self.logger.info(f"Completed simulation in {t1 - t0} seconds")
 
         finally:
 
@@ -530,8 +680,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             return {
-                'nc': nc,
-                'last_checkpoint': chk,
+                'system_pdb': shared_basepath / sim_settings.output_filename,
+                'minimizes_pdb': shared_basepath / sim_settings.minimized_structure,
+                'nvt_equil_pdb': shared_basepath / sim_settings.equ_NVT_structure,
+                'npt_equil_pdb': shared_basepath / sim_settings.equ_NPT_structure,
+                'nc': shared_basepath / sim_settings.output_filename,
+                'last_checkpoint': shared_basepath / sim_settings.checkpoint_storage,
             }
         else:
             return {'debug': {'system': stateA_system}}
