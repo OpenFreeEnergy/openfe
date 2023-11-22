@@ -6,7 +6,17 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 import openfe
 from openff.units import unit
+from gufe import SmallMoleculeComponent
 
+@pytest.fixture
+def benzene_modifications():
+    files = {}
+    with importlib.resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
 
 @pytest.fixture
 def benzene_vacuum_system(benzene_modifications):
