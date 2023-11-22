@@ -25,6 +25,7 @@ from typing import Any, Iterable
 import uuid
 import time
 import numpy as np
+import numpy.typing as npt
 import mdtraj
 from mdtraj.reporters import XTCReporter
 from openfe.utils import without_oechem_backend, log_system_probe
@@ -239,7 +240,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 equil_steps_npt: int,
                 prod_steps: int,
                 verbose=True,
-                shared_basepath=None) -> np.NDArray:
+                shared_basepath=None) -> npt.NDArray:
 
         """
         Energy minimization, Equilibration and Production MD to be reused
