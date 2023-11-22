@@ -40,19 +40,17 @@ def test_get_simsteps(s, ts, mc, es):
 
 def test_get_simsteps_indivisible_simtime():
     errmsg = "Simulation time not divisible by timestep"
-    timelengths = 1.003 * unit.picosecond
+    timelength = 1.003 * unit.picosecond
     with pytest.raises(ValueError, match=errmsg):
-        settings_validation.get_simsteps(timelengths, 2 * unit.femtoseconds, 100)
+        settings_validation.get_simsteps(timelength, 2 * unit.femtoseconds, 100)
 
 
-@pytest.mark.parametrize('nametype, timelengths', [
-    ['Simulation', [1 * unit.picoseconds, 10 * unit.picoseconds]],
-])
-def test_mc_indivisible(nametype, timelengths):
-    errmsg = f"{nametype} time 1.0 ps should contain"
+def test_mc_indivisible():
+    errmsg = "Simulation time 1.0 ps should contain"
+    timelength = 1 * unit.picoseconds
     with pytest.raises(ValueError, match=errmsg):
         settings_validation.get_simsteps(
-                timelengths[0], 2 * unit.femtoseconds, 1000)
+                timelength, 2 * unit.femtoseconds, 1000)
 
 
 def test_get_alchemical_components(benzene_modifications,
