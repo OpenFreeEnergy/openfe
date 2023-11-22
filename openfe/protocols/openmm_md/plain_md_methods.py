@@ -17,6 +17,7 @@ import gufe
 import openmm
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
+import openmm.unit as omm_unit
 from typing import Optional
 from openmm import app
 import pathlib
@@ -132,7 +133,7 @@ class PlainMDProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate solvent component
-        nonbond = self.settings.system_settings.nonbonded_method
+        nonbond = self._settings.system_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
         # Validate protein component
@@ -154,10 +155,10 @@ class PlainMDProtocol(gufe.Protocol):
                 system_name += f" {comp_type}:{comp_name}"
 
         # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.repeat_settings.n_repeats
+        n_repeats = self._settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
             stateA=stateA, stateB=stateB,
-            settings=self.settings,
+            settings=self._settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{system_name} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -240,7 +241,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 equil_steps_npt: int,
                 prod_steps: int,
                 verbose=True,
-                shared_basepath=None) -> npt.NDArray:
+                shared_basepath=None) -> np.NDArray:
 
         """
         Energy minimization, Equilibration and Production MD to be reused
@@ -252,8 +253,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           An OpenMM simulation to simulate.
         positions : openmm.unit.Quantity
           Initial positions for the system.
-        sim_settings : SimulationSettingsMD
-          Settings for MD simulation
+        settings : PlainMDProtocolSettings
+          Settings for Plain MD protocol
         Returns
         -------
 
@@ -384,6 +385,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
 
+        return
+
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
             shared_basepath=None) -> dict[str, Any]:
@@ -416,8 +419,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         """
         if verbose:
             self.logger.info("Creating system")
-        if scratch_basepath is None:
-            scratch_basepath = pathlib.Path('.')
         if shared_basepath is None:
             # use cwd
             shared_basepath = pathlib.Path('.')
