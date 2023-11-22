@@ -746,9 +746,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # Get the relevant simulation steps
         mc_steps = settings['integrator_settings'].n_steps.m
 
-        equil_steps, prod_steps = settings_validation.get_simsteps(
-            equil_length=settings['simulation_settings'].equilibration_length,
-            prod_length=settings['simulation_settings'].production_length,
+        equil_steps = settings_validation.get_simsteps(
+            sim_length=settings['simulation_settings'].equilibration_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=mc_steps,
+        )
+        prod_steps = settings_validation.get_simsteps(
+            sim_length=settings['simulation_settings'].production_length,
             timestep=settings['integrator_settings'].timestep,
             mc_steps=mc_steps,
         )
