@@ -1,4 +1,5 @@
 # custom ignores
+.duecredit.p
 .xxrun
 .idea/
 .vscode/
@@ -160,3 +161,9 @@ cython_debug/
 
 # vim
 *.swp
+
+# vscode
+.vscode/
+
+# Example notebooks
+docs/ExampleNotebooks/
