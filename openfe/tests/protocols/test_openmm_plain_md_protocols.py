@@ -12,6 +12,10 @@ from openmmtools.states import ThermodynamicState
 from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
 )
+import json
+import openfe
+from openfe.protocols import openmm_md
+import pathlib
 
 
 def test_create_default_settings():
@@ -90,11 +94,11 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
 
     with tmpdir.as_cwd():
         sim = dag_unit.run(dry=True)['debug']['system']
-        print(sim)
         assert not ThermodynamicState(sim, temperature=to_openmm(
             protocol.settings.thermo_settings.temperature)).is_periodic
         assert ThermodynamicState(sim, temperature=to_openmm(
             protocol.settings.thermo_settings.temperature)).barostat is None
+
 
 def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
 
@@ -105,6 +109,7 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
     protocol = PlainMDProtocol(
             settings=vac_settings,
     )
+    assert protocol.settings.simulation_settings.forcefield_cache is None
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
@@ -115,12 +120,7 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True)['debug']['system']
-        print(sim)
-        assert not ThermodynamicState(sim, temperature=to_openmm(
-            protocol.settings.thermo_settings.temperature)).is_periodic
-        assert ThermodynamicState(sim, temperature=to_openmm(
-            protocol.settings.thermo_settings.temperature)).barostat is None
+        dag_unit.run(dry=True)['debug']['system']
 
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
@@ -378,3 +378,43 @@ def test_gather(solvent_protocol_dag, tmpdir):
     res = prot.gather([dagres])
 
     assert isinstance(res, PlainMDProtocolResult)
+
+
+class TestProtocolResult:
+    @pytest.fixture()
+    def protocolresult(self, md_json):
+        d = json.loads(md_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+        pr = openfe.ProtocolResult.from_dict(d['protocol_result'])
+
+        return pr
+
+    def test_reload_protocol_result(self, md_json):
+        d = json.loads(md_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
+
+        pr = openmm_md.plain_md_methods.PlainMDProtocolResult.from_dict(d['protocol_result'])
+
+        assert pr
+
+    def test_get_estimate(self, protocolresult):
+        est = protocolresult.get_estimate()
+
+        assert est is None
+
+
+    def test_get_uncertainty(self, protocolresult):
+        est = protocolresult.get_uncertainty()
+
+        assert est is None
+
+    def test_get_traj_filename(self, protocolresult):
+        traj = protocolresult.get_traj_filename()
+
+        assert isinstance(traj, list)
+        assert isinstance(traj[0], pathlib.PurePath)
+
+    def test_get_pdb_filename(self, protocolresult):
+        pdb = protocolresult.get_pdb_filename()
+
+        assert isinstance(pdb, list)
+        assert isinstance(pdb[0], pathlib.PurePath)
