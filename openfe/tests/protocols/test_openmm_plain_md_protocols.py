@@ -16,6 +16,7 @@ import json
 import openfe
 from openfe.protocols import openmm_md
 import pathlib
+import logging
 
 
 def test_create_default_settings():
@@ -93,11 +94,42 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sim = dag_unit.run(dry=True)['debug']['system']
+        sim = dag_unit.run(dry=True, verbose=True)['debug']['system']
         assert not ThermodynamicState(sim, temperature=to_openmm(
             protocol.settings.thermo_settings.temperature)).is_periodic
         assert ThermodynamicState(sim, temperature=to_openmm(
             protocol.settings.thermo_settings.temperature)).barostat is None
+
+
+def test_dry_run_logger_output(benzene_vacuum_system, tmpdir, caplog):
+
+    vac_settings = PlainMDProtocol.default_settings()
+    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
+    vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
+    vac_settings.simulation_settings.production_length = 1 * unit.picosecond
+
+    protocol = PlainMDProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=benzene_vacuum_system,
+        mapping=None,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        caplog.set_level(logging.INFO)
+        dag_unit.run(dry=False, verbose=True)
+
+        messages = [r.message for r in caplog.records]
+        assert "minimizing systems" in messages
+        assert "Running NVT equilibration" in messages
+        assert "Running NPT equilibration" in messages
+        assert "running production phase" in messages
 
 
 def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
