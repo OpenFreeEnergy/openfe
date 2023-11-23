@@ -552,8 +552,8 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
             vac_repeats.add(ret.outputs['repeat_id'])
         else:
             solv_repeats.add(ret.outputs['repeat_id'])
-    assert vac_repeats == {0, 1, 2}
-    assert solv_repeats == {0, 1, 2}
+    # Repeat ids are random ints so just check their lengths
+    assert len(vac_repeats) == len(solv_repeats) == 3
 
 
 def test_gather(benzene_solvation_dag, tmpdir):
