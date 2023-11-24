@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 from openff.units import unit
+from openff.models.types import FloatQuantity
 import os
 
 from gufe.settings import (
@@ -91,7 +92,7 @@ class AlchemicalSettings(SettingsBaseModel):
 
     Default False.
     """
-    explicit_charge_correction_cutoff = 0.8 * unit.nanometer
+    explicit_charge_correction_cutoff: FloatQuantity['nanometer'] = 0.8 * unit.nanometer
     """
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
