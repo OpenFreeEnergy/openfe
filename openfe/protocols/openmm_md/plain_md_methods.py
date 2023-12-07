@@ -204,7 +204,7 @@ class PlainMDProtocol(gufe.Protocol):
 
 class PlainMDProtocolUnit(gufe.ProtocolUnit):
     """
-    Base class for plain MD simulations (NonTransformation).
+    Protocol unit for plain MD simulations (NonTransformation).
     """
 
     def __init__(self, *,
