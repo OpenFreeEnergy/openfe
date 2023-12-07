@@ -389,11 +389,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Setup the reporters
         simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / simulation_settings.output_filename),
-            reportInterval=simulation_settings.trajectory_interval.m,
+            file=str(shared_basepath / simulation_settings.production_trajectory_filename),
+            reportInterval=simulation_settings.trajectory_write_interval.m,
             atomSubset=selection_indices))
         simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / simulation_settings.checkpoint_storage),
+            file=str(shared_basepath / simulation_settings.checkpoint_storage_filename),
             reportInterval=simulation_settings.checkpoint_interval.m))
         simulation.reporters.append(openmm.app.StateDataReporter(
             str(shared_basepath / simulation_settings.log_output),
@@ -547,7 +547,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         # f. Save pdb of entire system
-        with open(shared_basepath / sim_settings.output_structure, "w") as f:
+        with open(shared_basepath / sim_settings.preminimized_structure, "w") as f:
             openmm.app.PDBFile.writeFile(
                 stateA_topology, stateA_positions, file=f, keepIds=True
             )
@@ -592,12 +592,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             return {
-                'system_pdb': shared_basepath / sim_settings.output_filename,
+                'system_pdb': shared_basepath / sim_settings.preminimized_structure,
                 'minimized_pdb': shared_basepath / sim_settings.minimized_structure,
                 'nvt_equil_pdb': shared_basepath / sim_settings.equil_NVT_structure,
                 'npt_equil_pdb': shared_basepath / sim_settings.equil_NPT_structure,
-                'nc': shared_basepath / sim_settings.output_filename,
-                'last_checkpoint': shared_basepath / sim_settings.checkpoint_storage,
+                'nc': shared_basepath / sim_settings.production_trajectory_filename,
+                'last_checkpoint': shared_basepath / sim_settings.checkpoint_storage_filename,
             }
         else:
             return {'debug': {'system': stateA_system}}
