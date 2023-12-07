@@ -72,14 +72,28 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
         return None
 
-    def get_traj_filename(self):
-        """String of trajectory file name"""
+    def get_traj_filename(self) -> list[pathlib.PurePath]:
+        """
+        Get a list of trajectory paths
+
+        Returns
+        -------
+        traj : list
+          list of paths (pathlib.PurePath) to the simulation trajectory
+        """
         traj = [pus[0].outputs['nc'] for pus in self.data.values()]
 
         return traj
 
-    def get_pdb_filename(self):
-        """String of pdb file name"""
+    def get_pdb_filename(self) -> list[pathlib.PurePath]:
+        """
+        Get a list of paths to the pdb files of the pre-minimized system.
+
+        Returns
+        -------
+        pdbs : list
+          list of paths (pathlib.PurePath) to the pdb files
+        """
         pdbs = [pus[0].outputs['system_pdb'] for pus in self.data.values()]
 
         return pdbs
