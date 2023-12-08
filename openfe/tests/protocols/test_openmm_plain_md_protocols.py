@@ -5,10 +5,10 @@ import gufe
 import pytest
 from unittest import mock
 from openff.units import unit
-
+from openmm import unit as omm_unit
 from openff.units.openmm import to_openmm
 from openmmtools.states import ThermodynamicState
-
+from openmm import MonteCarloBarostat
 from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
 )
@@ -314,7 +314,7 @@ def test_dry_run_complex(benzene_complex_system, tmpdir):
 
     with tmpdir.as_cwd():
         sim = dag_unit.run(dry=True)['debug']['system']
-        assert not ThermodynamicState(sim, temperature=
+        assert ThermodynamicState(sim, temperature=
         to_openmm(protocol.settings.thermo_settings.temperature)).is_periodic
         assert isinstance(ThermodynamicState(sim, temperature=
         to_openmm(protocol.settings.thermo_settings.temperature)).barostat,
