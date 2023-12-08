@@ -297,30 +297,30 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
         assert system
 
 
-# @pytest.mark.slow
-# def test_dry_run_complex(benzene_complex_system, tmpdir):
-#     # this will be very time consuming
-#     settings = PlainMDProtocol.default_settings()
-#
-#     protocol = PlainMDProtocol(
-#             settings=settings,
-#     )
-#     dag = protocol.create(
-#         stateA=benzene_complex_system,
-#         stateB=benzene_complex_system,
-#         mapping=None,
-#     )
-#     dag_unit = list(dag.protocol_units)[0]
-#
-#     with tmpdir.as_cwd():
-#         sim = dag_unit.run(dry=True)['debug']['system']
-#         assert not ThermodynamicState(sim, temperature=
-#         to_openmm(protocol.settings.thermo_settings.temperature)).is_periodic
-#         assert isinstance(ThermodynamicState(sim, temperature=
-#         to_openmm(protocol.settings.thermo_settings.temperature)).barostat,
-#                           MonteCarloBarostat)
-#         assert ThermodynamicState(sim, temperature=
-#         to_openmm(protocol.settings.thermo_settings.temperature)).pressure == 1 * omm_unit.bar
+@pytest.mark.slow
+def test_dry_run_complex(benzene_complex_system, tmpdir):
+    # this will be very time consuming
+    settings = PlainMDProtocol.default_settings()
+
+    protocol = PlainMDProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=benzene_complex_system,
+        mapping=None,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sim = dag_unit.run(dry=True)['debug']['system']
+        assert not ThermodynamicState(sim, temperature=
+        to_openmm(protocol.settings.thermo_settings.temperature)).is_periodic
+        assert isinstance(ThermodynamicState(sim, temperature=
+        to_openmm(protocol.settings.thermo_settings.temperature)).barostat,
+                          MonteCarloBarostat)
+        assert ThermodynamicState(sim, temperature=
+        to_openmm(protocol.settings.thermo_settings.temperature)).pressure == 1 * omm_unit.bar
 
 
 def test_hightimestep(benzene_vacuum_system, tmpdir):
