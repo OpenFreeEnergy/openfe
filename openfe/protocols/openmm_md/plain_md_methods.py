@@ -247,8 +247,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     def _run_MD(simulation: openmm.app.Simulation,
                 positions: omm_unit.Quantity,
                 simulation_settings: SimulationSettingsMD,
-                thermo_settings: settings.ThermoSettings,
-                integrator_settings: IntegratorSettings,
+                temperature: settings.ThermoSettings.temperature,
+                barostat_frequency: IntegratorSettings.barostat_frequency,
                 equil_steps_nvt: int,
                 equil_steps_npt: int,
                 prod_steps: int,
@@ -267,10 +267,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Initial positions for the system.
         simulation_settings : SimulationSettingsMD
           Settings for MD simulation
-        thermo_settings: settings.ThermoSettings
-          temperature settings
-        integrator_settings: IntegratorSettings
-          Settings for the MD integrator
+        temperature: settings.ThermoSettings.temperature
+          temperature setting
+        barostat_frequency: IntegratorSettings.barostat_frequency
+          Frequency for the barostat
         equil_steps_nvt: int
           number of steps for NVT equilibration
         equil_steps_npt: int
@@ -328,7 +328,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 x.setFrequency(0)
 
         simulation.context.setVelocitiesToTemperature(
-            to_openmm(thermo_settings.temperature))
+            to_openmm(temperature))
 
         t0 = time.time()
         simulation.step(equil_steps_nvt)
@@ -355,12 +355,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         if verbose:
             logger.info("Running NPT equilibration")
         simulation.context.setVelocitiesToTemperature(
-            to_openmm(thermo_settings.temperature))
+            to_openmm(temperature))
 
         # Enable the barostat for NPT
         for x in simulation.context.getSystem().getForces():
             if x.getName() == 'MonteCarloBarostat':
-                x.setFrequency(integrator_settings.barostat_frequency.m)
+                x.setFrequency(barostat_frequency.m)
 
         t0 = time.time()
         simulation.step(equil_steps_npt)
@@ -561,7 +561,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         integrator = openmm.LangevinMiddleIntegrator(
             to_openmm(thermo_settings.temperature),
             to_openmm(integrator_settings.collision_rate),
-            to_openmm(integrator_settings.timestep),
+            to_openmm(timestep),
         )
 
         simulation = openmm.app.Simulation(
@@ -577,8 +577,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 self._run_MD(simulation,
                              stateA_positions,
                              sim_settings,
-                             thermo_settings,
-                             integrator_settings,
+                             thermo_settings.temperature,
+                             integrator_settings.barostat_frequency,
                              equil_steps_nvt,
                              equil_steps_npt,
                              prod_steps,
