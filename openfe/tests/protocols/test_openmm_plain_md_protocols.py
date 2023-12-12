@@ -443,10 +443,10 @@ class TestProtocolResult:
         traj = protocolresult.get_traj_filename()
 
         assert isinstance(traj, list)
-        assert isinstance(traj[0], pathlib.PurePath)
+        assert isinstance(traj[0], pathlib.Path)
 
     def test_get_pdb_filename(self, protocolresult):
         pdb = protocolresult.get_pdb_filename()
 
         assert isinstance(pdb, list)
-        assert isinstance(pdb[0], pathlib.PurePath)
+        assert isinstance(pdb[0], pathlib.Path)
