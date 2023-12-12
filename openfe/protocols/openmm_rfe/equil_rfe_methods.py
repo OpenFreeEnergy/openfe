@@ -991,13 +991,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def analyse(where) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        ret = subprocess.run(['openfe_analysis', str(where)],
+        analysis_out = where / 'structural_analysis.json'
+
+        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
+                              str(where), str(analysis_out)],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if ret.returncode:
             return {'structural_analysis_error': ret.stderr}
 
-        data = json.loads(ret.stdout)
+        with open(analysis_out, 'rb') as f:
+            data = json.load(f)
 
         savedir = pathlib.Path(where)
         if d := data['protein_2D_RMSD']:
