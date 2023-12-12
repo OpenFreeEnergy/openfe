@@ -78,8 +78,8 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
         Returns
         -------
-        traj : list
-          list of paths (pathlib.PurePath) to the simulation trajectory
+        traj : list[pathlib.Path]
+          list of paths (pathlib.Path) to the simulation trajectory
         """
         traj = [pus[0].outputs['nc'] for pus in self.data.values()]
 
