@@ -72,7 +72,7 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
         return None
 
-    def get_traj_filename(self) -> list[pathlib.PurePath]:
+    def get_traj_filename(self) -> list[pathlib.Path]:
         """
         Get a list of trajectory paths
 
@@ -85,14 +85,14 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
         return traj
 
-    def get_pdb_filename(self) -> list[pathlib.PurePath]:
+    def get_pdb_filename(self) -> list[pathlib.Path]:
         """
         Get a list of paths to the pdb files of the pre-minimized system.
 
         Returns
         -------
-        pdbs : list
-          list of paths (pathlib.PurePath) to the pdb files
+        pdbs : list[pathlib.Path]
+          list of paths (pathlib.Path) to the pdb files
         """
         pdbs = [pus[0].outputs['system_pdb'] for pus in self.data.values()]
 
