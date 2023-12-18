@@ -218,7 +218,7 @@ class RelativeAlchemicalNetworkPlanner(
         return Transformation(
             stateA=stateA,
             stateB=stateB,
-            mapping={RFEComponentLabels.LIGAND: ligand_mapping_edge},
+            mapping=[ligand_mapping_edge],
             name=transformation_name,
             protocol=transformation_protocol,
         )

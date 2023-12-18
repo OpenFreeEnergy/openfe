@@ -521,7 +521,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Dict[str, gufe.ComponentMapping]] = None,
+        mapping: Optional[list[gufe.ComponentMapping]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: extensions
