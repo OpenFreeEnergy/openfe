@@ -37,8 +37,6 @@ jobs:
     - name: Install constructor environment with Micromamba
       uses: mamba-org/setup-micromamba@v1
       with:
-        environment-file: false
-        environment-name: constructor-env
         create-args: >-
           python=3.10
           jinja2
