@@ -39,8 +39,6 @@ jobs:
       with:
         environment-file: false
         environment-name: constructor-env
-        cache-environment: true
-        cache-downloads: true
         create-args: >-
           python=3.10
           jinja2
