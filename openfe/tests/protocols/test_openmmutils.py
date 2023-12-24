@@ -172,7 +172,8 @@ def get_settings():
     system_settings = SystemSettings()
     integrator_settings = IntegratorSettings()
 
-    return forcefield_settings, thermo_settings, system_settings, integrator_settings
+    return (forcefield_settings, thermo_settings, system_settings,
+            integrator_settings)
 
 
 class TestFEAnalysis:

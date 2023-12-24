@@ -630,7 +630,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         solvation_settings: SolvationSettings = protocol_settings.solvation_settings
         sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = protocol_settings.simulation_settings
-        integrator_settings : IntegratorSettings = protocol_settings.integrator_settings
+        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
