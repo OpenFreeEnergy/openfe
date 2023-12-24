@@ -18,7 +18,7 @@ from openfe.protocols.openmm_utils import (
     multistate_analysis
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SolvationSettings,
+    SystemSettings, SolvationSettings, IntegratorSettings,
 )
 
 
@@ -170,8 +170,9 @@ def get_settings():
         pressure=1 * unit.bar,
     )
     system_settings = SystemSettings()
+    integrator_settings = IntegratorSettings()
 
-    return forcefield_settings, thermo_settings, system_settings
+    return forcefield_settings, thermo_settings, system_settings, integrator_settings
 
 
 class TestFEAnalysis:
@@ -266,21 +267,11 @@ class TestFEAnalysis:
 
 
 class TestSystemCreation:
-    @staticmethod
-    def get_settings():
-        forcefield_settings = OpenMMSystemGeneratorFFSettings()
-        thermo_settings = ThermoSettings(
-                temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,
-        )
-        system_settings = SystemSettings()
-
-        return forcefield_settings, thermo_settings, system_settings
-
     def test_system_generator_nosolv_nocache(self, get_settings):
-        ffsets, thermosets, systemsets = get_settings
+        ffsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-                ffsets, thermosets, systemsets, None, False)
+            ffsets, thermosets, intsets, systemsets, None, False
+        )
         assert generator.barostat is None
         assert generator.template_generator._cache is None
         assert not generator.postprocess_system
@@ -301,18 +292,20 @@ class TestSystemCreation:
         assert generator.periodic_forcefield_kwargs == periodic_kwargs
 
     def test_system_generator_solv_cache(self, get_settings):
-        ffsets, thermosets, systemsets = get_settings
+        ffsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-                ffsets, thermosets, systemsets, Path('./db.json'), True)
+            ffsets, thermosets, intsets, systemsets, Path('./db.json'), True
+        )
         assert isinstance(generator.barostat, MonteCarloBarostat)
         assert generator.template_generator._cache == 'db.json'
 
     def test_get_omm_modeller_complex(self, T4_protein_component,
                                       benzene_modifications,
                                       get_settings):
-        ffsets, thermosets, systemsets = get_settings
+        ffsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-                ffsets, thermosets, systemsets, None, True)
+            ffsets, thermosets, intsets, systemsets, None, True
+        )
 
         smc = benzene_modifications['toluene']
         mol = smc.to_openff()
@@ -335,9 +328,9 @@ class TestSystemCreation:
                      np.linspace(165, len(resids)-1, len(resids)-165))
 
     def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
-        ffsets, thermosets, systemsets = get_settings
+        ffsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, thermosets, systemsets, None, True
+            ffsets, thermosets, intsets, systemsets, None, True
         )
 
         offmol = OFFMol.from_smiles('[O-]C=O')
