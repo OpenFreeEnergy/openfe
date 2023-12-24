@@ -293,10 +293,30 @@ class TestSystemCreation:
 
     def test_system_generator_solv_cache(self, get_settings):
         ffsets, thermosets, systemsets, intsets = get_settings
+
+        thermosets.temperature = 320 * unit.kelvin
+        thermosets.pressure = 1.25 * unit.bar
+        intsets.barostat_frequency = 200 * unit.timestep
         generator = system_creation.get_system_generator(
             ffsets, thermosets, intsets, systemsets, Path('./db.json'), True
         )
+
+        # Check barostat conditions
         assert isinstance(generator.barostat, MonteCarloBarostat)
+
+        pressure = ensure_quantity(
+            generator.barostat.getDefaultPressure(), 'openff',
+        )
+        temperature = ensure_quantity(
+            generator.barostat.getDefaultTemperature(), 'openff',
+        )
+        assert pressure.m == pytest.approx(1.25)
+        assert pressure.units == unit.bar
+        assert temperature.m == pytest.approx(320)
+        assert temperature.units == unit.kelvin
+        assert generator.barostat.getFrequency() == 200
+
+        # Check cache file
         assert generator.template_generator._cache == 'db.json'
 
     def test_get_omm_modeller_complex(self, T4_protein_component,
