@@ -223,7 +223,6 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
 class OpenMMEngineSettings(SettingsBaseModel):
     """OpenMM MD engine settings"""
 
-
     """
     TODO
     ----
@@ -372,3 +371,49 @@ class SimulationSettings(SettingsBaseModel):
                       "intervals must be positive")
             raise ValueError(errmsg)
         return v
+
+
+class SimulationSettingsMD(SimulationSettings):
+    """
+    Settings for simulation control for plain MD simulations, including
+    writing outputs
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    equilibration_length_nvt: unit.Quantity
+    """
+    Length of the equilibration phase in the NVT ensemble in units of time. 
+    The total number of steps from this equilibration length
+    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`)
+    must be a multiple of the value defined for
+    :class:`IntegratorSettings.n_steps`.
+    """
+    # reporter settings
+    production_trajectory_filename = 'simulation.xtc'
+    """Path to the storage file for analysis. Default 'simulation.xtc'."""
+    trajectory_write_interval = 5000 * unit.timestep
+    """
+    Frequency to write the xtc file. Default 5000 * unit.timestep.
+    """
+    preminimized_structure = 'system.pdb'
+    """Path to the pdb file of the full pre-minimized system. Default 'system.pdb'."""
+    minimized_structure = 'minimized.pdb'
+    """Path to the pdb file of the system after minimization. 
+    Only the specified atom subset is saved. Default 'minimized.pdb'."""
+    equil_NVT_structure = 'equil_NVT.pdb'
+    """Path to the pdb file of the system after NVT equilibration. 
+    Only the specified atom subset is saved. Default 'equil_NVT.pdb'."""
+    equil_NPT_structure = 'equil_NPT.pdb'
+    """Path to the pdb file of the system after NPT equilibration. 
+    Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
+    checkpoint_storage_filename = 'checkpoint.chk'
+    """
+    Separate filename for the checkpoint file. Note, this should
+    not be a full path, just a filename. Default 'checkpoint.chk'.
+    """
+    log_output = 'simulation.log'
+    """
+    Filename for writing the log of the MD simulation, including timesteps,
+    energies, density, etc.
+    """
