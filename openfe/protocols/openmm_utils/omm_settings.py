@@ -81,8 +81,11 @@ class SolvationSettings(SettingsBaseModel):
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
 
-    solvent_padding: FloatQuantity['nanometer'] = 1.2 * unit.nanometer
-    """Minimum distance from any solute atoms to the solvent box edge."""
+    solvation_backend = 'openmm'
+    """
+    Backend employed for solvating the system.
+    Allowed values are; `openmm`.
+    """
 
     @validator('solvent_model')
     def allowed_solvent(cls, v):
@@ -94,14 +97,14 @@ class SolvationSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('solvent_padding')
-    def is_positive_distance(cls, v):
-        # these are time units, not simulation steps
-        if not v.is_compatible_with(unit.nanometer):
-            raise ValueError("solvent_padding must be in distance units "
-                             "(i.e. nanometers)")
-        if v < 0:
-            errmsg = "solvent_padding must be a positive value"
+    @validator('solvation_backend')
+    def allowed_backends(cls, v):
+        backends = ['openmm',]
+        if v.lower() not in backends:
+            errmsg = (
+                f"Only these solvation backends: {backends} are allowed "
+                f"got: {v}"
+            )
             raise ValueError(errmsg)
         return v
 

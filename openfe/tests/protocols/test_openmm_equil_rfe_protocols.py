@@ -440,7 +440,6 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
     settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = True
@@ -601,7 +600,6 @@ def test_virtual_sites_no_reassign(benzene_system, toluene_system,
         "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
     settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = False
