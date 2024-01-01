@@ -478,7 +478,7 @@ def test_dry_run_ligand_system_cutoff(
     """
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
-    settings.system_settings.nonbonded_cutoff =  cutoff
+    settings.system_settings.nonbonded_cutoff = cutoff
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
