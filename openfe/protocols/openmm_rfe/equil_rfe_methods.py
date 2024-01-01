@@ -578,8 +578,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
     def run(self, *, dry=False, verbose=True,
-            scratch_basepath=None,
-            shared_basepath=None) -> dict[str, Any]:
+            scratch_basepath,
+            shared_basepath,
+            permanent_basepath) -> dict[str, Any]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -591,10 +592,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        scratch_basepath: Pathlike, optional
-          Where to store temporary files, defaults to current working directory
-        shared_basepath : Pathlike, optional
-          Where to run the calculation, defaults to current working directory
+        scratch_basepath: StagingDirectory
+          Where to store temporary files
+        shared_basepath : StagingDirectory
+          Where to run the calculation
+        permanent_basepath : StagingDirectory
+          Where to store files that must persist beyond the DAG
 
         Returns
         -------
@@ -609,11 +612,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         """
         if verbose:
             self.logger.info("Preparing the hybrid topology simulation")
-        if scratch_basepath is None:
-            scratch_basepath = pathlib.Path('.')
-        if shared_basepath is None:
-            # use cwd
-            shared_basepath = pathlib.Path('.')
 
         # 0. General setup and settings dependency resolution step
 
@@ -664,11 +662,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         else:
             ffcache = None
 
+        ffcache.register()
+
         system_generator = system_creation.get_system_generator(
             forcefield_settings=forcefield_settings,
             thermo_settings=thermo_settings,
             system_settings=system_settings,
-            cache=ffcache,
+            cache=ffcache.fspath,
             has_solvent=solvent_comp is not None,
         )
 
@@ -812,7 +812,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
-        nc = shared_basepath / sim_settings.output_filename
+        nc = (shared_basepath / sim_settings.output_filename).fspath
         chk = sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
             storage=nc,
@@ -947,7 +947,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     sampling_method=sampler_settings.sampler_method.lower(),
                     result_units=unit.kilocalorie_per_mole,
                 )
-                analyzer.plot(filepath=shared_basepath, filename_prefix="")
+                analyzer.plot(filepath=permanent_basepath, filename_prefix="")
                 analyzer.close()
 
             else:
@@ -1020,7 +1020,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         log_system_probe(logging.INFO, paths=[ctx.scratch])
         with without_oechem_backend():
             outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+                               shared_basepath=ctx.shared,
+                               permanent_basepath=ctx.permanent)
 
         analysis_outputs = self.analyse(ctx.shared)
 
