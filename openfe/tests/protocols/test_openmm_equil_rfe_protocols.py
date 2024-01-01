@@ -14,7 +14,10 @@ from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
 
-from openmm import app, XmlSerializer, MonteCarloBarostat, NonbondedForce
+from openmm import (
+    app, XmlSerializer, MonteCarloBarostat,
+    NonbondedForce, CustomNonbondedForce,
+)
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
@@ -459,6 +462,45 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
         assert sampler._factory.hybrid_system
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('cutoff',
+    [1.0 * unit.nanometer,
+     12.0 * unit.angstrom,
+     0.9 * unit.nanometer]
+)
+def test_dry_run_ligand_system_cutoff(
+    cutoff, benzene_system, toluene_system, benzene_to_toluene_mapping, tmpdir
+):
+    """
+    Test that the right nonbonded cutoff is propagated to the hybrid system.
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.system_settings.nonbonded_cutoff =  cutoff
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        hs = sampler._factory.hybrid_system
+
+        nbfs = [f for f in hs.getForces() if
+                isinstance(f, CustomNonbondedForce) or
+                isinstance(f, NonbondedForce)]
+
+        for f in nbfs:
+            f_cutoff = from_openmm(f.getCutoffDistance())
+            assert f_cutoff == cutoff
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
