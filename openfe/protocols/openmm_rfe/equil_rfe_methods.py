@@ -812,10 +812,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
-        nc = (shared_basepath / sim_settings.output_filename).fspath
+        nc = (shared_basepath / sim_settings.output_filename)
+        checkpoint = (shared_basepath / "checkpoint.nc")
+        real_time_analysis = (shared_basepath / "real_time_analysis.yaml")
+        # have to flag these files as being created so that they get brought back
+        nc.register()
+        checkpoint.register()
+        real_time_analysis.register()
+
         chk = sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
-            storage=nc,
+            storage=nc.fspath,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=sim_settings.checkpoint_interval.m,
             checkpoint_storage=chk,
@@ -991,6 +998,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def analyse(where) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
+        where = where.fspath
+
         ret = subprocess.run(['openfe_analysis', str(where)],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
