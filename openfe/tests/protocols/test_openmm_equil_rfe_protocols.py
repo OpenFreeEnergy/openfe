@@ -486,13 +486,15 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         assert num_waters == len(virtual_sites)
 
         # Test 3
-        # get the standard nonbonded force - only every one
+        # get the standard and custom nonbonded forces - one of each
         nonbond = [f for f in htf.hybrid_system.getForces()
                    if isinstance(f, NonbondedForce)][0]
 
         cust_nonbond = [f for f in htf.hybrid_system.getForces()
                         if isinstance(f, CustomNonbondedForce)][0]
 
+        # loop through every virtual site and check that they have the
+        # expected tip4p parameters
         for entry in virtual_sites:
             vs = htf.hybrid_system.getVirtualSite(entry)
             vs_mass = htf.hybrid_system.getParticleMass(entry)
