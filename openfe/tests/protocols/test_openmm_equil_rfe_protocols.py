@@ -14,7 +14,10 @@ from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
 
-from openmm import app, XmlSerializer, MonteCarloBarostat, NonbondedForce
+from openmm import (
+    app, XmlSerializer, MonteCarloBarostat,
+    NonbondedForce, CustomNonbondedForce
+)
 from openmm import unit as omm_unit
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 import pathlib
@@ -483,6 +486,31 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
         assert num_waters == len(virtual_sites)
 
         # Test 3
+        # get the standard nonbonded force - only every one
+        nonbond = [f for f in htf.hybrid_system.getForces()
+                   if isinstance(f, NonbondedForce)][0]
+
+        cust_nonbond = [f for f in htf.hybrid_system.getForces()
+                        if isinstance(f, CustomNonbondedForce)][0]
+
+        for entry in virtual_sites:
+            vs = htf.hybrid_system.getVirtualSite(entry)
+            vs_mass = htf.hybrid_system.getParticleMass(entry)
+            assert ensure_quantity(vs_mass, 'openff').m == pytest.approx(0)
+            vs_weights = [vs.getWeight(ix) for ix in range(vs.getNumParticles())]
+            np.testing.assert_allclose(
+                vs_weights, [0.786646558, 0.106676721, 0.106676721]
+            )
+            c, s, e = nonbond.getParticleParameters(entry)
+            assert ensure_quantity(c, 'openff').m == pytest.approx(-1.04844)
+            assert ensure_quantity(s, 'openff').m == 1
+            assert ensure_quantity(e, 'openff').m == 0
+
+            s1, e1, s2, e2, i, j = cust_nonbond.getParticleParameters(entry)
+
+            assert i == j == 0
+            assert s1 == s2 == 1
+            assert e1 == e2 == 0
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
