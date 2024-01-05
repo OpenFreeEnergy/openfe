@@ -926,9 +926,6 @@ class HybridTopologyFactory:
                                         openmm.NonbondedForce.Ewald]:
             [alpha_ewald, nx, ny, nz] = self._old_system_forces['NonbondedForce'].getPMEParameters()
             delta = self._old_system_forces['NonbondedForce'].getEwaldErrorTolerance()
-            r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
-            sterics_energy_expression = self._nonbonded_custom(
-                self._softcore_LJ_v2)
             standard_nonbonded_force.setPMEParameters(alpha_ewald, nx, ny, nz)
             standard_nonbonded_force.setEwaldErrorTolerance(delta)
             standard_nonbonded_force.setCutoffDistance(r_cutoff)
