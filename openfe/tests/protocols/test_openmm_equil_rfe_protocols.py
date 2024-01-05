@@ -458,7 +458,31 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
     with tmpdir.as_cwd():
         sampler = dag_unit.run(dry=True)['debug']['sampler']
         assert isinstance(sampler, MultiStateSampler)
-        assert sampler._factory.hybrid_system
+
+        # Get the htf and check
+        # 1. The number of particles in the system are as expected
+        #   - tot particles = old particles + new unique
+        # 2. The number of vs == number of waters
+        # 3. The vs parameters are as expected
+        htf = sampler._factory
+
+        # Test 1
+        old_particle_count = htf._old_system.getNumParticles()
+        unique_new_count = len(htf._unique_new_atoms)
+        hybrid_particle_count = htf.hybrid_system.getNumParticles()
+        assert old_particle_count + unique_new_count == hybrid_particle_count
+
+        # Test 2
+        num_waters = len(
+            [r for r in htf._old_topology.residues() if r.name =='HOH']
+        )
+        virtual_sites = [
+            ix for ix in range(htf.hybrid_system.getNumParticles()) if
+            htf.hybrid_system.isVirtualSite(ix)
+        ]
+        assert num_waters == len(virtual_sites)
+
+        # Test 3
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
