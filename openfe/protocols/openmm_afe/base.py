@@ -418,6 +418,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas['lambda_electrostatics'] = lambda_elec
         lambdas['lambda_sterics'] = lambda_vdw
 
+        n_replicas = settings['sampler_settings'].n_replicas
+
+        if n_replicas != (len(lambdas['lambda_sterics'])):
+            errmsg = (f"Number of replicas {n_replicas} "
+                      "does not equal the number of lambda windows ")
+            raise ValueError(errmsg)
+
         return lambdas
 
     def _add_restraints(self, system, topology, settings):
