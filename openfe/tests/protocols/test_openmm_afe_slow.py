@@ -56,7 +56,7 @@ def test_openmm_run_engine(platform,
     s.integrator_settings.n_steps = 5 * unit.timestep
     s.vacuum_simulation_settings.checkpoint_interval = 5 * unit.timestep
     s.solvent_simulation_settings.checkpoint_interval = 5 * unit.timestep
-    s.alchemsampler_settings.n_replicas = 14
+    s.alchemsampler_settings.n_replicas = 20
     s.lambda_settings.lambda_elec = \
         [0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -108,4 +108,4 @@ def test_openmm_run_engine(platform,
     states = results.get_replica_states()
     assert len(states.items()) == 2
     assert len(states['solvent']) == 1
-    assert states['solvent'][0].shape[1] == 14
+    assert states['solvent'][0].shape[1] == 20
