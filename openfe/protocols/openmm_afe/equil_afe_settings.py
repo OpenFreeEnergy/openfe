@@ -40,20 +40,52 @@ except ImportError:
 class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
 
-    These settings describe the lambda schedule and the creation of the
-    hybrid system.
+    Empty place holder for right now.
     """
 
-    lambda_elec_windows = 12
-    """Number of lambda electrostatic alchemical steps, default 12"""
-    lambda_vdw_windows = 12
-    """Number of lambda vdw alchemical steps, default 12"""
 
-    @validator('lambda_elec_windows', 'lambda_vdw_windows')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = ("Number of lambda steps must be positive ")
-            raise ValueError(errmsg)
+class LambdaSettings(SettingsBaseModel):
+    """Settings for lambda schedule
+    """
+    lambda_elec: list = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    """
+    List of floats of lambda values for the electrostatics. 
+    Zero means state A and 1 means state B.
+    """
+    lambda_vdw: list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5,
+                        0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
+    """
+    List of floats of lambda values for the van der Waals.
+    """
+    lambda_restraints: list = None
+    """
+    List of floats of lambda values for the restraints.
+    """
+
+    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    def must_be_between_0_and_1(cls, v):
+        for window in v:
+            if not 0 <= window <= 1:
+                errmsg = "Lambda windows must be between 0 and 1 "
+                raise ValueError(errmsg)
+        return v
+
+    @validator('lambda_elec')
+    def must_have_equal_number_elec_vdw_restraints_windows(cls, v, values):
+        if values['lambda_restraints'] is None:
+            if not len(v) == len(values['lambda_vdw']):
+                errmsg = (
+                    "Components elec and vdw must have equal amount of "
+                    "lambda windows")
+                raise ValueError(errmsg)
+        else:
+            if not len(v) == len(values['lambda_vdw']) == len(
+                    values['lambda_restraints']):
+                errmsg = (
+                    "Components elec, vdw and restraints must have equal amount "
+                    "of lambda windows")
+                raise ValueError(errmsg)
         return v
 
 
@@ -91,11 +123,16 @@ class AbsoluteSolvationSettings(Settings):
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
     """
-    Alchemical protocol settings including lambda windows.
+    Alchemical protocol settings.
+    """
+    lambda_settings: LambdaSettings
+    """
+    Settings for controlling the lambda schedule for the different components 
+    (vdw, elec, restraints).
     """
     alchemsampler_settings: AlchemicalSamplerSettings
     """
-    Settings for controling how we sample alchemical space, including the
+    Settings for controlling how we sample alchemical space, including the
     number of repeats.
     """
 
