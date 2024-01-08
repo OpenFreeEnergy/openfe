@@ -33,17 +33,25 @@ def test_create_default_settings():
 
 
 @pytest.mark.parametrize('val', [
-    {'elec': 0, 'vdw': 5},
-    {'elec': -2, 'vdw': 5},
-    {'elec': 5, 'vdw': -2},
-    {'elec': 5, 'vdw': 0},
+    {'elec': [0.0, -1], 'vdw': [0.0, 1.0]},
+    {'elec': [0.0, 1.5], 'vdw': [0.0, 1.0]},
 ])
 def test_incorrect_window_settings(val, default_settings):
-    errmsg = "lambda steps must be positive"
-    alchem_settings = default_settings.alchemical_settings
+    errmsg = "Lambda windows must be between 0 and 1."
+    lambda_settings = default_settings.lambda_settings
     with pytest.raises(ValueError, match=errmsg):
-        alchem_settings.lambda_elec_windows = val['elec']
-        alchem_settings.lambda_vdw_windows = val['vdw']
+        lambda_settings.lambda_elec = val['elec']
+        lambda_settings.lambda_vdw = val['vdw']
+
+@pytest.mark.parametrize('val', [
+    {'elec': [0.0, 0.1, 1.0], 'vdw': [0.0, 1.0]},
+])
+def test_incorrect_number_windows(val, default_settings):
+    errmsg = "Components elec and vdw must have equal amount of lambda windows"
+    lambda_settings = default_settings.lambda_settings
+    with pytest.raises(ValueError, match=errmsg):
+        lambda_settings.lambda_elec = val['elec']
+        lambda_settings.lambda_vdw = val['vdw']
 
 
 def test_create_default_protocol(default_settings):

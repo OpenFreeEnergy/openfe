@@ -50,7 +50,7 @@ from gufe import (
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings, SystemSettings,
-    SolvationSettings, AlchemicalSettings,
+    SolvationSettings, AlchemicalSettings, LambdaSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings,
     SettingsBaseModel,
@@ -404,8 +404,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             solvent_system_settings=SystemSettings(),
             vacuum_system_settings=SystemSettings(nonbonded_method='nocutoff'),
             alchemical_settings=AlchemicalSettings(),
+            lambda_settings=LambdaSettings(),
             alchemsampler_settings=AlchemicalSamplerSettings(
-                n_replicas=24,
+                n_replicas=20,
             ),
             solvation_settings=SolvationSettings(),
             vacuum_engine_settings=OpenMMEngineSettings(),
@@ -655,6 +656,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
             * sampler_settings : AlchemicalSamplerSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -668,6 +670,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings['system_settings'] = prot_settings.vacuum_system_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
+        settings['lambda_settings'] = prot_settings.lambda_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
         settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
@@ -739,6 +742,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
             * sampler_settings : AlchemicalSamplerSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -752,6 +756,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings['system_settings'] = prot_settings.solvent_system_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
+        settings['lambda_settings'] = prot_settings.lambda_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
         settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings

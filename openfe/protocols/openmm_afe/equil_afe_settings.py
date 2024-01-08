@@ -67,7 +67,7 @@ class LambdaSettings(SettingsBaseModel):
     def must_be_between_0_and_1(cls, v):
         for window in v:
             if not 0 <= window <= 1:
-                errmsg = "Lambda windows must be between 0 and 1 "
+                errmsg = "Lambda windows must be between 0 and 1."
                 raise ValueError(errmsg)
         return v
 
@@ -166,3 +166,11 @@ class AbsoluteSolvationSettings(Settings):
     Simulation control settings, including simulation lengths and
     record-keeping for the solvent transformation.
     """
+
+    def must_have_same_number_windows(cls, values):
+        n_elec = len(values['lambda_settings']['lambda_elec'])
+        n_replicas = values['alchemsampler_settings']['n_replicas']
+        if n_elec != n_replicas:
+            errmsg = "Number of lambda windows must equal number of replicas."
+            raise ValueError(errmsg)
+        return values
