@@ -812,8 +812,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
+        # TODO: Logic about keeping/not .nc files goes here
         nc = (shared_basepath / sim_settings.output_filename)
-        checkpoint = (shared_basepath / "checkpoint.nc")
+        checkpoint = (shared_basepath / sim_settings.checkpoint_storage)
         real_time_analysis = (shared_basepath / "real_time_analysis.yaml")
         # have to flag these files as being created so that they get brought back
         nc.register()
@@ -959,8 +960,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             else:
                 # clean up the reporter file
-                fns = [shared_basepath / sim_settings.output_filename,
-                       shared_basepath / sim_settings.checkpoint_storage]
+                fns = [nc.fspath, checkpoint.fspath]
                 for fn in fns:
                     os.remove(fn)
         finally:
@@ -987,8 +987,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             return {
-                'nc': nc,
-                'last_checkpoint': chk,
+                'nc': nc.fspath,
+                'last_checkpoint': checkpoint.fspath,
                 **analyzer.unit_results_dict
             }
         else:
@@ -998,27 +998,27 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def analyse(where) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        where = where.fspath
-
-        ret = subprocess.run(['openfe_analysis', str(where)],
+        output = (where / 'results.json')
+        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
+                              where.fspath, output],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if ret.returncode:
             return {'structural_analysis_error': ret.stderr}
 
-        data = json.loads(ret.stdout)
+        with open(output, 'w') as f:
+            data = json.load(f)
 
-        savedir = pathlib.Path(where)
         if d := data['protein_2D_RMSD']:
             fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(savedir / "protein_2D_RMSD.png")
+            fig.savefig(where / "protein_2D_RMSD.png")
             plt.close(fig)
             f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
-            f2.savefig(savedir / "ligand_COM_drift.png")
+            f2.savefig(where / "ligand_COM_drift.png")
             plt.close(f2)
 
         f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
-        f3.savefig(savedir / "ligand_RMSD.png")
+        f3.savefig(where / "ligand_RMSD.png")
         plt.close(f3)
 
         return {'structural_analysis': data}
