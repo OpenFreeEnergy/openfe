@@ -50,6 +50,7 @@ from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
     SmallMoleculeComponent, ProteinComponent, SolventComponent,
 )
+from gufe.storage import stagingregistry
 
 from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings, SystemSettings,
@@ -578,9 +579,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
     def run(self, *, dry=False, verbose=True,
-            scratch_basepath,
-            shared_basepath,
-            permanent_basepath) -> dict[str, Any]:
+            scratch_basepath: pathlib.Path,
+            shared_basepath: stagingregistry.StagingRegistry,
+            permanent_basepath: stagingregistry.StagingRegistry,
+            ) -> dict[str, Any]:
         """Run the relative free energy calculation.
 
         Parameters
@@ -668,7 +670,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings=forcefield_settings,
             thermo_settings=thermo_settings,
             system_settings=system_settings,
-            cache=ffcache.fspath,
+            cache=ffcache.as_path(),
             has_solvent=solvent_comp is not None,
         )
 
@@ -823,7 +825,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         chk = sim_settings.checkpoint_storage
         reporter = multistate.MultiStateReporter(
-            storage=nc.fspath,
+            storage=str(nc.as_path()),
             analysis_particle_indices=selection_indices,
             checkpoint_interval=sim_settings.checkpoint_interval.m,
             checkpoint_storage=chk,
@@ -960,7 +962,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             else:
                 # clean up the reporter file
-                fns = [nc.fspath, checkpoint.fspath]
+                fns = [nc.as_path(), checkpoint.as_path()]
                 for fn in fns:
                     os.remove(fn)
         finally:
@@ -987,26 +989,28 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             return {
-                'nc': nc.fspath,
-                'last_checkpoint': checkpoint.fspath,
+                'nc': nc.as_path(),
+                'last_checkpoint': checkpoint.as_path(),
                 **analyzer.unit_results_dict
             }
         else:
             return {'debug': {'sampler': sampler}}
 
     @staticmethod
-    def analyse(where) -> dict:
+    def analyse(where: stagingregistry.StagingRegistry) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
+        trjdir = (where / '')
         output = (where / 'results.json')
         ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              where.fspath, output],
+                                    str(trjdir.as_path()),
+                                    str(output.as_path())],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if ret.returncode:
             return {'structural_analysis_error': ret.stderr}
 
-        with open(output, 'w') as f:
+        with open(output, 'r') as f:
             data = json.load(f)
 
         if d := data['protein_2D_RMSD']:
