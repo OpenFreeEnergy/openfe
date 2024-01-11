@@ -52,16 +52,21 @@ class LambdaSettings(SettingsBaseModel):
     """
     List of floats of lambda values for the electrostatics. 
     Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
     lambda_vdw: list[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5,
                                0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
     """
     List of floats of lambda values for the van der Waals.
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
     lambda_restraints: list[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     """
     List of floats of lambda values for the restraints.
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
     @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
