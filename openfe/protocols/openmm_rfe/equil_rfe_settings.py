@@ -54,17 +54,9 @@ class AlchemicalSettings(SettingsBaseModel):
 
     """Settings for the alchemical protocol
 
-    This describes the lambda schedule and the creation of the
-    hybrid system.
+    This describes the creation of the hybrid system.
     """
-    # Lambda settings
-    lambda_functions = 'default'
-    """
-    Key of which switching functions to use for alchemical mutation.
-    Default 'default'.
-    """
-    lambda_windows = 11
-    """Number of lambda windows to calculate. Default 11."""
+
     unsampled_endstates = False
     """
     Whether to have extra unsampled endstate windows for long range
