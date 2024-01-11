@@ -58,7 +58,8 @@ class LambdaSettings(SettingsBaseModel):
     """
     List of floats of lambda values for the van der Waals.
     """
-    lambda_restraints: list = None
+    lambda_restraints: list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     """
     List of floats of lambda values for the restraints.
     """
@@ -73,19 +74,13 @@ class LambdaSettings(SettingsBaseModel):
 
     @validator('lambda_elec')
     def must_have_equal_number_elec_vdw_restraints_windows(cls, v, values):
-        if values['lambda_restraints'] is None:
-            if not len(v) == len(values['lambda_vdw']):
-                errmsg = (
-                    "Components elec and vdw must have equal amount of "
-                    "lambda windows")
-                raise ValueError(errmsg)
-        else:
-            if not len(v) == len(values['lambda_vdw']) == len(
-                    values['lambda_restraints']):
-                errmsg = (
-                    "Components elec, vdw and restraints must have equal amount "
-                    "of lambda windows")
-                raise ValueError(errmsg)
+        if 'lambda_vdw' in values and 'lambda_restraints' in values:
+            lambdas = [v, values['lambda_vdw'], values['lambda_restraints']]
+            it = iter(lambdas)
+            the_len = len(next(it))
+            if not all(len(l) == the_len for l in it):
+                raise ValueError('Components elec, vdw and restraints must have '
+                                 'equal amount of lambda windows')
         return v
 
 

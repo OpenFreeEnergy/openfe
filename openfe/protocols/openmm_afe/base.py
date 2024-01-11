@@ -233,11 +233,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * system_settings : SystemSettings
           * solvation_settings : SolvationSettings
           * alchemical_settings : AlchemicalSettings
+          * lambda_settings : LambdaSettings
           * sampler_settings : AlchemicalSamplerSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
           * simulation_settings : SimulationSettings
-          * lambda_settings : LambdaSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
@@ -764,11 +764,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # minimize
             if self.verbose:
                 self.logger.info("minimizing systems")
-
             sampler.minimize(
                 max_iterations=settings['simulation_settings'].minimization_steps
             )
-
             # equilibrate
             if self.verbose:
                 self.logger.info("equilibrating systems")
@@ -778,7 +776,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # production
             if self.verbose:
                 self.logger.info("running production phase")
-
             sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
             if self.verbose:
