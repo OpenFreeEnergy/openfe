@@ -53,7 +53,7 @@ from gufe import (
 
 from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings, SystemSettings,
-    SolvationSettings, AlchemicalSettings,
+    SolvationSettings, AlchemicalSettings, LambdaSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings
 )
@@ -456,6 +456,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             system_settings=SystemSettings(),
             solvation_settings=SolvationSettings(),
             alchemical_settings=AlchemicalSettings(),
+            lambda_settings=LambdaSettings(),
             alchemical_sampler_settings=AlchemicalSamplerSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -626,6 +627,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
+        lambda_settings: LambdaSettings = protocol_settings.lambda_settings
         system_settings: SystemSettings = protocol_settings.system_settings
         solvation_settings: SolvationSettings = protocol_settings.solvation_settings
         sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
@@ -793,8 +795,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
-            functions=alchem_settings.lambda_functions,
-            windows=alchem_settings.lambda_windows
+            functions=lambda_settings.lambda_functions,
+            windows=lambda_settings.lambda_windows
         )
 
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
