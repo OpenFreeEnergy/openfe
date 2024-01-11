@@ -86,8 +86,7 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 interpolate_old_and_new_14s=False,
-                 **kwargs):
+                 interpolate_old_and_new_14s=False):
         """
         Initialize the Hybrid topology factory.
 
