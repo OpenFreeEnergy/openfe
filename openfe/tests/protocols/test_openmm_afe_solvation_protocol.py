@@ -48,8 +48,8 @@ def test_incorrect_window_settings(val, default_settings):
     {'elec': [0.0, 0.1, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
 ])
 def test_incorrect_number_windows(val, default_settings):
-    errmsg = "Components elec, vdw and restraints must have equal amount " \
-             "of lambda windows"
+    errmsg = ("Components elec, vdw and restraints must have equal amount "
+             "of lambda windows")
     lambda_settings = default_settings.lambda_settings
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec = val['elec']

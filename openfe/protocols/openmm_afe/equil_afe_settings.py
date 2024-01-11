@@ -47,22 +47,28 @@ class AlchemicalSettings(SettingsBaseModel):
 class LambdaSettings(SettingsBaseModel):
     """Settings for lambda schedule
     """
-    lambda_elec: list[float] = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    lambda_elec: list[float] = [
+        0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]
     """
     List of floats of lambda values for the electrostatics. 
     Zero means state A and 1 means state B.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
-    lambda_vdw: list[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5,
-                               0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
+    lambda_vdw: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4,
+        0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+    ]
     """
     List of floats of lambda values for the van der Waals.
     Zero means state A and 1 means state B.
     Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
-    lambda_restraints: list[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    lambda_restraints: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ]
     """
     List of floats of lambda values for the restraints.
     Zero means state A and 1 means state B.
@@ -84,8 +90,8 @@ class LambdaSettings(SettingsBaseModel):
             it = iter(lambdas)
             the_len = len(next(it))
             if not all(len(l) == the_len for l in it):
-                raise ValueError('Components elec, vdw and restraints must have '
-                                 'equal amount of lambda windows')
+                raise ValueError('Components elec, vdw and restraints must'
+                                 'have equal amount of lambda windows')
         return v
 
 
