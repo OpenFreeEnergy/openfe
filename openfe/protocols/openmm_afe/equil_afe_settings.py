@@ -29,6 +29,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     SimulationSettings
 )
+import numpy as np
 
 
 try:
@@ -96,6 +97,29 @@ class LambdaSettings(SettingsBaseModel):
                           f" windows, and {len(values['lambda_restraints'])}"
                           " restraints lambda windows.")
                 raise ValueError(errmsg)
+        return v
+
+    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    def must_be_monotonic(cls, v):
+
+        difference = np.diff(v)
+
+        if not all(i >= 0. for i in difference):
+            errmsg = "The lambda schedule is not monotonic."
+            raise ValueError(errmsg)
+
+        return v
+
+    @validator('lambda_elec')
+    def check_naked_charges(cls, v, values):
+        if 'lambda_vdw' in values:
+            for inx, lam in enumerate(v):
+                if lam < 1 and values['lambda_vdw'][inx] == 1:
+                    errmsg = ("There are states along this lambda schedule "
+                              "where there are atoms with charges but no LJ "
+                              f"interactions: lambda {inx}: "
+                              f"elec {lam} vdW {values['lambda_vdw'][inx]}")
+                    raise ValueError(errmsg)
         return v
 
 

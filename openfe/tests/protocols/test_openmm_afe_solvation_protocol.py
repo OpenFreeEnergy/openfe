@@ -52,14 +52,36 @@ def test_incorrect_number_windows(val, default_settings):
               f"amount of lambda windows. Got {len(val['elec'])} elec lambda "
               f"windows, {len(val['vdw'])} vdw lambda windows, and "
               f"{len(val['restraints'])} restraints lambda windows.")
-    print(errmsg)
     lambda_settings = default_settings.lambda_settings
     lambda_settings.lambda_vdw = val['vdw']
     lambda_settings.lambda_restraints = val['restraints']
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec = val['elec']
-        print(lambda_settings)
 
+@pytest.mark.parametrize('val', [
+    {'elec': [0.0, 0.1, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 1.0]},
+])
+def test_monotonic_lambda_windows(val, default_settings):
+    errmsg = ("The lambda schedule is not monotonic.")
+    lambda_settings = default_settings.lambda_settings
+    lambda_settings.lambda_vdw = val['vdw']
+    lambda_settings.lambda_restraints = val['restraints']
+    with pytest.raises(ValueError, match=errmsg):
+        lambda_settings.lambda_elec = val['elec']
+
+@pytest.mark.parametrize('val', [
+    {'elec': [0.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_naked_charge(val, default_settings):
+    errmsg = ("There are states along this lambda schedule "
+              "where there are atoms with charges but no LJ "
+              f"interactions: lambda 0: "
+              f"elec {val['elec'][0]} vdW {val['vdw'][0]}")
+    lambda_settings = default_settings.lambda_settings
+    lambda_settings.lambda_vdw = val['vdw']
+    lambda_settings.lambda_restraints = val['restraints']
+    with pytest.raises(ValueError, match=errmsg):
+        lambda_settings.lambda_elec = val['elec']
 
 def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
