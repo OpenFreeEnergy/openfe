@@ -90,8 +90,12 @@ class LambdaSettings(SettingsBaseModel):
             it = iter(lambdas)
             the_len = len(next(it))
             if not all(len(l) == the_len for l in it):
-                raise ValueError('Components elec, vdw and restraints must'
-                                 'have equal amount of lambda windows')
+                errmsg = ("Components elec, vdw and restraints must have equal"
+                          f" amount of lambda windows. Got {len(v)} elec lambda"
+                          f" windows, {len(values['lambda_vdw'])} vdw lambda"
+                          f" windows, and {len(values['lambda_restraints'])}"
+                          " restraints lambda windows.")
+                raise ValueError(errmsg)
         return v
 
 

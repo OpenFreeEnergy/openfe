@@ -48,13 +48,17 @@ def test_incorrect_window_settings(val, default_settings):
     {'elec': [0.0, 0.1, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
 ])
 def test_incorrect_number_windows(val, default_settings):
-    errmsg = ("Components elec, vdw and restraints must have equal amount "
-             "of lambda windows")
+    errmsg = ("Components elec, vdw and restraints must have equal "
+              f"amount of lambda windows. Got {len(val['elec'])} elec lambda "
+              f"windows, {len(val['vdw'])} vdw lambda windows, and "
+              f"{len(val['restraints'])} restraints lambda windows.")
+    print(errmsg)
     lambda_settings = default_settings.lambda_settings
+    lambda_settings.lambda_vdw = val['vdw']
+    lambda_settings.lambda_restraints = val['restraints']
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec = val['elec']
-        lambda_settings.lambda_vdw = val['vdw']
-        lambda_settings.lambda_restraints = val['restraints']
+        print(lambda_settings)
 
 
 def test_create_default_protocol(default_settings):
