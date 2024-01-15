@@ -989,8 +989,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             return {
-                'nc': nc.as_path(),
-                'last_checkpoint': checkpoint.as_path(),
+                'nc': nc,
+                'last_checkpoint': checkpoint,
                 **analyzer.unit_results_dict
             }
         else:
