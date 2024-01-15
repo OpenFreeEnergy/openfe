@@ -789,7 +789,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
-            flatten_torsions=alchem_settings.flatten_torsions,
         )
 
         # 4. Create lambda schedule
