@@ -84,21 +84,6 @@ class LambdaSettings(SettingsBaseModel):
                 raise ValueError(errmsg)
         return v
 
-    @validator('lambda_elec')
-    def must_have_equal_number_elec_vdw_restraints_windows(cls, v, values):
-        if 'lambda_vdw' in values and 'lambda_restraints' in values:
-            lambdas = [v, values['lambda_vdw'], values['lambda_restraints']]
-            it = iter(lambdas)
-            the_len = len(next(it))
-            if not all(len(l) == the_len for l in it):
-                errmsg = ("Components elec, vdw and restraints must have equal"
-                          f" amount of lambda windows. Got {len(v)} elec lambda"
-                          f" windows, {len(values['lambda_vdw'])} vdw lambda"
-                          f" windows, and {len(values['lambda_restraints'])}"
-                          " restraints lambda windows.")
-                raise ValueError(errmsg)
-        return v
-
     @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
     def must_be_monotonic(cls, v):
 
@@ -110,8 +95,9 @@ class LambdaSettings(SettingsBaseModel):
 
         return v
 
-    @validator('lambda_elec')
+    @validator('lambda_elec', 'lambda_vdw')
     def check_naked_charges(cls, v, values):
+
         if 'lambda_vdw' in values:
             for inx, lam in enumerate(v):
                 if lam < 1 and values['lambda_vdw'][inx] == 1:
@@ -119,6 +105,14 @@ class LambdaSettings(SettingsBaseModel):
                               "where there are atoms with charges but no LJ "
                               f"interactions: lambda {inx}: "
                               f"elec {lam} vdW {values['lambda_vdw'][inx]}")
+                    raise ValueError(errmsg)
+        if 'lambda_elec' in values:
+            for inx, lam in enumerate(v):
+                if lam == 1 and values['lambda_elec'][inx] < 1:
+                    errmsg = ("There are states along this lambda schedule "
+                              "where there are atoms with charges but no LJ "
+                              f"interactions: lambda {inx}: "
+                              f"elec {values['lambda_elec'][inx]} vdW {lam}")
                     raise ValueError(errmsg)
         return v
 

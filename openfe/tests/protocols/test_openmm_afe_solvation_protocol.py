@@ -19,6 +19,7 @@ from openfe.protocols.openmm_afe import (
     AbsoluteSolvationVacuumUnit,
     AbsoluteSolvationProtocol,
 )
+
 from openfe.protocols.openmm_utils import system_validation
 
 
@@ -45,18 +46,44 @@ def test_incorrect_window_settings(val, default_settings):
         lambda_settings.lambda_restraints = val['restraints']
 
 @pytest.mark.parametrize('val', [
-    {'elec': [0.0, 0.1, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
+    {'elec': [0.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
 ])
-def test_incorrect_number_windows(val, default_settings):
-    errmsg = ("Components elec, vdw and restraints must have equal "
+def test_incorrect_number_windows(val, default_settings, benzene_modifications, tmpdir):
+    errmsg = ("Components elec and vdw must have equal "
               f"amount of lambda windows. Got {len(val['elec'])} elec lambda "
-              f"windows, {len(val['vdw'])} vdw lambda windows, and "
-              f"{len(val['restraints'])} restraints lambda windows.")
-    lambda_settings = default_settings.lambda_settings
-    lambda_settings.lambda_vdw = val['vdw']
-    lambda_settings.lambda_restraints = val['restraints']
+              f"windows and {len(val['vdw'])} vdw lambda windows.")
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent()
+    })
+    settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    settings.lambda_settings.lambda_elec = val['elec']
+    settings.lambda_settings.lambda_vdw = val['vdw']
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=settings,
+    )
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first vacuum unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    vac_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationVacuumUnit)]
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec = val['elec']
+        with tmpdir.as_cwd():
+            with mock.patch('rdkit.Chem.AllChem.EmbedMultipleConfs',
+                            return_value=0):
+                vac_sampler = vac_unit[0].run(dry=True)['debug']['sampler']
+
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, 0.1, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 1.0]},
@@ -64,10 +91,11 @@ def test_incorrect_number_windows(val, default_settings):
 def test_monotonic_lambda_windows(val, default_settings):
     errmsg = ("The lambda schedule is not monotonic.")
     lambda_settings = default_settings.lambda_settings
-    lambda_settings.lambda_vdw = val['vdw']
-    lambda_settings.lambda_restraints = val['restraints']
+
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec = val['elec']
+        lambda_settings.lambda_vdw = val['vdw']
+        lambda_settings.lambda_restraints = val['restraints']
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
@@ -78,10 +106,11 @@ def test_naked_charge(val, default_settings):
               f"interactions: lambda 0: "
               f"elec {val['elec'][0]} vdW {val['vdw'][0]}")
     lambda_settings = default_settings.lambda_settings
-    lambda_settings.lambda_vdw = val['vdw']
-    lambda_settings.lambda_restraints = val['restraints']
+
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec = val['elec']
+        lambda_settings.lambda_vdw = val['vdw']
+        lambda_settings.lambda_restraints = val['restraints']
 
 def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
