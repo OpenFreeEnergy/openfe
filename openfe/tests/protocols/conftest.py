@@ -16,7 +16,7 @@ def benzene_vacuum_system(benzene_modifications):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def benzene_system(benzene_modifications):
     return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
@@ -27,7 +27,7 @@ def benzene_system(benzene_modifications):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def benzene_complex_system(benzene_modifications, T4_protein_component):
     return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
@@ -38,14 +38,14 @@ def benzene_complex_system(benzene_modifications, T4_protein_component):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def toluene_vacuum_system(benzene_modifications):
     return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene']},
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def toluene_system(benzene_modifications):
     return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene'],
@@ -67,7 +67,7 @@ def toluene_complex_system(benzene_modifications, T4_protein_component):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def benzene_to_toluene_mapping(benzene_modifications):
     mapper = openfe.setup.LomapAtomMapper(element_change=False)
 

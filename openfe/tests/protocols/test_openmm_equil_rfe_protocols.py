@@ -431,11 +431,13 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
             assert sampler
 
 
-def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
-                              benzene_to_toluene_mapping, tmpdir):
+@pytest.fixture(scope='session')
+def tip4p_hybrid_factory(
+    benzene_system, toluene_system,
+    benzene_to_toluene_mapping, tmp_path_factory
+):
     """
-    Test that we can create a system with virtual sites in the
-    environment (waters)
+    Hybrid system with virtual sites in the environment (waters)
     """
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
@@ -458,61 +460,91 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
     )
     dag_unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)['debug']['sampler']
-        assert isinstance(sampler, MultiStateSampler)
+    shared_temp = tmp_path_factory.mktemp("tip4p_shared")
+    scratch_temp = tmp_path_factory.mktemp("tip4p_scratch")
 
-        # Get the htf and check
-        # 1. The number of particles in the system are as expected
-        #   - tot particles = old particles + new unique
-        # 2. The number of vs == number of waters
-        # 3. The vs parameters are as expected
-        htf = sampler._factory
+    dag_unit_result = dag_unit.run(
+            dry=True,
+            scratch_basepath=scratch_temp,
+            shared_basepath=shared_temp,
+    )
 
-        # Test 1
-        old_particle_count = htf._old_system.getNumParticles()
-        unique_new_count = len(htf._unique_new_atoms)
-        hybrid_particle_count = htf.hybrid_system.getNumParticles()
-        assert old_particle_count + unique_new_count == hybrid_particle_count
+    return dag_unit_result['debug']['sampler']._factory
 
-        # Test 2
-        num_waters = len(
-            [r for r in htf._old_topology.residues() if r.name =='HOH']
+
+def test_tip4p_particle_count(tip4p_hybrid_factory):
+    """
+    Check that the total number of particles in the system
+    are as expected.
+    """
+
+    htf = tip4p_hybrid_factory
+
+    old_particle_count = htf._old_system.getNumParticles()
+    unique_new_count = len(htf._unique_new_atoms)
+    hybrid_particle_count = htf.hybrid_system.getNumParticles()
+
+    assert old_particle_count + unique_new_count == hybrid_particle_count
+
+
+def test_tip4p_num_waters(tip4p_hybrid_factory):
+    """
+    Check that the number of virtual sites is equal the number of waters.
+    """
+
+    htf = tip4p_hybrid_factory
+
+    # Test 2
+    num_waters = len(
+        [r for r in htf._old_topology.residues() if r.name =='HOH']
+    )
+    virtual_sites = [
+        ix for ix in range(htf.hybrid_system.getNumParticles()) if
+        htf.hybrid_system.isVirtualSite(ix)
+    ]
+    assert num_waters == len(virtual_sites)
+
+
+def test_tip4p_check_vsite_parameters(tip4p_hybrid_factory):
+    """
+    Check that the virtual site parameters are those expected
+    as defined by the tip4p-ew parameters in openmmforcefields
+    """
+
+    htf = tip4p_hybrid_factory
+
+    virtual_sites = [
+        ix for ix in range(htf.hybrid_system.getNumParticles()) if
+        htf.hybrid_system.isVirtualSite(ix)
+    ]
+
+    # get the standard and custom nonbonded forces - one of each
+    nonbond = [f for f in htf.hybrid_system.getForces()
+               if isinstance(f, NonbondedForce)][0]
+
+    cust_nonbond = [f for f in htf.hybrid_system.getForces()
+                    if isinstance(f, CustomNonbondedForce)][0]
+
+    # loop through every virtual site and check that they have the
+    # expected tip4p parameters
+    for entry in virtual_sites:
+        vs = htf.hybrid_system.getVirtualSite(entry)
+        vs_mass = htf.hybrid_system.getParticleMass(entry)
+        assert ensure_quantity(vs_mass, 'openff').m == pytest.approx(0)
+        vs_weights = [vs.getWeight(ix) for ix in range(vs.getNumParticles())]
+        np.testing.assert_allclose(
+            vs_weights, [0.786646558, 0.106676721, 0.106676721]
         )
-        virtual_sites = [
-            ix for ix in range(htf.hybrid_system.getNumParticles()) if
-            htf.hybrid_system.isVirtualSite(ix)
-        ]
-        assert num_waters == len(virtual_sites)
+        c, s, e = nonbond.getParticleParameters(entry)
+        assert ensure_quantity(c, 'openff').m == pytest.approx(-1.04844)
+        assert ensure_quantity(s, 'openff').m == 1
+        assert ensure_quantity(e, 'openff').m == 0
 
-        # Test 3
-        # get the standard and custom nonbonded forces - one of each
-        nonbond = [f for f in htf.hybrid_system.getForces()
-                   if isinstance(f, NonbondedForce)][0]
+        s1, e1, s2, e2, i, j = cust_nonbond.getParticleParameters(entry)
 
-        cust_nonbond = [f for f in htf.hybrid_system.getForces()
-                        if isinstance(f, CustomNonbondedForce)][0]
-
-        # loop through every virtual site and check that they have the
-        # expected tip4p parameters
-        for entry in virtual_sites:
-            vs = htf.hybrid_system.getVirtualSite(entry)
-            vs_mass = htf.hybrid_system.getParticleMass(entry)
-            assert ensure_quantity(vs_mass, 'openff').m == pytest.approx(0)
-            vs_weights = [vs.getWeight(ix) for ix in range(vs.getNumParticles())]
-            np.testing.assert_allclose(
-                vs_weights, [0.786646558, 0.106676721, 0.106676721]
-            )
-            c, s, e = nonbond.getParticleParameters(entry)
-            assert ensure_quantity(c, 'openff').m == pytest.approx(-1.04844)
-            assert ensure_quantity(s, 'openff').m == 1
-            assert ensure_quantity(e, 'openff').m == 0
-
-            s1, e1, s2, e2, i, j = cust_nonbond.getParticleParameters(entry)
-
-            assert i == j == 0
-            assert s1 == s2 == 1
-            assert e1 == e2 == 0
+        assert i == j == 0
+        assert s1 == s2 == 1
+        assert e1 == e2 == 0
 
 
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
