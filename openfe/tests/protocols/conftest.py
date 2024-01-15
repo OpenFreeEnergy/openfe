@@ -27,7 +27,7 @@ def benzene_system(benzene_modifications):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def benzene_complex_system(benzene_modifications, T4_protein_component):
     return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['benzene'],
@@ -38,7 +38,7 @@ def benzene_complex_system(benzene_modifications, T4_protein_component):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def toluene_vacuum_system(benzene_modifications):
     return openfe.ChemicalSystem(
         {'ligand': benzene_modifications['toluene']},
