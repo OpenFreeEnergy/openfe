@@ -4,6 +4,8 @@ channels:
   - conda-forge
 dependencies:
   - duecredit
+  - kartograf>=1.0.0
+  - lomap2>=3.0.0
   - numpy<1.24
   - networkx
   - rdkit
@@ -13,18 +15,21 @@ dependencies:
   - pytest-cov
   - pytest-rerunfailures
   - pydantic >1
+  - pyyaml
   - coverage
   - cinnabar ==0.3.0
   - openff-toolkit>=0.13.0
   - openff-units==0.2.0
   - pint<0.22
   - openff-models>=0.0.5
+  - openfe-analysis>=0.2.0
   - click
   - typing-extensions
   - lomap2>=2.3.0
   - openmmtools
   - openmmforcefields>=0.11.2
   - perses
+  - pooch
   - py3dmol
   - plugcli
   - tqdm

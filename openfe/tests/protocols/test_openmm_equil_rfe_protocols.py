@@ -2,12 +2,14 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
 from io import StringIO
+import copy
 import numpy as np
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import json
 import pytest
 from unittest import mock
+from openff.units.openmm import to_openmm, from_openmm
 from openff.units import unit
 from importlib import resources
 import xml.etree.ElementTree as ET
@@ -24,8 +26,9 @@ import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
 from openfe.protocols.openmm_rfe.equil_rfe_methods import (
-        _validate_alchemical_components,
+        _validate_alchemical_components, _get_alchemical_charge_difference
 )
+from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
 from openfe.protocols.openmm_utils import system_creation
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openff.units.openmm import ensure_quantity
@@ -425,7 +428,6 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
             assert sampler
 
 
-
 def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
                               benzene_to_toluene_mapping, tmpdir):
     """
@@ -530,6 +532,12 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
                    if isinstance(f, NonbondedForce)]
         assert len(nonbond) == 1
 
+        # get the particle parameter offsets
+        c_offsets = {}
+        for i in range(nonbond[0].getNumParticleParameterOffsets()):
+            offset = nonbond[0].getParticleParameterOffset(i)
+            c_offsets[offset[1]] = ensure_quantity(offset[2], 'openff')
+
         # Here is a bit of exposition on what we're doing
         # HTF creates two sets of nonbonded forces, a standard one (for the
         # PME) and a custom one (for sterics).
@@ -556,30 +564,28 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
         #    particle charge).
         for i in range(hybrid_system.getNumParticles()):
             c, s, e = nonbond[0].getParticleParameters(i)
-            offsets = nonbond[0].getParticleParameterOffset(i)
-            # get the particle charge (c) and the chargeScale offset (c_offset)
+            # get the particle charge (c)
             c = ensure_quantity(c, 'openff')
-            c_offset = ensure_quantity(offsets[2], 'openff')
             # particle charge (c) is equal to molA particle charge
-            # offset (c_offset) is equal to -(molA particle charge)
+            # offset (c_offsets) is equal to -(molA particle charge)
             if i in htf._atom_classes['unique_old_atoms']:
                 idx = htf._hybrid_to_old_map[i]
                 np.testing.assert_allclose(c, benzene_rand_chg[idx])
-                np.testing.assert_allclose(c_offset, -benzene_rand_chg[idx])
+                np.testing.assert_allclose(c_offsets[i], -benzene_rand_chg[idx])
             # particle charge (c) is equal to 0
-            # offset (c_offset) is equal to molB particle charge
+            # offset (c_offsets) is equal to molB particle charge
             elif i in htf._atom_classes['unique_new_atoms']:
                 idx = htf._hybrid_to_new_map[i]
                 np.testing.assert_allclose(c, 0 * unit.elementary_charge)
-                np.testing.assert_allclose(c_offset, toluene_rand_chg[idx])
+                np.testing.assert_allclose(c_offsets[i], toluene_rand_chg[idx])
             # particle charge (c) is equal to molA particle charge
-            # offset (c_offset) is equalt to difference between molB and molA
+            # offset (c_offsets) is equal to difference between molB and molA
             elif i in htf._atom_classes['core_atoms']:
                 old_i = htf._hybrid_to_old_map[i]
                 new_i = htf._hybrid_to_new_map[i]
                 c_exp = toluene_rand_chg[new_i] - benzene_rand_chg[old_i]
                 np.testing.assert_allclose(c, benzene_rand_chg[old_i])
-                np.testing.assert_allclose(c_offset, c_exp)
+                np.testing.assert_allclose(c_offsets[i], c_exp)
 
 
 def test_virtual_sites_no_reassign(benzene_system, toluene_system,
@@ -1283,7 +1289,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-15.768768285032115)
+        assert est.m == pytest.approx(3.5531577581450953)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1291,7 +1297,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.03662634237353985)
+        assert est.m == pytest.approx(0.03431704941311493)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1341,13 +1347,6 @@ class TestProtocolResult:
         assert rpx1['eigenvalues'].shape == (11,)
         assert rpx1['matrix'].shape == (11, 11)
 
-    def test_get_replica_states(self, protocolresult):
-        rep = protocolresult.get_replica_states()
-
-        assert isinstance(rep, list)
-        assert len(rep) == 3
-        assert rep[0].shape == (6, 11)
-
     def test_equilibration_iterations(self, protocolresult):
         eq = protocolresult.equilibration_iterations()
 
@@ -1361,3 +1360,470 @@ class TestProtocolResult:
         assert isinstance(prod, list)
         assert len(prod) == 3
         assert all(isinstance(v, float) for v in prod)
+
+    def test_filenotfound_replica_states(self, protocolresult):
+        errmsg = "File could not be found"
+
+        with pytest.raises(ValueError, match=errmsg):
+            protocolresult.get_replica_states()
+
+@pytest.mark.parametrize('mapping_name,result', [
+    ["benzene_to_toluene_mapping", 0],
+    ["benzene_to_benzoic_mapping", 1],
+    ["benzene_to_aniline_mapping", -1],
+    ["aniline_to_benzene_mapping", 1],
+])
+def test_get_charge_difference(mapping_name, result, request):
+    mapping = request.getfixturevalue(mapping_name)
+    if result != 0:
+        ion = 'Na\+' if result == -1 else 'Cl\-'
+        wmsg = (f"A charge difference of {result} is observed "
+                "between the end states. This will be addressed by "
+                f"transforming a water into a {ion} ion")
+        with pytest.warns(UserWarning, match=wmsg):
+            val = _get_alchemical_charge_difference(
+                mapping, 'pme', True, openfe.SolventComponent()
+            )
+            assert result == pytest.approx(result)
+    else:
+        val = _get_alchemical_charge_difference(
+            mapping, 'pme', True, openfe.SolventComponent()
+        )
+        assert result == pytest.approx(result)
+
+
+def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
+    errmsg = "Explicit charge correction when not using PME"
+    with pytest.raises(ValueError, match=errmsg):
+        _get_alchemical_charge_difference(
+            benzene_to_benzoic_mapping,
+            'nocutoff', True, openfe.SolventComponent(),
+        )
+
+
+def test_get_charge_difference_no_corr(benzene_to_benzoic_mapping):
+    wmsg = ("A charge difference of 1 is observed between the end states. "
+            "No charge correction has been requested")
+    with pytest.warns(UserWarning, match=wmsg):
+        _get_alchemical_charge_difference(
+            benzene_to_benzoic_mapping,
+            'pme', False, openfe.SolventComponent(),
+        )
+
+
+def test_greater_than_one_charge_difference_error(aniline_to_benzoic_mapping):
+    errmsg = "A charge difference of 2"
+    with pytest.raises(ValueError, match=errmsg):
+        _get_alchemical_charge_difference(
+            aniline_to_benzoic_mapping,
+            'pme', True, openfe.SolventComponent(),
+        )
+
+
+@pytest.fixture(scope='session')
+def benzene_solvent_openmm_system(benzene_modifications):
+    smc = benzene_modifications['benzene']
+    offmol = smc.to_openff()
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+
+    system_generator = system_creation.get_system_generator(
+        forcefield_settings=settings.forcefield_settings,
+        thermo_settings=settings.thermo_settings,
+        system_settings=settings.system_settings,
+        cache=None,
+        has_solvent=True,
+    )
+
+    system_generator.create_system(
+        offmol.to_topology().to_openmm(),
+        molecules=[offmol],
+    )
+
+    modeller, _ = system_creation.get_omm_modeller(
+        protein_comp=None,
+        solvent_comp=openfe.SolventComponent(),
+        small_mols={smc: offmol},
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+
+    topology = modeller.getTopology()
+    positions = to_openmm(from_openmm(modeller.getPositions()))
+    system = system_generator.create_system(
+        topology,
+        molecules=[offmol]
+    )
+
+    return system, topology, positions
+
+
+@pytest.fixture(scope='session')
+def benzene_tip4p_solvent_openmm_system(benzene_modifications):
+    smc = benzene_modifications['benzene']
+    offmol = smc.to_openff()
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.forcefield_settings.forcefields = [
+        'amber/ff14SB.xml', 'amber/tip4pew_standard.xml', 'amber/phosaa10.xml'
+    ]
+    settings.solvation_settings.solvent_model = 'tip4pew'
+
+    system_generator = system_creation.get_system_generator(
+        forcefield_settings=settings.forcefield_settings,
+        thermo_settings=settings.thermo_settings,
+        system_settings=settings.system_settings,
+        cache=None,
+        has_solvent=True,
+    )
+
+    system_generator.create_system(
+        offmol.to_topology().to_openmm(),
+        molecules=[offmol],
+    )
+
+    modeller, _ = system_creation.get_omm_modeller(
+        protein_comp=None,
+        solvent_comp=openfe.SolventComponent(),
+        small_mols={smc: offmol},
+        omm_forcefield=system_generator.forcefield,
+        solvent_settings=settings.solvation_settings,
+    )
+
+    topology = modeller.getTopology()
+    positions = to_openmm(from_openmm(modeller.getPositions()))
+    system = system_generator.create_system(
+        topology,
+        molecules=[offmol]
+    )
+
+    return system, topology, positions
+
+
+@pytest.fixture
+def benzene_self_system_mapping(benzene_solvent_openmm_system):
+    """
+    A fictitious mapping of benzene to benzene where there is no
+    alchemical transformation (this technically doesn't work in practice
+    because the RFE protocol expects an alchemical component).
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    res = [r for r in topology.residues()]
+    benzene_res = [r for r in res if r.name == 'UNK'][0]
+    benzene_ids = [a.index for a in benzene_res.atoms()]
+    env_ids = [a.index for a in topology.atoms() if a.index not in benzene_ids]
+    all_ids = [a.index for a in topology.atoms()]
+
+    system_mapping = {
+        'new_to_old_atom_map': {i: i for i in all_ids},
+        'old_to_new_atom_map': {i: i for i in all_ids},
+        'new_to_old_core_atom_map': {i: i for i in benzene_ids},
+        'old_to_new_core_atom_map': {i: i for i in benzene_ids},
+        'old_to_new_env_atom_map': {i: i for i in env_ids},
+        'new_to_old_env_atom_map': {i: i for i in env_ids},
+        'old_mol_indices': benzene_ids,
+        'new_mol_indices': benzene_ids,
+    }
+
+    return system_mapping
+
+
+@pytest.mark.parametrize('ion, water', [
+    ['NA', 'SOL'],
+    ['NX', 'WAT'],
+])
+def test_get_ion_water_parameters_unknownresname(
+    ion, water, benzene_solvent_openmm_system
+):
+    system, topology, positions = benzene_solvent_openmm_system
+
+    errmsg = "Error encountered when attempting to explicitly handle"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers._get_ion_and_water_parameters(
+            topology, system,
+            ion_resname=ion, water_resname=water
+        )
+
+
+def test_get_alchemical_waters_no_waters(
+    benzene_solvent_openmm_system,
+):
+    system, topology, positions = benzene_solvent_openmm_system
+
+    errmsg = "There are no waters"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.get_alchemical_waters(
+            topology, positions, charge_difference=1,
+            distance_cutoff=2.0 * unit.nanometer
+        )
+
+
+def test_handle_alchemwats_incorrect_count(
+    benzene_solvent_openmm_system,
+):
+    """
+    Check that an error is thrown when charge_difference != len(water_resids)
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    errmsg = "There should be as many alchemical water residues:"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[1, 2, 3],
+            topology=topology,
+            system=system,
+            system_mapping={},
+            charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
+        )
+
+
+def test_handle_alchemwats_too_many_nbf(
+    benzene_solvent_openmm_system,
+):
+    """
+    Check that an error is thrown when there are multiple NonbondedForces
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    new_system = copy.deepcopy(system)
+    new_system.addForce(NonbondedForce())
+
+    errmsg = "Too many NonbondedForce forces"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[1,],
+            topology=topology,
+            system=new_system,
+            system_mapping={},
+            charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
+        )
+
+
+def test_handle_alchemwats_vsite_water(
+    benzene_tip4p_solvent_openmm_system,
+):
+    """
+    Check that an error is thrown when trying to use a 4 site
+    water as an alchemical species
+    """
+    system, topology, positions = benzene_tip4p_solvent_openmm_system
+
+    errmsg = "Non 3-site waters"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[1,],
+            topology=topology,
+            system=system,
+            system_mapping={},
+            charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
+        )
+
+
+def test_handle_alchemwats_incorrect_atom(
+    benzene_solvent_openmm_system,
+    benzene_self_system_mapping,
+):
+    """
+    Check that an error is thrown when charge_difference != len(water_resids)
+    """
+    system, topology, positions = benzene_solvent_openmm_system
+
+    # modify the charge of hydrogen atom 25
+    new_system = copy.deepcopy(system)  # protect the session scoped object
+    nbf = [i for i in new_system.getForces() if isinstance(i, NonbondedForce)][0]
+    c, s, e = nbf.getParticleParameters(25)
+    nbf.setParticleParameters(25, 1 * omm_unit.elementary_charge, s, e)
+
+    errmsg = "modifying an atom that doesn't match"
+
+    with pytest.raises(ValueError, match=errmsg):
+        topologyhelpers.handle_alchemical_waters(
+            water_resids=[5,],
+            topology=topology,
+            system=new_system,
+            system_mapping=benzene_self_system_mapping,
+            charge_difference=1,
+            solvent_component=openfe.SolventComponent(),
+        )
+
+
+def test_handle_alchemical_wats(
+    benzene_solvent_openmm_system,
+    benzene_self_system_mapping,
+):
+    system, topology, positions = benzene_solvent_openmm_system
+
+    n_env = len(benzene_self_system_mapping['old_to_new_env_atom_map'])
+    n_core = len(benzene_self_system_mapping['old_to_new_core_atom_map'])
+
+    topologyhelpers.handle_alchemical_waters(
+        water_resids=[5,],
+        topology=topology,
+        system=system,
+        system_mapping=benzene_self_system_mapping,
+        charge_difference=1,
+        solvent_component=openfe.SolventComponent(),
+    )
+
+    # check the mappings
+    old_new_env = benzene_self_system_mapping['old_to_new_env_atom_map']
+    old_new_core = benzene_self_system_mapping['old_to_new_core_atom_map']
+    assert len(old_new_env) == n_env - 3
+    assert old_new_env == benzene_self_system_mapping['new_to_old_env_atom_map']
+    assert len(old_new_core) == n_core + 3
+    assert old_new_core == benzene_self_system_mapping['new_to_old_core_atom_map']
+    expected_old_new_core = {i: i for i in range(12)} | {24: 24, 25: 25, 26: 26}
+    assert old_new_core == expected_old_new_core
+
+    # system parameters checks
+    nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
+    # check the oxygen parameters
+    i_chg, i_sig, i_eps, o_chg, h_chg = topologyhelpers._get_ion_and_water_parameters(
+        topology, system, 'NA', 'HOH',
+    )
+
+    charge, sigma, epsilon = nbf.getParticleParameters(24)
+    assert charge == 1.0 * omm_unit.elementary_charge == i_chg
+    assert sigma == i_sig
+    assert epsilon == i_eps
+
+    # check the hydrogen parameters
+    for i in [25, 26]:
+        charge, _, _ = nbf.getParticleParameters(i)
+        assert charge == 0.0 * omm_unit.elementary_charge
+
+
+def _assert_total_charge(system, atom_classes, chgA, chgB):
+    nonbond = [
+        f for f in system.getForces() if isinstance(f, NonbondedForce)
+    ]
+
+    offsets = {}
+    for i in range(nonbond[0].getNumParticleParameterOffsets()):
+        offset = nonbond[0].getParticleParameterOffset(i)
+        assert len(offset) == 5
+        offsets[offset[1]] = ensure_quantity(offset[2], 'openff')
+
+    stateA_charges = np.zeros(system.getNumParticles())
+    stateB_charges = np.zeros(system.getNumParticles())
+
+    for i in range(system.getNumParticles()):
+        # get the particle charge (c) and the chargeScale offset (c_offset)
+        c, s, e = nonbond[0].getParticleParameters(i)
+        c = ensure_quantity(c, 'openff')
+
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offset) is equal to -(molA particle charge)
+        if i in atom_classes['unique_old_atoms']:
+            stateA_charges[i] = c.m
+        # particle charge (c) is equal to 0
+        # offset (c_offset) is equal to molB particle charge
+        elif i in atom_classes['unique_new_atoms']:
+            stateB_charges[i] = offsets[i].m
+        # particle charge (c) is equal to molA particle charge
+        # offset (c_offset) is equal to difference between molB and molA
+        elif i in atom_classes['core_atoms']:
+            stateA_charges[i] = c.m
+            stateB_charges[i] = c.m + offsets[i].m
+        # an environment atom
+        else:
+            assert i in atom_classes['environment_atoms']
+            stateA_charges[i] = c.m
+            stateB_charges[i] = c.m
+
+    assert chgA == pytest.approx(np.sum(stateA_charges))
+    assert chgB == pytest.approx(np.sum(stateB_charges))
+
+
+def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, tmpdir):
+    stateA_system = openfe.ChemicalSystem(
+        {'ligand': benzene_to_benzoic_mapping.componentA,
+         'solvent': openfe.SolventComponent()}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {'ligand': benzene_to_benzoic_mapping.componentB,
+         'solvent': openfe.SolventComponent()}
+    )
+    solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    solv_settings.alchemical_settings.explicit_charge_correction = True
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=solv_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=stateA_system,
+        stateB=stateB_system,
+        mapping={'ligand': benzene_to_benzoic_mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+        htf = sampler._factory
+        _assert_total_charge(htf.hybrid_system,
+                             htf._atom_classes, 0, 0)
+
+        assert len(htf._atom_classes['core_atoms']) == 14
+        assert len(htf._atom_classes['unique_new_atoms']) == 3
+        assert len(htf._atom_classes['unique_old_atoms']) == 1
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('mapping_name,chgA,chgB,correction,core_atoms,new_uniq,old_uniq', [
+    ['benzene_to_aniline_mapping', 0, 1, False, 11, 4, 1],
+    ['aniline_to_benzene_mapping', 0, 0, True, 14, 1, 4],
+    ['aniline_to_benzene_mapping', 0, -1, False, 11, 1, 4],
+    ['benzene_to_benzoic_mapping', 0, 0, True, 14, 3, 1],
+    ['benzene_to_benzoic_mapping', 0, -1, False, 11, 3, 1],
+    ['benzoic_to_benzene_mapping', 0, 0, True, 14, 1, 3],
+    ['benzoic_to_benzene_mapping', 0, 1, False, 11, 1, 3],
+])
+def test_dry_run_complex_alchemwater_totcharge(
+    mapping_name, chgA, chgB, correction, core_atoms,
+    new_uniq, old_uniq, tmpdir, request, T4_protein_component,
+):
+
+    mapping = request.getfixturevalue(mapping_name)
+    stateA_system = openfe.ChemicalSystem(
+        {'ligand': mapping.componentA,
+         'solvent': openfe.SolventComponent(),
+         'protein': T4_protein_component}
+    )
+    stateB_system = openfe.ChemicalSystem(
+        {'ligand': mapping.componentB,
+         'solvent': openfe.SolventComponent(),
+         'protein': T4_protein_component}
+    )
+
+    solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    solv_settings.alchemical_settings.explicit_charge_correction = correction
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=solv_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=stateA_system,
+        stateB=stateB_system,
+        mapping={'ligand': mapping},
+    )
+    unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = unit.run(dry=True)['debug']['sampler']
+        htf = sampler._factory
+        _assert_total_charge(htf.hybrid_system,
+                             htf._atom_classes, chgA, chgB)
+
+        assert len(htf._atom_classes['core_atoms']) == core_atoms
+        assert len(htf._atom_classes['unique_new_atoms']) == new_uniq
+        assert len(htf._atom_classes['unique_old_atoms']) == old_uniq

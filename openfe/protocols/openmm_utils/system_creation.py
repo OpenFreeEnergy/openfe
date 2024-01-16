@@ -233,7 +233,8 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
             model=solvent_settings.solvent_model,
             padding=to_openmm(solvent_settings.solvent_padding),
             positiveIon=pos, negativeIon=neg,
-            ionicStrength=to_openmm(conc)
+            ionicStrength=to_openmm(conc),
+            neutralize=solvent_comp.neutralize,
         )
 
         all_resids = np.array(

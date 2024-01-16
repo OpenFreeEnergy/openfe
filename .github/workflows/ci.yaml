@@ -9,6 +9,7 @@ on:
   schedule:
     # At 07:00 UTC on Monday and Thursday.
     - cron: "0 7 * * *"
+  workflow_dispatch:
   release:
     types:
       - published
@@ -47,6 +48,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
+
       - name: "Setup Micromamba"
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -54,6 +59,8 @@ jobs:
           environment-name: openfe_env
           cache-environment: true
           cache-downloads: true
+          cache-environment-key: environment-${{ steps.date.outputs.date }}
+          cache-downloads-key: downloads-${{ steps.date.outputs.date }}
           create-args: >-
             python=${{ matrix.python-version }}
             pydantic=${{ matrix.pydantic-version }}
@@ -83,7 +90,7 @@ jobs:
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
-      - name: codecov
+      - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
                 && github.event_name == 'pull_request' }}
         uses: codecov/codecov-action@v3
@@ -92,3 +99,19 @@ jobs:
           file: coverage.xml
           fail_ci_if_error: False
           verbose: True
+          flags: fast-tests
+
+      - name: codecov-merge
+        # we only want to upload a slow report if
+        # 1) it isn't a schedule run
+        # 2) it wasn't from a PR (we don't run slow tests on PRs)
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
+                && github.event_name != 'schedule'            
+                && github.event_name != 'pull_request' }}     
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          fail_ci_if_error: False
+          verbose: True
+          flags: slow-tests

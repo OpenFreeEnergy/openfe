@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 from openff.units import unit
+from openff.models.types import FloatQuantity
 import os
 
 from gufe.settings import (
@@ -32,6 +33,7 @@ except ImportError:
 class AlchemicalSettings(SettingsBaseModel):
     class Config:
         extra = 'ignore'
+        arbitrary_types_allowed = True
 
     """Settings for the alchemical protocol
 
@@ -71,11 +73,23 @@ class AlchemicalSettings(SettingsBaseModel):
     at lambda 0 and old exceptions at lambda 1. If False they are present
     in the nonbonded force. Default False.
     """
-    flatten_torsions = False
+    explicit_charge_correction = False
     """
-    Whether to scale torsion terms involving unique atoms, such that at the
-    endstate the torsion term is turned off/on depending on the state the
-    unique atoms belong to. Default False.
+    Whether to explicitly account for a charge difference during the
+    alchemical transformation by transforming a water to a counterion
+    of the opposite charge of the formal charge difference.
+
+    Please note that this feature is currently in beta and poorly tested.
+
+    Absolute charge changes greater than 1 are
+    currently not supported.
+
+    Default False.
+    """
+    explicit_charge_correction_cutoff: FloatQuantity['nanometer'] = 0.8 * unit.nanometer
+    """
+    The minimum distance from the system solutes from which an
+    alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
 
 

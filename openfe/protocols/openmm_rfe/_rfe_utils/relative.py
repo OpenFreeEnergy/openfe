@@ -86,9 +86,7 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 interpolate_old_and_new_14s=False,
-                 flatten_torsions=False,
-                 **kwargs):
+                 interpolate_old_and_new_14s=False):
         """
         Initialize the Hybrid topology factory.
 
@@ -126,10 +124,6 @@ class HybridTopologyFactory:
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
             they are present in the nonbonded force.
-        flatten_torsions : bool, default False
-            If True, torsion terms involving `unique_new_atoms` will be
-            scaled such that at lambda=0,1, the torsion term is turned off/on
-            respectively. The opposite is true for `unique_old_atoms`.
         """
 
         # Assign system positions and force
@@ -148,11 +142,6 @@ class HybridTopologyFactory:
         # Other options
         self._use_dispersion_correction = use_dispersion_correction
         self._interpolate_14s = interpolate_old_and_new_14s
-
-        # TODO: re-implement this at some point
-        if flatten_torsions:
-            errmsg = "Flatten torsions option is not current implemented"
-            raise ValueError(errmsg)
 
         # Sofcore options
         self._softcore_alpha = softcore_alpha

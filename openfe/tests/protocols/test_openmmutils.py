@@ -5,10 +5,12 @@ from pathlib import Path
 import pytest
 import numpy as np
 from numpy.testing import assert_equal, assert_allclose
-from openmm import app, MonteCarloBarostat
+from openmm import app, MonteCarloBarostat, NonbondedForce
 from openmm import unit as ommunit
 from openmmtools import multistate
+from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
+from openff.units.openmm import ensure_quantity
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
@@ -25,43 +27,30 @@ def test_validate_timestep():
         settings_validation.validate_timestep(2.0, 4.0 * unit.femtoseconds)
 
 
-@pytest.mark.parametrize('e,p,ts,mc,es,ps', [
-    [1 * unit.nanoseconds, 5 * unit.nanoseconds, 4 * unit.femtoseconds,
-     250, 250000, 1250000],
-    [1 * unit.picoseconds, 1 * unit.picoseconds, 2 * unit.femtoseconds,
-     250, 500, 500],
+@pytest.mark.parametrize('s,ts,mc,es', [
+    [5 * unit.nanoseconds, 4 * unit.femtoseconds, 250, 1250000],
+    [1 * unit.nanoseconds, 4 * unit.femtoseconds, 250, 250000],
+    [1 * unit.picoseconds, 2 * unit.femtoseconds, 250, 500],
 ])
-def test_get_simsteps(e, p, ts, mc, es, ps):
-    equil_steps, prod_steps = settings_validation.get_simsteps(e, p, ts, mc)
+def test_get_simsteps(s, ts, mc, es):
+    sim_steps = settings_validation.get_simsteps(s, ts, mc)
 
-    assert equil_steps == es
-    assert prod_steps == ps
+    assert sim_steps == es
 
 
-@pytest.mark.parametrize('nametype, timelengths', [
-    ['Equilibration', [1.003 * unit.picoseconds, 1 * unit.picoseconds]],
-    ['Production', [1 * unit.picoseconds, 1.003 * unit.picoseconds]],
-])
-def test_get_simsteps_indivisible_simtime(nametype, timelengths):
-    errmsg = f"{nametype} time not divisible by timestep"
+def test_get_simsteps_indivisible_simtime():
+    errmsg = "Simulation time not divisible by timestep"
+    timelength = 1.003 * unit.picosecond
+    with pytest.raises(ValueError, match=errmsg):
+        settings_validation.get_simsteps(timelength, 2 * unit.femtoseconds, 100)
+
+
+def test_mc_indivisible():
+    errmsg = "Simulation time 1.0 ps should contain"
+    timelength = 1 * unit.picoseconds
     with pytest.raises(ValueError, match=errmsg):
         settings_validation.get_simsteps(
-                timelengths[0],
-                timelengths[1],
-                2 * unit.femtoseconds,
-                100)
-
-
-@pytest.mark.parametrize('nametype, timelengths', [
-    ['Equilibration', [1 * unit.picoseconds, 10 * unit.picoseconds]],
-    ['Production', [10 * unit.picoseconds,  1 * unit.picoseconds]],
-])
-def test_mc_indivisible(nametype, timelengths):
-    errmsg = f"{nametype} time 1.0 ps should contain"
-    with pytest.raises(ValueError, match=errmsg):
-        settings_validation.get_simsteps(
-                timelengths[0], timelengths[1],
-                2 * unit.femtoseconds, 1000)
+                timelength, 2 * unit.femtoseconds, 1000)
 
 
 def test_get_alchemical_components(benzene_modifications,
@@ -88,7 +77,7 @@ def test_get_alchemical_components(benzene_modifications,
 
 def test_duplicate_chemical_components(benzene_modifications):
     stateA = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
-                                    'B': benzene_modifications['toluene'],})
+                                    'B': benzene_modifications['toluene'], })
     stateB = openfe.ChemicalSystem({'A': benzene_modifications['toluene']})
 
     errmsg = "state A components B:"
@@ -137,7 +126,7 @@ def test_multiple_proteins(T4_protein_component):
 def test_get_components_gas(benzene_modifications):
 
     state = openfe.ChemicalSystem({'A': benzene_modifications['benzene'],
-                                   'B': benzene_modifications['toluene'],})
+                                   'B': benzene_modifications['toluene'], })
 
     s, p, mols = system_validation.get_components(state)
 
@@ -150,7 +139,7 @@ def test_components_solvent(benzene_modifications):
 
     state = openfe.ChemicalSystem({'S': openfe.SolventComponent(),
                                    'A': benzene_modifications['benzene'],
-                                   'B': benzene_modifications['toluene'],})
+                                   'B': benzene_modifications['toluene'], })
 
     s, p, mols = system_validation.get_components(state)
 
@@ -213,7 +202,7 @@ class TestFEAnalysis:
     
     def test_free_energies(self, analyzer):
         ret_dict = analyzer.unit_results_dict
-        assert len(ret_dict.items()) == 8
+        assert len(ret_dict.items()) == 7
         assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
         assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
         # forward and reverse (since we do this ourselves)
@@ -344,3 +333,42 @@ class TestSystemCreation:
         assert_equal(comp_resids[smc], np.array([164]))
         assert_equal(comp_resids[openfe.SolventComponent()],
                      np.linspace(165, len(resids)-1, len(resids)-165))
+
+    def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
+        ffsets, thermosets, systemsets = get_settings
+        generator = system_creation.get_system_generator(
+            ffsets, thermosets, systemsets, None, True
+        )
+
+        offmol = OFFMol.from_smiles('[O-]C=O')
+        offmol.generate_conformers()
+        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+        generator.create_system(offmol.to_topology().to_openmm(),
+                                molecules=[offmol])
+        model, comp_resids = system_creation.get_omm_modeller(
+            None,
+            openfe.SolventComponent(neutralize=False),
+            {smc: offmol},
+            generator.forcefield,
+            SolvationSettings(),
+        )
+
+        system = generator.create_system(
+            model.topology,
+            molecules=[offmol]
+        )
+
+        # Now let's check the total charge
+        nonbonded = [f for f in system.getForces()
+                     if isinstance(f, NonbondedForce)][0]
+
+        charge = 0 * ommunit.elementary_charge
+
+        for i in range(system.getNumParticles()):
+            c, s, e = nonbonded.getParticleParameters(i)
+            charge += c
+
+        charge = ensure_quantity(charge, 'openff')
+
+        assert pytest.approx(charge.m) == -1.0

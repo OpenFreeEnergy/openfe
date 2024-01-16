@@ -26,7 +26,9 @@ import logging
 from collections import defaultdict
 import uuid
 import warnings
+import json
 from itertools import chain
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
@@ -40,11 +42,13 @@ import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
 import mdtraj
+import subprocess
+from rdkit import Chem
 
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, ProteinComponent,
+    SmallMoleculeComponent, ProteinComponent, SolventComponent,
 )
 
 from .equil_rfe_settings import (
@@ -59,6 +63,7 @@ from ..openmm_utils import (
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
+from ...analysis import plotting
 from openfe.due import due, Doi
 
 
@@ -90,9 +95,85 @@ def _get_resname(off_mol) -> str:
     return names[0]
 
 
+def _get_alchemical_charge_difference(
+    mapping: LigandAtomMapping,
+    nonbonded_method: str,
+    explicit_charge_correction: bool,
+    solvent_component: SolventComponent
+) -> int:
+    """
+    Checks and returns the difference in formal charge between state A and B.
+
+    Raises
+    ------
+    ValueError
+      * If an explicit charge correction is attempted and the
+        nonbonded method is not PME.
+      * If the absolute charge difference is greater than one
+        and an explicit charge correction is attempted.
+    UserWarning
+      If there is any charge difference.
+
+    Parameters
+    ----------
+    mapping : dict[str, ComponentMapping]
+      Dictionary of mappings between transforming components.
+    nonbonded_method : str
+      The OpenMM nonbonded method used for the simulation.
+    explicit_charge_correction : bool
+      Whether or not to use an explicit charge correction.
+    solvent_component : openfe.SolventComponent
+      The SolventComponent of the simulation.
+
+    Returns
+    -------
+    int
+      The formal charge difference between states A and B.
+      This is defined as sum(charge state A) - sum(charge state B)
+    """
+    chg_A = Chem.rdmolops.GetFormalCharge(
+        mapping.componentA.to_rdkit()
+    )
+    chg_B = Chem.rdmolops.GetFormalCharge(
+        mapping.componentB.to_rdkit()
+    )
+
+    difference = chg_A - chg_B
+
+    if abs(difference) > 0:
+        if explicit_charge_correction:
+            if nonbonded_method.lower() != "pme":
+                errmsg = ("Explicit charge correction when not using PME is "
+                          "not currently supported.")
+                raise ValueError(errmsg)
+            if abs(difference) > 1:
+                errmsg = (f"A charge difference of {difference} is observed "
+                          "between the end states and an explicit charge  "
+                          "correction has been requested. Unfortunately "
+                          "only absolute differences of 1 are supported.")
+                raise ValueError(errmsg)
+
+            ion = {-1: solvent_component.positive_ion,
+                   1: solvent_component.negative_ion}[difference]
+            wmsg = (f"A charge difference of {difference} is observed "
+                    "between the end states. This will be addressed by "
+                    f"transforming a water into a {ion} ion")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+        else:
+            wmsg = (f"A charge difference of {difference} is observed "
+                    "between the end states. No charge correction has "
+                    "been requested, please account for this in your "
+                    "final results.")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+
+    return difference
+
+
 def _validate_alchemical_components(
-        alchemical_components: dict[str, list[Component]],
-        mapping: Optional[dict[str, ComponentMapping]],
+    alchemical_components: dict[str, list[Component]],
+    mapping: Optional[dict[str, ComponentMapping]],
 ):
     """
     Checks that the alchemical components are suitable for the RFE protocol.
@@ -159,7 +240,7 @@ def _validate_alchemical_components(
                     "No mass scaling is attempted in the hybrid topology, "
                     "the average mass of the two atoms will be used in the "
                     "simulation")
-                logger.warn(wmsg)
+                logger.warning(wmsg)
                 warnings.warn(wmsg)  # TODO: remove this once logging is fixed
 
 
@@ -297,8 +378,26 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         replica_states : List[npt.NDArray]
           List of replica states for each repeat
         """
-        replica_states = [pus[0].outputs['replica_states']
-                          for pus in self.data.values()]
+        def is_file(filename: str):
+            p = pathlib.Path(filename)
+            if not p.exists():
+                errmsg = f"File could not be found {p}"
+                raise ValueError(errmsg)
+            return p
+
+        replica_states = []
+
+        for pus in self.data.values():
+            nc = is_file(pus[0].outputs['nc'])
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / pus[0].outputs['last_checkpoint']).name
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode='r'
+            )
+            replica_states.append(
+                np.asarray(reporter.read_replica_thermodynamic_states())
+            )
+            reporter.close()
 
         return replica_states
 
@@ -538,13 +637,25 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep
         )
-        equil_steps, prod_steps = settings_validation.get_simsteps(
-            equil_length=sim_settings.equilibration_length,
-            prod_length=sim_settings.production_length,
-            timestep=timestep, mc_steps=mc_steps
+        equil_steps = settings_validation.get_simsteps(
+            sim_length=sim_settings.equilibration_length,
+            timestep=timestep, mc_steps=mc_steps,
+        )
+        prod_steps = settings_validation.get_simsteps(
+            sim_length=sim_settings.production_length,
+            timestep=timestep, mc_steps=mc_steps,
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
+
+        # Get the change difference between the end states
+        # and check if the charge correction used is appropriate
+        charge_difference = _get_alchemical_charge_difference(
+            mapping,
+            system_settings.nonbonded_method,
+            alchem_settings.explicit_charge_correction,
+            solvent_comp,
+        )
 
         # 1. Create stateA system
         # a. get a system generator
@@ -648,7 +759,21 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             fix_constraints=True,
         )
 
-        #  d. Finally get the positions
+        # d. if a charge correction is necessary, select alchemical waters
+        #    and transform them
+        if alchem_settings.explicit_charge_correction:
+            alchem_water_resids = _rfe_utils.topologyhelpers.get_alchemical_waters(
+                stateA_topology, stateA_positions,
+                charge_difference,
+                alchem_settings.explicit_charge_correction_cutoff,
+            )
+            _rfe_utils.topologyhelpers.handle_alchemical_waters(
+                alchem_water_resids, stateB_topology, stateB_system,
+                ligand_mappings, charge_difference,
+                solvent_comp,
+            )
+
+        #  e. Finally get the positions
         stateB_positions = _rfe_utils.topologyhelpers.set_and_check_new_positions(
             ligand_mappings, stateA_topology, stateB_topology,
             old_positions=ensure_quantity(stateA_positions, 'openmm'),
@@ -666,7 +791,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
-            flatten_torsions=alchem_settings.flatten_torsions,
         )
 
         # 4. Create lambda schedule
@@ -867,6 +991,37 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         else:
             return {'debug': {'sampler': sampler}}
 
+    @staticmethod
+    def analyse(where) -> dict:
+        # don't put energy analysis in here, it uses the open file reporter
+        # whereas structural stuff requires that the file handle is closed
+        analysis_out = where / 'structural_analysis.json'
+
+        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
+                              str(where), str(analysis_out)],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        if ret.returncode:
+            return {'structural_analysis_error': ret.stderr}
+
+        with open(analysis_out, 'rb') as f:
+            data = json.load(f)
+
+        savedir = pathlib.Path(where)
+        if d := data['protein_2D_RMSD']:
+            fig = plotting.plot_2D_rmsd(d)
+            fig.savefig(savedir / "protein_2D_RMSD.png")
+            plt.close(fig)
+            f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
+            f2.savefig(savedir / "ligand_COM_drift.png")
+            plt.close(f2)
+
+        f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
+        f3.savefig(savedir / "ligand_RMSD.png")
+        plt.close(f3)
+
+        return {'structural_analysis': data}
+
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
@@ -875,9 +1030,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             outputs = self.run(scratch_basepath=ctx.scratch,
                                shared_basepath=ctx.shared)
 
+        analysis_outputs = self.analyse(ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
-            **outputs
+            **outputs,
+            **analysis_outputs,
         }

@@ -552,8 +552,8 @@ def test_unit_tagging(benzene_solvation_dag, tmpdir):
             vac_repeats.add(ret.outputs['repeat_id'])
         else:
             solv_repeats.add(ret.outputs['repeat_id'])
-    assert vac_repeats == {0, 1, 2}
-    assert solv_repeats == {0, 1, 2}
+    # Repeat ids are random ints so just check their lengths
+    assert len(vac_repeats) == len(solv_repeats) == 3
 
 
 def test_gather(benzene_solvation_dag, tmpdir):
@@ -600,7 +600,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-3.00208997)
+        assert est.m == pytest.approx(-2.977553138764437)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -608,7 +608,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.1577349)
+        assert est.m == pytest.approx(0.19617297299036018)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -665,15 +665,6 @@ class TestProtocolResult:
         assert rpx1['matrix'].shape == (15, 15)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
-    def test_get_replica_states(self, key, protocolresult):
-        rep = protocolresult.get_replica_states()
-
-        assert isinstance(rep, dict)
-        assert isinstance(rep[key], list)
-        assert len(rep[key]) == 3
-        assert rep[key][0].shape == (251, 15)
-
-    @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_equilibration_iterations(self, key, protocolresult):
         eq = protocolresult.equilibration_iterations()
 
@@ -690,3 +681,10 @@ class TestProtocolResult:
         assert isinstance(prod[key], list)
         assert len(prod[key]) == 3
         assert all(isinstance(v, float) for v in prod[key])
+
+    def test_filenotfound_replica_states(self, protocolresult):
+        errmsg = "File could not be found"
+
+        with pytest.raises(ValueError, match=errmsg):
+            protocolresult.get_replica_states()
+

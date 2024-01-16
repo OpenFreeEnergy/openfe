@@ -28,8 +28,8 @@ Acknowledgements
 """
 from __future__ import annotations
 
+import pathlib
 import logging
-
 from collections import defaultdict
 import gufe
 from gufe.components import Component
@@ -38,8 +38,10 @@ import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
+from openmmtools import multistate
 from typing import Dict, Optional, Union
 from typing import Any, Iterable
+import uuid
 
 from gufe import (
     settings,
@@ -281,13 +283,41 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
           the thermodynamic cycle, with lists of replica states
           timeseries for each repeat of that simulation type.
         """
-        replica_states: dict[str, list[npt.NDArray]] = {}
+        replica_states: dict[str, list[npt.NDArray]] = {
+            'solvent': [], 'vacuum': []
+        }
+
+        def is_file(filename: str):
+            p = pathlib.Path(filename)
+
+            if not p.exists():
+                errmsg = f"File could not be found {p}"
+                raise ValueError(errmsg)
+
+            return p
+
+        def get_replica_state(nc, chk):
+            nc = is_file(nc)
+            dir_path = nc.parents[0]
+            chk = is_file(dir_path / chk).name
+
+            reporter = multistate.MultiStateReporter(
+                storage=nc, checkpoint_storage=chk, open_mode='r'
+            )
+
+            retval = np.asarray(reporter.read_replica_thermodynamic_states())
+            reporter.close()
+
+            return retval
 
         for key in ['solvent', 'vacuum']:
-            replica_states[key] = [
-                pus[0].outputs['replica_states']
-                for pus in self.data[key].values()
-            ]
+            for pus in self.data[key].values():
+                states = get_replica_state(
+                    pus[0].outputs['nc'],
+                    pus[0].outputs['last_checkpoint'],
+                )
+                replica_states[key].append(states)
+
         return replica_states
 
     def equilibration_iterations(self) -> dict[str, list[float]]:
@@ -527,7 +557,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
                 alchemical_components=alchem_comps,
-                generation=0, repeat_id=i,
+                generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
             )
@@ -541,7 +571,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 stateA=stateA, stateB=stateB,
                 settings=self.settings,
                 alchemical_components=alchem_comps,
-                generation=0, repeat_id=i,
+                generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
                       f"repeat {i} generation 0"),
             )

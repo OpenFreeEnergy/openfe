@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Optional
 from openff.units import unit
+from openff.models.types import FloatQuantity
 import os
 
 from gufe.settings import (
@@ -38,7 +39,7 @@ class SystemSettings(SettingsBaseModel):
     Method for treating nonbonded interactions, currently only PME and
     NoCutoff are allowed. Default PME.
     """
-    nonbonded_cutoff = 1.0 * unit.nanometer
+    nonbonded_cutoff: FloatQuantity['nanometer'] = 1.0 * unit.nanometer
     """
     Cutoff value for short range nonbonded interactions.
     Default 1.0 * unit.nanometer.
@@ -80,7 +81,7 @@ class SolvationSettings(SettingsBaseModel):
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
 
-    solvent_padding = 1.2 * unit.nanometer
+    solvent_padding: FloatQuantity['nanometer'] = 1.2 * unit.nanometer
     """Minimum distance from any solute atoms to the solvent box edge."""
 
     @validator('solvent_model')
@@ -152,7 +153,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
 
     Default `250`.
     """
-    online_analysis_target_error = 0.0 * unit.boltzmann_constant * unit.kelvin
+    online_analysis_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
     Target error for the online analysis measured in kT. Once the free energy
     is at or below this value, the simulation will be considered complete. A
@@ -222,7 +223,6 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
 class OpenMMEngineSettings(SettingsBaseModel):
     """OpenMM MD engine settings"""
 
-
     """
     TODO
     ----
@@ -242,11 +242,11 @@ class IntegratorSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    timestep = 4 * unit.femtosecond
+    timestep: FloatQuantity['femtosecond'] = 4 * unit.femtosecond
     """Size of the simulation timestep. Default 4 * unit.femtosecond."""
-    collision_rate = 1.0 / unit.picosecond
+    collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
-    n_steps = 250 * unit.timestep
+    n_steps = 250 * unit.timestep  # todo: IntQuantity
     """
     Number of integration timesteps between each time the MCMC move
     is applied. Default 250 * unit.timestep.
@@ -263,7 +263,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency = 25 * unit.timestep
+    barostat_frequency = 25 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
     Default 25 * unit.timestep.
@@ -311,7 +311,7 @@ class SimulationSettings(SettingsBaseModel):
 
     minimization_steps = 5000
     """Number of minimization steps to perform. Default 5000."""
-    equilibration_length: unit.Quantity
+    equilibration_length: FloatQuantity['nanosecond']
     """
     Length of the equilibration phase in units of time. The total number of
     steps from this equilibration length
@@ -319,7 +319,7 @@ class SimulationSettings(SettingsBaseModel):
     must be a multiple of the value defined for
     :class:`IntegratorSettings.n_steps`.
     """
-    production_length: unit.Quantity
+    production_length: FloatQuantity['nanosecond']
     """
     Length of the production phase in units of time. The total number of
     steps from this production length (i.e.
@@ -341,7 +341,7 @@ class SimulationSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval = 250 * unit.timestep
+    checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
     """
     Frequency to write the checkpoint file. Default 250 * unit.timestep.
     """
@@ -371,3 +371,49 @@ class SimulationSettings(SettingsBaseModel):
                       "intervals must be positive")
             raise ValueError(errmsg)
         return v
+
+
+class SimulationSettingsMD(SimulationSettings):
+    """
+    Settings for simulation control for plain MD simulations, including
+    writing outputs
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    equilibration_length_nvt: unit.Quantity
+    """
+    Length of the equilibration phase in the NVT ensemble in units of time. 
+    The total number of steps from this equilibration length
+    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`)
+    must be a multiple of the value defined for
+    :class:`IntegratorSettings.n_steps`.
+    """
+    # reporter settings
+    production_trajectory_filename = 'simulation.xtc'
+    """Path to the storage file for analysis. Default 'simulation.xtc'."""
+    trajectory_write_interval = 5000 * unit.timestep
+    """
+    Frequency to write the xtc file. Default 5000 * unit.timestep.
+    """
+    preminimized_structure = 'system.pdb'
+    """Path to the pdb file of the full pre-minimized system. Default 'system.pdb'."""
+    minimized_structure = 'minimized.pdb'
+    """Path to the pdb file of the system after minimization. 
+    Only the specified atom subset is saved. Default 'minimized.pdb'."""
+    equil_NVT_structure = 'equil_NVT.pdb'
+    """Path to the pdb file of the system after NVT equilibration. 
+    Only the specified atom subset is saved. Default 'equil_NVT.pdb'."""
+    equil_NPT_structure = 'equil_NPT.pdb'
+    """Path to the pdb file of the system after NPT equilibration. 
+    Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
+    checkpoint_storage_filename = 'checkpoint.chk'
+    """
+    Separate filename for the checkpoint file. Note, this should
+    not be a full path, just a filename. Default 'checkpoint.chk'.
+    """
+    log_output = 'simulation.log'
+    """
+    Filename for writing the log of the MD simulation, including timesteps,
+    energies, density, etc.
+    """
