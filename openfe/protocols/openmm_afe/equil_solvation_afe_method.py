@@ -518,6 +518,58 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                           "are not currently supported")
                 raise ValueError(errmsg)
 
+    @staticmethod
+    def _validate_lambda_schedule(
+            settings: AbsoluteSolvationSettings
+    ) -> None:
+        """
+        Checks that the lambda schedule is set up correctly.
+
+        Parameters
+        ----------
+        settings : AbsoluteSolvationSettings
+          Settings object.
+
+        Raises
+        ------
+        ValueError
+          If the number of lambda windows differs for electrostatics and sterics.
+          If the number of replicas does not match the number of lambda windows.
+          If there are states with naked charges.
+        """
+
+        lambda_elec = settings.lambda_settings.lambda_elec
+        lambda_vdw = settings.lambda_settings.lambda_vdw
+        n_replicas = settings.alchemsampler_settings.n_replicas
+
+        # Ensure that all lambda components have equal amount of windows
+        lambda_components = [lambda_vdw, lambda_elec]
+        it = iter(lambda_components)
+        the_len = len(next(it))
+        if not all(len(l) == the_len for l in it):
+            errmsg = (
+                "Components elec and vdw must have equal amount"
+                f" of lambda windows. Got {len(lambda_elec)} elec lambda"
+                f" windows and {len(lambda_vdw)} vdw lambda windows.")
+            raise ValueError(errmsg)
+
+        # Ensure that number of overall lambda windows matches number of lambda
+        # windows for individual components
+        if n_replicas != len(lambda_vdw):
+            errmsg = (f"Number of replicas {n_replicas} does not equal the"
+                      f" number of lambda windows {len(lambda_vdw)}")
+            raise ValueError(errmsg)
+
+        # Check if there are lambda windows with naked charges
+        for inx, lam in enumerate(lambda_elec):
+            if lam < 1 and lambda_vdw[inx] == 1:
+                errmsg = (
+                    "There are states along this lambda schedule "
+                    "where there are atoms with charges but no LJ "
+                    f"interactions: lambda {inx}: "
+                    f"elec {lam} vdW {lambda_vdw[inx]}")
+                raise ValueError(errmsg)
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -535,6 +587,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             stateA, stateB,
         )
         self._validate_alchemical_components(alchem_comps)
+
+        # Validate the lambda schedule
+        self._validate_lambda_schedule(self.settings)
 
         # Check nonbond & solvent compatibility
         solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method

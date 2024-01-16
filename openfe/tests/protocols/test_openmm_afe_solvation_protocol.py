@@ -45,72 +45,67 @@ def test_incorrect_window_settings(val, default_settings):
         lambda_settings.lambda_vdw = val['vdw']
         lambda_settings.lambda_restraints = val['restraints']
 
-@pytest.mark.parametrize('val', [
-    {'elec': [0.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
-])
-def test_incorrect_number_windows(val, default_settings, benzene_modifications, tmpdir):
-    errmsg = ("Components elec and vdw must have equal "
-              f"amount of lambda windows. Got {len(val['elec'])} elec lambda "
-              f"windows and {len(val['vdw'])} vdw lambda windows.")
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
-
-    stateB = ChemicalSystem({
-        'solvent': SolventComponent()
-    })
-    settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    settings.lambda_settings.lambda_elec = val['elec']
-    settings.lambda_settings.lambda_vdw = val['vdw']
-
-    protocol = openmm_afe.AbsoluteSolvationProtocol(
-        settings=settings,
-    )
-
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first vacuum unit
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
-    vac_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteSolvationVacuumUnit)]
-    with pytest.raises(ValueError, match=errmsg):
-        with tmpdir.as_cwd():
-            with mock.patch('rdkit.Chem.AllChem.EmbedMultipleConfs',
-                            return_value=0):
-                vac_sampler = vac_unit[0].run(dry=True)['debug']['sampler']
-
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, 0.1, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 1.0]},
 ])
 def test_monotonic_lambda_windows(val, default_settings):
-    errmsg = ("The lambda schedule is not monotonic.")
+    errmsg = "The lambda schedule is not monotonic."
     lambda_settings = default_settings.lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec = val['elec']
         lambda_settings.lambda_vdw = val['vdw']
         lambda_settings.lambda_restraints = val['restraints']
+
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
-def test_naked_charge(val, default_settings):
+def test_validate_lambda_schedule_naked_charge(val, default_settings):
     errmsg = ("There are states along this lambda schedule "
               "where there are atoms with charges but no LJ "
               f"interactions: lambda 0: "
               f"elec {val['elec'][0]} vdW {val['vdw'][0]}")
-    lambda_settings = default_settings.lambda_settings
-
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    default_settings.alchemsampler_settings.n_replicas = 2
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec = val['elec']
-        lambda_settings.lambda_vdw = val['vdw']
-        lambda_settings.lambda_restraints = val['restraints']
+        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_validate_lambda_schedule_nreplicas(val, default_settings):
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    n_replicas = 3
+    default_settings.alchemsampler_settings.n_replicas = n_replicas
+    errmsg = (f"Number of replicas {n_replicas} does not equal the"
+              f" number of lambda windows {len(val['vdw'])}")
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_validate_lambda_schedule_nwindows(val, default_settings):
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    n_replicas = 3
+    default_settings.alchemsampler_settings.n_replicas = n_replicas
+    errmsg = (
+        "Components elec and vdw must have equal amount"
+        f" of lambda windows. Got {len(val['elec'])} elec lambda"
+        f" windows and {len(val['vdw'])} vdw lambda windows.")
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+
 
 def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
@@ -131,7 +126,7 @@ def test_serialize_protocol(default_settings):
 
 
 def test_validate_solvent_endstates_protcomp(
-    benzene_modifications,T4_protein_component
+    benzene_modifications, T4_protein_component
 ):
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
@@ -146,7 +141,7 @@ def test_validate_solvent_endstates_protcomp(
     })
 
     with pytest.raises(ValueError, match="Protein components are not allowed"):
-        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_solvent_endstates_nosolvcomp_stateA(
@@ -165,7 +160,7 @@ def test_validate_solvent_endstates_nosolvcomp_stateA(
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateA"
     ):
-        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_solvent_endstates_nosolvcomp_stateB(
@@ -185,6 +180,7 @@ def test_validate_solvent_endstates_nosolvcomp_stateB(
         ValueError, match="No SolventComponent found in stateB"
     ):
         comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+
 
 def test_validate_alchem_comps_appearingB(benzene_modifications):
     stateA = ChemicalSystem({
@@ -242,7 +238,6 @@ def test_vac_bad_nonbonded(benzene_modifications):
     settings.vacuum_system_settings.nonbonded_method = 'pme'
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=settings)
 
-
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
         'solvent': SolventComponent()
@@ -251,7 +246,6 @@ def test_vac_bad_nonbonded(benzene_modifications):
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
     })
-
 
     with pytest.raises(ValueError, match='Only the nocutoff'):
         protocol.create(stateA=stateA, stateB=stateB, mapping=None)
@@ -389,7 +383,7 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     s.alchemsampler_settings.n_repeats = 1
     s.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     s.solvation_settings.solvent_model = 'tip4pew'
@@ -509,38 +503,6 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
             c, s = custom_elec.getParticleParameters(i)
             c = ensure_quantity(c, 'openff')
             assert pytest.approx(c) == prop_chgs[i]
-
-
-def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
-    s = AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
-    s.alchemsampler_settings.n_replicas = 12
-
-    protocol = AbsoluteSolvationProtocol(
-            settings=s,
-    )
-
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
-
-    stateB = ChemicalSystem({
-        'solvent': SolventComponent(),
-    })
-
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
-
-    with tmpdir.as_cwd():
-        errmsg = "Number of replicas 12"
-        with pytest.raises(ValueError, match=errmsg):
-            prot_units[0].run(dry=True)
-
 
 def test_high_timestep(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()

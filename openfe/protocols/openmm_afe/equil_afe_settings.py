@@ -95,27 +95,6 @@ class LambdaSettings(SettingsBaseModel):
 
         return v
 
-    @validator('lambda_elec', 'lambda_vdw')
-    def check_naked_charges(cls, v, values):
-
-        if 'lambda_vdw' in values:
-            for inx, lam in enumerate(v):
-                if lam < 1 and values['lambda_vdw'][inx] == 1:
-                    errmsg = ("There are states along this lambda schedule "
-                              "where there are atoms with charges but no LJ "
-                              f"interactions: lambda {inx}: "
-                              f"elec {lam} vdW {values['lambda_vdw'][inx]}")
-                    raise ValueError(errmsg)
-        if 'lambda_elec' in values:
-            for inx, lam in enumerate(v):
-                if lam == 1 and values['lambda_elec'][inx] < 1:
-                    errmsg = ("There are states along this lambda schedule "
-                              "where there are atoms with charges but no LJ "
-                              f"interactions: lambda {inx}: "
-                              f"elec {values['lambda_elec'][inx]} vdW {lam}")
-                    raise ValueError(errmsg)
-        return v
-
 
 class AbsoluteSolvationSettings(Settings):
     """
@@ -194,11 +173,3 @@ class AbsoluteSolvationSettings(Settings):
     Simulation control settings, including simulation lengths and
     record-keeping for the solvent transformation.
     """
-
-    def must_have_same_number_windows(cls, values):
-        n_elec = len(values['lambda_settings']['lambda_elec'])
-        n_replicas = values['alchemsampler_settings']['n_replicas']
-        if n_elec != n_replicas:
-            errmsg = "Number of lambda windows must equal number of replicas."
-            raise ValueError(errmsg)
-        return values

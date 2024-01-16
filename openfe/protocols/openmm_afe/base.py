@@ -418,25 +418,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas['lambda_electrostatics'] = lambda_elec
         lambdas['lambda_sterics'] = lambda_vdw
 
-        n_replicas = settings['sampler_settings'].n_replicas
-        # Ensure that all lambda components have equal amount of windows
-        lambda_components = [lambda_vdw, lambda_elec]
-        it = iter(lambda_components)
-        the_len = len(next(it))
-        if not all(len(l) == the_len for l in it):
-            errmsg = (
-                "Components elec and vdw must have equal amount"
-                f" of lambda windows. Got {len(lambda_elec)} elec lambda"
-                f" windows and {len(lambda_vdw)} vdw lambda windows.")
-            raise ValueError(errmsg)
-
-        # Ensure that number of overall lambda windows matches number of lambda
-        # windows for individual components
-        if n_replicas != (len(lambdas['lambda_sterics'])):
-            errmsg = (f"Number of replicas {n_replicas} "
-                      "does not equal the number of lambda windows ")
-            raise ValueError(errmsg)
-
         return lambdas
 
     def _add_restraints(self, system, topology, settings):
