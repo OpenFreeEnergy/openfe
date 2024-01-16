@@ -1,40 +1,36 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import os
-from io import StringIO
 import copy
-import numpy as np
-import gufe
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import json
-import pytest
-from unittest import mock
-from openff.units.openmm import to_openmm, from_openmm
-from openff.units import unit
-from importlib import resources
 import xml.etree.ElementTree as ET
+from importlib import resources
+from unittest import mock
 
+import gufe
+import mdtraj as mdt
+import numpy as np
+import pytest
+from openff.units import unit
+from openff.units.openmm import ensure_quantity
+from openff.units.openmm import to_openmm, from_openmm
 from openmm import (
     app, XmlSerializer, MonteCarloBarostat,
     NonbondedForce, CustomNonbondedForce
 )
 from openmm import unit as omm_unit
+from openmmforcefields.generators import SMIRNOFFTemplateGenerator
 from openmmtools.multistate.multistatesampler import MultiStateSampler
-import pathlib
 from rdkit import Chem
 from rdkit.Geometry import Point3D
-import mdtraj as mdt
 
 import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
-from openfe.protocols.openmm_rfe.equil_rfe_methods import (
-        _validate_alchemical_components, _get_alchemical_charge_difference
-)
 from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
+from openfe.protocols.openmm_rfe.equil_rfe_methods import (
+    _validate_alchemical_components, _get_alchemical_charge_difference
+)
 from openfe.protocols.openmm_utils import system_creation
-from openmmforcefields.generators import SMIRNOFFTemplateGenerator
-from openff.units.openmm import ensure_quantity
 
 
 def test_compute_platform_warn():
@@ -137,12 +133,12 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
     dag1 = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag2 = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
 
     repeat_ids = set()
@@ -156,7 +152,7 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
 
 
 @pytest.mark.parametrize('mapping', [
-    None, ['A', 'B'],
+    [], ['A', 'B'],
 ])
 def test_validate_alchemical_components_wrong_mappings(mapping):
     with pytest.raises(ValueError, match="A single LigandAtomMapping"):
@@ -193,7 +189,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=toluene_vacuum_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -237,7 +233,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     dag = protocol.create(
         stateA=benzene_vacuum_system,
         stateB=toluene_vacuum_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     unit = list(dag.protocol_units)[0]
 
@@ -263,7 +259,7 @@ def test_dry_many_molecules_solvent(
     dag = protocol.create(
         stateA=benzene_many_solv_system,
         stateB=toluene_many_solv_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     unit = list(dag.protocol_units)[0]
 
@@ -357,7 +353,7 @@ def test_dry_core_element_change(tmpdir):
     dag = protocol.create(
         stateA=openfe.ChemicalSystem({'ligand': benz,}),
         stateB=openfe.ChemicalSystem({'ligand': pyr,}),
-        mapping=[mapping],
+        mapping=mapping,
     )
 
     dag_unit = list(dag.protocol_units)[0]
@@ -393,7 +389,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -421,7 +417,7 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
     dag = protocol.create(stateA=benzene_system, stateB=toluene_system,
-                          mapping=[benzene_to_toluene_mapping])
+                          mapping=benzene_to_toluene_mapping)
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
@@ -456,7 +452,7 @@ def tip4p_hybrid_factory(
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -643,7 +639,7 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
     dag = protocol.create(
         stateA=openfe.ChemicalSystem({'l': benzene_smc,}),
         stateB=openfe.ChemicalSystem({'l': toluene_smc,}),
-        mapping=[mapping],
+        mapping=mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -737,7 +733,7 @@ def test_virtual_sites_no_reassign(benzene_system, toluene_system,
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -763,7 +759,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     dag = protocol.create(
         stateA=benzene_complex_system,
         stateB=toluene_complex_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -806,7 +802,7 @@ def test_hightimestep(benzene_vacuum_system,
     dag = p.create(
         stateA=benzene_vacuum_system,
         stateB=toluene_vacuum_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -837,7 +833,7 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
             dag = p.create(
                 stateA=benzene_vacuum_system,
                 stateB=toluene_vacuum_system,
-                mapping=[benzene_to_toluene_mapping],
+                mapping=benzene_to_toluene_mapping,
             )
             dag_unit = list(dag.protocol_units)[0]
             dag_unit.run(dry=True)
@@ -856,7 +852,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=[benzene_to_toluene_mapping],
+            mapping=benzene_to_toluene_mapping,
         )
 
 
@@ -873,7 +869,7 @@ def test_vaccuum_PME_error(benzene_vacuum_system, benzene_modifications,
         _ = p.create(
             stateA=benzene_vacuum_system,
             stateB=stateB,
-            mapping=[benzene_to_toluene_mapping],
+            mapping=benzene_to_toluene_mapping,
         )
 
 
@@ -896,7 +892,7 @@ def test_incompatible_solvent(benzene_system, benzene_modifications,
         _ = p.create(
             stateA=benzene_system,
             stateB=stateB,
-            mapping=[benzene_to_toluene_mapping],
+            mapping=benzene_to_toluene_mapping,
         )
 
 
@@ -917,7 +913,7 @@ def test_mapping_mismatch_A(benzene_system, toluene_system,
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping=[mapping],
+            mapping=mapping,
         )
 
 
@@ -937,7 +933,7 @@ def test_mapping_mismatch_B(benzene_system, toluene_system,
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_system,
-            mapping=[mapping],
+            mapping=mapping,
         )
 
 
@@ -951,7 +947,7 @@ def test_complex_mismatch(benzene_system, toluene_complex_system,
         _ = p.create(
             stateA=benzene_system,
             stateB=toluene_complex_system,
-            mapping=[benzene_to_toluene_mapping],
+            mapping=benzene_to_toluene_mapping,
         )
 
 
@@ -990,7 +986,7 @@ def test_protein_mismatch(benzene_complex_system, toluene_complex_system,
         _ = p.create(
             stateA=benzene_complex_system,
             stateB=alt_toluene_complex_system,
-            mapping=[benzene_to_toluene_mapping],
+            mapping=benzene_to_toluene_mapping,
         )
 
 
@@ -1015,7 +1011,7 @@ def test_element_change_warning(atom_mapping_basic_test_files):
     with pytest.warns(UserWarning, match="Element change"):
         _ = p.create(
             stateA=sys1, stateB=sys2,
-            mapping=[mapping],
+            mapping=mapping,
         )
 
 
@@ -1052,7 +1048,7 @@ def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
     with pytest.warns(UserWarning, match='0 : 4 deviates'):
         dag = protocol.create(
             stateA=sysA, stateB=toluene_vacuum_system,
-            mapping=[mapping],
+            mapping=mapping,
             )
         dag_unit = list(dag.protocol_units)[0]
         with tmpdir.as_cwd():
@@ -1069,7 +1065,7 @@ def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapp
 
     return protocol.create(
         stateA=benzene_system, stateB=toluene_system,
-        mapping=[benzene_to_toluene_mapping],
+        mapping=benzene_to_toluene_mapping,
     )
 
 
@@ -1343,7 +1339,7 @@ def tyk2_xml(tmp_path_factory):
     dag = protocol.create(
         stateA=openfe.ChemicalSystem({'ligand': lig23}),
         stateB=openfe.ChemicalSystem({'ligand': lig55}),
-        mapping=[mapping],
+        mapping=mapping,
     )
     pu = list(dag.protocol_units)[0]
 
@@ -1888,7 +1884,7 @@ def test_dry_run_alchemwater_solvent(benzene_to_benzoic_mapping, tmpdir):
     dag = protocol.create(
         stateA=stateA_system,
         stateB=stateB_system,
-        mapping=[benzene_to_benzoic_mapping],
+        mapping=benzene_to_benzoic_mapping,
     )
     unit = list(dag.protocol_units)[0]
 
@@ -1941,7 +1937,7 @@ def test_dry_run_complex_alchemwater_totcharge(
     dag = protocol.create(
         stateA=stateA_system,
         stateB=stateB_system,
-        mapping=[mapping],
+        mapping=mapping,
     )
     unit = list(dag.protocol_units)[0]
 
