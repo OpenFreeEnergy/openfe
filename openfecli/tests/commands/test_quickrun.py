@@ -1,6 +1,6 @@
 import pytest
 import click
-import importlib
+from importlib import resources
 import pathlib
 import json
 from click.testing import CliRunner
@@ -11,9 +11,8 @@ from gufe.tokenization import JSON_HANDLER
 
 @pytest.fixture
 def json_file():
-    with importlib.resources.path('openfecli.tests.data',
-                                  'transformation.json') as f:
-        json_file = str(f)
+    with resources.files('openfecli.tests.data') as d:
+        json_file = str(d / 'transformation.json')
 
     return json_file
 
@@ -58,9 +57,8 @@ def test_quickrun_output_file_exists(json_file):
 
 
 def test_quickrun_unit_error():
-    with importlib.resources.path('openfecli.tests.data',
-                                  'bad_transformation.json') as f:
-        json_file = str(f)
+    with resources.files('openfecli.tests.data') as d:
+        json_file = str(d / 'bad_transformation.json')
 
     runner = CliRunner()
     with runner.isolated_filesystem():

@@ -8,7 +8,7 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR,
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -21,8 +21,8 @@ def plan_rhfe_network_main(
 
     Parameters
     ----------
-    mapper : LigandAtomMapper
-        the mapper to use to generate the mapping
+    mapper : list[LigandAtomMapper]
+        list of mappers to use to generate the mapping
     mapping_scorer : Callable
         scorer, that evaluates the generated mappings
     ligand_network_planner : Callable
@@ -43,7 +43,7 @@ def plan_rhfe_network_main(
     )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
-        mappers=[mapper],
+        mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
     )
@@ -64,12 +64,16 @@ def plan_rhfe_network_main(
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
 )
+@YAML_OPTIONS.parameter(
+    multiple=False, required=False, default=None,
+    help=YAML_OPTIONS.kwargs["help"],
+)
 @OUTPUT_DIR.parameter(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
 @print_duration
-def plan_rhfe_network(molecules: List[str], output_dir: str):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -102,15 +106,6 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
 
     write("Parsing in Files: ")
 
-    from gufe import SolventComponent
-    from openfe.setup.atom_mapping.lomap_scorers import (
-        default_lomap_score,
-    )
-    from openfe.setup import LomapAtomMapper
-    from openfe.setup.ligand_network_planning import (
-        generate_minimal_spanning_network,
-    )
-
     # INPUT
     write("\tGot input: ")
 
@@ -120,27 +115,29 @@ def plan_rhfe_network(molecules: List[str], output_dir: str):
         + " ".join([str(sm) for sm in small_molecules])
     )
 
-    solvent = SolventComponent()
+    yaml_options = YAML_OPTIONS.get(yaml_settings)
+    mapper_obj = yaml_options.mapper
+    mapping_scorer = yaml_options.scorer
+    ligand_network_planner = yaml_options.ligand_network_planner
+    solvent = yaml_options.solvent
+
     write("\t\tSolvent: " + str(solvent))
     write("")
 
     write("Using Options:")
-    mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
     write("\tMapper: " + str(mapper_obj))
 
     # TODO:  write nice parameter
-    mapping_scorer = default_lomap_score
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO: write nice parameter
-    ligand_network_planner = generate_minimal_spanning_network
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 
     # DO
     write("Planning RHFE-Campaign:")
     alchemical_network, ligand_network = plan_rhfe_network_main(
-        mapper=mapper_obj,
+        mapper=[mapper_obj],
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,

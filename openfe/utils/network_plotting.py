@@ -16,12 +16,12 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 
-from typing import Dict, List, Tuple, Optional, Any, Union, cast
+from typing import Optional, Any, Union, cast
 from openfe.utils.custom_typing import (
     MPL_MouseEvent, MPL_FigureCanvasBase, MPL_Axes, TypeAlias
 )
 
-ClickLocation: TypeAlias = Tuple[Tuple[float, float], Tuple[Any, Any]]
+ClickLocation: TypeAlias = tuple[tuple[float, float], tuple[Any, Any]]
 
 
 class Node:
@@ -54,14 +54,14 @@ class Node:
         ax.add_patch(self.artist)
 
     @property
-    def extent(self) -> Tuple[float, float, float, float]:
+    def extent(self) -> tuple[float, float, float, float]:
         """extent of this node in matplotlib data coordinates"""
         bounds = self.artist.get_bbox().bounds
         return (bounds[0], bounds[0] + bounds[2],
                 bounds[1], bounds[1] + bounds[3])
 
     @property
-    def xy(self) -> Tuple[float, float]:
+    def xy(self) -> tuple[float, float]:
         """lower left (matplotlib data coordinates) position of this node"""
         return self.artist.xy
 
@@ -153,14 +153,14 @@ class Edge:
     """
     pickable = True
 
-    def __init__(self, node_artist1: Node, node_artist2: Node, data: Dict):
+    def __init__(self, node_artist1: Node, node_artist2: Node, data: dict):
         self.data = data
         self.node_artists = [node_artist1, node_artist2]
         self.artist = self._make_artist(node_artist1, node_artist2, data)
         self.picked = False
 
     def _make_artist(self, node_artist1: Node, node_artist2: Node,
-                     data: Dict) -> Any:
+                     data: dict) -> Any:
         xs, ys = self._edge_xs_ys(node_artist1, node_artist2)
         return Line2D(xs, ys, color='black', picker=True, zorder=-1)
 
@@ -238,7 +238,7 @@ class EventHandler:
     selected : Optional[Union[Node, Edge]]
         Object selected by a mouse click (after mouse is up), or None if no
         object has been selected in the graph.
-    click_location : Optional[Tuple[int, int]]
+    click_location : Optional[tuple[Optional[float], Optional[float]]]
         Cached location of the mousedown event, or None if mouse is up
     connections : List[int]
         list of IDs for connections to matplotlib canvas
@@ -247,15 +247,15 @@ class EventHandler:
         self.graph = graph
         self.active: Optional[Union[Node, Edge]] = None
         self.selected: Optional[Union[Node, Edge]] = None
-        self.click_location: Optional[Tuple[int, int]] = None
-        self.connections: List[int] = []
+        self.click_location: Optional[tuple[Optional[float], Optional[float]]] = None
+        self.connections: list[int] = []
 
     def connect(self, canvas: MPL_FigureCanvasBase):
         """Connect our methods to events in the matplotlib canvas"""
         self.connections.extend([
-            canvas.mpl_connect('button_press_event', self.on_mousedown),
-            canvas.mpl_connect('motion_notify_event', self.on_drag),
-            canvas.mpl_connect('button_release_event', self.on_mouseup),
+            canvas.mpl_connect('button_press_event', self.on_mousedown),  # type: ignore
+            canvas.mpl_connect('motion_notify_event', self.on_drag),  # type: ignore
+            canvas.mpl_connect('button_release_event', self.on_mouseup),  # type: ignore
         ])
 
     def disconnect(self, canvas: MPL_FigureCanvasBase):
@@ -346,11 +346,11 @@ class GraphDrawing:
         # TODO: use scale to scale up the positions?
         self.event_handler = EventHandler(self)
         self.graph = graph
-        self.nodes: Dict[Node, Any] = {}
-        self.edges: Dict[Tuple[Node, Node], Any] = {}
+        self.nodes: dict[Node, Any] = {}
+        self.edges: dict[tuple[Node, Node], Any] = {}
 
         if positions is None:
-            positions = nx.spring_layout(self.graph)
+            positions = nx.nx_agraph.graphviz_layout(self.graph, prog='neato')
 
         was_interactive = plt.isinteractive()
         plt.ioff()
@@ -378,7 +378,7 @@ class GraphDrawing:
     def _ipython_display_(self):  # -no-cov-
         return self.fig
 
-    def edges_for_node(self, node: Node) -> List[Edge]:
+    def edges_for_node(self, node: Node) -> list[Edge]:
         """List of edges for the given node"""
         edges = (list(self.graph.in_edges(node))
                  + list(self.graph.out_edges(node)))
@@ -410,7 +410,7 @@ class GraphDrawing:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-    def _register_node(self, node: Any, position: Tuple[float, float]):
+    def _register_node(self, node: Any, position: tuple[float, float]):
         """Create and register ``Node`` from NetworkX node and position"""
         if node in self.nodes:
             raise RuntimeError("node provided multiple times")
@@ -419,7 +419,7 @@ class GraphDrawing:
         self.nodes[node] = draw_node
         draw_node.register_artist(self.ax)
 
-    def _register_edge(self, edge: Tuple[Node, Node, Dict]):
+    def _register_edge(self, edge: tuple[Node, Node, dict]):
         """Create and register ``Edge`` from NetworkX edge information"""
         node1, node2, data = edge
         draw_edge = self.EdgeCls(self.nodes[node1], self.nodes[node2], data)

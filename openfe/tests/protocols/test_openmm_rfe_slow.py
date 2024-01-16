@@ -79,11 +79,18 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
         checkpoint = pur.outputs['last_checkpoint']
-        assert checkpoint == unit_shared / "checkpoint.nc"
-        assert checkpoint.exists()
+        assert checkpoint == "checkpoint.nc"
+        assert (unit_shared / checkpoint).exists()
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
+        assert (unit_shared / "structural_analysis.json").exists()
+
+    # Test results methods that need files present
+    results = p.gather([r])
+    states = results.get_replica_states()
+    assert len(states) == 1
+    assert states[0].shape[1] == 11
 
 
 @pytest.mark.integration  # takes ~7 minutes to run

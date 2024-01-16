@@ -11,18 +11,25 @@ For new users, we recommend the following two:
 Relative Free Energies CLI tutorial
 -----------------------------------
 
-The `Relative Free Energies with the OpenFE CLI <https://github.com/OpenFreeEnergy/ExampleNotebooks/blob/main/rbfe_tutorial/cli_tutorial.md>`_
+The :any:`Relative Free Energies with the OpenFE CLI <rbfe_cli_tutorial>`
 tutorial walks users through how to use the OpenFE command line to calculate
-relative hydration free energies from a small set of benzene modifications.
+relative binding free energies of various ligands against the TYK2 target.
 
-Associated with it is also a `notebook <https://github.com/OpenFreeEnergy/ExampleNotebooks/blob/main/rbfe_tutorial/python_tutorial.ipynb>`_
+Associated with it is also a :any:`notebook <rbfe_python_tutorial>`
 for how to achieve the same outcomes using the Python API.
 
 Python API Showcase
 -------------------
 
-Our `showcase notebook <https://github.com/OpenFreeEnergy/ExampleNotebooks/blob/main/openmm_rbfe/OpenFE_showcase_1_RBFE_of_T4lysozyme.ipynb>`_
+Our :any:`showcase notebook <showcase_notebook>`
 walks users through how to use the main components of OpenFE to create a
 relative binding free energy calculation.
 
 
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+
+    rbfe_cli_tutorial
+    rbfe_python_tutorial
+    showcase_notebook

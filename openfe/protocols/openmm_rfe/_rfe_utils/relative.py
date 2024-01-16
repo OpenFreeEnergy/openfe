@@ -15,7 +15,6 @@ import mdtraj as mdt
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class HybridTopologyFactory:
@@ -87,12 +86,7 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 softcore_electrostatics=True,
-                 softcore_electrostatics_alpha=0.3,
-                 softcore_sigma_Q=1.0,
-                 interpolate_old_and_new_14s=False,
-                 flatten_torsions=False,
-                 **kwargs):
+                 interpolate_old_and_new_14s=False):
         """
         Initialize the Hybrid topology factory.
 
@@ -126,20 +120,10 @@ class HybridTopologyFactory:
             Implement the softcore LJ as defined by Gapsys et al. JCTC 2012.
         softcore_LJ_v2_alpha : float, default 0.85
             Softcore alpha parameter for LJ v2
-        softcore_electrostatics : bool, default True
-            Use softcore electrostatics as defined by Gapsys et al. JCTC 2021.
-        softcore_electrostatics_alpha : float, default 0.3
-            Softcore alpha parameter for softcore electrostatics.
-        softcore_sigma_Q : float, default 1.0
-            Softcore sigma parameter for softcore electrostatics.
         interpolate_old_and_new_14s : bool, default False
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
             they are present in the nonbonded force.
-        flatten_torsions : bool, default False
-            If True, torsion terms involving `unique_new_atoms` will be
-            scaled such that at lambda=0,1, the torsion term is turned off/on
-            respectively. The opposite is true for `unique_old_atoms`.
         """
 
         # Assign system positions and force
@@ -159,11 +143,6 @@ class HybridTopologyFactory:
         self._use_dispersion_correction = use_dispersion_correction
         self._interpolate_14s = interpolate_old_and_new_14s
 
-        # TODO: re-implement this at some point
-        if flatten_torsions:
-            errmsg = "Flatten torsions option is not current implemented"
-            raise ValueError(errmsg)
-
         # Sofcore options
         self._softcore_alpha = softcore_alpha
         self._check_bounds(softcore_alpha, "softcore_alpha")  # [0,1] check
@@ -173,20 +152,12 @@ class HybridTopologyFactory:
             self._check_bounds(softcore_LJ_v2_alpha, "softcore_LJ_v2_alpha")
             self._softcore_LJ_v2_alpha = softcore_LJ_v2_alpha
 
-        self._softcore_electrostatics = softcore_electrostatics
-        if self._softcore_electrostatics:
-            self._softcore_electrostatics_alpha = softcore_electrostatics_alpha
-            self._check_bounds(softcore_electrostatics_alpha,
-                               "softcore_electrostatics_alpha")
-            self._softcore_sigma_Q = softcore_sigma_Q
-            self._check_bounds(softcore_sigma_Q, "softcore_sigma_Q")
-
         # TODO: end __init__ here and move everything else to
         # create_hybrid_system() or equivalent
 
         self._check_and_store_system_forces()
 
-        logger.info("creating hybrid system")
+        logger.info("Creating hybrid system")
         # Create empty system that will become the hybrid system
         self._hybrid_system = openmm.System()
 
@@ -209,7 +180,7 @@ class HybridTopologyFactory:
         # check for exceptions clashes between unique and env atoms
         self._validate_disjoint_sets()
 
-        logger.info("setting force field terms")
+        logger.info("Setting force field terms")
         # Copy constraints, checking to make sure they are not changing
         self._handle_constraints()
 
@@ -233,7 +204,7 @@ class HybridTopologyFactory:
 
         # Call each force preparation method to generate the actual
         # interactions that we need:
-        logger.info("adding forces")
+        logger.info("Adding forces")
         self._handle_harmonic_bonds()
 
         self._handle_harmonic_angles()
@@ -252,7 +223,7 @@ class HybridTopologyFactory:
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
         self._omm_hybrid_topology = self._create_hybrid_topology()
-        logger.info("DONE")
+        logger.info("Hybrid system created")
 
     @staticmethod
     def _check_bounds(value, varname, minmax=(0, 1)):
@@ -452,7 +423,6 @@ class HybridTopologyFactory:
             self._atom_classes['unique_new_atoms'].add(hybrid_idx)
 
         # The core atoms:
-        core_atoms = []
         for new_idx, old_idx in self._core_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -460,10 +430,9 @@ class HybridTopologyFactory:
                 errmsg = (f"there is an index collision in hybrid indices of "
                           f"the core atom map: {self._core_new_to_old_map}")
                 raise AssertionError(errmsg)
-            core_atoms.append(new_to_hybrid_idx)
+            self._atom_classes['core_atoms'].add(new_to_hybrid_idx)
 
         # The environment atoms:
-        env_atoms = []
         for new_idx, old_idx in self._env_new_to_old_map.items():
             new_to_hybrid_idx = self._new_to_hybrid_map[new_idx]
             old_to_hybrid_idx = self._old_to_hybrid_map[old_idx]
@@ -472,11 +441,7 @@ class HybridTopologyFactory:
                           f"the environment atom map: "
                           f"{self._env_new_to_old_map}")
                 raise AssertionError(errmsg)
-            env_atoms.append(new_to_hybrid_idx)
-
-        # TODO - this is weirdly done and double assignments - fix
-        self._atom_classes['core_atoms'] = set(core_atoms)
-        self._atom_classes['environment_atoms'] = set(env_atoms)
+            self._atom_classes['environment_atoms'].add(new_to_hybrid_idx)
 
     @staticmethod
     def _generate_dict_from_exceptions(force):

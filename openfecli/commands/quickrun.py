@@ -7,7 +7,7 @@ import pathlib
 
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write, print_duration
+from openfecli.utils import write, print_duration, configure_logger
 
 
 def _format_exception(exception) -> str:
@@ -60,6 +60,12 @@ def quickrun(transformation, work_dir, output):
     # avoid problems with output not showing if queueing system kills a job
     sys.stdout.reconfigure(line_buffering=True)
 
+    stdout_handler = logging.StreamHandler(sys.stdout)
+
+    configure_logger('gufekey', handler=stdout_handler)
+    configure_logger('gufe', handler=stdout_handler)
+    configure_logger('openfe', handler=stdout_handler)
+
     # silence the openmmtools.multistate API warning
     stfu = MsgIncludesStringFilter(
         "The openmmtools.multistate API is experimental and may change in "
@@ -75,7 +81,6 @@ def quickrun(transformation, work_dir, output):
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
 
-
     if work_dir is None:
         work_dir = pathlib.Path(os.getcwd())
     else:
@@ -87,7 +92,7 @@ def quickrun(transformation, work_dir, output):
     trans = gufe.Transformation.from_dict(dct)
     write("Planning simulations for this edge...")
     dag = trans.create()
-    write("Running the simulations...")
+    write("Starting the simulations for this edge...")
     dagresult = execute_DAG(dag,
                             shared_basedir=work_dir,
                             scratch_basedir=work_dir,
@@ -95,7 +100,7 @@ def quickrun(transformation, work_dir, output):
                             raise_error=False,
                             n_retries=2,
                             )
-    write("Done! Analyzing the results....")
+    write("Done with all simulations! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
     if dagresult.ok():
@@ -144,3 +149,6 @@ PLUGIN = OFECommandPlugin(
     section="Quickrun Executor",
     requires_ofe=(0, 3)
 )
+
+if __name__ == "__main__":
+    quickrun()

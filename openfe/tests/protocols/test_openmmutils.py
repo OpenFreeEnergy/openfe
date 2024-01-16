@@ -1,16 +1,21 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from importlib import resources
 from pathlib import Path
 import pytest
 import numpy as np
-from numpy.testing import assert_equal
-from openmm import app, MonteCarloBarostat
+from numpy.testing import assert_equal, assert_allclose
+from openmm import app, MonteCarloBarostat, NonbondedForce
 from openmm import unit as ommunit
+from openmmtools import multistate
+from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
+from openff.units.openmm import ensure_quantity
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
-    settings_validation, system_validation, system_creation
+    settings_validation, system_validation, system_creation,
+    multistate_analysis
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     SystemSettings, SolvationSettings,
@@ -22,43 +27,30 @@ def test_validate_timestep():
         settings_validation.validate_timestep(2.0, 4.0 * unit.femtoseconds)
 
 
-@pytest.mark.parametrize('e,p,ts,mc,es,ps', [
-    [1 * unit.nanoseconds, 5 * unit.nanoseconds, 4 * unit.femtoseconds,
-     250, 250000, 1250000],
-    [1 * unit.picoseconds, 1 * unit.picoseconds, 2 * unit.femtoseconds,
-     250, 500, 500],
+@pytest.mark.parametrize('s,ts,mc,es', [
+    [5 * unit.nanoseconds, 4 * unit.femtoseconds, 250, 1250000],
+    [1 * unit.nanoseconds, 4 * unit.femtoseconds, 250, 250000],
+    [1 * unit.picoseconds, 2 * unit.femtoseconds, 250, 500],
 ])
-def test_get_simsteps(e, p, ts, mc, es, ps):
-    equil_steps, prod_steps = settings_validation.get_simsteps(e, p, ts, mc)
+def test_get_simsteps(s, ts, mc, es):
+    sim_steps = settings_validation.get_simsteps(s, ts, mc)
 
-    assert equil_steps == es
-    assert prod_steps == ps
+    assert sim_steps == es
 
 
-@pytest.mark.parametrize('nametype, timelengths', [
-    ['Equilibration', [1.003 * unit.picoseconds, 1 * unit.picoseconds]],
-    ['Production', [1 * unit.picoseconds, 1.003 * unit.picoseconds]],
-])
-def test_get_simsteps_indivisible_simtime(nametype, timelengths):
-    errmsg = f"{nametype} time not divisible by timestep"
+def test_get_simsteps_indivisible_simtime():
+    errmsg = "Simulation time not divisible by timestep"
+    timelength = 1.003 * unit.picosecond
+    with pytest.raises(ValueError, match=errmsg):
+        settings_validation.get_simsteps(timelength, 2 * unit.femtoseconds, 100)
+
+
+def test_mc_indivisible():
+    errmsg = "Simulation time 1.0 ps should contain"
+    timelength = 1 * unit.picoseconds
     with pytest.raises(ValueError, match=errmsg):
         settings_validation.get_simsteps(
-                timelengths[0],
-                timelengths[1],
-                2 * unit.femtoseconds,
-                100)
-
-
-@pytest.mark.parametrize('nametype, timelengths', [
-    ['Equilibration', [1 * unit.picoseconds, 10 * unit.picoseconds]],
-    ['Production', [10 * unit.picoseconds,  1 * unit.picoseconds]],
-])
-def test_mc_indivisible(nametype, timelengths):
-    errmsg = f"{nametype} time 1.0 ps should contain"
-    with pytest.raises(ValueError, match=errmsg):
-        settings_validation.get_simsteps(
-                timelengths[0], timelengths[1],
-                2 * unit.femtoseconds, 1000)
+                timelength, 2 * unit.femtoseconds, 1000)
 
 
 def test_get_alchemical_components(benzene_modifications,
@@ -85,7 +77,7 @@ def test_get_alchemical_components(benzene_modifications,
 
 def test_duplicate_chemical_components(benzene_modifications):
     stateA = openfe.ChemicalSystem({'A': benzene_modifications['toluene'],
-                                    'B': benzene_modifications['toluene'],})
+                                    'B': benzene_modifications['toluene'], })
     stateB = openfe.ChemicalSystem({'A': benzene_modifications['toluene']})
 
     errmsg = "state A components B:"
@@ -134,7 +126,7 @@ def test_multiple_proteins(T4_protein_component):
 def test_get_components_gas(benzene_modifications):
 
     state = openfe.ChemicalSystem({'A': benzene_modifications['benzene'],
-                                   'B': benzene_modifications['toluene'],})
+                                   'B': benzene_modifications['toluene'], })
 
     s, p, mols = system_validation.get_components(state)
 
@@ -147,7 +139,7 @@ def test_components_solvent(benzene_modifications):
 
     state = openfe.ChemicalSystem({'S': openfe.SolventComponent(),
                                    'A': benzene_modifications['benzene'],
-                                   'B': benzene_modifications['toluene'],})
+                                   'B': benzene_modifications['toluene'], })
 
     s, p, mols = system_validation.get_components(state)
 
@@ -180,6 +172,97 @@ def get_settings():
     system_settings = SystemSettings()
 
     return forcefield_settings, thermo_settings, system_settings
+
+
+class TestFEAnalysis:
+
+    # Note: class scope _will_ cause this to segfault - the reporter has to close
+    @pytest.fixture(scope='function')
+    def reporter(self):
+        with resources.files('openfe.tests.data.openmm_rfe') as d:
+            ncfile = str(d / 'vacuum_nocoord.nc')
+
+        with resources.files('openfe.tests.data.openmm_rfe') as d:
+            chkfile = str(d / 'vacuum_nocoord_checkpoint.nc')
+
+        r = multistate.MultiStateReporter(
+            storage=ncfile, checkpoint_storage=chkfile
+        )
+        try:
+            yield r
+        finally:
+            r.close()
+    
+    @pytest.fixture()
+    def analyzer(self, reporter):
+        return multistate_analysis.MultistateEquilFEAnalysis(
+            reporter, sampling_method='repex',
+            result_units=unit.kilocalorie_per_mole,
+        )
+    
+    def test_free_energies(self, analyzer):
+        ret_dict = analyzer.unit_results_dict
+        assert len(ret_dict.items()) == 7
+        assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
+        assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
+        # forward and reverse (since we do this ourselves)
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['fractions'],
+            np.array([0.08988764, 0.191011, 0.292135, 0.393258, 0.494382,
+                      0.595506, 0.696629, 0.797753, 0.898876, 1.0]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['forward_DGs'].m,
+            np.array([-48.057326, -48.038367, -48.033994, -48.0228, -48.028532,
+                      -48.025258, -48.006349, -47.986304, -47.972138, -47.960623]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
+            np.array([0.07471 , 0.052914, 0.041508, 0.036613, 0.032827, 0.030489,
+                      0.028154, 0.026529, 0.025284, 0.023968]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
+            np.array([-47.823839, -47.833107, -47.845866, -47.858173, -47.883887,
+                      -47.915963, -47.93319, -47.939125, -47.949016, -47.960623]),
+            rtol=1e-04,
+        )
+        assert_allclose(
+            ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
+            np.array([0.081209, 0.055975, 0.044693, 0.038691, 0.034603, 0.031894,
+                      0.029417, 0.027082, 0.025316, 0.023968]),
+            rtol=1e-04,
+        )
+
+    def test_plots(self, analyzer, tmpdir):
+        with tmpdir.as_cwd():
+            analyzer.plot(filepath=Path('.'), filename_prefix='')
+            assert Path('forward_reverse_convergence.png').is_file()
+            assert Path('mbar_overlap_matrix.png').is_file()
+            assert Path('replica_exchange_matrix.png').is_file()
+            assert Path('replica_state_timeseries.png').is_file()
+
+    def test_plot_convergence_bad_units(self, analyzer):
+        
+        with pytest.raises(ValueError, match='Unknown plotting units'):
+            openfe.analysis.plotting.plot_convergence(
+                analyzer.forward_and_reverse_free_energies,
+                unit.nanometer,
+            )
+
+    def test_analyze_unknown_method_warning_and_error(self, reporter):
+
+        with pytest.warns(UserWarning, match='Unknown sampling method'):
+            ana = multistate_analysis.MultistateEquilFEAnalysis(
+                      reporter, sampling_method='replex',
+                      result_units=unit.kilocalorie_per_mole,
+                  )
+
+        with pytest.raises(ValueError, match="Exchange matrix"):
+            ana.replica_exchange_statistics
 
 
 class TestSystemCreation:
@@ -231,13 +314,14 @@ class TestSystemCreation:
         generator = system_creation.get_system_generator(
                 ffsets, thermosets, systemsets, None, True)
 
-        mol = benzene_modifications['toluene'].to_openff()
+        smc = benzene_modifications['toluene']
+        mol = smc.to_openff()
         generator.create_system(mol.to_topology().to_openmm(),
                                 molecules=[mol])
 
         model, comp_resids = system_creation.get_omm_modeller(
                 T4_protein_component, openfe.SolventComponent(),
-                [benzene_modifications['toluene'],],
+                {smc: mol},
                 generator.forcefield,
                 SolvationSettings())
 
@@ -246,6 +330,45 @@ class TestSystemCreation:
         assert resids[164].name == 'UNK'
         assert resids[165].name == 'HOH'
         assert_equal(comp_resids[T4_protein_component], np.linspace(0, 163, 164))
-        assert_equal(comp_resids[benzene_modifications['toluene']], np.array([164]))
+        assert_equal(comp_resids[smc], np.array([164]))
         assert_equal(comp_resids[openfe.SolventComponent()],
                      np.linspace(165, len(resids)-1, len(resids)-165))
+
+    def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
+        ffsets, thermosets, systemsets = get_settings
+        generator = system_creation.get_system_generator(
+            ffsets, thermosets, systemsets, None, True
+        )
+
+        offmol = OFFMol.from_smiles('[O-]C=O')
+        offmol.generate_conformers()
+        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+        generator.create_system(offmol.to_topology().to_openmm(),
+                                molecules=[offmol])
+        model, comp_resids = system_creation.get_omm_modeller(
+            None,
+            openfe.SolventComponent(neutralize=False),
+            {smc: offmol},
+            generator.forcefield,
+            SolvationSettings(),
+        )
+
+        system = generator.create_system(
+            model.topology,
+            molecules=[offmol]
+        )
+
+        # Now let's check the total charge
+        nonbonded = [f for f in system.getForces()
+                     if isinstance(f, NonbondedForce)][0]
+
+        charge = 0 * ommunit.elementary_charge
+
+        for i in range(system.getNumParticles()):
+            c, s, e = nonbonded.getParticleParameters(i)
+            charge += c
+
+        charge = ensure_quantity(charge, 'openff')
+
+        assert pytest.approx(charge.m) == -1.0
