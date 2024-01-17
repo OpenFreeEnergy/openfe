@@ -134,56 +134,65 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    online_analysis_interval: Optional[int] = 250
+    steps_per_iteration = 250 * unit.timestep  # todo: IntQuantity
     """
-    MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
+    Number of integration timesteps between each time the MCMC move
+    is applied. Default 250 * unit.timestep.
+    """
+    real_time_analysis_interval: Optional[int] = 250
+    """
+    MCMC steps (i.e. number of ``steps_per_iteration``) interval at which
     to perform an analysis of the free energies.
 
     At each interval, real time analysis data (e.g. current free energy
     estimate and timing data) will be written to a yaml file named
-    ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
-    current error in the estimate will also be assed and if it drops
-    below ``AlchemicalSamplerSettings.online_analysis_target_error``
+    ``<OutputSettings.output_name>_real_time_analysis.yaml``. The
+    current error in the estimate will also be assessed and if it drops
+    below ``AlchemicalSamplerSettings.early_termination_target_error``
     the simulation will be terminated.
 
     If ``None``, no real time analysis will be performed and the yaml
     file will not be written.
 
-    Must be a multiple of ``SimulationSettings.checkpoint_interval``
+    Must be a multiple of ``OutputSettings.checkpoint_interval``
 
     Default `250`.
+    
+    Example:
+    real_time_analysis_interval = 250
+    timestep = 4 fs
+    steps_per_iteration = 250 * 4 fs
+    --> The free energy would be analyzed every 250 ps (250 * 250 * 4 fs)
     """
-    online_analysis_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
+    early_termination_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
-    Target error for the online analysis measured in kT. Once the free energy
-    is at or below this value, the simulation will be considered complete. A
-    suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
+    Target error for the online analysis measured in kT. Once the MBAR error of
+     the free energy is at or below this value, the simulation will be 
+     considered complete. 
+     A suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
     shown to be effective in both hydration and binding free energy benchmarks.
     Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
     termination will occur.
     """
-    online_analysis_minimum_iterations = 500
+    real_time_analysis_minimum_iterations = 500
     """
-    Number of iterations which must pass before online analysis is
+    Number of sampling iterations which must pass before real time analysis is
     carried out. Default 500.
     """
-    n_repeats: int = 3
-    """
-    Number of independent repeats to run.  Default 3
-    """
-    flatness_criteria = 'logZ-flatness'
+
+    sams_flatness_criteria = 'logZ-flatness'
     """
     SAMS only. Method for assessing when to switch to asymptomatically
     optimal scheme.
     One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
     Default 'logZ-flatness'.
     """
-    gamma0 = 1.0
+    sams_gamma0 = 1.0
     """SAMS only. Initial weight adaptation rate. Default 1.0."""
     n_replicas = 11
     """Number of replicas to use. Default 11."""
 
-    @validator('flatness_criteria')
+    @validator('sams_flatness_criteria')
     def supported_flatness(cls, v):
         supported = [
             'logz-flatness', 'minimum-visits', 'histogram-flatness'
@@ -203,18 +212,18 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('n_repeats', 'n_replicas')
+    @validator('n_replicas')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = "n_repeats and n_replicas must be positive values"
+            errmsg = "n_replicas must be a positive value"
             raise ValueError(errmsg)
         return v
 
-    @validator('online_analysis_target_error', 'n_repeats',
-               'online_analysis_minimum_iterations', 'gamma0', 'n_replicas')
+    @validator('early_termination_target_error',
+               'real_time_minimum_iterations', 'sams_gamma0', 'n_replicas')
     def must_be_zero_or_positive(cls, v):
         if v < 0:
-            errmsg = ("Online analysis target error, minimum iteration "
+            errmsg = ("Early termination target error, minimum iteration "
                       "and SAMS gamm0 must be 0 or positive values.")
             raise ValueError(errmsg)
         return v
@@ -244,13 +253,8 @@ class IntegratorSettings(SettingsBaseModel):
 
     timestep: FloatQuantity['femtosecond'] = 4 * unit.femtosecond
     """Size of the simulation timestep. Default 4 * unit.femtosecond."""
-    collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
+    langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
-    n_steps = 250 * unit.timestep  # todo: IntQuantity
-    """
-    Number of integration timesteps between each time the MCMC move
-    is applied. Default 250 * unit.timestep.
-    """
     reassign_velocities = False
     """
     If True, velocities are reassigned from the Maxwell-Boltzmann
@@ -267,6 +271,10 @@ class IntegratorSettings(SettingsBaseModel):
     """
     Frequency at which volume scaling changes should be attempted.
     Default 25 * unit.timestep.
+    """
+    # remove_com =
+    """
+    
     """
 
     @validator('collision_rate', 'n_restart_attempts')
@@ -301,6 +309,50 @@ class IntegratorSettings(SettingsBaseModel):
         return v
 
 
+class OutputSettings(SettingsBaseModel):
+    """
+    Settings for simulation control, including lengths,
+    writing to disk, etc...
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+        # reporter settings
+        output_filename = 'simulation.nc'
+        """Path to the trajectory storage file. Default 'simulation.nc'."""
+        output_structure = 'hybrid_system.pdb'
+        """
+        Path of the output hybrid topology structure file. This is used
+        to visualise and further manipulate the system.
+        Default 'hybrid_system.pdb'.
+        """
+        output_indices = 'not water'
+        """
+        Selection string for which part of the system to write coordinates for.
+        Default 'not water'.
+        """
+        checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
+        """
+        Frequency to write the checkpoint file. Default 250 * unit.timestep.
+        """
+        checkpoint_storage = 'checkpoint.nc'
+        """
+        Separate filename for the checkpoint file. Note, this should
+        not be a full path, just a filename. Default 'checkpoint.nc'.
+        """
+        forcefield_cache: Optional[str] = 'db.json'
+        """
+        Filename for caching small molecule residue templates so they can be
+        later reused.
+        """
+
+        @validator('checkpoint_interval')
+        def must_be_positive(cls, v):
+            if v <= 0:
+                errmsg = "Checkpoint intervals must be positive"
+                raise ValueError(errmsg)
+            return v
+
 class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths,
@@ -327,34 +379,6 @@ class SimulationSettings(SettingsBaseModel):
     a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
     """
 
-    # reporter settings
-    output_filename = 'simulation.nc'
-    """Path to the trajectory storage file. Default 'simulation.nc'."""
-    output_structure = 'hybrid_system.pdb'
-    """
-    Path of the output hybrid topology structure file. This is used
-    to visualise and further manipulate the system.
-    Default 'hybrid_system.pdb'.
-    """
-    output_indices = 'not water'
-    """
-    Selection string for which part of the system to write coordinates for.
-    Default 'not water'.
-    """
-    checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
-    """
-    Frequency to write the checkpoint file. Default 250 * unit.timestep.
-    """
-    checkpoint_storage = 'checkpoint.nc'
-    """
-    Separate filename for the checkpoint file. Note, this should
-    not be a full path, just a filename. Default 'checkpoint.nc'.
-    """
-    forcefield_cache: Optional[str] = 'db.json'
-    """
-    Filename for caching small molecule residue templates so they can be
-    later reused.
-    """
 
     @validator('equilibration_length', 'production_length')
     def is_time(cls, v):
@@ -364,11 +388,10 @@ class SimulationSettings(SettingsBaseModel):
         return v
 
     @validator('minimization_steps', 'equilibration_length',
-               'production_length', 'checkpoint_interval')
+               'production_length')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("Minimization steps, MD lengths, and checkpoint "
-                      "intervals must be positive")
+            errmsg = ("Minimization steps, and MD lengths must be positive")
             raise ValueError(errmsg)
         return v
 
