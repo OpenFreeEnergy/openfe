@@ -136,12 +136,12 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
 
     vac_settings = PlainMDProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.simulation_settings.forcefield_cache = None
+    vac_settings.output_settings.forcefield_cache = None
 
     protocol = PlainMDProtocol(
             settings=vac_settings,
     )
-    assert protocol.settings.simulation_settings.forcefield_cache is None
+    assert protocol.settings.output_settings.forcefield_cache is None
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(

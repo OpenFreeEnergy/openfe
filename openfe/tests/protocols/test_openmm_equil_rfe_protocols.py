@@ -382,7 +382,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.n_repeats = 1
-    settings.simulation_settings.output_indices = 'resname UNK'
+    settings.output_settings.output_indices = 'resname UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -630,7 +630,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
     settings.n_repeats = 1
-    settings.simulation_settings.output_indices = 'protein or resname  UNK'
+    settings.output_settings.output_indices = 'protein or resname  UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,

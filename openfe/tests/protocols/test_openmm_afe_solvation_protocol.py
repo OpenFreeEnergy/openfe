@@ -336,7 +336,7 @@ def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
 def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.n_repeats = 1
-    s.solvent_simulation_settings.output_indices = "resname UNK"
+    s.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,

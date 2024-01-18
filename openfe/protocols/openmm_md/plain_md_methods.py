@@ -35,7 +35,7 @@ from gufe import (
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
     SolvationSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettingsMD,
+    IntegratorSettings, SimulationSettingsMD, OutputSettingsMD,
     RepeatSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
@@ -247,6 +247,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     def _run_MD(simulation: openmm.app.Simulation,
                 positions: omm_unit.Quantity,
                 simulation_settings: SimulationSettingsMD,
+                output_settings: OutputSettingsMD,
                 temperature: settings.ThermoSettings.temperature,
                 barostat_frequency: IntegratorSettings.barostat_frequency,
                 equil_steps_nvt: int,
@@ -267,6 +268,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Initial positions for the system.
         simulation_settings : SimulationSettingsMD
           Settings for MD simulation
+        output_settings: OutputSettingsMD
+          Settings for output of MD simulation
         temperature: settings.ThermoSettings.temperature
           temperature setting
         barostat_frequency: IntegratorSettings.barostat_frequency
@@ -300,7 +303,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Get the sub selection of the system to save coords for
         selection_indices = mdtraj.Topology.from_openmm(
-            simulation.topology).select(simulation_settings.output_indices)
+            simulation.topology).select(output_settings.output_indices)
 
         positions = to_openmm(from_openmm(
             simulation.context.getState(getPositions=True,
@@ -314,7 +317,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         traj.save_pdb(
-            shared_basepath / simulation_settings.minimized_structure
+            shared_basepath / output_settings.minimized_structure
         )
         # equilibrate
         # NVT equilibration
@@ -348,7 +351,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
         traj.save_pdb(
-            shared_basepath / simulation_settings.equil_NVT_structure
+            shared_basepath / output_settings.equil_NVT_structure
         )
 
         # NPT equilibration
@@ -380,7 +383,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
         traj.save_pdb(
-            shared_basepath / simulation_settings.equil_NPT_structure
+            shared_basepath / output_settings.equil_NPT_structure
         )
 
         # production
@@ -389,15 +392,15 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Setup the reporters
         simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / simulation_settings.production_trajectory_filename),
-            reportInterval=simulation_settings.trajectory_write_interval.m,
+            file=str(shared_basepath / output_settings.production_trajectory_filename),
+            reportInterval=output_settings.trajectory_write_interval.m,
             atomSubset=selection_indices))
         simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / simulation_settings.checkpoint_storage_filename),
-            reportInterval=simulation_settings.checkpoint_interval.m))
+            file=str(shared_basepath / output_settings.checkpoint_storage_filename),
+            reportInterval=output_settings.checkpoint_interval.m))
         simulation.reporters.append(openmm.app.StateDataReporter(
-            str(shared_basepath / simulation_settings.log_output),
-            simulation_settings.checkpoint_interval.m,
+            str(shared_basepath / output_settings.log_output),
+            output_settings.checkpoint_interval.m,
             step=True,
             time=True,
             potentialEnergy=True,
@@ -466,8 +469,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         system_settings: SystemSettings = protocol_settings.system_settings
         solvation_settings: SolvationSettings = \
             protocol_settings.solvation_settings
-        sim_settings: SimulationSettingsMD = \
-            protocol_settings.simulation_settings
+        sim_settings: SimulationSettingsMD = protocol_settings.simulation_settings
+        output_settings: OutputSettingsMD = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.integrator_settings.n_steps.m
         integrator_settings = protocol_settings.integrator_settings
@@ -494,8 +497,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # 1. Create stateA system
         # a. get a system generator
-        if sim_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / sim_settings.forcefield_cache
+        if output_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / output_settings.forcefield_cache
         else:
             ffcache = None
 
@@ -547,7 +550,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         # f. Save pdb of entire system
-        with open(shared_basepath / sim_settings.preminimized_structure, "w") as f:
+        with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
             openmm.app.PDBFile.writeFile(
                 stateA_topology, stateA_positions, file=f, keepIds=True
             )
@@ -577,6 +580,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 self._run_MD(simulation,
                              stateA_positions,
                              sim_settings,
+                             output_settings,
                              thermo_settings.temperature,
                              integrator_settings.barostat_frequency,
                              equil_steps_nvt,
@@ -592,12 +596,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         if not dry:  # pragma: no-cover
             return {
-                'system_pdb': shared_basepath / sim_settings.preminimized_structure,
-                'minimized_pdb': shared_basepath / sim_settings.minimized_structure,
-                'nvt_equil_pdb': shared_basepath / sim_settings.equil_NVT_structure,
-                'npt_equil_pdb': shared_basepath / sim_settings.equil_NPT_structure,
-                'nc': shared_basepath / sim_settings.production_trajectory_filename,
-                'last_checkpoint': shared_basepath / sim_settings.checkpoint_storage_filename,
+                'system_pdb': shared_basepath / output_settings.preminimized_structure,
+                'minimized_pdb': shared_basepath / output_settings.minimized_structure,
+                'nvt_equil_pdb': shared_basepath / output_settings.equil_NVT_structure,
+                'npt_equil_pdb': shared_basepath / output_settings.equil_NPT_structure,
+                'nc': shared_basepath / output_settings.production_trajectory_filename,
+                'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
         else:
             return {'debug': {'system': stateA_system}}

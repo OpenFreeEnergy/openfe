@@ -52,7 +52,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings, SystemSettings,
     SolvationSettings, AlchemicalSettings, LambdaSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings,
+    IntegratorSettings, SimulationSettings, OutputSettings,
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
@@ -415,12 +415,16 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             solvent_simulation_settings=SimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
+            ),
+            solvent_output_settings=OutputSettings(
                 output_filename='solvent.nc',
                 checkpoint_storage='solvent_checkpoint.nc',
             ),
             vacuum_simulation_settings=SimulationSettings(
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
+            ),
+            vacuum_output_setting=OutputSettings(
                 output_filename='vacuum.nc',
                 checkpoint_storage='vacuum_checkpoint.nc'
             ),
@@ -716,6 +720,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * simulation_settings : SimulationSettings
+            * output_settings: OutputSettings
         """
         prot_settings = self._inputs['settings']
 
@@ -730,6 +735,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
+        settings['output_settings'] = prot_settings.vacuum_output_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -802,6 +808,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * simulation_settings : SimulationSettings
+            * output_settings: OutputSettings
         """
         prot_settings = self._inputs['settings']
 
@@ -816,6 +823,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
+        settings['output_settings'] = prot_settings.solvent_output_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,

@@ -27,7 +27,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
     AlchemicalSamplerSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    SimulationSettings
+    SimulationSettings,
+    OutputSettings,
 )
 import numpy as np
 
@@ -176,11 +177,20 @@ class AbsoluteSolvationSettings(Settings):
     # Simulation run settings
     vacuum_simulation_settings: SimulationSettings
     """
-    Simulation control settings, including simulation lengths and
-    record-keeping for the vacuum transformation.
+    Simulation control settings, including simulation lengths
+    for the vacuum transformation.
     """
     solvent_simulation_settings: SimulationSettings
     """
-    Simulation control settings, including simulation lengths and
-    record-keeping for the solvent transformation.
+    Simulation control settings, including simulation lengths
+    for the solvent transformation.
     """
+    vacuum_output_settings: OutputSettings
+    """
+    Simulation output settings for the vacuum transformation.
+    """
+    solvent_output_settings: OutputSettings
+    """
+    Simulation output settings for the solvent transformation.
+    """
+

@@ -21,7 +21,8 @@ from gufe.settings import (
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings, SimulationSettings
+    OpenMMEngineSettings, IntegratorSettings, SimulationSettings,
+    OutputSettings,
 )
 
 try:
@@ -157,5 +158,9 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     # Simulation run settings
     simulation_settings: SimulationSettings
     """
-    Simulation control settings, including simulation lengths and record-keeping.
+    Simulation control settings, including simulation lengths.
+    """
+    output_settings: OutputSettings
+    """
+    Simulation output control settings.
     """

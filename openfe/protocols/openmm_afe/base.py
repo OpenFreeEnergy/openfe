@@ -53,7 +53,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     SolvationSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings, LambdaSettings,
+    IntegratorSettings, SimulationSettings, LambdaSettings, OutputSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
@@ -238,6 +238,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
           * simulation_settings : SimulationSettings
+          * output_settings: OutputSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
@@ -270,7 +271,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
         """
-        ffcache = settings['simulation_settings'].forcefield_cache
+        ffcache = settings['output_settings'].forcefield_cache
         if ffcache is not None:
             ffcache = self.shared_basepath / ffcache
 
@@ -536,7 +537,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         topology: app.Topology,
         positions: openmm.unit.Quantity,
-        simulation_settings: SimulationSettings,
+        output_settings: OutputSettings,
     ) -> multistate.MultiStateReporter:
         """
         Get a MultistateReporter for the simulation you are running.
@@ -545,8 +546,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         topology : app.Topology
           A Topology of the system being created.
-        simulation_settings : SimulationSettings
-          Settings for the simulation.
+        output_settings: OutputSettings
+          Output settings for the simulations
 
         Returns
         -------
@@ -556,16 +557,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         mdt_top = mdt.Topology.from_openmm(topology)
 
         selection_indices = mdt_top.select(
-                simulation_settings.output_indices
+                output_settings.output_indices
         )
 
-        nc = self.shared_basepath / simulation_settings.output_filename
-        chk = simulation_settings.checkpoint_storage
+        nc = self.shared_basepath / output_settings.output_filename
+        chk = output_settings.checkpoint_storage_filename
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=simulation_settings.checkpoint_interval.m,
+            checkpoint_interval=output_settings.checkpoint_interval.m,
             checkpoint_storage=chk,
         )
 
@@ -576,7 +577,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 mdt_top.subset(selection_indices),
             )
             traj.save_pdb(
-                self.shared_basepath / simulation_settings.output_structure
+                self.shared_basepath / output_settings.output_structure
             )
 
         return reporter
@@ -793,8 +794,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clean up the reporter file
-            fns = [self.shared_basepath / settings['simulation_settings'].output_filename,
-                   self.shared_basepath / settings['simulation_settings'].checkpoint_storage]
+            fns = [self.shared_basepath / settings['output_settings'].output_filename,
+                   self.shared_basepath / settings['output_settings'].checkpoint_storage_filename]
             for fn in fns:
                 os.remove(fn)
 
@@ -878,7 +879,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 11. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology, positions,
-            settings['simulation_settings'],
+            settings['output_settings'],
         )
 
         # Wrap in try/finally to avoid memory leak issues
@@ -925,8 +926,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 del integrator, sampler
 
         if not dry:
-            nc = self.shared_basepath / settings['simulation_settings'].output_filename
-            chk = settings['simulation_settings'].checkpoint_storage
+            nc = self.shared_basepath / settings['output_settings'].output_filename
+            chk = settings['output_settings'].checkpoint_storage_filename
             return {
                 'nc': nc,
                 'last_checkpoint': chk,

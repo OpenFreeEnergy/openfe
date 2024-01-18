@@ -312,7 +312,7 @@ class IntegratorSettings(SettingsBaseModel):
 
 class OutputSettings(SettingsBaseModel):
     """
-    Settings for simulation control, including lengths,
+    Settings for simulation output settings,
     writing to disk, etc...
     """
     class Config:
@@ -336,10 +336,10 @@ class OutputSettings(SettingsBaseModel):
         """
         Frequency to write the checkpoint file. Default 250 * unit.timestep.
         """
-        checkpoint_storage = 'checkpoint.nc'
+        checkpoint_storage_filename = 'checkpoint.chk'
         """
         Separate filename for the checkpoint file. Note, this should
-        not be a full path, just a filename. Default 'checkpoint.nc'.
+        not be a full path, just a filename. Default 'checkpoint.chk'.
         """
         forcefield_cache: Optional[str] = 'db.json'
         """
@@ -399,8 +399,7 @@ class SimulationSettings(SettingsBaseModel):
 
 class SimulationSettingsMD(SimulationSettings):
     """
-    Settings for simulation control for plain MD simulations, including
-    writing outputs
+    Settings for simulation control for plain MD simulations
     """
     class Config:
         arbitrary_types_allowed = True
@@ -413,6 +412,13 @@ class SimulationSettingsMD(SimulationSettings):
     must be a multiple of the value defined for
     :class:`AlchemicalSamplerSettings.steps_per_iteration`.
     """
+
+
+class OutputSettingsMD(OutputSettings):
+    """ Settings for simulation output settings for plain MD simulations."""
+    class Config:
+        arbitrary_types_allowed = True
+
     # reporter settings
     production_trajectory_filename = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
@@ -431,11 +437,6 @@ class SimulationSettingsMD(SimulationSettings):
     equil_NPT_structure = 'equil_NPT.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
     Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
-    checkpoint_storage_filename = 'checkpoint.chk'
-    """
-    Separate filename for the checkpoint file. Note, this should
-    not be a full path, just a filename. Default 'checkpoint.chk'.
-    """
     log_output = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,

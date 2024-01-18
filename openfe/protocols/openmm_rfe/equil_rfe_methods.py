@@ -55,7 +55,7 @@ from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings, SystemSettings,
     SolvationSettings, AlchemicalSettings, LambdaSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings
+    IntegratorSettings, SimulationSettings, OutputSettings,
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
@@ -634,6 +634,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         solvation_settings: SolvationSettings = protocol_settings.solvation_settings
         sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = protocol_settings.simulation_settings
+        output_settings: OutputSettings = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.alchemical_sampler_settings.steps_per_iteration.m
 
@@ -663,8 +664,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 1. Create stateA system
         # a. get a system generator
-        if sim_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / sim_settings.forcefield_cache
+        if output_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / output_settings.forcefield_cache
         else:
             ffcache = None
 
@@ -811,16 +812,16 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
         selection_indices = hybrid_factory.hybrid_topology.select(
-                sim_settings.output_indices
+                output_settings.output_indices
         )
 
         #  a. Create the multistate reporter
-        nc = shared_basepath / sim_settings.output_filename
-        chk = sim_settings.checkpoint_storage
+        nc = shared_basepath / output_settings.output_filename
+        chk = output_settings.checkpoint_storage_filename
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=sim_settings.checkpoint_interval.m,
+            checkpoint_interval=output_settings.checkpoint_interval.m,
             checkpoint_storage=chk,
         )
 
@@ -836,7 +837,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     hybrid_factory.hybrid_positions[selection_indices, :],
                     hybrid_factory.hybrid_topology.subset(selection_indices),
             ).save_pdb(
-                shared_basepath / sim_settings.output_structure,
+                shared_basepath / output_settings.output_structure,
                 bfactors=bfactors,
             )
 
@@ -955,8 +956,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             else:
                 # clean up the reporter file
-                fns = [shared_basepath / sim_settings.output_filename,
-                       shared_basepath / sim_settings.checkpoint_storage]
+                fns = [shared_basepath / output_settings.output_filename,
+                       shared_basepath / output_settings.checkpoint_storage_filename]
                 for fn in fns:
                     os.remove(fn)
         finally:

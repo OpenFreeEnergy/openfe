@@ -51,7 +51,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     s.system_settings.nonbonded_method = 'nocutoff'
     s.n_repeats = 1
     s.engine_settings.compute_platform = platform
-    s.simulation_settings.checkpoint_interval = 5 * unit.timestep
+    s.output_settings.checkpoint_interval = 5 * unit.timestep
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
@@ -107,7 +107,7 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     s.simulation_settings.production_length = 0.1 * unit.picosecond
     s.alchemical_sampler_settings.steps_per_iteration = 5 * unit.timestep
     s.n_repeats = 1
-    s.simulation_settings.checkpoint_interval = 5 * unit.timestep
+    s.output_settings.checkpoint_interval = 5 * unit.timestep
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
