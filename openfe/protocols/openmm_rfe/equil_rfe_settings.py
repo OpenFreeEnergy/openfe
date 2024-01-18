@@ -80,8 +80,8 @@ class AlchemicalSettings(SettingsBaseModel):
     turn_off_core_unique_exceptions = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
-    at lambda 0 and old exceptions at lambda 1. If False they are present
-    in the nonbonded force. Default False.
+    at lambda 0 and old exceptions at lambda 1 between unique atoms and core 
+    atoms. If False they are present in the nonbonded force. Default False.
     """
     explicit_charge_correction = False
     """

@@ -628,13 +628,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
+        alchem_sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
         lambda_settings: LambdaSettings = protocol_settings.lambda_settings
         system_settings: SystemSettings = protocol_settings.system_settings
         solvation_settings: SolvationSettings = protocol_settings.solvation_settings
         sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = protocol_settings.simulation_settings
         timestep = protocol_settings.integrator_settings.timestep
-        mc_steps = protocol_settings.integrator_settings.n_steps.m
+        mc_steps = protocol_settings.alchemical_sampler_settings.steps_per_iteration.m
 
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
@@ -788,8 +789,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_alpha=alchem_settings.softcore_alpha,
             softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
-            interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
-            flatten_torsions=alchem_settings.flatten_torsions,
+            interpolate_old_and_new_14s=alchem_settings.turn_off_core_unique_exceptions,
         )
 
         # 4. Create lambda schedule
@@ -862,7 +862,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
             collision_rate=to_openmm(integrator_settings.collision_rate),
-            n_steps=integrator_settings.n_steps.m,
+            n_steps=alchem_sampler_settings.steps_per_iteration.m,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
@@ -904,7 +904,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             reporter=reporter,
             lambda_protocol=lambdas,
             temperature=to_openmm(thermo_settings.temperature),
-            endstates=alchem_settings.unsampled_endstates,
+            endstates=alchem_settings.endstate_dispersion_correction,
             minimization_platform=platform.getName(),
         )
 

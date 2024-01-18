@@ -615,7 +615,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     def _get_integrator(
         self,
-        integrator_settings: IntegratorSettings
+        integrator_settings: IntegratorSettings,
+        alchemsampler_settings: AlchemicalSamplerSettings
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Return a LangevinDynamicsMove integrator
@@ -631,8 +632,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.collision_rate),
-            n_steps=integrator_settings.n_steps.m,
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
+            n_steps=alchemsampler_settings.steps_per_iteration.m,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
@@ -740,7 +741,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           if not a dry run.
         """
         # Get the relevant simulation steps
-        mc_steps = settings['integrator_settings'].n_steps.m
+        mc_steps = settings['sampler_settings'].steps_per_iteration.m
 
         equil_steps = settings_validation.get_simsteps(
             sim_length=settings['simulation_settings'].equilibration_length,
