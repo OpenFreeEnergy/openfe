@@ -221,7 +221,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
         return v
 
     @validator('early_termination_target_error',
-               'real_time_minimum_iterations', 'sams_gamma0', 'n_replicas')
+               'real_time_analysis_minimum_iterations', 'sams_gamma0', 'n_replicas')
     def must_be_zero_or_positive(cls, v):
         if v < 0:
             errmsg = ("Early termination target error, minimum iteration "
