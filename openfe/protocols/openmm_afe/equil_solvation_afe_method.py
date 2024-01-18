@@ -418,15 +418,15 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             ),
             solvent_output_settings=OutputSettings(
                 output_filename='solvent.nc',
-                checkpoint_storage='solvent_checkpoint.nc',
+                checkpoint_storage_filename='solvent_checkpoint.nc',
             ),
             vacuum_simulation_settings=SimulationSettings(
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
             ),
-            vacuum_output_setting=OutputSettings(
+            vacuum_output_settings=OutputSettings(
                 output_filename='vacuum.nc',
-                checkpoint_storage='vacuum_checkpoint.nc'
+                checkpoint_storage_filename='vacuum_checkpoint.nc'
             ),
         )
 

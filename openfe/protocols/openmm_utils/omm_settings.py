@@ -274,9 +274,9 @@ class IntegratorSettings(SettingsBaseModel):
     Default 25 * unit.timestep.
     """
     # remove_com =
-    """
-    
-    """
+    # """
+    #
+    # """
 
     @validator('langevin_collision_rate', 'n_restart_attempts')
     def must_be_positive_or_zero(cls, v):
@@ -318,41 +318,41 @@ class OutputSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-        # reporter settings
-        output_filename = 'simulation.nc'
-        """Path to the trajectory storage file. Default 'simulation.nc'."""
-        output_structure = 'hybrid_system.pdb'
-        """
-        Path of the output hybrid topology structure file. This is used
-        to visualise and further manipulate the system.
-        Default 'hybrid_system.pdb'.
-        """
-        output_indices = 'not water'
-        """
-        Selection string for which part of the system to write coordinates for.
-        Default 'not water'.
-        """
-        checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
-        """
-        Frequency to write the checkpoint file. Default 250 * unit.timestep.
-        """
-        checkpoint_storage_filename = 'checkpoint.chk'
-        """
-        Separate filename for the checkpoint file. Note, this should
-        not be a full path, just a filename. Default 'checkpoint.chk'.
-        """
-        forcefield_cache: Optional[str] = 'db.json'
-        """
-        Filename for caching small molecule residue templates so they can be
-        later reused.
-        """
+    # reporter settings
+    output_filename = 'simulation.nc'
+    """Path to the trajectory storage file. Default 'simulation.nc'."""
+    output_structure = 'hybrid_system.pdb'
+    """
+    Path of the output hybrid topology structure file. This is used
+    to visualise and further manipulate the system.
+    Default 'hybrid_system.pdb'.
+    """
+    output_indices = 'not water'
+    """
+    Selection string for which part of the system to write coordinates for.
+    Default 'not water'.
+    """
+    checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
+    """
+    Frequency to write the checkpoint file. Default 250 * unit.timestep.
+    """
+    checkpoint_storage_filename = 'checkpoint.chk'
+    """
+    Separate filename for the checkpoint file. Note, this should
+    not be a full path, just a filename. Default 'checkpoint.chk'.
+    """
+    forcefield_cache: Optional[str] = 'db.json'
+    """
+    Filename for caching small molecule residue templates so they can be
+    later reused.
+    """
 
-        @validator('checkpoint_interval')
-        def must_be_positive(cls, v):
-            if v <= 0:
-                errmsg = "Checkpoint intervals must be positive"
-                raise ValueError(errmsg)
-            return v
+    @validator('checkpoint_interval')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = "Checkpoint intervals must be positive"
+            raise ValueError(errmsg)
+        return v
 
 class SimulationSettings(SettingsBaseModel):
     """
@@ -427,7 +427,8 @@ class OutputSettingsMD(OutputSettings):
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
     preminimized_structure = 'system.pdb'
-    """Path to the pdb file of the full pre-minimized system. Default 'system.pdb'."""
+    """Path to the pdb file of the full pre-minimized system. 
+    Default 'system.pdb'."""
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""

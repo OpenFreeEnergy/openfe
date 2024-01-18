@@ -36,9 +36,9 @@ class TestOMMSettingsFromStrings:
 
         assert s.timestep == 3.0 * unit.femtosecond
 
-        s.collision_rate = '1.1 / ps'
+        s.langevin_collision_rate = '1.1 / ps'
 
-        assert s.collision_rate == 1.1 / unit.picosecond
+        assert s.langevin_collision_rate == 1.1 / unit.picosecond
 
         # todo: nsteps, barostat frequency require IntQuantity
 

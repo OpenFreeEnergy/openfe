@@ -131,6 +131,7 @@ class PlainMDProtocol(gufe.Protocol):
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
+            output_settings=OutputSettingsMD(),
             repeat_settings=RepeatSettings(),
         )
 
@@ -563,7 +564,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         # 11. Set the integrator
         integrator = openmm.LangevinMiddleIntegrator(
             to_openmm(thermo_settings.temperature),
-            to_openmm(integrator_settings.collision_rate),
+            to_openmm(integrator_settings.langevin_collision_rate),
             to_openmm(timestep),
         )
 
