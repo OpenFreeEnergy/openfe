@@ -180,7 +180,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
     vac_settings.alchemical_sampler_settings.sampler_method = method
-    vac_settings.alchemical_sampler_settings.n_repeats = 1
+    vac_settings.n_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -381,7 +381,7 @@ def test_dry_run_ligand(benzene_system, toluene_system,
     # this might be a bit time consuming
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
-    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.n_repeats = 1
     settings.simulation_settings.output_indices = 'resname UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -413,7 +413,7 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
     Check that even if conformer generation fails, we can still perform a sim
     """
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.n_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
@@ -470,7 +470,7 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
     """
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.alchemical_sampler_settings.n_repeats = 1
+    vac_settings.n_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -629,7 +629,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     # this will be very time consuming
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
-    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.n_repeats = 1
     settings.simulation_settings.output_indices = 'protein or resname  UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -1211,7 +1211,7 @@ def tyk2_xml(tmp_path_factory):
     settings.forcefield_settings.small_molecule_forcefield = 'openff-2.0.0'
     settings.system_settings.nonbonded_method = 'nocutoff'
     settings.forcefield_settings.hydrogen_mass = 3.0
-    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.n_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 

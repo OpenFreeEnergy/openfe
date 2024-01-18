@@ -448,6 +448,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           a set of default settings
         """
         return RelativeHybridTopologyProtocolSettings(
+            n_repeats=settings.n_repeats,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
@@ -497,7 +498,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Anames = ','.join(c.name for c in alchem_comps['stateA'])
         Bnames = ','.join(c.name for c in alchem_comps['stateB'])
         # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.alchemical_sampler_settings.n_repeats
+        n_repeats = self.settings.n_repeats
         units = [RelativeHybridTopologyProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
@@ -883,8 +884,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 hybrid_factory=hybrid_factory,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
                 online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
-                flatness_criteria=sampler_settings.flatness_criteria,
-                gamma0=sampler_settings.gamma0,
+                flatness_criteria=sampler_settings.sams_flatness_criteria,
+                gamma0=sampler_settings.sams_gamma0,
             )
         elif sampler_settings.sampler_method.lower() == 'independent':
             sampler = _rfe_utils.multistate.HybridMultiStateSampler(

@@ -257,7 +257,7 @@ def test_vac_bad_nonbonded(benzene_modifications):
 def test_dry_run_vac_benzene(benzene_modifications,
                              method, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.n_repeats = 1
     s.alchemsampler_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
@@ -300,7 +300,7 @@ def test_dry_run_vac_benzene(benzene_modifications,
 def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
     # check system parametrisation works even if confgen fails
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.n_repeats = 1
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
         settings=s,
@@ -335,7 +335,7 @@ def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
 
 def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.n_repeats = 1
     s.solvent_simulation_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
@@ -380,7 +380,7 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
 
 def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.n_repeats = 1
     s.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -426,7 +426,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     alchemical system.
     """
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.n_repeats = 1
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -506,7 +506,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
 
 def test_high_timestep(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.n_repeats = 1
     s.forcefield_settings.hydrogen_mass = 1.0
 
     protocol = AbsoluteSolvationProtocol(

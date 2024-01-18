@@ -26,7 +26,7 @@ class TestOMMSettingsFromStrings:
         assert s.solvent_padding == 1.1 * unit.nanometer
 
     def test_alchemical_sampler_settings(self):
-        # todo: online_analysis_target_error is in kT, how to pass this as string?
+        # todo: early_termination_target_error is in kT, how to pass this as string?
         pass
 
     def test_integator_settings(self):
