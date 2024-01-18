@@ -166,7 +166,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     """
     early_termination_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
     """
-    Target error for the online analysis measured in kT. Once the MBAR error of
+    Target error for the real time analysis measured in kT. Once the MBAR error of
      the free energy is at or below this value, the simulation will be 
      considered complete. 
      A suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
@@ -192,13 +192,14 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     n_replicas = 11
     """Number of replicas to use. Default 11."""
 
+
     @validator('sams_flatness_criteria')
     def supported_flatness(cls, v):
         supported = [
             'logz-flatness', 'minimum-visits', 'histogram-flatness'
         ]
         if v.lower() not in supported:
-            errmsg = ("Only the following flatness_criteria are "
+            errmsg = ("Only the following sams_flatness_criteria are "
                       f"supported: {supported}")
             raise ValueError(errmsg)
         return v
@@ -212,10 +213,10 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('n_replicas')
+    @validator('n_replicas', 'steps_per_iteration')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = "n_replicas must be a positive value"
+            errmsg = "n_replicas and steps_per_iteration must be positive values"
             raise ValueError(errmsg)
         return v
 
@@ -224,7 +225,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     def must_be_zero_or_positive(cls, v):
         if v < 0:
             errmsg = ("Early termination target error, minimum iteration "
-                      "and SAMS gamm0 must be 0 or positive values.")
+                      "and SAMS gamma0 must be 0 or positive values.")
             raise ValueError(errmsg)
         return v
 
@@ -277,18 +278,18 @@ class IntegratorSettings(SettingsBaseModel):
     
     """
 
-    @validator('collision_rate', 'n_restart_attempts')
+    @validator('langevin_collision_rate', 'n_restart_attempts')
     def must_be_positive_or_zero(cls, v):
         if v < 0:
-            errmsg = ("collision_rate, and n_restart_attempts must be "
-                      "zero or positive values")
+            errmsg = ("langevin_collision_rate, and n_restart_attempts must be"
+                      " zero or positive values")
             raise ValueError(errmsg)
         return v
 
-    @validator('timestep', 'n_steps', 'constraint_tolerance')
+    @validator('timestep', 'constraint_tolerance')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("timestep, n_steps, constraint_tolerance "
+            errmsg = ("timestep, and constraint_tolerance "
                       "must be positive values")
             raise ValueError(errmsg)
         return v
@@ -301,10 +302,10 @@ class IntegratorSettings(SettingsBaseModel):
                              "(i.e. picoseconds)")
         return v
 
-    @validator('collision_rate')
+    @validator('langevin_collision_rate')
     def must_be_inverse_time(cls, v):
         if not v.is_compatible_with(1 / unit.picosecond):
-            raise ValueError("collision_rate must be in inverse time "
+            raise ValueError("langevin collision_rate must be in inverse time "
                              "(i.e. 1/picoseconds)")
         return v
 
@@ -369,7 +370,7 @@ class SimulationSettings(SettingsBaseModel):
     steps from this equilibration length
     (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
     must be a multiple of the value defined for
-    :class:`IntegratorSettings.n_steps`.
+    :class:`AlchemicalSamplerSettings.steps_per_iteration`.
     """
     production_length: FloatQuantity['nanosecond']
     """
@@ -410,7 +411,7 @@ class SimulationSettingsMD(SimulationSettings):
     The total number of steps from this equilibration length
     (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`)
     must be a multiple of the value defined for
-    :class:`IntegratorSettings.n_steps`.
+    :class:`AlchemicalSamplerSettings.steps_per_iteration`.
     """
     # reporter settings
     production_trajectory_filename = 'simulation.xtc'

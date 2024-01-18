@@ -71,8 +71,9 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     softcore_LJ = Literal['gapsys', 'beutler']
     """
-    Whether to use the LJ softcore function as defined by
-    Gapsys et al. JCTC 2012 Default 'gapsys'.
+    Whether to use the LJ softcore function as defined by Gapsys et al. 
+    JCTC 2012, or the one by Beutler et al. Chem. Phys. Lett. 1994.
+    Default 'gapsys'.
     """
     softcore_alpha = 0.85
     """Softcore alpha parameter. Default 0.85"""
@@ -117,6 +118,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
             errmsg = "protocol_repeats must be a positive value"
             raise ValueError(errmsg)
         return v
+
     # Inherited things
 
     forcefield_settings: OpenMMSystemGeneratorFFSettings
@@ -141,7 +143,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
     alchemical_sampler_settings: AlchemicalSamplerSettings
     """
-    Settings for sampling alchemical space, including the number of repeats.
+    Settings for alchemical sampler.
     """
 
     # MD Engine things

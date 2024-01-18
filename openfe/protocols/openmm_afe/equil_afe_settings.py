@@ -107,6 +107,18 @@ class AbsoluteSolvationSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 
+    protocol_repeats: int = 3
+    """
+    Number of protocol repeats to run.  Default 3
+    """
+
+    @validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = "protocol_repeats must be a positive value"
+            raise ValueError(errmsg)
+        return v
+
     # Inherited things
     forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
@@ -139,8 +151,7 @@ class AbsoluteSolvationSettings(Settings):
     """
     alchemsampler_settings: AlchemicalSamplerSettings
     """
-    Settings for controlling how we sample alchemical space, including the
-    number of repeats.
+    Settings for controlling how we sample alchemical space.
     """
 
     # MD Engine things
