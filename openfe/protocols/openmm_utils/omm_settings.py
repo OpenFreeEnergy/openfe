@@ -198,7 +198,6 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     n_replicas = 11
     """Number of replicas to use. Default 11."""
 
-
     @validator('sams_flatness_criteria')
     def supported_flatness(cls, v):
         supported = [
@@ -361,6 +360,7 @@ class OutputSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
+
 class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths,
@@ -386,7 +386,6 @@ class SimulationSettings(SettingsBaseModel):
     ``production_length`` / :class:`IntegratorSettings.timestep`) must be
     a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
     """
-
 
     @validator('equilibration_length', 'production_length')
     def is_time(cls, v):

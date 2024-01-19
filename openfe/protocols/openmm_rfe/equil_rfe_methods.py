@@ -876,16 +876,16 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+                online_analysis_interval=sampler_settings.real_time_analysis_interval,
+                online_analysis_target_error=sampler_settings.early_termination_target_error.m,
+                online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations
             )
         elif sampler_settings.sampler_method.lower() == "sams":
             sampler = _rfe_utils.multistate.HybridSAMSSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
+                online_analysis_interval=sampler_settings.real_time_analysis_interval,
+                online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations,
                 flatness_criteria=sampler_settings.sams_flatness_criteria,
                 gamma0=sampler_settings.sams_gamma0,
             )
@@ -893,9 +893,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             sampler = _rfe_utils.multistate.HybridMultiStateSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+                online_analysis_interval=sampler_settings.real_time_analysis_interval,
+                online_analysis_target_error=sampler_settings.early_termination_target_error.m,
+                online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations
             )
 
         else:

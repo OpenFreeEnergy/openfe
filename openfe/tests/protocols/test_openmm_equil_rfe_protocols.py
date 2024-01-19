@@ -63,7 +63,7 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
     )
 
     assert len(list(top2.atoms())) == 2625 + 3  # added methyl
-    assert len(list(top2.bonds())) == 2645 + 4 - 1 # add methyl bonds, minus hydrogen
+    assert len(list(top2.bonds())) == 2645 + 4 - 1  # add methyl bonds, minus hydrogen
     assert appended_resids[0] == len(list(top1.residues())) - 1
 
 
@@ -92,7 +92,7 @@ def test_append_topology_no_exclude(benzene_complex_system,
     )
 
     assert len(list(top2.atoms())) == 2625 + 15  # added toluene
-    assert len(list(top2.bonds())) == 2645 + 15 # 15 bonds in toluene
+    assert len(list(top2.bonds())) == 2645 + 15  # 15 bonds in toluene
     assert appended_resids[0] == len(list(top1.residues()))
 
 
@@ -164,7 +164,7 @@ def test_validate_alchemical_components_wrong_mappings(mapping):
 
 def test_validate_alchemical_components_missing_alchem_comp(
         benzene_to_toluene_mapping):
-    alchem_comps = {'stateA': [openfe.SolventComponent(),], 'stateB': []}
+    alchem_comps = {'stateA': [openfe.SolventComponent(), ], 'stateB': []}
     with pytest.raises(ValueError, match="Unmapped alchemical component"):
         _validate_alchemical_components(
             alchem_comps, {'ligand': benzene_to_toluene_mapping},
@@ -352,8 +352,8 @@ def test_dry_core_element_change(tmpdir):
     )
 
     dag = protocol.create(
-        stateA=openfe.ChemicalSystem({'ligand': benz,}),
-        stateB=openfe.ChemicalSystem({'ligand': pyr,}),
+        stateA=openfe.ChemicalSystem({'ligand': benz, }),
+        stateB=openfe.ChemicalSystem({'ligand': pyr, }),
         mapping={'whatamapping': mapping},
     )
 
@@ -437,7 +437,7 @@ def test_dry_run_ligand_tip4p(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
@@ -516,8 +516,8 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
-        stateA=openfe.ChemicalSystem({'l': benzene_smc,}),
-        stateB=openfe.ChemicalSystem({'l': toluene_smc,}),
+        stateA=openfe.ChemicalSystem({'l': benzene_smc, }),
+        stateB=openfe.ChemicalSystem({'l': toluene_smc, }),
         mapping={'ligand': mapping},
     )
     dag_unit = list(dag.protocol_units)[0]
@@ -598,7 +598,7 @@ def test_virtual_sites_no_reassign(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
@@ -842,7 +842,7 @@ def test_too_many_specified_mappings(benzene_system, toluene_system,
             stateA=benzene_system,
             stateB=toluene_system,
             mapping={'solvent': benzene_to_toluene_mapping,
-                     'ligand': benzene_to_toluene_mapping,}
+                     'ligand': benzene_to_toluene_mapping, }
         )
 
 

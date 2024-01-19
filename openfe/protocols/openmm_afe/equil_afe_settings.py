@@ -197,4 +197,3 @@ class AbsoluteSolvationSettings(Settings):
     """
     Simulation output settings for the solvent transformation.
     """
-

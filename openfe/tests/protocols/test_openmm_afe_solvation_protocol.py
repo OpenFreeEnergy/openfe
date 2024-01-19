@@ -179,7 +179,7 @@ def test_validate_solvent_endstates_nosolvcomp_stateB(
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateB"
     ):
-        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_alchem_comps_appearingB(benzene_modifications):
@@ -504,6 +504,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
             c = ensure_quantity(c, 'openff')
             assert pytest.approx(c) == prop_chgs[i]
 
+
 def test_high_timestep(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
@@ -715,4 +716,3 @@ class TestProtocolResult:
 
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
-
