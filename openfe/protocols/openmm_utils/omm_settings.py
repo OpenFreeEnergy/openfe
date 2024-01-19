@@ -216,7 +216,8 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     @validator('n_replicas', 'steps_per_iteration')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = "n_replicas and steps_per_iteration must be positive values"
+            errmsg = "n_replicas and steps_per_iteration must be positive " \
+                     f"values, got {v}."
             raise ValueError(errmsg)
         return v
 
@@ -224,8 +225,8 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
                'real_time_analysis_minimum_iterations', 'sams_gamma0', 'n_replicas')
     def must_be_zero_or_positive(cls, v):
         if v < 0:
-            errmsg = ("Early termination target error, minimum iteration "
-                      "and SAMS gamma0 must be 0 or positive values.")
+            errmsg = ("Early termination target error, minimum iteration and"
+                      f" SAMS gamma0 must be 0 or positive values, got {v}.")
             raise ValueError(errmsg)
         return v
 
@@ -282,7 +283,7 @@ class IntegratorSettings(SettingsBaseModel):
     def must_be_positive_or_zero(cls, v):
         if v < 0:
             errmsg = ("langevin_collision_rate, and n_restart_attempts must be"
-                      " zero or positive values")
+                      f" zero or positive values, got {v}.")
             raise ValueError(errmsg)
         return v
 
@@ -290,7 +291,7 @@ class IntegratorSettings(SettingsBaseModel):
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = ("timestep, and constraint_tolerance "
-                      "must be positive values")
+                      f"must be positive values, got {v}.")
             raise ValueError(errmsg)
         return v
 
@@ -350,7 +351,7 @@ class OutputSettings(SettingsBaseModel):
     @validator('checkpoint_interval')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = "Checkpoint intervals must be positive"
+            errmsg = f"Checkpoint intervals must be positive, got {v}
             raise ValueError(errmsg)
         return v
 
@@ -392,7 +393,8 @@ class SimulationSettings(SettingsBaseModel):
                'production_length')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("Minimization steps, and MD lengths must be positive")
+            errmsg = ("Minimization steps, and MD lengths must be positive, "
+                      f"got {v}")
             raise ValueError(errmsg)
         return v
 

@@ -81,7 +81,8 @@ class LambdaSettings(SettingsBaseModel):
     def must_be_between_0_and_1(cls, v):
         for window in v:
             if not 0 <= window <= 1:
-                errmsg = "Lambda windows must be between 0 and 1."
+                errmsg = ("Lambda windows must be between 0 and 1, got a"
+                          f" window with value {window}.")
                 raise ValueError(errmsg)
         return v
 
@@ -91,7 +92,7 @@ class LambdaSettings(SettingsBaseModel):
         difference = np.diff(v)
 
         if not all(i >= 0. for i in difference):
-            errmsg = "The lambda schedule is not monotonic."
+            errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
             raise ValueError(errmsg)
 
         return v
