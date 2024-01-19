@@ -1554,6 +1554,7 @@ def benzene_solvent_openmm_system(benzene_modifications):
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
         thermo_settings=settings.thermo_settings,
+        integrator_settings=settings.integrator_settings,
         system_settings=settings.system_settings,
         cache=None,
         has_solvent=True,
@@ -1595,6 +1596,7 @@ def benzene_tip4p_solvent_openmm_system(benzene_modifications):
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
         thermo_settings=settings.thermo_settings,
+        integrator_settings=settings.integrator_settings,
         system_settings=settings.system_settings,
         cache=None,
         has_solvent=True,
