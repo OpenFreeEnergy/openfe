@@ -161,7 +161,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     Example:
     real_time_analysis_interval = 250
     timestep = 4 fs
-    steps_per_iteration = 250 * 4 fs
+    steps_per_iteration = 250
     --> The free energy would be analyzed every 250 ps (250 * 250 * 4 fs)
     """
     early_termination_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
@@ -178,6 +178,12 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     """
     Number of sampling iterations which must pass before real time analysis is
     carried out. Default 500.
+    Example:
+    real_time_analysis_minimum_iterations = 500
+    timestep = 4 fs
+    steps_per_iteration = 250
+    --> The free energy would be analyzed for 
+    the first time after 500 ps (500 * 250 * 4 fs)
     """
 
     sams_flatness_criteria = 'logZ-flatness'
