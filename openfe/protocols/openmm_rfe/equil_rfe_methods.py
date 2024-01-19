@@ -38,6 +38,7 @@ from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
 from openmm.app import PDBFile
+import pprint
 import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
@@ -448,7 +449,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           a set of default settings
         """
         return RelativeHybridTopologyProtocolSettings(
-            n_repeats=settings.n_repeats,
+            protocol_repeats=settings.protocol_repeats,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
@@ -498,7 +499,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Anames = ','.join(c.name for c in alchem_comps['stateA'])
         Bnames = ','.join(c.name for c in alchem_comps['stateB'])
         # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.n_repeats
+        n_repeats = self.settings.protocol_repeats
         units = [RelativeHybridTopologyProtocolUnit(
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
             settings=self.settings,
@@ -637,7 +638,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         output_settings: OutputSettings = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.alchemical_sampler_settings.steps_per_iteration.m
-
+        pprint(protocol_settings.dict())
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep

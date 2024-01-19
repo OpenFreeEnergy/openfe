@@ -621,7 +621,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
             )
-            for i in range(self.settings.n_repeats)
+            for i in range(self.settings.protocol_repeats)
         ]
 
         vacuum_units = [
