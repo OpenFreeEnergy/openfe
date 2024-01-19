@@ -173,7 +173,7 @@ def _get_alchemical_charge_difference(
 
 def _validate_alchemical_components(
     alchemical_components: dict[str, list[Component]],
-    mapping: list[ComponentMapping],
+    mapping: Optional[Union[ComponentMapping, list[ComponentMapping]]],
 ):
     """
     Checks that the alchemical components are suitable for the RFE protocol.
@@ -188,7 +188,7 @@ def _validate_alchemical_components(
     alchemical_components : dict[str, list[Component]]
       Dictionary contatining the alchemical components for
       states A and B.
-    mapping : list[ComponentMapping]
+    mapping : Optional[Union[ComponentMapping, list[ComponentMapping]]]
       all mappings between transforming components.
 
     Raises
@@ -203,7 +203,7 @@ def _validate_alchemical_components(
     """
     # Check mapping
     # For now we only allow for a single mapping, this will likely change
-    if len(mapping) != 1:
+    if mapping is None or len(mapping) > 1:
         errmsg = "A single LigandAtomMapping is expected for this Protocol"
         raise ValueError(errmsg)
 
@@ -468,7 +468,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: list[gufe.ComponentMapping],
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]],
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
