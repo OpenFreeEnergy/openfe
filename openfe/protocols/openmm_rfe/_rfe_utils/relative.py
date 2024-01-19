@@ -900,15 +900,14 @@ class HybridTopologyFactory:
         # Select functional form based on nonbonded method.
         # TODO: check _nonbonded_custom_ewald and _nonbonded_custom_cutoff
         # since they take arguments that are never used...
+        r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
+        sterics_energy_expression = self._nonbonded_custom(self._softcore_LJ_v2)
         if self._nonbonded_method in [openmm.NonbondedForce.NoCutoff]:
             sterics_energy_expression = self._nonbonded_custom(
                 self._softcore_LJ_v2)
         elif self._nonbonded_method in [openmm.NonbondedForce.CutoffPeriodic,
                                         openmm.NonbondedForce.CutoffNonPeriodic]:
             epsilon_solvent = self._old_system_forces['NonbondedForce'].getReactionFieldDielectric()
-            r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
-            sterics_energy_expression = self._nonbonded_custom(
-                self._softcore_LJ_v2)
             standard_nonbonded_force.setReactionFieldDielectric(
                 epsilon_solvent)
             standard_nonbonded_force.setCutoffDistance(r_cutoff)
@@ -916,9 +915,6 @@ class HybridTopologyFactory:
                                         openmm.NonbondedForce.Ewald]:
             [alpha_ewald, nx, ny, nz] = self._old_system_forces['NonbondedForce'].getPMEParameters()
             delta = self._old_system_forces['NonbondedForce'].getEwaldErrorTolerance()
-            r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
-            sterics_energy_expression = self._nonbonded_custom(
-                self._softcore_LJ_v2)
             standard_nonbonded_force.setPMEParameters(alpha_ewald, nx, ny, nz)
             standard_nonbonded_force.setEwaldErrorTolerance(delta)
             standard_nonbonded_force.setCutoffDistance(r_cutoff)
@@ -939,6 +935,8 @@ class HybridTopologyFactory:
 
         sterics_custom_nonbonded_force = openmm.CustomNonbondedForce(
             total_sterics_energy)
+        # Match cutoff from non-custom NB forces
+        sterics_custom_nonbonded_force.setCutoffDistance(r_cutoff)
 
         if self._softcore_LJ_v2:
             sterics_custom_nonbonded_force.addGlobalParameter(

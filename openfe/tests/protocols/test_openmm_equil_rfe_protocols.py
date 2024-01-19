@@ -547,6 +547,45 @@ def test_tip4p_check_vsite_parameters(tip4p_hybrid_factory):
         assert e1 == e2 == 0
 
 
+@pytest.mark.slow
+@pytest.mark.parametrize('cutoff',
+    [1.0 * unit.nanometer,
+     12.0 * unit.angstrom,
+     0.9 * unit.nanometer]
+)
+def test_dry_run_ligand_system_cutoff(
+    cutoff, benzene_system, toluene_system, benzene_to_toluene_mapping, tmpdir
+):
+    """
+    Test that the right nonbonded cutoff is propagated to the hybrid system.
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.system_settings.nonbonded_cutoff = cutoff
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        hs = sampler._factory.hybrid_system
+
+        nbfs = [f for f in hs.getForces() if
+                isinstance(f, CustomNonbondedForce) or
+                isinstance(f, NonbondedForce)]
+
+        for f in nbfs:
+            f_cutoff = from_openmm(f.getCutoffDistance())
+            assert f_cutoff == cutoff
+
+
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
 def test_dry_run_user_charges(benzene_modifications, tmpdir):
     """
@@ -1515,6 +1554,7 @@ def benzene_solvent_openmm_system(benzene_modifications):
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
         thermo_settings=settings.thermo_settings,
+        integrator_settings=settings.integrator_settings,
         system_settings=settings.system_settings,
         cache=None,
         has_solvent=True,
@@ -1556,6 +1596,7 @@ def benzene_tip4p_solvent_openmm_system(benzene_modifications):
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
         thermo_settings=settings.thermo_settings,
+        integrator_settings=settings.integrator_settings,
         system_settings=settings.system_settings,
         cache=None,
         has_solvent=True,
