@@ -351,7 +351,7 @@ class OutputSettings(SettingsBaseModel):
     @validator('checkpoint_interval')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = f"Checkpoint intervals must be positive, got {v}
+            errmsg = f"Checkpoint intervals must be positive, got {v}."
             raise ValueError(errmsg)
         return v
 
