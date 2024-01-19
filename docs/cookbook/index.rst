@@ -159,5 +159,6 @@ List of Cookbooks
     ligandnetwork_vis
     create_alchemical_network
     under_the_hood
+    user_charges
 
     
