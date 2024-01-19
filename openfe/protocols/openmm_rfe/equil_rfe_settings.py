@@ -119,7 +119,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     @validator('protocol_repeats')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = "protocol_repeats must be a positive value"
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
             raise ValueError(errmsg)
         return v
 
