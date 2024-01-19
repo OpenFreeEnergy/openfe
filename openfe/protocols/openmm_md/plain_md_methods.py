@@ -473,7 +473,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         sim_settings: SimulationSettingsMD = protocol_settings.simulation_settings
         output_settings: OutputSettingsMD = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
-        mc_steps = protocol_settings.integrator_settings.n_steps.m
         integrator_settings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?
@@ -483,15 +482,15 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         equil_steps_nvt = settings_validation.get_simsteps(
             sim_length=sim_settings.equilibration_length_nvt,
-            timestep=timestep, mc_steps=mc_steps
+            timestep=timestep, mc_steps=1,
         )
         equil_steps_npt = settings_validation.get_simsteps(
             sim_length=sim_settings.equilibration_length,
-            timestep=timestep, mc_steps=mc_steps
+            timestep=timestep, mc_steps=1,
         )
         prod_steps = settings_validation.get_simsteps(
             sim_length=sim_settings.production_length,
-            timestep=timestep, mc_steps=mc_steps
+            timestep=timestep, mc_steps=1,
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
