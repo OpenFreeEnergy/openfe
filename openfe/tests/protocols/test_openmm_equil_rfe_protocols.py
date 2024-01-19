@@ -152,7 +152,7 @@ def test_create_independent_repeat_ids(benzene_system, toluene_system, benzene_t
 
 
 @pytest.mark.parametrize('mapping', [
-    [], ['A', 'B'],
+    None, [], ['A', 'B'],
 ])
 def test_validate_alchemical_components_wrong_mappings(mapping):
     with pytest.raises(ValueError, match="A single LigandAtomMapping"):
@@ -166,7 +166,7 @@ def test_validate_alchemical_components_missing_alchem_comp(
     alchem_comps = {'stateA': [openfe.SolventComponent(),], 'stateB': []}
     with pytest.raises(ValueError, match="Unmapped alchemical component"):
         _validate_alchemical_components(
-            alchem_comps, [benzene_to_toluene_mapping],
+            alchem_comps, benzene_to_toluene_mapping,
         )
 
 
