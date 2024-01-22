@@ -580,8 +580,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath: pathlib.Path,
-            shared_basepath: stagingregistry.StagingRegistry,
-            permanent_basepath: stagingregistry.StagingRegistry,
+            shared_basepath: stagingregistry.StagingPath,
+            permanent_basepath: stagingregistry.StagingPath,
             ) -> dict[str, Any]:
         """Run the relative free energy calculation.
 
@@ -594,11 +594,11 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        scratch_basepath: StagingDirectory
+        scratch_basepath: pathlib.Path
           Where to store temporary files
-        shared_basepath : StagingDirectory
+        shared_basepath : StagingPath
           Where to run the calculation
-        permanent_basepath : StagingDirectory
+        permanent_basepath : StagingPath
           Where to store files that must persist beyond the DAG
 
         Returns
@@ -997,13 +997,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {'debug': {'sampler': sampler}}
 
     @staticmethod
-    def analyse(where: stagingregistry.StagingRegistry) -> dict:
+    def analyse(where: stagingregistry.StagingPath) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        trjdir = (where / '')
         output = (where / 'results.json')
         ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                                    str(trjdir.as_path()),
+                                    str(where.as_path()),
                                     str(output.as_path())],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
