@@ -782,6 +782,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 3. Create the hybrid topology
+        # a. Get softcore potential settings
+        if alchem_settings.softcore_LJ == 'gapsys':
+            softcore_LJ_v2 = True
+        elif alchem_settings.softcore_LJ == 'beutler':
+            softcore_LJ_v2 = False
+        # b. Get hybrid topology factory
         hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
@@ -789,7 +795,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             old_to_new_core_atom_map=ligand_mappings['old_to_new_core_atom_map'],
             use_dispersion_correction=alchem_settings.use_dispersion_correction,
             softcore_alpha=alchem_settings.softcore_alpha,
-            softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
+            softcore_LJ_v2=softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchem_settings.turn_off_core_unique_exceptions,
         )
