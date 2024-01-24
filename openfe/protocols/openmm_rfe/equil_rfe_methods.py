@@ -203,7 +203,7 @@ def _validate_alchemical_components(
     """
     # Check mapping
     # For now we only allow for a single mapping, this will likely change
-    if mapping is None or len(mapping) > 1:
+    if mapping is None or (isinstance(mapping, list) and len(mapping) > 1):
         errmsg = "A single LigandAtomMapping is expected for this Protocol"
         raise ValueError(errmsg)
 
