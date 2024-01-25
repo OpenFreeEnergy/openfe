@@ -890,7 +890,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             )
 
             # 13. Get integrator
-            integrator = self._get_integrator(settings['integrator_settings'])
+            integrator = self._get_integrator(
+                settings['integrator_settings'],
+                settings['sampler_settings'],
+            )
 
             # 14. Get sampler
             sampler = self._get_sampler(
