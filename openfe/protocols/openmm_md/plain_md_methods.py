@@ -36,7 +36,6 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
     SolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettingsMD, OutputSettingsMD,
-    RepeatSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
@@ -132,7 +131,7 @@ class PlainMDProtocol(gufe.Protocol):
                 production_length=5.0 * unit.nanosecond,
             ),
             output_settings=OutputSettingsMD(),
-            repeat_settings=RepeatSettings(),
+            protocol_repeats=1,
         )
 
     def _create(
@@ -169,7 +168,7 @@ class PlainMDProtocol(gufe.Protocol):
                 system_name += f" {comp_type}:{comp_name}"
 
         # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.repeat_settings.n_repeats
+        n_repeats = self.settings.protocol_repeats
         units = [PlainMDProtocolUnit(
             stateA=stateA,
             settings=self.settings,

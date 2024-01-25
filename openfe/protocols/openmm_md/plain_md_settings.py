@@ -13,20 +13,28 @@ from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings, OutputSettingsMD,
 )
 from gufe.settings import SettingsBaseModel
+try:
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator  # type: ignore[assignment]
 
-
-class RepeatSettings(SettingsBaseModel):
-    """Settings for how many independent MD runs to perform."""
-
-    n_repeats: int = 1
-    """
-    Number of independent repeats to run.  Default 1
-    """
 
 
 class PlainMDProtocolSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
+
+    protocol_repeats: int
+    """
+    Number of independent MD runs to perform.
+    """
+
+    @validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
 
     # Things for creating the systems
     system_settings: SystemSettings
@@ -40,9 +48,6 @@ class PlainMDProtocolSettings(Settings):
 
     # Simulation run settings
     simulation_settings: SimulationSettingsMD
-
-    # Setting number of repeats of md simulation
-    repeat_settings: RepeatSettings
 
     #Simulations output settings
     output_settings: OutputSettingsMD

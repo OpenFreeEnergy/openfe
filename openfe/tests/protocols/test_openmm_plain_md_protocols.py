@@ -51,7 +51,7 @@ def test_create_independent_repeat_ids(benzene_system):
     # this allows multiple DAGs in flight for one Transformation that don't clash on gather
     settings = PlainMDProtocol.default_settings()
     # Default protocol is 1 repeat, change to 3 repeats
-    settings.repeat_settings.n_repeats = 3
+    settings.protocol_repeats = 3
     protocol = PlainMDProtocol(
             settings=settings,
     )
@@ -362,7 +362,7 @@ def test_vaccuum_PME_error(benzene_vacuum_system):
 @pytest.fixture
 def solvent_protocol_dag(benzene_system):
     settings = PlainMDProtocol.default_settings()
-    settings.repeat_settings.n_repeats = 3
+    settings.protocol_repeats = 3
     protocol = PlainMDProtocol(
         settings=settings,
     )
@@ -402,7 +402,7 @@ def test_gather(solvent_protocol_dag, tmpdir):
                                             keep_shared=True)
 
     settings = PlainMDProtocol.default_settings()
-    settings.repeat_settings.n_repeats = 3
+    settings.protocol_repeats = 3
     prot = PlainMDProtocol(
         settings=settings
     )

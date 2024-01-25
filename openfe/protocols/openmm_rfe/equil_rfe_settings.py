@@ -102,17 +102,7 @@ class AlchemicalSettings(SettingsBaseModel):
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
-
-    @validator('softcore_LJ')
-    def allowed_solvent(cls, v):
-        allowed_models = ['gapsys', 'beutler']
-        if v.lower() not in allowed_models:
-            errmsg = (
-                f"Only {allowed_models} softcore potentials are allowed, "
-                f"got {v.lower()}."
-            )
-            raise ValueError(errmsg)
-        return v
+    
 
 class RelativeHybridTopologyProtocolSettings(Settings):
     class Config:
