@@ -102,7 +102,7 @@ class AlchemicalSettings(SettingsBaseModel):
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
     """
-    
+
 
 class RelativeHybridTopologyProtocolSettings(Settings):
     class Config:

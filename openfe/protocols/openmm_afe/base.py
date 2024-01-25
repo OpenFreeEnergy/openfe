@@ -277,6 +277,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         system_generator = system_creation.get_system_generator(
             forcefield_settings=settings['forcefield_settings'],
+            integrator_settings=settings['integrator_settings'],
             thermo_settings=settings['thermo_settings'],
             system_settings=settings['system_settings'],
             cache=ffcache,
