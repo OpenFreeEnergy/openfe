@@ -279,10 +279,10 @@ class IntegratorSettings(SettingsBaseModel):
     Frequency at which volume scaling changes should be attempted.
     Default 25 * unit.timestep.
     """
-    # remove_com =
-    # """
-    #
-    # """
+    remove_com: bool = False
+    """
+    Whether or not to remove the center of mass motion. Default False.
+    """
 
     @validator('langevin_collision_rate', 'n_restart_attempts')
     def must_be_positive_or_zero(cls, v):

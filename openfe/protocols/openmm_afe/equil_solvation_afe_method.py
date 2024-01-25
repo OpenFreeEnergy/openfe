@@ -396,6 +396,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
           a set of default settings
         """
         return AbsoluteSolvationSettings(
+            protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
@@ -635,7 +636,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
                       f"repeat {i} generation 0"),
             )
-            for i in range(self.settings.n_repeats)
+            for i in range(self.settings.protocol_repeats)
         ]
 
         return solvent_units + vacuum_units

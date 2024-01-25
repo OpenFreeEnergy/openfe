@@ -449,7 +449,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           a set of default settings
         """
         return RelativeHybridTopologyProtocolSettings(
-            protocol_repeats=settings.protocol_repeats,
+            protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
@@ -465,7 +465,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             simulation_settings=SimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
-            )
+            ),
+            output_settings=OutputSettings(),
         )
 
     def _create(

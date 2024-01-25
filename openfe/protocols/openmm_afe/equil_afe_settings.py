@@ -109,12 +109,11 @@ class AbsoluteSolvationSettings(Settings):
     class Config:
         arbitrary_types_allowed = True
 
-    protocol_repeats: int = 3
+    protocol_repeats: int
     """
     The number of completely independent repeats of the entire sampling 
     process. The mean of the repeats defines the final estimate of FE 
     difference, while the variance between repeats is used as the uncertainty.  
-    Default 3
     """
 
     @validator('protocol_repeats')
