@@ -38,7 +38,6 @@ from openmmtools import multistate
 from typing import Optional
 from openmm import unit as omm_unit
 from openmm.app import PDBFile
-import pprint
 import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
@@ -457,7 +456,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             ),
             system_settings=SystemSettings(),
             solvation_settings=SolvationSettings(),
-            alchemical_settings=AlchemicalSettings(),
+            alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
             lambda_settings=LambdaSettings(),
             alchemical_sampler_settings=AlchemicalSamplerSettings(),
             engine_settings=OpenMMEngineSettings(),
@@ -639,7 +638,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         output_settings: OutputSettings = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.alchemical_sampler_settings.steps_per_iteration.m
-        pprint(protocol_settings.dict())
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
             forcefield_settings.hydrogen_mass, timestep
@@ -870,7 +868,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.collision_rate),
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
             n_steps=alchem_sampler_settings.steps_per_iteration.m,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,

@@ -70,7 +70,7 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to use dispersion correction in the hybrid topology state.
     Default False.
     """
-    softcore_LJ = Literal['gapsys', 'beutler']
+    softcore_LJ: Literal['gapsys', 'beutler']
     """
     Whether to use the LJ softcore function as defined by Gapsys et al. 
     JCTC 2012, or the one by Beutler et al. Chem. Phys. Lett. 1994.
