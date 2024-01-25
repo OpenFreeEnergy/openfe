@@ -504,6 +504,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         system_generator = system_creation.get_system_generator(
             forcefield_settings=forcefield_settings,
+            integrator_settings=integrator_settings,
             thermo_settings=thermo_settings,
             system_settings=system_settings,
             cache=ffcache,

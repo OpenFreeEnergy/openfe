@@ -627,6 +627,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         mapping = self._inputs['ligandmapping']
 
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
+        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
         alchem_sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
@@ -671,6 +672,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         system_generator = system_creation.get_system_generator(
             forcefield_settings=forcefield_settings,
+            integrator_settings=integrator_settings,
             thermo_settings=thermo_settings,
             system_settings=system_settings,
             cache=ffcache,

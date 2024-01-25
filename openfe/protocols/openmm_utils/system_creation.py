@@ -18,12 +18,13 @@ from gufe import (
     Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
 )
 from ..openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SimulationSettings, SolvationSettings
+    SystemSettings, SimulationSettings, SolvationSettings, IntegratorSettings,
 )
 
 
 def get_system_generator(
     forcefield_settings: OpenMMSystemGeneratorFFSettings,
+    integrator_settings: IntegratorSettings,
     thermo_settings: ThermoSettings,
     system_settings: SystemSettings,
     cache: Optional[Path],
@@ -36,8 +37,10 @@ def get_system_generator(
     ---------
     forcefield_settings : OpenMMSystemGeneratorFFSettings
       Force field settings, including necessary information
-      for constraints, hydrogen mass, rigid waters, COM removal,
+      for constraints, hydrogen mass, rigid waters,
       non-ligand FF xmls, and the ligand FF name.
+    integrator_settings: IntegratorSettings
+      Integrator settings, including COM removal.
     thermo_settings : ThermoSettings
       Thermodynamic settings, including everything necessary to
       create a barostat.
@@ -72,7 +75,7 @@ def get_system_generator(
     forcefield_kwargs = {
         'constraints': constraints,
         'rigidWater': forcefield_settings.rigid_water,
-        'removeCMMotion': forcefield_settings.remove_com,
+        'removeCMMotion': integrator_settings.remove_com,
         'hydrogenMass': forcefield_settings.hydrogen_mass * omm_unit.amu,
     }
 
