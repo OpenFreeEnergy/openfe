@@ -146,7 +146,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
 
     At each interval, real time analysis data (e.g. current free energy
     estimate and timing data) will be written to a yaml file named
-    ``<OutputSettings.output_name>_real_time_analysis.yaml``. The
+    ``<OutputSettings.output_filename>_real_time_analysis.yaml``. The
     current error in the estimate will also be assessed and if it drops
     below ``AlchemicalSamplerSettings.early_termination_target_error``
     the simulation will be terminated.

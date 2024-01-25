@@ -937,11 +937,9 @@ def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
 @pytest.fixture
 def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapping):
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=settings,
     )
-
     return protocol.create(
         stateA=benzene_system, stateB=toluene_system,
         mapping={'ligand': benzene_to_toluene_mapping},
@@ -957,7 +955,6 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
         for u in dag_units:
             ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
             results.append(ret)
-
     repeats = set()
     for ret in results:
         assert isinstance(ret, gufe.ProtocolUnitResult)

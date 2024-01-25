@@ -784,9 +784,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 3. Create the hybrid topology
         # a. Get softcore potential settings
-        if alchem_settings.softcore_LJ == 'gapsys':
+        if alchem_settings.softcore_LJ.lower() == 'gapsys':
             softcore_LJ_v2 = True
-        elif alchem_settings.softcore_LJ == 'beutler':
+        elif alchem_settings.softcore_LJ.lower() == 'beutler':
             softcore_LJ_v2 = False
         # b. Get hybrid topology factory
         hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
