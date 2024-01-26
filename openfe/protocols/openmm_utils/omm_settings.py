@@ -9,7 +9,7 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
 import os
@@ -64,49 +64,42 @@ class SystemSettings(SettingsBaseModel):
         return v
 
 
-class SolvationSettings(SettingsBaseModel):
-    """Settings for solvating the system
-
-    Note
-    ----
-    No solvation will happen if a SolventComponent is not passed.
-
+class BaseSolvationSettings(SettingsBaseModel):
+    """
+    Base class for SolvationSettings objects.
     """
     class Config:
         arbitrary_types_allowed = True
 
-    solvent_model = 'tip3p'
+
+class OpenMMSolvationSettings(BaseSolvationSettings):
+    """Settings for controlling how a system is solvated using OpenMM tooling.
+
+    Note
+    ----
+    No solvation will happen if a SolventComponent is not passed.
+    """
+    solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
     Force field water model to use.
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
-
-    solvation_backend = 'openmm'
+    solvent_padding: Optional[FloatQuantity['nanometer'] = 1.2 * unit.nanometer]
     """
-    Backend employed for solvating the system.
-    Allowed values are; `openmm`.
+    Minimum distance from any solute atoms to the edge of the solvent box.
     """
+    box_shape: Literal['cube', 'dodecahedron', 'octahedron'] = 'cube'
+    """
+    """
+    number_of_solvent_molecules: Optional[int] = None
+    """
+    The number of solvent molecules to add.
 
-    @validator('solvent_model')
-    def allowed_solvent(cls, v):
-        allowed_models = ['tip3p', 'spce', 'tip4pew', 'tip5p']
-        if v.lower() not in allowed_models:
-            errmsg = (
-                f"Only {allowed_models} are allowed solvent_model values"
-            )
-            raise ValueError(errmsg)
-        return v
-
-    @validator('solvation_backend')
-    def allowed_backends(cls, v):
-        backends = ['openmm',]
-        if v.lower() not in backends:
-            errmsg = (
-                f"Only these solvation backends: {backends} are allowed "
-                f"got: {v}"
-            )
-            raise ValueError(errmsg)
-        return v
+    If ``None``, it should be determined either by setting
+    """
+    box_vectors: Optional[FloatQuantity[...]] = None
+    """
+    """
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
