@@ -28,40 +28,40 @@ except ImportError:
     from pydantic import validator  # type: ignore[assignment]
 
 
-class SystemSettings(SettingsBaseModel):
-    """Settings describing the simulation system settings."""
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    nonbonded_method = 'PME'
-    """
-    Method for treating nonbonded interactions, currently only PME and
-    NoCutoff are allowed. Default PME.
-    """
-    nonbonded_cutoff: FloatQuantity['nanometer'] = 1.0 * unit.nanometer
-    """
-    Cutoff value for short range nonbonded interactions.
-    Default 1.0 * unit.nanometer.
-    """
-
-    @validator('nonbonded_method')
-    def allowed_nonbonded(cls, v):
-        if v.lower() not in ['pme', 'nocutoff']:
-            errmsg = ("Only PME and NoCutoff are allowed nonbonded_methods")
-            raise ValueError(errmsg)
-        return v
-
-    @validator('nonbonded_cutoff')
-    def is_positive_distance(cls, v):
-        # these are time units, not simulation steps
-        if not v.is_compatible_with(unit.nanometer):
-            raise ValueError("nonbonded_cutoff must be in distance units "
-                             "(i.e. nanometers)")
-        if v < 0:
-            errmsg = "nonbonded_cutoff must be a positive value"
-            raise ValueError(errmsg)
-        return v
+# class SystemSettings(SettingsBaseModel):
+#     """Settings describing the simulation system settings."""
+#
+#     class Config:
+#         arbitrary_types_allowed = True
+#
+#     nonbonded_method = 'PME'
+#     """
+#     Method for treating nonbonded interactions, currently only PME and
+#     NoCutoff are allowed. Default PME.
+#     """
+#     nonbonded_cutoff: FloatQuantity['nanometer'] = 1.0 * unit.nanometer
+#     """
+#     Cutoff value for short range nonbonded interactions.
+#     Default 1.0 * unit.nanometer.
+#     """
+#
+#     @validator('nonbonded_method')
+#     def allowed_nonbonded(cls, v):
+#         if v.lower() not in ['pme', 'nocutoff']:
+#             errmsg = ("Only PME and NoCutoff are allowed nonbonded_methods")
+#             raise ValueError(errmsg)
+#         return v
+#
+#     @validator('nonbonded_cutoff')
+#     def is_positive_distance(cls, v):
+#         # these are time units, not simulation steps
+#         if not v.is_compatible_with(unit.nanometer):
+#             raise ValueError("nonbonded_cutoff must be in distance units "
+#                              "(i.e. nanometers)")
+#         if v < 0:
+#             errmsg = "nonbonded_cutoff must be a positive value"
+#             raise ValueError(errmsg)
+#         return v
 
 
 class SolvationSettings(SettingsBaseModel):
@@ -107,133 +107,133 @@ class SolvationSettings(SettingsBaseModel):
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
-    """Settings for the Equilibrium Alchemical sampler, currently supporting
-    either MultistateSampler, SAMSSampler or ReplicaExchangeSampler.
-
-    """
-
-    """
-    TODO
-    ----
-    * It'd be great if we could pass in the sampler object rather than using
-      strings to define which one we want.
-    * Make n_replicas optional such that: If `None` or greater than the number
-      of lambda windows set in :class:`AlchemicalSettings`, this will default
-      to the number of lambda windows. If less than the number of lambda
-      windows, the replica lambda states will be picked at equidistant
-      intervals along the lambda schedule.
-    """
-    class Config:
-        arbitrary_types_allowed = True
-
-    sampler_method = "repex"
-    """
-    Alchemical sampling method, must be one of;
-    `repex` (Hamiltonian Replica Exchange),
-    `sams` (Self-Adjusted Mixture Sampling),
-    or `independent` (independently sampled lambda windows).
-    Default `repex`.
-    """
-    steps_per_iteration = 250 * unit.timestep  # todo: IntQuantity
-    """
-    Number of integration timesteps between each time the MCMC move
-    is applied. Default 250 * unit.timestep.
-    """
-    real_time_analysis_interval: Optional[int] = 250
-    """
-    MCMC steps (i.e. number of ``steps_per_iteration``) interval at which
-    to perform an analysis of the free energies.
-
-    At each interval, real time analysis data (e.g. current free energy
-    estimate and timing data) will be written to a yaml file named
-    ``<OutputSettings.output_filename>_real_time_analysis.yaml``. The
-    current error in the estimate will also be assessed and if it drops
-    below ``AlchemicalSamplerSettings.early_termination_target_error``
-    the simulation will be terminated.
-
-    If ``None``, no real time analysis will be performed and the yaml
-    file will not be written.
-
-    Must be a multiple of ``OutputSettings.checkpoint_interval``
-
-    Default `250`.
-    
-    Example:
-    real_time_analysis_interval = 250
-    timestep = 4 fs
-    steps_per_iteration = 250
-    --> The free energy would be analyzed every 250 ps (250 * 250 * 4 fs)
-    """
-    early_termination_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
-    """
-    Target error for the real time analysis measured in kT. Once the MBAR error of
-     the free energy is at or below this value, the simulation will be 
-     considered complete. 
-     A suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
-    shown to be effective in both hydration and binding free energy benchmarks.
-    Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
-    termination will occur.
-    """
-    real_time_analysis_minimum_iterations = 500
-    """
-    Number of sampling iterations which must pass before real time analysis is
-    carried out. Default 500.
-    Example:
-    real_time_analysis_minimum_iterations = 500
-    timestep = 4 fs
-    steps_per_iteration = 250
-    --> The free energy would be analyzed for 
-    the first time after 500 ps (500 * 250 * 4 fs)
-    """
-
-    sams_flatness_criteria = 'logZ-flatness'
-    """
-    SAMS only. Method for assessing when to switch to asymptomatically
-    optimal scheme.
-    One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
-    Default 'logZ-flatness'.
-    """
-    sams_gamma0 = 1.0
-    """SAMS only. Initial weight adaptation rate. Default 1.0."""
-    n_replicas = 11
-    """Number of replicas to use. Default 11."""
-
-    @validator('sams_flatness_criteria')
-    def supported_flatness(cls, v):
-        supported = [
-            'logz-flatness', 'minimum-visits', 'histogram-flatness'
-        ]
-        if v.lower() not in supported:
-            errmsg = ("Only the following sams_flatness_criteria are "
-                      f"supported: {supported}")
-            raise ValueError(errmsg)
-        return v
-
-    @validator('sampler_method')
-    def supported_sampler(cls, v):
-        supported = ['repex', 'sams', 'independent']
-        if v.lower() not in supported:
-            errmsg = ("Only the following sampler_method values are "
-                      f"supported: {supported}")
-            raise ValueError(errmsg)
-        return v
-
-    @validator('n_replicas', 'steps_per_iteration')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = "n_replicas and steps_per_iteration must be positive " \
-                     f"values, got {v}."
-            raise ValueError(errmsg)
-        return v
-
-    @validator('early_termination_target_error',
-               'real_time_analysis_minimum_iterations', 'sams_gamma0', 'n_replicas')
-    def must_be_zero_or_positive(cls, v):
-        if v < 0:
-            errmsg = ("Early termination target error, minimum iteration and"
-                      f" SAMS gamma0 must be 0 or positive values, got {v}.")
-            raise ValueError(errmsg)
-        return v
+    # """Settings for the Equilibrium Alchemical sampler, currently supporting
+    # either MultistateSampler, SAMSSampler or ReplicaExchangeSampler.
+    #
+    # """
+    #
+    # """
+    # TODO
+    # ----
+    # * It'd be great if we could pass in the sampler object rather than using
+    #   strings to define which one we want.
+    # * Make n_replicas optional such that: If `None` or greater than the number
+    #   of lambda windows set in :class:`AlchemicalSettings`, this will default
+    #   to the number of lambda windows. If less than the number of lambda
+    #   windows, the replica lambda states will be picked at equidistant
+    #   intervals along the lambda schedule.
+    # """
+    # class Config:
+    #     arbitrary_types_allowed = True
+    #
+    # sampler_method = "repex"
+    # """
+    # Alchemical sampling method, must be one of;
+    # `repex` (Hamiltonian Replica Exchange),
+    # `sams` (Self-Adjusted Mixture Sampling),
+    # or `independent` (independently sampled lambda windows).
+    # Default `repex`.
+    # """
+    # steps_per_iteration = 250 * unit.timestep  # todo: IntQuantity
+    # """
+    # Number of integration timesteps between each time the MCMC move
+    # is applied. Default 250 * unit.timestep.
+    # """
+    # real_time_analysis_interval: Optional[int] = 250
+    # """
+    # MCMC steps (i.e. number of ``steps_per_iteration``) interval at which
+    # to perform an analysis of the free energies.
+    #
+    # At each interval, real time analysis data (e.g. current free energy
+    # estimate and timing data) will be written to a yaml file named
+    # ``<OutputSettings.output_filename>_real_time_analysis.yaml``. The
+    # current error in the estimate will also be assessed and if it drops
+    # below ``AlchemicalSamplerSettings.early_termination_target_error``
+    # the simulation will be terminated.
+    #
+    # If ``None``, no real time analysis will be performed and the yaml
+    # file will not be written.
+    #
+    # Must be a multiple of ``OutputSettings.checkpoint_interval``
+    #
+    # Default `250`.
+    #
+    # Example:
+    # real_time_analysis_interval = 250
+    # timestep = 4 fs
+    # steps_per_iteration = 250
+    # --> The free energy would be analyzed every 250 ps (250 * 250 * 4 fs)
+    # """
+    # early_termination_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
+    # """
+    # Target error for the real time analysis measured in kT. Once the MBAR error of
+    #  the free energy is at or below this value, the simulation will be
+    #  considered complete.
+    #  A suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
+    # shown to be effective in both hydration and binding free energy benchmarks.
+    # Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
+    # termination will occur.
+    # """
+    # real_time_analysis_minimum_iterations = 500
+    # """
+    # Number of sampling iterations which must pass before real time analysis is
+    # carried out. Default 500.
+    # Example:
+    # real_time_analysis_minimum_iterations = 500
+    # timestep = 4 fs
+    # steps_per_iteration = 250
+    # --> The free energy would be analyzed for
+    # the first time after 500 ps (500 * 250 * 4 fs)
+    # """
+    #
+    # sams_flatness_criteria = 'logZ-flatness'
+    # """
+    # SAMS only. Method for assessing when to switch to asymptomatically
+    # optimal scheme.
+    # One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
+    # Default 'logZ-flatness'.
+    # """
+    # sams_gamma0 = 1.0
+    # """SAMS only. Initial weight adaptation rate. Default 1.0."""
+    # n_replicas = 11
+    # """Number of replicas to use. Default 11."""
+    #
+    # @validator('sams_flatness_criteria')
+    # def supported_flatness(cls, v):
+    #     supported = [
+    #         'logz-flatness', 'minimum-visits', 'histogram-flatness'
+    #     ]
+    #     if v.lower() not in supported:
+    #         errmsg = ("Only the following sams_flatness_criteria are "
+    #                   f"supported: {supported}")
+    #         raise ValueError(errmsg)
+    #     return v
+    #
+    # @validator('sampler_method')
+    # def supported_sampler(cls, v):
+    #     supported = ['repex', 'sams', 'independent']
+    #     if v.lower() not in supported:
+    #         errmsg = ("Only the following sampler_method values are "
+    #                   f"supported: {supported}")
+    #         raise ValueError(errmsg)
+    #     return v
+    #
+    # @validator('n_replicas', 'steps_per_iteration')
+    # def must_be_positive(cls, v):
+    #     if v <= 0:
+    #         errmsg = "n_replicas and steps_per_iteration must be positive " \
+    #                  f"values, got {v}."
+    #         raise ValueError(errmsg)
+    #     return v
+    #
+    # @validator('early_termination_target_error',
+    #            'real_time_analysis_minimum_iterations', 'sams_gamma0', 'n_replicas')
+    # def must_be_zero_or_positive(cls, v):
+    #     if v < 0:
+    #         errmsg = ("Early termination target error, minimum iteration and"
+    #                   f" SAMS gamma0 must be 0 or positive values, got {v}.")
+    #         raise ValueError(errmsg)
+    #     return v
 
 
 class OpenMMEngineSettings(SettingsBaseModel):
@@ -338,9 +338,10 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
+    checkpoint_interval = FloatQuantity['picosecond'] = 1 * unit.picosecond
+    # todo: convert back to unit.timestep in protocol
     """
-    Frequency to write the checkpoint file. Default 250 * unit.timestep.
+    Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
     checkpoint_storage_filename = 'checkpoint.chk'
     """
@@ -363,8 +364,7 @@ class OutputSettings(SettingsBaseModel):
 
 class SimulationSettings(SettingsBaseModel):
     """
-    Settings for simulation control, including lengths,
-    writing to disk, etc...
+    Settings for simulation control, including lengths, etc...
     """
     class Config:
         arbitrary_types_allowed = True
@@ -403,8 +403,137 @@ class SimulationSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
+class MultistateSimulationSettings(SimulationSettings):
+    """
+    Settings for simulation control for multistate simulations,
+    including simulation length and details of the alchemical sampler.
+    """
 
-class SimulationSettingsMD(SimulationSettings):
+    """
+    TODO
+    ----
+    * It'd be great if we could pass in the sampler object rather than using
+      strings to define which one we want.
+    * Make n_replicas optional such that: If `None` or greater than the number
+      of lambda windows set in :class:`AlchemicalSettings`, this will default
+      to the number of lambda windows. If less than the number of lambda
+      windows, the replica lambda states will be picked at equidistant
+      intervals along the lambda schedule.
+    """
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    sampler_method = "repex"
+    """
+    Alchemical sampling method, must be one of;
+    `repex` (Hamiltonian Replica Exchange),
+    `sams` (Self-Adjusted Mixture Sampling),
+    or `independent` (independently sampled lambda windows).
+    Default `repex`.
+    """
+    time_per_iteration: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    # TODO: convert back in protocol
+    # todo: Add validators in the protocol
+    """
+    Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
+    """
+    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250 * unit.picosecond
+    # TODO: convert back in protocol
+    # todo: Add validators in the protocol
+    """
+    Time interval at which to perform an analysis of the free energies.
+
+    At each interval, real time analysis data (e.g. current free energy
+    estimate and timing data) will be written to a yaml file named
+    ``<OutputSettings.output_filename>_real_time_analysis.yaml``. The
+    current error in the estimate will also be assessed and if it drops
+    below ``MultiStateSimulationSettings.early_termination_target_error``
+    the simulation will be terminated.
+
+    If ``None``, no real time analysis will be performed and the yaml
+    file will not be written.
+
+    Must be a multiple of ``OutputSettings.checkpoint_interval``
+
+    Default `250`.
+    
+    """
+    early_termination_target_error: Optional[FloatQuantity['kcal/mol'] =
+    0.0 * unit.kilocalorie_per_mole
+    # todo: convert back to kT
+    # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
+    #  (later would give an example of unit).
+    """
+    Target error for the real time analysis measured in kcal/mol. Once the MBAR 
+    error of the free energy is at or below this value, the simulation will be 
+    considered complete. 
+    A suggested value of 0.12 * `unit.kilocalorie_per_mole` has
+    shown to be effective in both hydration and binding free energy benchmarks.
+    Default ``None``, i.e. no early termination will occur.
+    """
+    real_time_analysis_minimum_time = FloatQuantity['picosecond'] = 500 * unit.picosecond
+    # todo: convert back to unit.timestep in protocol
+    # todo: Add validators in the protocol
+    """
+    Simulation time which must pass before real time analysis is
+    carried out. 
+    
+    Default 500 * unit.picosecond.
+    """
+
+    sams_flatness_criteria = 'logZ-flatness'
+    """
+    SAMS only. Method for assessing when to switch to asymptomatically
+    optimal scheme.
+    One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
+    Default 'logZ-flatness'.
+    """
+    sams_gamma0 = 1.0
+    """SAMS only. Initial weight adaptation rate. Default 1.0."""
+    n_replicas = 11
+    """Number of replicas to use. Default 11."""
+
+    @validator('sams_flatness_criteria')
+    def supported_flatness(cls, v):
+        supported = [
+            'logz-flatness', 'minimum-visits', 'histogram-flatness'
+        ]
+        if v.lower() not in supported:
+            errmsg = ("Only the following sams_flatness_criteria are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
+
+    @validator('sampler_method')
+    def supported_sampler(cls, v):
+        supported = ['repex', 'sams', 'independent']
+        if v.lower() not in supported:
+            errmsg = ("Only the following sampler_method values are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
+
+    @validator('n_replicas', 'steps_per_iteration')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = "n_replicas and steps_per_iteration must be positive " \
+                     f"values, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+    @validator('early_termination_target_error',
+               'real_time_analysis_minimum_iterations', 'sams_gamma0',
+               'n_replicas')
+    def must_be_zero_or_positive(cls, v):
+        if v < 0:
+            errmsg = ("Early termination target error, minimum iteration and"
+                      f" SAMS gamma0 must be 0 or positive values, got {v}.")
+            raise ValueError(errmsg)
+        return v
+
+
+class MDSimulationSettings(SimulationSettings):
     """
     Settings for simulation control for plain MD simulations
     """
@@ -415,13 +544,11 @@ class SimulationSettingsMD(SimulationSettings):
     """
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
-    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`)
-    must be a multiple of the value defined for
-    :class:`AlchemicalSamplerSettings.steps_per_iteration`.
+    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
     """
 
 
-class OutputSettingsMD(OutputSettings):
+class MDOutputSettings(OutputSettings):
     """ Settings for simulation output settings for plain MD simulations."""
     class Config:
         arbitrary_types_allowed = True
