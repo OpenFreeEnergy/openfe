@@ -75,31 +75,132 @@ class BaseSolvationSettings(SettingsBaseModel):
 class OpenMMSolvationSettings(BaseSolvationSettings):
     """Settings for controlling how a system is solvated using OpenMM tooling.
 
-    Note
-    ----
-    No solvation will happen if a SolventComponent is not passed.
+    Defining the number of waters
+    -----------------------------
+
+    The number of waters is controlled by either:
+      a) defining a solvent padding (``solvent_padding``) in combination
+         with a box shape
+      b) defining the number of solvent molecules
+         (``number_of_solvent_molecules``)
+         alongside the box shape (``box_shape``)
+      c) defining the box directly either through the box vectors
+         (``box_vectors``) or rectangular box lengths (``box_size``)
+
+    When using ``solvent_padding``, ``box_vectors``, or ``box_size``,
+    the exact number of waters added is determined automatically by OpenMM
+    through :meth:`openmm.app.Modeller.addSolvent` internal heuristics.
+    Briefly, the necessary volume required by a single water is estimated
+    and then the defined target cell is packed with waters avoiding clashes
+    with existing solutes and box edges.
+
+
+    Defining the periodic cell size
+    -------------------------------
+
+    The periodic cell size is defined by one, and only one, of the following:
+      * ``solvent_padding`` in combination with ``box_shape``,
+      * ``box_vectors``,
+      * ``box_size``
+
+    Defining the pertiodic cell shape
+    ---------------------------------
+
+    The periodic cell shape is defined by one, and only one, of the following:
+      * ``box_shape``,
+      * ``box_vectors``,
+      * ``box_size``
+
+    Default settings will create a cubic box, although more space efficient
+    shapes (e.g. ``dodecahedrons``) are recommended to improve simulation
+    performance.
+
+
+    Notes
+    -----
+    * The number of water molecules added will be affected by the number of
+      ions defined in SolventComponent. For example, the value of
+      ``number_of_solvent_molecules`` is the sum of the number of counterions
+      added and the number of water molecules added.
+    * Solvent addition does not account for any pre-existing waters explicitly
+      defined in the :class:`openfe.ChemicalSystem`. Any waters will be added
+      in addition to those pre-existing waters.
+    * No solvation will happen if a SolventComponent is not passed.
+
+
+    See Also
+    --------
+    :mod:`openmm.app.Modeller`
     """
     solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
-    Force field water model to use.
+    Force field water model to use when solvating and defining the model
+    properties (e.g. adding virtual site particles).
+
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
     solvent_padding: Optional[FloatQuantity['nanometer'] = 1.2 * unit.nanometer]
     """
     Minimum distance from any solute atoms to the edge of the solvent box.
+
+    When used, the number of waters to add is defined by OpenMM.Modeller's
+    internal heuristics. These heuristics are based on a geometric estimate
+    of the volume required by each water molecule.
+
+
+    Note
+    ----
+    * Cannot be defined alongside ``number_of_solvent_molecules``,
+      ``box_size``, or ``box_vectors``.
     """
     box_shape: Literal['cube', 'dodecahedron', 'octahedron'] = 'cube'
     """
+    The shape of the periodic box to create.
+
+    Notes
+    -----
+    * Must be one of `cube`, `dodecahedron`, or `octahedron`.
+    * Cannot be defined alongside ``box_vectors`` or ``box_size``.
     """
     number_of_solvent_molecules: Optional[int] = None
     """
-    The number of solvent molecules to add.
+    The number of solvent molecules (water + ions) to add.
 
-    If ``None``, it should be determined either by setting
+    When defined, the size of the cell will be defined by OpenMM.Modeller's
+    internal heuristics, automatically selecting a padding value that
+    is large enough to contain the number of waters based on a geometric
+    estimate of the volume required by each water molecule.
+
+
+    Note
+    ----
+    * Cannot be defined alongside ``solvent_padding``, ``box_size``,
+      or ``box_vectors``.
     """
-    box_vectors: Optional[FloatQuantity[...]] = None
+    box_vectors: Optional[ArrayQuantity['nanometer']] = None
     """
+    `OpenMM reduced form box vectors <http://docs.openmm.org/latest/userguide/theory/05_other_features.html#periodic-boundary-conditions>`.
+
+    Notes
+    -----
+    * Cannot be defined alongside ``solvent_padding``,
+      ``number_of_solvent_molecules``, or ``box_size``.
+
+    See Also
+    --------
+    :mod:`openff.interchange.components.interchange`
+    :mod:`openff.interchange.components._packmol`
     """
+    box_size: Optional[FloatQuantity['nanometer']] = None
+    """
+    X, Y, and Z lengths of the unit cell for a rectangular box.
+
+    Notes
+    -----
+    * Cannot be defined alongside ``solvent_padding``,
+      ``number_of_solvent_molecules``, or ``box_vectors``.
+    """
+
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
