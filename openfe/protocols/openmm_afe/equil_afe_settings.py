@@ -23,6 +23,7 @@ from gufe.settings import (
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SystemSettings,
+    BaseSolvationSettings,
     OpenMMSolvationSettings,
     AlchemicalSamplerSettings,
     OpenMMEngineSettings,

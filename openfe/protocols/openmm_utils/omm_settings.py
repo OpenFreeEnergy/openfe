@@ -9,7 +9,7 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
 import os
@@ -80,7 +80,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     No solvation will happen if a SolventComponent is not passed.
 
     """
-    solvent_model = 'tip3p'
+    solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
     Force field water model to use.
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
@@ -88,16 +88,6 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
     solvent_padding: FloatQuantity['nanometer'] = 1.2 * unit.nanometer
     """Minimum distance from any solute atoms to the solvent box edge."""
-
-    @validator('solvent_model')
-    def allowed_solvent(cls, v):
-        allowed_models = ['tip3p', 'spce', 'tip4pew', 'tip5p']
-        if v.lower() not in allowed_models:
-            errmsg = (
-                f"Only {allowed_models} are allowed solvent_model values"
-            )
-            raise ValueError(errmsg)
-        return v
 
     @validator('solvent_padding')
     def is_positive_distance(cls, v):

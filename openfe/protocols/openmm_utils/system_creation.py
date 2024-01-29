@@ -17,8 +17,10 @@ from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
     Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
 )
-from ..openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SimulationSettings, SolvationSettings,
+from openfe.protocols.openmm_utils.omm_settings import (
+    SystemSettings,
+    SimulationSettings,
+    OpenMMSolvationSettings,
     IntegratorSettings,
 )
 
@@ -135,11 +137,13 @@ def get_system_generator(
 ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 
 
-def get_omm_modeller(protein_comp: Optional[ProteinComponent],
-                     solvent_comp: Optional[SolventComponent],
-                     small_mols: dict[SmallMoleculeComponent, OFFMol],
-                     omm_forcefield : app.ForceField,
-                     solvent_settings : SolvationSettings) -> ModellerReturn:
+def get_omm_modeller(
+    protein_comp: Optional[ProteinComponent],
+    solvent_comp: Optional[SolventComponent],
+    small_mols: dict[SmallMoleculeComponent, OFFMol],
+    omm_forcefield : app.ForceField,
+    solvent_settings : OpenMMSolvationSettings
+) -> ModellerReturn:
     """
     Generate an OpenMM Modeller class based on a potential input ProteinComponent,
     SolventComponent, and a set of small molecules.

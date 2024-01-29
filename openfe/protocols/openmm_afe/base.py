@@ -51,7 +51,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    SolvationSettings,
+    BaseSolvationSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings,
 )
@@ -231,7 +231,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
           * system_settings : SystemSettings
-          * solvation_settings : SolvationSettings
+          * solvation_settings : BaseSolvationSettings
           * alchemical_settings : AlchemicalSettings
           * sampler_settings : AlchemicalSamplerSettings
           * engine_settings : OpenMMEngineSettings
@@ -289,7 +289,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
-        solvation_settings: SolvationSettings
+        solvation_settings: BaseSolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
@@ -305,7 +305,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           List of openff Molecules to add.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
-        solvation_settings : SolvationSettings
+        solvation_settings : BaseSolvationSettings
           Settings detailing how to solvate the system.
 
         Returns

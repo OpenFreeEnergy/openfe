@@ -34,7 +34,7 @@ from gufe import (
 )
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
-    SolvationSettings, OpenMMEngineSettings,
+    OpenMMSolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettingsMD,
     RepeatSettings,
 )
@@ -123,7 +123,7 @@ class PlainMDProtocol(gufe.Protocol):
                 pressure=1 * unit.bar,
             ),
             system_settings=SystemSettings(),
-            solvation_settings=SolvationSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettingsMD(
@@ -459,15 +459,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             'settings']
         stateA = self._inputs['stateA']
 
-        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = \
-            protocol_settings.forcefield_settings
-        thermo_settings: settings.ThermoSettings = \
-            protocol_settings.thermo_settings
+        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
+        thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         system_settings: SystemSettings = protocol_settings.system_settings
-        solvation_settings: SolvationSettings = \
-            protocol_settings.solvation_settings
-        sim_settings: SimulationSettingsMD = \
-            protocol_settings.simulation_settings
+        solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
+        sim_settings: SimulationSettingsMD = protocol_settings.simulation_settings
         timestep = protocol_settings.integrator_settings.timestep
         mc_steps = protocol_settings.integrator_settings.n_steps.m
         integrator_settings = protocol_settings.integrator_settings
