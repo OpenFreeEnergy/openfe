@@ -100,8 +100,16 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
     The periodic cell size is defined by one, and only one, of the following:
       * ``solvent_padding`` in combination with ``box_shape``,
+      * ``number_of_solvent_molecules`` in combination with ``box_shape``,
       * ``box_vectors``,
       * ``box_size``
+
+    When using ``number_of_solvent_molecules``, the size of the cell is
+    defined by :meth:`openmm.app.Modeller.addSolvent` internal heuristics,
+    automatically selecting a padding value that is large enough to contain
+    the number of waters based on a geometric estimate of the volume required
+    by each water molecule.
+
 
     Defining the pertiodic cell shape
     ---------------------------------
@@ -141,12 +149,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     """
     solvent_padding: Optional[FloatQuantity['nanometer'] = 1.2 * unit.nanometer]
     """
-    Minimum distance from any solute atoms to the edge of the solvent box.
-
-    When used, the number of waters to add is defined by OpenMM.Modeller's
-    internal heuristics. These heuristics are based on a geometric estimate
-    of the volume required by each water molecule.
-
+    Minimum distance from any solute bounding sphere to the edge of the box.
 
     Note
     ----
@@ -165,12 +168,6 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     number_of_solvent_molecules: Optional[int] = None
     """
     The number of solvent molecules (water + ions) to add.
-
-    When defined, the size of the cell will be defined by OpenMM.Modeller's
-    internal heuristics, automatically selecting a padding value that
-    is large enough to contain the number of waters based on a geometric
-    estimate of the volume required by each water molecule.
-
 
     Note
     ----
@@ -200,6 +197,17 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``solvent_padding``,
       ``number_of_solvent_molecules``, or ``box_vectors``.
     """
+
+    @validator('box_vectors')
+    def supported_vectors(cls, v):
+        if v is not None:
+             from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
+        if v.lower() not in supported:
+            errmsg = ("Only the following sampler_method values are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
+
 
 
 
