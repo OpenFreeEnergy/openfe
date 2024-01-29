@@ -198,7 +198,7 @@ def test_dry_run_vac_benzene(benzene_modifications,
                              method, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
-    s.alchemsampler_settings.sampler_method = method
+    s.alchemsampler_settings.alchemical_sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,

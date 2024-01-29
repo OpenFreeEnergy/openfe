@@ -33,6 +33,7 @@ import logging
 from collections import defaultdict
 import gufe
 from gufe.components import Component
+from gufe.tokenization import nested_key_moved
 from openff.toolkit.topology import Molecule as OFFMolecule
 import itertools
 import numpy as np
@@ -565,7 +566,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         solvent_units = [
             AbsoluteSolvationSolventUnit(
                 stateA=stateA, stateB=stateB,
-                settings=self.settings,
+                protocol=self,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
@@ -579,7 +580,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 # These don't really reflect the actual transform
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
                 stateA=stateA, stateB=stateB,
-                settings=self.settings,
+                protocol=self,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
@@ -670,7 +671,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * integrator_settings : IntegratorSettings
             * simulation_settings : SimulationSettings
         """
-        prot_settings = self._inputs['settings']
+        prot_settings = self._inputs['protocol'].settings
 
         settings = {}
         settings['forcefield_settings'] = prot_settings.forcefield_settings
@@ -754,7 +755,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * integrator_settings : IntegratorSettings
             * simulation_settings : SimulationSettings
         """
-        prot_settings = self._inputs['settings']
+        prot_settings = self._inputs['protocol'].settings
 
         settings = {}
         settings['forcefield_settings'] = prot_settings.forcefield_settings
