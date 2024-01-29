@@ -20,8 +20,12 @@ from gufe.settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings, SimulationSettings
+    SystemSettings,
+    OpenMMSolvationSettings,
+    AlchemicalSamplerSettings,
+    OpenMMEngineSettings,
+    IntegratorSettings,
+    SimulationSettings
 )
 
 try:
@@ -107,7 +111,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     # Things for creating the systems
     system_settings: SystemSettings
     """Simulation system settings including the long-range non-bonded method."""
-    solvation_settings: SolvationSettings
+    solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
 
     # Alchemical settings

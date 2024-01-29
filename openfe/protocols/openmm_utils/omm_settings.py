@@ -64,17 +64,22 @@ class SystemSettings(SettingsBaseModel):
         return v
 
 
-class SolvationSettings(SettingsBaseModel):
-    """Settings for solvating the system
+class BaseSolvationSettings(SettingsBaseModel):
+    """
+    Base class for SolvationSettings objects
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class OpenMMSolvationSettings(BaseSolvationSettings):
+    """Settings for controlling how a system is solvated using OpenMM tooling
 
     Note
     ----
     No solvation will happen if a SolventComponent is not passed.
 
     """
-    class Config:
-        arbitrary_types_allowed = True
-
     solvent_model = 'tip3p'
     """
     Force field water model to use.

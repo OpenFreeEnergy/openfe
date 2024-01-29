@@ -23,7 +23,7 @@ from gufe.settings import (
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SystemSettings,
-    SolvationSettings,
+    OpenMMSolvationSettings,
     AlchemicalSamplerSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
@@ -85,7 +85,7 @@ class AbsoluteSolvationSettings(Settings):
     Simulation system settings including the
     long-range non-bonded methods for the solvent transformation.
     """
-    solvation_settings: SolvationSettings
+    solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
 
     # Alchemical settings
