@@ -4,6 +4,7 @@ import json
 import openfe
 from openfe.protocols import openmm_afe
 import gufe
+from gufe.tokenization import JSON_HANDLER
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
 
@@ -91,3 +92,15 @@ class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
     @pytest.fixture()
     def instance(self, protocol_result):
         return protocol_result
+
+
+def test_serialized_protocol_migration(afe_solv_protocol_json):
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol.from_dict(
+        json.loads(
+            afe_solv_protocol_json,
+            cls=JSON_HANDLER.decoder
+        )
+    )
+
+    assert isinstance(protocol, openmm_afe.AbsoluteSolvationProtocol)
