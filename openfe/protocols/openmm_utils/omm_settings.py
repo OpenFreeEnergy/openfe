@@ -194,7 +194,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('sampler_method')
+    @validator('alchemical_sampler_method')
     def supported_sampler(cls, v):
         supported = ['repex', 'sams', 'independent']
         if v.lower() not in supported:

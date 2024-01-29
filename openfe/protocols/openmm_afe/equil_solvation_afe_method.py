@@ -383,6 +383,16 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
     _settings: AbsoluteSolvationSettings
 
     @classmethod
+    def serialization_migration(cls, dct, version):
+        if version == 1:
+            dct = nested_key_moved(
+                dct,
+                old_name="settings.alchemsampler_settings.sampler_method",
+                new_name="settings.alchemsampler_settings.alchemical_sampler_method",
+            )
+        return dct
+
+    @classmethod
     def _default_settings(cls):
         """A dictionary of initial settings for this creating this Protocol
 
