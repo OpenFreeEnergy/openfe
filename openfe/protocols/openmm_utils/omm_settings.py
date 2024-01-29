@@ -126,7 +126,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    sampler_method = "repex"
+    alchemical_sampler_method = "repex"
     """
     Alchemical sampling method, must be one of;
     `repex` (Hamiltonian Replica Exchange),
