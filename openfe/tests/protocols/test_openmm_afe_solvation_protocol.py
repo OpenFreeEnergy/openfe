@@ -72,7 +72,7 @@ def test_validate_lambda_schedule_naked_charge(val, default_settings):
     default_settings.lambda_settings.lambda_restraints = val['restraints']
     default_settings.alchemsampler_settings.n_replicas = 2
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings.lambda_settings)
 
 
 @pytest.mark.parametrize('val', [
@@ -87,7 +87,7 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
     errmsg = (f"Number of replicas {n_replicas} does not equal the"
               f" number of lambda windows {len(val['vdw'])}")
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings.lambda_settings)
 
 
 @pytest.mark.parametrize('val', [
@@ -104,7 +104,7 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
         f" windows and {len(val['vdw'])} vdw lambda windows.")
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings.lambda_settings)
 
 
 def test_create_default_protocol(default_settings):
