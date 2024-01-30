@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Optional, Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
+from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 import os
 
 from gufe.settings import (
@@ -202,13 +203,10 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     @validator('box_vectors')
     def supported_vectors(cls, v):
         if v is not None:
-             from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
-        if v.lower() not in supported:
-            errmsg = ("Only the following sampler_method values are "
-                      f"supported: {supported}")
-            raise ValueError(errmsg)
+            if not _box_vectors_are_in_reduced_form(v):
+                errmsg = f"box_vectors: {v} are not in OpenMM reduced form"
+                raise ValueError(errmsg)
         return v
-
 
     @validator('solvent_padding')
     def is_positive_distance(cls, v):
