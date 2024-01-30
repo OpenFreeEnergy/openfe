@@ -66,7 +66,6 @@ class SystemSettings(SettingsBaseModel):
 
 class BaseSolvationSettings(SettingsBaseModel):
     """
-<<<<<<< HEAD
     Base class for SolvationSettings objects.
     """
     class Config:
@@ -224,7 +223,6 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
         return v
 
 
-=======
     @validator('solvent_padding')
     def is_positive_distance(cls, v):
         # these are time units, not simulation steps
@@ -235,7 +233,6 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
             errmsg = "solvent_padding must be a positive value"
             raise ValueError(errmsg)
         return v
->>>>>>> solvation-prep
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
