@@ -139,20 +139,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     See Also
     --------
     :mod:`openmm.app.Modeller`
-=======
     Base class for SolvationSettings objects
-    """
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class OpenMMSolvationSettings(BaseSolvationSettings):
-    """Settings for controlling how a system is solvated using OpenMM tooling
-
-    Note
-    ----
-    No solvation will happen if a SolventComponent is not passed.
-
     """
     solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
