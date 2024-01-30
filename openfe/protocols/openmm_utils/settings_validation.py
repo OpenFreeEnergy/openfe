@@ -10,6 +10,38 @@ from openff.units import unit
 from gufe import (
     Component, ChemicalSystem, SolventComponent, ProteinComponent
 )
+from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
+
+
+def validate_openmm_solvation_settings(
+    settings: OpenMMSolvationSettings
+) -> None:
+    """
+    Checks that the OpenMMSolvation settings are correct.
+
+    Raises
+    ------
+    ValueError
+      If more than one of ``solvent_padding``, ``number_of_solvent_molecules``,
+      ``box_vectors``, or ``box_size`` are defined.
+      If ``box_shape`` is defined alongside either ``box_vectors``,
+      or ``box_size``.
+    """
+    unique_attributes = (
+        settings.solvent_padding, settings.number_of_solvent_molecules,
+        settings.box_vectors, settings.box_size,
+    )
+    if len([x for x in unique_attributes if x is not None]) > 1:
+        errmsg = ("Only one of solvent_padding, number_of_solvent_molecules, "
+                  "box_vectors, and box_size can be defined in the solvation "
+                  "settings.")
+        raise ValueError(errmsg)
+
+    if settings.box_shape is not None:
+        if settings.box_size is not None or settings.box_vectors is not None:
+            errmsg = ("box_shape cannot be defined alongside either box_size "
+                      "or box_vectors in the solvation settings.")
+            raise ValueError(errmsg)
 
 
 def validate_timestep(hmass: float, timestep: unit.Quantity):
