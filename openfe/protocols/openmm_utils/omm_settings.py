@@ -149,7 +149,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
-    solvent_padding: Optional[FloatQuantity['nanometer'] = 1.2 * unit.nanometer]
+    solvent_padding: Optional[FloatQuantity['nanometer']] = 1.2 * unit.nanometer
     """
     Minimum distance from any solute bounding sphere to the edge of the box.
 
@@ -240,7 +240,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
             return v
 
         if v.shape != (3, ):
-            errmsg = (f"box_size must be an 1-D array of length 3")
+            errmsg = (f"box_size must be an 1-D array of length 3 "
                       f"got {v} with shape {v.shape}")
             raise ValueError(errmsg)
 

@@ -152,6 +152,11 @@ class PlainMDProtocol(gufe.Protocol):
         # Validate protein component
         system_validation.validate_protein(stateA)
 
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
+
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)

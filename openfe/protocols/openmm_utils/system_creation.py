@@ -214,21 +214,32 @@ def get_omm_modeller(
 
     # Add solvent if neeeded
     if solvent_comp is not None:
-        # Note: boxSize is set to None, overall it is safer to
-        # have users specify the vectors instead of relying on the edge lengths
-        # TODO box vectors need checking / validation
+        # Do unit conversions if necessary
+        solvent_padding = None
+        box_size = None
+        box_vectors = None
+
+        if solvent_settings.solvent_padding is not None:
+            padding = to_openmm(solvent_settings.solvent_padding)
+
+        if solvent_settings.box_size is not None:
+            box_size = to_openmm(solvent_settings.box_size)
+
+        if solvent_settings.box_vectors is not None:
+            box_vectors = to_openmm(solvent_settings.box_vectors)
+
         system_modeller.addSolvent(
             omm_forcefield,
             model=solvent_settings.solvent_model,
-            padding=to_openmm(solvent_comp.solvent_padding),
+            padding=padding,
             positiveIon=solvent_comp.positive_ion,
             negativeIon=solvent_comp.negative_ion,
             ionicStrength=to_openmm(solvent_comp.ion_concentration),
             neutralize=solvent_comp.neutralize,
-            boxSize=None,
-            boxVectors=to_openmm(solvent_comp.box_vectors),
-            boxShape=solvent_comp.box_shape,
-            numAdded=solvent_comp.num_solvent,
+            boxSize=box_size,
+            boxVectors=box_vectors,
+            boxShape=solvent_settings.box_shape,
+            numAdded=solvent_settings.number_of_solvent_molecules,
         )
 
         all_resids = np.array(

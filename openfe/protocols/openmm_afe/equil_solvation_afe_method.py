@@ -547,6 +547,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                       "passed")
             raise ValueError(errmsg)
 
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
+
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
 
