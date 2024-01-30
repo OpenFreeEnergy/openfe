@@ -106,7 +106,7 @@ class SolvationSettings(SettingsBaseModel):
         return v
 
 
-class AlchemicalSamplerSettings(SettingsBaseModel):
+# class AlchemicalSamplerSettings(SettingsBaseModel):
     # """Settings for the Equilibrium Alchemical sampler, currently supporting
     # either MultistateSampler, SAMSSampler or ReplicaExchangeSampler.
     #
@@ -403,7 +403,8 @@ class SimulationSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-class MultistateSimulationSettings(SimulationSettings):
+
+class MultiStateSimulationSettings(SimulationSettings):
     """
     Settings for simulation control for multistate simulations,
     including simulation length and details of the alchemical sampler.
@@ -459,9 +460,7 @@ class MultistateSimulationSettings(SimulationSettings):
     Default `250`.
     
     """
-    early_termination_target_error: Optional[FloatQuantity['kcal/mol'] =
-    0.0 * unit.kilocalorie_per_mole
-    # todo: convert back to kT
+    early_termination_target_error: Optional[FloatQuantity['kcal/mol']] = 0.0 * unit.kilocalorie_per_mole
     # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
     #  (later would give an example of unit).
     """

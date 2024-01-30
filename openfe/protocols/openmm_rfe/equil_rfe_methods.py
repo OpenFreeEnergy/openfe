@@ -879,12 +879,18 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 12. Create sampler
         self.logger.info("Creating and setting up the sampler")
+        # convert early_termination_target_error from kcal/mol to kT
+        temp = thermo_settings.temperature
+        kB = 0.001987204 * unit.kilocalorie_per_mole / unit.kelvin
+        kT = temp * kB
+        early_termination_target_error = kT / sampler_settings.early_termination_target_error
+
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
                 online_analysis_interval=sampler_settings.real_time_analysis_interval,
-                online_analysis_target_error=sampler_settings.early_termination_target_error.m,
+                online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations
             )
         elif sampler_settings.sampler_method.lower() == "sams":
@@ -901,7 +907,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
                 online_analysis_interval=sampler_settings.real_time_analysis_interval,
-                online_analysis_target_error=sampler_settings.early_termination_target_error.m,
+                online_analysis_target_error=early_termination_target_error,
                 online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations
             )
 
