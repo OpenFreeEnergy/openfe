@@ -82,12 +82,6 @@ class AlchemicalSettings(SettingsBaseModel):
     at lambda 0 and old exceptions at lambda 1. If False they are present
     in the nonbonded force. Default False.
     """
-    flatten_torsions = False
-    """
-    Whether to scale torsion terms involving unique atoms, such that at the
-    endstate the torsion term is turned off/on depending on the state the
-    unique atoms belong to. Default False.
-    """
     explicit_charge_correction = False
     """
     Whether to explicitly account for a charge difference during the

@@ -85,7 +85,7 @@ class TestAbsoluteSolvationVacuumUnit(GufeTokenizableTestsMixin):
 
 class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocolResult
-    key = "AbsoluteSolvationProtocolResult-e9590f4df17ff340afe5d734f602773a"
+    key = "AbsoluteSolvationProtocolResult-291fef7bbbad3ffda898be6c01a22f16"
     repr = f"<{key}>"
 
     @pytest.fixture()

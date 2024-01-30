@@ -86,9 +86,7 @@ class HybridTopologyFactory:
                  softcore_alpha=0.5,
                  softcore_LJ_v2=True,
                  softcore_LJ_v2_alpha=0.85,
-                 interpolate_old_and_new_14s=False,
-                 flatten_torsions=False,
-                 **kwargs):
+                 interpolate_old_and_new_14s=False):
         """
         Initialize the Hybrid topology factory.
 
@@ -126,10 +124,6 @@ class HybridTopologyFactory:
             Whether to turn off interactions for new exceptions (not just
             1,4s) at lambda = 0 and old exceptions at lambda = 1; if False,
             they are present in the nonbonded force.
-        flatten_torsions : bool, default False
-            If True, torsion terms involving `unique_new_atoms` will be
-            scaled such that at lambda=0,1, the torsion term is turned off/on
-            respectively. The opposite is true for `unique_old_atoms`.
         """
 
         # Assign system positions and force
@@ -148,11 +142,6 @@ class HybridTopologyFactory:
         # Other options
         self._use_dispersion_correction = use_dispersion_correction
         self._interpolate_14s = interpolate_old_and_new_14s
-
-        # TODO: re-implement this at some point
-        if flatten_torsions:
-            errmsg = "Flatten torsions option is not current implemented"
-            raise ValueError(errmsg)
 
         # Sofcore options
         self._softcore_alpha = softcore_alpha
@@ -911,15 +900,14 @@ class HybridTopologyFactory:
         # Select functional form based on nonbonded method.
         # TODO: check _nonbonded_custom_ewald and _nonbonded_custom_cutoff
         # since they take arguments that are never used...
+        r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
+        sterics_energy_expression = self._nonbonded_custom(self._softcore_LJ_v2)
         if self._nonbonded_method in [openmm.NonbondedForce.NoCutoff]:
             sterics_energy_expression = self._nonbonded_custom(
                 self._softcore_LJ_v2)
         elif self._nonbonded_method in [openmm.NonbondedForce.CutoffPeriodic,
                                         openmm.NonbondedForce.CutoffNonPeriodic]:
             epsilon_solvent = self._old_system_forces['NonbondedForce'].getReactionFieldDielectric()
-            r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
-            sterics_energy_expression = self._nonbonded_custom(
-                self._softcore_LJ_v2)
             standard_nonbonded_force.setReactionFieldDielectric(
                 epsilon_solvent)
             standard_nonbonded_force.setCutoffDistance(r_cutoff)
@@ -927,9 +915,6 @@ class HybridTopologyFactory:
                                         openmm.NonbondedForce.Ewald]:
             [alpha_ewald, nx, ny, nz] = self._old_system_forces['NonbondedForce'].getPMEParameters()
             delta = self._old_system_forces['NonbondedForce'].getEwaldErrorTolerance()
-            r_cutoff = self._old_system_forces['NonbondedForce'].getCutoffDistance()
-            sterics_energy_expression = self._nonbonded_custom(
-                self._softcore_LJ_v2)
             standard_nonbonded_force.setPMEParameters(alpha_ewald, nx, ny, nz)
             standard_nonbonded_force.setEwaldErrorTolerance(delta)
             standard_nonbonded_force.setCutoffDistance(r_cutoff)
@@ -950,6 +935,8 @@ class HybridTopologyFactory:
 
         sterics_custom_nonbonded_force = openmm.CustomNonbondedForce(
             total_sterics_energy)
+        # Match cutoff from non-custom NB forces
+        sterics_custom_nonbonded_force.setCutoffDistance(r_cutoff)
 
         if self._softcore_LJ_v2:
             sterics_custom_nonbonded_force.addGlobalParameter(
