@@ -158,7 +158,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``number_of_solvent_molecules``,
       ``box_size``, or ``box_vectors``.
     """
-    box_shape: Literal['cube', 'dodecahedron', 'octahedron'] = 'cube'
+    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'cube'
     """
     The shape of the periodic box to create.
 
@@ -211,13 +211,42 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     @validator('solvent_padding')
     def is_positive_distance(cls, v):
         # these are time units, not simulation steps
+        if v is None:
+            return v
+
         if not v.is_compatible_with(unit.nanometer):
             raise ValueError("solvent_padding must be in distance units "
                              "(i.e. nanometers)")
         if v < 0:
             errmsg = "solvent_padding must be a positive value"
             raise ValueError(errmsg)
+
         return v
+
+    @validator('number_of_solvent_molecules')
+    def positive_solvent_number(cls, v):
+        if v is None:
+            return v
+
+        if v <= 0:
+            errmsg = f"number_of_solvent molecules: {v} must be positive"
+            raise ValueError(errmsg)
+
+        return v
+
+    @validator('box_size')
+    def box_size_properties(cls, v):
+        if v is None:
+            return v
+
+        if v.shape != (3, ):
+            errmsg = (f"box_size must be an 1-D array of length 3")
+                      f"got {v} with shape {v.shape}")
+            raise ValueError(errmsg)
+
+        if not v.is_compatible_with(unit.nanometer):
+            errmsg = f"box_size is not in compatible distance units: {v}"
+            raise ValueError(errmsg)
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
