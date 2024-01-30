@@ -8,8 +8,11 @@ This module implements the settings necessary to run MD simulations using
 
 """
 from openfe.protocols.openmm_utils.omm_settings import (
-    Settings, SystemSettings,
-    SolvationSettings, OpenMMEngineSettings, SimulationSettingsMD,
+    Settings,
+    SystemSettings,
+    OpenMMSolvationSettings,
+    OpenMMEngineSettings,
+    SimulationSettingsMD,
     IntegratorSettings
 )
 from gufe.settings import SettingsBaseModel
@@ -30,7 +33,7 @@ class PlainMDProtocolSettings(Settings):
 
     # Things for creating the systems
     system_settings: SystemSettings
-    solvation_settings: SolvationSettings
+    solvation_settings: OpenMMSolvationSettings
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings

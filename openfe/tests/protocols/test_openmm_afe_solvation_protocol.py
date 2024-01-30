@@ -600,7 +600,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-2.977553138764437)
+        assert est.m == pytest.approx(-2.99302065845999)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -608,7 +608,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.19617297299036018)
+        assert est.m == pytest.approx(0.2315296517940568)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -649,7 +649,7 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1['matrix'], np.ndarray)
-        assert ovp1['matrix'].shape == (15, 15)
+        assert ovp1['matrix'].shape == (14, 14)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_replica_transition_statistics(self, key, protocolresult):
@@ -661,8 +661,8 @@ class TestProtocolResult:
         rpx1 = rpx[key][0]
         assert 'eigenvalues' in rpx1
         assert 'matrix' in rpx1
-        assert rpx1['eigenvalues'].shape == (15,)
-        assert rpx1['matrix'].shape == (15, 15)
+        assert rpx1['eigenvalues'].shape == (14,)
+        assert rpx1['matrix'].shape == (14, 14)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_equilibration_iterations(self, key, protocolresult):

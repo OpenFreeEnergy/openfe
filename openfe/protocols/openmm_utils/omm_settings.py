@@ -66,6 +66,7 @@ class SystemSettings(SettingsBaseModel):
 
 class BaseSolvationSettings(SettingsBaseModel):
     """
+<<<<<<< HEAD
     Base class for SolvationSettings objects.
     """
     class Config:
@@ -139,6 +140,20 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     See Also
     --------
     :mod:`openmm.app.Modeller`
+=======
+    Base class for SolvationSettings objects
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class OpenMMSolvationSettings(BaseSolvationSettings):
+    """Settings for controlling how a system is solvated using OpenMM tooling
+
+    Note
+    ----
+    No solvation will happen if a SolventComponent is not passed.
+
     """
     solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
@@ -209,6 +224,18 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
         return v
 
 
+=======
+    @validator('solvent_padding')
+    def is_positive_distance(cls, v):
+        # these are time units, not simulation steps
+        if not v.is_compatible_with(unit.nanometer):
+            raise ValueError("solvent_padding must be in distance units "
+                             "(i.e. nanometers)")
+        if v < 0:
+            errmsg = "solvent_padding must be a positive value"
+            raise ValueError(errmsg)
+        return v
+>>>>>>> solvation-prep
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
