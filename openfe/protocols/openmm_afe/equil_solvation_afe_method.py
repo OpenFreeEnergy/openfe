@@ -592,7 +592,6 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             logger.warning(wmsg)
             warnings.warn(wmsg)
 
-
     def _create(
         self,
         stateA: ChemicalSystem,
