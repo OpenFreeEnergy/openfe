@@ -18,8 +18,49 @@ from openfe.protocols.openmm_utils import (
     multistate_analysis
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SolvationSettings, IntegratorSettings,
+    SystemSettings, OpenMMSolvationSettings, IntegratorSettings,
 )
+
+
+@pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
+    [1.2 * unit.nanometer, 20, 20 * np.identity(3) * unit.angstrom,
+     [2, 2, 2] * unit.angstrom],
+    [1.2 * unit.nanometer, None, None, [2, 2, 2] * unit.angstrom],
+    [1.2 * unit.nanometer, None, 20 * np.identity(3) * unit.angstrom, None],
+    [1.2 * unit.nanometer, 20, None, None],
+])
+def test_validate_ommsolvation_settings_unique_settings(
+    padding, number_solv, box_vectors, box_size
+):
+    settings = OpenMMSolvationSettings(
+        solvent_padding=padding,
+        number_of_solvent_molecules=number_solv,
+        box_vectors=box_vectors,
+        box_size=box_size,
+    )
+
+    errmsg = "Only one of solvent_padding, number_of_solvent_molecules,"
+    with pytest.raises(ValueError, match=errmsg):
+        settings_validation.validate_openmm_solvation_settings(settings)
+
+
+@pytest.mark.parametrize('box_vectors, box_size', [
+    [20 * np.identity(3) * unit.angstrom, None],
+    [None, [2, 2, 2] * unit.angstrom],
+])
+def test_vallidate_ommsolvation_settings_shape_conflicts(
+    box_vectors, box_size,
+):
+    settings = OpenMMSolvationSettings(
+        solvent_padding=None,
+        box_vectors=box_vectors,
+        box_size=box_size,
+        box_shape='cube',
+    )
+
+    errmsg = "box_shape cannot be defined alongside either box_size"
+    with pytest.raises(ValueError, match=errmsg):
+        settings_validation.validate_openmm_solvation_settings(settings)
 
 
 def test_validate_timestep():
@@ -337,7 +378,7 @@ class TestSystemCreation:
                 T4_protein_component, openfe.SolventComponent(),
                 {smc: mol},
                 generator.forcefield,
-                SolvationSettings())
+                OpenMMSolvationSettings())
 
         resids = [r for r in model.topology.residues()]
         assert resids[163].name == 'NME'
@@ -365,7 +406,7 @@ class TestSystemCreation:
             openfe.SolventComponent(neutralize=False),
             {smc: offmol},
             generator.forcefield,
-            SolvationSettings(),
+            OpenMMSolvationSettings(),
         )
 
         system = generator.create_system(

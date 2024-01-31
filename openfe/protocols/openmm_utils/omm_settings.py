@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from openff.models.types import FloatQuantity
+from openff.models.types import FloatQuantity, ArrayQuantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 import os
 
@@ -190,7 +190,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     :mod:`openff.interchange.components.interchange`
     :mod:`openff.interchange.components._packmol`
     """
-    box_size: Optional[FloatQuantity['nanometer']] = None
+    box_size: Optional[ArrayQuantity['nanometer']] = None
     """
     X, Y, and Z lengths of the unit cell for a rectangular box.
 
@@ -247,6 +247,8 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
         if not v.is_compatible_with(unit.nanometer):
             errmsg = f"box_size is not in compatible distance units: {v}"
             raise ValueError(errmsg)
+
+        return v
 
 
 class AlchemicalSamplerSettings(SettingsBaseModel):
