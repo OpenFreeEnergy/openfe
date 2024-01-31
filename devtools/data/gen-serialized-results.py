@@ -74,8 +74,12 @@ def generate_ahfe_json(smc):
     settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
-    settings.alchemical_settings.lambda_elec_windows = 5
-    settings.alchemical_settings.lambda_vdw_windows = 9
+    settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
+                                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                                            1.0]
+    settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
+                                           0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
+                                           1.0]
     settings.alchemsampler_settings.n_repeats = 3
     settings.alchemsampler_settings.n_replicas = 14
     settings.alchemsampler_settings.online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
