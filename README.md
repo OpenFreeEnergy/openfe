@@ -30,7 +30,7 @@ This is pre-alpha work, it should not be considered ready for production and API
 The latest release of `openfe` can be installed via `mamba`, `docker`, or a `single file installer`. See [our installation instructions](https://docs.openfree.energy/en/stable/installation.html) for more details.
 Dependencies can be installed via conda through:
 
-### Developement version
+### Development version
 
 The development version of `openfe` can be installed directly from the `main` branch of this repository.
 
