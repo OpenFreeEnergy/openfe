@@ -19,7 +19,7 @@ class TestOMMSettingsFromStrings:
         assert s.nonbonded_cutoff == 1.1 * unit.nanometer
 
     def test_solvation_settings(self):
-        s = omm_settings.SolvationSettings()
+        s = omm_settings.OpenMMSolvationSettings()
 
         s.solvent_padding = '1.1 nm'
 

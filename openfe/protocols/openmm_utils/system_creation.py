@@ -220,7 +220,7 @@ def get_omm_modeller(
         box_vectors = None
 
         if solvent_settings.solvent_padding is not None:
-            padding = to_openmm(solvent_settings.solvent_padding)
+            solvent_padding = to_openmm(solvent_settings.solvent_padding)
 
         if solvent_settings.box_size is not None:
             box_size = to_openmm(solvent_settings.box_size)
@@ -231,7 +231,7 @@ def get_omm_modeller(
         system_modeller.addSolvent(
             omm_forcefield,
             model=solvent_settings.solvent_model,
-            padding=padding,
+            padding=solvent_padding,
             positiveIon=solvent_comp.positive_ion,
             negativeIon=solvent_comp.negative_ion,
             ionicStrength=to_openmm(solvent_comp.ion_concentration),

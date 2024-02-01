@@ -3,7 +3,9 @@
 import os
 from io import StringIO
 import copy
+from math import sqrt
 import numpy as np
+from numpy.testing import assert_allclose
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import json
@@ -743,6 +745,44 @@ def test_virtual_sites_no_reassign(benzene_system, toluene_system,
         errmsg = "Simulations with virtual sites without velocity"
         with pytest.raises(ValueError, match=errmsg):
             dag_unit.run(dry=True)
+
+
+def test_dodecahdron_ligand_box(benzene_system, toluene_system,
+                                benzene_to_toluene_mapping, tmpdir):
+    """
+    Test that a hybrid system with a dodechadron is built properly.
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.solvation_settings.box_shape = 'dodecahedron'
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        hs = sampler._factory.hybrid_system
+
+        vectors = hs.getDefaultPeriodicBoxVectors()
+
+        width = float(from_openmm(vectors)[0][0].to('nanometer').m)
+        # dodecahedron has the following shape:
+        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+
+        expected_vectors = [
+            [width, 0, 0],
+            [0, width, 0],
+            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+        ] * unit.nanometer
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors)
+        )
 
 
 @pytest.mark.slow

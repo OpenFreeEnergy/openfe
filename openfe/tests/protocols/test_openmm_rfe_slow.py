@@ -135,3 +135,39 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
                     keep_shared=True)
 
     assert r.ok()
+
+
+@pytest.mark.integration
+@pytest.mark.flaky(reruns=3)
+def test_run_dodecahdron_sim(
+    benzene_system, toluene_system, benzene_to_toluene_mapping, tmpdir
+):
+    """
+    Test that we can run a ligand in solvent RFE with a non-cubic box
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.solvation_settings.box_shape = 'dodecahedron'
+    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    settings.simulation_settings.production_length = 0.1 * unit.picosecond
+    settings.integrator_settings.n_steps = 5 * unit.timestep
+    settings.simulation_settings.checkpoint_interval = 5 * unit.timestep
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping={'ligand': benzene_to_toluene_mapping},
+    )
+
+    cwd = pathlib.Path(str(tmpdir))
+
+    r = execute_DAG(
+        dag,
+        shared_basedir=cwd,
+        scratch_basedir=cwd,
+        keep_shared=True
+    )
+
+    assert r.ok()
