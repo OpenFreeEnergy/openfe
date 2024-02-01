@@ -53,7 +53,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     SolvationSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings,
+    IntegratorSettings, SimulationSettings, LambdaSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
@@ -233,6 +233,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * system_settings : SystemSettings
           * solvation_settings : SolvationSettings
           * alchemical_settings : AlchemicalSettings
+          * lambda_settings : LambdaSettings
           * sampler_settings : AlchemicalSamplerSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
@@ -407,21 +408,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           LambdaProtocol
         """
         lambdas = dict()
-        n_elec = settings['alchemical_settings'].lambda_elec_windows
-        n_vdw = settings['alchemical_settings'].lambda_vdw_windows + 1
-        lambdas['lambda_electrostatics'] = np.concatenate(
-                [np.linspace(1, 0, n_elec), np.linspace(0, 0, n_vdw)[1:]]
-        )
-        lambdas['lambda_sterics'] = np.concatenate(
-                [np.linspace(1, 1, n_elec), np.linspace(1, 0, n_vdw)[1:]]
-        )
 
-        n_replicas = settings['sampler_settings'].n_replicas
+        lambda_elec = settings['lambda_settings'].lambda_elec
+        lambda_vdw = settings['lambda_settings'].lambda_vdw
 
-        if n_replicas != (len(lambdas['lambda_sterics'])):
-            errmsg = (f"Number of replicas {n_replicas} "
-                      "does not equal the number of lambda windows ")
-            raise ValueError(errmsg)
+        # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
+        # means fully interacting, not stateB
+        lambda_elec = [1-x for x in lambda_elec]
+        lambda_vdw = [1-x for x in lambda_vdw]
+        lambdas['lambda_electrostatics'] = lambda_elec
+        lambdas['lambda_sterics'] = lambda_vdw
 
         return lambdas
 
@@ -762,11 +758,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # minimize
             if self.verbose:
                 self.logger.info("minimizing systems")
-
             sampler.minimize(
                 max_iterations=settings['simulation_settings'].minimization_steps
             )
-
             # equilibrate
             if self.verbose:
                 self.logger.info("equilibrating systems")
@@ -776,7 +770,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # production
             if self.verbose:
                 self.logger.info("running production phase")
-
             sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
             if self.verbose:
