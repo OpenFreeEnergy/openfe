@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import pathlib
 import logging
+import warnings
 from collections import defaultdict
 import gufe
 from gufe.components import Component
@@ -412,7 +413,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 ],
                 lambda_vdw=[
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0]),
+                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+            ),
             alchemsampler_settings=AlchemicalSamplerSettings(
                 n_replicas=14,
             ),
@@ -532,7 +534,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
     @staticmethod
     def _validate_lambda_schedule(
-            settings: AbsoluteSolvationSettings
+            lambda_settings: LambdaSettings,
+            alchemsampler_settings: AlchemicalSamplerSettings,
     ) -> None:
         """
         Checks that the lambda schedule is set up correctly.
@@ -548,11 +551,14 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
           If the number of lambda windows differs for electrostatics and sterics.
           If the number of replicas does not match the number of lambda windows.
           If there are states with naked charges.
+        Warnings
+          If there are non-zero values for restraints (lambda_restraints).
         """
 
-        lambda_elec = settings.lambda_settings.lambda_elec
-        lambda_vdw = settings.lambda_settings.lambda_vdw
-        n_replicas = settings.alchemsampler_settings.n_replicas
+        lambda_elec = lambda_settings.lambda_elec
+        lambda_vdw = lambda_settings.lambda_vdw
+        lambda_restraints = lambda_settings.lambda_restraints
+        n_replicas = alchemsampler_settings.n_replicas
 
         # Ensure that all lambda components have equal amount of windows
         lambda_components = [lambda_vdw, lambda_elec]
@@ -582,6 +588,15 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     f"elec {lam} vdW {lambda_vdw[inx]}")
                 raise ValueError(errmsg)
 
+        # Check if there are lambda windows with non-zero restraints
+        if len([r for r in lambda_restraints if r != 0]) > 0:
+            wmsg = ("Non-zero restraint lambdas applied. The absolute "
+                    "solvation protocol doesn't apply restraints, "
+                    "therefore restraints won't be applied. "
+                    f"Given lambda_restraints: {lambda_restraints}")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -601,7 +616,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         self._validate_alchemical_components(alchem_comps)
 
         # Validate the lambda schedule
-        self._validate_lambda_schedule(self.settings)
+        self._validate_lambda_schedule(self.settings.lambda_settings,
+                                       self.settings.alchemsampler_settings)
 
         # Check nonbond & solvent compatibility
         solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method

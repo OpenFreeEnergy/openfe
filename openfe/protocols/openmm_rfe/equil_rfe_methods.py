@@ -627,7 +627,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         mapping = self._inputs['ligandmapping']
 
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
-        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
         alchem_sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
@@ -637,19 +636,22 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = protocol_settings.simulation_settings
         output_settings: OutputSettings = protocol_settings.output_settings
-        timestep = protocol_settings.integrator_settings.timestep
-        mc_steps = protocol_settings.alchemical_sampler_settings.steps_per_iteration.m
+        integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
+
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
-            forcefield_settings.hydrogen_mass, timestep
+            forcefield_settings.hydrogen_mass,
+            integrator_settings.timestep
         )
         equil_steps = settings_validation.get_simsteps(
             sim_length=sim_settings.equilibration_length,
-            timestep=timestep, mc_steps=mc_steps,
+            timestep=integrator_settings.timestep,
+            mc_steps=integrator_settings.n_steps.m,
         )
         prod_steps = settings_validation.get_simsteps(
             sim_length=sim_settings.production_length,
-            timestep=timestep, mc_steps=mc_steps,
+            timestep=integrator_settings.timestep,
+            mc_steps=integrator_settings.n_steps.m,
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
@@ -674,6 +676,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings=forcefield_settings,
             integrator_settings=integrator_settings,
             thermo_settings=thermo_settings,
+            integrator_settings=integrator_settings,
             system_settings=system_settings,
             cache=ffcache,
             has_solvent=solvent_comp is not None,
@@ -855,10 +858,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 11. Set the integrator
-        #  a. get integrator settings
-        integrator_settings = protocol_settings.integrator_settings
-
-        # Validate settings
+        # a. Validate integrator settings for current system
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
         if hybrid_factory.has_virtual_sites:
@@ -947,13 +947,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 if verbose:
                     self.logger.info("Running equilibration phase")
 
-                sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
+                sampler.equilibrate(
+                    int(equil_steps / integrator_settings.n_steps.m)  # type: ignore
+                )
 
                 # production
                 if verbose:
                     self.logger.info("Running production phase")
 
-                sampler.extend(int(prod_steps / mc_steps))  # type: ignore
+                sampler.extend(
+                    int(prod_steps / integrator_settings.n_steps.m)  # type: ignore
+                )
 
                 self.logger.info("Production phase complete")
 

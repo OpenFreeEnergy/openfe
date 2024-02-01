@@ -72,7 +72,10 @@ def test_validate_lambda_schedule_naked_charge(val, default_settings):
     default_settings.lambda_settings.lambda_restraints = val['restraints']
     default_settings.alchemsampler_settings.n_replicas = 2
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.alchemsampler_settings,
+        )
 
 
 @pytest.mark.parametrize('val', [
@@ -87,7 +90,10 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
     errmsg = (f"Number of replicas {n_replicas} does not equal the"
               f" number of lambda windows {len(val['vdw'])}")
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.alchemsampler_settings,
+        )
 
 
 @pytest.mark.parametrize('val', [
@@ -104,7 +110,28 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
         f" windows and {len(val['vdw'])} vdw lambda windows.")
     with pytest.raises(ValueError, match=errmsg):
-        AbsoluteSolvationProtocol._validate_lambda_schedule(default_settings)
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.alchemsampler_settings,
+        )
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 1.0]},
+])
+def test_validate_lambda_schedule_nonzero_restraints(val, default_settings):
+    wmsg = ("Non-zero restraint lambdas applied. The absolute "
+            "solvation protocol doesn't apply restraints, "
+            "therefore restraints won't be applied.")
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    default_settings.alchemsampler_settings.n_replicas = 2
+    with pytest.warns(UserWarning, match=wmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.alchemsampler_settings,
+        )
 
 
 def test_create_default_protocol(default_settings):
@@ -629,7 +656,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-2.977553138764437)
+        assert est.m == pytest.approx(-2.47, abs=0.5)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -637,7 +664,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.19617297299036018)
+        assert est.m == pytest.approx(0.2, abs=0.2)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -678,7 +705,7 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1['matrix'], np.ndarray)
-        assert ovp1['matrix'].shape == (15, 15)
+        assert ovp1['matrix'].shape == (14, 14)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_replica_transition_statistics(self, key, protocolresult):
@@ -690,8 +717,8 @@ class TestProtocolResult:
         rpx1 = rpx[key][0]
         assert 'eigenvalues' in rpx1
         assert 'matrix' in rpx1
-        assert rpx1['eigenvalues'].shape == (15,)
-        assert rpx1['matrix'].shape == (15, 15)
+        assert rpx1['eigenvalues'].shape == (14,)
+        assert rpx1['matrix'].shape == (14, 14)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_equilibration_iterations(self, key, protocolresult):

@@ -171,8 +171,10 @@ def get_settings():
         pressure=1 * unit.bar,
     )
     system_settings = SystemSettings()
+    integrator_settings = IntegratorSettings()
 
-    return forcefield_settings, integrator_settings, thermo_settings, system_settings
+    return (forcefield_settings, integrator_settings, thermo_settings, system_settings,
+            integrator_settings)
 
 
 class TestFEAnalysis:
@@ -270,7 +272,7 @@ class TestSystemCreation:
     @staticmethod
     def get_settings():
         forcefield_settings = OpenMMSystemGeneratorFFSettings()
-        integrator_settings = IntegratorSettings
+        integrator_settings = IntegratorSettings()
         thermo_settings = ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
@@ -280,9 +282,10 @@ class TestSystemCreation:
         return forcefield_settings, integrator_settings, thermo_settings, system_settings
 
     def test_system_generator_nosolv_nocache(self, get_settings):
-        ffsets, intsets, thermosets, systemsets = get_settings
+        ffsets, intsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-                ffsets, intsets, thermosets, systemsets, None, False)
+            ffsets, intsets, thermosets, intsets, systemsets, None, False
+        )
         assert generator.barostat is None
         assert generator.template_generator._cache is None
         assert not generator.postprocess_system
@@ -303,18 +306,40 @@ class TestSystemCreation:
         assert generator.periodic_forcefield_kwargs == periodic_kwargs
 
     def test_system_generator_solv_cache(self, get_settings):
-        ffsets, intsets, thermosets, systemsets = get_settings
+        ffsets, intsets, thermosets, systemsets, intsets = get_settings
+
+        thermosets.temperature = 320 * unit.kelvin
+        thermosets.pressure = 1.25 * unit.bar
+        intsets.barostat_frequency = 200 * unit.timestep
         generator = system_creation.get_system_generator(
-                ffsets, intsets, thermosets, systemsets, Path('./db.json'), True)
+            ffsets, intsets, thermosets, intsets, systemsets, Path('./db.json'), True
+        )
+
+        # Check barostat conditions
         assert isinstance(generator.barostat, MonteCarloBarostat)
+
+        pressure = ensure_quantity(
+            generator.barostat.getDefaultPressure(), 'openff',
+        )
+        temperature = ensure_quantity(
+            generator.barostat.getDefaultTemperature(), 'openff',
+        )
+        assert pressure.m == pytest.approx(1.25)
+        assert pressure.units == unit.bar
+        assert temperature.m == pytest.approx(320)
+        assert temperature.units == unit.kelvin
+        assert generator.barostat.getFrequency() == 200
+
+        # Check cache file
         assert generator.template_generator._cache == 'db.json'
 
     def test_get_omm_modeller_complex(self, T4_protein_component,
                                       benzene_modifications,
                                       get_settings):
-        ffsets, intsets, thermosets, systemsets = get_settings
+        ffsets, intsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-                ffsets, intsets, thermosets, systemsets, None, True)
+            ffsets, intsets, thermosets, intsets, systemsets, None, True
+        )
 
         smc = benzene_modifications['toluene']
         mol = smc.to_openff()
@@ -337,9 +362,9 @@ class TestSystemCreation:
                      np.linspace(165, len(resids)-1, len(resids)-165))
 
     def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
-        ffsets, intsets, thermosets, systemsets = get_settings
+        ffsets, intsets, thermosets, systemsets, intsets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, intsets, thermosets, systemsets, None, True
+            ffsets, intsets, thermosets, intsets, systemsets, None, True
         )
 
         offmol = OFFMol.from_smiles('[O-]C=O')

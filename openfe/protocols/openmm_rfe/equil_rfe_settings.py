@@ -36,8 +36,10 @@ class LambdaSettings(SettingsBaseModel):
         extra = 'ignore'
         arbitrary_types_allowed = True
 
-    """Settings for the lambda protocol
-    This describes the lambda schedule.
+    """Lambda schedule settings.
+    
+    Settings controlling the lambda schedule, these include the switching 
+    function type, and the number of windows.
     """
     lambda_functions = 'default'
     """

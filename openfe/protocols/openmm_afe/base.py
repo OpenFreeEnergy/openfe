@@ -279,6 +279,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             forcefield_settings=settings['forcefield_settings'],
             integrator_settings=settings['integrator_settings'],
             thermo_settings=settings['thermo_settings'],
+            integrator_settings=settings['integrator_settings'],
             system_settings=settings['system_settings'],
             cache=ffcache,
             has_solvent=solvent_comp is not None,

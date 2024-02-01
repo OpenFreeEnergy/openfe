@@ -47,7 +47,18 @@ class AlchemicalSettings(SettingsBaseModel):
 
 
 class LambdaSettings(SettingsBaseModel):
-    """Settings for lambda schedule
+    """Lambda schedule settings.
+
+    Defines lists of floats to control various aspects of the alchemical
+    transformation.
+
+    Notes
+    --------
+    * In all cases a lambda value of 0 defines a fully interacting state A and
+    a non-interacting state B, whilst a value of 1 defines a fully interacting
+     state B and a non-interacting state A.
+    * ``lambda_elec``, `lambda_vdw``, and ``lambda_restraints`` must all be of
+    the same length, defining all the windows of the transformation.
     """
     lambda_elec: list[float] = [
         0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,

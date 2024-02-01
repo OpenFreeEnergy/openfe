@@ -505,6 +505,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings=forcefield_settings,
             integrator_settings=integrator_settings,
             thermo_settings=thermo_settings,
+            integrator_settings=integrator_settings,
             system_settings=system_settings,
             cache=ffcache,
             has_solvent=solvent_comp is not None,
