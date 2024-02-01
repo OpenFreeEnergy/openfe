@@ -207,7 +207,7 @@ class RelativeAlchemicalNetworkPlanner(
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
         # Todo: Another dirty hack! - START
-        protocol_settings = copy.deepcopy(transformation_protocol.settings)
+        protocol_settings = transformation_protocol.settings.unfrozen_copy()
         if "vacuum" in transformation_name:
             protocol_settings.system_settings.nonbonded_method = "nocutoff"
 
