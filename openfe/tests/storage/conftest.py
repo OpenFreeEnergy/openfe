@@ -31,7 +31,7 @@ def absolute_transformation(solvated_ligand, solvated_complex):
     return gufe.Transformation(
         solvated_ligand,
         solvated_complex,
-        protocol=DummyProtocol(settings=None),
+        protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
         mapping=None,
     )
 
@@ -40,7 +40,7 @@ def absolute_transformation(solvated_ligand, solvated_complex):
 def complex_equilibrium(solvated_complex):
     return gufe.NonTransformation(
         solvated_complex,
-        protocol=DummyProtocol(settings=None),
+        protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
     )
 
 
@@ -68,7 +68,7 @@ def benzene_variants_star_map(benzene_transforms, solv_comp,
 
         solvated_ligand_transformations[("benzene", ligand)] = gufe.Transformation(
             solvated_ligands['benzene'], solvated_ligands[ligand],
-            protocol=DummyProtocol(settings=None),
+            protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
             mapping=None,
         )
 
@@ -92,7 +92,7 @@ def benzene_variants_star_map(benzene_transforms, solv_comp,
         solvated_complex_transformations[("benzene", ligand)] = gufe.Transformation(
             solvated_complexes["benzene"],
             solvated_complexes[ligand],
-            protocol=DummyProtocol(settings=None),
+            protocol=DummyProtocol(settings=DummyProtocol.default_settings()),
             mapping=None,
         )
 
