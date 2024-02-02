@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import pathlib
 import logging
+import warnings
 from collections import defaultdict
 import gufe
 from gufe.components import Component
@@ -50,7 +51,7 @@ from gufe import (
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings, SystemSettings,
-    SolvationSettings, AlchemicalSettings,
+    SolvationSettings, AlchemicalSettings, LambdaSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings,
     SettingsBaseModel,
@@ -404,8 +405,17 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             solvent_system_settings=SystemSettings(),
             vacuum_system_settings=SystemSettings(nonbonded_method='nocutoff'),
             alchemical_settings=AlchemicalSettings(),
+            lambda_settings=LambdaSettings(
+                lambda_elec=[
+                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+                ],
+                lambda_vdw=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
+                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+            ),
             alchemsampler_settings=AlchemicalSamplerSettings(
-                n_replicas=24,
+                n_replicas=14,
             ),
             solvation_settings=SolvationSettings(),
             vacuum_engine_settings=OpenMMEngineSettings(),
@@ -517,6 +527,71 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                           "are not currently supported")
                 raise ValueError(errmsg)
 
+    @staticmethod
+    def _validate_lambda_schedule(
+            lambda_settings: LambdaSettings,
+            alchemsampler_settings: AlchemicalSamplerSettings,
+    ) -> None:
+        """
+        Checks that the lambda schedule is set up correctly.
+
+        Parameters
+        ----------
+        settings : AbsoluteSolvationSettings
+          Settings object.
+
+        Raises
+        ------
+        ValueError
+          If the number of lambda windows differs for electrostatics and sterics.
+          If the number of replicas does not match the number of lambda windows.
+          If there are states with naked charges.
+        Warnings
+          If there are non-zero values for restraints (lambda_restraints).
+        """
+
+        lambda_elec = lambda_settings.lambda_elec
+        lambda_vdw = lambda_settings.lambda_vdw
+        lambda_restraints = lambda_settings.lambda_restraints
+        n_replicas = alchemsampler_settings.n_replicas
+
+        # Ensure that all lambda components have equal amount of windows
+        lambda_components = [lambda_vdw, lambda_elec]
+        it = iter(lambda_components)
+        the_len = len(next(it))
+        if not all(len(l) == the_len for l in it):
+            errmsg = (
+                "Components elec and vdw must have equal amount"
+                f" of lambda windows. Got {len(lambda_elec)} elec lambda"
+                f" windows and {len(lambda_vdw)} vdw lambda windows.")
+            raise ValueError(errmsg)
+
+        # Ensure that number of overall lambda windows matches number of lambda
+        # windows for individual components
+        if n_replicas != len(lambda_vdw):
+            errmsg = (f"Number of replicas {n_replicas} does not equal the"
+                      f" number of lambda windows {len(lambda_vdw)}")
+            raise ValueError(errmsg)
+
+        # Check if there are lambda windows with naked charges
+        for inx, lam in enumerate(lambda_elec):
+            if lam < 1 and lambda_vdw[inx] == 1:
+                errmsg = (
+                    "There are states along this lambda schedule "
+                    "where there are atoms with charges but no LJ "
+                    f"interactions: lambda {inx}: "
+                    f"elec {lam} vdW {lambda_vdw[inx]}")
+                raise ValueError(errmsg)
+
+        # Check if there are lambda windows with non-zero restraints
+        if len([r for r in lambda_restraints if r != 0]) > 0:
+            wmsg = ("Non-zero restraint lambdas applied. The absolute "
+                    "solvation protocol doesn't apply restraints, "
+                    "therefore restraints won't be applied. "
+                    f"Given lambda_restraints: {lambda_restraints}")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -534,6 +609,10 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             stateA, stateB,
         )
         self._validate_alchemical_components(alchem_comps)
+
+        # Validate the lambda schedule
+        self._validate_lambda_schedule(self.settings.lambda_settings,
+                                       self.settings.alchemsampler_settings)
 
         # Check nonbond & solvent compatibility
         solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method
@@ -655,6 +734,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
             * sampler_settings : AlchemicalSamplerSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -668,6 +748,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings['system_settings'] = prot_settings.vacuum_system_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
+        settings['lambda_settings'] = prot_settings.lambda_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
         settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
@@ -739,6 +820,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
             * sampler_settings : AlchemicalSamplerSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
@@ -752,6 +834,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings['system_settings'] = prot_settings.solvent_system_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
+        settings['lambda_settings'] = prot_settings.lambda_settings
         settings['sampler_settings'] = prot_settings.alchemsampler_settings
         settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings

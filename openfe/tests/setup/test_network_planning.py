@@ -10,6 +10,17 @@ from ..conftest import mol_from_smiles
 
 
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
+    @classmethod
+    def _defaults(cls):
+        return {}
+
+    def _to_dict(self):
+        return {}
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls()
+
     def _mappings_generator(self, molA, molB):
         yield {0: 0}
 
