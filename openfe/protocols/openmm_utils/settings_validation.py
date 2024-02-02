@@ -71,3 +71,95 @@ def get_simsteps(sim_length: unit.Quantity,
         raise ValueError(errmsg)
 
     return sim_steps
+
+
+def convert_steps_per_iteration(
+        simulation_settings,
+        integrator_settings,
+):
+    """Convert time per iteration to steps
+
+    Parameters
+    ----------
+        simulation_settings: MultiStateSimulationSettings
+    integrator_settings: IntegratorSettings
+
+    Returns
+    -------
+    steps_per_iteration : int
+      suitable for input to Integrator
+    """
+    # TODO: Check this is correct
+    tpi_fs = simulation_settings.time_per_iteration.to(unit.femtosecond).m
+    ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
+    steps_per_iteration = int(round(tpi_fs / ts_fs))
+
+    return steps_per_iteration
+
+
+def convert_real_time_analysis_iterations(
+        simulation_settings,
+):
+    """Convert time units in Settings to various other units
+
+    Interally openmmtools uses various quantities with units of time,
+    steps, and iterations.
+
+    Our Settings objects instead have things defined in time (fs or ps).
+
+    This function generates suitable inputs for the openmmtools objects
+
+    Parameters
+    ----------
+    simulation_settings: MultiStateSimulationSettings
+
+    Returns
+    -------
+    real_time_analysis_iterations : int
+      suitable for input to online_analysis_interval
+    real_time_analysis_minimum_iterations : int
+      suitable for input to real_time_analysis_minimum_iterations
+    """
+    # TODO: Check this is correct
+    tpi_fs = simulation_settings.time_per_iteration.to(unit.femtosecond).m
+
+    # convert real_time_analysis time to interval
+    # rta_its must be number of MCMC iterations
+    # i.e. rta_fs / tpi_fs -> number of iterations
+    rta_fs = simulation_settings.real_time_analysis_interval.to(unit.femtosecond).m
+    rta_its = round(int(rta_fs / tpi_fs))
+
+    # convert RTA_minimum_time to iterations
+    rta_min_fs = simulation_settings.real_time_analysis_minimum_time.to(unit.femtosecond).m
+    rta_min_its = round(int(rta_min_fs / tpi_fs))
+
+    return rta_its, rta_min_its
+
+
+def convert_target_error(
+        thermo_settings,
+        simulation_settings,
+):
+    """Convert kcal/mol target error to kT units
+
+    Parameters
+    ----------
+    thermo_settings: ThermoSettings
+    simulation_settings: MultiStateSimulationSettings
+
+    Returns
+    -------
+    early_termination_target_error : float
+      in units of kT, suitable for input as "online_analysis_target_error" in a
+      Sampler
+    """
+    temp = thermo_settings.temperature
+    if simulation_settings.early_termination_target_error:
+        # TODO: Check conversions here
+        kB = 0.001987204 * unit.kilocalorie_per_mole / unit.kelvin
+        kT = temp * kB
+        early_termination_target_error = kT / simulation_settings.early_termination_target_error
+    else:
+        early_termination_target_error = 0.0
+
+    return early_termination_target_error

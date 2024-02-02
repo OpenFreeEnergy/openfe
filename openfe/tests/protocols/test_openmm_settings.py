@@ -12,7 +12,7 @@ from openfe.protocols.openmm_utils import omm_settings
 class TestOMMSettingsFromStrings:
     # checks that we can set Settings fields via strings
     def test_system_settings(self):
-        s = omm_settings.SystemSettings()
+        s = omm_settings.OpenMMSystemGeneratorFFSettings()
 
         s.nonbonded_cutoff = '1.1 nm'
 
@@ -59,7 +59,7 @@ class TestOMMSettingsFromStrings:
 
 class TestEquilRFESettingsFromString:
     def test_alchemical_settings(self):
-        s = equil_rfe_settings.AlchemicalSettings()
+        s = equil_rfe_settings.AlchemicalSettings(softcore_LJ='gapsys')
 
         s.explicit_charge_correction_cutoff = '0.85 nm'
 

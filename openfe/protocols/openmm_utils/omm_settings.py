@@ -28,42 +28,6 @@ except ImportError:
     from pydantic import validator  # type: ignore[assignment]
 
 
-# class SystemSettings(SettingsBaseModel):
-#     """Settings describing the simulation system settings."""
-#
-#     class Config:
-#         arbitrary_types_allowed = True
-#
-#     nonbonded_method = 'PME'
-#     """
-#     Method for treating nonbonded interactions, currently only PME and
-#     NoCutoff are allowed. Default PME.
-#     """
-#     nonbonded_cutoff: FloatQuantity['nanometer'] = 1.0 * unit.nanometer
-#     """
-#     Cutoff value for short range nonbonded interactions.
-#     Default 1.0 * unit.nanometer.
-#     """
-#
-#     @validator('nonbonded_method')
-#     def allowed_nonbonded(cls, v):
-#         if v.lower() not in ['pme', 'nocutoff']:
-#             errmsg = ("Only PME and NoCutoff are allowed nonbonded_methods")
-#             raise ValueError(errmsg)
-#         return v
-#
-#     @validator('nonbonded_cutoff')
-#     def is_positive_distance(cls, v):
-#         # these are time units, not simulation steps
-#         if not v.is_compatible_with(unit.nanometer):
-#             raise ValueError("nonbonded_cutoff must be in distance units "
-#                              "(i.e. nanometers)")
-#         if v < 0:
-#             errmsg = "nonbonded_cutoff must be a positive value"
-#             raise ValueError(errmsg)
-#         return v
-
-
 class SolvationSettings(SettingsBaseModel):
     """Settings for solvating the system
 
@@ -338,8 +302,7 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval = FloatQuantity['picosecond'] = 1 * unit.picosecond
-    # todo: convert back to unit.timestep in protocol
+    checkpoint_interval: FloatQuantity['picosecond'] = 1 * unit.picosecond
     """
     Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
@@ -434,13 +397,11 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default `repex`.
     """
     time_per_iteration: FloatQuantity['picosecond'] = 1 * unit.picosecond
-    # TODO: convert back in protocol
     # todo: Add validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
     real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250 * unit.picosecond
-    # TODO: convert back in protocol
     # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
@@ -471,8 +432,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     shown to be effective in both hydration and binding free energy benchmarks.
     Default ``None``, i.e. no early termination will occur.
     """
-    real_time_analysis_minimum_time = FloatQuantity['picosecond'] = 500 * unit.picosecond
-    # todo: convert back to unit.timestep in protocol
+    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
@@ -513,7 +473,7 @@ class MultiStateSimulationSettings(SimulationSettings):
             raise ValueError(errmsg)
         return v
 
-    @validator('n_replicas', 'steps_per_iteration')
+    @validator('n_replicas', 'time_per_iteration')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = "n_replicas and steps_per_iteration must be positive " \
@@ -522,7 +482,7 @@ class MultiStateSimulationSettings(SimulationSettings):
         return v
 
     @validator('early_termination_target_error',
-               'real_time_analysis_minimum_iterations', 'sams_gamma0',
+               'real_time_analysis_minimum_time', 'sams_gamma0',
                'n_replicas')
     def must_be_zero_or_positive(cls, v):
         if v < 0:

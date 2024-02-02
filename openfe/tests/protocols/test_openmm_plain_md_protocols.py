@@ -79,7 +79,7 @@ def test_create_independent_repeat_ids(benzene_system):
 def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
 
     vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
 
     protocol = PlainMDProtocol(
             settings=vac_settings,
@@ -104,7 +104,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
 def test_dry_run_logger_output(benzene_vacuum_system, tmpdir, caplog):
 
     vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
     vac_settings.simulation_settings.production_length = 1 * unit.picosecond
@@ -135,7 +135,7 @@ def test_dry_run_logger_output(benzene_vacuum_system, tmpdir, caplog):
 def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
 
     vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.output_settings.forcefield_cache = None
 
     protocol = PlainMDProtocol(
@@ -157,7 +157,7 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.forcefield_settings.small_molecule_forcefield = 'gaff-2.11'
 
     protocol = PlainMDProtocol(
@@ -278,7 +278,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
-    settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+    settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = True
 
@@ -326,7 +326,7 @@ def test_dry_run_complex(benzene_complex_system, tmpdir):
 def test_hightimestep(benzene_vacuum_system, tmpdir):
     settings = PlainMDProtocol.default_settings()
     settings.forcefield_settings.hydrogen_mass = 1.0
-    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.forcefield_settings.nonbonded_method = 'nocutoff'
 
     p = PlainMDProtocol(
             settings=settings,

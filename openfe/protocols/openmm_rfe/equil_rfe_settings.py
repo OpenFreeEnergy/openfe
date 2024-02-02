@@ -11,7 +11,6 @@ from __future__ import annotations
 from typing import Optional, Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
-import os
 
 from gufe.settings import (
     Settings,
@@ -20,8 +19,8 @@ from gufe.settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings, SimulationSettings,
+    SolvationSettings, MultiStateSimulationSettings,
+    OpenMMEngineSettings, IntegratorSettings,
     OutputSettings,
 )
 
@@ -107,9 +106,6 @@ class AlchemicalSettings(SettingsBaseModel):
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
-    class Config:
-        arbitrary_types_allowed = True
-
     protocol_repeats: int
     """
     The number of completely independent repeats of the entire sampling 
@@ -132,8 +128,6 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """Settings for thermodynamic parameters."""
 
     # Things for creating the systems
-    system_settings: SystemSettings
-    """Simulation system settings including the long-range non-bonded method."""
     solvation_settings: SolvationSettings
     """Settings for solvating the system."""
 
@@ -146,7 +140,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
     Alchemical protocol settings including soft core scaling.
     """
-    alchemical_sampler_settings: AlchemicalSamplerSettings
+    simulation_settings: MultiStateSimulationSettings
     """
     Settings for alchemical sampler.
     """
@@ -159,11 +153,6 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     integrator_settings: IntegratorSettings
     """Settings for the integrator such as timestep and barostat settings."""
 
-    # Simulation run settings
-    simulation_settings: SimulationSettings
-    """
-    Simulation control settings, including simulation lengths.
-    """
     output_settings: OutputSettings
     """
     Simulation output control settings.

@@ -70,11 +70,17 @@ def test_validate_lambda_schedule_naked_charge(val, default_settings):
     default_settings.lambda_settings.lambda_elec = val['elec']
     default_settings.lambda_settings.lambda_vdw = val['vdw']
     default_settings.lambda_settings.lambda_restraints = val['restraints']
-    default_settings.alchemsampler_settings.n_replicas = 2
+    default_settings.vacuum_simulation_settings.n_replicas = 2
+    default_settings.solvent_simulation_settings.n_replicas = 2
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             default_settings.lambda_settings,
-            default_settings.alchemsampler_settings,
+            default_settings.vacuum_simulation_settings,
+        )
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.solvent_simulation_settings,
         )
 
 
@@ -86,13 +92,13 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
     default_settings.lambda_settings.lambda_vdw = val['vdw']
     default_settings.lambda_settings.lambda_restraints = val['restraints']
     n_replicas = 3
-    default_settings.alchemsampler_settings.n_replicas = n_replicas
+    default_settings.vacuum_simulation_settings.n_replicas = n_replicas
     errmsg = (f"Number of replicas {n_replicas} does not equal the"
               f" number of lambda windows {len(val['vdw'])}")
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             default_settings.lambda_settings,
-            default_settings.alchemsampler_settings,
+            default_settings.vacuum_simulation_settings,
         )
 
 
@@ -104,7 +110,7 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     default_settings.lambda_settings.lambda_vdw = val['vdw']
     default_settings.lambda_settings.lambda_restraints = val['restraints']
     n_replicas = 3
-    default_settings.alchemsampler_settings.n_replicas = n_replicas
+    default_settings.vacuum_simulation_settings.n_replicas = n_replicas
     errmsg = (
         "Components elec and vdw must have equal amount"
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
@@ -112,7 +118,7 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             default_settings.lambda_settings,
-            default_settings.alchemsampler_settings,
+            default_settings.vacuum_simulation_settings,
         )
 
 
@@ -126,11 +132,11 @@ def test_validate_lambda_schedule_nonzero_restraints(val, default_settings):
     default_settings.lambda_settings.lambda_elec = val['elec']
     default_settings.lambda_settings.lambda_vdw = val['vdw']
     default_settings.lambda_settings.lambda_restraints = val['restraints']
-    default_settings.alchemsampler_settings.n_replicas = 2
+    default_settings.vacuum_simulation_settings.n_replicas = 2
     with pytest.warns(UserWarning, match=wmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             default_settings.lambda_settings,
-            default_settings.alchemsampler_settings,
+            default_settings.vacuum_simulation_settings,
         )
 
 
@@ -262,7 +268,7 @@ def test_validate_alchem_nonsmc(benzene_modifications):
 
 def test_vac_bad_nonbonded(benzene_modifications):
     settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    settings.vacuum_system_settings.nonbonded_method = 'pme'
+    settings.vacuum_forcefield_settings.nonbonded_method = 'pme'
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=settings)
 
     stateA = ChemicalSystem({
@@ -285,7 +291,7 @@ def test_dry_run_vac_benzene(benzene_modifications,
                              method, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
-    s.alchemsampler_settings.sampler_method = method
+    s.vacuum_simulation_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -408,7 +414,12 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
 def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
-    s.forcefield_settings.forcefields = [
+    s.vacuum_forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",    # ff14SB protein force field
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    s.solvent_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
@@ -535,7 +546,8 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
 def test_high_timestep(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
-    s.forcefield_settings.hydrogen_mass = 1.0
+    s.solvent_forcefield_settings.hydrogen_mass = 1.0
+    s.vacuum_forcefield_settings.hydrogen_mass = 1.0
 
     protocol = AbsoluteSolvationProtocol(
             settings=s,

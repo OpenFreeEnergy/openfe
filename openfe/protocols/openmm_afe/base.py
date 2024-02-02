@@ -52,8 +52,9 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     SolvationSettings,
-    AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings, LambdaSettings, OutputSettings,
+    MultiStateSimulationSettings, OpenMMEngineSettings,
+    IntegratorSettings, LambdaSettings, OutputSettings,
+    ThermoSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
@@ -234,7 +235,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * solvation_settings : SolvationSettings
           * alchemical_settings : AlchemicalSettings
           * lambda_settings : LambdaSettings
-          * sampler_settings : AlchemicalSamplerSettings
+          * sampler_settings : MultiStateSimulationSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
           * simulation_settings : SimulationSettings
@@ -279,8 +280,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             forcefield_settings=settings['forcefield_settings'],
             integrator_settings=settings['integrator_settings'],
             thermo_settings=settings['thermo_settings'],
-            integrator_settings=settings['integrator_settings'],
-            system_settings=settings['system_settings'],
             cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
@@ -616,10 +615,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return energy_context_cache, sampler_context_cache
 
+    @staticmethod
     def _get_integrator(
-        self,
         integrator_settings: IntegratorSettings,
-        alchemsampler_settings: AlchemicalSamplerSettings
+        simulation_settings: MultiStateSimulationSettings
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Return a LangevinDynamicsMove integrator
@@ -627,16 +626,22 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         Parameters
         ----------
         integrator_settings : IntegratorSettings
+        simulation_settings : MultiStateSimulationSettings
 
         Returns
         -------
         integrator : openmmtools.mcmc.LangevinDynamicsMove
           A configured integrator object.
         """
+        # TODO: Check this is correct
+        tpi_fs = simulation_settings.time_per_iteration.to(unit.femtosecond).m
+        ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
+        steps_per_iteration = int(round(tpi_fs / ts_fs))
+
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
             collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
-            n_steps=alchemsampler_settings.steps_per_iteration.m,
+            n_steps=steps_per_iteration,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
@@ -644,11 +649,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return integrator
 
+    @staticmethod
     def _get_sampler(
-        self,
         integrator: openmmtools.mcmc.LangevinDynamicsMove,
         reporter: openmmtools.multistate.MultiStateReporter,
-        sampler_settings: AlchemicalSamplerSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        thermo_settings: ThermoSettings,
         cmp_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
         energy_context_cache: openmmtools.cache.ContextCache,
@@ -663,8 +669,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           The simulation integrator.
         reporter : openmmtools.multistate.MultiStateReporter
           The reporter to hook up to the sampler.
-        sampler_settings : AlchemicalSamplerSettings
+        simulation_settings : MultiStateSimulationSettings
           Settings for the alchemical sampler.
+        thermo_settings : ThermoSettings
+          Thermodynamic settings
         cmp_states : list[ThermodynamicState]
           A list of thermodynamic states to sample.
         sampler_states : list[SamplerState]
@@ -679,30 +687,37 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler : multistate.MultistateSampler
           A sampler configured for the chosen sampling method.
         """
+        rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=simulation_settings,
+        )
+        et_target_err = settings_validation.convert_target_error(
+            thermo_settings=thermo_settings,
+            simulation_settings=simulation_settings,
+        )
 
         # Select the right sampler
         # Note: doesn't need else, settings already validates choices
-        if sampler_settings.sampler_method.lower() == "repex":
+        if simulation_settings.sampler_method.lower() == "repex":
             sampler = multistate.ReplicaExchangeSampler(
                 mcmc_moves=integrator,
-                online_analysis_interval=sampler_settings.real_time_analysis_interval,
-                online_analysis_target_error=sampler_settings.early_termination_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=et_target_err,
+                online_analysis_minimum_iterations=rta_min_its
             )
-        elif sampler_settings.sampler_method.lower() == "sams":
+        elif simulation_settings.sampler_method.lower() == "sams":
             sampler = multistate.SAMSSampler(
                 mcmc_moves=integrator,
-                online_analysis_interval=sampler_settings.real_time_analysis_interval,
-                online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations,
-                flatness_criteria=sampler_settings.sams_flatness_criteria,
-                gamma0=sampler_settings.sams_gamma0,
+                online_analysis_interval=rta_its,
+                online_analysis_minimum_iterations=rta_min_its,
+                flatness_criteria=simulation_settings.sams_flatness_criteria,
+                gamma0=simulation_settings.sams_gamma0,
             )
-        elif sampler_settings.sampler_method.lower() == 'independent':
+        elif simulation_settings.sampler_method.lower() == 'independent':
             sampler = multistate.MultiStateSampler(
                 mcmc_moves=integrator,
-                online_analysis_interval=sampler_settings.real_time_analysis_interval,
-                online_analysis_target_error=sampler_settings.early_termination_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.real_time_analysis_minimum_iterations
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=et_target_err,
+                online_analysis_minimum_iterations=rta_min_its,
             )
 
         sampler.create(
@@ -744,7 +759,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           if not a dry run.
         """
         # Get the relevant simulation steps
-        mc_steps = settings['sampler_settings'].steps_per_iteration.m
+        mc_steps = settings_validation.convert_steps_per_iteration(
+            simulation_settings=settings['simulation_settings'],
+            integrator_settings=settings['integrator_settings'],
+        )
 
         equil_steps = settings_validation.get_simsteps(
             sim_length=settings['simulation_settings'].equilibration_length,
@@ -894,12 +912,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # 13. Get integrator
             integrator = self._get_integrator(
                 settings['integrator_settings'],
-                settings['sampler_settings'],
+                settings['simulation_settings'],
             )
 
             # 14. Get sampler
             sampler = self._get_sampler(
-                integrator, reporter, settings['sampler_settings'],
+                integrator, reporter, settings['simulation_settings'],
+                settings['thermo_settings'],
                 cmp_states, sampler_states,
                 energy_ctx_cache, sampler_ctx_cache
             )

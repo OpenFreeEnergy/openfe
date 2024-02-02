@@ -18,7 +18,7 @@ from gufe import (
     Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
 )
 from ..openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SimulationSettings, SolvationSettings, IntegratorSettings,
+    SolvationSettings, IntegratorSettings,
 )
 
 
@@ -26,7 +26,6 @@ def get_system_generator(
     forcefield_settings: OpenMMSystemGeneratorFFSettings,
     thermo_settings: ThermoSettings,
     integrator_settings: IntegratorSettings,
-    system_settings: SystemSettings,
     cache: Optional[Path],
     has_solvent: bool,
 ) -> SystemGenerator:
@@ -46,9 +45,6 @@ def get_system_generator(
       for defining the ensemble conditions.
     integrator_settings : IntegratorSettings
       Integrator settings, including barostat control variables.
-    system_settings : SystemSettings
-      System settings including all necessary information for
-      the nonbonded methods.
     cache : Optional[pathlib.Path]
       Path to openff force field cache.
     has_solvent : bool
@@ -88,10 +84,11 @@ def get_system_generator(
         'cutoffnonperiodic': app.CutoffNonPeriodic,
         'cutoffperiodic': app.CutoffPeriodic,
         'ewald': app.Ewald
-    }[system_settings.nonbonded_method.lower()]
+    }[forcefield_settings.nonbonded_method.lower()]
 
-    nonbonded_cutoff = to_openmm(
-        system_settings.nonbonded_cutoff
+    nonbonded_cutoff = ensure_quantity(
+        forcefield_settings.nonbonded_cutoff,  # type: ignore
+        'openmm',
     )
 
     # create the periodic_kwarg entry

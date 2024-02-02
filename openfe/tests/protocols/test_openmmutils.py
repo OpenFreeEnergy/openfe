@@ -18,7 +18,7 @@ from openfe.protocols.openmm_utils import (
     multistate_analysis
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    SystemSettings, SolvationSettings, IntegratorSettings,
+    SolvationSettings, IntegratorSettings,
 )
 
 
@@ -165,16 +165,13 @@ def test_components_complex(T4_protein_component, benzene_modifications):
 @pytest.fixture(scope='module')
 def get_settings():
     forcefield_settings = OpenMMSystemGeneratorFFSettings()
-    integrator_settings = IntegratorSettings
+    integrator_settings = IntegratorSettings()
     thermo_settings = ThermoSettings(
         temperature=298.15 * unit.kelvin,
         pressure=1 * unit.bar,
     )
-    system_settings = SystemSettings()
-    integrator_settings = IntegratorSettings()
 
-    return (forcefield_settings, integrator_settings, thermo_settings, system_settings,
-            integrator_settings)
+    return forcefield_settings, integrator_settings, thermo_settings
 
 
 class TestFEAnalysis:
@@ -269,22 +266,10 @@ class TestFEAnalysis:
 
 
 class TestSystemCreation:
-    @staticmethod
-    def get_settings():
-        forcefield_settings = OpenMMSystemGeneratorFFSettings()
-        integrator_settings = IntegratorSettings()
-        thermo_settings = ThermoSettings(
-                temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,
-        )
-        system_settings = SystemSettings()
-
-        return forcefield_settings, integrator_settings, thermo_settings, system_settings
-
     def test_system_generator_nosolv_nocache(self, get_settings):
-        ffsets, intsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, intsets, thermosets, intsets, systemsets, None, False
+            ffsets, thermosets, intsets, None, False
         )
         assert generator.barostat is None
         assert generator.template_generator._cache is None
@@ -306,13 +291,13 @@ class TestSystemCreation:
         assert generator.periodic_forcefield_kwargs == periodic_kwargs
 
     def test_system_generator_solv_cache(self, get_settings):
-        ffsets, intsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
 
         thermosets.temperature = 320 * unit.kelvin
         thermosets.pressure = 1.25 * unit.bar
         intsets.barostat_frequency = 200 * unit.timestep
         generator = system_creation.get_system_generator(
-            ffsets, intsets, thermosets, intsets, systemsets, Path('./db.json'), True
+            ffsets, thermosets, intsets, Path('./db.json'), True
         )
 
         # Check barostat conditions
@@ -336,9 +321,9 @@ class TestSystemCreation:
     def test_get_omm_modeller_complex(self, T4_protein_component,
                                       benzene_modifications,
                                       get_settings):
-        ffsets, intsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, intsets, thermosets, intsets, systemsets, None, True
+            ffsets, thermosets, intsets, None, True
         )
 
         smc = benzene_modifications['toluene']
@@ -362,9 +347,9 @@ class TestSystemCreation:
                      np.linspace(165, len(resids)-1, len(resids)-165))
 
     def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
-        ffsets, intsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, intsets, thermosets, intsets, systemsets, None, True
+            ffsets, thermosets, intsets, None, True
         )
 
         offmol = OFFMol.from_smiles('[O-]C=O')

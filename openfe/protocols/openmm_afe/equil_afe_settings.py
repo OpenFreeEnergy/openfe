@@ -16,21 +16,24 @@ TODO
 
 """
 from gufe.settings import (
-    Settings,
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SystemSettings,
+    MultiStateSimulationSettings,
     SolvationSettings,
-    AlchemicalSamplerSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    SimulationSettings,
     OutputSettings,
 )
 import numpy as np
+from openff.models.types import FloatQuantity
+from openff.units import unit
+from typing import (
+    Literal,
+    Optional,
+)
 
 
 try:
@@ -109,7 +112,9 @@ class LambdaSettings(SettingsBaseModel):
         return v
 
 
-class AbsoluteSolvationSettings(Settings):
+# This subclasses from SettingsBaseModel as it has vacuum_forcefield and
+# solvent_forcefield fields, not just a single forcefield_settings field
+class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Configuration object for ``AbsoluteSolvationProtocol``.
 
@@ -117,9 +122,6 @@ class AbsoluteSolvationSettings(Settings):
     --------
     openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
     """
-    class Config:
-        arbitrary_types_allowed = True
-
     protocol_repeats: int
     """
     The number of completely independent repeats of the entire sampling 
@@ -135,22 +137,12 @@ class AbsoluteSolvationSettings(Settings):
         return v
 
     # Inherited things
-    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
+    vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
-    # Things for creating the systems
-    vacuum_system_settings: SystemSettings
-    """
-    Simulation system settings including the
-    long-range non-bonded methods for the vacuum transformation.
-    """
-    solvent_system_settings: SystemSettings
-    """
-    Simulation system settings including the
-    long-range non-bonded methods for the solvent transformation.
-    """
     solvation_settings: SolvationSettings
     """Settings for solvating the system."""
 
@@ -163,10 +155,6 @@ class AbsoluteSolvationSettings(Settings):
     """
     Settings for controlling the lambda schedule for the different components 
     (vdw, elec, restraints).
-    """
-    alchemsampler_settings: AlchemicalSamplerSettings
-    """
-    Settings for controlling how we sample alchemical space.
     """
 
     # MD Engine things
@@ -189,12 +177,12 @@ class AbsoluteSolvationSettings(Settings):
     """
 
     # Simulation run settings
-    vacuum_simulation_settings: SimulationSettings
+    vacuum_simulation_settings: MultiStateSimulationSettings
     """
     Simulation control settings, including simulation lengths
     for the vacuum transformation.
     """
-    solvent_simulation_settings: SimulationSettings
+    solvent_simulation_settings: MultiStateSimulationSettings
     """
     Simulation control settings, including simulation lengths
     for the solvent transformation.

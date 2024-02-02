@@ -33,9 +33,9 @@ from gufe import (
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_md.plain_md_settings import (
-    PlainMDProtocolSettings, SystemSettings,
+    PlainMDProtocolSettings,
     SolvationSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettingsMD, OutputSettingsMD,
+    IntegratorSettings, MDSimulationSettings, MDOutputSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
@@ -121,16 +121,15 @@ class PlainMDProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            system_settings=SystemSettings(),
             solvation_settings=SolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            simulation_settings=SimulationSettingsMD(
+            simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
-            output_settings=OutputSettingsMD(),
+            output_settings=MDOutputSettings(),
             protocol_repeats=1,
         )
 
@@ -146,7 +145,7 @@ class PlainMDProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate solvent component
-        nonbond = self.settings.system_settings.nonbonded_method
+        nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
         # Validate protein component
@@ -246,8 +245,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     @staticmethod
     def _run_MD(simulation: openmm.app.Simulation,
                 positions: omm_unit.Quantity,
-                simulation_settings: SimulationSettingsMD,
-                output_settings: OutputSettingsMD,
+                simulation_settings: MDSimulationSettings,
+                output_settings: MDOutputSettings,
                 temperature: settings.ThermoSettings.temperature,
                 barostat_frequency: IntegratorSettings.barostat_frequency,
                 equil_steps_nvt: int,
@@ -466,11 +465,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             protocol_settings.forcefield_settings
         thermo_settings: settings.ThermoSettings = \
             protocol_settings.thermo_settings
-        system_settings: SystemSettings = protocol_settings.system_settings
         solvation_settings: SolvationSettings = \
             protocol_settings.solvation_settings
-        sim_settings: SimulationSettingsMD = protocol_settings.simulation_settings
-        output_settings: OutputSettingsMD = protocol_settings.output_settings
+        sim_settings: MDSimulationSettings = protocol_settings.simulation_settings
+        output_settings: MDOutputSettings = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
         integrator_settings = protocol_settings.integrator_settings
 
@@ -505,8 +503,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings=forcefield_settings,
             integrator_settings=integrator_settings,
             thermo_settings=thermo_settings,
-            integrator_settings=integrator_settings,
-            system_settings=system_settings,
             cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
