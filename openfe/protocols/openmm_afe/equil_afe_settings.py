@@ -29,6 +29,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     SimulationSettings
 )
+import numpy as np
 
 
 try:
@@ -40,20 +41,69 @@ except ImportError:
 class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
 
-    These settings describe the lambda schedule and the creation of the
-    hybrid system.
+    Empty place holder for right now.
     """
 
-    lambda_elec_windows = 12
-    """Number of lambda electrostatic alchemical steps, default 12"""
-    lambda_vdw_windows = 12
-    """Number of lambda vdw alchemical steps, default 12"""
 
-    @validator('lambda_elec_windows', 'lambda_vdw_windows')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = ("Number of lambda steps must be positive ")
+class LambdaSettings(SettingsBaseModel):
+    """Lambda schedule settings.
+
+    Defines lists of floats to control various aspects of the alchemical
+    transformation.
+
+    Notes
+    --------
+    * In all cases a lambda value of 0 defines a fully interacting state A and
+    a non-interacting state B, whilst a value of 1 defines a fully interacting
+     state B and a non-interacting state A.
+    * ``lambda_elec``, `lambda_vdw``, and ``lambda_restraints`` must all be of
+    the same length, defining all the windows of the transformation.
+    """
+    lambda_elec: list[float] = [
+        0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]
+    """
+    List of floats of lambda values for the electrostatics. 
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_vdw and lambda_restraints.
+    """
+    lambda_vdw: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4,
+        0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+    ]
+    """
+    List of floats of lambda values for the van der Waals.
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_elec and lambda_restraints.
+    """
+    lambda_restraints: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ]
+    """
+    List of floats of lambda values for the restraints.
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_vdw and lambda_elec.
+    """
+
+    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    def must_be_between_0_and_1(cls, v):
+        for window in v:
+            if not 0 <= window <= 1:
+                errmsg = "Lambda windows must be between 0 and 1."
+                raise ValueError(errmsg)
+        return v
+
+    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    def must_be_monotonic(cls, v):
+
+        difference = np.diff(v)
+
+        if not all(i >= 0. for i in difference):
+            errmsg = "The lambda schedule is not monotonic."
             raise ValueError(errmsg)
+
         return v
 
 
@@ -91,11 +141,16 @@ class AbsoluteSolvationSettings(Settings):
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
     """
-    Alchemical protocol settings including lambda windows.
+    Alchemical protocol settings.
+    """
+    lambda_settings: LambdaSettings
+    """
+    Settings for controlling the lambda schedule for the different components 
+    (vdw, elec, restraints).
     """
     alchemsampler_settings: AlchemicalSamplerSettings
     """
-    Settings for controling how we sample alchemical space, including the
+    Settings for controlling how we sample alchemical space, including the
     number of repeats.
     """
 

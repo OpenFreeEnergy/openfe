@@ -30,17 +30,16 @@ except ImportError:
     from pydantic import validator  # type: ignore[assignment]
 
 
-class AlchemicalSettings(SettingsBaseModel):
+class LambdaSettings(SettingsBaseModel):
     class Config:
         extra = 'ignore'
         arbitrary_types_allowed = True
 
-    """Settings for the alchemical protocol
-
-    This describes the lambda schedule and the creation of the
-    hybrid system.
+    """Lambda schedule settings.
+    
+    Settings controlling the lambda schedule, these include the switching 
+    function type, and the number of windows.
     """
-    # Lambda settings
     lambda_functions = 'default'
     """
     Key of which switching functions to use for alchemical mutation.
@@ -48,6 +47,18 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     lambda_windows = 11
     """Number of lambda windows to calculate. Default 11."""
+
+
+class AlchemicalSettings(SettingsBaseModel):
+    class Config:
+        extra = 'ignore'
+        arbitrary_types_allowed = True
+
+    """Settings for the alchemical protocol
+
+    This describes the creation of the hybrid system.
+    """
+
     unsampled_endstates = False
     """
     Whether to have extra unsampled endstate windows for long range
@@ -111,9 +122,13 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """Settings for solvating the system."""
 
     # Alchemical settings
+    lambda_settings: LambdaSettings
+    """
+    Lambda protocol settings including lambda windows and lambda functions.
+    """
     alchemical_settings: AlchemicalSettings
     """
-    Alchemical protocol settings including lambda windows and soft core scaling.
+    Alchemical protocol settings including soft core scaling.
     """
     alchemical_sampler_settings: AlchemicalSamplerSettings
     """
