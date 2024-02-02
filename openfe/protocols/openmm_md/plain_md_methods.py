@@ -170,8 +170,8 @@ class PlainMDProtocol(gufe.Protocol):
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.repeat_settings.n_repeats
         units = [PlainMDProtocolUnit(
+            protocol=self,
             stateA=stateA,
-            settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{system_name} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -179,7 +179,7 @@ class PlainMDProtocol(gufe.Protocol):
         return units
 
     def _gather(
-            self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
+        self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> dict[str, Any]:
         # result units will have a repeat_id and generations within this
         # repeat_id
@@ -207,16 +207,21 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     Protocol unit for plain MD simulations (NonTransformation).
     """
 
-    def __init__(self, *,
-                 stateA: ChemicalSystem,
-                 settings: PlainMDProtocolSettings,
-                 generation: int,
-                 repeat_id: int,
-                 name: Optional[str] = None,
-                 ):
+    def __init__(
+        self,
+        *,
+        protocol: PlainMDProtocol,
+        stateA: ChemicalSystem,
+        generation: int,
+        repeat_id: int,
+        name: Optional[str] = None,
+    ):
         """
         Parameters
         ----------
+        protocol : PlainMDProtocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
         stateA : ChemicalSystem
           the chemical system for the MD simulation
         settings : settings.Settings
@@ -237,8 +242,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         """
         super().__init__(
             name=name,
+            protocol=protocol,
             stateA=stateA,
-            settings=settings,
             repeat_id=repeat_id,
             generation=generation
         )
@@ -455,8 +460,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         # 0. General setup and settings dependency resolution step
 
         # Extract relevant settings
-        protocol_settings: PlainMDProtocolSettings = self._inputs[
-            'settings']
+        protocol_settings: PlainMDProtocolSettings = self._inputs['protocol'].settings
         stateA = self._inputs['stateA']
 
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = \

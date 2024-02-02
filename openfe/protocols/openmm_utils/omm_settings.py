@@ -126,7 +126,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    alchemical_sampler_method = "repex"
+    sampler_method = "repex"
     """
     Alchemical sampling method, must be one of;
     `repex` (Hamiltonian Replica Exchange),
@@ -194,7 +194,7 @@ class AlchemicalSamplerSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('alchemical_sampler_method')
+    @validator('sampler_method')
     def supported_sampler(cls, v):
         supported = ['repex', 'sams', 'independent']
         if v.lower() not in supported:

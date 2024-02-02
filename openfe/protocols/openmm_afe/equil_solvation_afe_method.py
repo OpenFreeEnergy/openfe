@@ -384,16 +384,6 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
     _settings: AbsoluteSolvationSettings
 
     @classmethod
-    def serialization_migration(cls, dct, version):
-        if version == 1:
-            dct = nested_key_moved(
-                dct,
-                old_name="settings.alchemsampler_settings.sampler_method",
-                new_name="settings.alchemsampler_settings.alchemical_sampler_method",
-            )
-        return dct
-
-    @classmethod
     def _default_settings(cls):
         """A dictionary of initial settings for this creating this Protocol
 
@@ -565,8 +555,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         solvent_units = [
             AbsoluteSolvationSolventUnit(
-                stateA=stateA, stateB=stateB,
                 protocol=self,
+                stateA=stateA,
+                stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
@@ -579,8 +570,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             AbsoluteSolvationVacuumUnit(
                 # These don't really reflect the actual transform
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
-                stateA=stateA, stateB=stateB,
                 protocol=self,
+                stateA=stateA,
+                stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "

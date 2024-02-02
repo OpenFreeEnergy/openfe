@@ -69,9 +69,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
     Base class for ligand absolute free energy transformations.
     """
     def __init__(self, *,
+                 protocol: gufe.Protocol,
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
-                 protocol: gufe.Protocol,
                  alchemical_components: dict[str, list[Component]],
                  generation: int = 0,
                  repeat_id: int = 0,
@@ -79,6 +79,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         Parameters
         ----------
+        protocol : gufe.Protocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
         stateA : ChemicalSystem
           ChemicalSystem containing the components defining the state at
           lambda 0.
@@ -103,9 +106,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         super().__init__(
             name=name,
+            protocol=protocol,
             stateA=stateA,
             stateB=stateB,
-            protocol=protocol,
             alchemical_components=alchemical_components,
             repeat_id=repeat_id,
             generation=generation,
@@ -683,14 +686,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # Select the right sampler
         # Note: doesn't need else, settings already validates choices
-        if sampler_settings.alchemical_sampler_method.lower() == "repex":
+        if sampler_settings.sampler_method.lower() == "repex":
             sampler = multistate.ReplicaExchangeSampler(
                 mcmc_moves=integrator,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
                 online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
                 online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
             )
-        elif sampler_settings.alchemical_sampler_method.lower() == "sams":
+        elif sampler_settings.sampler_method.lower() == "sams":
             sampler = multistate.SAMSSampler(
                 mcmc_moves=integrator,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
@@ -698,7 +701,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 flatness_criteria=sampler_settings.flatness_criteria,
                 gamma0=sampler_settings.gamma0,
             )
-        elif sampler_settings.alchemical_sampler_method.lower() == 'independent':
+        elif sampler_settings.sampler_method.lower() == 'independent':
             sampler = multistate.MultiStateSampler(
                 mcmc_moves=integrator,
                 online_analysis_interval=sampler_settings.online_analysis_interval,
@@ -787,7 +790,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
             analyzer = multistate_analysis.MultistateEquilFEAnalysis(
                 reporter,
-                sampling_method=settings['sampler_settings'].alchemical_sampler_method.lower(),
+                sampling_method=settings['sampler_settings'].sampler_method.lower(),
                 result_units=unit.kilocalorie_per_mole
             )
             analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
