@@ -28,13 +28,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OutputSettings,
 )
 import numpy as np
-from openff.models.types import FloatQuantity
-from openff.units import unit
-from typing import (
-    Literal,
-    Optional,
-)
-
 
 try:
     from pydantic.v1 import validator
