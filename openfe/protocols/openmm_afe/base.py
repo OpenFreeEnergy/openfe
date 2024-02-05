@@ -231,14 +231,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         Get a dictionary with the following entries:
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
-          * system_settings : SystemSettings
           * solvation_settings : SolvationSettings
           * alchemical_settings : AlchemicalSettings
           * lambda_settings : LambdaSettings
-          * sampler_settings : MultiStateSimulationSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
-          * simulation_settings : SimulationSettings
+          * simulation_settings : MultiStateSimulationSettings
           * output_settings: OutputSettings
 
         Settings may change depending on what type of simulation you are
@@ -801,7 +799,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
             analyzer = multistate_analysis.MultistateEquilFEAnalysis(
                 reporter,
-                sampling_method=settings['sampler_settings'].sampler_method.lower(),
+                sampling_method=settings['simulation_settings'].sampler_method.lower(),
                 result_units=unit.kilocalorie_per_mole
             )
             analyzer.plot(filepath=self.shared_basepath, filename_prefix="")

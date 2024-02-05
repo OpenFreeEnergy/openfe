@@ -39,7 +39,7 @@ import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from openmmtools import multistate
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 from typing import Any, Iterable
 import uuid
 
@@ -669,7 +669,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
         unsorted_solvent_repeats = defaultdict(list)
@@ -769,7 +769,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         with without_oechem_backend():
@@ -823,13 +823,12 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
-            * simulation_settings : SimulationSettings
+            * simulation_settings : MultiStateSimulationSettings
             * output_settings: OutputSettings
         """
         prot_settings = self._inputs['settings']
@@ -854,7 +853,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         with without_oechem_backend():
