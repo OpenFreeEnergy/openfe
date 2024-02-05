@@ -86,9 +86,8 @@ def get_system_generator(
         'ewald': app.Ewald
     }[forcefield_settings.nonbonded_method.lower()]
 
-    nonbonded_cutoff = ensure_quantity(
+    nonbonded_cutoff = to_openmm(
         forcefield_settings.nonbonded_cutoff,  # type: ignore
-        'openmm',
     )
 
     # create the periodic_kwarg entry
