@@ -5,6 +5,10 @@ Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
 from openff.units import unit
+from .omm_settings import (
+    IntegratorSettings,
+    MultiStateSimulationSettings,
+)
 
 
 def validate_timestep(hmass: float, timestep: unit.Quantity):
@@ -69,8 +73,8 @@ def get_simsteps(sim_length: unit.Quantity,
 
 
 def convert_steps_per_iteration(
-        simulation_settings,
-        integrator_settings,
+        simulation_settings: MultiStateSimulationSettings,
+        integrator_settings: IntegratorSettings,
 ) -> int:
     """Convert time per iteration to steps
 
@@ -96,7 +100,7 @@ def convert_steps_per_iteration(
 
 
 def convert_real_time_analysis_iterations(
-        simulation_settings,
+        simulation_settings: MultiStateSimulationSettings,
 ) -> tuple[int, int]:
     """Convert time units in Settings to various other units
 
@@ -146,7 +150,7 @@ def convert_target_error_from_kcal_per_mole_to_kT(
 ) -> float:
     """Convert kcal/mol target error to kT units
 
-    If target_error is 0, returns 0.0
+    If target_error is 0.0, returns 0.0
 
     Parameters
     ----------
@@ -166,6 +170,6 @@ def convert_target_error_from_kcal_per_mole_to_kT(
         kT = temperature * kB
         early_termination_target_error = kT / target_error
     else:
-        early_termination_target_error = 0.0
+        return 0.0
 
-    return early_termination_target_error
+    return early_termination_target_error.m
