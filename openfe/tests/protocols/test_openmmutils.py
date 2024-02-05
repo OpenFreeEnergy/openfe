@@ -463,7 +463,7 @@ def test_convert_target_error_from_kcal_per_mole_to_kT():
         target_error=0.12 * unit.kilocalorie_per_mole,
     )
 
-    assert kT == pytest.approx(4.937373938333333)
+    assert kT == pytest.approx(0.20253681663365392)
 
 
 def test_convert_target_error_from_kcal_per_mole_to_kT_zero():

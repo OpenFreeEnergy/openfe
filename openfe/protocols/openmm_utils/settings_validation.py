@@ -168,7 +168,7 @@ def convert_target_error_from_kcal_per_mole_to_kT(
     if target_error:
         kB = 0.001987204 * unit.kilocalorie_per_mole / unit.kelvin
         kT = temperature * kB
-        early_termination_target_error = kT / target_error
+        early_termination_target_error = target_error / kT
     else:
         return 0.0
 
