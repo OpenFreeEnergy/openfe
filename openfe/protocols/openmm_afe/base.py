@@ -27,7 +27,7 @@ import numpy.typing as npt
 import openmm
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
-from openff.toolkit.topology import Molecule as OFFMolecule
+from openff.toolkit import Molecule as OFFMolecule, ForceField, Topology
 from openmmtools import multistate
 from openmmtools.states import (SamplerState,
                                 ThermodynamicState,
@@ -354,7 +354,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         system_modeller: app.Modeller,
         system_generator: SystemGenerator,
         smc_components: list[OFFMolecule],
-    ) -> tuple[app.Topology, openmm.unit.Quantity, openmm.System]:
+    ) -> tuple[app.Topology, openmm.System, openmm.unit.Quantity]:
         """
         Get the OpenMM Topology, Positions and System of the
         parameterised system.
@@ -379,13 +379,65 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Positions of the system.
         """
         topology = system_modeller.getTopology()
-        # roundtrip positions to remove vec3 issues
+        # roundtrip positions to remove vec3 issues -- maybe a quicker way with openff-models 0.1.2
         positions = to_openmm(from_openmm(system_modeller.getPositions()))
         system = system_generator.create_system(
             system_modeller.topology,
             molecules=smc_components,
         )
         return topology, system, positions
+
+    def _get_omm_objects_via_interchange(
+        self,
+        protein_component: Optional[ProteinComponent],
+        solvent_component: Optional[SolventComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        settings: dict[str, SettingsBaseModel],
+    ) -> tuple[app.Topology, openmm.System, openmm.unit.Quanity, dict[Component, npt.NDArray]]:
+        if self.verbose:
+            self.logger.info("Parameterizing molecules")
+
+        if (protein_component is not None) or (solvent_component is not None) or (
+            len(smc_components) > 1
+        ):
+            raise NotImplementedError("just doing (one) small molecule in vacuum at first")
+
+        # same thing as in _get_modeller
+        for mol in smc_components.values():
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
+
+        component_resids = {component: np.array([0]) for component in smc_components}
+        
+        force_field = ForceField(
+            '_unconstrained-'.join([val for val in settings['forcefield_settings'].small_molecule_forcefield.split("-")]) + ".offxml"
+        )
+
+        # not sure how much we want to muck with these settings?
+        # settings['forcefield_settings'].hydrogen_mass == 0.0
+        assert settings['forcefield_settings'].constraints in ("hbonds", None)
+        assert settings['forcefield_settings'].nonbonded_method == "PME"
+
+        force_field['vdW'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
+        force_field['Electrostatics'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
+
+        topology = Topology.from_molecules(*smc_components.values())
+
+        interchange = force_field.create_interchange(
+            topology=topology,
+            charge_from_molecules=[*topology.molecules],
+        )
+
+        return (
+            interchange.to_openmm_topology(),
+            interchange.to_openmm_system(), interchange.positions.to_openmm(),
+            component_resids,
+        )
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
@@ -841,19 +893,28 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 2. Get settings
         settings = self._handle_settings()
 
-        # 3. Get system generator
-        system_generator = self._get_system_generator(settings, solv_comp)
+        if True:  # prot_comp is not None:
+            # 3a. Get system generator
+            system_generator = self._get_system_generator(settings, solv_comp)
 
-        # 4. Get modeller
-        system_modeller, comp_resids = self._get_modeller(
-            prot_comp, solv_comp, smc_comps, system_generator,
-            settings['solvation_settings']
-        )
+            # 4. Get modeller
+            system_modeller, comp_resids = self._get_modeller(
+                prot_comp, solv_comp, smc_comps, system_generator,
+                settings['solvation_settings']
+            )
 
-        # 5. Get OpenMM topology, positions and system
-        omm_topology, omm_system, positions = self._get_omm_objects(
-            system_modeller, system_generator, list(smc_comps.values())
-        )
+            # 5. Get OpenMM topology, positions and system
+            omm_topology, omm_system, positions = self._get_omm_objects(
+                system_modeller, system_generator, list(smc_comps.values())
+            )
+        else:
+            # 3b. Get objects via Interchange (no steps 4)
+            omm_topology, omm_system, positions, comp_resids = self._get_omm_objects_via_interchange(
+                protein_component=prot_comp,
+                solvent_component=solv_comp, 
+                smc_components=smc_comps,
+                settings=settings,
+            )
 
         # 6. Pre-minimize System (Test + Avoid NaNs)
         positions = self._pre_minimize(omm_system, positions)

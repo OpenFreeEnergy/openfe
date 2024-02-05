@@ -182,6 +182,8 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    # vac_settings.integrator_settings.timestep *= 0.25
+    # vac_settings.forcefield_settings.hydrogen_mass *= 0.0
     vac_settings.alchemical_sampler_settings.sampler_method = method
     vac_settings.alchemical_sampler_settings.n_repeats = 1
 
