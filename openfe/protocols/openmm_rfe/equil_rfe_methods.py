@@ -887,8 +887,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             simulation_settings=sampler_settings,
         )
         # convert early_termination_target_error from kcal/mol to kT
-        early_termination_target_error = settings_validation.convert_target_error(
-            thermo_settings=thermo_settings, simulation_settings=sampler_settings
+        early_termination_target_error = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+            thermo_settings.temperature,
+            sampler_settings.early_termination_target_error,
         )
 
         if sampler_settings.sampler_method.lower() == "repex":

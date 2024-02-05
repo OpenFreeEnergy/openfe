@@ -4,12 +4,7 @@
 Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
-import warnings
-from typing import Dict, List, Tuple
 from openff.units import unit
-from gufe import (
-    Component, ChemicalSystem, SolventComponent, ProteinComponent
-)
 
 
 def validate_timestep(hmass: float, timestep: unit.Quantity):
@@ -76,12 +71,12 @@ def get_simsteps(sim_length: unit.Quantity,
 def convert_steps_per_iteration(
         simulation_settings,
         integrator_settings,
-):
+) -> int:
     """Convert time per iteration to steps
 
     Parameters
     ----------
-        simulation_settings: MultiStateSimulationSettings
+    simulation_settings: MultiStateSimulationSettings
     integrator_settings: IntegratorSettings
 
     Returns
@@ -89,17 +84,20 @@ def convert_steps_per_iteration(
     steps_per_iteration : int
       suitable for input to Integrator
     """
-    # TODO: Check this is correct
-    tpi_fs = simulation_settings.time_per_iteration.to(unit.femtosecond).m
-    ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
-    steps_per_iteration = int(round(tpi_fs / ts_fs))
+    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
+    ts_fs = round(integrator_settings.timestep.to(unit.attosecond).m)
+    steps_per_iteration, rem = divmod(tpi_fs, ts_fs)
+
+    if rem:
+        raise ValueError(f"time_per_iteration ({simulation_settings.time_per_iteration}) "
+                         f"not divisible by timestep ({integrator_settings.timestep})")
 
     return steps_per_iteration
 
 
 def convert_real_time_analysis_iterations(
         simulation_settings,
-):
+) -> tuple[int, int]:
     """Convert time units in Settings to various other units
 
     Interally openmmtools uses various quantities with units of time,
@@ -120,32 +118,42 @@ def convert_real_time_analysis_iterations(
     real_time_analysis_minimum_iterations : int
       suitable for input to real_time_analysis_minimum_iterations
     """
-    # TODO: Check this is correct
-    tpi_fs = simulation_settings.time_per_iteration.to(unit.femtosecond).m
+    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
 
     # convert real_time_analysis time to interval
     # rta_its must be number of MCMC iterations
     # i.e. rta_fs / tpi_fs -> number of iterations
-    rta_fs = simulation_settings.real_time_analysis_interval.to(unit.femtosecond).m
-    rta_its = round(int(rta_fs / tpi_fs))
+    rta_fs = round(simulation_settings.real_time_analysis_interval.to(unit.attosecond).m)
+
+    rta_its, rem = divmod(rta_fs, tpi_fs)
+    if rem:
+        raise ValueError(f"real_time_analysis_interval ({simulation_settings.real_time_analysis_interval}) "
+                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
 
     # convert RTA_minimum_time to iterations
-    rta_min_fs = simulation_settings.real_time_analysis_minimum_time.to(unit.femtosecond).m
-    rta_min_its = round(int(rta_min_fs / tpi_fs))
+    rta_min_fs = round(simulation_settings.real_time_analysis_minimum_time.to(unit.attosecond).m)
+    rta_min_its, rem = divmod(rta_min_fs, tpi_fs)
+    if rem:
+        raise ValueError(f"real_time_analysis_minimum_time ({simulation_settings.real_time_analysis_minimum_time}) "
+                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
 
     return rta_its, rta_min_its
 
 
-def convert_target_error(
-        thermo_settings,
-        simulation_settings,
-):
+def convert_target_error_from_kcal_per_mole_to_kT(
+        temperature,
+        target_error,
+) -> float:
     """Convert kcal/mol target error to kT units
+
+    If target_error is 0, returns 0.0
 
     Parameters
     ----------
-    thermo_settings: ThermoSettings
-    simulation_settings: MultiStateSimulationSettings
+    temperature : unit.Quantity
+      temperature in K
+    target_error : unit.Quantity
+      error in kcal/mol
 
     Returns
     -------
@@ -153,12 +161,10 @@ def convert_target_error(
       in units of kT, suitable for input as "online_analysis_target_error" in a
       Sampler
     """
-    temp = thermo_settings.temperature
-    if simulation_settings.early_termination_target_error:
-        # TODO: Check conversions here
+    if target_error:
         kB = 0.001987204 * unit.kilocalorie_per_mole / unit.kelvin
-        kT = temp * kB
-        early_termination_target_error = kT / simulation_settings.early_termination_target_error
+        kT = temperature * kB
+        early_termination_target_error = kT / target_error
     else:
         early_termination_target_error = 0.0
 
