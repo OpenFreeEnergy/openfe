@@ -457,6 +457,21 @@ def test_convert_real_time_analysis_iterations_min_interval_fail():
         settings_validation.convert_real_time_analysis_iterations(sim)
 
 
+def test_convert_real_time_analysis_iterations_None():
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+        real_time_analysis_interval=None,
+        real_time_analysis_minimum_time='500 ps',
+    )
+
+    rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(sim)
+
+    assert rta_its is None
+    assert rta_min_its is None
+
+
 def test_convert_target_error_from_kcal_per_mole_to_kT():
     kT = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
         temperature=298.15 * unit.kelvin,

@@ -5,6 +5,7 @@ Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
 from openff.units import unit
+from typing import Optional
 from .omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,
@@ -101,7 +102,7 @@ def convert_steps_per_iteration(
 
 def convert_real_time_analysis_iterations(
         simulation_settings: MultiStateSimulationSettings,
-) -> tuple[int, int]:
+) -> tuple[Optional[int], Optional[int]]:
     """Convert time units in Settings to various other units
 
     Interally openmmtools uses various quantities with units of time,
@@ -117,11 +118,15 @@ def convert_real_time_analysis_iterations(
 
     Returns
     -------
-    real_time_analysis_iterations : int
+    real_time_analysis_iterations : Optional[int]
       suitable for input to online_analysis_interval
-    real_time_analysis_minimum_iterations : int
+    real_time_analysis_minimum_iterations : Optional[int]
       suitable for input to real_time_analysis_minimum_iterations
     """
+    if simulation_settings.real_time_analysis_interval is None:
+        # option to turn off real time analysis
+        return None, None
+
     tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
 
     # convert real_time_analysis time to interval
