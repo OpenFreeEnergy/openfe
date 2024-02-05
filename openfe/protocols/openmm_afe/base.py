@@ -631,10 +631,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         integrator : openmmtools.mcmc.LangevinDynamicsMove
           A configured integrator object.
         """
-        # TODO: Check this is correct
-        tpi_fs = simulation_settings.time_per_iteration.to(unit.femtosecond).m
-        ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
-        steps_per_iteration = int(round(tpi_fs / ts_fs))
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings, integrator_settings
+        )
 
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
