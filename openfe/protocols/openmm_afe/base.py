@@ -688,8 +688,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             simulation_settings=simulation_settings,
         )
         et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
-            thermo_settings=thermo_settings.temperature,
-            simulation_settings=simulation_settings.early_termination_target_error,
+            thermo_settings.temperature,
+            simulation_settings.early_termination_target_error,
         )
 
         # Select the right sampler

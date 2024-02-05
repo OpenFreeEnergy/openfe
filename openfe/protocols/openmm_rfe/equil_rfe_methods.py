@@ -955,7 +955,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(
-                    int(equil_steps / integrator_settings.n_steps.m)  # type: ignore
+                    int(equil_steps / steps_per_iteration)  # type: ignore
                 )
 
                 # production
@@ -963,7 +963,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running production phase")
 
                 sampler.extend(
-                    int(prod_steps / integrator_settings.n_steps.m)  # type: ignore
+                    int(prod_steps / steps_per_iteration)  # type: ignore
                 )
 
                 self.logger.info("Production phase complete")
