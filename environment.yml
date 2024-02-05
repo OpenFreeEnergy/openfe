@@ -10,7 +10,7 @@ dependencies:
   - networkx
   - rdkit
   - pip
-  - pytest
+  - pytest =7
   - pytest-xdist
   - pytest-cov
   - pytest-rerunfailures

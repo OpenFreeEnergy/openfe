@@ -379,7 +379,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Positions of the system.
         """
         topology = system_modeller.getTopology()
-        # roundtrip positions to remove vec3 issues -- maybe a quicker way with openff-models 0.1.2
+        # roundtrip positions to remove vec3 issues
+        # maybe a quicker way with openff-models 0.1.2
         positions = to_openmm(from_openmm(system_modeller.getPositions()))
         system = system_generator.create_system(
             system_modeller.topology,
@@ -393,7 +394,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         settings: dict[str, SettingsBaseModel],
-    ) -> tuple[app.Topology, openmm.System, openmm.unit.Quanity, dict[Component, npt.NDArray]]:
+    ) -> tuple[
+        app.Topology,
+        openmm.System,
+        openmm.unit.Quanity,
+        dict[Component, npt.NDArray],
+      ]:
         if self.verbose:
             self.logger.info("Parameterizing molecules")
 
@@ -413,7 +419,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 )
 
         component_resids = {component: np.array([0]) for component in smc_components}
-        
+
         force_field = ForceField(
             '_unconstrained-'.join([val for val in settings['forcefield_settings'].small_molecule_forcefield.split("-")]) + ".offxml"
         )
@@ -421,10 +427,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # not sure how much we want to muck with these settings?
         # settings['forcefield_settings'].hydrogen_mass == 0.0
         assert settings['forcefield_settings'].constraints in ("hbonds", None)
-        assert settings['forcefield_settings'].nonbonded_method == "PME"
 
-        force_field['vdW'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
-        force_field['Electrostatics'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
+        # not in 0.9.5?
+        if False:
+            settings['forcefield_settings'].nonbonded_method == "PME"
+
+            force_field['vdW'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
+            force_field['Electrostatics'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
 
         topology = Topology.from_molecules(*smc_components.values())
 
@@ -893,13 +902,20 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 2. Get settings
         settings = self._handle_settings()
 
-        if True:  # prot_comp is not None:
+        if (
+            (prot_comp is not None)
+            or (solv_comp is not None)
+            or (len(smc_comps) > 1)
+        ):
             # 3a. Get system generator
             system_generator = self._get_system_generator(settings, solv_comp)
 
             # 4. Get modeller
             system_modeller, comp_resids = self._get_modeller(
-                prot_comp, solv_comp, smc_comps, system_generator,
+                prot_comp,
+                solv_comp,
+                smc_comps,
+                system_generator,
                 settings['solvation_settings']
             )
 
@@ -909,9 +925,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             )
         else:
             # 3b. Get objects via Interchange (no steps 4)
-            omm_topology, omm_system, positions, comp_resids = self._get_omm_objects_via_interchange(
+            (
+                omm_topology,
+                omm_system,
+                positions,
+                comp_resids,
+            ) = self._get_omm_objects_via_interchange(
                 protein_component=prot_comp,
-                solvent_component=solv_comp, 
+                solvent_component=solv_comp,
                 smc_components=smc_comps,
                 settings=settings,
             )
