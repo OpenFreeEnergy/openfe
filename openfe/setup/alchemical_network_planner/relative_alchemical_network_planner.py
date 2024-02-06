@@ -209,7 +209,7 @@ class RelativeAlchemicalNetworkPlanner(
         # Todo: Another dirty hack! - START
         protocol_settings = transformation_protocol.settings.unfrozen_copy()
         if "vacuum" in transformation_name:
-            protocol_settings.system_settings.nonbonded_method = "nocutoff"
+            protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
 
         transformation_protocol = transformation_protocol.__class__(
             settings=protocol_settings

@@ -8,10 +8,9 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
-import os
 
 from gufe.settings import (
     Settings,
@@ -20,8 +19,11 @@ from gufe.settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings, SimulationSettings
+    IntegratorSettings,
+    MultiStateSimulationSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    OutputSettings,
 )
 
 try:
@@ -59,7 +61,7 @@ class AlchemicalSettings(SettingsBaseModel):
     This describes the creation of the hybrid system.
     """
 
-    unsampled_endstates = False
+    endstate_dispersion_correction = False
     """
     Whether to have extra unsampled endstate windows for long range
     correction. Default False.
@@ -71,18 +73,19 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to use dispersion correction in the hybrid topology state.
     Default False.
     """
-    softcore_LJ_v2 = True
+    softcore_LJ: Literal['gapsys', 'beutler']
     """
-    Whether to use the LJ softcore function as defined by
-    Gapsys et al. JCTC 2012 Default True.
+    Whether to use the LJ softcore function as defined by Gapsys et al. 
+    JCTC 2012, or the one by Beutler et al. Chem. Phys. Lett. 1994.
+    Default 'gapsys'.
     """
     softcore_alpha = 0.85
     """Softcore alpha parameter. Default 0.85"""
-    interpolate_old_and_new_14s = False
+    turn_off_core_unique_exceptions = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
-    at lambda 0 and old exceptions at lambda 1. If False they are present
-    in the nonbonded force. Default False.
+    at lambda 0 and old exceptions at lambda 1 between unique atoms and core 
+    atoms. If False they are present in the nonbonded force. Default False.
     """
     explicit_charge_correction = False
     """
@@ -105,8 +108,19 @@ class AlchemicalSettings(SettingsBaseModel):
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
-    class Config:
-        arbitrary_types_allowed = True
+    protocol_repeats: int
+    """
+    The number of completely independent repeats of the entire sampling 
+    process. The mean of the repeats defines the final estimate of FE 
+    difference, while the variance between repeats is used as the uncertainty.  
+    """
+
+    @validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
 
     # Inherited things
 
@@ -116,9 +130,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """Settings for thermodynamic parameters."""
 
     # Things for creating the systems
-    system_settings: SystemSettings
-    """Simulation system settings including the long-range non-bonded method."""
-    solvation_settings: SolvationSettings
+    solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
 
     # Alchemical settings
@@ -130,9 +142,9 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
     Alchemical protocol settings including soft core scaling.
     """
-    alchemical_sampler_settings: AlchemicalSamplerSettings
+    simulation_settings: MultiStateSimulationSettings
     """
-    Settings for sampling alchemical space, including the number of repeats.
+    Settings for alchemical sampler.
     """
 
     # MD Engine things
@@ -143,8 +155,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     integrator_settings: IntegratorSettings
     """Settings for the integrator such as timestep and barostat settings."""
 
-    # Simulation run settings
-    simulation_settings: SimulationSettings
+    output_settings: OutputSettings
     """
-    Simulation control settings, including simulation lengths and record-keeping.
+    Simulation output control settings.
     """

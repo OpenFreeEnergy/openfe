@@ -51,9 +51,10 @@ from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    SolvationSettings,
-    AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings, LambdaSettings,
+    BaseSolvationSettings,
+    MultiStateSimulationSettings, OpenMMEngineSettings,
+    IntegratorSettings, LambdaSettings, OutputSettings,
+    ThermoSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
@@ -233,14 +234,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         Get a dictionary with the following entries:
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
-          * system_settings : SystemSettings
-          * solvation_settings : SolvationSettings
+          * solvation_settings : BaseSolvationSettings
           * alchemical_settings : AlchemicalSettings
           * lambda_settings : LambdaSettings
-          * sampler_settings : AlchemicalSamplerSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
-          * simulation_settings : SimulationSettings
+          * simulation_settings : MultiStateSimulationSettings
+          * output_settings: OutputSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
@@ -273,15 +273,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
         """
-        ffcache = settings['simulation_settings'].forcefield_cache
+        ffcache = settings['output_settings'].forcefield_cache
         if ffcache is not None:
             ffcache = self.shared_basepath / ffcache
 
         system_generator = system_creation.get_system_generator(
             forcefield_settings=settings['forcefield_settings'],
-            thermo_settings=settings['thermo_settings'],
             integrator_settings=settings['integrator_settings'],
-            system_settings=settings['system_settings'],
+            thermo_settings=settings['thermo_settings'],
             cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
@@ -293,7 +292,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
-        solvation_settings: SolvationSettings
+        solvation_settings: BaseSolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
@@ -309,7 +308,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           List of openff Molecules to add.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
-        solvation_settings : SolvationSettings
+        solvation_settings : BaseSolvationSettings
           Settings detailing how to solvate the system.
 
         Returns
@@ -540,7 +539,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         topology: app.Topology,
         positions: openmm.unit.Quantity,
-        simulation_settings: SimulationSettings,
+        output_settings: OutputSettings,
     ) -> multistate.MultiStateReporter:
         """
         Get a MultistateReporter for the simulation you are running.
@@ -549,8 +548,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         topology : app.Topology
           A Topology of the system being created.
-        simulation_settings : SimulationSettings
-          Settings for the simulation.
+        output_settings: OutputSettings
+          Output settings for the simulations
 
         Returns
         -------
@@ -560,16 +559,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         mdt_top = mdt.Topology.from_openmm(topology)
 
         selection_indices = mdt_top.select(
-                simulation_settings.output_indices
+                output_settings.output_indices
         )
 
-        nc = self.shared_basepath / simulation_settings.output_filename
-        chk = simulation_settings.checkpoint_storage
+        nc = self.shared_basepath / output_settings.output_filename
+        chk = output_settings.checkpoint_storage_filename
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=simulation_settings.checkpoint_interval.m,
+            checkpoint_interval=output_settings.checkpoint_interval.m,
             checkpoint_storage=chk,
         )
 
@@ -580,7 +579,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 mdt_top.subset(selection_indices),
             )
             traj.save_pdb(
-                self.shared_basepath / simulation_settings.output_structure
+                self.shared_basepath / output_settings.output_structure
             )
 
         return reporter
@@ -617,9 +616,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return energy_context_cache, sampler_context_cache
 
+    @staticmethod
     def _get_integrator(
-        self,
-        integrator_settings: IntegratorSettings
+        integrator_settings: IntegratorSettings,
+        simulation_settings: MultiStateSimulationSettings
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Return a LangevinDynamicsMove integrator
@@ -627,16 +627,21 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         Parameters
         ----------
         integrator_settings : IntegratorSettings
+        simulation_settings : MultiStateSimulationSettings
 
         Returns
         -------
         integrator : openmmtools.mcmc.LangevinDynamicsMove
           A configured integrator object.
         """
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings, integrator_settings
+        )
+
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.collision_rate),
-            n_steps=integrator_settings.n_steps.m,
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
+            n_steps=steps_per_iteration,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
@@ -644,11 +649,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return integrator
 
+    @staticmethod
     def _get_sampler(
-        self,
         integrator: openmmtools.mcmc.LangevinDynamicsMove,
         reporter: openmmtools.multistate.MultiStateReporter,
-        sampler_settings: AlchemicalSamplerSettings,
+        simulation_settings: MultiStateSimulationSettings,
+        thermo_settings: ThermoSettings,
         cmp_states: list[ThermodynamicState],
         sampler_states: list[SamplerState],
         energy_context_cache: openmmtools.cache.ContextCache,
@@ -663,8 +669,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           The simulation integrator.
         reporter : openmmtools.multistate.MultiStateReporter
           The reporter to hook up to the sampler.
-        sampler_settings : AlchemicalSamplerSettings
+        simulation_settings : MultiStateSimulationSettings
           Settings for the alchemical sampler.
+        thermo_settings : ThermoSettings
+          Thermodynamic settings
         cmp_states : list[ThermodynamicState]
           A list of thermodynamic states to sample.
         sampler_states : list[SamplerState]
@@ -679,30 +687,37 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler : multistate.MultistateSampler
           A sampler configured for the chosen sampling method.
         """
+        rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=simulation_settings,
+        )
+        et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+            thermo_settings.temperature,
+            simulation_settings.early_termination_target_error,
+        )
 
         # Select the right sampler
         # Note: doesn't need else, settings already validates choices
-        if sampler_settings.sampler_method.lower() == "repex":
+        if simulation_settings.sampler_method.lower() == "repex":
             sampler = multistate.ReplicaExchangeSampler(
                 mcmc_moves=integrator,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=et_target_err,
+                online_analysis_minimum_iterations=rta_min_its
             )
-        elif sampler_settings.sampler_method.lower() == "sams":
+        elif simulation_settings.sampler_method.lower() == "sams":
             sampler = multistate.SAMSSampler(
                 mcmc_moves=integrator,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
-                flatness_criteria=sampler_settings.flatness_criteria,
-                gamma0=sampler_settings.gamma0,
+                online_analysis_interval=rta_its,
+                online_analysis_minimum_iterations=rta_min_its,
+                flatness_criteria=simulation_settings.sams_flatness_criteria,
+                gamma0=simulation_settings.sams_gamma0,
             )
-        elif sampler_settings.sampler_method.lower() == 'independent':
+        elif simulation_settings.sampler_method.lower() == 'independent':
             sampler = multistate.MultiStateSampler(
                 mcmc_moves=integrator,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=et_target_err,
+                online_analysis_minimum_iterations=rta_min_its,
             )
 
         sampler.create(
@@ -744,7 +759,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           if not a dry run.
         """
         # Get the relevant simulation steps
-        mc_steps = settings['integrator_settings'].n_steps.m
+        mc_steps = settings_validation.convert_steps_per_iteration(
+            simulation_settings=settings['simulation_settings'],
+            integrator_settings=settings['integrator_settings'],
+        )
 
         equil_steps = settings_validation.get_simsteps(
             sim_length=settings['simulation_settings'].equilibration_length,
@@ -783,7 +801,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
             analyzer = multistate_analysis.MultistateEquilFEAnalysis(
                 reporter,
-                sampling_method=settings['sampler_settings'].sampler_method.lower(),
+                sampling_method=settings['simulation_settings'].sampler_method.lower(),
                 result_units=unit.kilocalorie_per_mole
             )
             analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
@@ -796,8 +814,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clean up the reporter file
-            fns = [self.shared_basepath / settings['simulation_settings'].output_filename,
-                   self.shared_basepath / settings['simulation_settings'].checkpoint_storage]
+            fns = [self.shared_basepath / settings['output_settings'].output_filename,
+                   self.shared_basepath / settings['output_settings'].checkpoint_storage_filename]
             for fn in fns:
                 os.remove(fn)
 
@@ -881,7 +899,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 11. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology, positions,
-            settings['simulation_settings'],
+            settings['output_settings'],
         )
 
         # Wrap in try/finally to avoid memory leak issues
@@ -892,11 +910,15 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             )
 
             # 13. Get integrator
-            integrator = self._get_integrator(settings['integrator_settings'])
+            integrator = self._get_integrator(
+                settings['integrator_settings'],
+                settings['simulation_settings'],
+            )
 
             # 14. Get sampler
             sampler = self._get_sampler(
-                integrator, reporter, settings['sampler_settings'],
+                integrator, reporter, settings['simulation_settings'],
+                settings['thermo_settings'],
                 cmp_states, sampler_states,
                 energy_ctx_cache, sampler_ctx_cache
             )
@@ -928,8 +950,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 del integrator, sampler
 
         if not dry:
-            nc = self.shared_basepath / settings['simulation_settings'].output_filename
-            chk = settings['simulation_settings'].checkpoint_storage
+            nc = self.shared_basepath / settings['output_settings'].output_filename
+            chk = settings['output_settings'].checkpoint_storage_filename
             return {
                 'nc': nc,
                 'last_checkpoint': chk,

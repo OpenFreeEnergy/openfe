@@ -39,7 +39,7 @@ class TestRelativeHybridTopologyProtocolResult(GufeTokenizableTestsMixin):
 
 class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocol
-    key = "RelativeHybridTopologyProtocol-02ad30e0e0332ab6a8ce97bcdf3f287c"
+    key = "RelativeHybridTopologyProtocol-b6ecbf56c5effbda11d3c10d13f37273"
     repr = f"<{key}>"
 
     @pytest.fixture()
