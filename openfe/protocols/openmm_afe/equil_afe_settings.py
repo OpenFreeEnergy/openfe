@@ -25,9 +25,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
     SolvationSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    SimulationSettings,
     BasePartialChargeSettings,
-    OpenFFPartialChargeSettings
+    OpenFFPartialChargeSettings,
     OutputSettings,
 )
 import numpy as np
