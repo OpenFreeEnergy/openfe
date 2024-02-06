@@ -121,7 +121,8 @@ def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    show_progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    n_processes: int =1
 ) -> LigandNetwork:
     """
     Plan a network with all possible proposed mappings.
@@ -144,10 +145,12 @@ def generate_maximal_network(
       but many can be given.
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
+    show_progress : Union[bool, Callable[Iterable], Iterable]
       progress bar: if False, no progress bar will be shown. If True, use a
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
+    n_processes: int
+        number of processes available for parallelization.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
@@ -156,24 +159,34 @@ def generate_maximal_network(
 
     nodes = list(ligands)
 
-    if progress is True:
+    if show_progress is True:
         # default is a tqdm progress bar
         total = len(nodes) * (len(nodes) - 1) // 2
         progress = functools.partial(tqdm, total=total, delay=1.5)
-    elif progress is False:
+    elif show_progress is False:
         def progress(x): return x
-    # otherwise, it should be a user-defined callable
 
-    mapping_generator = itertools.chain.from_iterable(
-        mapper.suggest_mappings(molA, molB)
-        for molA, molB in progress(itertools.combinations(nodes, 2))
-        for mapper in mappers
-    )
-    if scorer:
-        mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                    for mapping in mapping_generator]
+    # otherwise, it should be a user-defined callable
+    if(n_processes > 1):
+        from ._parallel_mapping_pattern import _parallel_map_scoring
+
+        _parallel_map_scoring(possible_edges=itertools.combinations(nodes, 2),
+                              scorer=scorer,
+                              mapper=mappers[0],# Todo: this might be a problem!
+                              n_processes=n_processes,
+                              show_progress=show_progress
+                              )
     else:
-        mappings = list(mapping_generator)
+        mapping_generator = itertools.chain.from_iterable(
+            mapper.suggest_mappings(molA, molB)
+            for molA, molB in progress(itertools.combinations(nodes, 2))
+            for mapper in mappers
+        )
+        if scorer:
+            mappings = [mapping.with_annotations({'score': scorer(mapping)})
+                        for mapping in mapping_generator]
+        else:
+            mappings = list(mapping_generator)
 
     network = LigandNetwork(mappings, nodes=nodes)
     return network
