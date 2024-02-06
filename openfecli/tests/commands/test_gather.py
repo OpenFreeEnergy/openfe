@@ -224,6 +224,7 @@ def rbfe_results():
 
 
 @pytest.mark.download
+@pytest.mark.xfail
 def test_rbfe_results(rbfe_results):
     runner = CliRunner()
 

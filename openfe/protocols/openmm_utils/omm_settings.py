@@ -9,7 +9,7 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
 
@@ -27,18 +27,23 @@ except ImportError:
     from pydantic import validator  # type: ignore[assignment]
 
 
-class SolvationSettings(SettingsBaseModel):
-    """Settings for solvating the system
+class BaseSolvationSettings(SettingsBaseModel):
+    """
+    Base class for SolvationSettings objects
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class OpenMMSolvationSettings(BaseSolvationSettings):
+    """Settings for controlling how a system is solvated using OpenMM tooling
 
     Note
     ----
     No solvation will happen if a SolventComponent is not passed.
 
     """
-    class Config:
-        arbitrary_types_allowed = True
-
-    solvent_model = 'tip3p'
+    solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
     Force field water model to use.
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
@@ -46,16 +51,6 @@ class SolvationSettings(SettingsBaseModel):
 
     solvent_padding: FloatQuantity['nanometer'] = 1.2 * unit.nanometer
     """Minimum distance from any solute atoms to the solvent box edge."""
-
-    @validator('solvent_model')
-    def allowed_solvent(cls, v):
-        allowed_models = ['tip3p', 'spce', 'tip4pew', 'tip5p']
-        if v.lower() not in allowed_models:
-            errmsg = (
-                f"Only {allowed_models} are allowed solvent_model values"
-            )
-            raise ValueError(errmsg)
-        return v
 
     @validator('solvent_padding')
     def is_positive_distance(cls, v):

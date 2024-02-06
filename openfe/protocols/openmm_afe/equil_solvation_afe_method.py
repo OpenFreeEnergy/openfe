@@ -50,7 +50,7 @@ from gufe import (
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
-    SolvationSettings, AlchemicalSettings, LambdaSettings,
+    OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, OutputSettings,
     SettingsBaseModel,
@@ -415,7 +415,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                     0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
             ),
-            solvation_settings=SolvationSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
             vacuum_engine_settings=OpenMMEngineSettings(),
             solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -739,7 +739,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * solvation_settings : SolvationSettings
+            * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
@@ -823,7 +823,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * solvation_settings : SolvationSettings
+            * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings

@@ -22,7 +22,8 @@ from gufe.settings import (
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     MultiStateSimulationSettings,
-    SolvationSettings,
+    BaseSolvationSettings,
+    OpenMMSolvationSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
     OutputSettings,
@@ -137,7 +138,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
-    solvation_settings: SolvationSettings
+    solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
 
     # Alchemical settings

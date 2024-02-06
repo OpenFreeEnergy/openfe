@@ -8,7 +8,7 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional, Literal
+from typing import Literal
 from openff.units import unit
 from openff.models.types import FloatQuantity
 
@@ -19,8 +19,10 @@ from gufe.settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SolvationSettings, MultiStateSimulationSettings,
-    OpenMMEngineSettings, IntegratorSettings,
+    IntegratorSettings,
+    MultiStateSimulationSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
     OutputSettings,
 )
 
@@ -128,7 +130,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """Settings for thermodynamic parameters."""
 
     # Things for creating the systems
-    solvation_settings: SolvationSettings
+    solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
 
     # Alchemical settings

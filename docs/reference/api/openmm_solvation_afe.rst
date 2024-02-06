@@ -22,18 +22,6 @@ Protocol Settings
 
 Below are the settings which can be tweaked in the protocol. The default settings (accessed using :meth:`AbsoluteSolvationProtocol.default_settings`) will automatically populate settings which we have found to be useful for running solvation free energy calculations. There will however be some cases (such as when calculating difficult to converge systems) where you will need to tweak some of the following settings.
 
-.. autopydantic_model:: AbsoluteSolvationSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :exclude-members: get_defaults
-   :member-order: bysource
-   :noindex:
 
 .. module:: openfe.protocols.openmm_afe.equil_afe_settings
 
@@ -110,18 +98,6 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :noindex:
 
 .. autopydantic_model:: MultiStateSimulationSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-   :noindex:
-
-.. autopydantic_model:: SolvationSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False
