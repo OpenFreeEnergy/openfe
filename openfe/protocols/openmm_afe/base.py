@@ -51,12 +51,14 @@ from gufe import (
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+)
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     SolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, LambdaSettings, OutputSettings,
-    ThermoSettings, BasePartialChargeSettings,
-    OpenFFPartialChargeSettings,
+    ThermoSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
