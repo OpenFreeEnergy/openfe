@@ -82,9 +82,9 @@ def generate_md_json(smc):
 def generate_ahfe_json(smc):
     settings = AbsoluteSolvationProtocol.default_settings()
     settings.solvent_simulation_settings.equilibration_length = 10 * unit.picosecond
-    settings.solvent_simulation_settings.production_length = 10 * unit.picosecond
+    settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
-    settings.vacuum_simulation_settings.production_length = 10 * unit.picosecond
+    settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
     settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
                                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                                             1.0]
