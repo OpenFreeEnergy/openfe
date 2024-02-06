@@ -18,7 +18,8 @@ from openfe.protocols.openmm_utils import (
     multistate_analysis, omm_settings
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    SolvationSettings, IntegratorSettings,
+    IntegratorSettings,
+    OpenMMSolvationSettings,
 )
 
 
@@ -335,7 +336,7 @@ class TestSystemCreation:
                 T4_protein_component, openfe.SolventComponent(),
                 {smc: mol},
                 generator.forcefield,
-                SolvationSettings())
+                OpenMMSolvationSettings())
 
         resids = [r for r in model.topology.residues()]
         assert resids[163].name == 'NME'
@@ -363,7 +364,7 @@ class TestSystemCreation:
             openfe.SolventComponent(neutralize=False),
             {smc: offmol},
             generator.forcefield,
-            SolvationSettings(),
+            OpenMMSolvationSettings(),
         )
 
         system = generator.create_system(

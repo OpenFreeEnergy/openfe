@@ -19,9 +19,10 @@ from gufe.settings import (
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    OpenMMSolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings,
+    IntegratorSettings,
     MultiStateSimulationSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
     OutputSettings,
 )
 

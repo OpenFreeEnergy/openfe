@@ -18,10 +18,8 @@ from gufe import (
     Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SystemSettings,
-    SimulationSettings,
-    OpenMMSolvationSettings,
     IntegratorSettings,
+    OpenMMSolvationSettings,
 )
 
 
