@@ -32,10 +32,13 @@ from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+)
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
     SolvationSettings, OpenMMEngineSettings,
-    BasePartialChargeSettings, OpenFFPartialChargeSettings,
+    OpenFFPartialChargeSettings,
     IntegratorSettings, MDSimulationSettings, MDOutputSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule

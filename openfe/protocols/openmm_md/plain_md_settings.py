@@ -11,7 +11,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     Settings,
     SolvationSettings, OpenMMEngineSettings, MDSimulationSettings,
     IntegratorSettings, MDOutputSettings,
-    OpenFFPartialChargeSettings, BasePartialChargeSettings,
+    OpenFFPartialChargeSettings
 )
 from gufe.settings import SettingsBaseModel
 try:
