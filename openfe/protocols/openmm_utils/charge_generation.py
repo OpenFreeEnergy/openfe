@@ -87,10 +87,13 @@ def assign_offmol_espaloma_charges(
     # to avoid issues like:
     # https://github.com/openforcefield/openff-nagl/issues/69
     with toolkit_registry_manager(toolkit_registry):
-        offmol.assign_partial_charges(
+        offmol_copy.assign_partial_charges(
             partial_charge_method='espaloma-am1bcc',
-            toolkit_registry=toolkit_registry
+            toolkit_registry=EspalomaChargeToolkitWrapper(),
         )
+
+    # Copy back charges into the original offmol object
+    offmol.partial_charges = offmol_copy.partial_charges
 
 
 def assign_offmol_nagl_charges(
@@ -141,7 +144,7 @@ def assign_offmol_nagl_charges(
     with toolkit_registry_manager(toolkit_registry):
         offmol.assign_partial_charges(
             partial_charge_method=model_path,
-            toolkit_registry=toolkit_registry
+            toolkit_registry=NAGLToolkitWrapper(),
         )
 
 
@@ -264,7 +267,6 @@ def _generate_offmol_conformers(
 
 
 def _get_toolkit_registry(
-    charge_method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'],
     toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
     method_dict: dict[str, Union[Callable, int, list[str], dict[str, str]]]
 ) -> ToolkitRegistry:
@@ -293,9 +295,6 @@ def _get_toolkit_registry(
     ValueError
       If the selected ``toolkit_backend`` is not compatible with the partial
       charge method.
-    ImportError
-      If ``nagl`` or ``espaloma`` are selected but the relevant package is not
-      installed.
     """
 
     if toolkit_backend.lower() not in method_dict['backends']:
@@ -307,22 +306,6 @@ def _get_toolkit_registry(
     toolkits = ToolkitRegistry(
         [i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]]
     )
-
-    # Check for optional packages and add additional toolkit wrappers
-    if charge_method.lower() == 'nagl':
-        if not HAS_NAGL:
-            errmsg = "NAGL partial charge method requested but not installed"
-            raise ImportError(errmsg)
-
-        toolkits.add_toolkit(NAGLToolkitWrapper())
-
-    if charge_method.lower() == 'espaloma':
-        if not HAS_ESPALOMA:
-            errmsg = ("Espaloma partial charge method requested "
-                      "but not installed")
-            raise ImportError(errmsg)
-
-        toolkits.add_toolkit(EspalomaChargeToolkitWrapper())
 
     return toolkits
 
