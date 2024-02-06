@@ -4,22 +4,14 @@
 Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
-import warnings
-import logging
 import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
 from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
-from openff.toolkit.utils.toolkits import (
-    AmberToolsToolkitWrapper,
-    OpenEyeToolkitWrapper,
-    RDKitToolkitWrapper,
-)
 from openff.units.openmm import to_openmm, ensure_quantity
-from openff.units import unit as offunit
 from openmmforcefields.generators import SystemGenerator
-from typing import Optional, Iterable
+from typing import Optional
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
@@ -28,17 +20,6 @@ from gufe import (
 from ..openmm_rfe.equil_rfe_settings import (
     SolvationSettings, IntegratorSettings,
 )
-
-
-try:
-    from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
-except ImportError:
-    HAS_NAGL = False
-else:
-    HAS_NAGL = True
-
-
-logger = logging.getLogger(__name__)
 
 
 def get_system_generator(
@@ -256,3 +237,4 @@ def get_omm_modeller(protein_comp: Optional[ProteinComponent],
                 r.name = 'HOH'
 
     return system_modeller, component_resids
+
