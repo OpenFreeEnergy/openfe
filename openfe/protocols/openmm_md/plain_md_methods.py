@@ -37,8 +37,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
-    SolvationSettings, OpenMMEngineSettings,
     OpenFFPartialChargeSettings,
+    OpenMMSolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, MDSimulationSettings, MDOutputSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
@@ -126,8 +126,8 @@ class PlainMDProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            solvation_settings=SolvationSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=MDSimulationSettings(
@@ -493,12 +493,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             'settings']
         stateA = self._inputs['stateA']
 
-        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = \
-            protocol_settings.forcefield_settings
-        thermo_settings: settings.ThermoSettings = \
-            protocol_settings.thermo_settings
-        solvation_settings: SolvationSettings = \
-            protocol_settings.solvation_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
+        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
+        thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
+        solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
         charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sim_settings: MDSimulationSettings = protocol_settings.simulation_settings
         output_settings: MDOutputSettings = protocol_settings.output_settings

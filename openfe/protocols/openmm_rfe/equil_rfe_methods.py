@@ -53,7 +53,7 @@ from gufe import (
 
 from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings,
-    SolvationSettings, AlchemicalSettings, LambdaSettings,
+    OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, OutputSettings,
     OpenFFPartialChargeSettings,
@@ -458,7 +458,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            solvation_settings=SolvationSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
             alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
             lambda_settings=LambdaSettings(),
             simulation_settings=MultiStateSimulationSettings(
@@ -661,7 +661,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
         lambda_settings: LambdaSettings = protocol_settings.lambda_settings
-        solvation_settings: SolvationSettings = protocol_settings.solvation_settings
+        solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
         output_settings: OutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings

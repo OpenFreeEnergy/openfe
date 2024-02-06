@@ -9,7 +9,9 @@ This module implements the settings necessary to run MD simulations using
 """
 from openfe.protocols.openmm_utils.omm_settings import (
     Settings,
-    SolvationSettings, OpenMMEngineSettings, MDSimulationSettings,
+    OpenMMSolvationSettings,
+    OpenMMEngineSettings,
+    MDSimulationSettings,
     IntegratorSettings, MDOutputSettings,
     OpenFFPartialChargeSettings
 )
@@ -37,8 +39,8 @@ class PlainMDProtocolSettings(Settings):
         return v
 
     # Things for creating the systems
-    solvation_settings: SolvationSettings
     partial_charge_settings: OpenFFPartialChargeSettings
+    solvation_settings: OpenMMSolvationSettings
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings

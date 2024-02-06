@@ -55,7 +55,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    SolvationSettings,
+    BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, LambdaSettings, OutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
@@ -235,7 +235,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         Get a dictionary with the following entries:
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
           * thermo_settings : ThermoSettings
-          * solvation_settings : SolvationSettings
+          * solvation_settings : BaseSolvationSettings
           * alchemical_settings : AlchemicalSettings
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
@@ -319,8 +319,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
-        solvation_settings: SolvationSettings,
         partial_charge_settings: BasePartialChargeSettings,
+        solvation_settings: BaseSolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
@@ -337,7 +337,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
-        solvation_settings : SolvationSettings
+        solvation_settings : BaseSolvationSettings
           Settings detailing how to solvate the system.
         partial_charge_settings : BasePartialChargeSettings
           Settings detailing how to assign partial charges to the
