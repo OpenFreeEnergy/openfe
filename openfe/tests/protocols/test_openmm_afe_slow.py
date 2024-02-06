@@ -46,16 +46,16 @@ def test_openmm_run_engine(platform,
     # Run a really short calculation to check everything is going well
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.alchemsampler_settings.n_repeats = 1
-    s.solvent_simulation_settings.output_indices = "resname UNK"
+    s.solvent_output_settings.output_indices = "resname UNK"
     s.vacuum_simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.vacuum_simulation_settings.production_length = 0.1 * unit.picosecond
     s.solvent_simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.solvent_simulation_settings.production_length = 0.1 * unit.picosecond
     s.vacuum_engine_settings.compute_platform = platform
     s.solvent_engine_settings.compute_platform = platform
-    s.integrator_settings.n_steps = 5 * unit.timestep
-    s.vacuum_simulation_settings.checkpoint_interval = 5 * unit.timestep
-    s.solvent_simulation_settings.checkpoint_interval = 5 * unit.timestep
+    s.alchemsampler_settings.steps_per_iteration = 5 * unit.timestep
+    s.vacuum_output_settings.checkpoint_interval = 5 * unit.timestep
+    s.solvent_output_settings.checkpoint_interval = 5 * unit.timestep
     s.alchemsampler_settings.n_replicas = 20
     s.lambda_settings.lambda_elec = \
         [0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,

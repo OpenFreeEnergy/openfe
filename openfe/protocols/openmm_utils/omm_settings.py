@@ -12,7 +12,6 @@ from __future__ import annotations
 from typing import Optional
 from openff.units import unit
 from openff.models.types import FloatQuantity
-import os
 
 from gufe.settings import (
     Settings,
@@ -26,42 +25,6 @@ try:
     from pydantic.v1 import validator
 except ImportError:
     from pydantic import validator  # type: ignore[assignment]
-
-
-class SystemSettings(SettingsBaseModel):
-    """Settings describing the simulation system settings."""
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    nonbonded_method = 'PME'
-    """
-    Method for treating nonbonded interactions, currently only PME and
-    NoCutoff are allowed. Default PME.
-    """
-    nonbonded_cutoff: FloatQuantity['nanometer'] = 1.0 * unit.nanometer
-    """
-    Cutoff value for short range nonbonded interactions.
-    Default 1.0 * unit.nanometer.
-    """
-
-    @validator('nonbonded_method')
-    def allowed_nonbonded(cls, v):
-        if v.lower() not in ['pme', 'nocutoff']:
-            errmsg = ("Only PME and NoCutoff are allowed nonbonded_methods")
-            raise ValueError(errmsg)
-        return v
-
-    @validator('nonbonded_cutoff')
-    def is_positive_distance(cls, v):
-        # these are time units, not simulation steps
-        if not v.is_compatible_with(unit.nanometer):
-            raise ValueError("nonbonded_cutoff must be in distance units "
-                             "(i.e. nanometers)")
-        if v < 0:
-            errmsg = "nonbonded_cutoff must be a positive value"
-            raise ValueError(errmsg)
-        return v
 
 
 class SolvationSettings(SettingsBaseModel):
@@ -203,120 +166,6 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     """
 
 
-class AlchemicalSamplerSettings(SettingsBaseModel):
-    """Settings for the Equilibrium Alchemical sampler, currently supporting
-    either MultistateSampler, SAMSSampler or ReplicaExchangeSampler.
-
-    """
-
-    """
-    TODO
-    ----
-    * It'd be great if we could pass in the sampler object rather than using
-      strings to define which one we want.
-    * Make n_replicas optional such that: If `None` or greater than the number
-      of lambda windows set in :class:`AlchemicalSettings`, this will default
-      to the number of lambda windows. If less than the number of lambda
-      windows, the replica lambda states will be picked at equidistant
-      intervals along the lambda schedule.
-    """
-    class Config:
-        arbitrary_types_allowed = True
-
-    sampler_method = "repex"
-    """
-    Alchemical sampling method, must be one of;
-    `repex` (Hamiltonian Replica Exchange),
-    `sams` (Self-Adjusted Mixture Sampling),
-    or `independent` (independently sampled lambda windows).
-    Default `repex`.
-    """
-    online_analysis_interval: Optional[int] = 250
-    """
-    MCMC steps (i.e. ``IntegratorSettings.n_steps``) interval at which
-    to perform an analysis of the free energies.
-
-    At each interval, real time analysis data (e.g. current free energy
-    estimate and timing data) will be written to a yaml file named
-    ``<SimulationSettings.output_name>_real_time_analysis.yaml``. The
-    current error in the estimate will also be assed and if it drops
-    below ``AlchemicalSamplerSettings.online_analysis_target_error``
-    the simulation will be terminated.
-
-    If ``None``, no real time analysis will be performed and the yaml
-    file will not be written.
-
-    Must be a multiple of ``SimulationSettings.checkpoint_interval``
-
-    Default `250`.
-    """
-    online_analysis_target_error: FloatQuantity = 0.0 * unit.boltzmann_constant * unit.kelvin
-    """
-    Target error for the online analysis measured in kT. Once the free energy
-    is at or below this value, the simulation will be considered complete. A
-    suggested value of 0.2 * `unit.boltzmann_constant` * `unit.kelvin` has
-    shown to be effective in both hydration and binding free energy benchmarks.
-    Default 0.0 * `unit.boltzmann_constant` * `unit.kelvin`, i.e. no early
-    termination will occur.
-    """
-    online_analysis_minimum_iterations = 500
-    """
-    Number of iterations which must pass before online analysis is
-    carried out. Default 500.
-    """
-    n_repeats: int = 3
-    """
-    Number of independent repeats to run.  Default 3
-    """
-    flatness_criteria = 'logZ-flatness'
-    """
-    SAMS only. Method for assessing when to switch to asymptomatically
-    optimal scheme.
-    One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
-    Default 'logZ-flatness'.
-    """
-    gamma0 = 1.0
-    """SAMS only. Initial weight adaptation rate. Default 1.0."""
-    n_replicas = 11
-    """Number of replicas to use. Default 11."""
-
-    @validator('flatness_criteria')
-    def supported_flatness(cls, v):
-        supported = [
-            'logz-flatness', 'minimum-visits', 'histogram-flatness'
-        ]
-        if v.lower() not in supported:
-            errmsg = ("Only the following flatness_criteria are "
-                      f"supported: {supported}")
-            raise ValueError(errmsg)
-        return v
-
-    @validator('sampler_method')
-    def supported_sampler(cls, v):
-        supported = ['repex', 'sams', 'independent']
-        if v.lower() not in supported:
-            errmsg = ("Only the following sampler_method values are "
-                      f"supported: {supported}")
-            raise ValueError(errmsg)
-        return v
-
-    @validator('n_repeats', 'n_replicas')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = "n_repeats and n_replicas must be positive values"
-            raise ValueError(errmsg)
-        return v
-
-    @validator('online_analysis_target_error', 'n_repeats',
-               'online_analysis_minimum_iterations', 'gamma0', 'n_replicas')
-    def must_be_zero_or_positive(cls, v):
-        if v < 0:
-            errmsg = ("Online analysis target error, minimum iteration "
-                      "and SAMS gamm0 must be 0 or positive values.")
-            raise ValueError(errmsg)
-        return v
-
-
 class OpenMMEngineSettings(SettingsBaseModel):
     """OpenMM MD engine settings"""
 
@@ -341,13 +190,8 @@ class IntegratorSettings(SettingsBaseModel):
 
     timestep: FloatQuantity['femtosecond'] = 4 * unit.femtosecond
     """Size of the simulation timestep. Default 4 * unit.femtosecond."""
-    collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
+    langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
-    n_steps = 250 * unit.timestep  # todo: IntQuantity
-    """
-    Number of integration timesteps between each time the MCMC move
-    is applied. Default 250 * unit.timestep.
-    """
     reassign_velocities = False
     """
     If True, velocities are reassigned from the Maxwell-Boltzmann
@@ -365,20 +209,24 @@ class IntegratorSettings(SettingsBaseModel):
     Frequency at which volume scaling changes should be attempted.
     Default 25 * unit.timestep.
     """
+    remove_com: bool = False
+    """
+    Whether or not to remove the center of mass motion. Default False.
+    """
 
-    @validator('collision_rate', 'n_restart_attempts')
+    @validator('langevin_collision_rate', 'n_restart_attempts')
     def must_be_positive_or_zero(cls, v):
         if v < 0:
-            errmsg = ("collision_rate, and n_restart_attempts must be "
-                      "zero or positive values")
+            errmsg = ("langevin_collision_rate, and n_restart_attempts must be"
+                      f" zero or positive values, got {v}.")
             raise ValueError(errmsg)
         return v
 
-    @validator('timestep', 'n_steps', 'constraint_tolerance')
+    @validator('timestep', 'constraint_tolerance')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("timestep, n_steps, constraint_tolerance "
-                      "must be positive values")
+            errmsg = ("timestep, and constraint_tolerance "
+                      f"must be positive values, got {v}.")
             raise ValueError(errmsg)
         return v
 
@@ -390,39 +238,21 @@ class IntegratorSettings(SettingsBaseModel):
                              "(i.e. picoseconds)")
         return v
 
-    @validator('collision_rate')
+    @validator('langevin_collision_rate')
     def must_be_inverse_time(cls, v):
         if not v.is_compatible_with(1 / unit.picosecond):
-            raise ValueError("collision_rate must be in inverse time "
+            raise ValueError("langevin collision_rate must be in inverse time "
                              "(i.e. 1/picoseconds)")
         return v
 
 
-class SimulationSettings(SettingsBaseModel):
+class OutputSettings(SettingsBaseModel):
     """
-    Settings for simulation control, including lengths,
+    Settings for simulation output settings,
     writing to disk, etc...
     """
     class Config:
         arbitrary_types_allowed = True
-
-    minimization_steps = 5000
-    """Number of minimization steps to perform. Default 5000."""
-    equilibration_length: FloatQuantity['nanosecond']
-    """
-    Length of the equilibration phase in units of time. The total number of
-    steps from this equilibration length
-    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
-    must be a multiple of the value defined for
-    :class:`IntegratorSettings.n_steps`.
-    """
-    production_length: FloatQuantity['nanosecond']
-    """
-    Length of the production phase in units of time. The total number of
-    steps from this production length (i.e.
-    ``production_length`` / :class:`IntegratorSettings.timestep`) must be
-    a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
-    """
 
     # reporter settings
     output_filename = 'simulation.nc'
@@ -438,19 +268,52 @@ class SimulationSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval = 250 * unit.timestep  # todo: Needs IntQuantity
+    checkpoint_interval: FloatQuantity['picosecond'] = 1 * unit.picosecond
     """
-    Frequency to write the checkpoint file. Default 250 * unit.timestep.
+    Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
-    checkpoint_storage = 'checkpoint.nc'
+    checkpoint_storage_filename = 'checkpoint.chk'
     """
     Separate filename for the checkpoint file. Note, this should
-    not be a full path, just a filename. Default 'checkpoint.nc'.
+    not be a full path, just a filename. Default 'checkpoint.chk'.
     """
     forcefield_cache: Optional[str] = 'db.json'
     """
     Filename for caching small molecule residue templates so they can be
     later reused.
+    """
+
+    @validator('checkpoint_interval')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"Checkpoint intervals must be positive, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+
+class SimulationSettings(SettingsBaseModel):
+    """
+    Settings for simulation control, including lengths, etc...
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    minimization_steps = 5000
+    """Number of minimization steps to perform. Default 5000."""
+    equilibration_length: FloatQuantity['nanosecond']
+    """
+    Length of the equilibration phase in units of time. The total number of
+    steps from this equilibration length
+    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
+    must be a multiple of the value defined for
+    :class:`AlchemicalSamplerSettings.steps_per_iteration`.
+    """
+    production_length: FloatQuantity['nanosecond']
+    """
+    Length of the production phase in units of time. The total number of
+    steps from this production length (i.e.
+    ``production_length`` / :class:`IntegratorSettings.timestep`) must be
+    a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
     """
 
     @validator('equilibration_length', 'production_length')
@@ -461,19 +324,143 @@ class SimulationSettings(SettingsBaseModel):
         return v
 
     @validator('minimization_steps', 'equilibration_length',
-               'production_length', 'checkpoint_interval')
+               'production_length')
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("Minimization steps, MD lengths, and checkpoint "
-                      "intervals must be positive")
+            errmsg = ("Minimization steps, and MD lengths must be positive, "
+                      f"got {v}")
             raise ValueError(errmsg)
         return v
 
 
-class SimulationSettingsMD(SimulationSettings):
+class MultiStateSimulationSettings(SimulationSettings):
     """
-    Settings for simulation control for plain MD simulations, including
-    writing outputs
+    Settings for simulation control for multistate simulations,
+    including simulation length and details of the alchemical sampler.
+    """
+
+    """
+    TODO
+    ----
+    * It'd be great if we could pass in the sampler object rather than using
+      strings to define which one we want.
+    * Make n_replicas optional such that: If `None` or greater than the number
+      of lambda windows set in :class:`AlchemicalSettings`, this will default
+      to the number of lambda windows. If less than the number of lambda
+      windows, the replica lambda states will be picked at equidistant
+      intervals along the lambda schedule.
+    """
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    sampler_method = "repex"
+    """
+    Alchemical sampling method, must be one of;
+    `repex` (Hamiltonian Replica Exchange),
+    `sams` (Self-Adjusted Mixture Sampling),
+    or `independent` (independently sampled lambda windows).
+    Default `repex`.
+    """
+    time_per_iteration: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    # todo: Add validators in the protocol
+    """
+    Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
+    """
+    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250 * unit.picosecond
+    # todo: Add validators in the protocol
+    """
+    Time interval at which to perform an analysis of the free energies.
+
+    At each interval, real time analysis data (e.g. current free energy
+    estimate and timing data) will be written to a yaml file named
+    ``<OutputSettings.output_filename>_real_time_analysis.yaml``. The
+    current error in the estimate will also be assessed and if it drops
+    below ``MultiStateSimulationSettings.early_termination_target_error``
+    the simulation will be terminated.
+
+    If ``None``, no real time analysis will be performed and the yaml
+    file will not be written.
+
+    Must be a multiple of ``OutputSettings.checkpoint_interval``
+
+    Default `250`.
+    
+    """
+    early_termination_target_error: Optional[FloatQuantity['kcal/mol']] = 0.0 * unit.kilocalorie_per_mole
+    # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
+    #  (later would give an example of unit).
+    """
+    Target error for the real time analysis measured in kcal/mol. Once the MBAR 
+    error of the free energy is at or below this value, the simulation will be 
+    considered complete. 
+    A suggested value of 0.12 * `unit.kilocalorie_per_mole` has
+    shown to be effective in both hydration and binding free energy benchmarks.
+    Default ``None``, i.e. no early termination will occur.
+    """
+    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500 * unit.picosecond
+    # todo: Add validators in the protocol
+    """
+    Simulation time which must pass before real time analysis is
+    carried out. 
+    
+    Default 500 * unit.picosecond.
+    """
+
+    sams_flatness_criteria = 'logZ-flatness'
+    """
+    SAMS only. Method for assessing when to switch to asymptomatically
+    optimal scheme.
+    One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
+    Default 'logZ-flatness'.
+    """
+    sams_gamma0 = 1.0
+    """SAMS only. Initial weight adaptation rate. Default 1.0."""
+    n_replicas = 11
+    """Number of replicas to use. Default 11."""
+
+    @validator('sams_flatness_criteria')
+    def supported_flatness(cls, v):
+        supported = [
+            'logz-flatness', 'minimum-visits', 'histogram-flatness'
+        ]
+        if v.lower() not in supported:
+            errmsg = ("Only the following sams_flatness_criteria are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
+
+    @validator('sampler_method')
+    def supported_sampler(cls, v):
+        supported = ['repex', 'sams', 'independent']
+        if v.lower() not in supported:
+            errmsg = ("Only the following sampler_method values are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
+
+    @validator('n_replicas', 'time_per_iteration')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = "n_replicas and steps_per_iteration must be positive " \
+                     f"values, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+    @validator('early_termination_target_error',
+               'real_time_analysis_minimum_time', 'sams_gamma0',
+               'n_replicas')
+    def must_be_zero_or_positive(cls, v):
+        if v < 0:
+            errmsg = ("Early termination target error, minimum iteration and"
+                      f" SAMS gamma0 must be 0 or positive values, got {v}.")
+            raise ValueError(errmsg)
+        return v
+
+
+class MDSimulationSettings(SimulationSettings):
+    """
+    Settings for simulation control for plain MD simulations
     """
     class Config:
         arbitrary_types_allowed = True
@@ -482,10 +469,15 @@ class SimulationSettingsMD(SimulationSettings):
     """
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
-    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`)
-    must be a multiple of the value defined for
-    :class:`IntegratorSettings.n_steps`.
+    (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
     """
+
+
+class MDOutputSettings(OutputSettings):
+    """ Settings for simulation output settings for plain MD simulations."""
+    class Config:
+        arbitrary_types_allowed = True
+
     # reporter settings
     production_trajectory_filename = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
@@ -494,7 +486,8 @@ class SimulationSettingsMD(SimulationSettings):
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
     preminimized_structure = 'system.pdb'
-    """Path to the pdb file of the full pre-minimized system. Default 'system.pdb'."""
+    """Path to the pdb file of the full pre-minimized system. 
+    Default 'system.pdb'."""
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
@@ -504,11 +497,6 @@ class SimulationSettingsMD(SimulationSettings):
     equil_NPT_structure = 'equil_NPT.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
     Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
-    checkpoint_storage_filename = 'checkpoint.chk'
-    """
-    Separate filename for the checkpoint file. Note, this should
-    not be a full path, just a filename. Default 'checkpoint.chk'.
-    """
     log_output = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,

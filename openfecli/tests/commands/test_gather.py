@@ -209,8 +209,8 @@ def test_missing_leg_allow_partial(results_dir):
 
 RBFE_RESULTS = pooch.create(
     pooch.os_cache('openfe'),
-    base_url="doi:10.6084/m9.figshare.24542059",
-    registry={"results.tar.gz": None},
+    base_url="doi:10.6084/m9.figshare.25148945",
+    registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
 )
 
 

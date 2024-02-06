@@ -12,7 +12,7 @@ from openfe.protocols.openmm_utils import omm_settings
 class TestOMMSettingsFromStrings:
     # checks that we can set Settings fields via strings
     def test_system_settings(self):
-        s = omm_settings.SystemSettings()
+        s = omm_settings.OpenMMSystemGeneratorFFSettings()
 
         s.nonbonded_cutoff = '1.1 nm'
 
@@ -26,7 +26,7 @@ class TestOMMSettingsFromStrings:
         assert s.solvent_padding == 1.1 * unit.nanometer
 
     def test_alchemical_sampler_settings(self):
-        # todo: online_analysis_target_error is in kT, how to pass this as string?
+        # todo: early_termination_target_error is in kT, how to pass this as string?
         pass
 
     def test_integator_settings(self):
@@ -36,9 +36,9 @@ class TestOMMSettingsFromStrings:
 
         assert s.timestep == 3.0 * unit.femtosecond
 
-        s.collision_rate = '1.1 / ps'
+        s.langevin_collision_rate = '1.1 / ps'
 
-        assert s.collision_rate == 1.1 / unit.picosecond
+        assert s.langevin_collision_rate == 1.1 / unit.picosecond
 
         # todo: nsteps, barostat frequency require IntQuantity
 
@@ -59,7 +59,7 @@ class TestOMMSettingsFromStrings:
 
 class TestEquilRFESettingsFromString:
     def test_alchemical_settings(self):
-        s = equil_rfe_settings.AlchemicalSettings()
+        s = equil_rfe_settings.AlchemicalSettings(softcore_LJ='gapsys')
 
         s.explicit_charge_correction_cutoff = '0.85 nm'
 
