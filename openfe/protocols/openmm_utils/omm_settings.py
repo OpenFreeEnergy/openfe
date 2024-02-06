@@ -137,7 +137,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
       <https://docs.eyesopen.com/toolkits/python/quacpactk/molchargetheory.html#elf-conformer-selection>`_
       This is only currently possible via the OpenEye toolkit
       if setting ``off_toolkit_backend`` to ``openeye``.
-      We recommend setting ``generate_n_conformers`` to at least `500`.
+      We recommend setting ``number_of_conformers`` to at least `500`.
 
     ``nagl``:
       Assign partial charges using the `OpenFF NAGL ML method
@@ -182,7 +182,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     When using these methods we recommend setting the ``off_toolkit_backend``
     to ``rdkit``.
     """
-    generate_n_conformers: Optional[int] = None
+    number_of_conformers: Optional[int] = None
     """
     Number of conformers to generate as part of the partial charge assignement.
 

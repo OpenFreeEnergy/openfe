@@ -36,13 +36,15 @@ from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings, SystemSettings,
     SolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettingsMD,
-    RepeatSettings,
+    BasePartialChargeSettings,
+    OpenFFPartialChargeSettings, RepeatSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
-    system_validation, settings_validation, system_creation
+    system_validation, settings_validation, system_creation,
+    charge_generation,
 )
 
 logger = logging.getLogger(__name__)
@@ -124,6 +126,7 @@ class PlainMDProtocol(gufe.Protocol):
             ),
             system_settings=SystemSettings(),
             solvation_settings=SolvationSettings(),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             simulation_settings=SimulationSettingsMD(
@@ -418,7 +421,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _assign_partial_charges(
-        charge_settings: OpenFFPartialChargeSettings
+        charge_settings: OpenFFPartialChargeSettings,
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
@@ -433,7 +436,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         """
         for mol in smc_components.values():
-            charge_generation.assign_partial_charges(
+            charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
                 overwrite=False,
                 method=charge_settings.partial_charge_method,
@@ -492,6 +495,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         system_settings: SystemSettings = protocol_settings.system_settings
         solvation_settings: SolvationSettings = \
             protocol_settings.solvation_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sim_settings: SimulationSettingsMD = \
             protocol_settings.simulation_settings
         timestep = protocol_settings.integrator_settings.timestep

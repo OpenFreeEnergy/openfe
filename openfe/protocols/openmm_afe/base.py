@@ -55,11 +55,12 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     SolvationSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
     IntegratorSettings, SimulationSettings, LambdaSettings,
+    BasePartialChargeSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
     settings_validation, system_creation,
-    multistate_analysis
+    multistate_analysis, charge_generation
 )
 
 logger = logging.getLogger(__name__)
@@ -287,7 +288,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _assign_partial_charges(
-        charge_settings: OpenFFPartialChargeSettings
+        partial_charge_settings: OpenFFPartialChargeSettings,
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
@@ -302,13 +303,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         """
         for mol in smc_components.values():
-            charge_generation.assign_partial_charges(
+            charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
                 overwrite=False,
-                method=charge_settings.partial_charge_method,
-                toolkit_backend=charge_settings.off_toolkit_backend,
-                generate_n_conformers=charge_settings.number_of_conformers,
-                nagl_model=charge_settings.nagl_model,
+                method=partial_charge_settings.partial_charge_method,
+                toolkit_backend=partial_charge_settings.off_toolkit_backend,
+                generate_n_conformers=partial_charge_settings.number_of_conformers,
+                nagl_model=partial_charge_settings.nagl_model,
             )
 
     def _get_modeller(
@@ -317,7 +318,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
-        solvation_settings: SolvationSettings
+        solvation_settings: SolvationSettings,
+        partial_charge_settings: BasePartialChargeSettings,
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
@@ -336,6 +338,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           System Generator to parameterise this unit.
         solvation_settings : SolvationSettings
           Settings detailing how to solvate the system.
+        partial_charge_settings : BasePartialChargeSettings
+          Settings detailing how to assign partial charges to the
+          SMCs of the system.
 
         Returns
         -------
@@ -349,7 +354,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             self.logger.info("Parameterizing molecules")
 
         # Assign partial charges to smcs
-        self._assign_partial_charges(charge_settings, smc_components)
+        self._assign_partial_charges(partial_charge_settings, smc_components)
 
         # TODO: guard the following from non-RDKit backends
         # force the creation of parameters for the small molecules
@@ -871,7 +876,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 4. Get modeller
         system_modeller, comp_resids = self._get_modeller(
             prot_comp, solv_comp, smc_comps, system_generator,
-            settings['solvation_settings']
+            settings['solvation_settings'],
+            settings['charge_settings'],
         )
 
         # 5. Get OpenMM topology, positions and system

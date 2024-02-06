@@ -27,7 +27,9 @@ from openfe.protocols.openmm_utils.omm_settings import (
     AlchemicalSamplerSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    SimulationSettings
+    SimulationSettings,
+    BasePartialChargeSettings,
+    OpenFFPartialChargeSettings
 )
 import numpy as np
 
@@ -183,4 +185,12 @@ class AbsoluteSolvationSettings(Settings):
     """
     Simulation control settings, including simulation lengths and
     record-keeping for the solvent transformation.
+    """
+
+    # Partial charge settings
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """
+    Settings for controlling how to assign partial charges,
+    including the partial charge assignment method, and the
+    number of conformers used to generate the partial charges.
     """

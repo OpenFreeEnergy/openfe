@@ -21,7 +21,8 @@ from gufe.settings import (
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     SystemSettings, SolvationSettings, AlchemicalSamplerSettings,
-    OpenMMEngineSettings, IntegratorSettings, SimulationSettings
+    OpenMMEngineSettings, IntegratorSettings, SimulationSettings,
+    BasePartialChargeSettings, OpenFFPartialChargeSettings
 )
 
 try:
@@ -120,6 +121,8 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """Simulation system settings including the long-range non-bonded method."""
     solvation_settings: SolvationSettings
     """Settings for solvating the system."""
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """Settings for assigning partial charges to small molecules."""
 
     # Alchemical settings
     lambda_settings: LambdaSettings

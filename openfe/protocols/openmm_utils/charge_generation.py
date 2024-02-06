@@ -7,15 +7,24 @@ import copy
 from typing import Union, Optional, Literal, Callable
 import numpy as np
 from openff.toolkit import Molecule as OFFMol
+from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkits import (
     AmberToolsToolkitWrapper,
     OpenEyeToolkitWrapper,
     RDKitToolkitWrapper
 )
-from openff.utils.toolkit_registry import (
-    toolkit_registry_manager,
-    ToolkitRegistry,
-)
+from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+
+
+try:
+    from openff.toolkit.utils.toolkit_registry import (
+        toolkit_registry_manager,
+    )
+except ImportError:
+    # toolkit_registry_manager was made non private in 0.14.4
+    from openff.toolkit.utils.toolkit_registry import (
+        _toolkit_registry_manager as toolkit_registry_manager
+    )
 
 
 try:
@@ -35,12 +44,14 @@ else:
     HAS_ESPALOMA = True
 
 
-BACKEND_OPTIONS = {
-    "ambertools": ToolkitRegistry(
-        [RDKitToolkitWrapper(), AmberToolsToolkitWrapper()]
-    ),
-    "openeye": ToolkitRegistry([OpenEyeToolkitWrapper()]),
-    "rdkit": ToolkitRegistry([RDKitToolkitWrapper()]),
+# Dictionary of lists for the various backend options we allow.
+# Note: can't create the classes ahead of time in case we end
+# up with a case where the tool is not available, e.g. if OpenEye tk
+# is not installed.
+BACKEND_OPTIONS: dict[str, list[ToolkitWrapper]] = {
+    "ambertools": [RDKitToolkitWrapper, AmberToolsToolkitWrapper],
+    "openeye": [OpenEyeToolkitWrapper],
+    "rdkit": [RDKitToolkitWrapper],
 }
 
 
@@ -253,14 +264,19 @@ def _generate_offmol_conformers(
 
 
 def _get_toolkit_registry(
+    charge_method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'],
     toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
-    method_dict: dict[str, Union[Callable, int, list[str], dict[str, str]]]]
+    method_dict: dict[str, Union[Callable, int, list[str], dict[str, str]]]
 ) -> ToolkitRegistry:
     """
     Helper method for getting a ToolkitRegistry based on a user selection.
 
     Parameters
     ----------
+    charge_method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
+      The partial charge method to be used. In the case of ``nagl``
+      and ``espaloma``, adds extra ToolkitWrappers to the selected
+      toolkit_backend.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
       Selected toolkit backend.
     method_dict : dict[str, Union[Callable, int, list[str], dict[str, str]]]]
@@ -288,17 +304,19 @@ def _get_toolkit_registry(
                   f"backends are: {method_dict['backends']}")
         raise ValueError(errmsg)
 
-    toolkits = BACKEND_OPTIONS[toolkit_backend.lower()]
+    toolkits = ToolkitRegistry(
+        [i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]]
+    )
 
     # Check for optional packages and add additional toolkit wrappers
-    if method.lower() == 'nagl':
+    if charge_method.lower() == 'nagl':
         if not HAS_NAGL:
             errmsg = "NAGL partial charge method requested but not installed"
             raise ImportError(errmsg)
 
         toolkits.add_toolkit(NAGLToolkitWrapper())
 
-    if method.lower() == 'espaloma':
+    if charge_method.lower() == 'espaloma':
         if not HAS_ESPALOMA:
             errmsg = ("Espaloma partial charge method requested "
                       "but not installed")
@@ -311,7 +329,7 @@ def _get_toolkit_registry(
 
 def assign_offmol_partial_charges(
     offmol: OFFMol,
-    overwrite: bool = False,
+    overwrite: bool,
     method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'],
     toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
     generate_n_conformers: Optional[int],
@@ -326,7 +344,7 @@ def assign_offmol_partial_charges(
       The Molecule to assign partial charges to.
     overwrite : bool
       Whether or not to overwrite any existing non-zero partial charges.
-      Note that zeroed charges will always be 
+      Note that zeroed charges will always be overwritten.
     method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
       Partial charge assignement method.
       Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
@@ -379,14 +397,14 @@ def assign_offmol_partial_charges(
     CHARGE_METHODS = {
         "am1bcc": {
             "confgen_func": _generate_offmol_conformers,
-            "charge_func": assign_offmol_amb1bcc_charges,
+            "charge_func": assign_offmol_am1bcc_charges,
             "backends": ['ambertools', 'openeye'],
             "max_conf": 1,
             "charge_extra_kwargs": {'partial_charge_method': 'am1bcc'},
         },
         "am1bccelf10": {
             "confgen_func": _generate_offmol_conformers,
-            "charge_func": assign_offmol_amb1bcc_charges,
+            "charge_func": assign_offmol_am1bcc_charges,
             "backends": ['openeye'],
             "max_conf": None,
             "charge_extra_kwargs": {'partial_charge_kmethod': 'am1bccelf10'},
@@ -401,14 +419,16 @@ def assign_offmol_partial_charges(
         "espaloma": {
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_espaloma_charges,
-            "backends": ['openeye', 'rdkit', 'ambertools'],
+            "backends": ['rdkit', 'ambertools'],
             "max_conf": 1,
             "charge_extra_kwargs": {},
         },
     }
 
     toolkits = _get_toolkit_registry(
-        toolkit_backend, CHARGE_METHODS[method.lower()]
+        method.lower(),
+        toolkit_backend,
+        CHARGE_METHODS[method.lower()]
     )
 
     # We make a copy of the molecule since we're going to modify conformers
@@ -426,7 +446,7 @@ def assign_offmol_partial_charges(
     # Call selected method to assign partial charges
     CHARGE_METHODS[method.lower()]['charge_func'](
         offmol=offmol_copy,
-        toolkit_registry=toolkit_backend,
+        toolkit_registry=toolkits,
         **CHARGE_METHODS[method.lower()]['charge_extra_kwargs'],
     )
 

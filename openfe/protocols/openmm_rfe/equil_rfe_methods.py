@@ -60,7 +60,7 @@ from .equil_rfe_settings import (
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
-    multistate_analysis
+    multistate_analysis, charge_generation
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
@@ -584,7 +584,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _assign_partial_charges(
-        charge_settings: OpenFFPartialChargeSettings
+        charge_settings: OpenFFPartialChargeSettings,
         off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]],
     ) -> None:
         """
@@ -601,7 +601,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         for smc, mol in chain(off_small_mols['stateA'],
                               off_small_mols['stateB'],
                               off_small_mols['both']):
-            charge_generation.assign_partial_charges(
+            charge_generation.assign_offmol_partial_charges(
                 offmol=mol,
                 overwrite=False,
                 method=charge_settings.partial_charge_method,
