@@ -34,13 +34,12 @@ import warnings
 from collections import defaultdict
 import gufe
 from gufe.components import Component
-from openff.toolkit.topology import Molecule as OFFMolecule
 import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from openmmtools import multistate
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 from typing import Any, Iterable
 import uuid
 
@@ -50,10 +49,10 @@ from gufe import (
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteSolvationSettings, SystemSettings,
+    AbsoluteSolvationSettings,
     SolvationSettings, AlchemicalSettings, LambdaSettings,
-    AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings,
+    MultiStateSimulationSettings, OpenMMEngineSettings,
+    IntegratorSettings, OutputSettings,
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
@@ -397,13 +396,15 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
           a set of default settings
         """
         return AbsoluteSolvationSettings(
-            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            protocol_repeats=3,
+            solvent_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            vacuum_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
+                nonbonded_method='nocutoff',
+            ),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            solvent_system_settings=SystemSettings(),
-            vacuum_system_settings=SystemSettings(nonbonded_method='nocutoff'),
             alchemical_settings=AlchemicalSettings(),
             lambda_settings=LambdaSettings(
                 lambda_elec=[
@@ -414,24 +415,27 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                     0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
             ),
-            alchemsampler_settings=AlchemicalSamplerSettings(
-                n_replicas=14,
-            ),
             solvation_settings=SolvationSettings(),
             vacuum_engine_settings=OpenMMEngineSettings(),
             solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            solvent_simulation_settings=SimulationSettings(
+            solvent_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=14,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
-                output_filename='solvent.nc',
-                checkpoint_storage='solvent_checkpoint.nc',
             ),
-            vacuum_simulation_settings=SimulationSettings(
+            solvent_output_settings=OutputSettings(
+                output_filename='solvent.nc',
+                checkpoint_storage_filename='solvent_checkpoint.nc',
+            ),
+            vacuum_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=14,
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
+            ),
+            vacuum_output_settings=OutputSettings(
                 output_filename='vacuum.nc',
-                checkpoint_storage='vacuum_checkpoint.nc'
+                checkpoint_storage_filename='vacuum_checkpoint.nc'
             ),
         )
 
@@ -530,15 +534,17 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
     @staticmethod
     def _validate_lambda_schedule(
             lambda_settings: LambdaSettings,
-            alchemsampler_settings: AlchemicalSamplerSettings,
+            simulation_settings: MultiStateSimulationSettings,
     ) -> None:
         """
         Checks that the lambda schedule is set up correctly.
 
         Parameters
         ----------
-        settings : AbsoluteSolvationSettings
-          Settings object.
+        lambda_settings : LambdaSettings
+          the lambda schedule Settings
+        simulation_settings : MultiStateSimulationSettings
+          the settings for either the vacuum or solvent phase
 
         Raises
         ------
@@ -553,7 +559,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         lambda_elec = lambda_settings.lambda_elec
         lambda_vdw = lambda_settings.lambda_vdw
         lambda_restraints = lambda_settings.lambda_restraints
-        n_replicas = alchemsampler_settings.n_replicas
+        n_replicas = simulation_settings.n_replicas
 
         # Ensure that all lambda components have equal amount of windows
         lambda_components = [lambda_vdw, lambda_elec]
@@ -596,7 +602,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Dict[str, gufe.ComponentMapping]] = None,
+        mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: extensions
@@ -612,11 +618,13 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         # Validate the lambda schedule
         self._validate_lambda_schedule(self.settings.lambda_settings,
-                                       self.settings.alchemsampler_settings)
+                                       self.settings.solvent_simulation_settings)
+        self._validate_lambda_schedule(self.settings.lambda_settings,
+                                       self.settings.vacuum_simulation_settings)
 
         # Check nonbond & solvent compatibility
-        solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method
-        vac_nonbonded_method = self.settings.vacuum_system_settings.nonbonded_method
+        solv_nonbonded_method = self.settings.solvent_forcefield_settings.nonbonded_method
+        vac_nonbonded_method = self.settings.vacuum_forcefield_settings.nonbonded_method
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, solv_nonbonded_method)
         # Gas phase is always gas phase
@@ -640,7 +648,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
             )
-            for i in range(self.settings.alchemsampler_settings.n_repeats)
+            for i in range(self.settings.protocol_repeats)
         ]
 
         vacuum_units = [
@@ -654,14 +662,14 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
                       f"repeat {i} generation 0"),
             )
-            for i in range(self.settings.alchemsampler_settings.n_repeats)
+            for i in range(self.settings.protocol_repeats)
         ]
 
         return solvent_units + vacuum_units
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
         unsorted_solvent_repeats = defaultdict(list)
@@ -731,28 +739,26 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
-            * sampler_settings : AlchemicalSamplerSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * simulation_settings : SimulationSettings
+            * output_settings: OutputSettings
         """
         prot_settings = self._inputs['settings']
 
         settings = {}
-        settings['forcefield_settings'] = prot_settings.forcefield_settings
+        settings['forcefield_settings'] = prot_settings.vacuum_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['system_settings'] = prot_settings.vacuum_system_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['lambda_settings'] = prot_settings.lambda_settings
-        settings['sampler_settings'] = prot_settings.alchemsampler_settings
         settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
+        settings['output_settings'] = prot_settings.vacuum_output_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -763,7 +769,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         with without_oechem_backend():
@@ -817,28 +823,26 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * system_settings : SystemSettings
             * solvation_settings : SolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
-            * sampler_settings : AlchemicalSamplerSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
-            * simulation_settings : SimulationSettings
+            * simulation_settings : MultiStateSimulationSettings
+            * output_settings: OutputSettings
         """
         prot_settings = self._inputs['settings']
 
         settings = {}
-        settings['forcefield_settings'] = prot_settings.forcefield_settings
+        settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['system_settings'] = prot_settings.solvent_system_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['lambda_settings'] = prot_settings.lambda_settings
-        settings['sampler_settings'] = prot_settings.alchemsampler_settings
         settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
+        settings['output_settings'] = prot_settings.solvent_output_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -849,7 +853,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
         with without_oechem_backend():
