@@ -6,6 +6,7 @@ Reusable utilities for assigning partial charges to ChemicalComponents.
 import copy
 from typing import Union, Optional, Literal, Callable
 import numpy as np
+from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkits import (
@@ -82,9 +83,8 @@ def assign_offmol_espaloma_charges(
     offmol_copy = copy.deepcopy(offmol)
     offmol_copy._conformers = None
 
-    # We are being overly cautious by both passing the
-    # registry and applying the manager here - this is
-    # to avoid issues like:
+    # We are being overly cautious by applying the manager here
+    # this is to avoid issues like:
     # https://github.com/openforcefield/openff-nagl/issues/69
     with toolkit_registry_manager(toolkit_registry):
         offmol_copy.assign_partial_charges(
@@ -137,9 +137,8 @@ def assign_offmol_nagl_charges(
 
     model_path = validate_nalg_model_path(nagl_model)
 
-    # We are being overly cautious by both passing the
-    # registry and applying the manager here - this is
-    # to avoid issues like:
+    # We are being overly cautious by applying the manager here
+    # this is to avoid issues like:
     # https://github.com/openforcefield/openff-nagl/issues/69
     with toolkit_registry_manager(toolkit_registry):
         offmol.assign_partial_charges(
