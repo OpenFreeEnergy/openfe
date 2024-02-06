@@ -55,7 +55,8 @@ from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings, SystemSettings,
     SolvationSettings, AlchemicalSettings, LambdaSettings,
     AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings
+    IntegratorSettings, SimulationSettings,
+    BasePartialChargeSettings, OpenFFPartialChargeSettings
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
@@ -463,6 +464,9 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             simulation_settings=SimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
+            ),
+            partial_charge_settings=OpenFFPartialChargeSettings(
+
             )
         )
 
@@ -578,6 +582,34 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             generation=generation
         )
 
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings
+        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        off_small_mols : dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
+          Dictionary of dictionary of OpenFF Molecules to add, keyed by
+          state and SmallMoleculeComponent.
+        """
+        for smc, mol in chain(off_small_mols['stateA'],
+                              off_small_mols['stateB'],
+                              off_small_mols['both']):
+            charge_generation.assign_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
+
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
             shared_basepath=None) -> dict[str, Any]:
@@ -633,6 +665,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
         sim_settings: SimulationSettings = protocol_settings.simulation_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
+        charge_settings: BasePartialchargeSettings = protocol_settings.partial_charge_settings
 
         # is the timestep good for the mass?
         settings_validation.validate_timestep(
@@ -691,27 +724,18 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         }
 
         # b. force the creation of parameters
-        # This is necessary because we need to have the FF generated ahead of
-        # solvating the system.
+        self.logger.info("Parameterizing molecules")
+
+        # Start by assigning partial charges
+        self._assign_partial_charges(charge_settings, off_small_mols)
+
+        # This is necessary because we need to have the FF templates registered
+        # ahead of solvating the system.
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
-        self.logger.info("Parameterizing molecules")
         for smc, mol in chain(off_small_mols['stateA'],
                               off_small_mols['stateB'],
                               off_small_mols['both']):
-            # skip if we already have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-
-                # TODO: pass user selection for charge generation
-                system_creation.assign_offmol_partial_charges(
-                    mol,
-                    method='am1bcc',
-                    charge_backend='ambertools',
-                    use_conformer=True,
-                )
-
             system_generator.create_system(mol.to_topology().to_openmm(),
                                            molecules=[mol])
 

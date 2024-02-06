@@ -19,6 +19,7 @@ from __future__ import annotations
 import abc
 import os
 import logging
+import warnings
 
 import gufe
 from gufe.components import Component
@@ -284,6 +285,32 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
         return system_generator
 
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
+        """
+        for mol in smc_components.values():
+            charge_generation.assign_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
+
     def _get_modeller(
         self,
         protein_component: Optional[ProteinComponent],
@@ -302,8 +329,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Protein Component, if it exists.
         solvent_component : Optional[ProteinCompoinent]
           Solvent Component, if it exists.
-        smc_components : list[openff.toolkit.topology.Molecule]
-          List of openff Molecules to add.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
         solvation_settings : SolvationSettings
@@ -320,25 +348,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if self.verbose:
             self.logger.info("Parameterizing molecules")
 
+        # Assign partial charges to smcs
+        self._assign_partial_charges(charge_settings, smc_components)
+
+        # TODO: guard the following from non-RDKit backends
         # force the creation of parameters for the small molecules
         # this is necessary because we need to have the FF generated ahead
         # of solvating the system.
         # Note by default this is cached to ctx.shared/db.json which should
         # reduce some of the costs.
         for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-
-                # TODO: pass through user selection for partial charges
-                system_creation.assign_offmol_partial_charges(
-                    mol,
-                    method='am1bcc', 
-                    charge_backend='ambertools',
-                    use_conformer=True,
-                )
-
             system_generator.create_system(
                 mol.to_topology().to_openmm(), molecules=[mol]
             )
@@ -371,7 +390,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           parametrized.
         system_generator : SystemGenerator
           SystemGenerator object to create a System with.
-        smc_components : list
+        smc_components : list[openff.toolkit.Molecule]
           A list of openff Molecules to add to the system.
 
         Returns
@@ -829,13 +848,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         Attributes
         ----------
-        solvent : Optional[SolventComponent]
-          SolventComponent to be applied to the system
-        protein : Optional[ProteinComponent]
-          ProteinComponent for the system
-        openff_mols : List[openff.Molecule]
-          List of OpenFF Molecule objects for each SmallMoleculeComponent in
-          the stateA ChemicalSystem
+        verbose : bool
+          Controls the verbosity of logger outputs when running the
+          ProtocolUnit.
+        scratch_basepath : pathlib.Path
+          Path to the scratch (temporary) directory space.
+        shared_basepath : pathlib.Path
+          Path to the shared (persistent) directory space.
         """
         # 0. Generaly preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)

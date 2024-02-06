@@ -416,6 +416,32 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         return None
 
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
+        """
+        for mol in smc_components.values():
+            charge_generation.assign_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
+
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
             shared_basepath=None) -> dict[str, Any]:
@@ -511,16 +537,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
         smc_components = {i: i.to_openff() for i in small_mols}
-        for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(
-                    mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
 
+        # Assign partial charges to smcs
+        self._assign_partial_charges(charge_settings, smc_components)
+
+        # Force creation of smc templates so we can solvate later
+        for mol in smc_components.values():
             system_generator.create_system(
                 mol.to_topology().to_openmm(), molecules=[mol]
             )
