@@ -8,7 +8,7 @@ def fake():
 
 
 class TestOFECommandPlugin:
-    def setup(self):
+    def setup_method(self):
         self.plugin = OFECommandPlugin(
             command=fake,
             section="Some Section",
