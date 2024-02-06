@@ -275,10 +275,6 @@ def _get_toolkit_registry(
 
     Parameters
     ----------
-    charge_method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
-      The partial charge method to be used. In the case of ``nagl``
-      and ``espaloma``, adds extra ToolkitWrappers to the selected
-      toolkit_backend.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
       Selected toolkit backend.
     method_dict : dict[str, Union[Callable, int, list[str], dict[str, str]]]]
@@ -355,9 +351,6 @@ def assign_offmol_partial_charges(
       has no associated conformers.
       If the number of conformers passed or generated exceeds the number
       of conformers selected by the partial charge ``method``.
-    ImportError
-      If either the ``nagl`` or ``espaloma`` charge methods are selected
-      but their respective packages cannot be installed.
     """
 
     # If you have non-zero charges and not overwriting, just return
