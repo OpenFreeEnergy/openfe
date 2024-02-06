@@ -22,7 +22,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     SolvationSettings, MultiStateSimulationSettings,
     OpenMMEngineSettings, IntegratorSettings,
     OutputSettings,
-    BasePartialChargeSettings, OpenFFPartialChargeSettings
+    OpenFFPartialChargeSettings
 )
 
 try:
