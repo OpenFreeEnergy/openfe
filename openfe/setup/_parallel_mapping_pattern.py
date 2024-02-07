@@ -1,17 +1,24 @@
-from tqdm.auto import tqdm
-import functools
 import itertools
+import functools
+from tqdm.auto import tqdm
 import multiprocessing as mult
 
-def thread_mapping(args):
+from gufe import SmallMoleculeComponent
+from gufe import AtomMapper, AtomMapping
+
+def thread_mapping(args)->list[AtomMapping]:
     '''
     Helper function working as thread for parallel execution.
+
     Parameters
     ----------
-    compound_pair
+    args:
+        contains a list of: jobID, compound_pairs, mapper, scorer
 
     Returns
     -------
+    list[AtomMapping]:
+        return a list of scored atom mappings
 
     '''
     jobID, compound_pairs, mapper, scorer = args
@@ -29,8 +36,33 @@ def thread_mapping(args):
     return mappings
 
 
-def _parallel_map_scoring(possible_edges, scorer, mapper, n_processes,
-                          show_progress=True):
+def _parallel_map_scoring(possible_edges: list[tuple[SmallMoleculeComponent,
+SmallMoleculeComponent]],
+                          scorer:callable, mapper:AtomMapper,
+                          n_processes:int,
+                          show_progress:bool=True)->list[AtomMapping]:
+    """
+    This helper function parallelize mapping and scoring of a given list of
+    molecule pairs.
+
+    Parameters
+    ----------
+    possible_edges: tuple[SmallMoleculeComponent, SmallMoleculeComponent]
+        two  molecules to be mapped.
+    scorer: callable
+        scoring the mappings
+    mapper: AtomMapper
+        atom mapper for the mappings
+    n_processes: int
+        number of processes for parallelization
+    show_progress: bool
+        show a tqdm progressbar.
+
+    Returns
+    -------
+    list[AtomMapping]:
+        return a list of scored atom mappings
+    """
     if show_progress is True and n_processes > 1:
         n_batches = 10 * n_processes
         progress = functools.partial(tqdm, total=n_batches, delay=1.5,
