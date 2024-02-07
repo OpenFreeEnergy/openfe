@@ -106,8 +106,8 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     ``espaloma``:
       Assign partial charges using the `Espaloma Charge method
       <https://github.com/choderalab/espaloma_charge>`_
-      All `off_toolkit_backend`` options are supported.
-      A maximum of one conformer is allowed.
+      Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
+      are supported. A maximum of one conformer is allowed.
 
     """
     off_toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'] = 'ambertools'
@@ -122,23 +122,12 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     * ``ambertools``: this will limit partial charge generation to using
       a mixture of AmberTools and RDKit.
     * ``openeye``: this will limit partial charge generation to using
-      the OpenEye toolkit.
+      the OpenEye toolkit. This cannot be used with ``espaloma`` as the
+      ``partial_charge_method``
     * ``rdkit``: this will limit partial charge generation to using
       the RDKit toolkit. Note that this alone cannot be used for conventionla
       am1bcc partial charge generation, but is usually used in combination with
-      the ``nagl`` or ``espaloma`` ``partial_charge_method`` selections. See
-      below for more information.
-
-
-    Behaviour with ``nagl`` and ``espaloma``
-    ----------------------------------------
-
-    When setting ``partial_charge_method`` to either ``nagl`` or ``espaloma``,
-    the toolkit registry is modified by adding the :class:`NAGLToolkitWrapper`
-    or :class:`EspalomaToolkitWrapper` entries as necessary.
-
-    When using these methods we recommend setting the ``off_toolkit_backend``
-    to ``rdkit``.
+      the ``nagl`` or ``espaloma`` ``partial_charge_method`` selections.
     """
     number_of_conformers: Optional[int] = None
     """
