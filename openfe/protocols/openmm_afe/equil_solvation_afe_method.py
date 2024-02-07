@@ -641,8 +641,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         solvent_units = [
             AbsoluteSolvationSolventUnit(
-                stateA=stateA, stateB=stateB,
-                settings=self.settings,
+                protocol=self,
+                stateA=stateA,
+                stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
@@ -655,8 +656,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             AbsoluteSolvationVacuumUnit(
                 # These don't really reflect the actual transform
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
-                stateA=stateA, stateB=stateB,
-                settings=self.settings,
+                protocol=self,
+                stateA=stateA,
+                stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
@@ -747,7 +749,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * simulation_settings : SimulationSettings
             * output_settings: OutputSettings
         """
-        prot_settings = self._inputs['settings']
+        prot_settings = self._inputs['protocol'].settings
 
         settings = {}
         settings['forcefield_settings'] = prot_settings.vacuum_forcefield_settings
@@ -831,7 +833,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: OutputSettings
         """
-        prot_settings = self._inputs['settings']
+        prot_settings = self._inputs['protocol'].settings
 
         settings = {}
         settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
