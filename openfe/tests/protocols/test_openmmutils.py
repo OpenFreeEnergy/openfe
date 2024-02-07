@@ -12,6 +12,7 @@ from openmm import unit as ommunit
 from openmmtools import multistate
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
+from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
@@ -596,6 +597,17 @@ class TestOFFPartialCharge:
                 nagl_model=None,
             )
 
+    def test_am1bcc_no_conformer(self, uncharged_mol):
+
+        uncharged_mol._conformers = None
+
+        with pytest.raises(ValueError, match='at least one conformer'):
+            charge_generation.assign_offmol_am1bcc_charges(
+                uncharged_mol,
+                partial_charge_method='am1bcc',
+                toolkit_registry=ToolkitRegistry([RDKitToolkitWrapper()])
+            )
+
     @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
     def test_no_production_nagl(self, uncharged_mol):
         
@@ -660,7 +672,7 @@ class TestOFFPartialCharge:
         pytest.param(
             'nagl', 'openeye', 'nagl', None,
             marks=pytest.mark.skipif(
-                not HAS_NAGL and not HAS_OPENEYE,
+                not HAS_NAGL or not HAS_OPENEYE,
                 reason='needs NAGL and oechem',
             ),
         ),
