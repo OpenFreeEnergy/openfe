@@ -169,14 +169,17 @@ def generate_maximal_network(
     # otherwise, it should be a user-defined callable
     if(n_processes > 1):
         from ._parallel_mapping_pattern import _parallel_map_scoring
-
-        mappings = _parallel_map_scoring(possible_edges=itertools.combinations(
-            nodes, 2),
-                              scorer=scorer,
-                              mapper=mappers[0],# Todo: this might be a problem!
-                              n_processes=n_processes,
-                              show_progress=show_progress
-                              )
+        mappings   = []
+        for mapper in mappers:
+            test_mappings = _parallel_map_scoring(
+                possible_edges=itertools.combinations(
+                nodes, 2),
+                                  scorer=scorer,
+                                  mapper=mapper,
+                                  n_processes=n_processes,
+                                  show_progress=show_progress
+                                  )
+            mappings.extend(test_mappings)
 
     else:
         mapping_generator = itertools.chain.from_iterable(
