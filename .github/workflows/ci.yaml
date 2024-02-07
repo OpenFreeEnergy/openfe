@@ -88,7 +88,8 @@ jobs:
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
+          #pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
+          pytest -n auto -v ./openfe --cov=openfe --cov-report=xml --durations=10
 
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
