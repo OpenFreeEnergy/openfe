@@ -4,7 +4,7 @@
 Reusable utilities for assigning partial charges to ChemicalComponents.
 """
 import copy
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Callable
 import numpy as np
 from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
@@ -366,7 +366,7 @@ def assign_offmol_partial_charges(
         errmsg = f"Unknown partial charge method {method}"
         raise ValueError(errmsg)
 
-    if toolkit_backend.lower() not in backends:
+    if toolkit_backend.lower() not in backends:  # type: ignore
         errmsg = (f"Selected toolkit_backend ({toolkit_backend}) cannot "
                   f"be used with the selected method ({method}). "
                   f"Available backends are: {backends}")
@@ -386,14 +386,14 @@ def assign_offmol_partial_charges(
         max_conf=CHARGE_METHODS[method.lower()]['max_conf'],
         toolkit_registry=toolkits,
         generate_n_conformers=generate_n_conformers,
-    )
+    )  # type: ignore
 
     # Call selected method to assign partial charges
     CHARGE_METHODS[method.lower()]['charge_func'](
         offmol=offmol_copy,
         toolkit_registry=toolkits,
         **CHARGE_METHODS[method.lower()]['charge_extra_kwargs'],
-    )
+    )  # type: ignore
 
     # Copy partial charges back
     offmol.partial_charges = offmol_copy.partial_charges
