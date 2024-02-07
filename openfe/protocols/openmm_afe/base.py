@@ -896,8 +896,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 4. Get modeller
         system_modeller, comp_resids = self._get_modeller(
             prot_comp, solv_comp, smc_comps, system_generator,
-            settings['solvation_settings'],
             settings['charge_settings'],
+            settings['solvation_settings'],
         )
 
         # 5. Get OpenMM topology, positions and system

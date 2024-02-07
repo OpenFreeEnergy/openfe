@@ -4,7 +4,7 @@
 Reusable utilities for assigning partial charges to ChemicalComponents.
 """
 import copy
-from typing import Union, Optional, Literal, Callable
+from typing import Union, Optional, Literal
 import numpy as np
 from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
@@ -265,46 +265,6 @@ def _generate_offmol_conformers(
         )
 
 
-def _get_toolkit_registry(
-    toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
-    method_dict: dict[str, Union[Callable, int, list[str], dict[str, str]]]
-) -> ToolkitRegistry:
-    """
-    Helper method for getting a ToolkitRegistry based on a user selection.
-
-    Parameters
-    ----------
-    toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
-      Selected toolkit backend.
-    method_dict : dict[str, Union[Callable, int, list[str], dict[str, str]]]]
-      A dictionary containing the allowable parameters of a given partial
-      charge method.
-
-    Return
-    ------
-    toolkits : ToolkitRegistry
-      A ToolkitRegistry with relevant toolkit backends registered.
-
-    Raises
-    ------
-    ValueError
-      If the selected ``toolkit_backend`` is not compatible with the partial
-      charge method.
-    """
-
-    if toolkit_backend.lower() not in method_dict['backends']:
-        errmsg = (f"Selected toolkit_backend ({toolkit_backend}) cannot "
-                  f"be used with selected method ({method}). Available "
-                  f"backends are: {method_dict['backends']}")
-        raise ValueError(errmsg)
-
-    toolkits = ToolkitRegistry(
-        [i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]]
-    )
-
-    return toolkits
-
-
 def assign_offmol_partial_charges(
     offmol: OFFMol,
     overwrite: bool,
@@ -400,10 +360,16 @@ def assign_offmol_partial_charges(
         },
     }
 
-    toolkits = _get_toolkit_registry(
-        method.lower(),
-        toolkit_backend,
-        CHARGE_METHODS[method.lower()]
+
+    backends = CHARGE_METHODS[method.lower()]['backends']
+    if toolkit_backend.lower() not in backends:
+        errmsg = (f"Selected toolkit_backend ({toolkit_backend}) cannot "
+                  f"be used with the selected method ({method}). "
+                  f"Available backends are: {backends}")
+        raise ValueError(errmsg)
+
+    toolkits = ToolkitRegistry(
+        [i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]]
     )
 
     # We make a copy of the molecule since we're going to modify conformers
