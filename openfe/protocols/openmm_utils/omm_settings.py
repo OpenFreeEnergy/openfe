@@ -203,12 +203,8 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
             return v
 
         if v.shape != (3, ):
-            errmsg = (f"box_size must be an 1-D array of length 3 "
+            errmsg = (f"box_size must be a 1-D array of length 3 "
                       f"got {v} with shape {v.shape}")
-            raise ValueError(errmsg)
-
-        if not v.is_compatible_with(unit.nanometer):
-            errmsg = f"box_size is not in compatible distance units: {v}"
             raise ValueError(errmsg)
 
         return v
