@@ -74,9 +74,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
     Base class for ligand absolute free energy transformations.
     """
     def __init__(self, *,
+                 protocol: gufe.Protocol,
                  stateA: ChemicalSystem,
                  stateB: ChemicalSystem,
-                 settings: settings.Settings,
                  alchemical_components: dict[str, list[Component]],
                  generation: int = 0,
                  repeat_id: int = 0,
@@ -84,17 +84,15 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         Parameters
         ----------
+        protocol : gufe.Protocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
         stateA : ChemicalSystem
           ChemicalSystem containing the components defining the state at
           lambda 0.
         stateB : ChemicalSystem
           ChemicalSystem containing the components defining the state at
           lambda 1.
-        settings : gufe.settings.Setings
-          Settings for the Absolute Tranformation Protocol. This can be
-          constructed by calling the
-          :class:`AbsoluteTransformProtocol.get_default_settings` method
-          to get a default set of settings.
         alchemical_components : dict[str, Component]
           the alchemical components for each state in this Unit
         name : str, optional
@@ -108,9 +106,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         super().__init__(
             name=name,
+            protocol=protocol,
             stateA=stateA,
             stateB=stateB,
-            settings=settings,
             alchemical_components=alchemical_components,
             repeat_id=repeat_id,
             generation=generation,

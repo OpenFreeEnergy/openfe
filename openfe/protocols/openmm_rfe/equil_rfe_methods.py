@@ -504,8 +504,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # our DAG has no dependencies, so just list units
         n_repeats = self.settings.protocol_repeats
         units = [RelativeHybridTopologyProtocolUnit(
+            protocol=self,
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
-            settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -540,27 +540,28 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     Calculates the relative free energy of an alchemical ligand transformation.
     """
 
-    def __init__(self, *,
-                 stateA: ChemicalSystem,
-                 stateB: ChemicalSystem,
-                 ligandmapping: LigandAtomMapping,
-                 settings: RelativeHybridTopologyProtocolSettings,
-                 generation: int,
-                 repeat_id: int,
-                 name: Optional[str] = None,
-                 ):
+    def __init__(
+        self,
+        *,
+        protocol: RelativeHybridTopologyProtocol,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        ligandmapping: LigandAtomMapping,
+        generation: int,
+        repeat_id: int,
+        name: Optional[str] = None,
+    ):
         """
         Parameters
         ----------
+        protocol : RelativeHybridTopologyProtocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
         stateA, stateB : ChemicalSystem
           the two ligand SmallMoleculeComponents to transform between.  The
           transformation will go from ligandA to ligandB.
         ligandmapping : LigandAtomMapping
           the mapping of atoms between the two ligand components
-        settings : settings.Settings
-          the settings for the Method.  This can be constructed using the
-          get_default_settings classmethod to give a starting point that
-          can be updated to suit.
         repeat_id : int
           identifier for which repeat (aka replica/clone) this Unit is
         generation : int
@@ -575,10 +576,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         """
         super().__init__(
             name=name,
+            protocol=protocol,
             stateA=stateA,
             stateB=stateB,
             ligandmapping=ligandmapping,
-            settings=settings,
             repeat_id=repeat_id,
             generation=generation
         )
@@ -652,7 +653,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # 0. General setup and settings dependency resolution step
 
         # Extract relevant settings
-        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
+        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['protocol'].settings
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
