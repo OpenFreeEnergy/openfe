@@ -493,7 +493,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         protocol_settings: PlainMDProtocolSettings = self._inputs['protocol'].settings
         stateA = self._inputs['stateA']
 
-        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
