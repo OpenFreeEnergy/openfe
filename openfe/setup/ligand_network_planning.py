@@ -170,12 +170,14 @@ def generate_maximal_network(
     if(n_processes > 1):
         from ._parallel_mapping_pattern import _parallel_map_scoring
 
-        _parallel_map_scoring(possible_edges=itertools.combinations(nodes, 2),
+        mappings = _parallel_map_scoring(possible_edges=itertools.combinations(
+            nodes, 2),
                               scorer=scorer,
                               mapper=mappers[0],# Todo: this might be a problem!
                               n_processes=n_processes,
                               show_progress=show_progress
                               )
+
     else:
         mapping_generator = itertools.chain.from_iterable(
             mapper.suggest_mappings(molA, molB)

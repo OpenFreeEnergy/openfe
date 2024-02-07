@@ -1,6 +1,5 @@
-import itertools
-import functools
 from tqdm.auto import tqdm
+import functools
 import multiprocessing as mult
 
 from gufe import SmallMoleculeComponent
@@ -71,15 +70,14 @@ SmallMoleculeComponent]],
         progress = lambda x: x
 
     possible_edges = list(possible_edges)
-    n_batches = 10 * n_processes
-    total = len(possible_edges)
-
-    # size of each batch +fetch division rest
-    batch_num = (total // n_batches) + 1
 
     # Prepare parallel execution.
+    # suboptimal implementation, but itertools.batch is python 3.12,
+    batches = list(possible_edges[i::n_processes] for i in
+               range(n_processes))
+
     jobs = [(job_id, combination, mapper, scorer) for job_id,
-    combination in enumerate(itertools.batched(possible_edges, batch_num))]
+    combination in enumerate(batches)]
 
     # Execute parallelism
     mappings = []

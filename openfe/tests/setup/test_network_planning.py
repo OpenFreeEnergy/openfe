@@ -9,6 +9,9 @@ import openfe.setup
 from ..conftest import mol_from_smiles
 
 
+def scoring_func(mapping):
+    return len(mapping.componentA_to_componentB)
+
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
     @classmethod
     def _defaults(cls):
@@ -134,8 +137,7 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
     else:
         mappers = openfe.setup.atom_mapping.LomapAtomMapper()
 
-    def scoring_func(mapping):
-        return len(mapping.componentA_to_componentB)
+
 
     scorer = scoring_func if with_scorer else None
 
