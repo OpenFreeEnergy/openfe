@@ -124,7 +124,7 @@ def assign_offmol_nagl_charges(
         raise ImportError(errmsg)
 
     if nagl_model is None:
-        prod_models = get_model_by_type(
+        prod_models = get_models_by_type(
             model_type='am1bcc', production_only=True
         )
         # Currently there are no production models so expect an IndexError
@@ -135,7 +135,7 @@ def assign_offmol_nagl_charges(
                       "please manually select a candidate release model")
             raise ValueError(errmsg)
 
-    model_path = validate_nalg_model_path(nagl_model)
+    model_path = validate_nagl_model_path(nagl_model)
 
     # We are being overly cautious by applying the manager here
     # this is to avoid issues like:
