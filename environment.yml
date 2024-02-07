@@ -43,4 +43,4 @@ dependencies:
   - sphinx-click
   - pip:
     - sphinx-toolbox
-    - git+https://github.com/OpenFreeEnergy/gufe@v0.10.0
+    - git+https://github.com/OpenFreeEnergy/gufe@main
