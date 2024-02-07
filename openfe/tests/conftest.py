@@ -266,3 +266,17 @@ def orion_network():
 def fepplus_network():
     with resources.files('openfe.tests.data.external_formats') as d:
         yield str(d / 'somebenzenes_edges.edge')
+
+
+@pytest.fixture()
+def CN_molecule():
+    """
+    A basic CH3NH2 molecule for quick testing.
+    """
+    with resources.files('openfe.tests.data') as d:
+        fn = str(d / 'CN.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+
+        smc = [SmallMoleculeComponent(i) for i in supp][0]
+
+    return smc

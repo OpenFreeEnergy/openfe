@@ -5,6 +5,7 @@ Reusable utilities for assigning partial charges to ChemicalComponents.
 """
 import copy
 from typing import Union, Optional, Literal, Callable
+import sys
 import numpy as np
 from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
@@ -16,6 +17,12 @@ from openff.toolkit.utils.toolkits import (
 )
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 
+try:
+    import openeye
+except ImportError:
+    HAS_OPENEYE = False
+else:
+    HAS_OPENEYE = True
 
 try:
     from openff.toolkit.utils.toolkit_registry import (
@@ -30,7 +37,9 @@ except ImportError:
 
 try:
     from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
-    from openff.nagl_models import get_models_by_type, validate_nagl_model_path
+    from openff.nagl_models.openff_nagl_models import (
+        get_models_by_type, validate_nagl_model_path
+    )
 except ImportError:
     HAS_NAGL = False
 else:
@@ -341,15 +350,15 @@ def assign_offmol_partial_charges(
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_am1bcc_charges,
             "backends": ['openeye'],
-            "max_conf": None,
-            "charge_extra_kwargs": {'partial_charge_kmethod': 'am1bccelf10'},
+            "max_conf": sys.maxsize,
+            "charge_extra_kwargs": {'partial_charge_method': 'am1bccelf10'},
         },
         "nagl": {
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_nagl_charges,
             "backends": ['openeye', 'rdkit', 'ambertools'],
             "max_conf": 1,
-            "charge_extra_kwargs": {"model": nagl_model},
+            "charge_extra_kwargs": {"nagl_model": nagl_model},
         },
         "espaloma": {
             "confgen_func": _generate_offmol_conformers,
@@ -360,17 +369,24 @@ def assign_offmol_partial_charges(
         },
     }
 
+    # Grab the backends and also check our method
     try:
         backends = CHARGE_METHODS[method.lower()]['backends']
     except KeyError:
         errmsg = f"Unknown partial charge method {method}"
         raise ValueError(errmsg)
 
+    # Check our method actually supports the toolkit backend selected
     if toolkit_backend.lower() not in backends:  # type: ignore
         errmsg = (f"Selected toolkit_backend ({toolkit_backend}) cannot "
                   f"be used with the selected method ({method}). "
                   f"Available backends are: {backends}")
         raise ValueError(errmsg)
+
+    # OpenEye is the only optional dependency in the toolkit backends
+    if toolkit_backend.lower() == 'openeye' and not HAS_OPENEYE:
+        errmsg = "OpenEye is not available and cannot be selected as a backend"
+        raise ImportError(errmsg)
 
     toolkits = ToolkitRegistry(
         [i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]]
