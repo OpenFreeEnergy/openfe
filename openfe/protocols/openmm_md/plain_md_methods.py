@@ -223,10 +223,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           as the settings.
         stateA : ChemicalSystem
           the chemical system for the MD simulation
-        settings : settings.Settings
-          the settings for the Method.  This can be constructed using the
-          get_default_settings classmethod to give a starting point that
-          can be updated to suit.
         repeat_id : int
           identifier for which repeat (aka replica/clone) this Unit is
         generation : int

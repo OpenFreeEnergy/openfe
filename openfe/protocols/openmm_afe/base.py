@@ -89,11 +89,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         stateB : ChemicalSystem
           ChemicalSystem containing the components defining the state at
           lambda 1.
-        settings : gufe.settings.Setings
-          Settings for the Absolute Tranformation Protocol. This can be
-          constructed by calling the
-          :class:`AbsoluteTransformProtocol.get_default_settings` method
-          to get a default set of settings.
         alchemical_components : dict[str, Component]
           the alchemical components for each state in this Unit
         name : str, optional
