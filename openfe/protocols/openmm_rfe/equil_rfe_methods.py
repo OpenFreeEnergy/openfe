@@ -201,9 +201,11 @@ def _validate_alchemical_components(
     UserWarning
       * Mappings which involve element changes in core atoms
     """
+    if isinstance(mapping, ComponentMapping):
+        mapping = [mapping]
     # Check mapping
     # For now we only allow for a single mapping, this will likely change
-    if mapping is None or (not isinstance(mapping, ComponentMapping) and len(mapping) != 1):
+    if mapping is None or len(mapping) != 1:
         errmsg = "A single LigandAtomMapping is expected for this Protocol"
         raise ValueError(errmsg)
 
@@ -481,7 +483,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             stateA, stateB
         )
         _validate_alchemical_components(alchem_comps, mapping)
-        ligandmapping = mapping[0]  # type: ignore
+        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping  # type: ignore
 
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
