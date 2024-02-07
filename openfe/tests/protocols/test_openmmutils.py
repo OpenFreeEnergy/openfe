@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from importlib import resources
+import copy
 from pathlib import Path
 import pytest
 import numpy as np
@@ -15,7 +16,7 @@ from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
     settings_validation, system_validation, system_creation,
-    multistate_analysis, omm_settings
+    multistate_analysis, omm_settings, charge_generation
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
@@ -490,3 +491,25 @@ def test_convert_target_error_from_kcal_per_mole_to_kT_zero():
     )
 
     assert kT == 0.0
+
+
+@pytest.mark.parametrize('overwrite', [True, False])
+def test_offmol_chg_gen_charged_overwrite(overwrite):
+    mol = OFFMol.from_smiles('CN')
+    mol.generate_conformers()
+    chg = [1 for _ in range(len(mol.atoms))] * unit.elementary_charge
+    mol.partial_charges = copy.deepcopy(chg)
+
+    charge_generation.assign_offmol_partial_charges(
+        mol,
+        overwrite=overwrite,
+        method='am1bcc',
+        toolkit_backend='ambertools',
+        generate_n_conformers=None,
+        nagl_model=None,
+    )
+
+    assert np.allclose(mol.partial_charges, chg) != overwrite
+
+
+def test_offmol_chg_gen_
