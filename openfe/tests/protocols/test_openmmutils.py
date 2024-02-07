@@ -511,5 +511,3 @@ def test_offmol_chg_gen_charged_overwrite(overwrite):
 
     assert np.allclose(mol.partial_charges, chg) != overwrite
 
-
-def test_offmol_chg_gen_
