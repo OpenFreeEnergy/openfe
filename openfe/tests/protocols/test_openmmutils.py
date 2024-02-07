@@ -15,10 +15,11 @@ from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
     settings_validation, system_validation, system_creation,
-    multistate_analysis
+    multistate_analysis, omm_settings
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    SystemSettings, OpenMMSolvationSettings, IntegratorSettings,
+    IntegratorSettings,
+    OpenMMSolvationSettings,
 )
 
 
@@ -206,15 +207,13 @@ def test_components_complex(T4_protein_component, benzene_modifications):
 @pytest.fixture(scope='module')
 def get_settings():
     forcefield_settings = OpenMMSystemGeneratorFFSettings()
+    integrator_settings = IntegratorSettings()
     thermo_settings = ThermoSettings(
         temperature=298.15 * unit.kelvin,
         pressure=1 * unit.bar,
     )
-    system_settings = SystemSettings()
-    integrator_settings = IntegratorSettings()
 
-    return (forcefield_settings, thermo_settings, system_settings,
-            integrator_settings)
+    return forcefield_settings, integrator_settings, thermo_settings
 
 
 class TestFEAnalysis:
@@ -310,9 +309,9 @@ class TestFEAnalysis:
 
 class TestSystemCreation:
     def test_system_generator_nosolv_nocache(self, get_settings):
-        ffsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, thermosets, intsets, systemsets, None, False
+            ffsets, thermosets, intsets, None, False
         )
         assert generator.barostat is None
         assert generator.template_generator._cache is None
@@ -334,13 +333,13 @@ class TestSystemCreation:
         assert generator.periodic_forcefield_kwargs == periodic_kwargs
 
     def test_system_generator_solv_cache(self, get_settings):
-        ffsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
 
         thermosets.temperature = 320 * unit.kelvin
         thermosets.pressure = 1.25 * unit.bar
         intsets.barostat_frequency = 200 * unit.timestep
         generator = system_creation.get_system_generator(
-            ffsets, thermosets, intsets, systemsets, Path('./db.json'), True
+            ffsets, thermosets, intsets, Path('./db.json'), True
         )
 
         # Check barostat conditions
@@ -364,9 +363,9 @@ class TestSystemCreation:
     def test_get_omm_modeller_complex(self, T4_protein_component,
                                       benzene_modifications,
                                       get_settings):
-        ffsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, thermosets, intsets, systemsets, None, True
+            ffsets, thermosets, intsets, None, True
         )
 
         smc = benzene_modifications['toluene']
@@ -397,10 +396,9 @@ class TestSystemCreation:
         offmol.assign_partial_charges(partial_charge_method='am1bcc')
         smc = openfe.SmallMoleculeComponent.from_openff(offmol)
 
-        # Create generator
-        ffsets, thermosets, systemsets, intsets = get_settings
+        ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
-            ffsets, thermosets, intsets, systemsets, None, True
+            ffsets, thermosets, intsets, None, True
         )
 
         # Register offmol in generator
@@ -526,3 +524,107 @@ class TestSystemCreation:
             from_openmm(vectors),
             [[2, 0, 0], [0, 2, 0], [0, 0, 5]] * unit.nanometer
         )
+
+def test_convert_steps_per_iteration():
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+    )
+    inty = omm_settings.IntegratorSettings(
+        timestep='4 fs'
+    )
+
+    spi = settings_validation.convert_steps_per_iteration(sim, inty)
+
+    assert spi == 250
+
+
+def test_convert_steps_per_iteration_failure():
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+    )
+    inty = omm_settings.IntegratorSettings(
+        timestep='3 fs'
+    )
+
+    with pytest.raises(ValueError, match="not divisible"):
+        settings_validation.convert_steps_per_iteration(sim, inty)
+
+
+def test_convert_real_time_analysis_iterations():
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+        real_time_analysis_interval='250 ps',
+        real_time_analysis_minimum_time='500 ps',
+    )
+
+    rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(sim)
+
+    assert rta_its == 250, 500
+
+
+def test_convert_real_time_analysis_iterations_interval_fail():
+    # shouldn't like 250.5 ps / 1.0 ps
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+        real_time_analysis_interval='250.5 ps',
+        real_time_analysis_minimum_time='500 ps',
+    )
+
+    with pytest.raises(ValueError, match='not divisible'):
+        settings_validation.convert_real_time_analysis_iterations(sim)
+
+
+def test_convert_real_time_analysis_iterations_min_interval_fail():
+    # shouldn't like 500.5 ps / 1 ps
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+        real_time_analysis_interval='250 ps',
+        real_time_analysis_minimum_time='500.5 ps',
+    )
+
+    with pytest.raises(ValueError, match='not divisible'):
+        settings_validation.convert_real_time_analysis_iterations(sim)
+
+
+def test_convert_real_time_analysis_iterations_None():
+    sim = omm_settings.MultiStateSimulationSettings(
+        equilibration_length='10 ps',
+        production_length='10 ps',
+        time_per_iteration='1.0 ps',
+        real_time_analysis_interval=None,
+        real_time_analysis_minimum_time='500 ps',
+    )
+
+    rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(sim)
+
+    assert rta_its is None
+    assert rta_min_its is None
+
+
+def test_convert_target_error_from_kcal_per_mole_to_kT():
+    kT = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+        temperature=298.15 * unit.kelvin,
+        target_error=0.12 * unit.kilocalorie_per_mole,
+    )
+
+    assert kT == pytest.approx(0.20253681663365392)
+
+
+def test_convert_target_error_from_kcal_per_mole_to_kT_zero():
+    # special case, 0 input gives 0 output
+    kT = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+        temperature=298.15 * unit.kelvin,
+        target_error=0.0 * unit.kilocalorie_per_mole,
+    )
+
+    assert kT == 0.0

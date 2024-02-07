@@ -1,3 +1,14 @@
+"""
+Dev script to generate some result jsons that are used for testing
+
+Generates
+- AHFEProtocol_json_results.gz
+  - used in afe_solvation_json fixture
+- RHFEProtocol_json_results.gz
+  - used in rfe_transformation_json fixture
+- MDProtocol_json_results.gz
+  - used in md_json fixture
+"""
 import gzip
 import json
 import logging
@@ -60,7 +71,7 @@ def generate_md_json(smc):
     settings.simulation_settings.equilibration_length_nvt = 0.01 * unit.nanosecond
     settings.simulation_settings.equilibration_length = 0.01 * unit.nanosecond
     settings.simulation_settings.production_length = 0.01 * unit.nanosecond
-    settings.system_settings.nonbonded_method = "nocutoff"
+    settings.forcefield_settings.nonbonded_method = "nocutoff"
     protocol = PlainMDProtocol(settings=settings)
     system = openfe.ChemicalSystem({"ligand": smc})
     dag = protocol.create(stateA=system, stateB=system, mapping=None)
@@ -74,11 +85,17 @@ def generate_ahfe_json(smc):
     settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
-    settings.alchemical_settings.lambda_elec_windows = 5
-    settings.alchemical_settings.lambda_vdw_windows = 9
-    settings.alchemsampler_settings.n_repeats = 3
-    settings.alchemsampler_settings.n_replicas = 14
-    settings.alchemsampler_settings.online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
+    settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
+                                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                                            1.0]
+    settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
+                                           0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
+                                           1.0]
+    settings.protocol_repeats = 3
+    settings.solvent_simulation_settings.n_replicas = 14
+    settings.vacuum_simulation_settings.n_replicas = 14
+    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
+    settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
     settings.vacuum_engine_settings.compute_platform = 'CPU'
     settings.solvent_engine_settings.compute_platform = 'CUDA'
 
@@ -99,7 +116,7 @@ def generate_rfe_json(smcA, smcB):
     settings = RelativeHybridTopologyProtocol.default_settings()
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 250 * unit.picosecond
-    settings.system_settings.nonbonded_method = "nocutoff"
+    settings.forcefield_settings.nonbonded_method = "nocutoff"
     protocol = RelativeHybridTopologyProtocol(settings=settings)
 
     a_smcB = align_mol_shape(smcB, ref_mol=smcA)

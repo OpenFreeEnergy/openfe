@@ -4,11 +4,11 @@
 Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
-import warnings
-from typing import Dict, List, Tuple
 from openff.units import unit
-from gufe import (
-    Component, ChemicalSystem, SolventComponent, ProteinComponent
+from typing import Optional
+from .omm_settings import (
+    IntegratorSettings,
+    MultiStateSimulationSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
@@ -103,3 +103,110 @@ def get_simsteps(sim_length: unit.Quantity,
         raise ValueError(errmsg)
 
     return sim_steps
+
+
+def convert_steps_per_iteration(
+        simulation_settings: MultiStateSimulationSettings,
+        integrator_settings: IntegratorSettings,
+) -> int:
+    """Convert time per iteration to steps
+
+    Parameters
+    ----------
+    simulation_settings: MultiStateSimulationSettings
+    integrator_settings: IntegratorSettings
+
+    Returns
+    -------
+    steps_per_iteration : int
+      suitable for input to Integrator
+    """
+    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
+    ts_fs = round(integrator_settings.timestep.to(unit.attosecond).m)
+    steps_per_iteration, rem = divmod(tpi_fs, ts_fs)
+
+    if rem:
+        raise ValueError(f"time_per_iteration ({simulation_settings.time_per_iteration}) "
+                         f"not divisible by timestep ({integrator_settings.timestep})")
+
+    return steps_per_iteration
+
+
+def convert_real_time_analysis_iterations(
+        simulation_settings: MultiStateSimulationSettings,
+) -> tuple[Optional[int], Optional[int]]:
+    """Convert time units in Settings to various other units
+
+    Interally openmmtools uses various quantities with units of time,
+    steps, and iterations.
+
+    Our Settings objects instead have things defined in time (fs or ps).
+
+    This function generates suitable inputs for the openmmtools objects
+
+    Parameters
+    ----------
+    simulation_settings: MultiStateSimulationSettings
+
+    Returns
+    -------
+    real_time_analysis_iterations : Optional[int]
+      suitable for input to online_analysis_interval
+    real_time_analysis_minimum_iterations : Optional[int]
+      suitable for input to real_time_analysis_minimum_iterations
+    """
+    if simulation_settings.real_time_analysis_interval is None:
+        # option to turn off real time analysis
+        return None, None
+
+    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
+
+    # convert real_time_analysis time to interval
+    # rta_its must be number of MCMC iterations
+    # i.e. rta_fs / tpi_fs -> number of iterations
+    rta_fs = round(simulation_settings.real_time_analysis_interval.to(unit.attosecond).m)
+
+    rta_its, rem = divmod(rta_fs, tpi_fs)
+    if rem:
+        raise ValueError(f"real_time_analysis_interval ({simulation_settings.real_time_analysis_interval}) "
+                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
+
+    # convert RTA_minimum_time to iterations
+    rta_min_fs = round(simulation_settings.real_time_analysis_minimum_time.to(unit.attosecond).m)
+    rta_min_its, rem = divmod(rta_min_fs, tpi_fs)
+    if rem:
+        raise ValueError(f"real_time_analysis_minimum_time ({simulation_settings.real_time_analysis_minimum_time}) "
+                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
+
+    return rta_its, rta_min_its
+
+
+def convert_target_error_from_kcal_per_mole_to_kT(
+        temperature,
+        target_error,
+) -> float:
+    """Convert kcal/mol target error to kT units
+
+    If target_error is 0.0, returns 0.0
+
+    Parameters
+    ----------
+    temperature : unit.Quantity
+      temperature in K
+    target_error : unit.Quantity
+      error in kcal/mol
+
+    Returns
+    -------
+    early_termination_target_error : float
+      in units of kT, suitable for input as "online_analysis_target_error" in a
+      Sampler
+    """
+    if target_error:
+        kB = 0.001987204 * unit.kilocalorie_per_mole / unit.kelvin
+        kT = temperature * kB
+        early_termination_target_error = target_error / kT
+    else:
+        return 0.0
+
+    return early_termination_target_error.m

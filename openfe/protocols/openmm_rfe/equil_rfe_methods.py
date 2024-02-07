@@ -52,10 +52,10 @@ from gufe import (
 )
 
 from .equil_rfe_settings import (
-    RelativeHybridTopologyProtocolSettings, SystemSettings,
-    OpenMMSolvationSettings, AlchemicalSettings,
-    AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings
+    RelativeHybridTopologyProtocolSettings,
+    OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
+    MultiStateSimulationSettings, OpenMMEngineSettings,
+    IntegratorSettings, OutputSettings,
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
@@ -448,21 +448,22 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
           a set of default settings
         """
         return RelativeHybridTopologyProtocolSettings(
+            protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            system_settings=SystemSettings(),
             solvation_settings=OpenMMSolvationSettings(),
-            alchemical_settings=AlchemicalSettings(),
-            alchemical_sampler_settings=AlchemicalSamplerSettings(),
-            engine_settings=OpenMMEngineSettings(),
-            integrator_settings=IntegratorSettings(),
-            simulation_settings=SimulationSettings(
+            alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
+            lambda_settings=LambdaSettings(),
+            simulation_settings=MultiStateSimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
-            )
+            ),
+            engine_settings=OpenMMEngineSettings(),
+            integrator_settings=IntegratorSettings(),
+            output_settings=OutputSettings(),
         )
 
     def _create(
@@ -486,7 +487,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         ligandmapping = list(mapping.values())[0]  # type: ignore
 
         # Validate solvent component
-        nonbond = self.settings.system_settings.nonbonded_method
+        nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
         # Validate solvation settings
@@ -501,10 +502,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         Anames = ','.join(c.name for c in alchem_comps['stateA'])
         Bnames = ','.join(c.name for c in alchem_comps['stateB'])
         # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.alchemical_sampler_settings.n_repeats
+        n_repeats = self.settings.protocol_repeats
         units = [RelativeHybridTopologyProtocolUnit(
+            protocol=self,
             stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
-            settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -539,27 +540,28 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     Calculates the relative free energy of an alchemical ligand transformation.
     """
 
-    def __init__(self, *,
-                 stateA: ChemicalSystem,
-                 stateB: ChemicalSystem,
-                 ligandmapping: LigandAtomMapping,
-                 settings: RelativeHybridTopologyProtocolSettings,
-                 generation: int,
-                 repeat_id: int,
-                 name: Optional[str] = None,
-                 ):
+    def __init__(
+        self,
+        *,
+        protocol: RelativeHybridTopologyProtocol,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        ligandmapping: LigandAtomMapping,
+        generation: int,
+        repeat_id: int,
+        name: Optional[str] = None,
+    ):
         """
         Parameters
         ----------
+        protocol : RelativeHybridTopologyProtocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
         stateA, stateB : ChemicalSystem
           the two ligand SmallMoleculeComponents to transform between.  The
           transformation will go from ligandA to ligandB.
         ligandmapping : LigandAtomMapping
           the mapping of atoms between the two ligand components
-        settings : settings.Settings
-          the settings for the Method.  This can be constructed using the
-          get_default_settings classmethod to give a starting point that
-          can be updated to suit.
         repeat_id : int
           identifier for which repeat (aka replica/clone) this Unit is
         generation : int
@@ -574,10 +576,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         """
         super().__init__(
             name=name,
+            protocol=protocol,
             stateA=stateA,
             stateB=stateB,
             ligandmapping=ligandmapping,
-            settings=settings,
             repeat_id=repeat_id,
             generation=generation
         )
@@ -623,7 +625,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # 0. General setup and settings dependency resolution step
 
         # Extract relevant settings
-        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['settings']
+        protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['protocol'].settings
         stateA = self._inputs['stateA']
         stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
@@ -631,10 +633,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
-        system_settings: SystemSettings = protocol_settings.system_settings
+        lambda_settings: LambdaSettings = protocol_settings.lambda_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
-        sampler_settings: AlchemicalSamplerSettings = protocol_settings.alchemical_sampler_settings
-        sim_settings: SimulationSettings = protocol_settings.simulation_settings
+        sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
+        output_settings: OutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?
@@ -642,15 +644,22 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings.hydrogen_mass,
             integrator_settings.timestep
         )
+        # TODO: Also validate various conversions?
+        # Convert various time based inputs to steps/iterations
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings=sampler_settings,
+            integrator_settings=integrator_settings,
+        )
+
         equil_steps = settings_validation.get_simsteps(
-            sim_length=sim_settings.equilibration_length,
+            sim_length=sampler_settings.equilibration_length,
             timestep=integrator_settings.timestep,
-            mc_steps=integrator_settings.n_steps.m,
+            mc_steps=steps_per_iteration,
         )
         prod_steps = settings_validation.get_simsteps(
-            sim_length=sim_settings.production_length,
+            sim_length=sampler_settings.production_length,
             timestep=integrator_settings.timestep,
-            mc_steps=integrator_settings.n_steps.m,
+            mc_steps=steps_per_iteration,
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
@@ -659,23 +668,22 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # and check if the charge correction used is appropriate
         charge_difference = _get_alchemical_charge_difference(
             mapping,
-            system_settings.nonbonded_method,
+            forcefield_settings.nonbonded_method,
             alchem_settings.explicit_charge_correction,
             solvent_comp,
         )
 
         # 1. Create stateA system
         # a. get a system generator
-        if sim_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / sim_settings.forcefield_cache
+        if output_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / output_settings.forcefield_cache
         else:
             ffcache = None
 
         system_generator = system_creation.get_system_generator(
             forcefield_settings=forcefield_settings,
-            thermo_settings=thermo_settings,
             integrator_settings=integrator_settings,
-            system_settings=system_settings,
+            thermo_settings=thermo_settings,
             cache=ffcache,
             has_solvent=solvent_comp is not None,
         )
@@ -784,6 +792,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 3. Create the hybrid topology
+        # a. Get softcore potential settings
+        if alchem_settings.softcore_LJ.lower() == 'gapsys':
+            softcore_LJ_v2 = True
+        elif alchem_settings.softcore_LJ.lower() == 'beutler':
+            softcore_LJ_v2 = False
+        # b. Get hybrid topology factory
         hybrid_factory = _rfe_utils.relative.HybridTopologyFactory(
             stateA_system, stateA_positions, stateA_topology,
             stateB_system, stateB_positions, stateB_topology,
@@ -791,17 +805,17 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             old_to_new_core_atom_map=ligand_mappings['old_to_new_core_atom_map'],
             use_dispersion_correction=alchem_settings.use_dispersion_correction,
             softcore_alpha=alchem_settings.softcore_alpha,
-            softcore_LJ_v2=alchem_settings.softcore_LJ_v2,
+            softcore_LJ_v2=softcore_LJ_v2,
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
-            interpolate_old_and_new_14s=alchem_settings.interpolate_old_and_new_14s,
+            interpolate_old_and_new_14s=alchem_settings.turn_off_core_unique_exceptions,
         )
 
         # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
-            functions=alchem_settings.lambda_functions,
-            windows=alchem_settings.lambda_windows
+            functions=lambda_settings.lambda_functions,
+            windows=lambda_settings.lambda_windows
         )
 
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
@@ -815,16 +829,20 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # 9. Create the multistate reporter
         # Get the sub selection of the system to print coords for
         selection_indices = hybrid_factory.hybrid_topology.select(
-                sim_settings.output_indices
+                output_settings.output_indices
         )
 
         #  a. Create the multistate reporter
-        nc = shared_basepath / sim_settings.output_filename
-        chk = sim_settings.checkpoint_storage
+        # convert checkpoint_interval from time to steps
+        checkpoint_fs = output_settings.checkpoint_interval.to(unit.femtosecond).m
+        ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
+        checkpoint_int = int(round(checkpoint_fs / ts_fs))
+        nc = shared_basepath / output_settings.output_filename
+        chk = output_settings.checkpoint_storage_filename
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=sim_settings.checkpoint_interval.m,
+            checkpoint_interval=checkpoint_int,
             checkpoint_storage=chk,
         )
 
@@ -840,7 +858,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     hybrid_factory.hybrid_positions[selection_indices, :],
                     hybrid_factory.hybrid_topology.subset(selection_indices),
             ).save_pdb(
-                shared_basepath / sim_settings.output_structure,
+                shared_basepath / output_settings.output_structure,
                 bfactors=bfactors,
             )
 
@@ -862,8 +880,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         #  b. create langevin integrator
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.collision_rate),
-            n_steps=integrator_settings.n_steps.m,
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
+            n_steps=steps_per_iteration,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
             constraint_tolerance=integrator_settings.constraint_tolerance,
@@ -871,30 +889,39 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         # 12. Create sampler
         self.logger.info("Creating and setting up the sampler")
+        rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=sampler_settings,
+        )
+        # convert early_termination_target_error from kcal/mol to kT
+        early_termination_target_error = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+            thermo_settings.temperature,
+            sampler_settings.early_termination_target_error,
+        )
+
         if sampler_settings.sampler_method.lower() == "repex":
             sampler = _rfe_utils.multistate.HybridRepexSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=early_termination_target_error,
+                online_analysis_minimum_iterations=rta_min_its,
             )
         elif sampler_settings.sampler_method.lower() == "sams":
             sampler = _rfe_utils.multistate.HybridSAMSSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations,
-                flatness_criteria=sampler_settings.flatness_criteria,
-                gamma0=sampler_settings.gamma0,
+                online_analysis_interval=rta_its,
+                online_analysis_minimum_iterations=rta_min_its,
+                flatness_criteria=sampler_settings.sams_flatness_criteria,
+                gamma0=sampler_settings.sams_gamma0,
             )
         elif sampler_settings.sampler_method.lower() == 'independent':
             sampler = _rfe_utils.multistate.HybridMultiStateSampler(
                 mcmc_moves=integrator,
                 hybrid_factory=hybrid_factory,
-                online_analysis_interval=sampler_settings.online_analysis_interval,
-                online_analysis_target_error=sampler_settings.online_analysis_target_error.m,
-                online_analysis_minimum_iterations=sampler_settings.online_analysis_minimum_iterations
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=early_termination_target_error,
+                online_analysis_minimum_iterations=rta_min_its,
             )
 
         else:
@@ -905,7 +932,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             reporter=reporter,
             lambda_protocol=lambdas,
             temperature=to_openmm(thermo_settings.temperature),
-            endstates=alchem_settings.unsampled_endstates,
+            endstates=alchem_settings.endstate_dispersion_correction,
             minimization_platform=platform.getName(),
         )
 
@@ -927,14 +954,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 if verbose:
                     self.logger.info("Running minimization")
 
-                sampler.minimize(max_iterations=sim_settings.minimization_steps)
+                sampler.minimize(max_iterations=sampler_settings.minimization_steps)
 
                 # equilibrate
                 if verbose:
                     self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(
-                    int(equil_steps / integrator_settings.n_steps.m)  # type: ignore
+                    int(equil_steps / steps_per_iteration)  # type: ignore
                 )
 
                 # production
@@ -942,7 +969,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running production phase")
 
                 sampler.extend(
-                    int(prod_steps / integrator_settings.n_steps.m)  # type: ignore
+                    int(prod_steps / steps_per_iteration)  # type: ignore
                 )
 
                 self.logger.info("Production phase complete")
@@ -960,8 +987,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
             else:
                 # clean up the reporter file
-                fns = [shared_basepath / sim_settings.output_filename,
-                       shared_basepath / sim_settings.checkpoint_storage]
+                fns = [shared_basepath / output_settings.output_filename,
+                       shared_basepath / output_settings.checkpoint_storage_filename]
                 for fn in fns:
                     os.remove(fn)
         finally:

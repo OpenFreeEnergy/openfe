@@ -16,21 +16,19 @@ TODO
 
 """
 from gufe.settings import (
-    Settings,
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
-    SystemSettings,
+    MultiStateSimulationSettings,
     BaseSolvationSettings,
     OpenMMSolvationSettings,
-    AlchemicalSamplerSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    SimulationSettings
+    OutputSettings,
 )
-
+import numpy as np
 
 try:
     from pydantic.v1 import validator
@@ -41,24 +39,77 @@ except ImportError:
 class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
 
-    These settings describe the lambda schedule and the creation of the
-    hybrid system.
+    Empty place holder for right now.
     """
 
-    lambda_elec_windows = 12
-    """Number of lambda electrostatic alchemical steps, default 12"""
-    lambda_vdw_windows = 12
-    """Number of lambda vdw alchemical steps, default 12"""
 
-    @validator('lambda_elec_windows', 'lambda_vdw_windows')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = ("Number of lambda steps must be positive ")
+class LambdaSettings(SettingsBaseModel):
+    """Lambda schedule settings.
+
+    Defines lists of floats to control various aspects of the alchemical
+    transformation.
+
+    Notes
+    -----
+    * In all cases a lambda value of 0 defines a fully interacting state A and
+      a non-interacting state B, whilst a value of 1 defines a fully interacting
+      state B and a non-interacting state A.
+    * ``lambda_elec``, `lambda_vdw``, and ``lambda_restraints`` must all be of
+      the same length, defining all the windows of the transformation.
+
+    """
+    lambda_elec: list[float] = [
+        0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]
+    """
+    List of floats of lambda values for the electrostatics. 
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_vdw and lambda_restraints.
+    """
+    lambda_vdw: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4,
+        0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+    ]
+    """
+    List of floats of lambda values for the van der Waals.
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_elec and lambda_restraints.
+    """
+    lambda_restraints: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ]
+    """
+    List of floats of lambda values for the restraints.
+    Zero means state A and 1 means state B.
+    Length of this list needs to match length of lambda_vdw and lambda_elec.
+    """
+
+    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    def must_be_between_0_and_1(cls, v):
+        for window in v:
+            if not 0 <= window <= 1:
+                errmsg = ("Lambda windows must be between 0 and 1, got a"
+                          f" window with value {window}.")
+                raise ValueError(errmsg)
+        return v
+
+    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    def must_be_monotonic(cls, v):
+
+        difference = np.diff(v)
+
+        if not all(i >= 0. for i in difference):
+            errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
             raise ValueError(errmsg)
+
         return v
 
 
-class AbsoluteSolvationSettings(Settings):
+# This subclasses from SettingsBaseModel as it has vacuum_forcefield and
+# solvent_forcefield fields, not just a single forcefield_settings field
+class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Configuration object for ``AbsoluteSolvationProtocol``.
 
@@ -66,38 +117,39 @@ class AbsoluteSolvationSettings(Settings):
     --------
     openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
     """
-    class Config:
-        arbitrary_types_allowed = True
+    protocol_repeats: int
+    """
+    The number of completely independent repeats of the entire sampling 
+    process. The mean of the repeats defines the final estimate of FE 
+    difference, while the variance between repeats is used as the uncertainty.  
+    """
+
+    @validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
 
     # Inherited things
-    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
+    vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
-    # Things for creating the systems
-    vacuum_system_settings: SystemSettings
-    """
-    Simulation system settings including the
-    long-range non-bonded methods for the vacuum transformation.
-    """
-    solvent_system_settings: SystemSettings
-    """
-    Simulation system settings including the
-    long-range non-bonded methods for the solvent transformation.
-    """
     solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
     """
-    Alchemical protocol settings including lambda windows.
+    Alchemical protocol settings.
     """
-    alchemsampler_settings: AlchemicalSamplerSettings
+    lambda_settings: LambdaSettings
     """
-    Settings for controling how we sample alchemical space, including the
-    number of repeats.
+    Settings for controlling the lambda schedule for the different components 
+    (vdw, elec, restraints).
     """
 
     # MD Engine things
@@ -120,13 +172,21 @@ class AbsoluteSolvationSettings(Settings):
     """
 
     # Simulation run settings
-    vacuum_simulation_settings: SimulationSettings
+    vacuum_simulation_settings: MultiStateSimulationSettings
     """
-    Simulation control settings, including simulation lengths and
-    record-keeping for the vacuum transformation.
+    Simulation control settings, including simulation lengths
+    for the vacuum transformation.
     """
-    solvent_simulation_settings: SimulationSettings
+    solvent_simulation_settings: MultiStateSimulationSettings
     """
-    Simulation control settings, including simulation lengths and
-    record-keeping for the solvent transformation.
+    Simulation control settings, including simulation lengths
+    for the solvent transformation.
+    """
+    vacuum_output_settings: OutputSettings
+    """
+    Simulation output settings for the vacuum transformation.
+    """
+    solvent_output_settings: OutputSettings
+    """
+    Simulation output settings for the solvent transformation.
     """
