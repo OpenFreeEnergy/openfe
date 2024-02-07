@@ -360,8 +360,12 @@ def assign_offmol_partial_charges(
         },
     }
 
+    try:
+        backends = CHARGE_METHODS[method.lower()]['backends']
+    except KeyError:
+        errmsg = f"Unknown partial charge method {method}"
+        raise ValueError(errmsg)
 
-    backends = CHARGE_METHODS[method.lower()]['backends']
     if toolkit_backend.lower() not in backends:
         errmsg = (f"Selected toolkit_backend ({toolkit_backend}) cannot "
                   f"be used with the selected method ({method}). "
