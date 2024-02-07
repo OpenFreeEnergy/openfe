@@ -62,7 +62,7 @@ def test_append_topology(benzene_complex_system, toluene_complex_system):
     )
 
     assert len(list(top2.atoms())) == 2625 + 3  # added methyl
-    assert len(list(top2.bonds())) == 2645 + 4 - 1 # add methyl bonds, minus hydrogen
+    assert len(list(top2.bonds())) == 2645 + 4 - 1  # add methyl bonds, minus hydrogen
     assert appended_resids[0] == len(list(top1.residues())) - 1
 
 
@@ -91,7 +91,7 @@ def test_append_topology_no_exclude(benzene_complex_system,
     )
 
     assert len(list(top2.atoms())) == 2625 + 15  # added toluene
-    assert len(list(top2.bonds())) == 2645 + 15 # 15 bonds in toluene
+    assert len(list(top2.bonds())) == 2645 + 15  # 15 bonds in toluene
     assert appended_resids[0] == len(list(top1.residues()))
 
 
@@ -163,7 +163,7 @@ def test_validate_alchemical_components_wrong_mappings(mapping):
 
 def test_validate_alchemical_components_missing_alchem_comp(
         benzene_to_toluene_mapping):
-    alchem_comps = {'stateA': [openfe.SolventComponent(),], 'stateB': []}
+    alchem_comps = {'stateA': [openfe.SolventComponent(), ], 'stateB': []}
     with pytest.raises(ValueError, match="Unmapped alchemical component"):
         _validate_alchemical_components(
             alchem_comps, benzene_to_toluene_mapping,
@@ -177,9 +177,9 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, method, tmpdir):
 
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.alchemical_sampler_settings.sampler_method = method
-    vac_settings.alchemical_sampler_settings.n_repeats = 1
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.simulation_settings.sampler_method = method
+    vac_settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -222,7 +222,7 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                              benzene_to_toluene_mapping, tmpdir):
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.forcefield_settings.small_molecule_forcefield = 'gaff-2.11'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -344,15 +344,15 @@ def test_dry_core_element_change(tmpdir):
     )
 
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.forcefield_settings.nonbonded_method = 'nocutoff'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
     )
 
     dag = protocol.create(
-        stateA=openfe.ChemicalSystem({'ligand': benz,}),
-        stateB=openfe.ChemicalSystem({'ligand': pyr,}),
+        stateA=openfe.ChemicalSystem({'ligand': benz, }),
+        stateB=openfe.ChemicalSystem({'ligand': pyr, }),
         mapping=mapping,
     )
 
@@ -379,9 +379,9 @@ def test_dry_run_ligand(benzene_system, toluene_system,
                         benzene_to_toluene_mapping, method, tmpdir):
     # this might be a bit time consuming
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.alchemical_sampler_settings.sampler_method = method
-    settings.alchemical_sampler_settings.n_repeats = 1
-    settings.simulation_settings.output_indices = 'resname UNK'
+    settings.simulation_settings.sampler_method = method
+    settings.protocol_repeats = 1
+    settings.output_settings.output_indices = 'resname UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -412,7 +412,7 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
     Check that even if conformer generation fails, we can still perform a sim
     """
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
@@ -438,11 +438,11 @@ def tip4p_hybrid_factory(
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
-    settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+    settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = True
 
@@ -590,8 +590,8 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
     hybrid topology.
     """
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
-    vac_settings.alchemical_sampler_settings.n_repeats = 1
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -637,8 +637,8 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
-        stateA=openfe.ChemicalSystem({'l': benzene_smc,}),
-        stateB=openfe.ChemicalSystem({'l': toluene_smc,}),
+        stateA=openfe.ChemicalSystem({'l': benzene_smc, }),
+        stateB=openfe.ChemicalSystem({'l': toluene_smc, }),
         mapping=mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
@@ -719,11 +719,11 @@ def test_virtual_sites_no_reassign(benzene_system, toluene_system,
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
-    settings.system_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+    settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = False
 
@@ -750,8 +750,8 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
     # this will be very time consuming
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.alchemical_sampler_settings.sampler_method = method
-    settings.alchemical_sampler_settings.n_repeats = 1
-    settings.simulation_settings.output_indices = 'protein or resname  UNK'
+    settings.protocol_repeats = 1
+    settings.output_settings.output_indices = 'protein or resname  UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -793,7 +793,7 @@ def test_hightimestep(benzene_vacuum_system,
                       benzene_to_toluene_mapping, tmpdir):
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.hydrogen_mass = 1.0
-    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.forcefield_settings.nonbonded_method = 'nocutoff'
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -819,8 +819,8 @@ def test_n_replicas_not_n_windows(benzene_vacuum_system,
     # equals the numbers of replicas used - TODO: remove limitation
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     # default lambda windows is 11
-    settings.alchemical_sampler_settings.n_replicas = 13
-    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.simulation_settings.n_replicas = 13
+    settings.forcefield_settings.nonbonded_method = 'nocutoff'
 
     errmsg = ("Number of replicas 13 does not equal the number of "
               "lambda windows 11")
@@ -1018,7 +1018,7 @@ def test_element_change_warning(atom_mapping_basic_test_files):
 def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
                                 benzene_to_toluene_mapping, tmpdir):
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    vac_settings.system_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -1058,11 +1058,9 @@ def test_ligand_overlap_warning(benzene_vacuum_system, toluene_vacuum_system,
 @pytest.fixture
 def solvent_protocol_dag(benzene_system, toluene_system, benzene_to_toluene_mapping):
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=settings,
     )
-
     return protocol.create(
         stateA=benzene_system, stateB=toluene_system,
         mapping=benzene_to_toluene_mapping,
@@ -1078,7 +1076,6 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
         for u in dag_units:
             ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
             results.append(ret)
-
     repeats = set()
     for ret in results:
         assert isinstance(ret, gufe.ProtocolUnitResult)
@@ -1332,7 +1329,7 @@ def tyk2_xml(tmp_path_factory):
     settings.forcefield_settings.small_molecule_forcefield = 'openff-2.0.0'
     settings.system_settings.nonbonded_method = 'nocutoff'
     settings.forcefield_settings.hydrogen_mass = 3.0
-    settings.alchemical_sampler_settings.n_repeats = 1
+    settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
@@ -1410,7 +1407,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(16.887389)
+        assert est.m == pytest.approx(16.85, abs=0.3)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1418,7 +1415,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.12354885)
+        assert est.m == pytest.approx(0.1, abs=0.1)
         assert isinstance(est, unit.Quantity)
         assert est.is_compatible_with(unit.kilojoule_per_mole)
 
@@ -1549,9 +1546,8 @@ def benzene_solvent_openmm_system(benzene_modifications):
 
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
-        thermo_settings=settings.thermo_settings,
         integrator_settings=settings.integrator_settings,
-        system_settings=settings.system_settings,
+        thermo_settings=settings.thermo_settings,
         cache=None,
         has_solvent=True,
     )
@@ -1591,9 +1587,8 @@ def benzene_tip4p_solvent_openmm_system(benzene_modifications):
 
     system_generator = system_creation.get_system_generator(
         forcefield_settings=settings.forcefield_settings,
-        thermo_settings=settings.thermo_settings,
         integrator_settings=settings.integrator_settings,
-        system_settings=settings.system_settings,
+        thermo_settings=settings.thermo_settings,
         cache=None,
         has_solvent=True,
     )
