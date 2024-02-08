@@ -173,7 +173,7 @@ def _get_alchemical_charge_difference(
 
 def _validate_alchemical_components(
     alchemical_components: dict[str, list[Component]],
-    mapping: Optional[dict[str, ComponentMapping]],
+    mapping: Optional[Union[ComponentMapping, list[ComponentMapping]]],
 ):
     """
     Checks that the alchemical components are suitable for the RFE protocol.
@@ -188,8 +188,8 @@ def _validate_alchemical_components(
     alchemical_components : dict[str, list[Component]]
       Dictionary contatining the alchemical components for
       states A and B.
-    mapping : dict[str, ComponentMapping]
-      Dictionary of mappings between transforming components.
+    mapping : Optional[Union[ComponentMapping, list[ComponentMapping]]]
+      all mappings between transforming components.
 
     Raises
     ------
@@ -201,16 +201,17 @@ def _validate_alchemical_components(
     UserWarning
       * Mappings which involve element changes in core atoms
     """
+    if isinstance(mapping, ComponentMapping):
+        mapping = [mapping]
     # Check mapping
     # For now we only allow for a single mapping, this will likely change
-    if mapping is None or len(mapping.values()) > 1:
+    if mapping is None or len(mapping) != 1:
         errmsg = "A single LigandAtomMapping is expected for this Protocol"
         raise ValueError(errmsg)
 
     # Check that all alchemical components are mapped & small molecules
-    mapped = {}
-    mapped['stateA'] = [m.componentA for m in mapping.values()]
-    mapped['stateB'] = [m.componentB for m in mapping.values()]
+    mapped = {'stateA': [m.componentA for m in mapping],
+              'stateB': [m.componentB for m in mapping]}
 
     for idx in ['stateA', 'stateB']:
         if len(alchemical_components[idx]) != len(mapped[idx]):
@@ -226,7 +227,7 @@ def _validate_alchemical_components(
                 raise ValueError(errmsg)
 
     # Validate element changes in mappings
-    for m in mapping.values():
+    for m in mapping:
         molA = m.componentA.to_rdkit()
         molB = m.componentB.to_rdkit()
         for i, j in m.componentA_to_componentB.items():
@@ -470,7 +471,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[dict[str, gufe.ComponentMapping]] = None,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]],
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: Extensions?
@@ -482,9 +483,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             stateA, stateB
         )
         _validate_alchemical_components(alchem_comps, mapping)
-
-        # For now we've made it fail already if it was None,
-        ligandmapping = list(mapping.values())[0]  # type: ignore
+        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping  # type: ignore
 
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
@@ -500,7 +499,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         n_repeats = self.settings.protocol_repeats
         units = [RelativeHybridTopologyProtocolUnit(
             protocol=self,
-            stateA=stateA, stateB=stateB, ligandmapping=ligandmapping,
+            stateA=stateA, stateB=stateB,
+            ligandmapping=ligandmapping,  # type: ignore
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]

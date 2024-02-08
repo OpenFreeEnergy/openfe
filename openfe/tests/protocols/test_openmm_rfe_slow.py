@@ -67,7 +67,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     m = openfe.LigandAtomMapping(componentA=b, componentB=b_alt,
                                  componentA_to_componentB={i: i for i in range(12)})
     dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_alt_system,
-                   mapping={'ligand': m})
+                   mapping=[m])
 
     cwd = pathlib.Path(str(tmpdir))
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
@@ -128,7 +128,7 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     sys2 = openfe.ChemicalSystem(components={**base_sys, 'ligand': l2})
 
     dag = p.create(stateA=sys1, stateB=sys2,
-                   mapping={'ligand': m})
+                   mapping=[m])
 
     cwd = pathlib.Path(str(tmpdir))
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
