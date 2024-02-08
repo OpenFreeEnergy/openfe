@@ -663,10 +663,10 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
         lambda_settings: LambdaSettings = protocol_settings.lambda_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
         output_settings: OutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
-        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
 
         # is the timestep good for the mass?
         settings_validation.validate_timestep(

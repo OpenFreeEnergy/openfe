@@ -335,11 +335,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
-        solvation_settings : BaseSolvationSettings
-          Settings detailing how to solvate the system.
         partial_charge_settings : BasePartialChargeSettings
           Settings detailing how to assign partial charges to the
           SMCs of the system.
+        solvation_settings : BaseSolvationSettings
+          Settings detailing how to solvate the system.
 
         Returns
         -------

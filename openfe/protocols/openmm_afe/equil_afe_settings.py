@@ -26,7 +26,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    BasePartialChargeSettings,
     OpenFFPartialChargeSettings,
     OutputSettings,
 )
@@ -192,8 +191,6 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Simulation output settings for the solvent transformation.
     """
-
-    # Partial charge settings
     partial_charge_settings: OpenFFPartialChargeSettings
     """
     Settings for controlling how to assign partial charges,
