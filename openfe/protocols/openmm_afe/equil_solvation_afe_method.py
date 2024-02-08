@@ -53,6 +53,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, OutputSettings,
+    OpenFFPartialChargeSettings,
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
@@ -415,6 +416,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                     0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
             ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
             vacuum_engine_settings=OpenMMEngineSettings(),
             solvent_engine_settings=OpenMMEngineSettings(),
@@ -741,6 +743,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
+            * charge_settings: OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
@@ -754,6 +757,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings = {}
         settings['forcefield_settings'] = prot_settings.vacuum_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
+        settings['charge_settings'] = prot_settings.partial_charge_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['lambda_settings'] = prot_settings.lambda_settings
@@ -825,6 +829,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
+            * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
@@ -838,6 +843,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings = {}
         settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
+        settings['charge_settings'] = prot_settings.partial_charge_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['lambda_settings'] = prot_settings.lambda_settings
