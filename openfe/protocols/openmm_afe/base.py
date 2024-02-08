@@ -19,7 +19,6 @@ from __future__ import annotations
 import abc
 import os
 import logging
-import warnings
 
 import gufe
 from gufe.components import Component
