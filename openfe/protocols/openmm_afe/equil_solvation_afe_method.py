@@ -58,7 +58,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
-from openfe.utils import without_oechem_backend, log_system_probe
+from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
 
@@ -778,9 +778,8 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],

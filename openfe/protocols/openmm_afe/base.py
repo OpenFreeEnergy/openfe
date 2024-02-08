@@ -65,6 +65,8 @@ from ..openmm_utils import (
     settings_validation, system_creation,
     multistate_analysis, charge_generation
 )
+from openfe.utils import without_oechem_backend
+
 
 logger = logging.getLogger(__name__)
 
@@ -276,13 +278,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if ffcache is not None:
             ffcache = self.shared_basepath / ffcache
 
-        system_generator = system_creation.get_system_generator(
-            forcefield_settings=settings['forcefield_settings'],
-            integrator_settings=settings['integrator_settings'],
-            thermo_settings=settings['thermo_settings'],
-            cache=ffcache,
-            has_solvent=solvent_comp is not None,
-        )
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=settings['forcefield_settings'],
+                integrator_settings=settings['integrator_settings'],
+                thermo_settings=settings['thermo_settings'],
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
+            )
         return system_generator
 
     @staticmethod
@@ -359,21 +364,22 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # force the creation of parameters for the small molecules
         # this is necessary because we need to have the FF generated ahead
         # of solvating the system.
-        # Note by default this is cached to ctx.shared/db.json which should
-        # reduce some of the costs.
-        for mol in smc_components.values():
-            system_generator.create_system(
-                mol.to_topology().to_openmm(), molecules=[mol]
-            )
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            for mol in smc_components.values():
+                system_generator.create_system(
+                    mol.to_topology().to_openmm(), molecules=[mol]
+                )
 
-        # get OpenMM modeller + dictionary of resids for each component
-        system_modeller, comp_resids = system_creation.get_omm_modeller(
-            protein_comp=protein_component,
-            solvent_comp=solvent_component,
-            small_mols=smc_components,
-            omm_forcefield=system_generator.forcefield,
-            solvent_settings=solvation_settings,
-        )
+            # get OpenMM modeller + dictionary of resids for each component
+            system_modeller, comp_resids = system_creation.get_omm_modeller(
+                protein_comp=protein_component,
+                solvent_comp=solvent_component,
+                small_mols=smc_components,
+                omm_forcefield=system_generator.forcefield,
+                solvent_settings=solvation_settings,
+            )
 
         return system_modeller, comp_resids
 
@@ -409,10 +415,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology = system_modeller.getTopology()
         # roundtrip positions to remove vec3 issues
         positions = to_openmm(from_openmm(system_modeller.getPositions()))
-        system = system_generator.create_system(
-            system_modeller.topology,
-            molecules=smc_components,
-        )
+
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system = system_generator.create_system(
+                system_modeller.topology,
+                molecules=smc_components,
+            )
         return topology, system, positions
 
     def _get_lambda_schedule(
