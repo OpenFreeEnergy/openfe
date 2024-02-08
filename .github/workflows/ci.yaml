@@ -76,7 +76,7 @@ jobs:
 
       - name: "Install OpenEye"
         if: ${{ !github.event.pull_request.head.repo.fork
-                && matrix.openeye == "yes" }}
+                && matrix.openeye == 'yes' }}
         env:
           OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
         run: |
