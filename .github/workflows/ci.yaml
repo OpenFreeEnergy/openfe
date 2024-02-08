@@ -35,6 +35,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+        openeye: ["no"]
         include:
           - os: "macos"
             python-version: "3.11"
@@ -42,6 +43,13 @@ jobs:
           - os: "ubuntu"
             python-version: "3.11"
             pydantic-version: "<2"
+          - os: "ubuntu"
+            python-version: "3.11"
+            pydantic-version: ">1"
+            openeye: "yes"
+
+    env:
+      OE_LICENSE: ${{ github.workspace }}/oe_license.txt
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +75,8 @@ jobs:
           init-shell: bash
 
       - name: "Install OpenEye"
-        if: ${{ !github.event.pull_request.head.repo.fork }}
+        if: ${{ !github.event.pull_request.head.repo.fork
+                && matrix.openeye == "yes" }}
         env:
           OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
         run: |
