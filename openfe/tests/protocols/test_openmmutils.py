@@ -608,6 +608,45 @@ class TestOFFPartialCharge:
                 toolkit_registry=ToolkitRegistry([RDKitToolkitWrapper()])
             )
 
+    @pytest.mark.slow
+    def test_am1bcc_conformer_nochange(self, eg5_ligands):
+
+        lig = eg5_ligands[0].to_openff()
+
+        conf = copy.deepcopy(lig.conformers)
+
+        # Get charges without conf generation
+        charge_generation.assign_offmol_partial_charges(
+            lig,
+            overwrite=False,
+            method='am1bcc',
+            toolkit_backend='ambertools',
+            generate_n_conformers=None,
+            nagl_model=None,
+        )
+
+        # check the conformation hasn't changed
+        assert_allclose(conf, lig.conformers)
+
+        # copy the charges to check that the conf gen will change things
+        charges = copy.deepcopy(lig.partial_charges)
+
+        # now with conformer generation
+        charge_generation.assign_offmol_partial_charges(
+            lig,
+            overwrite=True,
+            method='am1bcc',
+            toolkit_backend='ambertools',
+            generate_n_conformers=1,
+            nagl_model=None
+        )
+
+        # conformer shouldn't have changed
+        assert_allclose(conf, lig.conformers)
+
+        # but the charges should have
+        assert not np.allclose(charges, lig.partial_charges)
+
     @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
     def test_no_production_nagl(self, uncharged_mol):
         
