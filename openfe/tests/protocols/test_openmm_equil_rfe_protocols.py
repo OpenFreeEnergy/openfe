@@ -761,7 +761,7 @@ def test_dodecahdron_ligand_box(benzene_system, toluene_system,
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping={'ligand': benzene_to_toluene_mapping},
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
