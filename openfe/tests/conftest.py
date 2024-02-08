@@ -6,6 +6,7 @@ import pytest
 from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from openff.units import unit
 
 import gufe
 import openfe
@@ -280,3 +281,26 @@ def CN_molecule():
         smc = [SmallMoleculeComponent(i) for i in supp][0]
 
     return smc
+
+
+@pytest.fixture(scope='function')
+def am1bcc_ref_charges():
+    ref_chgs = {
+        'ambertools': [
+            0.146957, -0.918943, 0.025557, 0.025557,
+            0.025557, 0.347657, 0.347657
+        ] * unit.elementary_charge,
+        'openeye': [
+            0.14713, -0.92016, 0.02595, 0.02595,
+            0.02595, 0.34759, 0.34759
+        ] * unit.elementary_charge,
+        'nagl': [
+            0.170413, -0.930417, 0.021593, 0.021593,
+            0.021593, 0.347612, 0.347612
+        ] * unit.elementary_charge,
+        'espaloma': [
+            0.017702, -0.966793, 0.063076, 0.063076,
+            0.063076, 0.379931, 0.379931
+        ] * unit.elementary_charge,
+    }
+    return ref_chgs
