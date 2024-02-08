@@ -203,7 +203,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
         ),
     ),
 ])
-def test_dry_run_user_charges(
+def test_dry_run_charge_backends(
     CN_molecule, tmpdir, method, backend, ref_key, am1bcc_ref_charges
 ):
     vac_settings = PlainMDProtocol.default_settings()
