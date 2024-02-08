@@ -127,7 +127,7 @@ def generate_rfe_json(smcA, smcB):
     systemB = openfe.ChemicalSystem({'ligand': a_smcB})
 
     dag = protocol.create(
-        stateA=systemA, stateB=systemB, mapping={'ligands': mapping}
+        stateA=systemA, stateB=systemB, mapping=mapping
     )
 
     execute_and_serialize(dag, protocol, "RHFEProtocol")
