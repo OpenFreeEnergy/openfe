@@ -643,6 +643,8 @@ class TestOFFPartialCharge:
         }
         return ref_chgs
 
+    # Note: skipping nagl tests on macos/darwin due to known issues
+    # see: https://github.com/openforcefield/openff-nagl/issues/78
     @pytest.mark.parametrize('method, backend, ref_key, confs', [
         ('am1bcc', 'ambertools', 'ambertools', None),
         pytest.param(
@@ -660,20 +662,22 @@ class TestOFFPartialCharge:
         pytest.param(
             'nagl', 'rdkit', 'nagl', None,
             marks=pytest.mark.skipif(
-                not HAS_NAGL, reason='needs NAGL',
+                not HAS_NAGL or sys.platform.startswith('darwin'),
+                reason='needs NAGL and/or on macos',
             ),
         ),
         pytest.param(
             'nagl', 'ambertools', 'nagl', None,
             marks=pytest.mark.skipif(
-                not HAS_NAGL, reason='needs NAGL',
+                not HAS_NAGL or sys.platform.startswith('darwin')
+                , reason='needs NAGL and/or on macos',
             ),
         ),
         pytest.param(
             'nagl', 'openeye', 'nagl', None,
             marks=pytest.mark.skipif(
-                not HAS_NAGL or not HAS_OPENEYE,
-                reason='needs NAGL and oechem',
+                not HAS_NAGL or not HAS_OPENEYE or sys.platform.startswith('darwin'),
+                reason='needs NAGL and oechem and not on macos',
             ),
         ),
         pytest.param(
