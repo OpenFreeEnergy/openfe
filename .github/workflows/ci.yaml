@@ -66,6 +66,15 @@ jobs:
             pydantic=${{ matrix.pydantic-version }}
           init-shell: bash
 
+      - name: "Install OpenEye"
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        env:
+          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
+        run: |
+          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
+          micromamba install -c openeye openeye
+          python -c "import openeye; assert opneye.oechem.OEChemIsLicensed(), 'oechem license check failed!'"
+
       - name: "Install GUFE from main@HEAD"
         run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
 
