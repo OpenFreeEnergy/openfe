@@ -72,7 +72,7 @@ jobs:
           OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
         run: |
           echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
-          micromamba install -c openeye openeye
+          micromamba install -c openeye openeye-toolkit
           python -c "import openeye; assert opneye.oechem.OEChemIsLicensed(), 'oechem license check failed!'"
 
       - name: "Install GUFE from main@HEAD"
