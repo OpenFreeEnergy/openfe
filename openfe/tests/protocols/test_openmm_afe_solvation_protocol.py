@@ -623,7 +623,7 @@ def test_dry_run_charge_backends(
     assert_allclose(
         am1bcc_ref_charges[ref_key],
         charges * offunit.elementary_charge,
-        rtol=1e-4
+        rtol=1e-4,
     )
 
 
