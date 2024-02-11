@@ -236,6 +236,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             output_settings=settings['equil_output_settings'],
             temperature=settings['thermo_settings'].temperature,
             barostat_frequency=settings['integrator_settings'].barostat_frequency,
+            timestep=settings['integrator_settings'].timestep,
             equil_steps_nvt=equil_steps_nvt,
             equil_steps_npt=equil_steps_npt,
             prod_steps=prod_steps_npt,
