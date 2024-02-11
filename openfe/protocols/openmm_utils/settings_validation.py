@@ -100,8 +100,54 @@ def convert_steps_per_iteration(
     return steps_per_iteration
 
 
+def convert_time_to_iterations(
+    time: unit.Quantity,
+    time_per_iteration: unit.Quantity,
+    check_remainder: bool = True,
+) -> tuple[int, int]:
+    """
+    Convert a set amount of time to a number of iterations.
+
+    This method allows one to get the number of MC iterations as used
+    in OpenMMTools' MultiStateSampler and MultiStatereporter.
+
+
+    Parameters
+    ---------
+    time: unit.Quantity
+      The time to convert in a number of MC iterations.
+    time_per_iteration : unit.Quantity
+      The amount of time which each iteration takes.
+    check_remainder : bool
+      If true, raises an error if the remainder is not zero.
+
+    Returns
+    -------
+    iterations : int
+      The number of iterations covered by the input time.
+    remainder : int
+      The remainder of the input time and time_per_iteration division.
+
+    Raises
+    ------
+    ValueError
+      If ``check_remainder`` is true and the the time does not exactly
+      divide by the time per iteration.
+    """
+    time_ats = round(time.to(unit.attosecond).m)
+    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)
+
+    iterations, remainder = divmod(time_ats, tpi_ats)
+
+    if check_remainder and remainder:
+        errmsg = "Input time does not divide exactly by the time per iteration"
+        raise ValueError(errmsg)
+
+    return iterations, remainder
+
+
 def convert_real_time_analysis_iterations(
-        simulation_settings: MultiStateSimulationSettings,
+    simulation_settings: MultiStateSimulationSettings,
 ) -> tuple[Optional[int], Optional[int]]:
     """Convert time units in Settings to various other units
 
@@ -127,21 +173,23 @@ def convert_real_time_analysis_iterations(
         # option to turn off real time analysis
         return None, None
 
-    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
+    rta_its, rem = convert_time_to_iterations(
+        simulation_settings.real_time_analysis_interval,
+        simulation_settings.time_per_iteration,
+        check_remainder=False,
+    )
 
-    # convert real_time_analysis time to interval
-    # rta_its must be number of MCMC iterations
-    # i.e. rta_fs / tpi_fs -> number of iterations
-    rta_fs = round(simulation_settings.real_time_analysis_interval.to(unit.attosecond).m)
-
-    rta_its, rem = divmod(rta_fs, tpi_fs)
     if rem:
         raise ValueError(f"real_time_analysis_interval ({simulation_settings.real_time_analysis_interval}) "
                          f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
 
     # convert RTA_minimum_time to iterations
-    rta_min_fs = round(simulation_settings.real_time_analysis_minimum_time.to(unit.attosecond).m)
-    rta_min_its, rem = divmod(rta_min_fs, tpi_fs)
+    rta_min_its, rem = convert_time_to_iterations(
+        simulation_settings.real_time_analysis_minimum_time,
+        simulation_settings.time_per_iteration,
+        check_remainder=False,
+    )
+
     if rem:
         raise ValueError(f"real_time_analysis_minimum_time ({simulation_settings.real_time_analysis_minimum_time}) "
                          f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
@@ -150,8 +198,8 @@ def convert_real_time_analysis_iterations(
 
 
 def convert_target_error_from_kcal_per_mole_to_kT(
-        temperature,
-        target_error,
+    temperature,
+    target_error,
 ) -> float:
     """Convert kcal/mol target error to kT units
 
