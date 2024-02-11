@@ -17,6 +17,7 @@ import gufe
 import openmm
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
+from openff.models.types import FloatQuantity
 import openmm.unit as omm_unit
 from typing import Optional
 from openmm import app
@@ -248,13 +249,14 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 positions: omm_unit.Quantity,
                 simulation_settings: MDSimulationSettings,
                 output_settings: MDOutputSettings,
-                temperature: settings.ThermoSettings.temperature,
-                barostat_frequency: IntegratorSettings.barostat_frequency,
+                temperature: FloatQuantity["kelvin"],
+                barostat_frequency: unit.Quantity,
+                timestep: FloatQuantity["femtosecond"],
                 equil_steps_nvt: int,
                 equil_steps_npt: int,
                 prod_steps: int,
                 verbose=True,
-                shared_basepath=None):
+                shared_basepath=None) -> None:
 
         """
         Energy minimization, Equilibration and Production MD to be reused
@@ -270,10 +272,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Settings for MD simulation
         output_settings: OutputSettingsMD
           Settings for output of MD simulation
-        temperature: settings.ThermoSettings.temperature
+        temperature: FloatQuantity["kelvin"]
           temperature setting
-        barostat_frequency: IntegratorSettings.barostat_frequency
+        barostat_frequency: unit.Quantity
           Frequency for the barostat
+        timestep: FloatQuantity["femtosecond"]
+          Simulation integration timestep
         equil_steps_nvt: int
           number of steps for NVT equilibration
         equil_steps_npt: int
@@ -285,9 +289,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           INFO level logging.
         shared_basepath : Pathlike, optional
           Where to run the calculation, defaults to current working directory
-
-        Returns
-        -------
 
         """
         if shared_basepath is None:
@@ -391,16 +392,27 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             logger.info("running production phase")
 
         # Setup the reporters
+
+        # TODO: write_interval should probably not be in units of
+        # timestep but time - Issue #716
+        write_interval = output_settings.trajectory_write_interval.m
+
+        checkpoint_interval = settings_validation.get_simsteps(
+            sim_length=output_settings.checkpoint_interval,
+            timestep=timestep,
+            mc_steps=1,
+        )
+
         simulation.reporters.append(XTCReporter(
             file=str(shared_basepath / output_settings.production_trajectory_filename),
-            reportInterval=output_settings.trajectory_write_interval.m,
+            reportInterval=write_interval,
             atomSubset=selection_indices))
         simulation.reporters.append(openmm.app.CheckpointReporter(
             file=str(shared_basepath / output_settings.checkpoint_storage_filename),
-            reportInterval=output_settings.checkpoint_interval.m))
+            reportInterval=checkpoint_interval))
         simulation.reporters.append(openmm.app.StateDataReporter(
             str(shared_basepath / output_settings.log_output),
-            output_settings.checkpoint_interval.m,
+            checkpoint_interval,
             step=True,
             time=True,
             potentialEnergy=True,
@@ -416,8 +428,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         t1 = time.time()
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
-
-        return None
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -571,17 +581,19 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         try:
 
             if not dry:  # pragma: no-cover
-                self._run_MD(simulation,
-                             stateA_positions,
-                             sim_settings,
-                             output_settings,
-                             thermo_settings.temperature,
-                             integrator_settings.barostat_frequency,
-                             equil_steps_nvt,
-                             equil_steps_npt,
-                             prod_steps,
-                             shared_basepath=shared_basepath,
-                             )
+                self._run_MD(
+                    simulation,
+                    stateA_positions,
+                    sim_settings,
+                    output_settings,
+                    thermo_settings.temperature,
+                    integrator_settings.barostat_frequency,
+                    timestep,
+                    equil_steps_nvt,
+                    equil_steps_npt,
+                    prod_steps,
+                    shared_basepath=shared_basepath,
+                )
 
         finally:
 
