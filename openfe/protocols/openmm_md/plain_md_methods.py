@@ -17,7 +17,6 @@ import gufe
 import openmm
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
-from openff.models.types import FloatQuantity
 import openmm.unit as omm_unit
 from typing import Optional
 from openmm import app
@@ -249,9 +248,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 positions: omm_unit.Quantity,
                 simulation_settings: MDSimulationSettings,
                 output_settings: MDOutputSettings,
-                temperature: FloatQuantity["kelvin"],
+                temperature: unit.Quantity,
                 barostat_frequency: unit.Quantity,
-                timestep: FloatQuantity["femtosecond"],
+                timestep: unit.Quantity,
                 equil_steps_nvt: int,
                 equil_steps_npt: int,
                 prod_steps: int,
