@@ -155,7 +155,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool
-    ) -> None:
+    ) -> omm_unit.Quantity:
         """
         Run a non-alchemical equilibration to get a stable system.
 
