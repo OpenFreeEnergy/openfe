@@ -557,7 +557,7 @@ def test_dry_run_ligand_system_cutoff(
     """
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
-    settings.system_settings.nonbonded_cutoff = cutoff
+    settings.forcefield_settings.nonbonded_cutoff = cutoff
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=settings,
@@ -565,7 +565,7 @@ def test_dry_run_ligand_system_cutoff(
     dag = protocol.create(
         stateA=benzene_system,
         stateB=toluene_system,
-        mapping={'ligand': benzene_to_toluene_mapping},
+        mapping=benzene_to_toluene_mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -749,7 +749,7 @@ def test_dry_run_complex(benzene_complex_system, toluene_complex_system,
                          benzene_to_toluene_mapping, method, tmpdir):
     # this will be very time consuming
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    settings.alchemical_sampler_settings.sampler_method = method
+    settings.simulation_settings.sampler_method = method
     settings.protocol_repeats = 1
     settings.output_settings.output_indices = 'protein or resname  UNK'
 
@@ -1327,7 +1327,7 @@ def tyk2_xml(tmp_path_factory):
 
     settings: openmm_rfe.RelativeHybridTopologyProtocolSettings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.small_molecule_forcefield = 'openff-2.0.0'
-    settings.system_settings.nonbonded_method = 'nocutoff'
+    settings.forcefield_settings.nonbonded_method = 'nocutoff'
     settings.forcefield_settings.hydrogen_mass = 3.0
     settings.protocol_repeats = 1
 
