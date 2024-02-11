@@ -73,9 +73,72 @@ def get_simsteps(sim_length: unit.Quantity,
     return sim_steps
 
 
+def divmod_time(
+    time: unit.Quantity,
+    time_per_iteration: unit.Quantity,
+) -> tuple[int, int]:
+    """
+    Convert a set amount of time to a number of iterations.
+
+    Parameters
+    ---------
+    time: unit.Quantity
+      The time to convert.
+    time_per_iteration : unit.Quantity
+      The amount of time which each iteration takes.
+
+    Returns
+    -------
+    iterations : int
+      The number of iterations covered by the input time.
+    remainder : int
+      The remainder of the input time and time_per_iteration division.
+    """
+    time_ats = round(time.to(unit.attosecond).m)
+    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)
+
+    iterations, remainder = divmod(time_ats, tpi_ats)
+
+    return iterations, remainder
+
+
+def convert_checkpoint_interval_to_iterations(
+    checkpoint_interval: unit.Quantity,
+    time_per_iteration: unit.Quantity,
+) -> int:
+    """
+    Get the number of iterations per checkpoint interval.
+
+    This is necessary as our input settings define checkpoints intervals in
+    units of time, but OpenMMTools' MultiStateReporter requires them defined
+    in the number of MC intervals.
+
+    Parameters
+    ----------
+    checkpoint_interval : unit.Quantity
+      The amount of time per checkpoints written.
+    time_per_iteration : unit.Quantity
+      The amount of time each MC iteration takes.
+
+    Returns
+    -------
+    iterations : int
+      The number of iterations per checkpoint.
+    """
+    iterations, rem = divmod_time(checkpoint_interval, time_per_iteration)
+
+    if rem:
+        errmsg = (f"The amount of time per checkpoint {checkpoint_interval} "
+                  "does not evenly divide by the amount of time per "
+                  f"state MCM move attempt {time_per_iteration}")
+        raise ValueError(errmsg)
+
+    return iterations
+
+
 def convert_steps_per_iteration(
-        simulation_settings: MultiStateSimulationSettings,
-        integrator_settings: IntegratorSettings,
+    simulation_settings: MultiStateSimulationSettings,
+    integrator_settings: IntegratorSettings,
 ) -> int:
     """Convert time per iteration to steps
 
@@ -89,61 +152,16 @@ def convert_steps_per_iteration(
     steps_per_iteration : int
       suitable for input to Integrator
     """
-    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
-    ts_fs = round(integrator_settings.timestep.to(unit.attosecond).m)
-    steps_per_iteration, rem = divmod(tpi_fs, ts_fs)
+    steps_per_iteration, rem = divmod_time(
+        simulation_settings.time_per_iteration,
+        integrator_settings.timestep
+    )
 
     if rem:
         raise ValueError(f"time_per_iteration ({simulation_settings.time_per_iteration}) "
                          f"not divisible by timestep ({integrator_settings.timestep})")
 
     return steps_per_iteration
-
-
-def convert_time_to_iterations(
-    time: unit.Quantity,
-    time_per_iteration: unit.Quantity,
-    check_remainder: bool = True,
-) -> tuple[int, int]:
-    """
-    Convert a set amount of time to a number of iterations.
-
-    This method allows one to get the number of MC iterations as used
-    in OpenMMTools' MultiStateSampler and MultiStatereporter.
-
-
-    Parameters
-    ---------
-    time: unit.Quantity
-      The time to convert in a number of MC iterations.
-    time_per_iteration : unit.Quantity
-      The amount of time which each iteration takes.
-    check_remainder : bool
-      If true, raises an error if the remainder is not zero.
-
-    Returns
-    -------
-    iterations : int
-      The number of iterations covered by the input time.
-    remainder : int
-      The remainder of the input time and time_per_iteration division.
-
-    Raises
-    ------
-    ValueError
-      If ``check_remainder`` is true and the the time does not exactly
-      divide by the time per iteration.
-    """
-    time_ats = round(time.to(unit.attosecond).m)
-    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)
-
-    iterations, remainder = divmod(time_ats, tpi_ats)
-
-    if check_remainder and remainder:
-        errmsg = "Input time does not divide exactly by the time per iteration"
-        raise ValueError(errmsg)
-
-    return iterations, remainder
 
 
 def convert_real_time_analysis_iterations(
@@ -173,10 +191,9 @@ def convert_real_time_analysis_iterations(
         # option to turn off real time analysis
         return None, None
 
-    rta_its, rem = convert_time_to_iterations(
+    rta_its, rem = divmod_time(
         simulation_settings.real_time_analysis_interval,
         simulation_settings.time_per_iteration,
-        check_remainder=False,
     )
 
     if rem:
@@ -184,10 +201,9 @@ def convert_real_time_analysis_iterations(
                          f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
 
     # convert RTA_minimum_time to iterations
-    rta_min_its, rem = convert_time_to_iterations(
+    rta_min_its, rem = divmod_time(
         simulation_settings.real_time_analysis_minimum_time,
         simulation_settings.time_per_iteration,
-        check_remainder=False,
     )
 
     if rem:
