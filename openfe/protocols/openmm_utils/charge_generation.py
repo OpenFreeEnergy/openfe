@@ -6,6 +6,7 @@ Reusable utilities for assigning partial charges to ChemicalComponents.
 import copy
 from typing import Union, Optional, Literal, Callable
 import sys
+import warnings
 import numpy as np
 from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
@@ -86,6 +87,9 @@ def assign_offmol_espaloma_charges(
         errmsg = ("The Espaloma ToolkiWrapper is not available, "
                   "please install espaloma_charge")
         raise ImportError(errmsg)
+
+    warnings.warn("Using espaloma to assign charges is not well tested",
+            category=RuntimeWarning)
 
     # make a copy to remove conformers as espaloma enforces
     # a 0 conformer check
