@@ -56,6 +56,10 @@ from .equil_rfe_settings import (
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, OutputSettings,
+    OpenFFPartialChargeSettings,
+)
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
@@ -455,6 +459,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
             alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
             lambda_settings=LambdaSettings(),
@@ -579,6 +584,33 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             generation=generation
         )
 
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings,
+        off_small_mols: dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        off_small_mols : dict[str, list[tuple[SmallMoleculeComponent, OFFMolecule]]]
+          Dictionary of dictionary of OpenFF Molecules to add, keyed by
+          state and SmallMoleculeComponent.
+        """
+        for smc, mol in chain(off_small_mols['stateA'],
+                              off_small_mols['stateB'],
+                              off_small_mols['both']):
+            # skip if we already have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
+
+
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
             shared_basepath=None) -> dict[str, Any]:
@@ -629,6 +661,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
         lambda_settings: LambdaSettings = protocol_settings.lambda_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
         output_settings: OutputSettings = protocol_settings.output_settings
@@ -702,17 +735,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Note: by default this is cached to ctx.shared/db.json so shouldn't
         # incur too large a cost
         self.logger.info("Parameterizing molecules")
+
+        # Start by assigning partial charges
+        self._assign_partial_charges(charge_settings, off_small_mols)
+
+        # Then register all the templates
         for smc, mol in chain(off_small_mols['stateA'],
                               off_small_mols['stateB'],
                               off_small_mols['both']):
-            # skip if we already have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
-
             system_generator.create_system(mol.to_topology().to_openmm(),
                                            molecules=[mol])
 

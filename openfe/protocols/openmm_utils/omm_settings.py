@@ -64,6 +64,20 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
         return v
 
 
+class BasePartialChargeSettings(SettingsBaseModel):
+    """
+    Base class for partial charge assignment.
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class OpenFFPartialChargeSettings(BasePartialChargeSettings):
+    """
+    Empty placeholder class, will implement OpenFF partial charge assignment.
+    """
+
+
 class OpenMMEngineSettings(SettingsBaseModel):
     """OpenMM MD engine settings"""
 

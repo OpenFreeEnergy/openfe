@@ -24,6 +24,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
     OutputSettings,
+    OpenFFPartialChargeSettings,
 )
 
 try:
@@ -132,6 +133,9 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     # Things for creating the systems
     solvation_settings: OpenMMSolvationSettings
     """Settings for solvating the system."""
+
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """Settings for assigning partial charges to small molecules."""
 
     # Alchemical settings
     lambda_settings: LambdaSettings

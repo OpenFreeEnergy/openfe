@@ -13,6 +13,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMEngineSettings,
     MDSimulationSettings,
     IntegratorSettings, MDOutputSettings,
+    OpenFFPartialChargeSettings,
 )
 from gufe.settings import SettingsBaseModel
 try:
@@ -39,6 +40,7 @@ class PlainMDProtocolSettings(Settings):
 
     # Things for creating the systems
     solvation_settings: OpenMMSolvationSettings
+    partial_charge_settings: OpenFFPartialChargeSettings
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
