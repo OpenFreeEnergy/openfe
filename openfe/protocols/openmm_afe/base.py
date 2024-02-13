@@ -27,7 +27,7 @@ import numpy.typing as npt
 import openmm
 from openff.models.types import ArrayQuantity
 from openff.units import unit
-from openff.units.openmm import ensure_quantity
+from openff.units.openmm import ensure_quantity, to_openmm
 from openff.toolkit import Molecule as OFFMolecule, ForceField, Topology
 from openmmtools import multistate
 from openmmtools.states import (SamplerState,
@@ -374,74 +374,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return system_modeller, comp_resids
 
-    def _get_omm_objects(
-        self,
-        settings: dict[str, SettingsBaseModel],
-        protein_component: Optional[ProteinComponent],
-        solvent_component: Optional[SolventComponent],
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
-    ) -> tuple[
-        app.Topology,
-        openmm.System,
-        openmm.unit.Quantity,
-        dict[str, npt.NDArray],
-    ]:
-        """
-        Get the OpenMM Topology, Positions and System of the
-        parameterised system.
-
-        Parameters
-        ----------
-        system_modeller : app.Modeller
-          OpenMM Modeller object representing the system to be
-          parametrized.
-        system_generator : SystemGenerator
-          SystemGenerator object to create a System with.
-        smc_components : list[openff.toolkit.Molecules]
-          A list of openff Molecules to add to the system.
-
-        Returns
-        -------
-        topology : app.Topology
-          Topology object describing the parameterized system
-        system : openmm.System
-          An OpenMM System of the alchemical system.
-        positionns : openmm.unit.Quantity
-          Positions of the system.
-        comp_resids : dict[str, npt.NDArray]
-          A dictionary of residues for each component in the System.
-        """
-        use_interchange = (protein_component is None) and (solvent_component is None) and (len(smc_components) == 1)
-
-        if use_interchange:
-            return self._get_omm_objects_via_interchange(
-                protein_component=protein_component,
-                solvent_component=solvent_component,
-                smc_components=smc_components,
-                settings=settings,
-            )
-        else:
-          system_generator = self._get_system_generator(
-              settings=settings, solvent_comp=solvent_component,
-          )
-
-          system_modeller, comp_resids = self._get_modeller(
-              protein_component=protein_component,
-              solvent_component=solvent_component,
-              smc_components=smc_components,
-              system_generator=system_generator,
-              partial_charge_settings=settings['charge_settings'],
-              solvation_settings=settings['solvation_settings'],
-          )
-
-          return *self._get_omm_objects_via_openmmforcefields(
-              modeller=system_modeller,
-              system_generator=system_generator,
-              smc_components=smc_components,
-          ), comp_resids
-
-
     def _get_omm_objects_via_openmmforcefields(
+        self,
         modeller: app.Modeller,
         system_generator: SystemGenerator,
         smc_components: list[OFFMolecule],
@@ -521,6 +455,73 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             interchange.to_openmm_system(), interchange.positions.to_openmm(),
             component_resids,
         )
+
+    def _get_omm_objects(
+        self,
+        settings: dict[str, SettingsBaseModel],
+        protein_component: Optional[ProteinComponent],
+        solvent_component: Optional[SolventComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> tuple[
+        app.Topology,
+        openmm.System,
+        openmm.unit.Quantity,
+        dict[str, npt.NDArray],
+    ]:
+        """
+        Get the OpenMM Topology, Positions and System of the
+        parameterised system.
+
+        Parameters
+        ----------
+        system_modeller : app.Modeller
+          OpenMM Modeller object representing the system to be
+          parametrized.
+        system_generator : SystemGenerator
+          SystemGenerator object to create a System with.
+        smc_components : list[openff.toolkit.Molecules]
+          A list of openff Molecules to add to the system.
+
+        Returns
+        -------
+        topology : app.Topology
+          Topology object describing the parameterized system
+        system : openmm.System
+          An OpenMM System of the alchemical system.
+        positionns : openmm.unit.Quantity
+          Positions of the system.
+        comp_resids : dict[str, npt.NDArray]
+          A dictionary of residues for each component in the System.
+        """
+        use_interchange = (protein_component is None) and (solvent_component is None) and (len(smc_components) == 1)
+
+        if use_interchange:
+            return self._get_omm_objects_via_interchange(
+                protein_component=protein_component,
+                solvent_component=solvent_component,
+                smc_components=smc_components,
+                settings=settings,
+            )
+        else:
+          system_generator = self._get_system_generator(
+              settings=settings, solvent_comp=solvent_component,
+          )
+
+          system_modeller, comp_resids = self._get_modeller(
+              protein_component=protein_component,
+              solvent_component=solvent_component,
+              smc_components=smc_components,
+              system_generator=system_generator,
+              partial_charge_settings=settings['charge_settings'],
+              solvation_settings=settings['solvation_settings'],
+          )
+
+          return *self._get_omm_objects_via_openmmforcefields(
+              modeller=system_modeller,
+              system_generator=system_generator,
+              smc_components=list(smc_components.values()),
+          ), comp_resids
+
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
