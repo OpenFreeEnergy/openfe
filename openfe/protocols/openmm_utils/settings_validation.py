@@ -130,7 +130,7 @@ def convert_checkpoint_interval_to_iterations(
     if rem:
         errmsg = (f"The amount of time per checkpoint {checkpoint_interval} "
                   "does not evenly divide by the amount of time per "
-                  f"state MCM move attempt {time_per_iteration}")
+                  f"state MCMC move attempt {time_per_iteration}")
         raise ValueError(errmsg)
 
     return iterations
