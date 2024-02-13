@@ -163,7 +163,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         system : openmm.System
           An OpenMM System to equilibrate.
-        topologY : openmm.app.Topology
+        topology : openmm.app.Topology
           OpenMM Topology of the System.
         positions : openmm.unit.Quantity
           Initial positions for the system.
