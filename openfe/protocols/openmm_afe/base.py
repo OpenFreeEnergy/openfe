@@ -25,8 +25,9 @@ from gufe.components import Component
 import numpy as np
 import numpy.typing as npt
 import openmm
+from openff.models.types import ArrayQuantity
 from openff.units import unit
-from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
+from openff.units.openmm import ensure_quantity
 from openff.toolkit import Molecule as OFFMolecule, ForceField, Topology
 from openmmtools import multistate
 from openmmtools.states import (SamplerState,
@@ -375,10 +376,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     def _get_omm_objects(
         self,
-        system_modeller: app.Modeller,
-        system_generator: SystemGenerator,
-        smc_components: list[OFFMolecule],
-    ) -> tuple[app.Topology, openmm.System, openmm.unit.Quantity]:
+        settings: dict[str, SettingsBaseModel],
+        protein_component: Optional[ProteinComponent],
+        solvent_component: Optional[SolventComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> tuple[
+        app.Topology,
+        openmm.System,
+        openmm.unit.Quantity,
+        dict[str, npt.NDArray],
+    ]:
         """
         Get the OpenMM Topology, Positions and System of the
         parameterised system.
@@ -401,15 +408,58 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           An OpenMM System of the alchemical system.
         positionns : openmm.unit.Quantity
           Positions of the system.
+        comp_resids : dict[str, npt.NDArray]
+          A dictionary of residues for each component in the System.
         """
-        topology = system_modeller.getTopology()
-        # roundtrip positions to remove vec3 issues
-        # maybe a quicker way with openff-models 0.1.2
-        positions = to_openmm(from_openmm(system_modeller.getPositions()))
-        system = system_generator.create_system(
-            system_modeller.topology,
+        use_interchange = (protein_component is None) and (solvent_component is None) and (len(smc_components) == 1)
+
+        if use_interchange:
+            return self._get_omm_objects_via_interchange(
+                protein_component=protein_component,
+                solvent_component=solvent_component,
+                smc_components=smc_components,
+                settings=settings,
+            )
+        else:
+          system_generator = self._get_system_generator(
+              settings=settings, solvent_comp=solvent_component,
+          )
+
+          system_modeller, comp_resids = self._get_modeller(
+              protein_component=protein_component,
+              solvent_component=solvent_component,
+              smc_components=smc_components,
+              system_generator=system_generator,
+              partial_charge_settings=settings['charge_settings'],
+              solvation_settings=settings['solvation_settings'],
+          )
+
+          return *self._get_omm_objects_via_openmmforcefields(
+              modeller=system_modeller,
+              system_generator=system_generator,
+              smc_components=smc_components,
+          ), comp_resids
+
+
+    def _get_omm_objects_via_openmmforcefields(
+        modeller: app.Modeller,
+        system_generator: SystemGenerator,
+        smc_components: list[OFFMolecule],
+    ) -> tuple[
+        app.Topology,
+        openmm.System,
+        openmm.unit.Quantity,
+    ]:
+
+        topology = modeller.getTopology()
+
+        positions = ArrayQuantity.validate_type(modeller.getPositions())
+
+        system =system_generator.create_system(
+            topology = topology,
             molecules=smc_components,
         )
+
         return topology, system, positions
 
     def _get_omm_objects_via_interchange(
@@ -947,41 +997,18 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 2. Get settings
         settings = self._handle_settings()
 
-        if (
-            (prot_comp is not None)
-            or (solv_comp is not None)
-            or (len(smc_comps) > 1)
-        ):
-            # 3a. Get system generator
-            system_generator = self._get_system_generator(settings, solv_comp)
-
-            # 4. Get modeller
-            system_modeller, comp_resids = self._get_modeller(
-                prot_comp,
-                solv_comp,
-                smc_comps,
-                system_generator,
-                settings['charge_settings'],
-                settings['solvation_settings'],
-            )
-
-            # 5. Get OpenMM topology, positions and system
-            omm_topology, omm_system, positions = self._get_omm_objects(
-                system_modeller, system_generator, list(smc_comps.values())
-            )
-        else:
-            # 3b. Get objects via Interchange (no steps 4)
-            (
-                omm_topology,
-                omm_system,
-                positions,
-                comp_resids,
-            ) = self._get_omm_objects_via_interchange(
-                protein_component=prot_comp,
-                solvent_component=solv_comp,
-                smc_components=smc_comps,
-                settings=settings,
-            )
+        # 3-5. Get OpenMM objects and resids in one go
+        (
+            omm_topology,
+            omm_system,
+            positions,
+            comp_resids,
+        ) = self._get_omm_objects(
+            settings=settings,
+            protein_component=prot_comp,
+            solvent_component=solv_comp,
+            smc_components=smc_comps,
+        )
 
         # 6. Pre-minimize System (Test + Avoid NaNs)
         positions = self._pre_minimize(omm_system, positions)
