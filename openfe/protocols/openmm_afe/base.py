@@ -956,7 +956,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             system_modeller, system_generator, list(smc_comps.values())
         )
 
-        # 6. Pre-minimize System (Test + Avoid NaNs)
+        # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         positions = self._pre_equilibrate(
             omm_system, omm_topology, positions, settings, dry
         )
