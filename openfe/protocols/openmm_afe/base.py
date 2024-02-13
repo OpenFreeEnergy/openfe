@@ -34,7 +34,7 @@ from openmmtools.states import (SamplerState,
                                 create_thermodynamic_state_protocol,)
 from openmmtools.alchemy import (AlchemicalRegion, AbsoluteAlchemicalFactory,
                                  AlchemicalState,)
-from typing import Dict, List, Optional
+from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
@@ -50,11 +50,14 @@ from gufe import (
 from openfe.protocols.openmm_utils.omm_settings import (
     SettingsBaseModel,
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+)
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, LambdaSettings, OutputSettings,
-    ThermoSettings,
+    ThermoSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
@@ -281,12 +284,37 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
         return system_generator
 
+    @staticmethod
+    def _assign_partial_charges(
+        partial_charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
+        """
+        for mol in smc_components.values():
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
+
     def _get_modeller(
         self,
         protein_component: Optional[ProteinComponent],
         solvent_component: Optional[SolventComponent],
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
+        partial_charge_settings: BasePartialChargeSettings,
         solvation_settings: BaseSolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
@@ -299,10 +327,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Protein Component, if it exists.
         solvent_component : Optional[ProteinCompoinent]
           Solvent Component, if it exists.
-        smc_components : list[openff.toolkit.topology.Molecule]
-          List of openff Molecules to add.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dicationary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
+        partial_charge_settings : BasePartialChargeSettings
+          Settings detailing how to assign partial charges to the
+          SMCs of the system.
         solvation_settings : BaseSolvationSettings
           Settings detailing how to solvate the system.
 
@@ -317,20 +349,15 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if self.verbose:
             self.logger.info("Parameterizing molecules")
 
+        # Assign partial charges to smcs
+        self._assign_partial_charges(partial_charge_settings, smc_components)
+
         # force the creation of parameters for the small molecules
         # this is necessary because we need to have the FF generated ahead
         # of solvating the system.
         # Note by default this is cached to ctx.shared/db.json which should
         # reduce some of the costs.
         for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
-
             system_generator.create_system(
                 mol.to_topology().to_openmm(), molecules=[mol]
             )
@@ -363,7 +390,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           parametrized.
         system_generator : SystemGenerator
           SystemGenerator object to create a System with.
-        smc_components : list
+        smc_components : list[openff.toolkit.Molecules]
           A list of openff Molecules to add to the system.
 
         Returns
@@ -827,7 +854,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             return None
 
     def run(self, dry=False, verbose=True,
-            scratch_basepath=None, shared_basepath=None) -> Dict[str, Any]:
+            scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
         """Run the absolute free energy calculation.
 
         Parameters
@@ -839,24 +866,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        basepath : Pathlike, optional
-          Where to run the calculation, defaults to current working directory
+        scratch_basepath : pathlib.Path
+          Path to the scratch (temporary) directory space.
+        shared_basepath : pathlib.Path
+          Path to the shared (persistent) directory space.
 
         Returns
         -------
         dict
           Outputs created in the basepath directory or the debug objects
           (i.e. sampler) if ``dry==True``.
-
-        Attributes
-        ----------
-        solvent : Optional[SolventComponent]
-          SolventComponent to be applied to the system
-        protein : Optional[ProteinComponent]
-          ProteinComponent for the system
-        openff_mols : List[openff.Molecule]
-          List of OpenFF Molecule objects for each SmallMoleculeComponent in
-          the stateA ChemicalSystem
         """
         # 0. Generaly preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
@@ -873,7 +892,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 4. Get modeller
         system_modeller, comp_resids = self._get_modeller(
             prot_comp, solv_comp, smc_comps, system_generator,
-            settings['solvation_settings']
+            settings['charge_settings'],
+            settings['solvation_settings'],
         )
 
         # 5. Get OpenMM topology, positions and system
