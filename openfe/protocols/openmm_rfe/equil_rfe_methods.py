@@ -858,16 +858,18 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
-        # convert checkpoint_interval from time to steps
-        checkpoint_fs = output_settings.checkpoint_interval.to(unit.femtosecond).m
-        ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
-        checkpoint_int = int(round(checkpoint_fs / ts_fs))
+        # convert checkpoint_interval from time to iterations
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=sampler_settings.time_per_iteration,
+        )
+
         nc = shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=checkpoint_int,
+            checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
         )
 
