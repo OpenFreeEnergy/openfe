@@ -10,11 +10,10 @@ We describe a chemical system as being made up of one or more "components," e.g.
     :nosignatures:
     :toctree: generated/
 
-    Component
-	SmallMoleculeComponent
- 	ProteinComponent
- 	SolventComponent
- 	ChemicalSystem
+    SmallMoleculeComponent
+    ProteinComponent
+    SolventComponent
+    ChemicalSystem
 
 
 Chemical System Generators
