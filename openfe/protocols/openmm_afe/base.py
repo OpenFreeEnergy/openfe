@@ -309,7 +309,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * integrator_settings : IntegratorSettings
           * simulation_settings : MultiStateSimulationSettings
           * output_settings: OutputSettings
-          * equil_simulation_settings: MDSimulaltionSettings
+          * equil_simulation_settings: MDSimulationSettings
           * equil_output_settings: MDOutputSettings
 
         Settings may change depending on what type of simulation you are
