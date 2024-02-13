@@ -1,9 +1,25 @@
+"""
+Dev script to generate some result jsons that are used for testing
+
+Generates
+- AHFEProtocol_json_results.gz
+  - used in afe_solvation_json fixture
+- RHFEProtocol_json_results.gz
+  - used in rfe_transformation_json fixture
+- MDProtocol_json_results.gz
+  - used in md_json fixture
+"""
 import gzip
 import json
 import logging
 import pathlib
 import tempfile
-from openff.toolkit import Molecule
+from openff.toolkit import (
+    Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
+)
+from openff.toolkit.utils.toolkit_registry import (
+    toolkit_registry_manager, ToolkitRegistry
+)
 from openff.units import unit
 from kartograf.atom_aligner import align_mol_shape
 from kartograf import KartografAtomMapper
@@ -20,11 +36,16 @@ logger = logging.getLogger(__name__)
 LIGA = "[H]C([H])([H])C([H])([H])C(=O)C([H])([H])C([H])([H])[H]"
 LIGB = "[H]C([H])([H])C(=O)C([H])([H])C([H])([H])C([H])([H])[H]"
 
+amber_rdkit = ToolkitRegistry(
+    [RDKitToolkitWrapper(), AmberToolsToolkitWrapper()]
+)
+
 
 def get_molecule(smi, name):
-    m = Molecule.from_smiles(smi)
-    m.generate_conformers()
-    m.assign_partial_charges(partial_charge_method="am1bcc")
+    with toolkit_registry_manager(amber_rdkit):
+        m = Molecule.from_smiles(smi)
+        m.generate_conformers()
+        m.assign_partial_charges(partial_charge_method="am1bcc")
     return openfe.SmallMoleculeComponent.from_openff(m, name=name)
 
 
@@ -60,7 +81,7 @@ def generate_md_json(smc):
     settings.simulation_settings.equilibration_length_nvt = 0.01 * unit.nanosecond
     settings.simulation_settings.equilibration_length = 0.01 * unit.nanosecond
     settings.simulation_settings.production_length = 0.01 * unit.nanosecond
-    settings.system_settings.nonbonded_method = "nocutoff"
+    settings.forcefield_settings.nonbonded_method = "nocutoff"
     protocol = PlainMDProtocol(settings=settings)
     system = openfe.ChemicalSystem({"ligand": smc})
     dag = protocol.create(stateA=system, stateB=system, mapping=None)
@@ -80,9 +101,11 @@ def generate_ahfe_json(smc):
     settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                                            0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
                                            1.0]
-    settings.alchemsampler_settings.n_repeats = 3
-    settings.alchemsampler_settings.n_replicas = 14
-    settings.alchemsampler_settings.online_analysis_target_error = 0.2 * unit.boltzmann_constant * unit.kelvin
+    settings.protocol_repeats = 3
+    settings.solvent_simulation_settings.n_replicas = 14
+    settings.vacuum_simulation_settings.n_replicas = 14
+    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
+    settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
     settings.vacuum_engine_settings.compute_platform = 'CPU'
     settings.solvent_engine_settings.compute_platform = 'CUDA'
 
@@ -103,7 +126,7 @@ def generate_rfe_json(smcA, smcB):
     settings = RelativeHybridTopologyProtocol.default_settings()
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 250 * unit.picosecond
-    settings.system_settings.nonbonded_method = "nocutoff"
+    settings.forcefield_settings.nonbonded_method = "nocutoff"
     protocol = RelativeHybridTopologyProtocol(settings=settings)
 
     a_smcB = align_mol_shape(smcB, ref_mol=smcA)
@@ -114,7 +137,7 @@ def generate_rfe_json(smcA, smcB):
     systemB = openfe.ChemicalSystem({'ligand': a_smcB})
 
     dag = protocol.create(
-        stateA=systemA, stateB=systemB, mapping={'ligands': mapping}
+        stateA=systemA, stateB=systemB, mapping=mapping
     )
 
     execute_and_serialize(dag, protocol, "RHFEProtocol")

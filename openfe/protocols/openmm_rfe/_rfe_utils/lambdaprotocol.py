@@ -9,7 +9,7 @@ from openmmtools.alchemy import AlchemicalState
 
 
 class LambdaProtocol(object):
-    """Protocols for perturbing each of the compent energy terms in alchemical
+    """Protocols for perturbing each of the component energy terms in alchemical
     free energy simulations.
 
     TODO
