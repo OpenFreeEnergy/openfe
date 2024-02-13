@@ -12,7 +12,7 @@ from openff.toolkit.utils.toolkits import (
 
 from contextlib import contextmanager
 
-without_oechem = toolkit_registry_manager(
+without_oechem_backend = toolkit_registry_manager(
     toolkit_registry=ToolkitRegistry(
         toolkit_precedence=[
             RDKitToolkitWrapper(),
