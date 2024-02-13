@@ -379,7 +379,7 @@ class MDOutputSettings(OutputSettings):
     # reporter settings
     production_trajectory_filename = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
-    trajectory_write_interval = 5000 * unit.timestep
+    trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """

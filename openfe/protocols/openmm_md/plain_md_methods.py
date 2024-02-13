@@ -32,8 +32,12 @@ from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+)
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
+    OpenFFPartialChargeSettings,
     OpenMMSolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, MDSimulationSettings, MDOutputSettings,
 )
@@ -121,6 +125,7 @@ class PlainMDProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -391,10 +396,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             logger.info("running production phase")
 
         # Setup the reporters
-
-        # TODO: write_interval should probably not be in units of
-        # timestep but time - Issue #716
-        write_interval = output_settings.trajectory_write_interval.m
+        write_interval = settings_validation.divmod_time_and_check(
+            output_settings.trajectory_write_interval,
+            timestep,
+            "trajectory_write_interval",
+            "timestep",
+        )
 
         checkpoint_interval = settings_validation.get_simsteps(
             sim_length=output_settings.checkpoint_interval,
