@@ -54,8 +54,6 @@ class TestOMMSettingsFromStrings:
         assert s.equilibration_length == 2.5 * unit.nanosecond
         assert s.production_length == 10.0 * unit.nanosecond
 
-        # todo: checkpoint_interval IntQuantity
-
 
 class TestEquilRFESettingsFromString:
     def test_alchemical_settings(self):
