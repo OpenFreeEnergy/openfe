@@ -47,11 +47,11 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.simulation_settings.production_length = 0.1 * unit.picosecond
-    s.alchemical_sampler_settings.steps_per_iteration = 5 * unit.timestep
-    s.system_settings.nonbonded_method = 'nocutoff'
-    s.n_repeats = 1
+    s.simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    s.forcefield_settings.nonbonded_method = 'nocutoff'
+    s.protocol_repeats = 1
     s.engine_settings.compute_platform = platform
-    s.output_settings.checkpoint_interval = 5 * unit.timestep
+    s.output_settings.checkpoint_interval = 20 * unit.femtosecond
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
@@ -79,7 +79,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
         checkpoint = pur.outputs['last_checkpoint']
-        assert checkpoint == "checkpoint.nc"
+        assert checkpoint == "checkpoint.chk"
         assert (unit_shared / checkpoint).exists()
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
@@ -105,9 +105,9 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.simulation_settings.production_length = 0.1 * unit.picosecond
-    s.alchemical_sampler_settings.steps_per_iteration = 5 * unit.timestep
-    s.n_repeats = 1
-    s.output_settings.checkpoint_interval = 5 * unit.timestep
+    s.simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    s.protocol_repeats = 1
+    s.output_settings.checkpoint_interval = 20 * unit.femtosecond
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 

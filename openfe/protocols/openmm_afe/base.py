@@ -561,6 +561,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         topology: app.Topology,
         positions: openmm.unit.Quantity,
+        simulation_settings: MultiStateSimulationSettings,
         output_settings: OutputSettings,
     ) -> multistate.MultiStateReporter:
         """
@@ -570,6 +571,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         topology : app.Topology
           A Topology of the system being created.
+        positions : openmm.unit.Quantity
+          Positions of the pre-alchemical simulation system.
+        simulation_settings : MultiStateSimulationSettings
+          Multistate simulation control settings, specifically containing
+          the amount of time per state sampling iteration.
         output_settings: OutputSettings
           Output settings for the simulations
 
@@ -586,11 +592,15 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         nc = self.shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=output_settings.checkpoint_interval.m,
+            checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
         )
 
@@ -914,6 +924,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 11. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology, positions,
+            settings['simulation_settings'],
             settings['output_settings'],
         )
 
