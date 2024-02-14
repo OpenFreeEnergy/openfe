@@ -4,15 +4,15 @@
 Reusable utility methods to analyze results from multistate calculations.
 """
 from pathlib import Path
+from typing import Union
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openmmtools import multistate
 from openff.units import unit, ensure_quantity
-from pymbar.utils import ParameterError
+
 from openfe.analysis import plotting
-from typing import Optional, Union
 
 
 class MultistateEquilFEAnalysis:
@@ -80,15 +80,14 @@ class MultistateEquilFEAnalysis:
         plt.close(ax.figure)  # type: ignore
 
         # Reverse and forward analysis
-        if self.forward_and_reverse_free_energies is not None:
-            ax = plotting.plot_convergence(
-                self.forward_and_reverse_free_energies, self.units
-            )
-            ax.set_title('Forward and Reverse free energy convergence')
-            ax.figure.savefig(  # type: ignore
-                filepath / (filename_prefix + 'forward_reverse_convergence.png')
-            )
-            plt.close(ax.figure)  # type: ignore
+        ax = plotting.plot_convergence(
+            self.forward_and_reverse_free_energies, self.units
+        )
+        ax.set_title('Forward and Reverse free energy convergence')
+        ax.figure.savefig(  # type: ignore
+            filepath / (filename_prefix + 'forward_reverse_convergence.png')
+        )
+        plt.close(ax.figure)  # type: ignore
 
         # Replica state timeseries plot
         ax = plotting.plot_replica_timeseries(
@@ -228,7 +227,7 @@ class MultistateEquilFEAnalysis:
 
     def get_forward_and_reverse_analysis(
         self, num_samples: int = 10
-    ) -> Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]:
+    ) -> dict[str, Union[npt.NDArray, unit.Quantity]]:
         """
         Calculate free energies with a progressively larger
         fraction of the decorrelated timeseries data in both
@@ -241,21 +240,16 @@ class MultistateEquilFEAnalysis:
 
         Returns
         -------
-        forward_reverse : Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]
-          If this analysis fails, returns None; otherwise returns a dictionary
-          containing;
+        forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
+          A dictionary containing;
             * ``fractions``: fractions of sample used to calculate free energies
             * ``forward_DGs`` and `forward_dDGs`: the free energy estimates
               and errors along each sample fraction in the forward direction
             * ``reverse_DGs`` and `reverse_dDGs`: the free energy estimates
               and errors along each sample fraction in the reverse direction
         """
-        try:
-            u_ln = self.analyzer._unbiased_decorrelated_u_ln
-            N_l = self.analyzer._unbiased_decorrelated_N_l
-        except ParameterError:
-            return None
-
+        u_ln = self.analyzer._unbiased_decorrelated_u_ln
+        N_l = self.analyzer._unbiased_decorrelated_N_l
         n_states = len(N_l)
 
         # Check that the N_l is the same across all states
