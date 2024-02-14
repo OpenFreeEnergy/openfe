@@ -467,7 +467,6 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
-            partial_charge_settings=OpenFFPartialChargeSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             output_settings=OutputSettings(),
@@ -665,7 +664,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         lambda_settings: LambdaSettings = protocol_settings.lambda_settings
         charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
-        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
         output_settings: OutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
