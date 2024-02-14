@@ -32,8 +32,12 @@ from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+)
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
+    OpenFFPartialChargeSettings,
     OpenMMSolvationSettings, OpenMMEngineSettings,
     IntegratorSettings, MDSimulationSettings, MDOutputSettings,
 )
@@ -121,6 +125,7 @@ class PlainMDProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -391,10 +396,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             logger.info("running production phase")
 
         # Setup the reporters
-
-        # TODO: write_interval should probably not be in units of
-        # timestep but time - Issue #716
-        write_interval = output_settings.trajectory_write_interval.m
+        write_interval = settings_validation.divmod_time_and_check(
+            output_settings.trajectory_write_interval,
+            timestep,
+            "trajectory_write_interval",
+            "timestep",
+        )
 
         checkpoint_interval = settings_validation.get_simsteps(
             sim_length=output_settings.checkpoint_interval,
@@ -427,6 +434,33 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         t1 = time.time()
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
+
+        return None
+
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
+        """
+        for mol in smc_components.values():
+            # don't do this if we have user charges
+            if not (mol.partial_charges is not None and np.any(
+                    mol.partial_charges)):
+                # due to issues with partial charge generation in ambertools
+                # we default to using the input conformer for charge generation
+                mol.assign_partial_charges(
+                    'am1bcc', use_conformers=mol.conformers
+                )
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -473,6 +507,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sim_settings: MDSimulationSettings = protocol_settings.simulation_settings
         output_settings: MDOutputSettings = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
@@ -516,16 +551,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
         smc_components = {i: i.to_openff() for i in small_mols}
-        for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(
-                    mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
 
+        # Assign partial charges to smcs
+        self._assign_partial_charges(charge_settings, smc_components)
+
+        for mol in smc_components.values():
             system_generator.create_system(
                 mol.to_topology().to_openmm(), molecules=[mol]
             )

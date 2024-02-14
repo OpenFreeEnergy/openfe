@@ -102,6 +102,41 @@ def divmod_time(
     return iterations, remainder
 
 
+def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
+                          numerator_name: str, denominator_name: str) -> int:
+    """Perform a division of time, failing if there is a remainder
+
+    For example numerator 20.0 ps and denominator 4.0 fs gives 5000
+
+    Parameters
+    ----------
+    numerator, denominator : unit.Quantity
+      the division to perform
+    numerator_name, denominator_name : str
+      used for the error generated if there is any remainder
+
+    Returns
+    -------
+    iterations : int
+      the result of the division
+
+    Raises
+    ------
+    ValueError
+      if the division results in any remainder, will include a formatted error
+      message
+    """
+    its, rem = divmod_time(numerator, denominator)
+
+    if rem:
+        errmsg = (f"The {numerator_name} ({numerator}) "
+                  "does not evenly divide by the "
+                  f"{denominator_name} ({denominator})")
+        raise ValueError(errmsg)
+
+    return its
+
+
 def convert_checkpoint_interval_to_iterations(
     checkpoint_interval: unit.Quantity,
     time_per_iteration: unit.Quantity,
@@ -152,16 +187,12 @@ def convert_steps_per_iteration(
     steps_per_iteration : int
       suitable for input to Integrator
     """
-    steps_per_iteration, rem = divmod_time(
+    return divmod_time_and_check(
         simulation_settings.time_per_iteration,
-        integrator_settings.timestep
+        integrator_settings.timestep,
+        "time_per_iteration",
+        "timestep",
     )
-
-    if rem:
-        raise ValueError(f"time_per_iteration ({simulation_settings.time_per_iteration}) "
-                         f"not divisible by timestep ({integrator_settings.timestep})")
-
-    return steps_per_iteration
 
 
 def convert_real_time_analysis_iterations(
@@ -191,24 +222,18 @@ def convert_real_time_analysis_iterations(
         # option to turn off real time analysis
         return None, None
 
-    rta_its, rem = divmod_time(
+    rta_its = divmod_time_and_check(
         simulation_settings.real_time_analysis_interval,
         simulation_settings.time_per_iteration,
+        "real_time_analysis_interval",
+        "time_per_iteration",
     )
-
-    if rem:
-        raise ValueError(f"real_time_analysis_interval ({simulation_settings.real_time_analysis_interval}) "
-                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
-
-    # convert RTA_minimum_time to iterations
-    rta_min_its, rem = divmod_time(
+    rta_min_its = divmod_time_and_check(
         simulation_settings.real_time_analysis_minimum_time,
         simulation_settings.time_per_iteration,
+        "real_time_analysis_minimum_time",
+        "time_per_iteration",
     )
-
-    if rem:
-        raise ValueError(f"real_time_analysis_minimum_time ({simulation_settings.real_time_analysis_minimum_time}) "
-                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
 
     return rta_its, rta_min_its
 
