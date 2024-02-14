@@ -34,7 +34,7 @@ from openmmtools.states import (SamplerState,
                                 create_thermodynamic_state_protocol,)
 from openmmtools.alchemy import (AlchemicalRegion, AbsoluteAlchemicalFactory,
                                  AlchemicalState,)
-from typing import Dict, List, Optional
+from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
@@ -574,6 +574,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         topology: app.Topology,
         positions: openmm.unit.Quantity,
+        simulation_settings: MultiStateSimulationSettings,
         output_settings: OutputSettings,
     ) -> multistate.MultiStateReporter:
         """
@@ -583,6 +584,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----------
         topology : app.Topology
           A Topology of the system being created.
+        positions : openmm.unit.Quantity
+          Positions of the pre-alchemical simulation system.
+        simulation_settings : MultiStateSimulationSettings
+          Multistate simulation control settings, specifically containing
+          the amount of time per state sampling iteration.
         output_settings: OutputSettings
           Output settings for the simulations
 
@@ -599,11 +605,15 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         nc = self.shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=output_settings.checkpoint_interval.m,
+            checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
         )
 
@@ -857,7 +867,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             return None
 
     def run(self, dry=False, verbose=True,
-            scratch_basepath=None, shared_basepath=None) -> Dict[str, Any]:
+            scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
         """Run the absolute free energy calculation.
 
         Parameters
@@ -869,8 +879,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
           INFO level logging.
-        basepath : Pathlike, optional
-          Where to run the calculation, defaults to current working directory
+        scratch_basepath : pathlib.Path
+          Path to the scratch (temporary) directory space.
+        shared_basepath : pathlib.Path
+          Path to the shared (persistent) directory space.
 
         Returns
         -------
@@ -935,6 +947,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 11. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology, positions,
+            settings['simulation_settings'],
             settings['output_settings'],
         )
 

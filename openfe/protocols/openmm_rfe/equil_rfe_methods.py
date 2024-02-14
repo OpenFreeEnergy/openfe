@@ -459,6 +459,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
             alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
             lambda_settings=LambdaSettings(),
@@ -662,6 +663,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
         alchem_settings: AlchemicalSettings = protocol_settings.alchemical_settings
         lambda_settings: LambdaSettings = protocol_settings.lambda_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
         charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
@@ -865,16 +867,18 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  a. Create the multistate reporter
-        # convert checkpoint_interval from time to steps
-        checkpoint_fs = output_settings.checkpoint_interval.to(unit.femtosecond).m
-        ts_fs = integrator_settings.timestep.to(unit.femtosecond).m
-        checkpoint_int = int(round(checkpoint_fs / ts_fs))
+        # convert checkpoint_interval from time to iterations
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=sampler_settings.time_per_iteration,
+        )
+
         nc = shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
-            checkpoint_interval=checkpoint_int,
+            checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
         )
 

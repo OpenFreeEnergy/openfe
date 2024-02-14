@@ -14,7 +14,12 @@ import json
 import logging
 import pathlib
 import tempfile
-from openff.toolkit import Molecule
+from openff.toolkit import (
+    Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
+)
+from openff.toolkit.utils.toolkit_registry import (
+    toolkit_registry_manager, ToolkitRegistry
+)
 from openff.units import unit
 from kartograf.atom_aligner import align_mol_shape
 from kartograf import KartografAtomMapper
@@ -31,11 +36,16 @@ logger = logging.getLogger(__name__)
 LIGA = "[H]C([H])([H])C([H])([H])C(=O)C([H])([H])C([H])([H])[H]"
 LIGB = "[H]C([H])([H])C(=O)C([H])([H])C([H])([H])C([H])([H])[H]"
 
+amber_rdkit = ToolkitRegistry(
+    [RDKitToolkitWrapper(), AmberToolsToolkitWrapper()]
+)
+
 
 def get_molecule(smi, name):
-    m = Molecule.from_smiles(smi)
-    m.generate_conformers()
-    m.assign_partial_charges(partial_charge_method="am1bcc")
+    with toolkit_registry_manager(amber_rdkit):
+        m = Molecule.from_smiles(smi)
+        m.generate_conformers()
+        m.assign_partial_charges(partial_charge_method="am1bcc")
     return openfe.SmallMoleculeComponent.from_openff(m, name=name)
 
 

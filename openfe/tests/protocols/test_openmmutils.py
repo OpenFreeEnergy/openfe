@@ -419,7 +419,7 @@ def test_convert_steps_per_iteration_failure():
         timestep='3 fs'
     )
 
-    with pytest.raises(ValueError, match="not divisible"):
+    with pytest.raises(ValueError, match="does not evenly divide"):
         settings_validation.convert_steps_per_iteration(sim, inty)
 
 
@@ -447,7 +447,7 @@ def test_convert_real_time_analysis_iterations_interval_fail():
         real_time_analysis_minimum_time='500 ps',
     )
 
-    with pytest.raises(ValueError, match='not divisible'):
+    with pytest.raises(ValueError, match='does not evenly divide'):
         settings_validation.convert_real_time_analysis_iterations(sim)
 
 
@@ -461,7 +461,7 @@ def test_convert_real_time_analysis_iterations_min_interval_fail():
         real_time_analysis_minimum_time='500.5 ps',
     )
 
-    with pytest.raises(ValueError, match='not divisible'):
+    with pytest.raises(ValueError, match='does not evenly divide'):
         settings_validation.convert_real_time_analysis_iterations(sim)
 
 
