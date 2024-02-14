@@ -136,9 +136,6 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     partial_charge_settings: OpenFFPartialChargeSettings
     """Settings for assigning partial charges to small molecules."""
 
-    partial_charge_settings: OpenFFPartialChargeSettings
-    """Settings for assigning partial charges to small molecules."""
-
     # Alchemical settings
     lambda_settings: LambdaSettings
     """

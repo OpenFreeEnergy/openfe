@@ -41,7 +41,6 @@ class PlainMDProtocolSettings(Settings):
     # Things for creating the systems
     partial_charge_settings: OpenFFPartialChargeSettings
     solvation_settings: OpenMMSolvationSettings
-    partial_charge_settings: OpenFFPartialChargeSettings
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
