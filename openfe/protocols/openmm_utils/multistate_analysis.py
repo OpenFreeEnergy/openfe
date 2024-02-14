@@ -4,7 +4,6 @@
 Reusable utility methods to analyze results from multistate calculations.
 """
 from pathlib import Path
-from typing import Union
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +12,7 @@ from openmmtools import multistate
 from openff.units import unit, ensure_quantity
 from pymbar.utils import ParameterError
 from openfe.analysis import plotting
+from typing import Optional, Union
 
 
 class MultistateEquilFEAnalysis:
@@ -228,7 +228,7 @@ class MultistateEquilFEAnalysis:
 
     def get_forward_and_reverse_analysis(
         self, num_samples: int = 10
-    ) -> dict[str, Union[npt.NDArray, unit.Quantity]]:
+    ) -> Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]:
         """
         Calculate free energies with a progressively larger
         fraction of the decorrelated timeseries data in both
@@ -241,8 +241,9 @@ class MultistateEquilFEAnalysis:
 
         Returns
         -------
-        forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
-          A dictionary containing;
+        forward_reverse : Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]
+          If this analysis fails, returns None; otherwise returns a dictionary
+          containing;
             * ``fractions``: fractions of sample used to calculate free energies
             * ``forward_DGs`` and `forward_dDGs`: the free energy estimates
               and errors along each sample fraction in the forward direction
@@ -252,59 +253,59 @@ class MultistateEquilFEAnalysis:
         try:
             u_ln = self.analyzer._unbiased_decorrelated_u_ln
             N_l = self.analyzer._unbiased_decorrelated_N_l
-            n_states = len(N_l)
-
-            # Check that the N_l is the same across all states
-            if not np.all(N_l == N_l[0]):
-                errmsg = ("The number of samples is not equivalent across all "
-                          f"states {N_l}")
-                raise ValueError(errmsg)
-
-            # Get the chunks of N_l going from 10% to ~ 100%
-            # Note: you always lose out a few data points but it's fine
-            chunks = [max(int(N_l[0] / num_samples * i), 1)
-                      for i in range(1, num_samples + 1)]
-
-            forward_DGs = []
-            forward_dDGs = []
-            reverse_DGs = []
-            reverse_dDGs = []
-            fractions = []
-
-            for chunk in chunks:
-                new_N_l = np.array([chunk for _ in range(n_states)])
-                samples = chunk * n_states
-
-                # Forward
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, :samples], new_N_l,
-                    self.units,
-                )
-                forward_DGs.append(DG)
-                forward_dDGs.append(dDG)
-
-                # Reverse
-                DG, dDG = self._get_free_energy(
-                    self.analyzer,
-                    u_ln[:, -samples:], new_N_l,
-                    self.units,
-                )
-                reverse_DGs.append(DG)
-                reverse_dDGs.append(dDG)
-
-                fractions.append(chunk / N_l[0])
-
-            forward_reverse = {
-                'fractions': np.array(fractions),
-                'forward_DGs': unit.Quantity.from_list(forward_DGs),
-                'forward_dDGs': unit.Quantity.from_list(forward_dDGs),
-                'reverse_DGs': unit.Quantity.from_list(reverse_DGs),
-                'reverse_dDGs': unit.Quantity.from_list(reverse_dDGs)
-            }
         except ParameterError:
-            forward_reverse = None
+            return None
 
+        n_states = len(N_l)
+
+        # Check that the N_l is the same across all states
+        if not np.all(N_l == N_l[0]):
+            errmsg = ("The number of samples is not equivalent across all "
+                      f"states {N_l}")
+            raise ValueError(errmsg)
+
+        # Get the chunks of N_l going from 10% to ~ 100%
+        # Note: you always lose out a few data points but it's fine
+        chunks = [max(int(N_l[0] / num_samples * i), 1)
+                  for i in range(1, num_samples + 1)]
+
+        forward_DGs = []
+        forward_dDGs = []
+        reverse_DGs = []
+        reverse_dDGs = []
+        fractions = []
+
+        for chunk in chunks:
+            new_N_l = np.array([chunk for _ in range(n_states)])
+            samples = chunk * n_states
+
+            # Forward
+            DG, dDG = self._get_free_energy(
+                self.analyzer,
+                u_ln[:, :samples], new_N_l,
+                self.units,
+            )
+            forward_DGs.append(DG)
+            forward_dDGs.append(dDG)
+
+            # Reverse
+            DG, dDG = self._get_free_energy(
+                self.analyzer,
+                u_ln[:, -samples:], new_N_l,
+                self.units,
+            )
+            reverse_DGs.append(DG)
+            reverse_dDGs.append(dDG)
+
+            fractions.append(chunk / N_l[0])
+
+        forward_reverse = {
+            'fractions': np.array(fractions),
+            'forward_DGs': unit.Quantity.from_list(forward_DGs),
+            'forward_dDGs': unit.Quantity.from_list(forward_dDGs),
+            'reverse_DGs': unit.Quantity.from_list(reverse_DGs),
+            'reverse_dDGs': unit.Quantity.from_list(reverse_dDGs)
+        }
         return forward_reverse
 
     def get_overlap_matrix(self) -> dict[str, npt.NDArray]:
