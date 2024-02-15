@@ -875,10 +875,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         dry : bool
           Do a dry run of the calculation, creating all necessary alchemical
           system components (topology, system, sampler, etc...) but without
-          running the simulation.
+          running the simulation, default False
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
+          INFO level logging, default True
         scratch_basepath : pathlib.Path
           Path to the scratch (temporary) directory space.
         shared_basepath : pathlib.Path
@@ -889,16 +889,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         dict
           Outputs created in the basepath directory or the debug objects
           (i.e. sampler) if ``dry==True``.
-
-        Attributes
-        ----------
-        verbose : bool
-          Controls the verbosity of logger outputs when running the
-          ProtocolUnit.
-        scratch_basepath : pathlib.Path
-          Path to the scratch (temporary) directory space.
-        shared_basepath : pathlib.Path
-          Path to the shared (persistent) directory space.
         """
         # 0. Generaly preparation tasks
         self._prepare(verbose, scratch_basepath, shared_basepath)
