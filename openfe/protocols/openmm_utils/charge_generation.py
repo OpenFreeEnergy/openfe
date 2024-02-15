@@ -38,7 +38,7 @@ except ImportError:
 
 try:
     from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
-    from openff.nagl_models.openff_nagl_models import (
+    from openff.nagl_models import (
         get_models_by_type, validate_nagl_model_path
     )
 except ImportError:
