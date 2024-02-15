@@ -62,8 +62,10 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from ..openmm_utils import (
     settings_validation, system_creation,
-    multistate_analysis
+    multistate_analysis, charge_generation
 )
+from openfe.utils import without_oechem_backend
+
 
 logger = logging.getLogger(__name__)
 
@@ -275,13 +277,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if ffcache is not None:
             ffcache = self.shared_basepath / ffcache
 
-        system_generator = system_creation.get_system_generator(
-            forcefield_settings=settings['forcefield_settings'],
-            integrator_settings=settings['integrator_settings'],
-            thermo_settings=settings['thermo_settings'],
-            cache=ffcache,
-            has_solvent=solvent_comp is not None,
-        )
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=settings['forcefield_settings'],
+                integrator_settings=settings['integrator_settings'],
+                thermo_settings=settings['thermo_settings'],
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
+            )
         return system_generator
 
     @staticmethod
@@ -291,6 +296,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
     ) -> None:
         """
         Assign partial charges to SMCs.
+
         Parameters
         ----------
         charge_settings : OpenFFPartialChargeSettings
@@ -300,13 +306,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         """
         for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=partial_charge_settings.partial_charge_method,
+                toolkit_backend=partial_charge_settings.off_toolkit_backend,
+                generate_n_conformers=partial_charge_settings.number_of_conformers,
+                nagl_model=partial_charge_settings.nagl_model,
+            )
 
     def _get_modeller(
         self,
@@ -328,7 +335,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component : Optional[ProteinCompoinent]
           Solvent Component, if it exists.
         smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
-          Dicationary of OpenFF Molecules to add, keyed by
+          Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
@@ -352,24 +359,26 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # Assign partial charges to smcs
         self._assign_partial_charges(partial_charge_settings, smc_components)
 
+        # TODO: guard the following from non-RDKit backends
         # force the creation of parameters for the small molecules
         # this is necessary because we need to have the FF generated ahead
         # of solvating the system.
-        # Note by default this is cached to ctx.shared/db.json which should
-        # reduce some of the costs.
-        for mol in smc_components.values():
-            system_generator.create_system(
-                mol.to_topology().to_openmm(), molecules=[mol]
-            )
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            for mol in smc_components.values():
+                system_generator.create_system(
+                    mol.to_topology().to_openmm(), molecules=[mol]
+                )
 
-        # get OpenMM modeller + dictionary of resids for each component
-        system_modeller, comp_resids = system_creation.get_omm_modeller(
-            protein_comp=protein_component,
-            solvent_comp=solvent_component,
-            small_mols=smc_components,
-            omm_forcefield=system_generator.forcefield,
-            solvent_settings=solvation_settings,
-        )
+            # get OpenMM modeller + dictionary of resids for each component
+            system_modeller, comp_resids = system_creation.get_omm_modeller(
+                protein_comp=protein_component,
+                solvent_comp=solvent_component,
+                small_mols=smc_components,
+                omm_forcefield=system_generator.forcefield,
+                solvent_settings=solvation_settings,
+            )
 
         return system_modeller, comp_resids
 
@@ -390,7 +399,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           parametrized.
         system_generator : SystemGenerator
           SystemGenerator object to create a System with.
-        smc_components : list[openff.toolkit.Molecules]
+        smc_components : list[openff.toolkit.Molecule]
           A list of openff Molecules to add to the system.
 
         Returns
@@ -405,10 +414,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology = system_modeller.getTopology()
         # roundtrip positions to remove vec3 issues
         positions = to_openmm(from_openmm(system_modeller.getPositions()))
-        system = system_generator.create_system(
-            system_modeller.topology,
-            molecules=smc_components,
-        )
+
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system = system_generator.create_system(
+                system_modeller.topology,
+                molecules=smc_components,
+            )
         return topology, system, positions
 
     def _get_lambda_schedule(
@@ -862,10 +875,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         dry : bool
           Do a dry run of the calculation, creating all necessary alchemical
           system components (topology, system, sampler, etc...) but without
-          running the simulation.
+          running the simulation, default False
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
+          INFO level logging, default True
         scratch_basepath : pathlib.Path
           Path to the scratch (temporary) directory space.
         shared_basepath : pathlib.Path

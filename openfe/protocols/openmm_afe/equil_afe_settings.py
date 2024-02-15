@@ -191,9 +191,9 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Simulation output settings for the solvent transformation.
     """
-
     partial_charge_settings: OpenFFPartialChargeSettings
     """
-    Settings for controlling how to assign partial charges.
-    Currently unused.
+    Settings for controlling how to assign partial charges,
+    including the partial charge assignment method, and the
+    number of conformers used to generate the partial charges.
     """

@@ -45,7 +45,8 @@ from openff.toolkit.topology import Molecule as OFFMolecule
 
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
-    system_validation, settings_validation, system_creation
+    system_validation, settings_validation, system_creation,
+    charge_generation,
 )
 
 logger = logging.getLogger(__name__)
@@ -444,6 +445,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     ) -> None:
         """
         Assign partial charges to SMCs.
+
         Parameters
         ----------
         charge_settings : OpenFFPartialChargeSettings
@@ -453,14 +455,14 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         """
         for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(
-                    mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -534,53 +536,59 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         # 1. Create stateA system
-        # a. get a system generator
+        # Create a dictionary of OFFMol for each SMC for bookeeping
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule]
+
+        smc_components = {i: i.to_openff() for i in small_mols}
+
+        # a. assign partial charges to smcs
+        self._assign_partial_charges(charge_settings, smc_components)
+
+        # b. get a system generator
         if output_settings.forcefield_cache is not None:
             ffcache = shared_basepath / output_settings.forcefield_cache
         else:
             ffcache = None
 
-        system_generator = system_creation.get_system_generator(
-            forcefield_settings=forcefield_settings,
-            integrator_settings=integrator_settings,
-            thermo_settings=thermo_settings,
-            cache=ffcache,
-            has_solvent=solvent_comp is not None,
-        )
-
-        smc_components: dict[SmallMoleculeComponent, OFFMolecule]
-
-        smc_components = {i: i.to_openff() for i in small_mols}
-
-        # Assign partial charges to smcs
-        self._assign_partial_charges(charge_settings, smc_components)
-
-        for mol in smc_components.values():
-            system_generator.create_system(
-                mol.to_topology().to_openmm(), molecules=[mol]
+        # Note: we block out the oechem backend for all systemgenerator
+        # linked operations to avoid any smiles operations that can
+        # go wrong when doing rdkit->OEchem roundtripping
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=forcefield_settings,
+                integrator_settings=integrator_settings,
+                thermo_settings=thermo_settings,
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
             )
 
-        # c. get OpenMM Modeller + a dictionary of resids for each component
-        stateA_modeller, comp_resids = system_creation.get_omm_modeller(
-            protein_comp=protein_comp,
-            solvent_comp=solvent_comp,
-            small_mols=smc_components,
-            omm_forcefield=system_generator.forcefield,
-            solvent_settings=solvation_settings,
-        )
+            # Force creation of smc templates so we can solvate later
+            for mol in smc_components.values():
+                system_generator.create_system(
+                    mol.to_topology().to_openmm(), molecules=[mol]
+                )
 
-        # d. get topology & positions
-        # Note: roundtrip positions to remove vec3 issues
-        stateA_topology = stateA_modeller.getTopology()
-        stateA_positions = to_openmm(
-            from_openmm(stateA_modeller.getPositions())
-        )
+            # c. get OpenMM Modeller + a resids dictionary for each component
+            stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+                protein_comp=protein_comp,
+                solvent_comp=solvent_comp,
+                small_mols=smc_components,
+                omm_forcefield=system_generator.forcefield,
+                solvent_settings=solvation_settings,
+            )
 
-        # e. create the stateA System
-        stateA_system = system_generator.create_system(
-            stateA_topology,
-            molecules=[s.to_openff() for s in small_mols],
-        )
+            # d. get topology & positions
+            # Note: roundtrip positions to remove vec3 issues
+            stateA_topology = stateA_modeller.getTopology()
+            stateA_positions = to_openmm(
+                from_openmm(stateA_modeller.getPositions())
+            )
+
+            # e. create the stateA System
+            stateA_system = system_generator.create_system(
+                stateA_topology,
+                molecules=[s.to_openff() for s in small_mols],
+            )
 
         # f. Save pdb of entire system
         with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
@@ -646,9 +654,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
