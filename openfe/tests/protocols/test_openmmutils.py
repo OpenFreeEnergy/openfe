@@ -3,6 +3,7 @@
 from importlib import resources
 from pathlib import Path
 import pytest
+from pymbar.utils import ParameterError
 import numpy as np
 from numpy.testing import assert_equal, assert_allclose
 from openmm import app, MonteCarloBarostat, NonbondedForce
@@ -21,6 +22,7 @@ from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
 )
+from unittest import mock
 
 
 def test_validate_timestep():
@@ -490,3 +492,23 @@ def test_convert_target_error_from_kcal_per_mole_to_kT_zero():
     )
 
     assert kT == 0.0
+
+
+@pytest.mark.slow
+@pytest.mark.download
+def test_forward_backwards_failure(simulation_nc):
+    rep = multistate.multistatereporter.MultiStateReporter(
+        simulation_nc,
+        open_mode='r'
+    )
+    ana = multistate_analysis.MultistateEquilFEAnalysis(
+        rep,
+        sampling_method='repex',
+        result_units=unit.kilocalorie_per_mole,
+    )
+
+    with mock.patch('openfe.protocols.openmm_utils.multistate_analysis.MultistateEquilFEAnalysis._get_free_energy',
+                    side_effect=ParameterError):
+        ret = ana.get_forward_and_reverse_analysis()
+
+    assert ret is None
