@@ -10,7 +10,6 @@ dependencies:
 - openff-toolkit >=0.13.0
 - openff-units
 - openmm
-- openmmtools
 - packaging
 - plugcli
 - python=3.10
