@@ -80,6 +80,26 @@ dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 
 [tool.versioningit.vcs]
-method = "git" 
+method = "git"
 match = ["*"]
 default-tag = "0.0.0"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 120
+profile = "black"
+known_first_party = ["openfe"]
+
+[tool.interrogate]
+fail-under = 0
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
+# possible values: 0 (minimal output), 1 (-v), 2 (-vv)
+verbose = 2
+color = true
+exclude = ["build", "docs"]

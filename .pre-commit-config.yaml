@@ -1,0 +1,45 @@
+ci:
+  autoupdate_schedule: "quarterly"
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-case-conflict
+  - id: check-executables-have-shebangs
+  - id: check-symlinks
+  - id: check-toml
+  - id: check-yaml
+    exclude: 'devtools/installer/construct\.yaml'
+  - id: debug-statements
+  - id: destroyed-symlinks
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+    exclude: '\.(pdb|gro|top|sdf)$'
+- repo: https://github.com/psf/black
+  rev: 24.2.0
+  hooks:
+  - id: black
+  - id: black-jupyter
+- repo: https://github.com/PyCQA/isort
+  rev: 5.13.2
+  hooks:
+  - id: isort
+- repo: https://github.com/econchick/interrogate
+  rev: 1.5.0
+  hooks:
+    - id: interrogate
+      pass_filenames: false
+- repo: https://github.com/asottile/add-trailing-comma
+  rev: v3.1.0
+  hooks:
+  - id: add-trailing-comma
+- repo: https://github.com/asottile/yesqa
+  rev: v1.5.0
+  hooks:
+  - id: yesqa
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.15.0
+  hooks:
+  - id: pyupgrade
+    args: ["--py39-plus"]
