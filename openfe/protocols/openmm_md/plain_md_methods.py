@@ -284,6 +284,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Simulation integration timestep
         equil_steps_nvt: int
           number of steps for NVT equilibration
+          if None, no NVT equilibration will be performed
         equil_steps_npt: int
           number of steps for NPT equilibration
         prod_steps: int
@@ -326,7 +327,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
         # equilibrate
         # NVT equilibration
-        if equil_steps_nvt is not None or equil_steps_nvt != 0:
+        if equil_steps_nvt:
             if verbose:
                 logger.info("Running NVT equilibration")
 

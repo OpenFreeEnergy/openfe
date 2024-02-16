@@ -382,6 +382,7 @@ class MDSimulationSettings(SimulationSettings):
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
     (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
+    If None, no NVT equilibration will be performed.
     """
 
 
