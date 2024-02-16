@@ -275,6 +275,25 @@ class OutputSettings(SettingsBaseModel):
         return v
 
 
+class MultiStateOutputSettings(OutputSettings):
+    """
+    Settings for MultiState simulation output settings,
+    writing to disk, etc...
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    # reporter settings
+    output_filename = 'simulation.nc'
+    """Path to the trajectory storage file. Default 'simulation.nc'."""
+    output_structure = 'hybrid_system.pdb'
+    """
+    Path of the output hybrid topology structure file. This is used
+    to visualise and further manipulate the system.
+    Default 'hybrid_system.pdb'.
+    """
+
+
 class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths, etc...

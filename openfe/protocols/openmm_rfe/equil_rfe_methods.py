@@ -55,7 +55,7 @@ from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings,
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, OutputSettings,
+    IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -469,7 +469,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             ),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            output_settings=OutputSettings(),
+            output_settings=MultiStateOutputSettings(),
         )
 
     def _create(
@@ -665,7 +665,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
-        output_settings: OutputSettings = protocol_settings.output_settings
+        output_settings: MultiStateOutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?

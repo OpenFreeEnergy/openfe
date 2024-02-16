@@ -52,7 +52,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, OutputSettings,
+    IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
     SettingsBaseModel,
 )
@@ -426,7 +426,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
-            solvent_output_settings=OutputSettings(
+            solvent_output_settings=MultiStateOutputSettings(
                 output_filename='solvent.nc',
                 checkpoint_storage_filename='solvent_checkpoint.nc',
             ),
@@ -435,7 +435,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
             ),
-            vacuum_output_settings=OutputSettings(
+            vacuum_output_settings=MultiStateOutputSettings(
                 output_filename='vacuum.nc',
                 checkpoint_storage_filename='vacuum_checkpoint.nc'
             ),
@@ -750,7 +750,7 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * simulation_settings : SimulationSettings
-            * output_settings: OutputSettings
+            * output_settings: MultiStateOutputSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -835,7 +835,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * simulation_settings : MultiStateSimulationSettings
-            * output_settings: OutputSettings
+            * output_settings: MultiStateOutputSettings
         """
         prot_settings = self._inputs['protocol'].settings
 

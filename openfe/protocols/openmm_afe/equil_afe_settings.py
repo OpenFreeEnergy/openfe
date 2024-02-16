@@ -27,7 +27,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMEngineSettings,
     IntegratorSettings,
     OpenFFPartialChargeSettings,
-    OutputSettings,
+    MultiStateOutputSettings,
 )
 import numpy as np
 
@@ -183,11 +183,11 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    vacuum_output_settings: OutputSettings
+    vacuum_output_settings: MultiStateOutputSettings
     """
     Simulation output settings for the vacuum transformation.
     """
-    solvent_output_settings: OutputSettings
+    solvent_output_settings: MultiStateOutputSettings
     """
     Simulation output settings for the solvent transformation.
     """
