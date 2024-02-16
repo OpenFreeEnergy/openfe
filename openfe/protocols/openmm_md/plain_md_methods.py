@@ -326,7 +326,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
         # equilibrate
         # NVT equilibration
-        if equil_steps_nvt is not None or equil_steps_nvt == 0:
+        if equil_steps_nvt is not None or equil_steps_nvt != 0:
             if verbose:
                 logger.info("Running NVT equilibration")
 
