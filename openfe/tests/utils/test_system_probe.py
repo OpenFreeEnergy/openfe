@@ -1,13 +1,13 @@
 import contextlib
-from collections import namedtuple
 import logging
 import pathlib
 import sys
+from collections import namedtuple
 from unittest.mock import Mock, patch
 
 import psutil
-from psutil._common import sdiskusage
 import pytest
+from psutil._common import sdiskusage
 
 from openfe.utils.system_probe import (
     _get_disk_usage,
@@ -17,7 +17,6 @@ from openfe.utils.system_probe import (
     _probe_system,
     log_system_probe,
 )
-
 
 # Named tuples from https://github.com/giampaolo/psutil/blob/master/psutil/_pslinux.py
 svmem = namedtuple(

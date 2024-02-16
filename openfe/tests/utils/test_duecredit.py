@@ -1,9 +1,9 @@
-import os
 import importlib
+import os
+
 import pytest
 
 import openfe
-
 
 pytest.importorskip("duecredit")
 

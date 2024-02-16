@@ -1,8 +1,9 @@
-import pytest
-from unittest import mock
-from click.testing import CliRunner
 import importlib.resources
+from unittest import mock
+
 import matplotlib
+import pytest
+from click.testing import CliRunner
 
 from openfecli.commands.view_ligand_network import view_ligand_network
 

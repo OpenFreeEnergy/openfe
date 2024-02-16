@@ -1,4 +1,5 @@
 import click
+
 from openfecli import OFECommandPlugin
 
 
@@ -8,9 +9,10 @@ from openfecli import OFECommandPlugin
     type=click.Path(exists=True, readable=True, dir_okay=False, file_okay=True),
 )
 def view_ligand_network(ligand_network):
-    from openfe.utils.atommapping_network_plotting import plot_atommapping_network
-    from openfe.setup import LigandNetwork
     import matplotlib
+
+    from openfe.setup import LigandNetwork
+    from openfe.utils.atommapping_network_plotting import plot_atommapping_network
 
     matplotlib.use("TkAgg")
     with open(ligand_network) as f:

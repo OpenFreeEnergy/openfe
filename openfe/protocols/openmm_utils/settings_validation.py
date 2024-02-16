@@ -4,12 +4,11 @@
 Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
-from openff.units import unit
 from typing import Optional
-from .omm_settings import (
-    IntegratorSettings,
-    MultiStateSimulationSettings,
-)
+
+from openff.units import unit
+
+from .omm_settings import IntegratorSettings, MultiStateSimulationSettings
 
 
 def validate_timestep(hmass: float, timestep: unit.Quantity):

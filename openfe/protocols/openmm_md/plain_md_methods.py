@@ -11,45 +11,37 @@ simulation using OpenMM tools.
 from __future__ import annotations
 
 import logging
-
+import pathlib
+import time
+import uuid
 from collections import defaultdict
+from typing import Any, Iterable, Optional
+
 import gufe
+import mdtraj
+import numpy as np
 import openmm
+import openmm.unit as omm_unit
+from gufe import ChemicalSystem, ProteinComponent, SmallMoleculeComponent, SolventComponent, settings
+from mdtraj.reporters import XTCReporter
+from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
-import openmm.unit as omm_unit
-from typing import Optional
 from openmm import app
-import pathlib
-from typing import Any, Iterable
-import uuid
-import time
-import numpy as np
-import mdtraj
-from mdtraj.reporters import XTCReporter
-from openfe.utils import without_oechem_backend, log_system_probe
-from gufe import settings, ChemicalSystem, SmallMoleculeComponent, ProteinComponent, SolventComponent
-from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings,
-)
-from openfe.protocols.openmm_md.plain_md_settings import (
-    PlainMDProtocolSettings,
-    OpenFFPartialChargeSettings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
-    IntegratorSettings,
-    MDSimulationSettings,
-    MDOutputSettings,
-)
-from openff.toolkit.topology import Molecule as OFFMolecule
 
-from openfe.protocols.openmm_rfe._rfe_utils import compute
-from openfe.protocols.openmm_utils import (
-    system_validation,
-    settings_validation,
-    system_creation,
-    charge_generation,
+from openfe.protocols.openmm_md.plain_md_settings import (
+    IntegratorSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    PlainMDProtocolSettings,
 )
+from openfe.protocols.openmm_rfe._rfe_utils import compute
+from openfe.protocols.openmm_utils import charge_generation, settings_validation, system_creation, system_validation
+from openfe.protocols.openmm_utils.omm_settings import BasePartialChargeSettings
+from openfe.utils import log_system_probe, without_oechem_backend
 
 logger = logging.getLogger(__name__)
 

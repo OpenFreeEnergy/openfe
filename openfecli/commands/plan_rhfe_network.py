@@ -2,18 +2,14 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 
-import click
 from typing import List
 
-from openfecli.utils import write, print_duration
+import click
+
 from openfecli import OFECommandPlugin
-from openfecli.parameters import (
-    MOL_DIR,
-    MAPPER,
-    OUTPUT_DIR,
-    YAML_OPTIONS,
-)
+from openfecli.parameters import MAPPER, MOL_DIR, OUTPUT_DIR, YAML_OPTIONS
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+from openfecli.utils import print_duration, write
 
 
 def plan_rhfe_network_main(

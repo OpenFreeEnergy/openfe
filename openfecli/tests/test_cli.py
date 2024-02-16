@@ -1,9 +1,8 @@
-import pytest
-
-import click.testing
-
 import contextlib
 import logging
+
+import click.testing
+import pytest
 
 from openfecli.cli import OpenFECLI, main
 from openfecli.plugins import OFECommandPlugin

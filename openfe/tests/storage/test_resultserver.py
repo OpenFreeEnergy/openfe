@@ -1,14 +1,13 @@
-import pytest
+import pathlib
 from unittest import mock
 
-import pathlib
-
-from openfe.storage.resultserver import ResultServer
+import pytest
+from gufe.storage.errors import ChangedExternalResourceError, MissingExternalResourceError
+from gufe.storage.externalresource import FileStorage
 from gufe.storage.externalresource.base import Metadata
 
-from gufe.storage.externalresource import FileStorage
 from openfe.storage.metadatastore import JSONMetadataStore
-from gufe.storage.errors import MissingExternalResourceError, ChangedExternalResourceError
+from openfe.storage.resultserver import ResultServer
 
 
 @pytest.fixture

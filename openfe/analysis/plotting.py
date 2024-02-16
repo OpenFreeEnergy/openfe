@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from itertools import chain
+from typing import Optional, Union
+
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
 import numpy as np
 import numpy.typing as npt
+from matplotlib.axes import Axes
 from openff.units import unit
-from typing import Optional, Union
 
 
 def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:

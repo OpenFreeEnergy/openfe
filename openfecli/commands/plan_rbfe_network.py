@@ -1,19 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
 from typing import List
-from openfecli.utils import write, print_duration
+
+import click
+
 from openfecli import OFECommandPlugin
-from openfecli.parameters import (
-    MOL_DIR,
-    PROTEIN,
-    MAPPER,
-    OUTPUT_DIR,
-    COFACTORS,
-    YAML_OPTIONS,
-)
+from openfecli.parameters import COFACTORS, MAPPER, MOL_DIR, OUTPUT_DIR, PROTEIN, YAML_OPTIONS
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+from openfecli.utils import print_duration, write
 
 
 def plan_rbfe_network_main(
@@ -51,9 +46,7 @@ def plan_rbfe_network_main(
         associated ligand network
     """
 
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RBFEAlchemicalNetworkPlanner,
-    )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RBFEAlchemicalNetworkPlanner
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,

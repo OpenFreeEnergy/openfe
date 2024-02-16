@@ -1,5 +1,6 @@
-import pytest
 import click
+import pytest
+
 from openfecli.clicktypes.hyphenchoice import HyphenAwareChoice
 
 

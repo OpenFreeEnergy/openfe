@@ -1,9 +1,9 @@
 import pytest
+
 from openfe.setup import LigandAtomMapping
 
-
 pytest.importorskip("py3Dmol")
-from openfe.utils.visualization_3D import view_mapping_3d, view_components_3d
+from openfe.utils.visualization_3D import view_components_3d, view_mapping_3d
 
 
 @pytest.fixture(scope="module")

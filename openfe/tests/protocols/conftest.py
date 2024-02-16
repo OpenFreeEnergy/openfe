@@ -1,13 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
-import pytest
 from importlib import resources
+
+import pooch
+import pytest
+from openff.units import unit
 from rdkit import Chem
 from rdkit.Geometry import Point3D
+
 import openfe
-from openff.units import unit
-import pooch
 
 
 @pytest.fixture

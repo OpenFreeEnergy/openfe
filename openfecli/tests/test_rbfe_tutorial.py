@@ -5,16 +5,17 @@ Tests the easy start guide
 - mocks the calculations and performs gathers on the mocked outputs
 """
 
-import pytest
 from importlib import resources
-from click.testing import CliRunner
 from os import path
 from unittest import mock
+
+import pytest
+from click.testing import CliRunner
 from openff.units import unit
 
+from openfecli.commands.gather import gather
 from openfecli.commands.plan_rbfe_network import plan_rbfe_network
 from openfecli.commands.quickrun import quickrun
-from openfecli.commands.gather import gather
 
 
 @pytest.fixture

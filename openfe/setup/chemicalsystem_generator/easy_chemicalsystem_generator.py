@@ -1,19 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .abstract_chemicalsystem_generator import (
-    AbstractChemicalSystemGenerator,
-    RFEComponentLabels,
-)
 from typing import Iterable, Optional
 
-from gufe import (
-    Component,
-    SmallMoleculeComponent,
-    ProteinComponent,
-    SolventComponent,
-    ChemicalSystem,
-)
+from gufe import ChemicalSystem, Component, ProteinComponent, SmallMoleculeComponent, SolventComponent
+
+from .abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator, RFEComponentLabels
 
 
 class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):

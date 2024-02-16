@@ -7,6 +7,7 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 """
 
 from openmm import unit
+
 from openfe.utils import requires_package
 
 from ...utils.silence_root_logging import silence_root_logging

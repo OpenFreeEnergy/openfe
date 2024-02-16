@@ -1,16 +1,17 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import os
 import importlib
-import pytest
+import os
 from importlib import resources
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from openff.units import unit
 
 import gufe
+import pytest
+from gufe import LigandAtomMapping, SmallMoleculeComponent
+from openff.units import unit
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
 import openfe
-from gufe import SmallMoleculeComponent, LigandAtomMapping
 
 
 class SlowTests:

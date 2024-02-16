@@ -3,27 +3,28 @@
 import itertools
 import json
 import sys
-import pytest
 from unittest import mock
-from openmm import NonbondedForce, CustomNonbondedForce
-from openmmtools.multistate.multistatesampler import MultiStateSampler
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
+
+import gufe
 import mdtraj as mdt
 import numpy as np
+import pytest
 from numpy.testing import assert_allclose
-import gufe
+from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity, from_openmm
+from openmm import CustomNonbondedForce, NonbondedForce
+from openmmtools.multistate.multistatesampler import MultiStateSampler
+
 import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
+    AbsoluteSolvationProtocol,
     AbsoluteSolvationSolventUnit,
     AbsoluteSolvationVacuumUnit,
-    AbsoluteSolvationProtocol,
 )
-
 from openfe.protocols.openmm_utils import system_validation
-from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+from openfe.protocols.openmm_utils.charge_generation import HAS_ESPALOMA, HAS_NAGL, HAS_OPENEYE
 
 
 @pytest.fixture()

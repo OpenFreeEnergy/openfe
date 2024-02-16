@@ -1,37 +1,36 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from importlib import resources
 import copy
-from pathlib import Path
-import pytest
 import sys
-from pymbar.utils import ParameterError
+from importlib import resources
+from pathlib import Path
+from unittest import mock
+
 import numpy as np
-from numpy.testing import assert_equal, assert_allclose
-from openmm import app, MonteCarloBarostat, NonbondedForce
-from openmm import unit as ommunit
-from openmmtools import multistate
+import pytest
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
+from numpy.testing import assert_allclose, assert_equal
 from openff.toolkit import Molecule as OFFMol
-from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
-from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
+from openmm import MonteCarloBarostat, NonbondedForce, app
+from openmm import unit as ommunit
+from openmmtools import multistate
+from pymbar.utils import ParameterError
+
 import openfe
+from openfe.protocols.openmm_rfe.equil_rfe_settings import IntegratorSettings, OpenMMSolvationSettings
 from openfe.protocols.openmm_utils import (
-    settings_validation,
-    system_validation,
-    system_creation,
+    charge_generation,
     multistate_analysis,
     omm_settings,
-    charge_generation,
+    settings_validation,
+    system_creation,
+    system_validation,
 )
-from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL, HAS_ESPALOMA, HAS_OPENEYE
-from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    IntegratorSettings,
-    OpenMMSolvationSettings,
-)
-from unittest import mock
+from openfe.protocols.openmm_utils.charge_generation import HAS_ESPALOMA, HAS_NAGL, HAS_OPENEYE
 
 
 def test_validate_timestep():

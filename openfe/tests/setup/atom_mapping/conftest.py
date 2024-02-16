@@ -3,10 +3,10 @@
 
 from typing import Dict, Tuple
 
-from rdkit import Chem
-from gufe import SmallMoleculeComponent
 import lomap
 import pytest
+from gufe import SmallMoleculeComponent
+from rdkit import Chem
 
 from openfe import LigandAtomMapping
 

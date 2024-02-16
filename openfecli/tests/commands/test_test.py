@@ -1,7 +1,8 @@
-import pytest
-from unittest import mock
-from click.testing import CliRunner
 import os
+from unittest import mock
+
+import pytest
+from click.testing import CliRunner
 
 from openfecli.commands.test import test
 

@@ -1,11 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from pathlib import Path
+from typing import Optional
+
 import netCDF4 as nc
 import numpy as np
-from pathlib import Path
 from openff.units import unit
+
 from openfe import __version__
-from typing import Optional
 
 
 def _state_to_replica(dataset: nc.Dataset, state_num: int, frame_num: int) -> int:

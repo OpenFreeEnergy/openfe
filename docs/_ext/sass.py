@@ -17,12 +17,10 @@ from os import PathLike
 from pathlib import Path
 from typing import Optional, Union
 
-
 import sass
 from sphinx.application import Sphinx
 from sphinx.environment import BuildEnvironment
 from sphinx.util import logging
-
 
 logger = logging.getLogger(__name__)
 

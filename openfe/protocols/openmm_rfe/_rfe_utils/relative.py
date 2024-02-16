@@ -3,17 +3,17 @@
 # The eventual goal is to move a version of this towards openmmtools
 # LICENSE: MIT
 
-import logging
-import openmm
-from openmm import unit, app
-import numpy as np
 import copy
 import itertools
+import logging
+
+import mdtraj as mdt
+import numpy as np
+import openmm
+from openmm import app, unit
 
 # OpenMM constant for Coulomb interactions (implicitly in md_unit_system units)
 from openmmtools.constants import ONE_4PI_EPS0
-import mdtraj as mdt
-
 
 logger = logging.getLogger(__name__)
 

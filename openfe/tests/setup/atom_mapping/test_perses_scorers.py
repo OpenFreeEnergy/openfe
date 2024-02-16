@@ -1,10 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import pytest
-from numpy.testing import assert_allclose, assert_
-
 import numpy as np
+import pytest
+from numpy.testing import assert_, assert_allclose
 
 from openfe.setup import perses_scorers
 

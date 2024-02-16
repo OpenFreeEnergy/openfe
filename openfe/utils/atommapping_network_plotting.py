@@ -1,16 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import io
-import matplotlib
-from rdkit import Chem
 from typing import Dict, Tuple
 
-from openfe.utils.network_plotting import GraphDrawing, Node, Edge
-from gufe.visualization.mapping_visualization import (
-    draw_one_molecule_mapping,
-)
+import matplotlib
+from gufe.visualization.mapping_visualization import draw_one_molecule_mapping
+from rdkit import Chem
+
+from openfe import LigandNetwork, SmallMoleculeComponent
 from openfe.utils.custom_typing import MPL_MouseEvent
-from openfe import SmallMoleculeComponent, LigandNetwork
+from openfe.utils.network_plotting import Edge, GraphDrawing, Node
 
 
 class AtomMappingEdge(Edge):

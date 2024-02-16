@@ -1,7 +1,8 @@
 import os
-import pytest
 
+import pytest
 from plugcli.params import NOT_PARSED
+
 from openfecli.parameters.utils import import_parameter
 
 

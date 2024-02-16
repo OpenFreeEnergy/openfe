@@ -1,11 +1,12 @@
-import pytest
 import json
 import pathlib
 
-from openfe.storage.metadatastore import JSONMetadataStore, PerFileJSONMetadataStore
+import pytest
+from gufe.storage.errors import ChangedExternalResourceError, MissingExternalResourceError
 from gufe.storage.externalresource import FileStorage
 from gufe.storage.externalresource.base import Metadata
-from gufe.storage.errors import MissingExternalResourceError, ChangedExternalResourceError
+
+from openfe.storage.metadatastore import JSONMetadataStore, PerFileJSONMetadataStore
 
 
 @pytest.fixture

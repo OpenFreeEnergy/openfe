@@ -4,15 +4,16 @@
 Reusable utilities for assigning partial charges to ChemicalComponents.
 """
 import copy
-from typing import Union, Optional, Literal, Callable
 import sys
 import warnings
+from typing import Callable, Literal, Optional, Union
+
 import numpy as np
-from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
-from openff.toolkit.utils.toolkits import AmberToolsToolkitWrapper, OpenEyeToolkitWrapper, RDKitToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from openff.toolkit.utils.toolkits import AmberToolsToolkitWrapper, OpenEyeToolkitWrapper, RDKitToolkitWrapper
+from openff.units import unit
 
 try:
     import openeye
@@ -22,17 +23,15 @@ else:
     HAS_OPENEYE = True
 
 try:
-    from openff.toolkit.utils.toolkit_registry import (
-        toolkit_registry_manager,
-    )
+    from openff.toolkit.utils.toolkit_registry import toolkit_registry_manager
 except ImportError:
     # toolkit_registry_manager was made non private in 0.14.4
     from openff.toolkit.utils.toolkit_registry import _toolkit_registry_manager as toolkit_registry_manager
 
 
 try:
-    from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
     from openff.nagl_models import get_models_by_type, validate_nagl_model_path
+    from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
 except ImportError:
     HAS_NAGL = False
 else:

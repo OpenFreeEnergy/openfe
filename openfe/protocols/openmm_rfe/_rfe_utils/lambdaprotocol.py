@@ -2,9 +2,10 @@
 # License: MIT
 # OpenFE note: eventually we aim to move this to openmmtools where possible
 
-import numpy as np
-import warnings
 import copy
+import warnings
+
+import numpy as np
 from openmmtools.alchemy import AlchemicalState
 
 

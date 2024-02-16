@@ -1,13 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from __future__ import annotations
-import os
-from collections import defaultdict
+
 import json
+import os
 import pathlib
-from openfecli.utils import write
 import typing
+from collections import defaultdict
+
 from openfe import AlchemicalNetwork, LigandNetwork
+from openfecli.utils import write
 
 
 def plan_alchemical_network_output(

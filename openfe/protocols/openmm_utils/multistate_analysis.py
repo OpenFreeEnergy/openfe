@@ -3,16 +3,18 @@
 """
 Reusable utility methods to analyze results from multistate calculations.
 """
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import Optional, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+from openff.units import ensure_quantity, unit
 from openmmtools import multistate
-from openff.units import unit, ensure_quantity
 from pymbar.utils import ParameterError
+
 from openfe.analysis import plotting
-from typing import Optional, Union
 
 
 class MultistateEquilFEAnalysis:

@@ -1,7 +1,8 @@
 from importlib import resources
 
-from rdkit import Chem
 from gufe import ProteinComponent
+from rdkit import Chem
+
 from openfecli.parameters.protein import get_molecule
 
 

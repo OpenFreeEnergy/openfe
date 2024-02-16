@@ -1,16 +1,15 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import pathlib
 import logging
 import logging.config
+import pathlib
 
 import click
 from plugcli.cli import CLI, CONTEXT_SETTINGS
 from plugcli.plugin_management import FilePluginLoader
 
 import openfecli
-
 from openfecli.plugins import OFECommandPlugin
 
 

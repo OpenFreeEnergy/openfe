@@ -1,17 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from rdkit import Chem
 import pytest
+from gufe import ChemicalSystem, SolventComponent
+from rdkit import Chem
 
-from gufe import ChemicalSystem
-from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import (
-    EasyChemicalSystemGenerator,
-)
-
+from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import EasyChemicalSystemGenerator
 
 from ...conftest import T4_protein_component
-from gufe import SolventComponent
-from .component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
+from .component_checks import ligandC_in_chem_sys, proteinC_in_chem_sys, solventC_in_chem_sys
 
 
 def test_easy_chemical_system_generator_init(T4_protein_component):

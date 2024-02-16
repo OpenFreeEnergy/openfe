@@ -7,18 +7,19 @@ See here for the license: https://github.com/choderalab/perses/blob/main/LICENSE
 """
 
 import copy
-import warnings
 import logging
+import warnings
+
 import numpy as np
 import openmm
-from openmm import unit
-from openmmtools.multistate import replicaexchange, sams, multistatesampler
-from openmmtools import cache
 import openmmtools.states as states
-from openmmtools.states import CompoundThermodynamicState, SamplerState, ThermodynamicState
+from openmm import unit
+from openmmtools import cache
 from openmmtools.integrators import FIREMinimizationIntegrator
-from .lambdaprotocol import RelativeAlchemicalState
+from openmmtools.multistate import multistatesampler, replicaexchange, sams
+from openmmtools.states import CompoundThermodynamicState, SamplerState, ThermodynamicState
 
+from .lambdaprotocol import RelativeAlchemicalState
 
 logger = logging.getLogger(__name__)
 

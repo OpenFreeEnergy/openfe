@@ -1,12 +1,12 @@
+import importlib.resources
+import pathlib
+import shutil
+import urllib.request
+
 import click
 from plugcli.plugin_management import CommandPlugin
 
-import urllib.request
-import importlib.resources
-import shutil
 from .utils import write
-
-import pathlib
 
 
 class _Fetcher:

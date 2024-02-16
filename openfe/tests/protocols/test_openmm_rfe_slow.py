@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from gufe.protocols import execute_DAG
-import pytest
-from openff.units import unit
-from openmm import Platform
 import os
 import pathlib
+
+import pytest
+from gufe.protocols import execute_DAG
+from openff.units import unit
+from openmm import Platform
 
 import openfe
 from openfe.protocols import openmm_rfe

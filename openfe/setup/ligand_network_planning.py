@@ -1,22 +1,21 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import math
-from pathlib import Path
-from typing import Iterable, Callable, Optional, Union
-import itertools
-from collections import Counter
 import functools
+import itertools
+import math
 import warnings
+from collections import Counter
+from pathlib import Path
+from typing import Callable, Iterable, Optional, Union
 
 import networkx as nx
+from gufe import AtomMapper, SmallMoleculeComponent
+from lomap import LomapAtomMapper, generate_lomap_network
+from lomap.dbmol import _find_common_core
 from tqdm.auto import tqdm
 
-from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
-
-from lomap import generate_lomap_network, LomapAtomMapper
-from lomap.dbmol import _find_common_core
 
 
 def _hasten_lomap(mapper, ligands):

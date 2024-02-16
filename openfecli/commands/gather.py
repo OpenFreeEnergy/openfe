@@ -1,11 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
-from openfecli import OFECommandPlugin
-from openfecli.clicktypes import HyphenAwareChoice
 import pathlib
 import warnings
+
+import click
+
+from openfecli import OFECommandPlugin
+from openfecli.clicktypes import HyphenAwareChoice
 
 
 def _get_column(val):
@@ -51,6 +53,7 @@ def is_results_json(f):
 def load_results(f):
     # path to deserialized results
     import json
+
     from gufe.tokenization import JSON_HANDLER
 
     return json.load(open(f, "r"), cls=JSON_HANDLER.decoder)
@@ -315,9 +318,9 @@ def gather(rootdir, output, report, allow_partial):
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    from collections import defaultdict
-    import glob
     import csv
+    import glob
+    from collections import defaultdict
 
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + "/**/*json", recursive=True)

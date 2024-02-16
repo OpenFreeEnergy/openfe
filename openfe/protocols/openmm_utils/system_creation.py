@@ -4,21 +4,20 @@
 Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
+from pathlib import Path
+from typing import Optional
+
 import numpy as np
 import numpy.typing as npt
-from openmm import app, MonteCarloBarostat
-from openmm import unit as omm_unit
-from openff.toolkit import Molecule as OFFMol
-from openff.units.openmm import to_openmm, ensure_quantity
-from openmmforcefields.generators import SystemGenerator
-from typing import Optional
-from pathlib import Path
+from gufe import Component, ProteinComponent, SmallMoleculeComponent, SolventComponent
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
-from gufe import Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
-from openfe.protocols.openmm_utils.omm_settings import (
-    IntegratorSettings,
-    OpenMMSolvationSettings,
-)
+from openff.toolkit import Molecule as OFFMol
+from openff.units.openmm import ensure_quantity, to_openmm
+from openmm import MonteCarloBarostat, app
+from openmm import unit as omm_unit
+from openmmforcefields.generators import SystemGenerator
+
+from openfe.protocols.openmm_utils.omm_settings import IntegratorSettings, OpenMMSolvationSettings
 
 
 def get_system_generator(

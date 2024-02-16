@@ -1,6 +1,6 @@
 """Plugins for the ``fetch`` command"""
 
-from openfecli.fetching import URLFetcher, PkgResourceFetcher
+from openfecli.fetching import PkgResourceFetcher, URLFetcher
 
 _EXAMPLE_NB_BASE = "https://raw.githubusercontent.com/" "OpenFreeEnergy/ExampleNotebooks/main/"
 

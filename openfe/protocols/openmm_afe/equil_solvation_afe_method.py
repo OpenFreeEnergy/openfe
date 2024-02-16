@@ -28,39 +28,39 @@ Acknowledgements
 """
 from __future__ import annotations
 
-import pathlib
+import itertools
 import logging
+import pathlib
+import uuid
 import warnings
 from collections import defaultdict
+from typing import Any, Iterable, Optional, Union
+
 import gufe
-from gufe.components import Component
-import itertools
 import numpy as np
 import numpy.typing as npt
+from gufe import ChemicalSystem, ProteinComponent, SmallMoleculeComponent, SolventComponent, settings
+from gufe.components import Component
 from openff.units import unit
 from openmmtools import multistate
-from typing import Optional, Union
-from typing import Any, Iterable
-import uuid
 
-from gufe import settings, ChemicalSystem, SmallMoleculeComponent, ProteinComponent, SolventComponent
+from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
-    OpenMMSolvationSettings,
     AlchemicalSettings,
+    IntegratorSettings,
     LambdaSettings,
     MultiStateSimulationSettings,
-    OpenMMEngineSettings,
-    IntegratorSettings,
-    OutputSettings,
     OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    OutputSettings,
     SettingsBaseModel,
 )
-from ..openmm_utils import system_validation, settings_validation
-from .base import BaseAbsoluteUnit
 from openfe.utils import log_system_probe
-from openfe.due import due, Doi
 
+from ..openmm_utils import settings_validation, system_validation
+from .base import BaseAbsoluteUnit
 
 due.cite(
     Doi("10.5281/zenodo.596504"),

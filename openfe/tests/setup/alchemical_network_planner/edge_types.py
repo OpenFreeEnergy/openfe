@@ -1,6 +1,6 @@
 from gufe import Transformation
 
-from ..chemicalsystem_generator.component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
+from ..chemicalsystem_generator.component_checks import ligandC_in_chem_sys, proteinC_in_chem_sys, solventC_in_chem_sys
 
 
 def both_states_proteinC_edge(edge: Transformation) -> bool:

@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
+from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
 
 
 def _load_protein_from_pdb(user_input, context):

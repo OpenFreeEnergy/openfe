@@ -1,9 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from openfe.protocols import openmm_rfe
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
+from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+
+from openfe.protocols import openmm_rfe
 
 """
 todo:

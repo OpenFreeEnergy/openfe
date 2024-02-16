@@ -3,9 +3,10 @@
 import abc
 from typing import Iterable
 
-from gufe import SmallMoleculeComponent
-from . import LigandAtomMapping
 import gufe
+from gufe import SmallMoleculeComponent
+
+from . import LigandAtomMapping
 
 
 class LigandAtomMapper(gufe.AtomMapper):

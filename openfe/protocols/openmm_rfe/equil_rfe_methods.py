@@ -21,68 +21,65 @@ the Perses toolkit (https://github.com/choderalab/perses).
 """
 from __future__ import annotations
 
-import os
+import json
 import logging
-from collections import defaultdict
+import os
+import pathlib
+import subprocess
 import uuid
 import warnings
-import json
+from collections import defaultdict
 from itertools import chain
-import matplotlib.pyplot as plt
-import numpy as np
-import numpy.typing as npt
-from openff.units import unit
-from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
-from openff.toolkit.topology import Molecule as OFFMolecule
-from openmmtools import multistate
-from typing import Optional
-from openmm import unit as omm_unit
-from openmm.app import PDBFile
-import pathlib
-from typing import Any, Iterable, Union
-import openmmtools
-import mdtraj
-import subprocess
-from rdkit import Chem
+from typing import Any, Iterable, Optional, Union
 
 import gufe
+import matplotlib.pyplot as plt
+import mdtraj
+import numpy as np
+import numpy.typing as npt
+import openmmtools
 from gufe import (
-    settings,
     ChemicalSystem,
-    LigandAtomMapping,
     Component,
     ComponentMapping,
-    SmallMoleculeComponent,
+    LigandAtomMapping,
     ProteinComponent,
+    SmallMoleculeComponent,
     SolventComponent,
+    settings,
 )
+from openff.toolkit.topology import Molecule as OFFMolecule
+from openff.units import unit
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmm import unit as omm_unit
+from openmm.app import PDBFile
+from openmmtools import multistate
+from rdkit import Chem
 
-from .equil_rfe_settings import (
-    RelativeHybridTopologyProtocolSettings,
-    OpenMMSolvationSettings,
-    AlchemicalSettings,
-    LambdaSettings,
-    MultiStateSimulationSettings,
-    OpenMMEngineSettings,
-    IntegratorSettings,
-    OutputSettings,
-    OpenFFPartialChargeSettings,
-)
-from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings,
-)
+from openfe.due import Doi, due
+from openfe.protocols.openmm_utils.omm_settings import BasePartialChargeSettings
+
+from ...analysis import plotting
+from ...utils import log_system_probe, without_oechem_backend
 from ..openmm_utils import (
-    system_validation,
+    charge_generation,
+    multistate_analysis,
     settings_validation,
     system_creation,
-    multistate_analysis,
-    charge_generation,
+    system_validation,
 )
 from . import _rfe_utils
-from ...utils import without_oechem_backend, log_system_probe
-from ...analysis import plotting
-from openfe.due import due, Doi
-
+from .equil_rfe_settings import (
+    AlchemicalSettings,
+    IntegratorSettings,
+    LambdaSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    OutputSettings,
+    RelativeHybridTopologyProtocolSettings,
+)
 
 logger = logging.getLogger(__name__)
 

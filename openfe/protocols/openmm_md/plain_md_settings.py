@@ -7,16 +7,17 @@ This module implements the settings necessary to run MD simulations using
 :class:`openfe.protocols.openmm_md.plain_md_methods.py`
 
 """
+from gufe.settings import SettingsBaseModel
+
 from openfe.protocols.openmm_utils.omm_settings import (
-    Settings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
-    MDSimulationSettings,
     IntegratorSettings,
     MDOutputSettings,
+    MDSimulationSettings,
     OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    Settings,
 )
-from gufe.settings import SettingsBaseModel
 
 try:
     from pydantic.v1 import validator

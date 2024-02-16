@@ -1,17 +1,13 @@
-from click.testing import CliRunner
-from importlib import resources
-import tarfile
 import os
 import pathlib
-import pytest
-import pooch
+import tarfile
+from importlib import resources
 
-from openfecli.commands.gather import (
-    gather,
-    format_estimate_uncertainty,
-    _get_column,
-    _generate_bad_legs_error_message,
-)
+import pooch
+import pytest
+from click.testing import CliRunner
+
+from openfecli.commands.gather import _generate_bad_legs_error_message, _get_column, format_estimate_uncertainty, gather
 
 
 @pytest.mark.parametrize(

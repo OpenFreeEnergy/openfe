@@ -2,8 +2,9 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL, MAPPER, OUTPUT_FILE_AND_EXT
+from openfecli.parameters import MAPPER, MOL, OUTPUT_FILE_AND_EXT
 
 
 def allow_two_molecules(ctx, param, value):
@@ -71,8 +72,8 @@ def atommapping_print_dict_main(mapper, molA, molB):
 
 
 def atommapping_visualize_main(mapper, molA, molB, file, ext):
-    from rdkit.Chem import Draw
     from gufe.visualization import mapping_visualization as vis
+    from rdkit.Chem import Draw
 
     mapping = generate_mapping(mapper, molA, molB)
     ext_to_artist = {

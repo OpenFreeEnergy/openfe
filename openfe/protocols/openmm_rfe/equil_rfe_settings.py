@@ -9,22 +9,18 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 from __future__ import annotations
 
 from typing import Literal
-from openff.units import unit
-from openff.models.types import FloatQuantity
 
-from gufe.settings import (
-    Settings,
-    SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
-)
+from gufe.settings import OpenMMSystemGeneratorFFSettings, Settings, SettingsBaseModel, ThermoSettings
+from openff.models.types import FloatQuantity
+from openff.units import unit
+
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
     OutputSettings,
-    OpenFFPartialChargeSettings,
 )
 
 try:

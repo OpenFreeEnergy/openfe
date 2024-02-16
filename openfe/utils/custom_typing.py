@@ -2,9 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import TypeVar
-from rdkit import Chem
+
 import matplotlib.axes
 import matplotlib.backend_bases
+from rdkit import Chem
 
 try:
     from typing import TypeAlias  # type: ignore

@@ -1,19 +1,19 @@
-import numpy as np
-from numpy.typing import NDArray
-from typing import Tuple, Union, Optional, Dict, Iterable
+from typing import Dict, Iterable, Optional, Tuple, Union
 
-from rdkit import Chem
-from rdkit.Geometry.rdGeometry import Point3D
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import rgb2hex
+from numpy.typing import NDArray
+from rdkit import Chem
+from rdkit.Geometry.rdGeometry import Point3D
 
 try:
     import py3Dmol
 except ImportError:
     pass  # Don't throw  error, will happen later
 
-from gufe.mapping import AtomMapping
 from gufe.components.explicitmoleculecomponent import ExplicitMoleculeComponent
+from gufe.mapping import AtomMapping
 
 from openfe.utils import requires_package
 

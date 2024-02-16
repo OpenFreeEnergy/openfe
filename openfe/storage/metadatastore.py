@@ -1,14 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
-import json
 import abc
 import collections
+import json
+from typing import Dict, Tuple
 
-from typing import Tuple, Dict
-
+from gufe.storage.errors import ChangedExternalResourceError, MissingExternalResourceError
 from gufe.storage.externalresource.base import Metadata
-
-from gufe.storage.errors import MissingExternalResourceError, ChangedExternalResourceError
 
 
 class MetadataStore(collections.abc.Mapping):

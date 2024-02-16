@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
-from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
+
+from openfe.setup.atom_mapping import LigandAtomMapping, PersesAtomMapper
 
 pytest.importorskip("perses")
 pytest.importorskip("openeye")

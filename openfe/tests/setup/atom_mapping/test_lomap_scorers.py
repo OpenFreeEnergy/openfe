@@ -2,16 +2,17 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
-import lomap
 import math
-import numpy as np
-from numpy.testing import assert_allclose
-import openfe
-from openfe.setup import lomap_scorers, LigandAtomMapping
 
+import lomap
+import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 from rdkit import Chem
 from rdkit.Chem.AllChem import Compute2DCoords
+
+import openfe
+from openfe.setup import LigandAtomMapping, lomap_scorers
 
 from .conftest import mol_from_smiles
 

@@ -1,15 +1,12 @@
+import os
+import shutil
+from importlib import resources
 from unittest import mock
 
 import pytest
-from importlib import resources
-import os
-import shutil
 from click.testing import CliRunner
 
-from openfecli.commands.plan_rbfe_network import (
-    plan_rbfe_network,
-    plan_rbfe_network_main,
-)
+from openfecli.commands.plan_rbfe_network import plan_rbfe_network, plan_rbfe_network_main
 
 
 @pytest.fixture(scope="session")
@@ -44,16 +41,9 @@ def print_test_with_file(
 
 
 def test_plan_rbfe_network_main():
-    from gufe import (
-        ProteinComponent,
-        SmallMoleculeComponent,
-        SolventComponent,
-    )
-    from openfe.setup import (
-        LomapAtomMapper,
-        lomap_scorers,
-        ligand_network_planning,
-    )
+    from gufe import ProteinComponent, SmallMoleculeComponent, SolventComponent
+
+    from openfe.setup import LomapAtomMapper, ligand_network_planning, lomap_scorers
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
         smallM_components = [SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]]

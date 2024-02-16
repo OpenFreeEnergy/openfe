@@ -5,16 +5,10 @@ import json
 import re
 from typing import Any
 
-from .resultserver import ResultServer
+from gufe.tokenization import JSON_HANDLER, from_dict, get_all_gufe_objs, key_decode_dependencies
+
 from .metadatastore import JSONMetadataStore
-
-from gufe.tokenization import (
-    get_all_gufe_objs,
-    key_decode_dependencies,
-    from_dict,
-    JSON_HANDLER,
-)
-
+from .resultserver import ResultServer
 
 GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]+)"')
 

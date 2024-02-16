@@ -15,21 +15,18 @@ TODO
 * Add support for restraints
 
 """
-from gufe.settings import (
-    SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
-)
+import numpy as np
+from gufe.settings import OpenMMSystemGeneratorFFSettings, SettingsBaseModel, ThermoSettings
+
 from openfe.protocols.openmm_utils.omm_settings import (
-    MultiStateSimulationSettings,
     BaseSolvationSettings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
     IntegratorSettings,
+    MultiStateSimulationSettings,
     OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
     OutputSettings,
 )
-import numpy as np
 
 try:
     from pydantic.v1 import validator

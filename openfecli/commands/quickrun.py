@@ -1,13 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
 import json
 import pathlib
 
+import click
+
 from openfecli import OFECommandPlugin
 from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write, print_duration, configure_logger
+from openfecli.utils import configure_logger, print_duration, write
 
 
 def _format_exception(exception) -> str:
@@ -43,13 +44,15 @@ def quickrun(transformation, work_dir, output):
 
     That will save a JSON file suitable to be input for this command.
     """
-    import gufe
+    import logging
     import os
     import sys
+
+    import gufe
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
+
     from openfe.utils.logging_filter import MsgIncludesStringFilter
-    import logging
 
     # avoid problems with output not showing if queueing system kills a job
     sys.stdout.reconfigure(line_buffering=True)

@@ -9,17 +9,11 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional, Literal
-from openff.units import unit
+from typing import Literal, Optional
+
+from gufe.settings import OpenMMSystemGeneratorFFSettings, Settings, SettingsBaseModel, ThermoSettings
 from openff.models.types import FloatQuantity
-
-from gufe.settings import (
-    Settings,
-    SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
-)
-
+from openff.units import unit
 
 try:
     from pydantic.v1 import validator
