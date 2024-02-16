@@ -19,6 +19,7 @@ dependencies:
   - coverage
   - cinnabar ==0.3.0
   - openff-toolkit>=0.13.0
+  - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
   - pint<0.22
   - openff-models>=0.0.5
@@ -42,4 +43,6 @@ dependencies:
   - sphinx-click
   - pip:
     - sphinx-toolbox
+    - espaloma_charge
+    - openff-nagl-models>=0.1.2
     - git+https://github.com/OpenFreeEnergy/gufe@main

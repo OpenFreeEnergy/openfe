@@ -2,14 +2,16 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import itertools
 import json
+import sys
 import pytest
 from unittest import mock
 from openmm import NonbondedForce, CustomNonbondedForce
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity
+from openff.units.openmm import ensure_quantity, from_openmm
 import mdtraj as mdt
 import numpy as np
+from numpy.testing import assert_allclose
 import gufe
 import openfe
 from openfe import ChemicalSystem, SolventComponent
@@ -21,6 +23,9 @@ from openfe.protocols.openmm_afe import (
 )
 
 from openfe.protocols.openmm_utils import system_validation
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+)
 
 
 @pytest.fixture()
@@ -541,6 +546,85 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
             c, s = custom_elec.getParticleParameters(i)
             c = ensure_quantity(c, 'openff')
             assert pytest.approx(c) == prop_chgs[i]
+
+
+@pytest.mark.parametrize('method, backend, ref_key', [
+    ('am1bcc', 'ambertools', 'ambertools'),
+    pytest.param(
+        'am1bcc', 'openeye', 'openeye',
+        marks=pytest.mark.skipif(
+            not HAS_OPENEYE, reason='needs oechem',
+        ),
+    ),
+    pytest.param(
+        'nagl', 'rdkit', 'nagl',
+        marks=pytest.mark.skipif(
+            not HAS_NAGL or sys.platform.startswith('darwin'),
+            reason='needs NAGL and/or on macos',
+        ),
+    ),
+    pytest.param(
+        'espaloma', 'rdkit', 'espaloma',
+        marks=pytest.mark.skipif(
+            not HAS_ESPALOMA, reason='needs espaloma',
+        ),
+    ),
+])
+def test_dry_run_charge_backends(
+    CN_molecule, tmpdir, method, backend, ref_key, am1bcc_ref_charges
+):
+    """
+    Check that partial charge generation with different backends
+    works as expected.
+    """
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.partial_charge_settings.partial_charge_method = method
+    s.partial_charge_settings.off_toolkit_backend = backend
+    s.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=s)
+
+    # Create ChemicalSystems
+    stateA = ChemicalSystem({
+        'benzene': CN_molecule,
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
+    prot_units = list(dag.protocol_units)
+
+    vac_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
+
+    # check vac_unit charges
+    with tmpdir.as_cwd():
+        sampler = vac_unit.run(dry=True)['debug']['sampler']
+        system = sampler._thermodynamic_states[0].system
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, CustomNonbondedForce)]
+        assert len(nonbond) == 4
+
+        custom_elec = [
+            n for n in nonbond if
+            n.getGlobalParameterName(0) == 'lambda_electrostatics'][0]
+
+        charges = []
+        for i in range(system.getNumParticles()):
+            c, s = custom_elec.getParticleParameters(i)
+            charges.append(c)
+
+    assert_allclose(
+        am1bcc_ref_charges[ref_key],
+        charges * offunit.elementary_charge,
+        rtol=1e-4,
+    )
 
 
 def test_high_timestep(benzene_modifications, tmpdir):

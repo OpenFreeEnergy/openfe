@@ -170,3 +170,9 @@ docs/ExampleNotebooks/
 
 # duecredit
 .duecredit.p
+
+# Some charge stuff
+*.model.pt
+
+# Rever
+rever/

@@ -1,16 +1,21 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
+import sys
 import gufe
 import pytest
 from unittest import mock
+from numpy.testing import assert_allclose
 from openff.units import unit
 from openmm import unit as omm_unit
-from openff.units.openmm import to_openmm
+from openmm import NonbondedForce
+from openff.units.openmm import to_openmm, from_openmm
 from openmmtools.states import ThermodynamicState
 from openmm import MonteCarloBarostat
 from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
+)
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
 )
 import json
 import openfe
@@ -174,6 +179,60 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
 
     with tmpdir.as_cwd():
         system = unit.run(dry=True)['debug']['system']
+
+
+@pytest.mark.parametrize('method, backend, ref_key', [
+    ('am1bcc', 'ambertools', 'ambertools'),
+    pytest.param(
+        'am1bcc', 'openeye', 'openeye',
+        marks=pytest.mark.skipif(
+            not HAS_OPENEYE, reason='needs oechem',
+        ),
+    ),
+    pytest.param(
+        'nagl', 'rdkit', 'nagl',
+        marks=pytest.mark.skipif(
+            not HAS_NAGL or sys.platform.startswith('darwin'),
+            reason='needs NAGL and/or on macos',
+        ),
+    ),
+    pytest.param(
+        'espaloma', 'rdkit', 'espaloma',
+        marks=pytest.mark.skipif(
+            not HAS_ESPALOMA, reason='needs espaloma',
+        ),
+    ),
+])
+def test_dry_run_charge_backends(
+    CN_molecule, tmpdir, method, backend, ref_key, am1bcc_ref_charges
+):
+    vac_settings = PlainMDProtocol.default_settings()
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
+
+    protocol = PlainMDProtocol(settings=vac_settings)
+
+    csystem = openfe.ChemicalSystem({'ligand': CN_molecule})
+
+    dag = protocol.create(stateA=csystem, stateB=csystem, mapping=None)
+    md_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        system = md_unit.run(dry=True)['debug']['system']
+
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, NonbondedForce)][0]
+
+        charges = []
+        for i in range(system.getNumParticles()):
+            c, s, e = nonbond.getParticleParameters(i)
+            charges.append(from_openmm(c))
+
+    charges = unit.Quantity.from_list(charges)
+
+    assert_allclose(am1bcc_ref_charges[ref_key], charges, rtol=1e-4)
 
 
 def test_dry_many_molecules_solvent(
