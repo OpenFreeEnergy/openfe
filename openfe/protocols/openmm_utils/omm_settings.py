@@ -377,7 +377,7 @@ class MDSimulationSettings(SimulationSettings):
     class Config:
         arbitrary_types_allowed = True
 
-    equilibration_length_nvt: unit.Quantity
+    equilibration_length_nvt: Optional[FloatQuantity['nanosecond']]
     """
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
@@ -403,10 +403,10 @@ class MDOutputSettings(OutputSettings):
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
-    equil_nvt_structure = 'equil_nvt.pdb'
+    equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
     """Path to the pdb file of the system after NVT equilibration. 
     Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
-    equil_npt_structure = 'equil_npt.pdb'
+    equil_npt_structure: Optional[str] = 'equil_npt.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
     Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
     log_output = 'simulation.log'

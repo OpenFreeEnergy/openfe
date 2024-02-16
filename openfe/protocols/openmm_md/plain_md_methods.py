@@ -256,7 +256,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 temperature: unit.Quantity,
                 barostat_frequency: unit.Quantity,
                 timestep: unit.Quantity,
-                equil_steps_nvt: int,
+                equil_steps_nvt: Optional[int],
                 equil_steps_npt: int,
                 prod_steps: int,
                 verbose=True,
@@ -326,38 +326,39 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
         # equilibrate
         # NVT equilibration
+        if equil_steps_nvt is not None or equil_steps_nvt == 0:
+            if verbose:
+                logger.info("Running NVT equilibration")
 
-        if verbose:
-            logger.info("Running NVT equilibration")
+            # Set barostat frequency to zero for NVT
+            for x in simulation.context.getSystem().getForces():
+                if x.getName() == 'MonteCarloBarostat':
+                    x.setFrequency(0)
 
-        # Set barostat frequency to zero for NVT
-        for x in simulation.context.getSystem().getForces():
-            if x.getName() == 'MonteCarloBarostat':
-                x.setFrequency(0)
+            simulation.context.setVelocitiesToTemperature(
+                to_openmm(temperature))
 
-        simulation.context.setVelocitiesToTemperature(
-            to_openmm(temperature))
+            t0 = time.time()
+            simulation.step(equil_steps_nvt)
+            t1 = time.time()
+            if verbose:
+                logger.info(
+                    f"Completed NVT equilibration in {t1 - t0} seconds")
 
-        t0 = time.time()
-        simulation.step(equil_steps_nvt)
-        t1 = time.time()
-        if verbose:
-            logger.info(
-                f"Completed NVT equilibration in {t1 - t0} seconds")
+            # Save last frame NVT equilibration
+            positions = to_openmm(
+                from_openmm(simulation.context.getState(
+                    getPositions=True, enforcePeriodicBox=False
+                ).getPositions()))
 
-        # Save last frame NVT equilibration
-        positions = to_openmm(
-            from_openmm(simulation.context.getState(
-                getPositions=True, enforcePeriodicBox=False
-            ).getPositions()))
-
-        traj = mdtraj.Trajectory(
-            positions[selection_indices, :],
-            mdtraj_top.subset(selection_indices),
-        )
-        traj.save_pdb(
-            shared_basepath / output_settings.equil_nvt_structure
-        )
+            traj = mdtraj.Trajectory(
+                positions[selection_indices, :],
+                mdtraj_top.subset(selection_indices),
+            )
+            if output_settings.equil_nvt_structure is not None:
+                traj.save_pdb(
+                    shared_basepath / output_settings.equil_nvt_structure
+                )
 
         # NPT equilibration
         if verbose:
@@ -387,9 +388,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             positions[selection_indices, :],
             mdtraj_top.subset(selection_indices),
         )
-        traj.save_pdb(
-            shared_basepath / output_settings.equil_npt_structure
-        )
+        if output_settings.equil_npt_structure is not None:
+            traj.save_pdb(
+                shared_basepath / output_settings.equil_npt_structure
+            )
 
         # production
         if verbose:
@@ -518,10 +520,14 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings.hydrogen_mass, timestep
         )
 
-        equil_steps_nvt = settings_validation.get_simsteps(
-            sim_length=sim_settings.equilibration_length_nvt,
-            timestep=timestep, mc_steps=1,
-        )
+        if sim_settings.equilibration_length_nvt is not None:
+            equil_steps_nvt = settings_validation.get_simsteps(
+                sim_length=sim_settings.equilibration_length_nvt,
+                timestep=timestep, mc_steps=1,
+            )
+        else:
+            equil_steps_nvt = None
+
         equil_steps_npt = settings_validation.get_simsteps(
             sim_length=sim_settings.equilibration_length,
             timestep=timestep, mc_steps=1,
