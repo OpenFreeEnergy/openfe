@@ -205,11 +205,15 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # Get the necessary number of steps
-        equil_steps_nvt = settings_validation.get_simsteps(
-            sim_length=settings['equil_simulation_settings'].equilibration_length_nvt,
-            timestep=settings['integrator_settings'].timestep,
-            mc_steps=1,
-        )
+        if settings['equil_simulation_settings'].equilibration_length_nvt is not None:
+            equil_steps_nvt = settings_validation.get_simsteps(
+                sim_length=settings[
+                    'equil_simulation_settings'].equilibration_length_nvt,
+                timestep=settings['integrator_settings'].timestep,
+                mc_steps=1,
+            )
+        else:
+            equil_steps_nvt = None
 
         equil_steps_npt = settings_validation.get_simsteps(
             sim_length=settings['equil_simulation_settings'].equilibration_length,

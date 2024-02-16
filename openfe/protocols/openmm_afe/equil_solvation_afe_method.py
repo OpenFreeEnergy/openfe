@@ -428,8 +428,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 production_length=0.5 * unit.nanosecond,
             ),
             solvent_equil_output_settings=MDOutputSettings(
-                equil_NVT_structure='equil_nvt_structure.pdb',
-                equil_NPT_structure='equil_npt_structure.pdb',
+                equil_nvt_structure='equil_nvt_structure.pdb',
+                equil_npt_structure='equil_npt_structure.pdb',
                 production_trajectory_filename='production_equil.xtc',
                 log_output='equil_simulation.log',
             ),
@@ -443,13 +443,13 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 checkpoint_storage_filename='solvent_checkpoint.nc',
             ),
             vacuum_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0 * unit.nanosecond,
+                equilibration_length_nvt=None,
                 equilibration_length=0.2 * unit.nanosecond,
                 production_length=0.5 * unit.nanosecond,
             ),
             vacuum_equil_output_settings=MDOutputSettings(
-                equil_NVT_structure='pre_equil_structure.pdb',
-                equil_NPT_structure='equil_structure.pdb',
+                equil_nvt_structure=None,
+                equil_npt_structure='equil_structure.pdb',
                 production_trajectory_filename='production_equil.xtc',
                 log_output='equil_simulation.log',
             ),
@@ -661,9 +661,10 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         # Check vacuum equilibration MD settings is 0 ns
         nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
-        if not np.allclose(nvt_time, 0 * unit.nanosecond):
-            errmsg = "NVT equilibration cannot be run in vacuum simulation"
-            raise ValueError(errmsg)
+        if nvt_time is not None:
+            if not np.allclose(nvt_time, 0 * unit.nanosecond):
+                errmsg = "NVT equilibration cannot be run in vacuum simulation"
+                raise ValueError(errmsg)
 
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
