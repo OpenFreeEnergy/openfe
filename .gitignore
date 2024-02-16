@@ -173,3 +173,6 @@ docs/ExampleNotebooks/
 
 # Some charge stuff
 *.model.pt
+
+# Rever
+rever/
