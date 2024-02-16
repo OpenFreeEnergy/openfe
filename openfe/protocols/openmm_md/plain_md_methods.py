@@ -637,38 +637,18 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 del integrator, simulation
 
         if not dry:  # pragma: no-cover
-            if output_settings.equil_nvt_structure and output_settings.equil_npt_structure:
-                return {
-                    'system_pdb': shared_basepath / output_settings.preminimized_structure,
-                    'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                    'nvt_equil_pdb': shared_basepath / output_settings.equil_nvt_structure,
-                    'npt_equil_pdb': shared_basepath / output_settings.equil_npt_structure,
-                    'nc': shared_basepath / output_settings.production_trajectory_filename,
-                    'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
-                }
-            elif output_settings.equil_nvt_structure and not output_settings.equil_npt_structure:
-                return {
-                    'system_pdb': shared_basepath / output_settings.preminimized_structure,
-                    'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                    'nvt_equil_pdb': shared_basepath / output_settings.equil_nvt_structure,
-                    'nc': shared_basepath / output_settings.production_trajectory_filename,
-                    'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
-                }
-            elif output_settings.equil_npt_structure and not output_settings.equil_nvt_structure:
-                return {
-                    'system_pdb': shared_basepath / output_settings.preminimized_structure,
-                    'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                    'npt_equil_pdb': shared_basepath / output_settings.equil_npt_structure,
-                    'nc': shared_basepath / output_settings.production_trajectory_filename,
-                    'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
-                }
-            else:
-                return {
-                    'system_pdb': shared_basepath / output_settings.preminimized_structure,
-                    'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                    'nc': shared_basepath / output_settings.production_trajectory_filename,
-                    'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
-                }
+            output = {
+                'system_pdb': shared_basepath / output_settings.preminimized_structure,
+                'minimized_pdb': shared_basepath / output_settings.minimized_structure,
+                'nc': shared_basepath / output_settings.production_trajectory_filename,
+                'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
+            }
+            if output_settings.equil_nvt_structure:
+                output['nvt_equil_pdb'] = shared_basepath / output_settings.equil_nvt_structure
+            if output_settings.equil_npt_structure:
+                output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
+
+            return output
         else:
             return {'debug': {'system': stateA_system}}
 
