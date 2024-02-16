@@ -403,12 +403,12 @@ class MDOutputSettings(OutputSettings):
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
-    equil_NVT_structure = 'equil_NVT.pdb'
+    equil_nvt_structure = 'equil_nvt.pdb'
     """Path to the pdb file of the system after NVT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_NVT.pdb'."""
-    equil_NPT_structure = 'equil_NPT.pdb'
+    Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
+    equil_npt_structure = 'equil_npt.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
+    Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
     log_output = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,

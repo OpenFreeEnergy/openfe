@@ -356,7 +356,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
         traj.save_pdb(
-            shared_basepath / output_settings.equil_NVT_structure
+            shared_basepath / output_settings.equil_nvt_structure
         )
 
         # NPT equilibration
@@ -388,7 +388,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
         traj.save_pdb(
-            shared_basepath / output_settings.equil_NPT_structure
+            shared_basepath / output_settings.equil_npt_structure
         )
 
         # production
@@ -633,8 +633,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             return {
                 'system_pdb': shared_basepath / output_settings.preminimized_structure,
                 'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                'nvt_equil_pdb': shared_basepath / output_settings.equil_NVT_structure,
-                'npt_equil_pdb': shared_basepath / output_settings.equil_NPT_structure,
+                'nvt_equil_pdb': shared_basepath / output_settings.equil_nvt_structure,
+                'npt_equil_pdb': shared_basepath / output_settings.equil_npt_structure,
                 'nc': shared_basepath / output_settings.production_trajectory_filename,
                 'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }

@@ -428,8 +428,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 production_length=0.5 * unit.nanosecond,
             ),
             solvent_equil_output_settings=MDOutputSettings(
-                equil_NVT_structure='equil_nvt_structure.pdb',
-                equil_NPT_structure='equil_npt_structure.pdb',
+                equil_nvt_structure='equil_nvt_structure.pdb',
+                equil_npt_structure='equil_npt_structure.pdb',
                 production_trajectory_filename='production_equil.xtc',
                 log_output='equil_simulation.log',
             ),
@@ -448,8 +448,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 production_length=0.5 * unit.nanosecond,
             ),
             vacuum_equil_output_settings=MDOutputSettings(
-                equil_NVT_structure='pre_equil_structure.pdb',
-                equil_NPT_structure='equil_structure.pdb',
+                equil_nvt_structure='pre_equil_structure.pdb',
+                equil_npt_structure='equil_structure.pdb',
                 production_trajectory_filename='production_equil.xtc',
                 log_output='equil_simulation.log',
             ),
