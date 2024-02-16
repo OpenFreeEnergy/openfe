@@ -26,7 +26,7 @@ walks users through how to use the main components of OpenFE to create a
 relative binding free energy calculation.
 
 MD protocol tutorial
--------------------
+--------------------
 
 The :any:`MD protocol <md_tutorial>`
 tutorial walks users through how to run an MD simulation of benzene bound to 
