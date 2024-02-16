@@ -60,6 +60,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     ThermoSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from ..openmm_utils import (
     settings_validation, system_creation,
     multistate_analysis, charge_generation
@@ -152,37 +153,113 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return atom_ids
 
-    @staticmethod
-    def _pre_minimize(system: openmm.System,
-                      positions: omm_unit.Quantity) -> npt.NDArray:
+    def _pre_equilibrate(
+        self,
+        system: openmm.System,
+        topology: openmm.app.Topology,
+        positions: omm_unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+        dry: bool
+    ) -> omm_unit.Quantity:
         """
-        Short CPU minization of System to avoid GPU NaNs
+        Run a non-alchemical equilibration to get a stable system.
 
         Parameters
         ----------
         system : openmm.System
-          An OpenMM System to minimize.
-        positionns : openmm.unit.Quantity
+          An OpenMM System to equilibrate.
+        topology : openmm.app.Topology
+          OpenMM Topology of the System.
+        positions : openmm.unit.Quantity
           Initial positions for the system.
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings objects. Expects the
+          following entries:
+          * `engine_settings`
+          * `thermo_settings`
+          * `integrator_settings`
+          * `equil_simulation_settings`
+          * `equil_output_settings`
+        dry: bool
+          Whether or not this is a dry run.
 
         Returns
         -------
-        minimized_positions : npt.NDArray
-          Minimized positions
+        equilibrated_positions : npt.NDArray
+          Equilibrated system positions
         """
-        integrator = openmm.VerletIntegrator(0.001)
-        context = openmm.Context(
-            system, integrator,
-            openmm.Platform.getPlatformByName('CPU'),
+        # Prep the simulation object
+        platform = compute.get_openmm_platform(
+            settings['engine_settings'].compute_platform
         )
-        context.setPositions(positions)
-        # Do a quick 100 steps minimization, usually avoids NaNs
-        openmm.LocalEnergyMinimizer.minimize(
-            context, maxIterations=100
+
+        integrator = openmm.LangevinMiddleIntegrator(
+            to_openmm(settings['thermo_settings'].temperature),
+            to_openmm(settings['integrator_settings'].langevin_collision_rate),
+            to_openmm(settings['integrator_settings'].timestep),
         )
-        state = context.getState(getPositions=True)
-        minimized_positions = state.getPositions(asNumpy=True)
-        return minimized_positions
+
+        simulation = openmm.app.Simulation(
+            topology=topology,
+            system=system,
+            integrator=integrator,
+            platform=platform,
+        )
+
+        # Get the necessary number of steps
+        if settings['equil_simulation_settings'].equilibration_length_nvt is not None:
+            equil_steps_nvt = settings_validation.get_simsteps(
+                sim_length=settings[
+                    'equil_simulation_settings'].equilibration_length_nvt,
+                timestep=settings['integrator_settings'].timestep,
+                mc_steps=1,
+            )
+        else:
+            equil_steps_nvt = None
+
+        equil_steps_npt = settings_validation.get_simsteps(
+            sim_length=settings['equil_simulation_settings'].equilibration_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=1,
+        )
+
+        prod_steps_npt = settings_validation.get_simsteps(
+            sim_length=settings['equil_simulation_settings'].production_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=1,
+        )
+
+        if self.verbose:
+            logger.info("running non-alchemical equilibration MD")
+
+        # Don't do anything if we're doing a dry run
+        if dry:
+            return positions
+
+        # Use the _run_MD method from the PlainMDProtocolUnit
+        # Should in-place modify the simulation
+        PlainMDProtocolUnit._run_MD(
+            simulation=simulation,
+            positions=positions,
+            simulation_settings=settings['equil_simulation_settings'],
+            output_settings=settings['equil_output_settings'],
+            temperature=settings['thermo_settings'].temperature,
+            barostat_frequency=settings['integrator_settings'].barostat_frequency,
+            timestep=settings['integrator_settings'].timestep,
+            equil_steps_nvt=equil_steps_nvt,
+            equil_steps_npt=equil_steps_npt,
+            prod_steps=prod_steps_npt,
+            verbose=self.verbose,
+            shared_basepath=self.shared_basepath,
+        )
+ 
+        state = simulation.context.getState(getPositions=True)
+        equilibrated_positions = state.getPositions(asNumpy=True)
+
+        # cautiously delete out contexts & integrator
+        del simulation.context, integrator
+
+        return equilibrated_positions
 
     def _prepare(
         self, verbose: bool,
@@ -241,6 +318,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * integrator_settings : IntegratorSettings
           * simulation_settings : MultiStateSimulationSettings
           * output_settings: OutputSettings
+          * equil_simulation_settings: MDSimulationSettings
+          * equil_output_settings: MDOutputSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
@@ -914,8 +993,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             system_modeller, system_generator, list(smc_comps.values())
         )
 
-        # 6. Pre-minimize System (Test + Avoid NaNs)
-        positions = self._pre_minimize(omm_system, positions)
+        # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        positions = self._pre_equilibrate(
+            omm_system, omm_topology, positions, settings, dry
+        )
 
         # 7. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
