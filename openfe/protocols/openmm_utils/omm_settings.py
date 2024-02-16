@@ -116,7 +116,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency = 25 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: Optional[FloatQuantity['timestep']] = 25 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
     Default 25 * unit.timestep.
