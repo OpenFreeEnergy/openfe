@@ -1,6 +1,6 @@
 .. _guide-introduction:
 
-Introduction 
+Introduction
 ============
 
 Here we present an overview of the workflow for calculating free energies in

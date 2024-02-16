@@ -1,10 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
-from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 
-pytest.importorskip('perses')
-pytest.importorskip('openeye')
+from openfe.setup.atom_mapping import LigandAtomMapping, PersesAtomMapper
+
+pytest.importorskip("perses")
+pytest.importorskip("openeye")
 
 USING_NEW_OFF = True  # by default we are now
 
@@ -12,8 +13,8 @@ USING_NEW_OFF = True  # by default we are now
 @pytest.mark.xfail(USING_NEW_OFF, reason="Perses #1108")
 def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = PersesAtomMapper()
 
@@ -29,8 +30,8 @@ def test_simple(atom_mapping_basic_test_files):
 def test_generator_length(atom_mapping_basic_test_files):
     # check that we get one mapping back from Lomap LigandAtomMapper then the
     # generator stops correctly
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = PersesAtomMapper()
 

@@ -7,10 +7,10 @@ Run absolute free energy calculations using OpenMM and OpenMMTools.
 
 from .equil_solvation_afe_method import (
     AbsoluteSolvationProtocol,
-    AbsoluteSolvationSettings,
     AbsoluteSolvationProtocolResult,
-    AbsoluteSolvationVacuumUnit,
+    AbsoluteSolvationSettings,
     AbsoluteSolvationSolventUnit,
+    AbsoluteSolvationVacuumUnit,
 )
 
 __all__ = [

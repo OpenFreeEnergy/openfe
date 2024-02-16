@@ -24,7 +24,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link-type: doc
 
         New to *OpenFE*? Check out our installation guide to get it working on your machine!
-        
+
     .. grid-item-card:: Tutorials
         :img-top: _static/Tutorial.svg
         :text-align: center
@@ -32,7 +32,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link-type: doc
 
         Worked through examples of how to use the OpenFE toolkit.
-        
+
     .. grid-item-card:: User Guide
         :img-top: _static/UserGuide.svg
         :text-align: center
@@ -40,7 +40,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link-type: doc
 
         Learn about the underlying concepts of the OpenFE toolkit.
-        
+
     .. grid-item-card:: API Reference
         :img-top: _static/API.svg
         :text-align: center
@@ -56,7 +56,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link-type: doc
 
         How-to guides on how to utilise the toolkit components.
-        
+
     .. grid-item-card:: Using the CLI
         :img-top: _static/CLI.svg
         :text-align: center
@@ -72,7 +72,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
         :link-type: doc
 
         Tutorial notebook showing the sorts of things OpenFE can do.
-        
+
     .. grid-item-card:: Relative Free Energy Protocol
         :img-top: _static/Rocket.svg
         :text-align: center

@@ -2,8 +2,9 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL, MAPPER, OUTPUT_FILE_AND_EXT
+from openfecli.parameters import MAPPER, MOL, OUTPUT_FILE_AND_EXT
 
 
 def allow_two_molecules(ctx, param, value):
@@ -13,16 +14,15 @@ def allow_two_molecules(ctx, param, value):
     return value
 
 
-@click.command(
-    "atommapping",
-    short_help="Check the atom mapping of a given pair of ligands"
+@click.command("atommapping", short_help="Check the atom mapping of a given pair of ligands")
+@MOL.parameter(
+    multiple=True,
+    callback=allow_two_molecules,
+    required=True,
+    help=MOL.kwargs["help"] + " Must be specified twice.",
 )
-@MOL.parameter(multiple=True, callback=allow_two_molecules, required=True,
-               help=MOL.kwargs['help'] + " Must be specified twice.")
 @MAPPER.parameter(required=True)
-@OUTPUT_FILE_AND_EXT.parameter(
-    help=OUTPUT_FILE_AND_EXT.kwargs['help'] + " (PNG format)"
-)
+@OUTPUT_FILE_AND_EXT.parameter(help=OUTPUT_FILE_AND_EXT.kwargs["help"] + " (PNG format)")
 def atommapping(mol, mapper, output):
     """
     This provides tools for looking at a specific atommapping.
@@ -60,8 +60,7 @@ def generate_mapping(mapper, molA, molB):
     mappings = list(mapper.suggest_mappings(molA, molB))
     if len(mappings) != 1:
         raise click.UsageError(
-            f"Found {len(mappings)} mappings; this command requires a mapper "
-            "to provide exactly 1 mapping"
+            f"Found {len(mappings)} mappings; this command requires a mapper " "to provide exactly 1 mapping",
         )
     return mappings[0]
 
@@ -73,8 +72,8 @@ def atommapping_print_dict_main(mapper, molA, molB):
 
 
 def atommapping_visualize_main(mapper, molA, molB, file, ext):
-    from rdkit.Chem import Draw
     from gufe.visualization import mapping_visualization as vis
+    from rdkit.Chem import Draw
 
     mapping = generate_mapping(mapper, molA, molB)
     ext_to_artist = {
@@ -85,12 +84,15 @@ def atommapping_visualize_main(mapper, molA, molB, file, ext):
     except KeyError:
         raise click.BadParameter(
             f"Unknown file format: '{ext}'. The following formats are "
-            "supported: " + ", ".join([f"'{ext}'" for ext in ext_to_artist])
+            "supported: " + ", ".join([f"'{ext}'" for ext in ext_to_artist]),
         )
 
-    contents = vis.draw_mapping(mapping.componentA_to_componentB,
-                                mapping.componentA.to_rdkit(),
-                                mapping.componentB.to_rdkit(), d2d=artist)
+    contents = vis.draw_mapping(
+        mapping.componentA_to_componentB,
+        mapping.componentA.to_rdkit(),
+        mapping.componentB.to_rdkit(),
+        d2d=artist,
+    )
 
     file.write(contents)
 

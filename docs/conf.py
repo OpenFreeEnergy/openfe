@@ -13,15 +13,15 @@
 import os
 import sys
 from importlib.metadata import version
-from packaging.version import parse
-from pathlib import Path
 from inspect import cleandoc
+from pathlib import Path
 
-from git import Repo
-import nbsphinx
 import nbformat
+import nbsphinx
+from git import Repo
+from packaging.version import parse
 
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath("../"))
 
 
 os.environ["SPHINX"] = "True"
@@ -134,7 +134,7 @@ html_theme_options = {
             "url": "https://github.com/OpenFreeEnergy/openfe",
             "icon": "fa-brands fa-square-github",
             "type": "fontawesome",
-        }
+        },
     ],
     "accent_color": "DarkGoldenYellow",
     "navigation_with_keys": False,
@@ -171,7 +171,7 @@ example_notebooks_path = Path("ExampleNotebooks")
 try:
     if example_notebooks_path.exists():
         repo = Repo(example_notebooks_path)
-        repo.remote('origin').pull()
+        repo.remote("origin").pull()
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
@@ -182,11 +182,10 @@ except Exception as e:
 
     filename = e.__traceback__.tb_frame.f_code.co_filename
     lineno = e.__traceback__.tb_lineno
-    getLogger('sphinx.ext.openfe_git').warning(
-        f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
-    )
+    getLogger("sphinx.ext.openfe_git").warning(f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}")
 
-nbsphinx_prolog = cleandoc(r"""
+nbsphinx_prolog = cleandoc(
+    r"""
     {%- set path = env.doc2path(env.docname, base="ExampleNotebooks") -%}
     {%- set gh_repo = "OpenFreeEnergy/openfe" -%}
     {%- set gh_branch = "main" -%}
@@ -246,4 +245,5 @@ nbsphinx_prolog = cleandoc(r"""
 
             :octicon:`rocket` Run in Colab
 
-""")
+""",
+)

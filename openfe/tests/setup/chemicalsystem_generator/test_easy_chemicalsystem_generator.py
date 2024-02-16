@@ -1,34 +1,33 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from rdkit import Chem
 import pytest
+from gufe import ChemicalSystem, SolventComponent
+from rdkit import Chem
 
-from gufe import ChemicalSystem
-from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import (
-    EasyChemicalSystemGenerator,
-)
-
+from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import EasyChemicalSystemGenerator
 
 from ...conftest import T4_protein_component
-from gufe import SolventComponent
-from .component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
+from .component_checks import ligandC_in_chem_sys, proteinC_in_chem_sys, solventC_in_chem_sys
 
 
 def test_easy_chemical_system_generator_init(T4_protein_component):
 
     chem_sys_generator = EasyChemicalSystemGenerator(do_vacuum=True)
-    
+
     chem_sys_generator = EasyChemicalSystemGenerator(solvent=SolventComponent())
-    
+
+    chem_sys_generator = EasyChemicalSystemGenerator(solvent=SolventComponent(), protein=T4_protein_component)
+
     chem_sys_generator = EasyChemicalSystemGenerator(
-        solvent=SolventComponent(), protein=T4_protein_component
-    )
-    
-    chem_sys_generator = EasyChemicalSystemGenerator(
-        solvent=SolventComponent(), protein=T4_protein_component, do_vacuum=True
+        solvent=SolventComponent(),
+        protein=T4_protein_component,
+        do_vacuum=True,
     )
 
-    with pytest.raises(ValueError, match='Chemical system generator is unable to generate any chemical systems with neither protein nor solvent nor do_vacuum'):
+    with pytest.raises(
+        ValueError,
+        match="Chemical system generator is unable to generate any chemical systems with neither protein nor solvent nor do_vacuum",
+    ):
         chem_sys_generator = EasyChemicalSystemGenerator()
 
 
@@ -69,9 +68,7 @@ def test_build_protein_chemical_system(ethane, T4_protein_component):
 
 
 def test_build_hydr_scenario_chemical_systems(ethane):
-    chem_sys_generator = EasyChemicalSystemGenerator(
-        do_vacuum=True, solvent=SolventComponent()
-    )
+    chem_sys_generator = EasyChemicalSystemGenerator(do_vacuum=True, solvent=SolventComponent())
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]
 
@@ -84,7 +81,8 @@ def test_build_hydr_scenario_chemical_systems(ethane):
 
 def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
     chem_sys_generator = EasyChemicalSystemGenerator(
-        solvent=SolventComponent(), protein=T4_protein_component,
+        solvent=SolventComponent(),
+        protein=T4_protein_component,
     )
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]
@@ -99,7 +97,9 @@ def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
 
 def test_build_hbinding_scenario_chemical_systems(ethane, T4_protein_component):
     chem_sys_generator = EasyChemicalSystemGenerator(
-        do_vacuum=True, solvent=SolventComponent(), protein=T4_protein_component,
+        do_vacuum=True,
+        solvent=SolventComponent(),
+        protein=T4_protein_component,
     )
     chem_sys_gen = chem_sys_generator(ethane)
     chem_syss = [chem_sys for chem_sys in chem_sys_gen]

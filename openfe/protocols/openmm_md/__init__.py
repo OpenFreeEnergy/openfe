@@ -5,12 +5,7 @@ Run MD simulation using OpenMM and OpenMMTools.
 
 """
 
-from .plain_md_methods import (
-    PlainMDProtocol,
-    PlainMDProtocolSettings,
-    PlainMDProtocolResult,
-    PlainMDProtocolUnit,
-)
+from .plain_md_methods import PlainMDProtocol, PlainMDProtocolResult, PlainMDProtocolSettings, PlainMDProtocolUnit
 
 __all__ = [
     "PlainMDProtocol",

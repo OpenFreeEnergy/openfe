@@ -2,38 +2,29 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
 import copy
-from typing import Iterable, Callable, Type, Optional
+from collections.abc import Iterable
+from typing import Callable, Optional, Type
 
 from gufe import (
-    Protocol,
     AlchemicalNetwork,
-    LigandAtomMapping,
-    Transformation,
     ChemicalSystem,
-)
-from gufe import (
-    SmallMoleculeComponent, ProteinComponent, SolventComponent,
+    LigandAtomMapping,
     LigandNetwork,
+    ProteinComponent,
+    Protocol,
+    SmallMoleculeComponent,
+    SolventComponent,
+    Transformation,
 )
 
-
-from .abstract_alchemical_network_planner import (
-    AbstractAlchemicalNetworkPlanner,
-)
-
+from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
 from .. import LomapAtomMapper
 from ..atom_mapping.ligandatommapper import LigandAtomMapper
 from ..atom_mapping.lomap_scorers import default_lomap_score
+from ..chemicalsystem_generator import EasyChemicalSystemGenerator, RFEComponentLabels
+from ..chemicalsystem_generator.abstract_chemicalsystem_generator import AbstractChemicalSystemGenerator
 from ..ligand_network_planning import generate_minimal_spanning_network
-from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
-    AbstractChemicalSystemGenerator,
-)
-from ..chemicalsystem_generator import (
-    EasyChemicalSystemGenerator,
-    RFEComponentLabels,
-)
-from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
-
+from .abstract_alchemical_network_planner import AbstractAlchemicalNetworkPlanner
 
 # TODO: move/or find better structure for protocol_generator combintations!
 PROTOCOL_GENERATOR = {
@@ -41,16 +32,14 @@ PROTOCOL_GENERATOR = {
 }
 
 
-class RelativeAlchemicalNetworkPlanner(
-    AbstractAlchemicalNetworkPlanner, abc.ABC
-):
+class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC):
     _chemical_system_generator: AbstractChemicalSystemGenerator
 
     def __init__(
         self,
         name: str = "easy_rfe_calculation",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float] = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -74,21 +63,17 @@ class RelativeAlchemicalNetworkPlanner(
         if protocol is None:
             protocol = RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings())
         if mappers is None:
-            mappers = [LomapAtomMapper(time=20, threed=True,
-                                       element_change=False, max3d=1)]
+            mappers = [LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)]
 
         self.name = name
         self._mappers = mappers
         self._mapping_scorer = mapping_scorer
         self._ligand_network_planner = ligand_network_planner
         self._protocol = protocol
-        self._chemical_system_generator_type = PROTOCOL_GENERATOR[
-            protocol.__class__
-        ]
+        self._chemical_system_generator_type = PROTOCOL_GENERATOR[protocol.__class__]
 
     @abc.abstractmethod
-    def __call__(self, *args, **kwargs) -> AlchemicalNetwork:
-        ...  # -no-cov-
+    def __call__(self, *args, **kwargs) -> AlchemicalNetwork: ...  # -no-cov-
 
     @property
     def mappers(self) -> Iterable[LigandAtomMapper]:
@@ -109,15 +94,11 @@ class RelativeAlchemicalNetworkPlanner(
     @property
     def chemical_system_generator_type(
         self,
-    ) -> Type[AbstractChemicalSystemGenerator]:
+    ) -> type[AbstractChemicalSystemGenerator]:
         return self._chemical_system_generator_type
 
-    def _construct_ligand_network(
-        self, ligands: Iterable[SmallMoleculeComponent]
-    ) -> LigandNetwork:
-        ligand_network = self._ligand_network_planner(
-            ligands=ligands, mappers=self.mappers, scorer=self.mapping_scorer
-        )
+    def _construct_ligand_network(self, ligands: Iterable[SmallMoleculeComponent]) -> LigandNetwork:
+        ligand_network = self._ligand_network_planner(ligands=ligands, mappers=self.mappers, scorer=self.mapping_scorer)
 
         return ligand_network
 
@@ -162,25 +143,19 @@ class RelativeAlchemicalNetworkPlanner(
                 end_state_nodes.extend([stateA_env, stateB_env])
 
         # Todo: make the code here more stable in future: Name doubling check
-        all_transformation_labels = list(
-            map(lambda x: x.name, transformation_edges)
-        )
+        all_transformation_labels = list(map(lambda x: x.name, transformation_edges))
 
-        if len(all_transformation_labels) != len(
-            set(all_transformation_labels)
-        ):
+        if len(all_transformation_labels) != len(set(all_transformation_labels)):
             raise ValueError(
                 "There were multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
                 + str(len(all_transformation_labels))
                 + "\nunique: "
                 + str(len(set(all_transformation_labels)))
                 + "\ngot: \n\t"
-                + "\n\t".join(all_transformation_labels)
+                + "\n\t".join(all_transformation_labels),
             )
 
-        alchemical_network = AlchemicalNetwork(
-            nodes=end_state_nodes, edges=transformation_edges, name=self.name
-        )
+        alchemical_network = AlchemicalNetwork(nodes=end_state_nodes, edges=transformation_edges, name=self.name)
         return alchemical_network
 
     def _build_transformation(
@@ -211,9 +186,7 @@ class RelativeAlchemicalNetworkPlanner(
         if "vacuum" in transformation_name:
             protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
 
-        transformation_protocol = transformation_protocol.__class__(
-            settings=protocol_settings
-        )
+        transformation_protocol = transformation_protocol.__class__(settings=protocol_settings)
 
         return Transformation(
             stateA=stateA,
@@ -237,7 +210,7 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         self,
         name: str = "easy_rhfe",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float] = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -274,7 +247,8 @@ class RHFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
 
         # Prepare system generation
         self._chemical_system_generator = self._chemical_system_generator_type(
-            solvent=solvent, do_vacuum=True,
+            solvent=solvent,
+            do_vacuum=True,
         )
 
         # Build transformations
@@ -295,11 +269,12 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     network planning scheme, then call it on a collection of ligands, protein,
     solvent, and co-factors to create the network.
     """
+
     def __init__(
         self,
         name: str = "easy_rbfe",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
-        mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
+        mapping_scorer: Callable[[LigandAtomMapping], float] = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
     ):
@@ -342,7 +317,9 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
 
         # Prepare system generation
         self._chemical_system_generator = self._chemical_system_generator_type(
-            solvent=solvent, protein=protein, cofactors=cofactors,
+            solvent=solvent,
+            protein=protein,
+            cofactors=cofactors,
         )
 
         # Build transformations

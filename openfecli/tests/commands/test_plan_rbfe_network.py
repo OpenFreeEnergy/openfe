@@ -1,23 +1,20 @@
+import os
+import shutil
+from importlib import resources
 from unittest import mock
 
 import pytest
-from importlib import resources
-import os
-import shutil
 from click.testing import CliRunner
 
-from openfecli.commands.plan_rbfe_network import (
-    plan_rbfe_network,
-    plan_rbfe_network_main,
-)
+from openfecli.commands.plan_rbfe_network import plan_rbfe_network, plan_rbfe_network_main
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mol_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp('moldir')
+    ofe_dir_path = tmpdir_factory.mktemp("moldir")
 
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
-        for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+    with resources.files("openfe.tests.data.openmm_rfe") as d:
+        for f in ["ligand_23.sdf", "ligand_55.sdf"]:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
@@ -44,26 +41,14 @@ def print_test_with_file(
 
 
 def test_plan_rbfe_network_main():
-    from gufe import (
-        ProteinComponent,
-        SmallMoleculeComponent,
-        SolventComponent,
-    )
-    from openfe.setup import (
-        LomapAtomMapper,
-        lomap_scorers,
-        ligand_network_planning,
-    )
+    from gufe import ProteinComponent, SmallMoleculeComponent, SolventComponent
+
+    from openfe.setup import LomapAtomMapper, ligand_network_planning, lomap_scorers
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
-        smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(d / f)
-            for f in ['ligand_23.sdf', 'ligand_55.sdf']
-        ]
+        smallM_components = [SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]]
     with resources.files("openfe.tests.data") as d:
-        protein_compontent = ProteinComponent.from_pdb_file(
-            str(d / "181l_only.pdb")
-        )
+        protein_compontent = ProteinComponent.from_pdb_file(str(d / "181l_only.pdb"))
 
     solvent_component = SolventComponent()
     alchemical_network, ligand_network = plan_rbfe_network_main(
@@ -101,9 +86,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
         "- easy_rbfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
-    patch_base = (
-        "openfecli.commands.plan_rbfe_network."
-    )
+    patch_base = "openfecli.commands.plan_rbfe_network."
     args += ["-o", "tmp_network"]
 
     patch_loc = patch_base + "plan_rbfe_network"
@@ -124,10 +107,10 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
 
 @pytest.fixture
 def eg5_files():
-    with resources.files('openfe.tests.data.eg5') as p:
-        pdb_path = str(p.joinpath('eg5_protein.pdb'))
-        lig_path = str(p.joinpath('eg5_ligands.sdf'))
-        cof_path = str(p.joinpath('eg5_cofactor.sdf'))
+    with resources.files("openfe.tests.data.eg5") as p:
+        pdb_path = str(p.joinpath("eg5_protein.pdb"))
+        lig_path = str(p.joinpath("eg5_ligands.sdf"))
+        cof_path = str(p.joinpath("eg5_cofactor.sdf"))
 
         yield pdb_path, lig_path, cof_path
 
@@ -137,9 +120,12 @@ def test_plan_rbfe_network_cofactors(eg5_files):
     runner = CliRunner()
 
     args = [
-        '-p', eg5_files[0],
-        '-M', eg5_files[1],
-        '-C', eg5_files[2],
+        "-p",
+        eg5_files[0],
+        "-M",
+        eg5_files[1],
+        "-C",
+        eg5_files[2],
     ]
 
     with runner.isolated_filesystem():
@@ -175,10 +161,14 @@ def test_custom_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdi
     assert settings_path.exists()
 
     args = [
-        '-p', protein,
-        '-M', ligand,
-        '-C', cofactor,
-        '-s', settings_path,
+        "-p",
+        protein,
+        "-M",
+        ligand,
+        "-C",
+        cofactor,
+        "-s",
+        settings_path,
     ]
 
     runner = CliRunner()

@@ -7,15 +7,18 @@ This module implements the settings necessary to run MD simulations using
 :class:`openfe.protocols.openmm_md.plain_md_methods.py`
 
 """
-from openfe.protocols.openmm_utils.omm_settings import (
-    Settings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
-    MDSimulationSettings,
-    IntegratorSettings, MDOutputSettings,
-    OpenFFPartialChargeSettings,
-)
 from gufe.settings import SettingsBaseModel
+
+from openfe.protocols.openmm_utils.omm_settings import (
+    IntegratorSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    Settings,
+)
+
 try:
     from pydantic.v1 import validator
 except ImportError:
@@ -31,7 +34,7 @@ class PlainMDProtocolSettings(Settings):
     Number of independent MD runs to perform.
     """
 
-    @validator('protocol_repeats')
+    @validator("protocol_repeats")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."

@@ -1,6 +1,7 @@
 import contextlib
 import logging
 
+
 @contextlib.contextmanager
 def silence_root_logging():
     """Context manager to silence logging from root logging handlers.
@@ -21,6 +22,3 @@ def silence_root_logging():
         root.removeHandler(null)
         for handler in old_handlers:
             root.addHandler(handler)
-
-
-

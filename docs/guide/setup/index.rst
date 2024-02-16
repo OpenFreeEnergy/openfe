@@ -33,4 +33,3 @@ for more details.
    :hidden:
 
    define_ligand_network
-

@@ -1,14 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
 from typing import List
-from openfecli.utils import write, print_duration
+
+import click
+
 from openfecli import OFECommandPlugin
-from openfecli.parameters import (
-    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
-)
+from openfecli.parameters import COFACTORS, MAPPER, MOL_DIR, OUTPUT_DIR, PROTEIN, YAML_OPTIONS
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+from openfecli.utils import print_duration, write
 
 
 def plan_rbfe_network_main(
@@ -46,9 +46,7 @@ def plan_rbfe_network_main(
         associated ligand network
     """
 
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RBFEAlchemicalNetworkPlanner,
-    )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RBFEAlchemicalNetworkPlanner
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
@@ -56,7 +54,9 @@ def plan_rbfe_network_main(
         ligand_network_planner=ligand_network_planner,
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent, protein=protein,
+        ligands=small_molecules,
+        solvent=solvent,
+        protein=protein,
         cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
@@ -64,22 +64,15 @@ def plan_rbfe_network_main(
 
 @click.command(
     "plan-rbfe-network",
-    short_help=(
-        "Plan a relative binding free energy network, saved as JSON files "
-        "for the quickrun command."
-    )
+    short_help=("Plan a relative binding free energy network, saved as JSON files " "for the quickrun command."),
 )
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
-@PROTEIN.parameter(
-    multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
-)
-@COFACTORS.parameter(
-    multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
-)
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
+@PROTEIN.parameter(multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"])
+@COFACTORS.parameter(multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"])
 @YAML_OPTIONS.parameter(
-    multiple=False, required=False, default=None,
+    multiple=False,
+    required=False,
+    default=None,
     help=YAML_OPTIONS.kwargs["help"],
 )
 @OUTPUT_DIR.parameter(
@@ -88,9 +81,11 @@ def plan_rbfe_network_main(
 )
 @print_duration
 def plan_rbfe_network(
-        molecules: List[str], protein: str, cofactors: tuple[str],
-        yaml_settings: str,
-        output_dir: str,
+    molecules: list[str],
+    protein: str,
+    cofactors: tuple[str],
+    yaml_settings: str,
+    output_dir: str,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -125,10 +120,7 @@ def plan_rbfe_network(
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
-    write(
-        "\t\tSmall Molecules: "
-        + " ".join([str(sm) for sm in small_molecules])
-    )
+    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
@@ -182,6 +174,4 @@ def plan_rbfe_network(
     )
 
 
-PLUGIN = OFECommandPlugin(
-    command=plan_rbfe_network, section="Network Planning", requires_ofe=(0, 3)
-)
+PLUGIN = OFECommandPlugin(command=plan_rbfe_network, section="Network Planning", requires_ofe=(0, 3))

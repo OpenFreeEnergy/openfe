@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from openfecli.parameters import plan_network_options
 import pytest
+
+from openfecli.parameters import plan_network_options
 
 
 @pytest.fixture
@@ -26,6 +27,7 @@ mapper:
     timeout: 120.0
 """
 
+
 @pytest.fixture
 def partial_network_yaml():
     return """\
@@ -41,10 +43,10 @@ def test_loading_full_yaml(full_yaml):
 
     assert d
     assert d.mapper
-    assert d.mapper.method == 'LomapAtomMapper'.lower()
-    assert d.mapper.settings['timeout'] == 120
+    assert d.mapper.method == "LomapAtomMapper".lower()
+    assert d.mapper.settings["timeout"] == 120
     assert d.network
-    assert d.network.method == 'generate_radial_network'
+    assert d.network.method == "generate_radial_network"
 
 
 def test_loading_mapper_yaml(partial_mapper_yaml):
@@ -52,7 +54,7 @@ def test_loading_mapper_yaml(partial_mapper_yaml):
 
     assert d
     assert d.mapper
-    assert d.mapper.method == 'KartografAtomMapper'.lower()
+    assert d.mapper.method == "KartografAtomMapper".lower()
     assert d.network is None
 
 
@@ -62,5 +64,5 @@ def test_loading_network_yaml(partial_network_yaml):
     assert d
     assert d.mapper is None
     assert d.network
-    assert d.network.method == 'generate_radial_network'
-    assert d.network.settings['scorer'] == 'default_lomap_scorer'
+    assert d.network.method == "generate_radial_network"
+    assert d.network.settings["scorer"] == "default_lomap_scorer"

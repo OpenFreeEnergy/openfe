@@ -5,6 +5,7 @@ import pytest
 from openff.units import unit
 
 from openfe.protocols.openmm_rfe import equil_rfe_settings
+
 # afe settings currently have no FloatQuantity values
 from openfe.protocols.openmm_utils import omm_settings
 
@@ -14,14 +15,14 @@ class TestOMMSettingsFromStrings:
     def test_system_settings(self):
         s = omm_settings.OpenMMSystemGeneratorFFSettings()
 
-        s.nonbonded_cutoff = '1.1 nm'
+        s.nonbonded_cutoff = "1.1 nm"
 
         assert s.nonbonded_cutoff == 1.1 * unit.nanometer
 
     def test_solvation_settings(self):
         s = omm_settings.OpenMMSolvationSettings()
 
-        s.solvent_padding = '1.1 nm'
+        s.solvent_padding = "1.1 nm"
 
         assert s.solvent_padding == 1.1 * unit.nanometer
 
@@ -32,11 +33,11 @@ class TestOMMSettingsFromStrings:
     def test_integator_settings(self):
         s = omm_settings.IntegratorSettings()
 
-        s.timestep = '3 fs'
+        s.timestep = "3 fs"
 
         assert s.timestep == 3.0 * unit.femtosecond
 
-        s.langevin_collision_rate = '1.1 / ps'
+        s.langevin_collision_rate = "1.1 / ps"
 
         assert s.langevin_collision_rate == 1.1 / unit.picosecond
 
@@ -48,8 +49,8 @@ class TestOMMSettingsFromStrings:
             production_length=5.0 * unit.nanosecond,
         )
 
-        s.equilibration_length = '2.5 ns'
-        s.production_length = '10 ns'
+        s.equilibration_length = "2.5 ns"
+        s.production_length = "10 ns"
 
         assert s.equilibration_length == 2.5 * unit.nanosecond
         assert s.production_length == 10.0 * unit.nanosecond
@@ -57,10 +58,8 @@ class TestOMMSettingsFromStrings:
 
 class TestEquilRFESettingsFromString:
     def test_alchemical_settings(self):
-        s = equil_rfe_settings.AlchemicalSettings(softcore_LJ='gapsys')
+        s = equil_rfe_settings.AlchemicalSettings(softcore_LJ="gapsys")
 
-        s.explicit_charge_correction_cutoff = '0.85 nm'
+        s.explicit_charge_correction_cutoff = "0.85 nm"
 
         assert s.explicit_charge_correction_cutoff == 0.85 * unit.nanometer
-
-

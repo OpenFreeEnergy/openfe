@@ -3,28 +3,29 @@
 """Pydantic models for the definition of advanced CLI options
 
 """
-import click
 from collections import namedtuple
+
+import click
+
 try:
     # todo; once we're fully v2, we can use ConfigDict not nested class
     from pydantic.v1 import BaseModel  # , ConfigDict
 except ImportError:
     from pydantic import BaseModel
-from plugcli.params import Option
-from typing import Any, Optional
-import yaml
+
 import warnings
+from typing import Any, Optional
 
+import yaml
+from plugcli.params import Option
 
-PlanNetworkOptions = namedtuple('PlanNetworkOptions',
-                                ['mapper', 'scorer',
-                                 'ligand_network_planner', 'solvent'])
+PlanNetworkOptions = namedtuple("PlanNetworkOptions", ["mapper", "scorer", "ligand_network_planner", "solvent"])
 
 
 class MapperSelection(BaseModel):
     # model_config = ConfigDict(extra='allow', str_to_lower=True)
     class Config:
-        extra = 'allow'
+        extra = "allow"
         anystr_lower = True
 
     method: Optional[str] = None
@@ -34,7 +35,7 @@ class MapperSelection(BaseModel):
 class NetworkSelection(BaseModel):
     # model_config = ConfigDict(extra='allow', str_to_lower=True)
     class Config:
-        extra = 'allow'
+        extra = "allow"
         anystr_lower = True
 
     method: Optional[str] = None
@@ -44,7 +45,7 @@ class NetworkSelection(BaseModel):
 class CliYaml(BaseModel):
     # model_config = ConfigDict(extra='allow')
     class Config:
-        extra = 'allow'
+        extra = "allow"
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
@@ -72,7 +73,7 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
 
     if False:
         # todo: warnings about extra fields we don't expect?
-        expected = {'mapper', 'network'}
+        expected = {"mapper", "network"}
         for field in raw:
             if field in expected:
                 continue
@@ -98,24 +99,21 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
       and 'solvent' fields.
       these fields each hold appropriate objects ready for use
     """
-    from gufe import SolventComponent
-    from openfe.setup.ligand_network_planning import (
-        generate_radial_network,
-        generate_minimal_spanning_network,
-        generate_maximal_network,
-        generate_minimal_redundant_network,
-    )
-    from openfe.setup import (
-        LomapAtomMapper,
-        KartografAtomMapper,
-    )
-    from openfe.setup.atom_mapping.lomap_scorers import (
-        default_lomap_score,
-    )
     from functools import partial
 
+    from gufe import SolventComponent
+
+    from openfe.setup import KartografAtomMapper, LomapAtomMapper
+    from openfe.setup.atom_mapping.lomap_scorers import default_lomap_score
+    from openfe.setup.ligand_network_planning import (
+        generate_maximal_network,
+        generate_minimal_redundant_network,
+        generate_minimal_spanning_network,
+        generate_radial_network,
+    )
+
     if path is not None:
-        with open(path, 'r') as f:
+        with open(path) as f:
             raw = f.read()
 
         # convert raw yaml to normalised pydantic model
@@ -126,10 +124,10 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     # convert normalised inputs to objects
     if opt and opt.mapper:
         mapper_choices = {
-            'lomap': LomapAtomMapper,
-            'lomapatommapper': LomapAtomMapper,
-            'kartograf': KartografAtomMapper,
-            'kartografatommapper': KartografAtomMapper,
+            "lomap": LomapAtomMapper,
+            "lomapatommapper": LomapAtomMapper,
+            "kartograf": KartografAtomMapper,
+            "kartografatommapper": KartografAtomMapper,
         }
 
         try:
@@ -138,20 +136,19 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
         mapper_obj = cls(**opt.mapper.settings)
     else:
-        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False,
-                                     max3d=1)
+        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False, max3d=1)
 
     # todo: choice of scorer goes here
     mapping_scorer = default_lomap_score
 
     if opt and opt.network:
         network_choices = {
-            'generate_radial_network': generate_radial_network,
-            'radial': generate_radial_network,
-            'generate_minimal_spanning_network': generate_minimal_spanning_network,
-            'mst': generate_minimal_spanning_network,
-            'generate_minimal_redundant_network': generate_minimal_redundant_network,
-            'generate_maximal_network': generate_maximal_network,
+            "generate_radial_network": generate_radial_network,
+            "radial": generate_radial_network,
+            "generate_minimal_spanning_network": generate_minimal_spanning_network,
+            "mst": generate_minimal_spanning_network,
+            "generate_minimal_redundant_network": generate_minimal_redundant_network,
+            "generate_maximal_network": generate_maximal_network,
         }
 
         try:
@@ -175,7 +172,9 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
 
 YAML_OPTIONS = Option(
-    '-s', "--settings", "yaml_settings",
+    "-s",
+    "--settings",
+    "yaml_settings",
     type=click.Path(exists=True, dir_okay=False),
     help="Path to planning settings yaml file.",
     getter=load_yaml_planner_options,

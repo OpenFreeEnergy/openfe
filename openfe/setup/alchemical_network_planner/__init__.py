@@ -1,7 +1,4 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .relative_alchemical_network_planner import (
-    RHFEAlchemicalNetworkPlanner,
-    RBFEAlchemicalNetworkPlanner,
-)
+from .relative_alchemical_network_planner import RBFEAlchemicalNetworkPlanner, RHFEAlchemicalNetworkPlanner
