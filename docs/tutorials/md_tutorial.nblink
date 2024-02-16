@@ -1,6 +1,6 @@
 {
    "path": "../ExampleNotebooks/openmm_md/plain_md.ipynb",
    "extra-media": [
-      "../ExampleNotebooks/openmm_rbfe/assets/",
+      "../ExampleNotebooks/openmm_md/assets/",
    ]
 }
