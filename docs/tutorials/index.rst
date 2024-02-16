@@ -25,6 +25,12 @@ Our :any:`showcase notebook <showcase_notebook>`
 walks users through how to use the main components of OpenFE to create a
 relative binding free energy calculation.
 
+MD protocol tutorial
+-------------------
+
+The :any:`MD protocol <md_tutorial>`
+tutorial walks users through how to run an MD simulation of benzene bound to 
+T4-lysozyme L99A in OpenFE.
 
 .. toctree::
     :maxdepth: 1
@@ -33,3 +39,4 @@ relative binding free energy calculation.
     rbfe_cli_tutorial
     rbfe_python_tutorial
     showcase_notebook
+    md_tutorial
