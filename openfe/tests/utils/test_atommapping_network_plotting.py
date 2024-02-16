@@ -7,7 +7,8 @@ import matplotlib.figure
 import importlib.resources
 
 from openfe.utils.atommapping_network_plotting import (
-    AtomMappingNetworkDrawing, plot_atommapping_network,
+    AtomMappingNetworkDrawing,
+    plot_atommapping_network,
     LigandNode,
 )
 
@@ -41,11 +42,7 @@ def bound_args(func, args, kwargs):
 def network_drawing(simple_network):
     nx_graph = simple_network.network.graph
     node_dict = {node.smiles: node for node in nx_graph.nodes}
-    positions = {
-        node_dict["CC"]: (0.0, 0.0),
-        node_dict["CO"]: (0.5, 0.0),
-        node_dict["CCO"]: (0.25, 0.25)
-    }
+    positions = {node_dict["CC"]: (0.0, 0.0), node_dict["CO"]: (0.5, 0.0), node_dict["CCO"]: (0.25, 0.25)}
     graph = AtomMappingNetworkDrawing(nx_graph, positions)
     graph.ax.set_xlim(0, 1)
     graph.ax.set_ylim(0, 1)
@@ -65,7 +62,6 @@ def default_node(network_drawing):
     yield LigandNode(node_dict["CC"], 0.5, 0.5, 0.1, 0.1)
 
 
-
 class TestAtomMappingEdge:
     def test_draw_mapped_molecule(self, default_edge):
         assert len(default_edge.artist.axes.images) == 0
@@ -73,7 +69,7 @@ class TestAtomMappingEdge:
             (0.05, 0.45, 0.5, 0.9),
             default_edge.node_artists[0].node,
             default_edge.node_artists[1].node,
-            {0: 0}
+            {0: 0},
         )
         # maybe add something about im itself? not sure what to test here
         assert len(default_edge.artist.axes.images) == 1
@@ -88,51 +84,48 @@ class TestAtomMappingEdge:
         assert not default_edge.picked
         assert len(default_edge.artist.axes.images) == 0
 
-        event = mock_event('mouseup', 0.25, 0.0, network_drawing.fig)
+        event = mock_event("mouseup", 0.25, 0.0, network_drawing.fig)
         default_edge.select(event, network_drawing)
 
         assert default_edge.picked
         assert len(default_edge.artist.axes.images) == 2
 
-    @pytest.mark.parametrize('edge_str,left_right,molA_to_molB', [
-        (("CCO", "CC"), ("CC", "CCO"), {0: 0, 1: 1}),
-        (("CC", "CO"), ("CC", "CO"), {0: 0}),
-        (("CCO", "CO"), ("CCO", "CO"), {0: 0, 2: 1}),
-    ])
-    def test_select_mock_drawing(self, edge_str, left_right, molA_to_molB,
-                                 network_drawing):
+    @pytest.mark.parametrize(
+        "edge_str,left_right,molA_to_molB",
+        [
+            (("CCO", "CC"), ("CC", "CCO"), {0: 0, 1: 1}),
+            (("CC", "CO"), ("CC", "CO"), {0: 0}),
+            (("CCO", "CO"), ("CCO", "CO"), {0: 0, 2: 1}),
+        ],
+    )
+    def test_select_mock_drawing(self, edge_str, left_right, molA_to_molB, network_drawing):
         # this tests that we call _draw_mapped_molecule with the correct
         # kwargs -- in particular, it ensures that we get the left and right
         # molecules correctly
-        node_dict = {node.smiles: node
-                     for node in network_drawing.graph.nodes}
+        node_dict = {node.smiles: node for node in network_drawing.graph.nodes}
         edge_tuple = tuple(node_dict[node] for node in edge_str)
         edge = network_drawing.edges[edge_tuple]
-        left, right = [network_drawing.nodes[node_dict[node]]
-                       for node in left_right]
+        left, right = [network_drawing.nodes[node_dict[node]] for node in left_right]
         # ensure that we have them labelled correctly
         assert left.xy[0] < right.xy[0]
         func = edge._draw_mapped_molecule  # save for bound_args
         edge._draw_mapped_molecule = mock.Mock()
 
-        event = mock_event('mouseup', 0.25, 0.0, network_drawing.fig)
+        event = mock_event("mouseup", 0.25, 0.0, network_drawing.fig)
         edge.select(event, network_drawing)
 
-        arg_dicts = [
-            bound_args(func, call.args, call.kwargs)
-            for call in edge._draw_mapped_molecule.mock_calls
-        ]
+        arg_dicts = [bound_args(func, call.args, call.kwargs) for call in edge._draw_mapped_molecule.mock_calls]
         expected_left = {
-            'extent': (0.05, 0.45, 0.5, 0.9),
-            'molA': left.node,
-            'molB': right.node,
-            'molA_to_molB': molA_to_molB,
+            "extent": (0.05, 0.45, 0.5, 0.9),
+            "molA": left.node,
+            "molB": right.node,
+            "molA_to_molB": molA_to_molB,
         }
         expected_right = {
-            'extent': (0.55, 0.95, 0.5, 0.9),
-            'molA': right.node,
-            'molB': left.node,
-            'molA_to_molB': {v: k for k, v in molA_to_molB.items()},
+            "extent": (0.55, 0.95, 0.5, 0.9),
+            "molA": right.node,
+            "molB": left.node,
+            "molA_to_molB": {v: k for k, v in molA_to_molB.items()},
         }
         assert len(arg_dicts) == 2
         assert expected_left in arg_dicts
@@ -141,7 +134,7 @@ class TestAtomMappingEdge:
     def test_unselect(self, default_edge, network_drawing):
         # start by selecting; hard to be sure we mocked all the side effects
         # of select
-        event = mock_event('mouseup', 0.25, 0.0, network_drawing.fig)
+        event = mock_event("mouseup", 0.25, 0.0, network_drawing.fig)
         default_edge.select(event, network_drawing)
         assert default_edge.picked
         assert len(default_edge.artist.axes.images) == 2

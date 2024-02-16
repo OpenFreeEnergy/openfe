@@ -7,19 +7,24 @@ import pathlib
 
 from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 
+
 # MOVE TO GUFE ####################################################
 def _smcs_from_sdf(sdf):
     from openfe import SmallMoleculeComponent
     from rdkit import Chem
+
     supp = Chem.SDMolSupplier(str(sdf), removeHs=False)
     mols = [SmallMoleculeComponent(mol) for mol in supp]
     return mols
 
+
 def _smcs_from_mol2(mol2):
     from openfe import SmallMoleculeComponent
     from rdkit import Chem
+
     rdmol = Chem.MolFromMol2File(str(mol2), removeHs=False)
     return [SmallMoleculeComponent.from_rdkit(rdmol)]
+
 
 def load_molecules(file_or_directory):
     """
@@ -40,8 +45,7 @@ def load_molecules(file_or_directory):
     inp = pathlib.Path(file_or_directory)  # for shorter lines
     if inp.is_dir():
         sdf_files = [f for f in inp.iterdir() if f.suffix.lower() == ".sdf"]
-        mol2_files = [f for f in inp.iterdir()
-                      if f.suffix.lower() == ".mol2"]
+        mol2_files = [f for f in inp.iterdir() if f.suffix.lower() == ".mol2"]
     else:
         sdf_files = [inp] if inp.suffix.lower() == ".sdf" else []
         mol2_files = [inp] if inp.suffix.lower() == ".mol2" else []
@@ -53,6 +57,8 @@ def load_molecules(file_or_directory):
     mol2_mols = sum([_smcs_from_mol2(mol2) for mol2 in mol2_files], [])
 
     return sdf_mols + mol2_mols
+
+
 # END MOVE TO GUFE ################################################
 
 
@@ -65,14 +71,14 @@ MOL_DIR = Option(
     "--molecules",
     type=click.Path(exists=True),
     help=(
-        "A directory or file containing all molecules to be loaded, either"
-        " as a single SDF or multiple MOL2/SDFs."
+        "A directory or file containing all molecules to be loaded, either" " as a single SDF or multiple MOL2/SDFs."
     ),
     getter=molecule_getter,
 )
 
 COFACTORS = Option(
-    "-C", "--cofactors",
+    "-C",
+    "--cofactors",
     type=click.Path(exists=True),
     help="Path to cofactors sdf file.  This may contain multiple molecules",
     getter=molecule_getter,

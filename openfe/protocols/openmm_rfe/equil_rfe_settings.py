@@ -35,15 +35,15 @@ except ImportError:
 
 class LambdaSettings(SettingsBaseModel):
     class Config:
-        extra = 'ignore'
+        extra = "ignore"
         arbitrary_types_allowed = True
 
     """Lambda schedule settings.
-    
-    Settings controlling the lambda schedule, these include the switching 
+
+    Settings controlling the lambda schedule, these include the switching
     function type, and the number of windows.
     """
-    lambda_functions = 'default'
+    lambda_functions = "default"
     """
     Key of which switching functions to use for alchemical mutation.
     Default 'default'.
@@ -54,7 +54,7 @@ class LambdaSettings(SettingsBaseModel):
 
 class AlchemicalSettings(SettingsBaseModel):
     class Config:
-        extra = 'ignore'
+        extra = "ignore"
         arbitrary_types_allowed = True
 
     """Settings for the alchemical protocol
@@ -74,9 +74,9 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to use dispersion correction in the hybrid topology state.
     Default False.
     """
-    softcore_LJ: Literal['gapsys', 'beutler']
+    softcore_LJ: Literal["gapsys", "beutler"]
     """
-    Whether to use the LJ softcore function as defined by Gapsys et al. 
+    Whether to use the LJ softcore function as defined by Gapsys et al.
     JCTC 2012, or the one by Beutler et al. Chem. Phys. Lett. 1994.
     Default 'gapsys'.
     """
@@ -85,7 +85,7 @@ class AlchemicalSettings(SettingsBaseModel):
     turn_off_core_unique_exceptions = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
-    at lambda 0 and old exceptions at lambda 1 between unique atoms and core 
+    at lambda 0 and old exceptions at lambda 1 between unique atoms and core
     atoms. If False they are present in the nonbonded force. Default False.
     """
     explicit_charge_correction = False
@@ -101,7 +101,7 @@ class AlchemicalSettings(SettingsBaseModel):
 
     Default False.
     """
-    explicit_charge_correction_cutoff: FloatQuantity['nanometer'] = 0.8 * unit.nanometer
+    explicit_charge_correction_cutoff: FloatQuantity["nanometer"] = 0.8 * unit.nanometer
     """
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
@@ -111,12 +111,12 @@ class AlchemicalSettings(SettingsBaseModel):
 class RelativeHybridTopologyProtocolSettings(Settings):
     protocol_repeats: int
     """
-    The number of completely independent repeats of the entire sampling 
-    process. The mean of the repeats defines the final estimate of FE 
-    difference, while the variance between repeats is used as the uncertainty.  
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
     """
 
-    @validator('protocol_repeats')
+    @validator("protocol_repeats")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."

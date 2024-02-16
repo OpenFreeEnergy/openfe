@@ -17,9 +17,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 
 from typing import Optional, Any, Union, cast
-from openfe.utils.custom_typing import (
-    MPL_MouseEvent, MPL_FigureCanvasBase, MPL_Axes, TypeAlias
-)
+from openfe.utils.custom_typing import MPL_MouseEvent, MPL_FigureCanvasBase, MPL_Axes, TypeAlias
 
 ClickLocation: TypeAlias = tuple[tuple[float, float], tuple[Any, Any]]
 
@@ -32,6 +30,7 @@ class Node:
     for this node. This acts as an adapter class, allowing different artists
     to be used, as well as enabling different functionalities.
     """
+
     # TODO: someday it might be good to separate the artist adapter from the
     # functionality on select, etc.
     draggable = True
@@ -47,7 +46,7 @@ class Node:
         self.press: Optional[ClickLocation] = None
 
     def _make_artist(self, x, y, dx, dy):
-        return Rectangle((x, y), dx, dy, color='blue')
+        return Rectangle((x, y), dx, dy, color="blue")
 
     def register_artist(self, ax: MPL_Axes):
         """Register this node's artist with the matplotlib Axes"""
@@ -57,8 +56,7 @@ class Node:
     def extent(self) -> tuple[float, float, float, float]:
         """extent of this node in matplotlib data coordinates"""
         bounds = self.artist.get_bbox().bounds
-        return (bounds[0], bounds[0] + bounds[2],
-                bounds[1], bounds[1] + bounds[3])
+        return (bounds[0], bounds[0] + bounds[2], bounds[1], bounds[1] + bounds[3])
 
     @property
     def xy(self) -> tuple[float, float]:
@@ -71,11 +69,11 @@ class Node:
 
     def unselect(self):
         """Reset this node to its standard, unselected visualization"""
-        self.artist.set(color='blue')
+        self.artist.set(color="blue")
 
     def edge_select(self, edge: Edge):
         """Change node visualization when one of its edges is selected"""
-        self.artist.set(color='red')
+        self.artist.set(color="red")
 
     def update_location(self, x: float, y: float):
         """Update the location of the underlying artist"""
@@ -151,6 +149,7 @@ class Edge:
     data : Dict
         data dictionary for this edge
     """
+
     pickable = True
 
     def __init__(self, node_artist1: Node, node_artist2: Node, data: dict):
@@ -159,10 +158,9 @@ class Edge:
         self.artist = self._make_artist(node_artist1, node_artist2, data)
         self.picked = False
 
-    def _make_artist(self, node_artist1: Node, node_artist2: Node,
-                     data: dict) -> Any:
+    def _make_artist(self, node_artist1: Node, node_artist2: Node, data: dict) -> Any:
         xs, ys = self._edge_xs_ys(node_artist1, node_artist2)
-        return Line2D(xs, ys, color='black', picker=True, zorder=-1)
+        return Line2D(xs, ys, color="black", picker=True, zorder=-1)
 
     def register_artist(self, ax: MPL_Axes):
         """Register this edge's artist with the matplotlib Axes"""
@@ -198,14 +196,14 @@ class Edge:
 
     def unselect(self):
         """Reset this edge to its standard, unselected visualization"""
-        self.artist.set(color='black')
+        self.artist.set(color="black")
         for node_artist in self.node_artists:
             node_artist.unselect()
         self.picked = False
 
     def select(self, event: MPL_MouseEvent, graph: GraphDrawing):
         """Mark this edge as selected, update visualization"""
-        self.artist.set(color='red')
+        self.artist.set(color="red")
         for artist in self.node_artists:
             artist.edge_select(self)
         self.picked = True
@@ -243,6 +241,7 @@ class EventHandler:
     connections : List[int]
         list of IDs for connections to matplotlib canvas
     """
+
     def __init__(self, graph: GraphDrawing):
         self.graph = graph
         self.active: Optional[Union[Node, Edge]] = None
@@ -252,11 +251,13 @@ class EventHandler:
 
     def connect(self, canvas: MPL_FigureCanvasBase):
         """Connect our methods to events in the matplotlib canvas"""
-        self.connections.extend([
-            canvas.mpl_connect('button_press_event', self.on_mousedown),  # type: ignore
-            canvas.mpl_connect('motion_notify_event', self.on_drag),  # type: ignore
-            canvas.mpl_connect('button_release_event', self.on_mouseup),  # type: ignore
-        ])
+        self.connections.extend(
+            [
+                canvas.mpl_connect("button_press_event", self.on_mousedown),  # type: ignore
+                canvas.mpl_connect("motion_notify_event", self.on_drag),  # type: ignore
+                canvas.mpl_connect("button_release_event", self.on_mouseup),  # type: ignore
+            ],
+        )
 
     def disconnect(self, canvas: MPL_FigureCanvasBase):
         """Disconnect all connections to the canvas."""
@@ -271,8 +272,7 @@ class EventHandler:
         could be a node or an edge, it is interpreted as clicking on the
         node.
         """
-        containers = itertools.chain(self.graph.nodes.values(),
-                                     self.graph.edges.values())
+        containers = itertools.chain(self.graph.nodes.values(), self.graph.edges.values())
         for container in containers:
             if container.contains(event):
                 break
@@ -339,6 +339,7 @@ class GraphDrawing:
     positions : Optional[Dict[Any, Tuple[float, float]]]
         mapping of node to position
     """
+
     NodeCls = Node
     EdgeCls = Edge
 
@@ -350,7 +351,7 @@ class GraphDrawing:
         self.edges: dict[tuple[Node, Node], Any] = {}
 
         if positions is None:
-            positions = nx.nx_agraph.graphviz_layout(self.graph, prog='neato')
+            positions = nx.nx_agraph.graphviz_layout(self.graph, prog="neato")
 
         was_interactive = plt.isinteractive()
         plt.ioff()
@@ -380,15 +381,12 @@ class GraphDrawing:
 
     def edges_for_node(self, node: Node) -> list[Edge]:
         """List of edges for the given node"""
-        edges = (list(self.graph.in_edges(node))
-                 + list(self.graph.out_edges(node)))
+        edges = list(self.graph.in_edges(node)) + list(self.graph.out_edges(node))
         return [self.edges[edge] for edge in edges]
 
     def _get_nodes_extent(self):
         """Find the extent of all nodes (used in setting bounds)"""
-        min_xs, max_xs, min_ys, max_ys = zip(*(
-            node.extent for node in self.nodes.values()
-        ))
+        min_xs, max_xs, min_ys, max_ys = zip(*(node.extent for node in self.nodes.values()))
         return min(min_xs), max(max_xs), min(min_ys), max(max_ys)
 
     def reset_bounds(self):

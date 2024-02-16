@@ -22,7 +22,7 @@ which uses an MCS approach based on the RDKit.
 This takes various parameters which control how it produces mappings,
 these are viewable through ``help(LomapAtomMapper)``.
 
-This is how we can create a mapping between two ligands: 
+This is how we can create a mapping between two ligands:
 
 .. code::
 

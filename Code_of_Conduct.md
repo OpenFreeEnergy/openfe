@@ -1,6 +1,6 @@
 ## Code of Conduct ##
 
-This project is dedicated to providing a welcoming and supportive environment for all people, regardless of background or identity. Members do not tolerate harassment for any reason, but especially harassment based on gender, sexual orientation, disability, physical appearance, body size, race, nationality, sex, color, ethnic or social origin, pregnancy, citizenship, familial status, veteran status, genetic information, religion or belief, political or any other opinion, membership of a national minority, property, age, or preference of text editor. 
+This project is dedicated to providing a welcoming and supportive environment for all people, regardless of background or identity. Members do not tolerate harassment for any reason, but especially harassment based on gender, sexual orientation, disability, physical appearance, body size, race, nationality, sex, color, ethnic or social origin, pregnancy, citizenship, familial status, veteran status, genetic information, religion or belief, political or any other opinion, membership of a national minority, property, age, or preference of text editor.
 
 
 ### Expected Behavior ###

@@ -16,7 +16,9 @@ def both_states_ligandC_edge(edge: Transformation) -> bool:
 
 
 def r_vacuum_edge(edge: Transformation) -> bool:
-    return both_states_ligandC_edge(edge) and not both_states_solventC_edge(edge) and not both_states_proteinC_edge(edge)
+    return (
+        both_states_ligandC_edge(edge) and not both_states_solventC_edge(edge) and not both_states_proteinC_edge(edge)
+    )
 
 
 def r_solvent_edge(edge: Transformation) -> bool:

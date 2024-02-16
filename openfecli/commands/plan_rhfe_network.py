@@ -8,13 +8,19 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
+    MOL_DIR,
+    MAPPER,
+    OUTPUT_DIR,
+    YAML_OPTIONS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
 
 def plan_rhfe_network_main(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules,
+    mapper,
+    mapping_scorer,
+    ligand_network_planner,
+    small_molecules,
     solvent,
 ):
     """Utility method to plan a relative hydration free energy network.
@@ -38,34 +44,27 @@ def plan_rhfe_network_main(
         Alchemical network with protocol for executing simulations, and the
         associated ligand network
     """
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RHFEAlchemicalNetworkPlanner
-    )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RHFEAlchemicalNetworkPlanner
 
     network_planner = RHFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
     )
-    alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent
-    )
+    alchemical_network = network_planner(ligands=small_molecules, solvent=solvent)
 
     return alchemical_network, network_planner._ligand_network
 
 
 @click.command(
     "plan-rhfe-network",
-    short_help=(
-        "Plan a relative hydration free energy network, saved as JSON files "
-        "for the quickrun command."
-    ),
+    short_help=("Plan a relative hydration free energy network, saved as JSON files " "for the quickrun command."),
 )
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
 @YAML_OPTIONS.parameter(
-    multiple=False, required=False, default=None,
+    multiple=False,
+    required=False,
+    default=None,
     help=YAML_OPTIONS.kwargs["help"],
 )
 @OUTPUT_DIR.parameter(
@@ -110,10 +109,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
-    write(
-        "\t\tSmall Molecules: "
-        + " ".join([str(sm) for sm in small_molecules])
-    )
+    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     mapper_obj = yaml_options.mapper
@@ -156,6 +152,4 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     )
 
 
-PLUGIN = OFECommandPlugin(
-    command=plan_rhfe_network, section="Network Planning", requires_ofe=(0, 3)
-)
+PLUGIN = OFECommandPlugin(command=plan_rhfe_network, section="Network Planning", requires_ofe=(0, 3))

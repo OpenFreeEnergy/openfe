@@ -59,18 +59,55 @@ class LambdaSettings(SettingsBaseModel):
       the same length, defining all the windows of the transformation.
 
     """
+
     lambda_elec: list[float] = [
-        0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
     ]
     """
-    List of floats of lambda values for the electrostatics. 
+    List of floats of lambda values for the electrostatics.
     Zero means state A and 1 means state B.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
     lambda_vdw: list[float] = [
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4,
-        0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8,
+        0.85,
+        0.9,
+        0.95,
+        1.0,
     ]
     """
     List of floats of lambda values for the van der Waals.
@@ -78,8 +115,26 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
     lambda_restraints: list[float] = [
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     ]
     """
     List of floats of lambda values for the restraints.
@@ -87,21 +142,20 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
-    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    @validator("lambda_elec", "lambda_vdw", "lambda_restraints")
     def must_be_between_0_and_1(cls, v):
         for window in v:
             if not 0 <= window <= 1:
-                errmsg = ("Lambda windows must be between 0 and 1, got a"
-                          f" window with value {window}.")
+                errmsg = "Lambda windows must be between 0 and 1, got a" f" window with value {window}."
                 raise ValueError(errmsg)
         return v
 
-    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    @validator("lambda_elec", "lambda_vdw", "lambda_restraints")
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
 
-        if not all(i >= 0. for i in difference):
+        if not all(i >= 0.0 for i in difference):
             errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
             raise ValueError(errmsg)
 
@@ -118,14 +172,15 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     --------
     openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
     """
+
     protocol_repeats: int
     """
-    The number of completely independent repeats of the entire sampling 
-    process. The mean of the repeats defines the final estimate of FE 
-    difference, while the variance between repeats is used as the uncertainty.  
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
     """
 
-    @validator('protocol_repeats')
+    @validator("protocol_repeats")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."
@@ -149,7 +204,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     lambda_settings: LambdaSettings
     """
-    Settings for controlling the lambda schedule for the different components 
+    Settings for controlling the lambda schedule for the different components
     (vdw, elec, restraints).
     """
 

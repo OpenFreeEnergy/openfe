@@ -11,7 +11,7 @@ We are happy to get you started in using our software.
 ## Issues
 
 If you think you have encountered a software issue, please raise this on the "Issues" tab in Github.
-In general the more details you can provide the better, 
+In general the more details you can provide the better,
 we recommend reading section 3.3 of [this article](https://livecomsjournal.org/index.php/livecoms/article/view/v3i1e1473)
 to understand the problem solving process.
 

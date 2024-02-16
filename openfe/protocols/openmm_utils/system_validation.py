@@ -6,15 +6,12 @@ Protocols.
 """
 from typing import Optional, Tuple
 from openff.toolkit import Molecule as OFFMol
-from gufe import (
-    Component, ChemicalSystem, SolventComponent, ProteinComponent,
-    SmallMoleculeComponent
-)
+from gufe import Component, ChemicalSystem, SolventComponent, ProteinComponent, SmallMoleculeComponent
 
 
 def get_alchemical_components(
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
+    stateA: ChemicalSystem,
+    stateB: ChemicalSystem,
 ) -> dict[str, list[Component]]:
     """
     Checks the equality between Components of two end state ChemicalSystems
@@ -37,9 +34,10 @@ def get_alchemical_components(
     ValueError
       If there are any duplicate components in states A or B.
     """
-    matched_components: dict[Component, Component]  = {}
+    matched_components: dict[Component, Component] = {}
     alchemical_components: dict[str, list[Component]] = {
-        'stateA': [], 'stateB': [],
+        "stateA": [],
+        "stateB": [],
     }
 
     for keyA, valA in stateA.components.items():
@@ -50,19 +48,18 @@ def get_alchemical_components(
                 else:
                     # Could be that either we have a duplicate component
                     # in stateA or in stateB
-                    errmsg = (f"state A components {keyA}: {valA} matches "
-                              "multiple components in stateA or stateB")
+                    errmsg = f"state A components {keyA}: {valA} matches " "multiple components in stateA or stateB"
                     raise ValueError(errmsg)
 
     # populate stateA alchemical components
     for valA in stateA.components.values():
         if valA not in matched_components.keys():
-            alchemical_components['stateA'].append(valA)
+            alchemical_components["stateA"].append(valA)
 
     # populate stateB alchemical components
     for valB in stateB.components.values():
         if valB not in matched_components.values():
-            alchemical_components['stateB'].append(valB)
+            alchemical_components["stateB"].append(valB)
 
     return alchemical_components
 
@@ -87,14 +84,13 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         `nocutoff`.
       * If the SolventComponent solvent is not water.
     """
-    solv = [comp for comp in state.values()
-            if isinstance(comp, SolventComponent)]
+    solv = [comp for comp in state.values() if isinstance(comp, SolventComponent)]
 
     if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
         errmsg = "nocutoff cannot be used for solvent transformations"
         raise ValueError(errmsg)
 
-    if len(solv) == 0 and nonbonded_method.lower() == 'pme':
+    if len(solv) == 0 and nonbonded_method.lower() == "pme":
         errmsg = "PME cannot be used for vacuum transform"
         raise ValueError(errmsg)
 
@@ -102,7 +98,7 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
         errmsg = "Multiple SolventComponent found, only one is supported"
         raise ValueError(errmsg)
 
-    if len(solv) > 0 and solv[0].smiles != 'O':
+    if len(solv) > 0 and solv[0].smiles != "O":
         errmsg = "Non water solvent is not currently supported"
         raise ValueError(errmsg)
 
@@ -122,8 +118,7 @@ def validate_protein(state: ChemicalSystem):
     ValueError
       If there are multiple ProteinComponent in the ChemicalSystem.
     """
-    nprot = sum(1 for comp in state.values()
-                if isinstance(comp, ProteinComponent))
+    nprot = sum(1 for comp in state.values() if isinstance(comp, ProteinComponent))
 
     if nprot > 1:
         errmsg = "Multiple ProteinComponent found, only one is supported"
@@ -131,7 +126,8 @@ def validate_protein(state: ChemicalSystem):
 
 
 ParseCompRet = Tuple[
-    Optional[SolventComponent], Optional[ProteinComponent],
+    Optional[SolventComponent],
+    Optional[ProteinComponent],
     list[SmallMoleculeComponent],
 ]
 
@@ -153,21 +149,17 @@ def get_components(state: ChemicalSystem) -> ParseCompRet:
       If it exists, the ProteinComponent for the state, otherwise None.
     small_mols : list[SmallMoleculeComponent]
     """
+
     def _get_single_comps(comp_list, comptype):
-        ret_comps = [comp for comp in comp_list
-                     if isinstance(comp, comptype)]
+        ret_comps = [comp for comp in comp_list if isinstance(comp, comptype)]
         if ret_comps:
             return ret_comps[0]
         else:
             return None
 
-    solvent_comp: Optional[SolventComponent] = _get_single_comps(
-        list(state.values()), SolventComponent
-    )
+    solvent_comp: Optional[SolventComponent] = _get_single_comps(list(state.values()), SolventComponent)
 
-    protein_comp: Optional[ProteinComponent] = _get_single_comps(
-        list(state.values()), ProteinComponent
-    )
+    protein_comp: Optional[ProteinComponent] = _get_single_comps(list(state.values()), ProteinComponent)
 
     small_mols = []
     for comp in state.components.values():

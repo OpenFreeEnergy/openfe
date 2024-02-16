@@ -9,17 +9,14 @@ Generates
 - MDProtocol_json_results.gz
   - used in md_json fixture
 """
+
 import gzip
 import json
 import logging
 import pathlib
 import tempfile
-from openff.toolkit import (
-    Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
-)
-from openff.toolkit.utils.toolkit_registry import (
-    toolkit_registry_manager, ToolkitRegistry
-)
+from openff.toolkit import Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
+from openff.toolkit.utils.toolkit_registry import toolkit_registry_manager, ToolkitRegistry
 from openff.units import unit
 from kartograf.atom_aligner import align_mol_shape
 from kartograf import KartografAtomMapper
@@ -36,9 +33,7 @@ logger = logging.getLogger(__name__)
 LIGA = "[H]C([H])([H])C([H])([H])C(=O)C([H])([H])C([H])([H])[H]"
 LIGB = "[H]C([H])([H])C(=O)C([H])([H])C([H])([H])C([H])([H])[H]"
 
-amber_rdkit = ToolkitRegistry(
-    [RDKitToolkitWrapper(), AmberToolsToolkitWrapper()]
-)
+amber_rdkit = ToolkitRegistry([RDKitToolkitWrapper(), AmberToolsToolkitWrapper()])
 
 
 def get_molecule(smi, name):
@@ -58,7 +53,7 @@ def execute_and_serialize(dag, protocol, simname):
             shared_basedir=workdir,
             scratch_basedir=workdir,
             keep_shared=False,
-            n_retries=3
+            n_retries=3,
         )
     protres = protocol.gather([dagres])
 
@@ -66,13 +61,10 @@ def execute_and_serialize(dag, protocol, simname):
         "estimate": protres.get_estimate(),
         "uncertainty": protres.get_uncertainty(),
         "protocol_result": protres.to_dict(),
-        "unit_results": {
-            unit.key: unit.to_keyed_dict()
-            for unit in dagres.protocol_unit_results
-        }
+        "unit_results": {unit.key: unit.to_keyed_dict() for unit in dagres.protocol_unit_results},
     }
 
-    with gzip.open(f"{simname}_json_results.gz", 'wt') as zipfile:
+    with gzip.open(f"{simname}_json_results.gz", "wt") as zipfile:
         json.dump(outdict, zipfile, cls=JSON_HANDLER.encoder)
 
 
@@ -95,27 +87,19 @@ def generate_ahfe_json(smc):
     settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
-    settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
-                                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                            1.0]
-    settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                                           0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
-                                           1.0]
+    settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24, 0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0]
     settings.protocol_repeats = 3
     settings.solvent_simulation_settings.n_replicas = 14
     settings.vacuum_simulation_settings.n_replicas = 14
     settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
     settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
-    settings.vacuum_engine_settings.compute_platform = 'CPU'
-    settings.solvent_engine_settings.compute_platform = 'CUDA'
+    settings.vacuum_engine_settings.compute_platform = "CPU"
+    settings.solvent_engine_settings.compute_platform = "CUDA"
 
     protocol = AbsoluteSolvationProtocol(settings=settings)
-    sysA = openfe.ChemicalSystem(
-        {"ligand": smc, "solvent": openfe.SolventComponent()}
-    )
-    sysB = openfe.ChemicalSystem(
-        {"solvent": openfe.SolventComponent()}
-    )
+    sysA = openfe.ChemicalSystem({"ligand": smc, "solvent": openfe.SolventComponent()})
+    sysB = openfe.ChemicalSystem({"solvent": openfe.SolventComponent()})
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
 
@@ -133,15 +117,13 @@ def generate_rfe_json(smcA, smcB):
     mapper = KartografAtomMapper(atom_map_hydrogens=True)
     mapping = next(mapper.suggest_mappings(smcA, a_smcB))
 
-    systemA = openfe.ChemicalSystem({'ligand': smcA})
-    systemB = openfe.ChemicalSystem({'ligand': a_smcB})
+    systemA = openfe.ChemicalSystem({"ligand": smcA})
+    systemB = openfe.ChemicalSystem({"ligand": a_smcB})
 
-    dag = protocol.create(
-        stateA=systemA, stateB=systemB, mapping=mapping
-    )
+    dag = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
 
     execute_and_serialize(dag, protocol, "RHFEProtocol")
-        
+
 
 if __name__ == "__main__":
     molA = get_molecule(LIGA, "ligandA")

@@ -9,29 +9,28 @@ from .resultserver import ResultServer
 from .metadatastore import JSONMetadataStore
 
 from gufe.tokenization import (
-    get_all_gufe_objs, key_decode_dependencies, from_dict, JSON_HANDLER,
+    get_all_gufe_objs,
+    key_decode_dependencies,
+    from_dict,
+    JSON_HANDLER,
 )
 
 
-GUFEKEY_JSON_REGEX = re.compile(
-    '":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]+)"'
-)
+GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]+)"')
 
 
 class _ResultContainer(abc.ABC):
     """
     Abstract class, represents all data under some level of the heirarchy.
     """
+
     def __init__(self, parent, path_component):
         self.parent = parent
         self._path_component = self._to_path_component(path_component)
         self._cache = {}
 
     def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and self.path == other.path
-        )
+        return isinstance(other, self.__class__) and self.path == other.path
 
     @staticmethod
     def _to_path_component(item: Any) -> str:
@@ -122,8 +121,8 @@ class ResultClient(_ResultContainer):
             storage key (string identifier used by storage to locate this
             object)
         """
-        pref = prefix.split('/')  # remove this if we switch to tuples
-        cls, token = key.split('-')
+        pref = prefix.split("/")  # remove this if we switch to tuples
+        cls, token = key.split("-")
         tup = tuple(list(pref) + [cls, f"{token}.json"])
         # right now we're using strings, but we've talked about switching
         # that to tuples
@@ -137,9 +136,7 @@ class ResultClient(_ResultContainer):
             # we trust that if we get the same key, it's the same object, so
             # we only store on keys that we don't already know
             if key not in self.result_server:
-                data = json.dumps(o.to_keyed_dict(),
-                                  cls=JSON_HANDLER.encoder,
-                                  sort_keys=True).encode('utf-8')
+                data = json.dumps(o.to_keyed_dict(), cls=JSON_HANDLER.encoder, sort_keys=True).encode("utf-8")
                 self.result_server.store_bytes(key, data)
 
     def store_transformation(self, transformation):
@@ -174,7 +171,7 @@ class ResultClient(_ResultContainer):
             # (they are cached on creation).
             storage_key = self._gufe_key_to_storage_key(prefix, gufe_key)
             with self.load_stream(storage_key) as f:
-                keyencoded_json = f.read().decode('utf-8')
+                keyencoded_json = f.read().decode("utf-8")
 
             dct = json.loads(keyencoded_json, cls=JSON_HANDLER.decoder)
             # this implementation may seem strange, but it will be a
@@ -243,7 +240,7 @@ class ResultClient(_ResultContainer):
     # the recursive chain
     @property
     def path(self):
-        return 'transformations'
+        return "transformations"
 
     @property
     def result_server(self):

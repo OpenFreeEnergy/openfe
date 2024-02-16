@@ -28,31 +28,30 @@ def get_openmm_platform(platform_name=None):
         # No platform is specified, so retrieve fastest platform that supports
         # 'mixed' precision
         from openmmtools.utils import get_fastest_platform
-        platform = get_fastest_platform(minimum_precision='mixed')
+
+        platform = get_fastest_platform(minimum_precision="mixed")
     else:
         try:
             platform_name = {
-                'cpu': 'CPU',
-                'opencl': 'OpenCL',
-                'cuda': 'CUDA',
+                "cpu": "CPU",
+                "opencl": "OpenCL",
+                "cuda": "CUDA",
             }[str(platform_name).lower()]
         except KeyError:
             pass
 
         from openmm import Platform
+
         platform = Platform.getPlatformByName(platform_name)
     # Set precision and properties
     name = platform.getName()
-    if name in ['CUDA', 'OpenCL']:
-        platform.setPropertyDefaultValue(
-                'Precision', 'mixed')
-    if name == 'CUDA':
-        platform.setPropertyDefaultValue(
-                'DeterministicForces', 'true')
+    if name in ["CUDA", "OpenCL"]:
+        platform.setPropertyDefaultValue("Precision", "mixed")
+    if name == "CUDA":
+        platform.setPropertyDefaultValue("DeterministicForces", "true")
 
-    if name != 'CUDA':
-        wmsg = (f"Non-GPU platform selected: {name}, this may significantly "
-                "impact simulation performance")
+    if name != "CUDA":
+        wmsg = f"Non-GPU platform selected: {name}, this may significantly " "impact simulation performance"
         warnings.warn(wmsg)
         logging.warning(wmsg)
 

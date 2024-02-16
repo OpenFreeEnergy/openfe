@@ -27,7 +27,7 @@ def _get_ion_and_water_parameters(
     topology: app.Topology,
     system: System,
     ion_resname: str,
-    water_resname: str = 'HOH',
+    water_resname: str = "HOH",
 ):
     """
     Get ion, and water (oxygen and hydrogen) atoms parameters.
@@ -66,22 +66,24 @@ def _get_ion_and_water_parameters(
     -----------
     Based on `perses.utils.charge_changing.get_ion_and_water_parameters`.
     """
+
     def _find_atom(topology, resname, elementname):
         for atom in topology.atoms():
             if atom.residue.name == resname:
-                if (elementname is None or atom.element.symbol == elementname):
+                if elementname is None or atom.element.symbol == elementname:
                     return atom.index
-        errmsg = ("Error encountered when attempting to explicitly handle "
-                  "charge changes using an alchemical water. No residue "
-                  f"named: {resname} found, with element {elementname}")
+        errmsg = (
+            "Error encountered when attempting to explicitly handle "
+            "charge changes using an alchemical water. No residue "
+            f"named: {resname} found, with element {elementname}"
+        )
         raise ValueError(errmsg)
 
     ion_index = _find_atom(topology, ion_resname, None)
-    oxygen_index = _find_atom(topology, water_resname, 'O')
-    hydrogen_index = _find_atom(topology, water_resname, 'H')
+    oxygen_index = _find_atom(topology, water_resname, "O")
+    hydrogen_index = _find_atom(topology, water_resname, "H")
 
-    nbf = [i for i in system.getForces()
-           if isinstance(i, NonbondedForce)][0]
+    nbf = [i for i in system.getForces() if isinstance(i, NonbondedForce)][0]
 
     ion_charge, ion_sigma, ion_epsilon = nbf.getParticleParameters(ion_index)
     o_charge, _, _ = nbf.getParticleParameters(oxygen_index)
@@ -104,24 +106,26 @@ def _fix_alchemical_water_atom_mapping(
     b_idx : int
       The index of the state B particle.
     """
-    a_idx = system_mapping['new_to_old_atom_map'][b_idx]
+    a_idx = system_mapping["new_to_old_atom_map"][b_idx]
 
     # Note, because these are already shared positions, we don't
     # append alchemical molecule indices in the new & old molecule
     # i.e. the `old_mol_indices` and `new_mol_indices` lists
 
     # remove atom from the environment atom map
-    system_mapping['old_to_new_env_atom_map'].pop(a_idx)
-    system_mapping['new_to_old_env_atom_map'].pop(b_idx)
+    system_mapping["old_to_new_env_atom_map"].pop(a_idx)
+    system_mapping["new_to_old_env_atom_map"].pop(b_idx)
 
     # add atom to the new_to_old_core atom maps
-    system_mapping['old_to_new_core_atom_map'][a_idx] = b_idx
-    system_mapping['new_to_old_core_atom_map'][b_idx] = a_idx
+    system_mapping["old_to_new_core_atom_map"][a_idx] = b_idx
+    system_mapping["new_to_old_core_atom_map"][b_idx] = a_idx
 
 
 def handle_alchemical_waters(
-    water_resids: list[int], topology: app.Topology,
-    system: System, system_mapping: dict,
+    water_resids: list[int],
+    topology: app.Topology,
+    system: System,
+    system_mapping: dict,
     charge_difference: int,
     solvent_component: SolventComponent,
 ):
@@ -163,27 +167,30 @@ def handle_alchemical_waters(
     """
 
     if abs(charge_difference) != len(water_resids):
-        errmsg = ("There should be as many alchemical water residues: "
-                  f"{len(water_resids)} as the absolute charge "
-                  f"difference: {abs(charge_difference)}")
+        errmsg = (
+            "There should be as many alchemical water residues: "
+            f"{len(water_resids)} as the absolute charge "
+            f"difference: {abs(charge_difference)}"
+        )
         raise ValueError(errmsg)
 
     if charge_difference > 0:
-        ion_resname = solvent_component.positive_ion.strip('-+').upper()
+        ion_resname = solvent_component.positive_ion.strip("-+").upper()
     elif charge_difference < 0:
-        ion_resname = solvent_component.negative_ion.strip('-+').upper()
+        ion_resname = solvent_component.negative_ion.strip("-+").upper()
     # if there's no charge difference then just skip altogether
     else:
         return None
 
     ion_charge, ion_sigma, ion_epsilon, o_charge, h_charge = _get_ion_and_water_parameters(
-        topology, system, ion_resname,
-        'HOH',  # Modeller always adds HOH waters
+        topology,
+        system,
+        ion_resname,
+        "HOH",  # Modeller always adds HOH waters
     )
 
     # get the nonbonded forces
-    nbfrcs = [i for i in system.getForces()
-              if isinstance(i, NonbondedForce)]
+    nbfrcs = [i for i in system.getForces() if isinstance(i, NonbondedForce)]
     if len(nbfrcs) > 1:
         raise ValueError("Too many NonbondedForce forces found")
 
@@ -197,8 +204,10 @@ def handle_alchemical_waters(
             # if the number of atoms > 3, then we have virtual sites which are
             # not supported currently
             if len([at for at in res.atoms()]) > 3:
-                errmsg = ("Non 3-site waters (i.e. waters with virtual sites) "
-                          "are not currently supported as alchemical waters")
+                errmsg = (
+                    "Non 3-site waters (i.e. waters with virtual sites) "
+                    "are not currently supported as alchemical waters"
+                )
                 raise ValueError(errmsg)
 
             for at in res.atoms():
@@ -207,13 +216,10 @@ def handle_alchemical_waters(
                 _fix_alchemical_water_atom_mapping(system_mapping, idx)
 
                 if charge == o_charge:
-                    nbf.setParticleParameters(
-                        idx, ion_charge, ion_sigma, ion_epsilon
-                    )
+                    nbf.setParticleParameters(idx, ion_charge, ion_sigma, ion_epsilon)
                 else:
                     if charge != h_charge:
-                        errmsg = ("modifying an atom that doesn't match known "
-                                  "water parameters")
+                        errmsg = "modifying an atom that doesn't match known " "water parameters"
                         raise ValueError(errmsg)
 
                     nbf.setParticleParameters(idx, 0.0, sigma, epsilon)
@@ -257,43 +263,48 @@ def get_alchemical_waters(
         return []
 
     # construct a new mdt trajectory
-    traj = mdt.Trajectory(
-        positions[np.newaxis, ...],
-        mdt.Topology.from_openmm(topology)
-    )
+    traj = mdt.Trajectory(positions[np.newaxis, ...], mdt.Topology.from_openmm(topology))
 
     water_atoms = traj.topology.select("water")
     solvent_residue_names = list(_SOLVENT_TYPES)
-    solute_atoms = [atom.index for atom in traj.topology.atoms
-                    if atom.residue.name not in solvent_residue_names]
+    solute_atoms = [atom.index for atom in traj.topology.atoms if atom.residue.name not in solvent_residue_names]
 
     excluded_waters = mdt.compute_neighbors(
-        traj, distance_cutoff.to(unit.nanometer).m,
-        solute_atoms, haystack_indices=water_atoms,
+        traj,
+        distance_cutoff.to(unit.nanometer).m,
+        solute_atoms,
+        haystack_indices=water_atoms,
         periodic=True,
     )[0]
 
-    solvent_indices = set([
-        atom.residue.index for atom in traj.topology.atoms
-        if (atom.index in water_atoms) and (atom.index not in excluded_waters)
-    ])
+    solvent_indices = set(
+        [
+            atom.residue.index
+            for atom in traj.topology.atoms
+            if (atom.index in water_atoms) and (atom.index not in excluded_waters)
+        ],
+    )
 
     if len(solvent_indices) < 1:
-        errmsg = ("There are no waters outside of a "
-                  f"{distance_cutoff.to(unit.nanometer)} nanometer distance "
-                  "of the system solutes to be used as alchemical waters")
+        errmsg = (
+            "There are no waters outside of a "
+            f"{distance_cutoff.to(unit.nanometer)} nanometer distance "
+            "of the system solutes to be used as alchemical waters"
+        )
         raise ValueError(errmsg)
 
     # unlike the original perses approach, we stick to the first water index
     # in order to make sure we somewhat reproducibily pick the same water
-    chosen_residues = list(solvent_indices)[:abs(charge_difference)]
+    chosen_residues = list(solvent_indices)[: abs(charge_difference)]
 
     return chosen_residues
 
 
-def combined_topology(topology1: app.Topology,
-                      topology2: app.Topology,
-                      exclude_resids: Optional[npt.NDArray] = None,):
+def combined_topology(
+    topology1: app.Topology,
+    topology2: app.Topology,
+    exclude_resids: Optional[npt.NDArray] = None,
+):
     """
     Create a new topology combining these two topologies.
 
@@ -321,21 +332,16 @@ def combined_topology(topology1: app.Topology,
     top = app.Topology()
 
     # create list of excluded residues from topology
-    excluded_res = [
-        r for r in topology1.residues() if r.index in exclude_resids
-    ]
+    excluded_res = [r for r in topology1.residues() if r.index in exclude_resids]
 
     # get a list of all excluded atoms
-    excluded_atoms = set(itertools.chain.from_iterable(
-        r.atoms() for r in excluded_res)
-    )
+    excluded_atoms = set(itertools.chain.from_iterable(r.atoms() for r in excluded_res))
 
     # add new copies of selected chains, residues, and atoms; keep mapping
     # of old atoms to new for adding bonds later
     old_to_new_atom_map = {}
     appended_resids = []
-    for chain_id, chain in enumerate(
-            itertools.chain(topology1.chains(), topology2.chains())):
+    for chain_id, chain in enumerate(itertools.chain(topology1.chains(), topology2.chains())):
         # TODO: is chain ID int or str? I recall it being int in MDTraj....
         # are there any issues if we just add a blank chain?
         new_chain = top.addChain(chain_id)
@@ -343,35 +349,29 @@ def combined_topology(topology1: app.Topology,
             if residue in excluded_res:
                 continue
 
-            new_res = top.addResidue(residue.name,
-                                     new_chain,
-                                     residue.id)
+            new_res = top.addResidue(residue.name, new_chain, residue.id)
 
             # append the new resindex if it's part of topology2
             if residue in list(topology2.residues()):
                 appended_resids.append(new_res.index)
 
             for atom in residue.atoms():
-                new_atom = top.addAtom(atom.name,
-                                       atom.element,
-                                       new_res,
-                                       atom.id)
+                new_atom = top.addAtom(atom.name, atom.element, new_res, atom.id)
                 old_to_new_atom_map[atom] = new_atom
 
     # figure out which bonds to keep: drop any that involve removed atoms
     def atoms_for_bond(bond):
         return {bond.atom1, bond.atom2}
 
-    keep_bonds = (bond for bond in itertools.chain(topology1.bonds(),
-                                                   topology2.bonds())
-                  if not (atoms_for_bond(bond) & excluded_atoms))
+    keep_bonds = (
+        bond
+        for bond in itertools.chain(topology1.bonds(), topology2.bonds())
+        if not (atoms_for_bond(bond) & excluded_atoms)
+    )
 
     # add bonds to topology
     for bond in keep_bonds:
-        top.addBond(old_to_new_atom_map[bond.atom1],
-                    old_to_new_atom_map[bond.atom2],
-                    bond.type,
-                    bond.order)
+        top.addBond(old_to_new_atom_map[bond.atom1], old_to_new_atom_map[bond.atom2], bond.type, bond.order)
 
     # Copy over the box vectors
     top.setPeriodicBoxVectors(topology1.getPeriodicBoxVectors())
@@ -403,8 +403,7 @@ def _get_indices(topology, resids):
     return [at.index for at in top_atoms]
 
 
-def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
-                        new_system, new_topology):
+def _remove_constraints(old_to_new_atom_map, old_system, old_topology, new_system, new_topology):
     """
     Adapted from Perses' Topology Proposal. Adjusts atom mapping to account for
     any bonds that are constrained but change in length.
@@ -436,10 +435,12 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 
     h_elem = app.Element.getByAtomicNumber(1)
-    old_H_atoms = {i for i, atom in enumerate(old_topology.atoms())
-                   if atom.element == h_elem and i in old_to_new_atom_map}
-    new_H_atoms = {i for i, atom in enumerate(new_topology.atoms())
-                   if atom.element == h_elem and i in old_to_new_atom_map.values()}
+    old_H_atoms = {
+        i for i, atom in enumerate(old_topology.atoms()) if atom.element == h_elem and i in old_to_new_atom_map
+    }
+    new_H_atoms = {
+        i for i, atom in enumerate(new_topology.atoms()) if atom.element == h_elem and i in old_to_new_atom_map.values()
+    }
 
     def pick_H(i, j, x, y) -> int:
         """Identify which atom to remove to resolve constraint violation
@@ -453,8 +454,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
         elif j in old_H_atoms or y in new_H_atoms:
             return j
         else:
-            raise ValueError(f"Couldn't resolve constraint demapping for atoms"
-                             f" A: {i}-{j} B: {x}-{y}")
+            raise ValueError(f"Couldn't resolve constraint demapping for atoms" f" A: {i}-{j} B: {x}-{y}")
 
     old_constraints: dict[[int, int], float] = dict()
     for idx in range(old_system.getNumConstraints()):
@@ -467,8 +467,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     for idx in range(new_system.getNumConstraints()):
         atom1, atom2, length = new_system.getConstraintParameters(idx)
 
-        if (atom1 in old_to_new_atom_map.values() and
-                atom2 in old_to_new_atom_map.values()):
+        if atom1 in old_to_new_atom_map.values() and atom2 in old_to_new_atom_map.values():
             new_constraints[atom1, atom2] = length
 
     # there are two reasons constraints would invalidate a mapping entry
@@ -508,10 +507,16 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     return no_const_old_to_new_atom_map
 
 
-def get_system_mappings(old_to_new_atom_map,
-                        old_system, old_topology, old_resids,
-                        new_system, new_topology, new_resids,
-                        fix_constraints=True):
+def get_system_mappings(
+    old_to_new_atom_map,
+    old_system,
+    old_topology,
+    old_resids,
+    new_system,
+    new_topology,
+    new_resids,
+    fix_constraints=True,
+):
     """
     From a starting alchemical map between two molecules, get the mappings
     between two alchemical end state systems.
@@ -575,7 +580,7 @@ def get_system_mappings(old_to_new_atom_map,
     # We assume that the atom indices are linear in the residue so we shift
     # by the index of the first atom in each residue
     adjusted_old_to_new_map = {}
-    for (key, value) in old_to_new_atom_map.items():
+    for key, value in old_to_new_atom_map.items():
         shift_old = old_at_indices[0] + key
         shift_new = new_at_indices[0] + value
         adjusted_old_to_new_map[shift_old] = shift_new
@@ -584,14 +589,20 @@ def get_system_mappings(old_to_new_atom_map,
     # the atoms in the two systems. For now we are only doing the alchemical
     # residues. We might want to change this as necessary in the future.
     if not fix_constraints:
-        wmsg = ("Not attempting to fix atom mapping to account for "
-                "constraints. Please note that core atoms which have "
-                "constrained bonds and changing bond lengths are not allowed.")
+        wmsg = (
+            "Not attempting to fix atom mapping to account for "
+            "constraints. Please note that core atoms which have "
+            "constrained bonds and changing bond lengths are not allowed."
+        )
         warnings.warn(wmsg)
     else:
         adjusted_old_to_new_map = _remove_constraints(
-            adjusted_old_to_new_map, old_system, old_topology,
-            new_system, new_topology)
+            adjusted_old_to_new_map,
+            old_system,
+            old_topology,
+            new_system,
+            new_topology,
+        )
 
     # We return a dictionary with all the necessary mappings (as they are
     # needed downstream). These include:
@@ -639,21 +650,19 @@ def get_system_mappings(old_to_new_atom_map,
 
     # Now let's create our output dictionary
     mappings = {}
-    mappings['new_to_old_atom_map'] = new_to_old_all_map
-    mappings['old_to_new_atom_map'] = {v: k for k, v in new_to_old_all_map.items()}
-    mappings['new_to_old_core_atom_map'] = {v: k for k, v in adjusted_old_to_new_map.items()}
-    mappings['old_to_new_core_atom_map'] = adjusted_old_to_new_map
-    mappings['new_to_old_env_atom_map'] = new_to_old_env_map
-    mappings['old_to_new_env_atom_map'] = {v: k for k, v in new_to_old_env_map.items()}
-    mappings['old_mol_indices'] = old_at_indices
-    mappings['new_mol_indices'] = new_at_indices
+    mappings["new_to_old_atom_map"] = new_to_old_all_map
+    mappings["old_to_new_atom_map"] = {v: k for k, v in new_to_old_all_map.items()}
+    mappings["new_to_old_core_atom_map"] = {v: k for k, v in adjusted_old_to_new_map.items()}
+    mappings["old_to_new_core_atom_map"] = adjusted_old_to_new_map
+    mappings["new_to_old_env_atom_map"] = new_to_old_env_map
+    mappings["old_to_new_env_atom_map"] = {v: k for k, v in new_to_old_env_map.items()}
+    mappings["old_mol_indices"] = old_at_indices
+    mappings["new_mol_indices"] = new_at_indices
 
     return mappings
 
 
-def set_and_check_new_positions(mapping, old_topology, new_topology,
-                                old_positions, insert_positions,
-                                tolerance=1.0):
+def set_and_check_new_positions(mapping, old_topology, new_topology, old_positions, insert_positions, tolerance=1.0):
     """
     Utility to create new positions given a mapping, the old positions and
     the positions of the molecule being inserted, defined by `insert_positions.
@@ -687,9 +696,9 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
     new_pos_array = np.zeros((new_topology.getNumAtoms(), 3))
 
     # get your mappings
-    new_idxs = list(mapping['old_to_new_atom_map'].values())
-    old_idxs = list(mapping['old_to_new_atom_map'].keys())
-    new_mol_idxs = mapping['new_mol_indices']
+    new_idxs = list(mapping["old_to_new_atom_map"].values())
+    old_idxs = list(mapping["old_to_new_atom_map"].keys())
+    new_mol_idxs = mapping["new_mol_indices"]
 
     # copy over the old positions for mapped atoms
     new_pos_array[new_idxs, :] = old_pos_array[old_idxs, :]
@@ -698,9 +707,8 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
 
     # loop through all mapped atoms and make sure we don't deviate by more than
     # tolerance - not super necessary, but it's a nice sanity check
-    for key, val in mapping['old_to_new_atom_map'].items():
-        if np.any(
-            np.abs(new_pos_array[val] - old_pos_array[key]) > tolerance):
+    for key, val in mapping["old_to_new_atom_map"].items():
+        if np.any(np.abs(new_pos_array[val] - old_pos_array[key]) > tolerance):
             wmsg = f"mapping {key} : {val} deviates by more than {tolerance}"
             warnings.warn(wmsg)
             logging.warning(wmsg)

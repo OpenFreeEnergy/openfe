@@ -40,13 +40,18 @@ class MultistateEquilFEAnalysis:
       The number of samples to use in the foward and reverse analysis
       of the free energies. Default 10.
     """
-    def __init__(self, reporter: multistate.MultiStateReporter,
-                 sampling_method: str, result_units: unit.Quantity,
-                 forward_reverse_samples: int = 10):
+
+    def __init__(
+        self,
+        reporter: multistate.MultiStateReporter,
+        sampling_method: str,
+        result_units: unit.Quantity,
+        forward_reverse_samples: int = 10,
+    ):
         self.analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
         self.units = result_units
 
-        if sampling_method.lower() not in ['repex', 'sams', 'independent']:
+        if sampling_method.lower() not in ["repex", "sams", "independent"]:
             wmsg = f"Unknown sampling method {sampling_method}"
             warnings.warn(wmsg)
         self.sampling_method = sampling_method.lower()
@@ -72,43 +77,29 @@ class MultistateEquilFEAnalysis:
           A prefix for the written filenames.
         """
         # MBAR overlap matrix
-        ax = plotting.plot_lambda_transition_matrix(self.free_energy_overlaps['matrix'])
-        ax.set_title('MBAR overlap matrix')
-        ax.figure.savefig(  # type: ignore
-            filepath / (filename_prefix + 'mbar_overlap_matrix.png')
-        )
+        ax = plotting.plot_lambda_transition_matrix(self.free_energy_overlaps["matrix"])
+        ax.set_title("MBAR overlap matrix")
+        ax.figure.savefig(filepath / (filename_prefix + "mbar_overlap_matrix.png"))  # type: ignore
         plt.close(ax.figure)  # type: ignore
 
         # Reverse and forward analysis
         if self.forward_and_reverse_free_energies is not None:
-            ax = plotting.plot_convergence(
-                self.forward_and_reverse_free_energies, self.units
-            )
-            ax.set_title('Forward and Reverse free energy convergence')
-            ax.figure.savefig(  # type: ignore
-                filepath / (filename_prefix + 'forward_reverse_convergence.png')
-            )
+            ax = plotting.plot_convergence(self.forward_and_reverse_free_energies, self.units)
+            ax.set_title("Forward and Reverse free energy convergence")
+            ax.figure.savefig(filepath / (filename_prefix + "forward_reverse_convergence.png"))  # type: ignore
             plt.close(ax.figure)  # type: ignore
 
         # Replica state timeseries plot
-        ax = plotting.plot_replica_timeseries(
-            self.replica_states, self.equilibration_iterations
-        )
-        ax.set_title('Change in replica state over time')
-        ax.figure.savefig(  # type: ignore
-            filepath / (filename_prefix + 'replica_state_timeseries.png')
-        )
+        ax = plotting.plot_replica_timeseries(self.replica_states, self.equilibration_iterations)
+        ax.set_title("Change in replica state over time")
+        ax.figure.savefig(filepath / (filename_prefix + "replica_state_timeseries.png"))  # type: ignore
         plt.close(ax.figure)  # type: ignore
 
         # Replica exchange transition matrix
-        if self.sampling_method == 'repex':
-            ax = plotting.plot_lambda_transition_matrix(
-                self.replica_exchange_statistics['matrix']
-            )
-            ax.set_title('Replica exchange transition matrix')
-            ax.figure.savefig(  # type: ignore
-                filepath / (filename_prefix + 'replica_exchange_matrix.png')
-            )
+        if self.sampling_method == "repex":
+            ax = plotting.plot_lambda_transition_matrix(self.replica_exchange_statistics["matrix"])
+            ax.set_title("Replica exchange transition matrix")
+            ax.figure.savefig(filepath / (filename_prefix + "replica_exchange_matrix.png"))  # type: ignore
             plt.close(ax.figure)  # type: ignore
 
     def _analyze(self, forward_reverse_samples: int):
@@ -141,9 +132,7 @@ class MultistateEquilFEAnalysis:
         self._free_energy, self._free_energy_err = self.get_equil_free_energy()
 
         # forward and reverse analysis
-        self._forward_reverse = self.get_forward_and_reverse_analysis(
-            forward_reverse_samples
-        )
+        self._forward_reverse = self.get_forward_and_reverse_analysis(forward_reverse_samples)
 
         # Gather overlap matrix
         self._overlap_matrix = self.get_overlap_matrix()
@@ -151,13 +140,14 @@ class MultistateEquilFEAnalysis:
         # Gather exchange transition matrix
         # Note we only generate these for replica exchange calculations
         # TODO: consider if this would also work for SAMS
-        if self.sampling_method == 'repex':
+        if self.sampling_method == "repex":
             self._exchange_matrix = self.get_exchanges()
 
     @staticmethod
     def _get_free_energy(
         analyzer: multistate.MultiStateSamplerAnalyzer,
-        u_ln: npt.NDArray, N_l: npt.NDArray,
+        u_ln: npt.NDArray,
+        N_l: npt.NDArray,
         return_units: unit.Quantity,
     ) -> tuple[unit.Quantity, unit.Quantity]:
         """
@@ -196,14 +186,13 @@ class MultistateEquilFEAnalysis:
             DF_ij, dDF_ij = mbar.getFreeEnergyDifferences()
         except AttributeError:
             r = mbar.compute_free_energy_differences()
-            DF_ij = r['Delta_f']
-            dDF_ij = r['dDelta_f']
+            DF_ij = r["Delta_f"]
+            dDF_ij = r["dDelta_f"]
 
         DG = DF_ij[0, -1] * analyzer.kT
         dDG = dDF_ij[0, -1] * analyzer.kT
 
-        return (ensure_quantity(DG, 'openff').to(return_units),
-                ensure_quantity(dDG, 'openff').to(return_units))
+        return (ensure_quantity(DG, "openff").to(return_units), ensure_quantity(dDG, "openff").to(return_units))
 
     def get_equil_free_energy(self) -> tuple[unit.Quantity, unit.Quantity]:
         """
@@ -220,14 +209,13 @@ class MultistateEquilFEAnalysis:
         u_ln_decorr = self.analyzer._unbiased_decorrelated_u_ln
         N_l_decorr = self.analyzer._unbiased_decorrelated_N_l
 
-        DG, dDG = self._get_free_energy(
-            self.analyzer, u_ln_decorr, N_l_decorr, self.units
-        )
+        DG, dDG = self._get_free_energy(self.analyzer, u_ln_decorr, N_l_decorr, self.units)
 
         return DG, dDG
 
     def get_forward_and_reverse_analysis(
-        self, num_samples: int = 10
+        self,
+        num_samples: int = 10,
     ) -> Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]:
         """
         Calculate free energies with a progressively larger
@@ -257,14 +245,12 @@ class MultistateEquilFEAnalysis:
 
             # Check that the N_l is the same across all states
             if not np.all(N_l == N_l[0]):
-                errmsg = ("The number of samples is not equivalent across all "
-                          f"states {N_l}")
+                errmsg = "The number of samples is not equivalent across all " f"states {N_l}"
                 raise ValueError(errmsg)
 
             # Get the chunks of N_l going from 10% to ~ 100%
             # Note: you always lose out a few data points but it's fine
-            chunks = [max(int(N_l[0] / num_samples * i), 1)
-                      for i in range(1, num_samples + 1)]
+            chunks = [max(int(N_l[0] / num_samples * i), 1) for i in range(1, num_samples + 1)]
 
             forward_DGs = []
             forward_dDGs = []
@@ -279,7 +265,8 @@ class MultistateEquilFEAnalysis:
                 # Forward
                 DG, dDG = self._get_free_energy(
                     self.analyzer,
-                    u_ln[:, :samples], new_N_l,
+                    u_ln[:, :samples],
+                    new_N_l,
                     self.units,
                 )
                 forward_DGs.append(DG)
@@ -288,7 +275,8 @@ class MultistateEquilFEAnalysis:
                 # Reverse
                 DG, dDG = self._get_free_energy(
                     self.analyzer,
-                    u_ln[:, -samples:], new_N_l,
+                    u_ln[:, -samples:],
+                    new_N_l,
                     self.units,
                 )
                 reverse_DGs.append(DG)
@@ -299,11 +287,11 @@ class MultistateEquilFEAnalysis:
             return None
 
         forward_reverse = {
-            'fractions': np.array(fractions),
-            'forward_DGs': unit.Quantity.from_list(forward_DGs),
-            'forward_dDGs': unit.Quantity.from_list(forward_dDGs),
-            'reverse_DGs': unit.Quantity.from_list(reverse_DGs),
-            'reverse_dDGs': unit.Quantity.from_list(reverse_dDGs)
+            "fractions": np.array(fractions),
+            "forward_DGs": unit.Quantity.from_list(forward_DGs),
+            "forward_dDGs": unit.Quantity.from_list(forward_dDGs),
+            "reverse_DGs": unit.Quantity.from_list(reverse_DGs),
+            "reverse_dDGs": unit.Quantity.from_list(reverse_dDGs),
         }
         return forward_reverse
 
@@ -325,7 +313,7 @@ class MultistateEquilFEAnalysis:
             # pymbar 3
             overlap_matrix = self.analyzer.mbar.computeOverlap()
             # convert matrix to np array
-            overlap_matrix['matrix'] = np.array(overlap_matrix['matrix'])
+            overlap_matrix["matrix"] = np.array(overlap_matrix["matrix"])
         except AttributeError:
             overlap_matrix = self.analyzer.mbar.compute_overlap()
 
@@ -347,8 +335,7 @@ class MultistateEquilFEAnalysis:
         """
         # Get replica mixing statistics
         mixing_stats = self.analyzer.generate_mixing_statistics()
-        transition_matrix = {'eigenvalues': mixing_stats.eigenvalues,
-                             'matrix': mixing_stats.transition_matrix}
+        transition_matrix = {"eigenvalues": mixing_stats.eigenvalues, "matrix": mixing_stats.transition_matrix}
         return transition_matrix
 
     @property
@@ -408,26 +395,25 @@ class MultistateEquilFEAnalysis:
         A dictionary containing the estimated replica exchange matrix
         and corresponding eigenvalues.
         """
-        if hasattr(self, '_exchange_matrix'):
+        if hasattr(self, "_exchange_matrix"):
             return self._exchange_matrix
         else:
-            errmsg = ("Exchange matrix was not generated, this is likely "
-                      f"{self.sampling_method} is not repex.")
+            errmsg = "Exchange matrix was not generated, this is likely " f"{self.sampling_method} is not repex."
             raise ValueError(errmsg)
 
     @property
     def unit_results_dict(self):
         results_dict = {
-            'unit_estimate': self.free_energy,
-            'unit_estimate_error': self.free_energy_error,
-            'unit_mbar_overlap': self.free_energy_overlaps,
-            'forward_and_reverse_energies': self.forward_and_reverse_free_energies,
-            'production_iterations': self.production_iterations,
-            'equilibration_iterations': self.equilibration_iterations,
+            "unit_estimate": self.free_energy,
+            "unit_estimate_error": self.free_energy_error,
+            "unit_mbar_overlap": self.free_energy_overlaps,
+            "forward_and_reverse_energies": self.forward_and_reverse_free_energies,
+            "production_iterations": self.production_iterations,
+            "equilibration_iterations": self.equilibration_iterations,
         }
 
-        if hasattr(self, '_exchange_matrix'):
-            results_dict['replica_exchange_statistics'] = self.replica_exchange_statistics
+        if hasattr(self, "_exchange_matrix"):
+            results_dict["replica_exchange_statistics"] = self.replica_exchange_statistics
 
         return results_dict
 

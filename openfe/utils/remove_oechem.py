@@ -9,8 +9,7 @@ from contextlib import contextmanager
 @contextmanager
 def without_oechem_backend():
     """For temporarily removing oechem from openff's toolkit registry"""
-    current_toolkits = [type(tk)
-                        for tk in GLOBAL_TOOLKIT_REGISTRY.registered_toolkits]
+    current_toolkits = [type(tk) for tk in GLOBAL_TOOLKIT_REGISTRY.registered_toolkits]
 
     try:
         GLOBAL_TOOLKIT_REGISTRY.deregister_toolkit(OpenEyeToolkitWrapper())
@@ -22,7 +21,6 @@ def without_oechem_backend():
     finally:
         # this is order dependent; we want to prepend OEChem back to first
         while GLOBAL_TOOLKIT_REGISTRY.registered_toolkits:
-            GLOBAL_TOOLKIT_REGISTRY.deregister_toolkit(
-                GLOBAL_TOOLKIT_REGISTRY.registered_toolkits[0])
+            GLOBAL_TOOLKIT_REGISTRY.deregister_toolkit(GLOBAL_TOOLKIT_REGISTRY.registered_toolkits[0])
         for tk in current_toolkits:
             GLOBAL_TOOLKIT_REGISTRY.register_toolkit(tk)

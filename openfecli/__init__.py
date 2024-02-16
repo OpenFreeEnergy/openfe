@@ -5,4 +5,5 @@ from .plugins import OFECommandPlugin
 from . import commands
 
 from importlib.metadata import version
+
 __version__ = version("openfe")

@@ -10,16 +10,14 @@ import pytest
 
 @pytest.fixture
 def protocol():
-    return openmm_afe.AbsoluteSolvationProtocol(
-               openmm_afe.AbsoluteSolvationProtocol.default_settings()
-           )
+    return openmm_afe.AbsoluteSolvationProtocol(openmm_afe.AbsoluteSolvationProtocol.default_settings())
 
 
 @pytest.fixture
 def protocol_units(protocol, benzene_system):
     pus = protocol.create(
         stateA=benzene_system,
-        stateB=openfe.ChemicalSystem({'solvent': openfe.SolventComponent()}),
+        stateB=openfe.ChemicalSystem({"solvent": openfe.SolventComponent()}),
         mapping=None,
     )
     return list(pus.protocol_units)
@@ -41,9 +39,8 @@ def vacuum_protocol_unit(protocol_units):
 
 @pytest.fixture
 def protocol_result(afe_solv_transformation_json):
-    d = json.loads(afe_solv_transformation_json,
-                   cls=gufe.tokenization.JSON_HANDLER.decoder)
-    pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d['protocol_result'])
+    d = json.loads(afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder)
+    pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d["protocol_result"])
     return pr
 
 

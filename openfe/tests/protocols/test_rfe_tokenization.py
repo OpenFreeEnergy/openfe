@@ -12,6 +12,7 @@ todo:
 - RelativeHybridTopologyProtocolUnit
 """
 
+
 @pytest.fixture
 def protocol():
     return openmm_rfe.RelativeHybridTopologyProtocol(openmm_rfe.RelativeHybridTopologyProtocol.default_settings())
@@ -20,7 +21,8 @@ def protocol():
 @pytest.fixture
 def protocol_unit(protocol, benzene_system, toluene_system, benzene_to_toluene_mapping):
     pus = protocol.create(
-        stateA=benzene_system, stateB=toluene_system,
+        stateA=benzene_system,
+        stateB=toluene_system,
         mapping=[benzene_to_toluene_mapping],
     )
     return list(pus.protocol_units)[0]

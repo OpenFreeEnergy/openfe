@@ -15,11 +15,13 @@ class LigandAtomMapper(gufe.AtomMapper):
     Subclasses will typically implement the ``_mappings_generator`` method,
     which returns an iterable of :class:`.LigandAtomMapping` suggestions.
     """
+
     @abc.abstractmethod
-    def _mappings_generator(self,
-                            componentA: SmallMoleculeComponent,
-                            componentB: SmallMoleculeComponent
-                            ) -> Iterable[dict[int, int]]:
+    def _mappings_generator(
+        self,
+        componentA: SmallMoleculeComponent,
+        componentB: SmallMoleculeComponent,
+    ) -> Iterable[dict[int, int]]:
         """
         Suggest mapping options for the input molecules.
 
@@ -35,8 +37,10 @@ class LigandAtomMapper(gufe.AtomMapper):
         """
         ...
 
-    def suggest_mappings(self, componentA: SmallMoleculeComponent,
-                         componentB: SmallMoleculeComponent
+    def suggest_mappings(
+        self,
+        componentA: SmallMoleculeComponent,
+        componentB: SmallMoleculeComponent,
     ) -> Iterable[LigandAtomMapping]:
         """
         Suggest :class:`.LigandAtomMapping` options for the input molecules.

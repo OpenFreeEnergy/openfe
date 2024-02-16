@@ -13,7 +13,7 @@ except ImportError:
 
 RDKitMol: TypeAlias = Chem.rdchem.Mol
 
-OEMol = TypeVar('OEMol')
+OEMol = TypeVar("OEMol")
 MPL_FigureCanvasBase: TypeAlias = matplotlib.backend_bases.FigureCanvasBase
 MPL_MouseEvent: TypeAlias = matplotlib.backend_bases.MouseEvent
 MPL_Axes: TypeAlias = matplotlib.axes.Axes

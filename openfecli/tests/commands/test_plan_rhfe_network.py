@@ -12,20 +12,18 @@ from openfecli.commands.plan_rhfe_network import (
 )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mol_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp('moldir')
+    ofe_dir_path = tmpdir_factory.mktemp("moldir")
 
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
-        for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+    with resources.files("openfe.tests.data.openmm_rfe") as d:
+        for f in ["ligand_23.sdf", "ligand_55.sdf"]:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
 
 
-def print_test_with_file(
-    mapping_scorer, ligand_network_planner, small_molecules, solvent
-):
+def print_test_with_file(mapping_scorer, ligand_network_planner, small_molecules, solvent):
     print(mapping_scorer)
     print(ligand_network_planner)
     print(small_molecules)
@@ -42,10 +40,7 @@ def test_plan_rhfe_network_main():
     )
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
-        smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(d / f)
-            for f in ['ligand_23.sdf', 'ligand_55.sdf']
-        ]
+        smallM_components = [SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]]
 
     solvent_component = SolventComponent()
     alchemical_network, ligand_network = plan_rhfe_network_main(
@@ -82,9 +77,7 @@ def test_plan_rhfe_network(mol_dir_args):
         "- easy_rhfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
-    patch_base = (
-        "openfecli.commands.plan_rhfe_network."
-    )
+    patch_base = "openfecli.commands.plan_rhfe_network."
     args += ["-o", "tmp_network"]
 
     patch_loc = patch_base + "plan_rhfe_network"
@@ -126,7 +119,7 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
 
     assert settings_path.exists()
 
-    args = mol_dir_args + ['-s', settings_path]
+    args = mol_dir_args + ["-s", settings_path]
 
     runner = CliRunner()
 

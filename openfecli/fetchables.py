@@ -2,8 +2,7 @@
 
 from openfecli.fetching import URLFetcher, PkgResourceFetcher
 
-_EXAMPLE_NB_BASE = ("https://raw.githubusercontent.com/"
-                    "OpenFreeEnergy/ExampleNotebooks/main/")
+_EXAMPLE_NB_BASE = "https://raw.githubusercontent.com/" "OpenFreeEnergy/ExampleNotebooks/main/"
 
 RBFE_SHOWCASE = URLFetcher(
     resources=[

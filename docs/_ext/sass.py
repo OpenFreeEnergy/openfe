@@ -44,10 +44,7 @@ def get_targets(app: Sphinx) -> dict[Path, Path]:
     if isinstance(app.config.sass_targets, dict):
         targets = app.config.sass_targets
     else:
-        targets = {
-            path: path.relative_to(src_dir).with_suffix(".css")
-            for path in src_dir.glob("**/[!_]*.s[ca]ss")
-        }
+        targets = {path: path.relative_to(src_dir).with_suffix(".css") for path in src_dir.glob("**/[!_]*.s[ca]ss")}
 
     return {src_dir / src: dst_dir / dst for src, dst in targets.items()}
 

@@ -6,27 +6,22 @@ from typing import Callable
 from openfe.utils import requires_package
 
 from ...utils.silence_root_logging import silence_root_logging
+
 try:
     with silence_root_logging():
         from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 except ImportError:
-    pass    # Don't throw  error, will happen later
+    pass  # Don't throw  error, will happen later
 
 from . import LigandAtomMapping
 
 
 # Helpfer Function / reducing code amount
-def _get_all_mapped_atoms_with(oeyMolA,
-                               oeyMolB,
-                               numMaxPossibleMappingAtoms: int,
-                               criterium: Callable) -> int:
-    molA_allAtomsWith = len(
-        list(filter(criterium, oeyMolA.GetAtoms())))
-    molB_allAtomsWith = len(
-        list(filter(criterium, oeyMolB.GetAtoms())))
+def _get_all_mapped_atoms_with(oeyMolA, oeyMolB, numMaxPossibleMappingAtoms: int, criterium: Callable) -> int:
+    molA_allAtomsWith = len(list(filter(criterium, oeyMolA.GetAtoms())))
+    molB_allAtomsWith = len(list(filter(criterium, oeyMolB.GetAtoms())))
 
-    if (molA_allAtomsWith > molB_allAtomsWith and
-            molA_allAtomsWith <= numMaxPossibleMappingAtoms):
+    if molA_allAtomsWith > molB_allAtomsWith and molA_allAtomsWith <= numMaxPossibleMappingAtoms:
         numMaxPossibleMappings = molA_allAtomsWith
     else:
         numMaxPossibleMappings = molB_allAtomsWith
@@ -35,9 +30,7 @@ def _get_all_mapped_atoms_with(oeyMolA,
 
 
 @requires_package("perses")
-def default_perses_scorer(mapping: LigandAtomMapping,
-                          use_positions: bool = False,
-                          normalize: bool = True) -> float:
+def default_perses_scorer(mapping: LigandAtomMapping, use_positions: bool = False, normalize: bool = True) -> float:
     """
     Score an atom mapping with the default Perses score function.
 
@@ -66,45 +59,54 @@ def default_perses_scorer(mapping: LigandAtomMapping,
         float
     """
     score = AtomMapper(use_positions=use_positions).score_mapping(
-        AtomMapping(old_mol=mapping.componentA.to_openff(),
-                    new_mol=mapping.componentB.to_openff(),
-                    old_to_new_atom_map=mapping.componentA_to_componentB))
+        AtomMapping(
+            old_mol=mapping.componentA.to_openff(),
+            new_mol=mapping.componentB.to_openff(),
+            old_to_new_atom_map=mapping.componentA_to_componentB,
+        ),
+    )
 
     # normalize
-    if (normalize):
+    if normalize:
         oeyMolA = mapping.componentA.to_openff().to_openeye()
         oeyMolB = mapping.componentB.to_openff().to_openeye()
-        if (use_positions):
-            raise NotImplementedError("normalizing using positions is "
-                                      "not currently implemented")
+        if use_positions:
+            raise NotImplementedError("normalizing using positions is " "not currently implemented")
         else:
 
-            smallerMolecule = oeyMolA if (
-                    oeyMolA.NumAtoms() < oeyMolB.NumAtoms()) else oeyMolB
+            smallerMolecule = oeyMolA if (oeyMolA.NumAtoms() < oeyMolB.NumAtoms()) else oeyMolB
             numMaxPossibleMappingAtoms = smallerMolecule.NumAtoms()
             # Max possible Aromatic mappings
             numMaxPossibleAromaticMappings = _get_all_mapped_atoms_with(
-                oeyMolA=oeyMolA, oeyMolB=oeyMolB,
+                oeyMolA=oeyMolA,
+                oeyMolB=oeyMolB,
                 numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
-                criterium=lambda x: x.IsAromatic())
+                criterium=lambda x: x.IsAromatic(),
+            )
 
             # Max possible heavy mappings
             numMaxPossibleHeavyAtomMappings = _get_all_mapped_atoms_with(
-                oeyMolA=oeyMolA, oeyMolB=oeyMolB,
+                oeyMolA=oeyMolA,
+                oeyMolB=oeyMolB,
                 numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
-                criterium=lambda x: x.GetAtomicNum() > 1)
+                criterium=lambda x: x.GetAtomicNum() > 1,
+            )
 
             # Max possible ring mappings
             numMaxPossibleRingMappings = _get_all_mapped_atoms_with(
-                oeyMolA=oeyMolA, oeyMolB=oeyMolB,
+                oeyMolA=oeyMolA,
+                oeyMolB=oeyMolB,
                 numMaxPossibleMappingAtoms=numMaxPossibleMappingAtoms,
-                criterium=lambda x: x.IsInRing())
+                criterium=lambda x: x.IsInRing(),
+            )
 
             # These weights are totally arbitrary
-            normalize_score = (1.0 * numMaxPossibleMappingAtoms +
-                               0.8 * numMaxPossibleAromaticMappings +
-                               0.5 * numMaxPossibleHeavyAtomMappings +
-                               0.4 * numMaxPossibleRingMappings)
+            normalize_score = (
+                1.0 * numMaxPossibleMappingAtoms
+                + 0.8 * numMaxPossibleAromaticMappings
+                + 0.5 * numMaxPossibleHeavyAtomMappings
+                + 0.4 * numMaxPossibleRingMappings
+            )
 
         score /= normalize_score  # final normalize score
 

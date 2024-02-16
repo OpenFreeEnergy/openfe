@@ -28,7 +28,7 @@ class TestAtomMapper:
                 return {}
 
             def _to_dict(self):
-                return {'mappings': self.mappings}
+                return {"mappings": self.mappings}
 
             @classmethod
             def _from_dict(cls, dct):

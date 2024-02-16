@@ -22,7 +22,7 @@ def import_thing(import_string: str):
     Any :
         the object from that namespace
     """
-    splitted = import_string.split('.')
+    splitted = import_string.split(".")
     if len(splitted) > 1:
         # if the string has a dot, import the module and getattr the object
         obj = splitted[-1]
@@ -65,13 +65,12 @@ def _should_configure_logger(logger: logging.Logger):
     ):
         l = l.parent
 
-    is_default = (l == logging.root and l.level == logging.WARNING)
+    is_default = l == logging.root and l.level == logging.WARNING
 
     return is_default
 
 
-def configure_logger(logger_name: str, level: int = logging.INFO, *,
-                     handler: Optional[logging.Handler] = None):
+def configure_logger(logger_name: str, level: int = logging.INFO, *, handler: Optional[logging.Handler] = None):
     """Configure the logger at ``logger_name`` to be at ``level``.
 
     This is used to prevent accidentally overwriting existing logging
@@ -103,6 +102,7 @@ def print_duration(function: Callable) -> Callable:
     the decorated function.
 
     """
+
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
         start_time = datetime.now()
@@ -115,4 +115,3 @@ def print_duration(function: Callable) -> Callable:
         return result
 
     return wrapper
-

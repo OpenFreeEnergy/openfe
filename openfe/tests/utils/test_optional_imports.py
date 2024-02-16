@@ -5,7 +5,7 @@ from openfe.utils import requires_package
 import pytest
 
 
-@requires_package('no_such_package_hopefully')
+@requires_package("no_such_package_hopefully")
 def the_answer():
     return 42
 

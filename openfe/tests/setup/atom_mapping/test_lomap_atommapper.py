@@ -13,8 +13,8 @@ from .conftest import mol_from_smiles
 
 def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = LomapAtomMapper()
 
@@ -28,8 +28,8 @@ def test_simple(atom_mapping_basic_test_files):
 
 def test_distances(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = LomapAtomMapper()
     mapping = next(mapper.suggest_mappings(mol1, mol2))
@@ -38,8 +38,8 @@ def test_distances(atom_mapping_basic_test_files):
 
     assert len(dists) == len(mapping.componentA_to_componentB)
     i, j = next(iter(mapping.componentA_to_componentB.items()))
-    ref_d = mol1.to_rdkit().GetConformer().GetAtomPosition(i).Distance(
-        mol2.to_rdkit().GetConformer().GetAtomPosition(j)
+    ref_d = (
+        mol1.to_rdkit().GetConformer().GetAtomPosition(i).Distance(mol2.to_rdkit().GetConformer().GetAtomPosition(j))
     )
     assert pytest.approx(dists[0], rel=1e-5) == ref_d
     assert pytest.approx(dists[0], rel=1e-5) == 0.07249779
@@ -48,8 +48,8 @@ def test_distances(atom_mapping_basic_test_files):
 def test_generator_length(atom_mapping_basic_test_files):
     # check that we get one mapping back from Lomap LigandAtomMapper then the
     # generator stops correctly
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = LomapAtomMapper()
 
@@ -61,9 +61,8 @@ def test_generator_length(atom_mapping_basic_test_files):
 
 
 def test_bad_mapping(atom_mapping_basic_test_files):
-    toluene = atom_mapping_basic_test_files['toluene']
-    NigelTheNitrogen = SmallMoleculeComponent(mol_from_smiles('N'),
-                                              name='Nigel')
+    toluene = atom_mapping_basic_test_files["toluene"]
+    NigelTheNitrogen = SmallMoleculeComponent(mol_from_smiles("N"), name="Nigel")
 
     mapper = LomapAtomMapper()
 
@@ -75,8 +74,8 @@ def test_bad_mapping(atom_mapping_basic_test_files):
 # TODO: Remvoe these test when element changes are allowed - START
 def test_simple_no_element_changes(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = LomapAtomMapper()
     mapper._no_element_changes = True
@@ -87,17 +86,16 @@ def test_simple_no_element_changes(atom_mapping_basic_test_files):
     # maps (CH3) off methyl and (6C + 5H) on ring
     assert len(mapping.componentA_to_componentB) == 15
 
-    
+
 def test_bas_mapping_no_element_changes(atom_mapping_basic_test_files):
-    toluene = atom_mapping_basic_test_files['toluene']
-    NigelTheNitrogen = SmallMoleculeComponent(mol_from_smiles('N'),
-                                              name='Nigel')
+    toluene = atom_mapping_basic_test_files["toluene"]
+    NigelTheNitrogen = SmallMoleculeComponent(mol_from_smiles("N"), name="Nigel")
 
     mapper = LomapAtomMapper()
     mapper._no_element_changes = True
     mapping_gen = mapper.suggest_mappings(toluene, NigelTheNitrogen)
     with pytest.raises(StopIteration):
         next(mapping_gen)
-        
-# TODO: Remvoe these test when element changes are allowed - END
 
+
+# TODO: Remvoe these test when element changes are allowed - END

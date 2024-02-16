@@ -22,7 +22,7 @@ from gufe.tests.test_protocol import DummyProtocol, BrokenProtocol
 from gufe.tokenization import JSON_HANDLER
 
 parser = argparse.ArgumentParser()
-parser.add_argument('directory')
+parser.add_argument("directory")
 opts = parser.parse_args()
 directory = pathlib.Path(opts.directory)
 if not directory.exists() and directory.is_dir():
@@ -30,13 +30,13 @@ if not directory.exists() and directory.is_dir():
 
 benzene_modifications = benzene_modifications.__pytest_wrapped__.obj()
 
-benzene = gufe.SmallMoleculeComponent.from_rdkit(benzene_modifications['benzene'])
-toluene = gufe.SmallMoleculeComponent.from_rdkit(benzene_modifications['toluene'])
+benzene = gufe.SmallMoleculeComponent.from_rdkit(benzene_modifications["benzene"])
+toluene = gufe.SmallMoleculeComponent.from_rdkit(benzene_modifications["toluene"])
 solvent = gufe.SolventComponent(positive_ion="K", negative_ion="Cl")
 
-benz_dict = {'ligand': benzene}
-tol_dict = {'ligand': toluene}
-solv_dict = {'solvent': solvent}
+benz_dict = {"ligand": benzene}
+tol_dict = {"ligand": toluene}
+solv_dict = {"solvent": solvent}
 
 solv_benz = gufe.ChemicalSystem(dict(**benz_dict, **solv_dict))
 solv_tol = gufe.ChemicalSystem(dict(**tol_dict, **solv_dict))
@@ -48,8 +48,7 @@ protocol = DummyProtocol(settings=DummyProtocol.default_settings())
 
 transformation = gufe.Transformation(solv_benz, solv_tol, protocol, mapping)
 bad_protocol = BrokenProtocol(settings=BrokenProtocol.default_settings())
-bad_transformation = gufe.Transformation(solv_benz, solv_tol,
-                                         bad_protocol, mapping)
+bad_transformation = gufe.Transformation(solv_benz, solv_tol, bad_protocol, mapping)
 
 transformation.dump(directory / "transformation.json")
 bad_transformation.dump(directory / "bad_transformation.json")

@@ -10,13 +10,12 @@ from openmm import unit
 from openfe.utils import requires_package
 
 from ...utils.silence_root_logging import silence_root_logging
+
 try:
     with silence_root_logging():
-        from perses.rjmc.atom_mapping import (
-            AtomMapper, InvalidMappingException
-        )
+        from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
 except ImportError:
-    pass    # Don't throw  error, will happen later
+    pass  # Don't throw  error, will happen later
 
 from .ligandatommapper import LigandAtomMapper
 
@@ -27,10 +26,13 @@ class PersesAtomMapper(LigandAtomMapper):
     use_positions: bool
 
     @requires_package("perses")
-    def __init__(self, allow_ring_breaking: bool = True,
-                 preserve_chirality: bool = True,
-                 use_positions: bool = True,
-                 coordinate_tolerance: float = 0.25 * unit.angstrom):
+    def __init__(
+        self,
+        allow_ring_breaking: bool = True,
+        preserve_chirality: bool = True,
+        use_positions: bool = True,
+        coordinate_tolerance: float = 0.25 * unit.angstrom,
+    ):
         """
         Suggest atom mappings with the Perses atom mapper.
 
@@ -58,12 +60,15 @@ class PersesAtomMapper(LigandAtomMapper):
         _atom_mapper = AtomMapper(
             use_positions=self.use_positions,
             coordinate_tolerance=self.coordinate_tolerance,
-            allow_ring_breaking=self.allow_ring_breaking)
+            allow_ring_breaking=self.allow_ring_breaking,
+        )
 
         # Try generating a mapping
         try:
             _atom_mappings = _atom_mapper.get_all_mappings(
-                    old_mol=componentA.to_openff(), new_mol=componentB.to_openff())
+                old_mol=componentA.to_openff(),
+                new_mol=componentB.to_openff(),
+            )
         except InvalidMappingException:
             return
 

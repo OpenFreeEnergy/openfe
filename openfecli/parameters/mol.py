@@ -7,6 +7,7 @@ from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
 def _load_molecule_from_smiles(user_input, context):
     from openfe import SmallMoleculeComponent
     from rdkit import Chem
+
     # MolFromSmiles returns None if the string is not a molecule
     # TODO: find some way to redirect the error messages? Messages stayed
     # after either redirect_stdout or redirect_stderr.
@@ -21,10 +22,11 @@ def _load_molecule_from_smiles(user_input, context):
 
 
 def _load_molecule_from_sdf(user_input, context):
-    if '.sdf' not in str(user_input):  # this silences some stderr spam
+    if ".sdf" not in str(user_input):  # this silences some stderr spam
         return NOT_PARSED
 
     from openfe import SmallMoleculeComponent
+
     try:
         return SmallMoleculeComponent.from_sdf_file(user_input)
     except ValueError:  # any exception should try other strategies
@@ -32,7 +34,7 @@ def _load_molecule_from_sdf(user_input, context):
 
 
 def _load_molecule_from_mol2(user_input, context):
-    if '.mol2' not in str(user_input):
+    if ".mol2" not in str(user_input):
         return NOT_PARSED
 
     from rdkit import Chem
@@ -53,12 +55,12 @@ get_molecule = MultiStrategyGetter(
         # failure will give meaningless user-facing errors
         _load_molecule_from_smiles,
     ],
-    error_message="Unable to generate a molecule from '{user_input}'."
+    error_message="Unable to generate a molecule from '{user_input}'.",
 )
 
 MOL = Option(
-    "-m", "--mol",
-    help=("SmallMoleculeComponent. Can be provided as an SDF file or as a SMILES "
-          " string."),
-    getter=get_molecule
+    "-m",
+    "--mol",
+    help=("SmallMoleculeComponent. Can be provided as an SDF file or as a SMILES " " string."),
+    getter=get_molecule,
 )

@@ -5,13 +5,15 @@ import os
 
 from openfecli.commands.test import test
 
+
 def mock_func(args):
     print(os.environ.get("OFE_SLOW_TESTS"))
 
-@pytest.mark.parametrize('slow', [True, False])
+
+@pytest.mark.parametrize("slow", [True, False])
 def test_test(slow):
     runner = CliRunner()
-    args = ['--long'] if slow else []
+    args = ["--long"] if slow else []
     patchloc = "openfecli.commands.test.pytest.main"
     ofe_slow_tests = os.environ.get("OFE_SLOW_TESTS")
     with mock.patch(patchloc, mock_func):

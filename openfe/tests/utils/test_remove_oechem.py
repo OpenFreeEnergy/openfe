@@ -12,6 +12,5 @@ def test_remove_oechem():
         for tk in GLOBAL_TOOLKIT_REGISTRY.registered_toolkits:
             assert not isinstance(tk, OpenEyeToolkitWrapper)
     assert len(GLOBAL_TOOLKIT_REGISTRY.registered_toolkits) == original_n_tks
-    for ref_tk, tk in zip(original_tks,
-                          GLOBAL_TOOLKIT_REGISTRY.registered_toolkits):
+    for ref_tk, tk in zip(original_tks, GLOBAL_TOOLKIT_REGISTRY.registered_toolkits):
         assert isinstance(tk, type(ref_tk))

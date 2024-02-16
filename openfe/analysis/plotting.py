@@ -25,7 +25,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     """
     num_states = len(matrix)
     fig, ax = plt.subplots(figsize=(num_states / 2, num_states / 2))
-    ax.axis('off')
+    ax.axis("off")
     for i in range(num_states):
         if i != 0:
             ax.axvline(x=i, ls="-", lw=0.5, color="k", alpha=0.25)
@@ -37,35 +37,42 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
 
             # shade box
             ax.fill_between(
-                [i, i+1], [num_states - j, num_states - j],
+                [i, i + 1],
+                [num_states - j, num_states - j],
                 [num_states - (j + 1), num_states - (j + 1)],
-                color='k', alpha=rel_prob
+                color="k",
+                alpha=rel_prob,
             )
             # annotate box
             ax.annotate(
-                val_str, xy=(i, j), xytext=(i+0.5, num_states - (j + 0.5)),
-                size=8, va="center", ha="center",
+                val_str,
+                xy=(i, j),
+                xytext=(i + 0.5, num_states - (j + 0.5)),
+                size=8,
+                va="center",
+                ha="center",
                 color=("k" if rel_prob < 0.5 else "w"),
             )
 
         # anotate axes
-        base_settings = {
-            'size': 10, 'va': 'center', 'ha': 'center', 'color': 'k',
-            'family': 'sans-serif'
-        }
+        base_settings = {"size": 10, "va": "center", "ha": "center", "color": "k", "family": "sans-serif"}
         for i in range(num_states):
             ax.annotate(
-                i, xy=(i + 0.5, 1), xytext=(i + 0.5, num_states + 0.5),
+                i,
+                xy=(i + 0.5, 1),
+                xytext=(i + 0.5, num_states + 0.5),
                 **base_settings,
             )
             ax.annotate(
-                i, xy=(-0.5, num_states - (num_states - 0.5)),
+                i,
+                xy=(-0.5, num_states - (num_states - 0.5)),
                 xytext=(-0.5, num_states - (i + 0.5)),
                 **base_settings,
             )
 
         ax.annotate(
-            r"$\lambda$", xy=(-0.5, num_states - (num_states - 0.5)),
+            r"$\lambda$",
+            xy=(-0.5, num_states - (num_states - 0.5)),
             xytext=(-0.5, num_states + 0.5),
             **base_settings,
         )
@@ -79,10 +86,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     return ax
 
 
-def plot_convergence(
-    forward_and_reverse: dict[str, Union[npt.NDArray, unit.Quantity]],
-    units: unit.Quantity
-) -> Axes:
+def plot_convergence(forward_and_reverse: dict[str, Union[npt.NDArray, unit.Quantity]], units: unit.Quantity) -> Axes:
     """
     Plot a Reverse and Forward convergence analysis of the
     free energies.
@@ -102,18 +106,20 @@ def plot_convergence(
       An Axes object to plot.
     """
     known_units = {
-        'kilojoule_per_mole': 'kJ/mol',
-        'kilojoules_per_mole': 'kJ/mol',
-        'kilocalorie_per_mole': 'kcal/mol',
-        'kilocalories_per_mole': 'kcal/mol',
+        "kilojoule_per_mole": "kJ/mol",
+        "kilojoules_per_mole": "kJ/mol",
+        "kilocalorie_per_mole": "kcal/mol",
+        "kilocalories_per_mole": "kcal/mol",
     }
 
     try:
         plt_units = known_units[str(units)]
     except KeyError:
-        errmsg = (f"Unknown plotting units {units} passed, acceptable "
-                  "values are kilojoule(s)_per_mole and "
-                  "kilocalorie(s)_per_mole")
+        errmsg = (
+            f"Unknown plotting units {units} passed, acceptable "
+            "values are kilojoule(s)_per_mole and "
+            "kilocalorie(s)_per_mole"
+        )
         raise ValueError(errmsg)
 
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -129,38 +135,43 @@ def plot_convergence(
     ax.yaxis.set_ticks_position("left")
 
     # Set the overall error bar to the final error for the reverse results
-    overall_error = forward_and_reverse['reverse_dDGs'][-1].m
-    final_value = forward_and_reverse['reverse_DGs'][-1].m
-    ax.fill_between([0, 1],
-                    final_value - overall_error,
-                    final_value + overall_error,
-                    color='#D2B9D3', zorder=1)
+    overall_error = forward_and_reverse["reverse_dDGs"][-1].m
+    final_value = forward_and_reverse["reverse_DGs"][-1].m
+    ax.fill_between([0, 1], final_value - overall_error, final_value + overall_error, color="#D2B9D3", zorder=1)
 
     ax.errorbar(
-        forward_and_reverse['fractions'],
-        [val.m
-         for val in forward_and_reverse['forward_DGs']],
-        yerr=[err.m
-              for err in forward_and_reverse['forward_dDGs']],
-        color="#736AFF", lw=3, zorder=2,
-        marker="o", mfc="w", mew=2.5,
-        mec="#736AFF", ms=8, label='Forward'
+        forward_and_reverse["fractions"],
+        [val.m for val in forward_and_reverse["forward_DGs"]],
+        yerr=[err.m for err in forward_and_reverse["forward_dDGs"]],
+        color="#736AFF",
+        lw=3,
+        zorder=2,
+        marker="o",
+        mfc="w",
+        mew=2.5,
+        mec="#736AFF",
+        ms=8,
+        label="Forward",
     )
 
     ax.errorbar(
-        forward_and_reverse['fractions'],
-        [val.m
-         for val in forward_and_reverse['reverse_DGs']],
-        yerr=[err.m
-              for err in forward_and_reverse['reverse_dDGs']],
-        color="#C11B17", lw=3, zorder=2,
-        marker="o", mfc="w", mew=2.5,
-        mec="#C11B17", ms=8, label='Reverse',
+        forward_and_reverse["fractions"],
+        [val.m for val in forward_and_reverse["reverse_DGs"]],
+        yerr=[err.m for err in forward_and_reverse["reverse_dDGs"]],
+        color="#C11B17",
+        lw=3,
+        zorder=2,
+        marker="o",
+        mfc="w",
+        mew=2.5,
+        mec="#C11B17",
+        ms=8,
+        label="Reverse",
     )
     ax.legend(frameon=False)
 
-    ax.set_ylabel(r'$\Delta G$' + f' ({plt_units})')
-    ax.set_xlabel('Fraction of uncorrelated samples')
+    ax.set_ylabel(r"$\Delta G$" + f" ({plt_units})")
+    ax.set_xlabel("Fraction of uncorrelated samples")
 
     return ax
 
@@ -190,24 +201,20 @@ def plot_replica_timeseries(
     iterations = [i for i in range(len(state_timeseries))]
 
     for i in range(num_states):
-        ax.scatter(iterations, state_timeseries.T[i], label=f'replica {i}', s=8)
+        ax.scatter(iterations, state_timeseries.T[i], label=f"replica {i}", s=8)
 
     ax.set_xlabel("Number of simulation iterations")
     ax.set_ylabel("Lambda state")
     ax.set_title("Change in replica lambda state over time")
 
     if equilibration_iterations is not None:
-        ax.axvline(
-            x=equilibration_iterations, color='grey',
-            linestyle='--', label='equilibration limit'
-        )
+        ax.axvline(x=equilibration_iterations, color="grey", linestyle="--", label="equilibration limit")
 
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     return ax
 
 
-def plot_2D_rmsd(data: list[list[float]],
-                 vmax=5.0) -> plt.Figure:
+def plot_2D_rmsd(data: list[list[float]], vmax=5.0) -> plt.Figure:
     """Plots 2D RMSD for many states
 
     Parameters
@@ -240,20 +247,14 @@ def plot_2D_rmsd(data: list[list[float]],
 
     fig, axes = plt.subplots(nrows, 4)
 
-    for i, (arr, ax) in enumerate(
-            zip(twod_rmsd_arrs, chain.from_iterable(axes))):
-        ax.imshow(arr,
-                  vmin=0, vmax=vmax,
-                  cmap=plt.get_cmap('cividis'))
-        ax.axis('off')  # turn off ticks/labels
-        ax.set_title(f'State {i}')
+    for i, (arr, ax) in enumerate(zip(twod_rmsd_arrs, chain.from_iterable(axes))):
+        ax.imshow(arr, vmin=0, vmax=vmax, cmap=plt.get_cmap("cividis"))
+        ax.axis("off")  # turn off ticks/labels
+        ax.set_title(f"State {i}")
 
-    plt.colorbar(axes[0][0].images[0],
-                 cax=axes[-1][-1],
-                 label="RMSD scale (A)",
-                 orientation="horizontal")
+    plt.colorbar(axes[0][0].images[0], cax=axes[-1][-1], label="RMSD scale (A)", orientation="horizontal")
 
-    fig.suptitle('Protein 2D RMSD')
+    fig.suptitle("Protein 2D RMSD")
     fig.tight_layout()
 
     return fig
@@ -263,12 +264,12 @@ def plot_ligand_COM_drift(time: list[float], data: list[list[float]]):
     fig, ax = plt.subplots()
 
     for i, s in enumerate(data):
-        ax.plot(time, s, label=f'State {i}')
+        ax.plot(time, s, label=f"State {i}")
 
-    ax.legend(loc='upper left')
-    ax.set_xlabel('Time (ps)')
-    ax.set_ylabel('Distance (A)')
-    ax.set_title('Ligand COM drift')
+    ax.legend(loc="upper left")
+    ax.set_xlabel("Time (ps)")
+    ax.set_ylabel("Distance (A)")
+    ax.set_title("Ligand COM drift")
 
     return fig
 
@@ -277,11 +278,11 @@ def plot_ligand_RMSD(time: list[float], data: list[list[float]]):
     fig, ax = plt.subplots()
 
     for i, s in enumerate(data):
-        ax.plot(time, s, label=f'State {i}')
+        ax.plot(time, s, label=f"State {i}")
 
-    ax.legend(loc='upper left')
-    ax.set_xlabel('Time (ps)')
-    ax.set_ylabel('RMSD (A)')
-    ax.set_title('Ligand RMSD')
+    ax.legend(loc="upper left")
+    ax.set_xlabel("Time (ps)")
+    ax.set_ylabel("RMSD (A)")
+    ax.set_title("Ligand RMSD")
 
     return fig

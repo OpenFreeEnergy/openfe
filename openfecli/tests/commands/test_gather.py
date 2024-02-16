@@ -7,22 +7,40 @@ import pytest
 import pooch
 
 from openfecli.commands.gather import (
-    gather, format_estimate_uncertainty, _get_column,
+    gather,
+    format_estimate_uncertainty,
+    _get_column,
     _generate_bad_legs_error_message,
 )
 
-@pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
-    (12.432, 0.111, 2, "12.43", "0.11"),
-    (0.9999, 0.01, 2, "1.000", "0.010"),
-    (1234, 100, 2, "1230", "100"),
-])
+
+@pytest.mark.parametrize(
+    "est,unc,unc_prec,est_str,unc_str",
+    [
+        (12.432, 0.111, 2, "12.43", "0.11"),
+        (0.9999, 0.01, 2, "1.000", "0.010"),
+        (1234, 100, 2, "1230", "100"),
+    ],
+)
 def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
     assert format_estimate_uncertainty(est, unc, unc_prec) == (est_str, unc_str)
 
-@pytest.mark.parametrize('val, col', [
-    (1.0, 1), (0.1, -1), (-0.0, 0), (0.0, 0), (0.2, -1), (0.9, -1),
-    (0.011, -2), (9, 1), (10, 2), (15, 2),
-])
+
+@pytest.mark.parametrize(
+    "val, col",
+    [
+        (1.0, 1),
+        (0.1, -1),
+        (-0.0, 0),
+        (0.0, 0),
+        (0.2, -1),
+        (0.9, -1),
+        (0.011, -2),
+        (9, 1),
+        (10, 2),
+        (15, 2),
+    ],
+)
 def test_get_column(val, col):
     assert _get_column(val) == col
 
@@ -30,11 +48,12 @@ def test_get_column(val, col):
 @pytest.fixture
 def results_dir(tmpdir):
     with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            t.extractall('.')
+        with resources.files("openfecli.tests.data") as d:
+            t = tarfile.open(d / "rbfe_results.tar.gz", mode="r")
+            t.extractall(".")
 
         yield
+
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
@@ -146,7 +165,7 @@ solvent	lig_ejm_46	lig_jmc_28	23.65	0.03
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize('report', ["", "dg", "ddg"])
+@pytest.mark.parametrize("report", ["", "dg", "ddg"])
 def test_gather(results_dir, report):
     expected = {
         "": _EXPECTED_DG,
@@ -161,25 +180,24 @@ def test_gather(results_dir, report):
     else:
         args = []
 
-    result = runner.invoke(gather, ['results'] + args + ['-o', '-'])
+    result = runner.invoke(gather, ["results"] + args + ["-o", "-"])
 
     assert result.exit_code == 0
 
-    actual_lines = set(result.stdout_bytes.split(b'\n'))
+    actual_lines = set(result.stdout_bytes.split(b"\n"))
 
-    assert set(expected.split(b'\n')) == actual_lines
+    assert set(expected.split(b"\n")) == actual_lines
 
 
-@pytest.mark.parametrize('include', ['complex', 'solvent', 'vacuum'])
+@pytest.mark.parametrize("include", ["complex", "solvent", "vacuum"])
 def test_generate_bad_legs_error_message(include):
     expected = {
-        'complex': ("appears to be an RBFE", "missing {'solvent'}"),
-        'vacuum': ("appears to be an RHFE", "missing {'solvent'}"),
-        'solvent': ("whether this is an RBFE or an RHFE",
-                    "'complex'", "'solvent'"),
+        "complex": ("appears to be an RBFE", "missing {'solvent'}"),
+        "vacuum": ("appears to be an RHFE", "missing {'solvent'}"),
+        "solvent": ("whether this is an RBFE or an RHFE", "'complex'", "'solvent'"),
     }[include]
     set_vals = {include}
-    ligpair = {'lig1', 'lig2'}
+    ligpair = {"lig1", "lig2"}
     msg = _generate_bad_legs_error_message(set_vals, ligpair)
     for string in expected:
         assert string in msg
@@ -191,7 +209,7 @@ def test_missing_leg_error(results_dir):
     (pathlib.Path("results") / file_to_remove).unlink()
 
     runner = CliRunner()
-    result = runner.invoke(gather, ['results'] + ['-o', '-'])
+    result = runner.invoke(gather, ["results"] + ["-o", "-"])
     assert result.exit_code == 1
     assert isinstance(result.exception, RuntimeError)
     assert "Unable to determine" in str(result.exception)
@@ -205,13 +223,12 @@ def test_missing_leg_allow_partial(results_dir):
     (pathlib.Path("results") / file_to_remove).unlink()
 
     runner = CliRunner()
-    result = runner.invoke(gather,
-                           ['results'] + ['--allow-partial', '-o', '-'])
+    result = runner.invoke(gather, ["results"] + ["--allow-partial", "-o", "-"])
     assert result.exit_code == 0
 
 
 RBFE_RESULTS = pooch.create(
-    pooch.os_cache('openfe'),
+    pooch.os_cache("openfe"),
     base_url="doi:10.6084/m9.figshare.25148945",
     registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
 )
@@ -221,9 +238,9 @@ RBFE_RESULTS = pooch.create(
 def rbfe_results():
     # fetches rbfe results from online
     # untars into local directory and returns path to this
-    d = RBFE_RESULTS.fetch('results.tar.gz', processor=pooch.Untar())
+    d = RBFE_RESULTS.fetch("results.tar.gz", processor=pooch.Untar())
 
-    return os.path.join(pooch.os_cache('openfe'), 'results.tar.gz.untar', 'results')
+    return os.path.join(pooch.os_cache("openfe"), "results.tar.gz.untar", "results")
 
 
 @pytest.mark.download
@@ -231,7 +248,7 @@ def rbfe_results():
 def test_rbfe_results(rbfe_results):
     runner = CliRunner()
 
-    result = runner.invoke(gather, ['--report', 'raw', rbfe_results])
+    result = runner.invoke(gather, ["--report", "raw", rbfe_results])
 
     assert result.exit_code == 0
     assert result.stdout_bytes == _EXPECTED_RAW

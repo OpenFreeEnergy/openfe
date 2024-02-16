@@ -4,9 +4,7 @@ import warnings
 
 from typing import ClassVar
 
-from gufe.storage.errors import (
-    MissingExternalResourceError, ChangedExternalResourceError
-)
+from gufe.storage.errors import MissingExternalResourceError, ChangedExternalResourceError
 
 
 class ResultServer:
@@ -15,6 +13,7 @@ class ResultServer:
     At this level, we provide an abstraction where client code no longer
     needs to be aware of the nature of the metadata, or even that it exists.
     """
+
     def __init__(self, external_store, metadata_store):
         self.external_store = external_store
         self.metadata_store = metadata_store
@@ -39,17 +38,12 @@ class ResultServer:
         try:
             metadata = self.metadata_store[location]
         except KeyError:
-            raise MissingExternalResourceError(f"Metadata for '{location}' "
-                                               "not found")
+            raise MissingExternalResourceError(f"Metadata for '{location}' " "not found")
 
         if not self.external_store.get_metadata(location) == metadata:
-            msg = (f"Metadata mismatch for {location}: this object "
-                   "may have changed.")
+            msg = f"Metadata mismatch for {location}: this object " "may have changed."
             if not allow_changed:
-                raise ChangedExternalResourceError(
-                    msg + " To allow this, set ExternalStorage."
-                    "allow_changed = True"
-                )
+                raise ChangedExternalResourceError(msg + " To allow this, set ExternalStorage." "allow_changed = True")
             else:
                 warnings.warn(msg)
 

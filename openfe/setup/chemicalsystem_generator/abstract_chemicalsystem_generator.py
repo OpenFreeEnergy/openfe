@@ -8,6 +8,7 @@ from gufe import ChemicalSystem
 
 # Todo: connect to protocols - use this for labels?
 
+
 class RFEComponentLabels(str, Enum):
     PROTEIN = "protein"
     LIGAND = "ligand"

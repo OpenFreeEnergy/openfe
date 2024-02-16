@@ -9,7 +9,7 @@ installation is working.
 is tested against Python 3.9, 3.10, and 3.11.
 
 When you install ``openfe`` through any of the methods described below, you
-will install both the core library and the command line interface (CLI). 
+will install both the core library and the command line interface (CLI).
 
 If you already have a Mamba installation, you can install ``openfe`` with:
 
@@ -120,7 +120,7 @@ Now we need to activate our new environment ::
    environment, as one of our requirements is not yet available for Apple
    Silicon. Run the following modified commands
 
-   .. parsed-literal:: 
+   .. parsed-literal::
 
       CONDA_SUBDIR=osx-64 mamba create -n openfe_env openfe=\ |version|
       mamba activate openfe_env
@@ -136,7 +136,7 @@ skipped, or xfailed (expected fail). The very first time you run this, the
 initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
 happens once per installation.
-  
+
 With that, you should be ready to use ``openfe``!
 
 Single file installer
@@ -144,7 +144,7 @@ Single file installer
 
 .. _releases on GitHub: https://github.com/OpenFreeEnergy/openfe/releases
 
-Single file installers are available for x86_64 Linux and MacOS. 
+Single file installers are available for x86_64 Linux and MacOS.
 They are attached to our `releases on GitHub`_ and can be downloaded with a browser or ``curl`` (or similar tool).
 For example, the Linux installer can be downloaded with ::
 
@@ -158,7 +158,7 @@ The single file installer contains all of the dependencies required for ``openfe
 
 Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
 The installer can be installed in batch mode or interactively  ::
-  
+
   $ chmod +x ./OpenFEforge-Linux-x86_64.sh # Make installer executable
   $ ./OpenFEforge-Linux-x86_64.sh # Run the installer
 
@@ -167,27 +167,27 @@ Example installer output is shown below (click to expand "Installer Output")
 .. collapse:: Installer Output
 
   .. code-block::
-  
+
       Welcome to OpenFEforge 0.7.4
-    
+
       In order to continue the installation process, please review the license
       agreement.
       Please, press ENTER to continue
       >>>
       MIT License
-    
+
       Copyright (c) 2022 OpenFreeEnergy
-      
+
       Permission is hereby granted, free of charge, to any person obtaining a copy
       of this software and associated documentation files (the "Software"), to deal
       in the Software without restriction, including without limitation the rights
       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
       copies of the Software, and to permit persons to whom the Software is
       furnished to do so, subject to the following conditions:
-      
+
       The above copyright notice and this permission notice shall be included in all
       copies or substantial portions of the Software.
-      
+
       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
       IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
       FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -195,41 +195,41 @@ Example installer output is shown below (click to expand "Installer Output")
       LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
-      
-      
+
+
       Do you accept the license terms? [yes|no]
       [no] >>> yes
-  
-  .. note:: 
+
+  .. note::
      The install location will be different when you run the installer.
-  
+
   .. code-block::
-    
+
       OpenFEforge will now be installed into this location:
       /home/mmh/openfeforge
-    
+
       - Press ENTER to confirm the location
       - Press CTRL-C to abort the installation
       - Or specify a different location below
-    
+
       [/home/mmh/openfeforge] >>>
       PREFIX=/home/mmh/openfeforge
       Unpacking payload ...
-      
+
       Installing base environment...
-      
-      
+
+
       Downloading and Extracting Packages
-      
-      
+
+
       Downloading and Extracting Packages
-      
+
       Preparing transaction: done
       Executing transaction: \ By downloading and using the CUDA Toolkit conda packages, you accept the terms and conditions of the CUDA End User License Agreement (EULA): https://docs.nvidia.com/cuda/eula/index.html
-      
+
       | Enabling notebook extension jupyter-js-widgets/extension...
             - Validating: OK
-      
+
       done
       installation finished.
       Do you wish the installer to initialize OpenFEforge
@@ -247,10 +247,10 @@ Example installer output is shown below (click to expand "Installer Output")
       no change     /home/mmh/openfeforge/lib/python3.9/site-packages/xontrib/conda.xsh
       no change     /home/mmh/openfeforge/etc/profile.d/conda.csh
       modified      /home/mmh/.bashrc
-      
+
       ==> For changes to take effect, close and re-open your current shell. <==
-      
-      
+
+
                         __    __    __    __
                        /  \  /  \  /  \  /  \
                       /    \/    \/    \/    \
@@ -265,14 +265,14 @@ Example installer output is shown below (click to expand "Installer Output")
               ██║╚██╔╝██║██╔══██║██║╚██╔╝██║██╔══██╗██╔══██║
               ██║ ╚═╝ ██║██║  ██║██║ ╚═╝ ██║██████╔╝██║  ██║
               ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝
-      
+
               mamba (1.4.2) supported by @QuantStack
-      
+
               GitHub:  https://github.com/mamba-org/mamba
               Twitter: https://twitter.com/QuantStack
-      
+
       █████████████████████████████████████████████████████████████
-      
+
       no change     /home/mmh/openfeforge/condabin/conda
       no change     /home/mmh/openfeforge/bin/conda
       no change     /home/mmh/openfeforge/bin/conda-env
@@ -287,17 +287,17 @@ Example installer output is shown below (click to expand "Installer Output")
       no change     /home/mmh/.bashrc
       No action taken.
       Added mamba to /home/mmh/.bashrc
-      
+
       ==> For changes to take effect, close and re-open your current shell. <==
-      
+
       If you'd prefer that conda's base environment not be activated on startup,
          set the auto_activate_base parameter to false:
-      
+
       conda config --set auto_activate_base false
-      
+
       Thank you for installing OpenFEforge!
 
-After the installer completes, close and reopen your shell. 
+After the installer completes, close and reopen your shell.
 To check if your path is setup correctly, run ``which python`` your output should look something like this ::
 
    (base) $ which python
@@ -310,22 +310,22 @@ Now the CLI tool should work as well ::
 
    (base) $ openfe --help
    Usage: openfe [OPTIONS] COMMAND [ARGS]...
-   
+
      This is the command line tool to provide easy access to functionality from
      the OpenFE Python library.
-   
+
    Options:
      --version   Show the version and exit.
      --log PATH  logging configuration file
      -h, --help  Show this message and exit.
-   
+
    Setup Commands:
      atommapping        Check the atom mapping of a given pair of ligands
      plan-rhfe-network  Plan a relative hydration free energy network, saved in a
                         dir with multiple JSON files
      plan-rbfe-network  Plan a relative binding free energy network, saved in a
                         dir with multiple JSON files.
-   
+
    Simulation Commands:
      gather    Gather DAG result jsons for network of RFE results into single TSV
                file
@@ -338,7 +338,7 @@ To make sure everything is working, run the tests ::
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
-  
+
 With that, you should be ready to use ``openfe``!
 
 Containers
@@ -356,7 +356,7 @@ The Apptainer image is pre-built and can be pulled with ::
 .. warning::
 
    For production use, we recommend using version tags to prevent disruptions in workflows e.g.
-   
+
    .. parsed-literal::
 
      $ docker pull ghcr.io/openfreeenergy/openfe:\ |version|
@@ -366,7 +366,7 @@ We recommend testing the container to ensure that it can access a GPU (if desire
 This can be done with the following command ::
 
   $ singularity run --nv openfe_latest-apptainer.sif python -m openmm.testInstallation
-  
+
   OpenMM Version: 8.0
   Git Revision: a7800059645f4471f4b91c21e742fe5aa4513cda
 
@@ -385,7 +385,7 @@ This can be done with the following command ::
   All differences are within tolerance.
 
 The ``--nv`` flag is required for the Apptainer image to access the GPU on the host.
-Your output may produce different values for the forces, but should list the CUDA platform if everything is working properly. 
+Your output may produce different values for the forces, but should list the CUDA platform if everything is working properly.
 
 You can access the ``openfe`` CLI from the Singularity image with ::
 
@@ -398,7 +398,7 @@ To make sure everything is working, run the tests ::
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
-  
+
 With that, you should be ready to use ``openfe``!
 
 Developer install
@@ -500,7 +500,7 @@ For example, on a login node where there likely is not a GPU or a CUDA environme
 Now if we run the same command on a HPC node that has a GPU ::
 
   $ mamba info
-    
+
                 mamba version : 1.5.1
          active environment : base
         active env location : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0

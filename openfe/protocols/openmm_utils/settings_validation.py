@@ -37,8 +37,7 @@ def validate_timestep(hmass: float, timestep: unit.Quantity):
             raise ValueError(errmsg)
 
 
-def get_simsteps(sim_length: unit.Quantity,
-                 timestep: unit.Quantity, mc_steps: int) -> int:
+def get_simsteps(sim_length: unit.Quantity, timestep: unit.Quantity, mc_steps: int) -> int:
     """
     Gets and validates the number of simulation steps.
 
@@ -57,17 +56,19 @@ def get_simsteps(sim_length: unit.Quantity,
       The number of simulation timesteps.
     """
 
-    sim_time = round(sim_length.to('attosecond').m)
-    ts = round(timestep.to('attosecond').m)
+    sim_time = round(sim_length.to("attosecond").m)
+    ts = round(timestep.to("attosecond").m)
 
     sim_steps, mod = divmod(sim_time, ts)
     if mod != 0:
         raise ValueError("Simulation time not divisible by timestep")
 
     if (sim_steps % mc_steps) != 0:
-        errmsg =  (f"Simulation time {sim_time/1000000} ps should contain a "
-                   "number of steps divisible by the number of integrator "
-                   f"timesteps between MC moves {mc_steps}")
+        errmsg = (
+            f"Simulation time {sim_time/1000000} ps should contain a "
+            "number of steps divisible by the number of integrator "
+            f"timesteps between MC moves {mc_steps}"
+        )
         raise ValueError(errmsg)
 
     return sim_steps
@@ -102,8 +103,12 @@ def divmod_time(
     return iterations, remainder
 
 
-def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
-                          numerator_name: str, denominator_name: str) -> int:
+def divmod_time_and_check(
+    numerator: unit.Quantity,
+    denominator: unit.Quantity,
+    numerator_name: str,
+    denominator_name: str,
+) -> int:
     """Perform a division of time, failing if there is a remainder
 
     For example numerator 20.0 ps and denominator 4.0 fs gives 5000
@@ -129,9 +134,11 @@ def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
     its, rem = divmod_time(numerator, denominator)
 
     if rem:
-        errmsg = (f"The {numerator_name} ({numerator}) "
-                  "does not evenly divide by the "
-                  f"{denominator_name} ({denominator})")
+        errmsg = (
+            f"The {numerator_name} ({numerator}) "
+            "does not evenly divide by the "
+            f"{denominator_name} ({denominator})"
+        )
         raise ValueError(errmsg)
 
     return its
@@ -161,9 +168,10 @@ def convert_checkpoint_interval_to_iterations(
       The number of iterations per checkpoint.
     """
     return divmod_time_and_check(
-        checkpoint_interval, time_per_iteration,
+        checkpoint_interval,
+        time_per_iteration,
         "amount of time per checkpoint",
-        "amount of time per state MCM move attempt"
+        "amount of time per state MCM move attempt",
     )
 
 

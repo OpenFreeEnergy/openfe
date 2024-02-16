@@ -12,10 +12,12 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
     OpenMMEngineSettings,
     MDSimulationSettings,
-    IntegratorSettings, MDOutputSettings,
+    IntegratorSettings,
+    MDOutputSettings,
     OpenFFPartialChargeSettings,
 )
 from gufe.settings import SettingsBaseModel
+
 try:
     from pydantic.v1 import validator
 except ImportError:
@@ -31,7 +33,7 @@ class PlainMDProtocolSettings(Settings):
     Number of independent MD runs to perform.
     """
 
-    @validator('protocol_repeats')
+    @validator("protocol_repeats")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."

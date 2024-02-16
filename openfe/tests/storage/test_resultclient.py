@@ -5,9 +5,7 @@ from unittest import mock
 
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import TOKENIZABLE_REGISTRY
-from openfe.storage.resultclient import (
-    ResultClient, TransformationResult, CloneResult, ExtensionResult
-)
+from openfe.storage.resultclient import ResultClient, TransformationResult, CloneResult, ExtensionResult
 
 
 @pytest.fixture
@@ -16,10 +14,7 @@ def result_client(tmpdir):
     result_client = ResultClient(external)
 
     # store one file with contents "foo"
-    result_client.result_server.store_bytes(
-        "transformations/MAIN_TRANS/0/0/file.txt",
-        "foo".encode('utf-8')
-    )
+    result_client.result_server.store_bytes("transformations/MAIN_TRANS/0/0/file.txt", "foo".encode("utf-8"))
 
     # create some empty files as well
     empty_files = [
@@ -45,7 +40,7 @@ def _make_mock_transformation(hash_str):
 def test_load_file(result_client):
     file_handler = result_client / "MAIN_TRANS" / "0" / 0 / "file.txt"
     with file_handler as f:
-        assert f.read().decode('utf-8') == "foo"
+        assert f.read().decode("utf-8") == "foo"
 
 
 class _ResultContainerTest:
@@ -70,27 +65,27 @@ class _ResultContainerTest:
         key = obj if as_object else obj._path_component
         return key, obj
 
-    @pytest.mark.parametrize('as_object', [True, False])
+    @pytest.mark.parametrize("as_object", [True, False])
     def test_getitem(self, as_object, result_client):
         container = self.get_container(result_client)
         key, obj = self._get_key(as_object, container)
         assert container[key] == obj
 
-    @pytest.mark.parametrize('as_object', [True, False])
+    @pytest.mark.parametrize("as_object", [True, False])
     def test_div(self, as_object, result_client):
         container = self.get_container(result_client)
         key, obj = self._get_key(as_object, container)
         assert container / key == obj
 
-    @pytest.mark.parametrize('load_with', ['div', 'getitem'])
+    @pytest.mark.parametrize("load_with", ["div", "getitem"])
     def test_caching(self, result_client, load_with):
         # used to test caching regardless of how first loaded was loaded
         container = self.get_container(result_client)
         key, obj = self._get_key(False, container)
 
-        if load_with == 'div':
+        if load_with == "div":
             loaded = container / key
-        elif load_with == 'getitem':
+        elif load_with == "getitem":
             loaded = container[key]
         else:  # -no-cov-
             raise RuntimeError(f"Bad input: can't load with '{load_with}'")
@@ -107,12 +102,12 @@ class _ResultContainerTest:
         container = self.get_container(result_client)
         loc = "transformations/MAIN_TRANS/0/0/file.txt"
         with container.load_stream(loc) as f:
-            assert f.read().decode('utf-8') == "foo"
+            assert f.read().decode("utf-8") == "foo"
 
     def test_load_bytes(self, result_client):
         container = self.get_container(result_client)
         loc = "transformations/MAIN_TRANS/0/0/file.txt"
-        assert container.load_bytes(loc).decode('utf-8') == "foo"
+        assert container.load_bytes(loc).decode("utf-8") == "foo"
 
     def test_path(self, result_client):
         container = self.get_container(result_client)
@@ -138,10 +133,7 @@ class TestResultClient(_ResultContainerTest):
         return result_client
 
     def _getitem_object(self, container):
-        return TransformationResult(
-            parent=container,
-            transformation=_make_mock_transformation("MAIN_TRANS")
-        )
+        return TransformationResult(parent=container, transformation=_make_mock_transformation("MAIN_TRANS"))
 
     def test_store_protocol_dag_result(self):
         pytest.skip("Not implemented yet")
@@ -159,8 +151,7 @@ class TestResultClient(_ResultContainerTest):
         assert reloaded is obj
 
     @staticmethod
-    def _test_store_load_different_process(obj, store_func_name,
-                                           load_func_name):
+    def _test_store_load_different_process(obj, store_func_name, load_func_name):
         store = MemoryStorage()
         client = ResultClient(store)
         store_func = getattr(client, store_func_name)
@@ -177,41 +168,37 @@ class TestResultClient(_ResultContainerTest):
             assert reload == obj
             assert reload is not obj
 
-
-    @pytest.mark.parametrize("fixture", [
-        "absolute_transformation",
-        "complex_equilibrium",
-    ])
+    @pytest.mark.parametrize(
+        "fixture",
+        [
+            "absolute_transformation",
+            "complex_equilibrium",
+        ],
+    )
     def test_store_load_transformation_same_process(self, request, fixture):
         transformation = request.getfixturevalue(fixture)
-        self._test_store_load_same_process(transformation,
-                                           "store_transformation",
-                                           "load_transformation")
+        self._test_store_load_same_process(transformation, "store_transformation", "load_transformation")
 
-    @pytest.mark.parametrize('fixture', [
-        "absolute_transformation",
-        "complex_equilibrium",
-    ])
-    def test_store_load_transformation_different_process(self, request,
-                                                        fixture):
+    @pytest.mark.parametrize(
+        "fixture",
+        [
+            "absolute_transformation",
+            "complex_equilibrium",
+        ],
+    )
+    def test_store_load_transformation_different_process(self, request, fixture):
         transformation = request.getfixturevalue(fixture)
-        self._test_store_load_different_process(transformation,
-                                                "store_transformation",
-                                                "load_transformation")
+        self._test_store_load_different_process(transformation, "store_transformation", "load_transformation")
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     def test_store_load_network_same_process(self, request, fixture):
         network = request.getfixturevalue(fixture)
-        self._test_store_load_same_process(network,
-                                           "store_network",
-                                           "load_network")
+        self._test_store_load_same_process(network, "store_network", "load_network")
 
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     def test_store_load_network_different_process(self, request, fixture):
         network = request.getfixturevalue(fixture)
-        self._test_store_load_different_process(network,
-                                                "store_network",
-                                                "load_network")
+        self._test_store_load_different_process(network, "store_network", "load_network")
 
     def test_delete(self, result_client):
         file_to_delete = self.expected_files[0]
@@ -234,7 +221,7 @@ class TestTransformationResults(_ResultContainerTest):
     def get_container(result_client):
         container = TransformationResult(
             parent=TestResultClient.get_container(result_client),
-            transformation=_make_mock_transformation("MAIN_TRANS")
+            transformation=_make_mock_transformation("MAIN_TRANS"),
         )
         container._path_component = "MAIN_TRANS"
         return container
@@ -253,10 +240,7 @@ class TestCloneResults(_ResultContainerTest):
 
     @staticmethod
     def get_container(result_client):
-        return CloneResult(
-            parent=TestTransformationResults.get_container(result_client),
-            clone=0
-        )
+        return CloneResult(parent=TestTransformationResults.get_container(result_client), clone=0)
 
     def _getitem_object(self, container):
         return ExtensionResult(parent=container, extension=0)
@@ -271,15 +255,11 @@ class TestExtensionResults(_ResultContainerTest):
 
     @staticmethod
     def get_container(result_client):
-        return ExtensionResult(
-            parent=TestCloneResults.get_container(result_client),
-            extension=0
-        )
+        return ExtensionResult(parent=TestCloneResults.get_container(result_client), extension=0)
 
     def _get_key(self, as_object, container):
         if self.as_object:  # -no-cov-
-            raise RuntimeError("TestExtensionResults does not support "
-                               "as_object=True")
+            raise RuntimeError("TestExtensionResults does not support " "as_object=True")
         path = "transformations/MAIN_TRANS/0/0/"
         fname = "file.txt"
         return fname, container.result_server.load_stream(path + fname)
@@ -288,12 +268,12 @@ class TestExtensionResults(_ResultContainerTest):
     def test_div(self, result_client):
         container = self.get_container(result_client)
         with container / "file.txt" as f:
-            assert f.read().decode('utf-8') == "foo"
+            assert f.read().decode("utf-8") == "foo"
 
     def test_getitem(self, result_client):
         container = self.get_container(result_client)
         with container["file.txt"] as f:
-            assert f.read().decode('utf-8') == "foo"
+            assert f.read().decode("utf-8") == "foo"
 
     def test_caching(self, result_client):
         # this one does not cache results; the cache should remain empty

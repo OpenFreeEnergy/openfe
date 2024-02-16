@@ -17,29 +17,21 @@ class LambdaProtocol(object):
     * Class needs cleaning up and made more consistent
     """
 
-    default_functions = {'lambda_sterics_core':
-                         lambda x: x,
-                         'lambda_electrostatics_core':
-                         lambda x: x,
-                         'lambda_sterics_insert':
-                         lambda x: 2.0 * x if x < 0.5 else 1.0,
-                         'lambda_sterics_delete':
-                         lambda x: 0.0 if x < 0.5 else 2.0 * (x - 0.5),
-                         'lambda_electrostatics_insert':
-                         lambda x: 0.0 if x < 0.5 else 2.0 * (x - 0.5),
-                         'lambda_electrostatics_delete':
-                         lambda x: 2.0 * x if x < 0.5 else 1.0,
-                         'lambda_bonds':
-                         lambda x: x,
-                         'lambda_angles':
-                         lambda x: x,
-                         'lambda_torsions':
-                         lambda x: x
-                         }
+    default_functions = {
+        "lambda_sterics_core": lambda x: x,
+        "lambda_electrostatics_core": lambda x: x,
+        "lambda_sterics_insert": lambda x: 2.0 * x if x < 0.5 else 1.0,
+        "lambda_sterics_delete": lambda x: 0.0 if x < 0.5 else 2.0 * (x - 0.5),
+        "lambda_electrostatics_insert": lambda x: 0.0 if x < 0.5 else 2.0 * (x - 0.5),
+        "lambda_electrostatics_delete": lambda x: 2.0 * x if x < 0.5 else 1.0,
+        "lambda_bonds": lambda x: x,
+        "lambda_angles": lambda x: x,
+        "lambda_torsions": lambda x: x,
+    }
 
     # lambda components for each component,
     # all run from 0 -> 1 following master lambda
-    def __init__(self, functions='default', windows=10, lambda_schedule=None):
+    def __init__(self, functions="default", windows=10, lambda_schedule=None):
         """Instantiates lambda protocol to be used in a free energy
         calculation. Can either be user defined, by passing in a dict, or using
         one of the pregenerated sets by passing in a string 'default', 'namd'
@@ -92,53 +84,51 @@ class LambdaProtocol(object):
         self.functions = copy.deepcopy(functions)
 
         # set the lambda schedule
-        self.lambda_schedule = self._validate_schedule(lambda_schedule,
-                                                       windows)
+        self.lambda_schedule = self._validate_schedule(lambda_schedule, windows)
         if lambda_schedule:
             self.lambda_schedule = lambda_schedule
         else:
-            self.lambda_schedule = np.linspace(0., 1., windows)
+            self.lambda_schedule = np.linspace(0.0, 1.0, windows)
 
         if type(self.functions) == dict:
-            self.type = 'user-defined'
+            self.type = "user-defined"
         elif type(self.functions) == str:
             self.functions = None  # will be set later
             self.type = functions
 
         if self.functions is None:
-            if self.type == 'default':
-                self.functions = copy.deepcopy(
-                                     LambdaProtocol.default_functions)
-            elif self.type == 'namd':
+            if self.type == "default":
+                self.functions = copy.deepcopy(LambdaProtocol.default_functions)
+            elif self.type == "namd":
                 self.functions = {
-                    'lambda_sterics_core': lambda x: x,
-                    'lambda_electrostatics_core': lambda x: x,
-                    'lambda_sterics_insert': lambda x: (3. / 2.) * x if x < (2. / 3.) else 1.0,
-                    'lambda_sterics_delete': lambda x: 0.0 if x < (1. / 3.) else (x - (1. / 3.)) * (3. / 2.),
-                    'lambda_electrostatics_insert': lambda x: 0.0 if x < 0.5 else 2.0 * (x - 0.5),
-                    'lambda_electrostatics_delete': lambda x: 2.0 * x if x < 0.5 else 1.0,
-                    'lambda_bonds': lambda x: x,
-                    'lambda_angles': lambda x: x,
-                    'lambda_torsions': lambda x: x
+                    "lambda_sterics_core": lambda x: x,
+                    "lambda_electrostatics_core": lambda x: x,
+                    "lambda_sterics_insert": lambda x: (3.0 / 2.0) * x if x < (2.0 / 3.0) else 1.0,
+                    "lambda_sterics_delete": lambda x: 0.0 if x < (1.0 / 3.0) else (x - (1.0 / 3.0)) * (3.0 / 2.0),
+                    "lambda_electrostatics_insert": lambda x: 0.0 if x < 0.5 else 2.0 * (x - 0.5),
+                    "lambda_electrostatics_delete": lambda x: 2.0 * x if x < 0.5 else 1.0,
+                    "lambda_bonds": lambda x: x,
+                    "lambda_angles": lambda x: x,
+                    "lambda_torsions": lambda x: x,
                 }
-            elif self.type == 'quarters':
+            elif self.type == "quarters":
                 self.functions = {
-                    'lambda_sterics_core': lambda x: x,
-                    'lambda_electrostatics_core': lambda x: x,
-                    'lambda_sterics_insert': lambda x: 0. if x < 0.5 else 1 if x > 0.75 else 4 * (x - 0.5),
-                    'lambda_sterics_delete': lambda x: 0. if x < 0.25 else 1 if x > 0.5 else 4 * (x - 0.25),
-                    'lambda_electrostatics_insert': lambda x: 0. if x < 0.75 else 4 * (x - 0.75),
-                    'lambda_electrostatics_delete': lambda x: 4.0 * x if x < 0.25 else 1.0,
-                    'lambda_bonds': lambda x: x,
-                    'lambda_angles': lambda x: x,
-                    'lambda_torsions': lambda x: x
+                    "lambda_sterics_core": lambda x: x,
+                    "lambda_electrostatics_core": lambda x: x,
+                    "lambda_sterics_insert": lambda x: 0.0 if x < 0.5 else 1 if x > 0.75 else 4 * (x - 0.5),
+                    "lambda_sterics_delete": lambda x: 0.0 if x < 0.25 else 1 if x > 0.5 else 4 * (x - 0.25),
+                    "lambda_electrostatics_insert": lambda x: 0.0 if x < 0.75 else 4 * (x - 0.75),
+                    "lambda_electrostatics_delete": lambda x: 4.0 * x if x < 0.25 else 1.0,
+                    "lambda_bonds": lambda x: x,
+                    "lambda_angles": lambda x: x,
+                    "lambda_torsions": lambda x: x,
                 }
-            elif self.type == 'ele-scaled':
+            elif self.type == "ele-scaled":
                 self.functions = {
-                    'lambda_electrostatics_insert': lambda x: 0.0 if x < 0.5 else ((2*(x-0.5))**0.5),
-                    'lambda_electrostatics_delete': lambda x: (2*x)**2 if x < 0.5 else 1.0
+                    "lambda_electrostatics_insert": lambda x: 0.0 if x < 0.5 else ((2 * (x - 0.5)) ** 0.5),
+                    "lambda_electrostatics_delete": lambda x: (2 * x) ** 2 if x < 0.5 else 1.0,
                 }
-            elif self.type == 'user-defined':
+            elif self.type == "user-defined":
                 self.functions = functions
             else:
                 errmsg = f"LambdaProtocol type : {self.type} not recognised "
@@ -170,18 +160,17 @@ class LambdaProtocol(object):
             A valid lambda schedule.
         """
         if schedule is None:
-            return np.linspace(0., 1., windows)
+            return np.linspace(0.0, 1.0, windows)
 
         # Check end states
         if schedule[0] != 0 or schedule[-1] != 1:
-            errmsg = ("end and start lambda windows must be lambda 0 and 1 "
-                      "respectively")
+            errmsg = "end and start lambda windows must be lambda 0 and 1 " "respectively"
             raise ValueError(errmsg)
 
         # Check monotonically increasing
         difference = np.diff(schedule)
 
-        if not all(i >= 0. for i in difference):
+        if not all(i >= 0.0 for i in difference):
             errmsg = "The lambda schedule is not monotonic"
             raise ValueError(errmsg)
 
@@ -204,8 +193,7 @@ class LambdaProtocol(object):
         for function in required_functions:
             if function not in self.functions:
                 # IA switched from warn to error here
-                errmsg = (f"function {function} is missing from "
-                          "self.lambda_functions.")
+                errmsg = f"function {function} is missing from " "self.lambda_functions."
                 raise ValueError(errmsg)
 
             # Check that the function starts and ends at 0 and 1 respectively
@@ -215,14 +203,12 @@ class LambdaProtocol(object):
                 raise ValueError("lambda fucntions must end at 1")
 
             # now validatate that it's monotonic
-            global_lambda = np.linspace(0., 1., n)
-            sub_lambda = [self.functions[function](lam) for
-                          lam in global_lambda]
+            global_lambda = np.linspace(0.0, 1.0, n)
+            sub_lambda = [self.functions[function](lam) for lam in global_lambda]
             difference = np.diff(sub_lambda)
 
-            if not all(i >= 0. for i in difference):
-                wmsg = (f"The function {function} is not monotonic as "
-                        "typically expected.")
+            if not all(i >= 0.0 for i in difference):
+                wmsg = f"The function {function} is not monotonic as " "typically expected."
                 warnings.warn(wmsg)
 
     def _check_for_naked_charges(self):
@@ -240,19 +226,21 @@ class LambdaProtocol(object):
                 ster_val = functions[sterics](lam)
                 # if charge > 0 and sterics == 0 raise error
                 if ele_val != endstate and ster_val == endstate:
-                    errmsg = ("There are states along this lambda schedule "
-                              "where there are atoms with charges but no LJ "
-                              f"interactions: {lam} {ele_val} {ster_val}")
+                    errmsg = (
+                        "There are states along this lambda schedule "
+                        "where there are atoms with charges but no LJ "
+                        f"interactions: {lam} {ele_val} {ster_val}"
+                    )
                     raise ValueError(errmsg)
 
         # checking unique new terms first
-        ele = 'lambda_electrostatics_insert'
-        sterics = 'lambda_sterics_insert'
+        ele = "lambda_electrostatics_insert"
+        sterics = "lambda_sterics_insert"
         check_overlap(ele, sterics, global_lambda, self.functions, endstate=0)
 
         # checking unique old terms now
-        ele = 'lambda_electrostatics_delete'
-        sterics = 'lambda_sterics_delete'
+        ele = "lambda_electrostatics_delete"
+        sterics = "lambda_sterics_delete"
         check_overlap(ele, sterics, global_lambda, self.functions, endstate=1)
 
     def get_functions(self):
@@ -275,12 +263,10 @@ class LambdaProtocol(object):
         global_lambda = lambda_schedule if lambda_schedule else self.lambda_schedule
 
         for f in self.functions:
-            plt.plot(global_lambda,
-                     [self.functions[f](lam) for lam in global_lambda],
-                     alpha=0.5, label=f)
+            plt.plot(global_lambda, [self.functions[f](lam) for lam in global_lambda], alpha=0.5, label=f)
 
-        plt.xlabel('global lambda')
-        plt.ylabel('sub-lambda')
+        plt.xlabel("global lambda")
+        plt.ylabel("sub-lambda")
         plt.legend()
         plt.show()
 
@@ -311,17 +297,14 @@ class RelativeAlchemicalState(AlchemicalState):
     class _LambdaParameter(AlchemicalState._LambdaParameter):
         pass
 
-    lambda_sterics_core = _LambdaParameter('lambda_sterics_core')
-    lambda_electrostatics_core = _LambdaParameter('lambda_electrostatics_core')
-    lambda_sterics_insert = _LambdaParameter('lambda_sterics_insert')
-    lambda_sterics_delete = _LambdaParameter('lambda_sterics_delete')
-    lambda_electrostatics_insert = _LambdaParameter(
-                                       'lambda_electrostatics_insert')
-    lambda_electrostatics_delete = _LambdaParameter(
-                                      'lambda_electrostatics_delete')
+    lambda_sterics_core = _LambdaParameter("lambda_sterics_core")
+    lambda_electrostatics_core = _LambdaParameter("lambda_electrostatics_core")
+    lambda_sterics_insert = _LambdaParameter("lambda_sterics_insert")
+    lambda_sterics_delete = _LambdaParameter("lambda_sterics_delete")
+    lambda_electrostatics_insert = _LambdaParameter("lambda_electrostatics_insert")
+    lambda_electrostatics_delete = _LambdaParameter("lambda_electrostatics_delete")
 
-    def set_alchemical_parameters(self, global_lambda,
-                                  lambda_protocol=LambdaProtocol()):
+    def set_alchemical_parameters(self, global_lambda, lambda_protocol=LambdaProtocol()):
         """Set each lambda value according to the lambda_functions protocol.
         The undefined parameters (i.e. those being set to None) remain
         undefined.

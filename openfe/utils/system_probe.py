@@ -223,7 +223,7 @@ def _get_psutil_info() -> dict[str, dict[str, str]]:
                 "num_fds",
                 "pid",
                 "status",
-            ]
+            ],
         )
         # OSX doesn't have rlimit for Process
         if sys.platform != "darwin":
@@ -337,13 +337,11 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
     )
 
     try:
-        nvidia_smi_output = subprocess.check_output(
-            ["nvidia-smi", GPU_QUERY, "--format=csv"]
-        ).decode("utf-8")
+        nvidia_smi_output = subprocess.check_output(["nvidia-smi", GPU_QUERY, "--format=csv"]).decode("utf-8")
     except FileNotFoundError:
         logging.debug(
             "Error: nvidia-smi command not found. Make sure NVIDIA drivers are"
-            " installed, this is expected if there is no GPU available"
+            " installed, this is expected if there is no GPU available",
         )
         return {}
 
@@ -478,12 +476,11 @@ def _probe_system(paths: Optional[Iterable[pathlib.Path]] = None) -> dict:
             "gpu information": gpu_info,
             "psutil information": psutil_info,
             "disk usage information": disk_usage_info,
-        }
+        },
     }
 
 
-def log_system_probe(level=logging.DEBUG,
-                     paths: Optional[Iterable[os.PathLike]] = None):
+def log_system_probe(level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]] = None):
     """Print the system information via configurable logging.
 
     This creates a logger tree under "{__name__}.log", allowing one to turn
@@ -499,29 +496,26 @@ def log_system_probe(level=logging.DEBUG,
     hostname = logging.getLogger(basename + ".hostname")
     loggers = [base, gpu, hostname]
     if any(l.isEnabledFor(level) for l in loggers):
-        sysinfo = _probe_system(pl_paths)['system information']
+        sysinfo = _probe_system(pl_paths)["system information"]
         base.log(level, "SYSTEM CONFIG DETAILS:")
         hostname.log(level, f"hostname: '{sysinfo['hostname']}'")
-        if gpuinfo := sysinfo['gpu information']:
+        if gpuinfo := sysinfo["gpu information"]:
             for uuid, gpu_card in gpuinfo.items():
-                gpu.log(level, f"GPU: {uuid=} {gpu_card['name']} "
-                        f"mode={gpu_card['compute_mode']}")
+                gpu.log(level, f"GPU: {uuid=} {gpu_card['name']} " f"mode={gpu_card['compute_mode']}")
             # gpu.log(level, f"CUDA driver: {...}")
             # gpu.log(level, f"CUDA toolkit: {...}")
         else:  # -no-cov-
             gpu.log(level, f"CUDA-based GPU not found")
 
         psutilinfo = sysinfo["psutil information"]
-        memused = psutilinfo['virtual_memory']['used']
-        mempct = psutilinfo['virtual_memory']['percent']
+        memused = psutilinfo["virtual_memory"]["used"]
+        mempct = psutilinfo["virtual_memory"]["percent"]
         base.log(level, f"Memory used: {bytes2human(memused)} ({mempct}%)")
-        for diskdev, disk in sysinfo['disk usage information'].items():
-            base.log(level, f"{diskdev}: {disk['percent_used']} full "
-                     f"({disk['available']} free)")
+        for diskdev, disk in sysinfo["disk usage information"].items():
+            base.log(level, f"{diskdev}: {disk['percent_used']} full " f"({disk['available']} free)")
 
 
 if __name__ == "__main__":
     from pprint import pprint
 
     pprint(_probe_system())
-

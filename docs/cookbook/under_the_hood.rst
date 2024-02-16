@@ -142,4 +142,3 @@ If you want to implement your own atom mapper or free energy procedure, or you w
 
         - :class:`ProtocolDAGResult`
                 A completed transformation with multiple user-defined replicas.
-

@@ -6,10 +6,11 @@ import matplotlib
 
 from openfecli.commands.view_ligand_network import view_ligand_network
 
+
 @pytest.mark.filterwarnings("ignore:.*non-GUI backend")
 def test_view_ligand_network():
     # smoke test
-    resource = importlib.resources.files('openfe.tests.data.serialization')
+    resource = importlib.resources.files("openfe.tests.data.serialization")
     ref = resource / "network_template.graphml"
     runner = CliRunner()
 

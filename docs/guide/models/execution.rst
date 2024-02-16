@@ -1,7 +1,7 @@
 Protocols and the Execution Model
 =================================
 
-Protocols in OpenFE are built on a flexible execution model. 
+Protocols in OpenFE are built on a flexible execution model.
 Result objects are shaped by this model, and therefore some basic
 background on it can be useful when looking into the details of simulation
 results. In general, most users don't need to work with the details of the

@@ -14,9 +14,7 @@ from openmmforcefields.generators import SystemGenerator
 from typing import Optional
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
-from gufe import (
-    Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
-)
+from gufe import Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
@@ -63,28 +61,28 @@ def get_system_generator(
     """
     # get the right constraint
     constraints = {
-        'hbonds': app.HBonds,
-        'none': None,
-        'allbonds': app.AllBonds,
-        'hangles': app.HAngles
+        "hbonds": app.HBonds,
+        "none": None,
+        "allbonds": app.AllBonds,
+        "hangles": app.HAngles,
         # vvv can be None so string it
     }[str(forcefield_settings.constraints).lower()]
 
     # create forcefield_kwargs entry
     forcefield_kwargs = {
-        'constraints': constraints,
-        'rigidWater': forcefield_settings.rigid_water,
-        'removeCMMotion': integrator_settings.remove_com,
-        'hydrogenMass': forcefield_settings.hydrogen_mass * omm_unit.amu,
+        "constraints": constraints,
+        "rigidWater": forcefield_settings.rigid_water,
+        "removeCMMotion": integrator_settings.remove_com,
+        "hydrogenMass": forcefield_settings.hydrogen_mass * omm_unit.amu,
     }
 
     # get the right nonbonded method
     nonbonded_method = {
-        'pme': app.PME,
-        'nocutoff': app.NoCutoff,
-        'cutoffnonperiodic': app.CutoffNonPeriodic,
-        'cutoffperiodic': app.CutoffPeriodic,
-        'ewald': app.Ewald
+        "pme": app.PME,
+        "nocutoff": app.NoCutoff,
+        "cutoffnonperiodic": app.CutoffNonPeriodic,
+        "cutoffperiodic": app.CutoffPeriodic,
+        "ewald": app.Ewald,
     }[forcefield_settings.nonbonded_method.lower()]
 
     nonbonded_cutoff = to_openmm(
@@ -93,15 +91,15 @@ def get_system_generator(
 
     # create the periodic_kwarg entry
     periodic_kwargs = {
-        'nonbondedMethod': nonbonded_method,
-        'nonbondedCutoff': nonbonded_cutoff,
+        "nonbondedMethod": nonbonded_method,
+        "nonbondedCutoff": nonbonded_cutoff,
     }
 
     # Currently the else is a dead branch, we will want to investigate the
     # possibility of using CutoffNonPeriodic at some point though (for RF)
     if nonbonded_method is not app.CutoffNonPeriodic:
         nonperiodic_kwargs = {
-                'nonbondedMethod': app.NoCutoff,
+            "nonbondedMethod": app.NoCutoff,
         }
     else:  # pragma: no-cover
         nonperiodic_kwargs = periodic_kwargs
@@ -110,8 +108,8 @@ def get_system_generator(
     # TODO: move this to its own place where we can handle membranes
     if has_solvent:
         barostat = MonteCarloBarostat(
-            ensure_quantity(thermo_settings.pressure, 'openmm'),
-            ensure_quantity(thermo_settings.temperature, 'openmm'),
+            ensure_quantity(thermo_settings.pressure, "openmm"),
+            ensure_quantity(thermo_settings.temperature, "openmm"),
             integrator_settings.barostat_frequency.m,
         )
     else:
@@ -137,8 +135,8 @@ def get_omm_modeller(
     protein_comp: Optional[ProteinComponent],
     solvent_comp: Optional[SolventComponent],
     small_mols: dict[SmallMoleculeComponent, OFFMol],
-    omm_forcefield : app.ForceField,
-    solvent_settings : OpenMMSolvationSettings
+    omm_forcefield: app.ForceField,
+    solvent_settings: OpenMMSolvationSettings,
 ) -> ModellerReturn:
     """
     Generate an OpenMM Modeller class based on a potential input ProteinComponent,
@@ -167,19 +165,13 @@ def get_omm_modeller(
     """
     component_resids = {}
 
-    def _add_small_mol(comp,
-                       mol,
-                       system_modeller: app.Modeller,
-                       comp_resids: dict[Component, npt.NDArray]):
+    def _add_small_mol(comp, mol, system_modeller: app.Modeller, comp_resids: dict[Component, npt.NDArray]):
         """
         Helper method to add OFFMol to an existing Modeller object and
         update a dictionary tracking residue indices for each component.
         """
         omm_top = mol.to_topology().to_openmm()
-        system_modeller.add(
-            omm_top,
-            ensure_quantity(mol.conformers[0], 'openmm')
-        )
+        system_modeller.add(omm_top, ensure_quantity(mol.conformers[0], "openmm"))
 
         nres = omm_top.getNumResidues()
         resids = [res.index for res in system_modeller.topology.residues()]
@@ -190,19 +182,16 @@ def get_omm_modeller(
 
     # If there's a protein in the system, we add it first to the Modeller
     if protein_comp is not None:
-        system_modeller.add(protein_comp.to_openmm_topology(),
-                            protein_comp.to_openmm_positions())
+        system_modeller.add(protein_comp.to_openmm_topology(), protein_comp.to_openmm_positions())
         # add missing virtual particles (from crystal waters)
         system_modeller.addExtraParticles(omm_forcefield)
-        component_resids[protein_comp] = np.array(
-          [r.index for r in system_modeller.topology.residues()]
-        )
+        component_resids[protein_comp] = np.array([r.index for r in system_modeller.topology.residues()])
         # if we solvate temporarily rename water molecules to 'WAT'
         # see openmm issue #4103
         if solvent_comp is not None:
             for r in system_modeller.topology.residues():
-                if r.name == 'HOH':
-                    r.name = 'WAT'
+                if r.name == "HOH":
+                    r.name = "WAT"
 
     # Now loop through small mols
     for comp, mol in small_mols.items():
@@ -218,26 +207,20 @@ def get_omm_modeller(
             omm_forcefield,
             model=solvent_settings.solvent_model,
             padding=to_openmm(solvent_settings.solvent_padding),
-            positiveIon=pos, negativeIon=neg,
+            positiveIon=pos,
+            negativeIon=neg,
             ionicStrength=to_openmm(conc),
             neutralize=solvent_comp.neutralize,
         )
 
-        all_resids = np.array(
-            [r.index for r in system_modeller.topology.residues()]
-        )
+        all_resids = np.array([r.index for r in system_modeller.topology.residues()])
 
-        existing_resids = np.concatenate(
-            [resids for resids in component_resids.values()]
-        )
+        existing_resids = np.concatenate([resids for resids in component_resids.values()])
 
-        component_resids[solvent_comp] = np.setdiff1d(
-            all_resids, existing_resids
-        )
+        component_resids[solvent_comp] = np.setdiff1d(all_resids, existing_resids)
         # undo rename of pre-existing waters
         for r in system_modeller.topology.residues():
-            if r.name == 'WAT':
-                r.name = 'HOH'
+            if r.name == "WAT":
+                r.name = "HOH"
 
     return system_modeller, component_resids
-
