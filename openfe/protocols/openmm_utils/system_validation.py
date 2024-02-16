@@ -126,7 +126,7 @@ def validate_protein(state: ChemicalSystem):
         raise ValueError(errmsg)
 
 
-ParseCompRet = Tuple[
+ParseCompRet = tuple[
     Optional[SolventComponent],
     Optional[ProteinComponent],
     list[SmallMoleculeComponent],

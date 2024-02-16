@@ -27,17 +27,17 @@ class AtomMappingEdge(Edge):
         to an :class:`.AtomMapping`.
     """
 
-    def __init__(self, node_artist1: Node, node_artist2: Node, data: Dict):
+    def __init__(self, node_artist1: Node, node_artist2: Node, data: dict):
         super().__init__(node_artist1, node_artist2, data)
         self.left_image = None
         self.right_image = None
 
     def _draw_mapped_molecule(
         self,
-        extent: Tuple[float, float, float, float],
+        extent: tuple[float, float, float, float],
         molA: SmallMoleculeComponent,
         molB: SmallMoleculeComponent,
-        molA_to_molB: Dict[int, int],
+        molA_to_molB: dict[int, int],
     ):
         # create the image in a format matplotlib can handle
         d2d = Chem.Draw.rdMolDraw2D.MolDraw2DCairo(300, 300, 300, 300)

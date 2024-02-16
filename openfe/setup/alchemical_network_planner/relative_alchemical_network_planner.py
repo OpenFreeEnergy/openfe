@@ -2,7 +2,8 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
 import copy
-from typing import Callable, Iterable, Optional, Type
+from collections.abc import Iterable
+from typing import Callable, Optional, Type
 
 from gufe import (
     AlchemicalNetwork,
@@ -93,7 +94,7 @@ class RelativeAlchemicalNetworkPlanner(AbstractAlchemicalNetworkPlanner, abc.ABC
     @property
     def chemical_system_generator_type(
         self,
-    ) -> Type[AbstractChemicalSystemGenerator]:
+    ) -> type[AbstractChemicalSystemGenerator]:
         return self._chemical_system_generator_type
 
     def _construct_ligand_network(self, ligands: Iterable[SmallMoleculeComponent]) -> LigandNetwork:

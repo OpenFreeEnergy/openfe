@@ -15,7 +15,7 @@ def result_server(tmpdir):
     external = FileStorage(tmpdir)
     metadata = JSONMetadataStore(external)
     result_server = ResultServer(external, metadata)
-    result_server.store_bytes("path/to/foo.txt", "foo".encode("utf-8"))
+    result_server.store_bytes("path/to/foo.txt", b"foo")
     return result_server
 
 
@@ -32,7 +32,7 @@ class TestResultServer:
         mock_hash = mock.Mock(return_value=mock.Mock(hexdigest=mock.Mock(return_value="deadbeef")))
         bar_loc = "path/to/bar.txt"
         with mock.patch("hashlib.md5", mock_hash):
-            result_server.store_bytes(bar_loc, "bar".encode("utf-8"))
+            result_server.store_bytes(bar_loc, b"bar")
 
         assert len(metadata_store) == 2
         assert bar_loc in metadata_store
@@ -46,7 +46,7 @@ class TestResultServer:
         orig_file = tmp_path / ".hidden" / "bar.txt"
         orig_file.parent.mkdir(parents=True, exist_ok=True)
         with open(orig_file, mode="wb") as f:
-            f.write("bar".encode("utf-8"))
+            f.write(b"bar")
 
         mock_hash = mock.Mock(return_value=mock.Mock(hexdigest=mock.Mock(return_value="deadc0de")))
         bar_loc = "path/to/bar.txt"

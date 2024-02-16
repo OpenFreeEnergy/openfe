@@ -44,7 +44,7 @@ class Node:
         self.dy = dx
         self.artist = self._make_artist(x, y, dx, dy)
         self.picked = False
-        self.press: Optional[ClickLocation] = None
+        self.press: ClickLocation | None = None
 
     def _make_artist(self, x, y, dx, dy):
         return Rectangle((x, y), dx, dy, color="blue")
@@ -245,9 +245,9 @@ class EventHandler:
 
     def __init__(self, graph: GraphDrawing):
         self.graph = graph
-        self.active: Optional[Union[Node, Edge]] = None
-        self.selected: Optional[Union[Node, Edge]] = None
-        self.click_location: Optional[tuple[Optional[float], Optional[float]]] = None
+        self.active: Node | Edge | None = None
+        self.selected: Node | Edge | None = None
+        self.click_location: tuple[float | None, float | None] | None = None
         self.connections: list[int] = []
 
     def connect(self, canvas: MPL_FigureCanvasBase):

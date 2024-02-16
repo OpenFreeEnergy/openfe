@@ -47,7 +47,7 @@ def format_estimate_uncertainty(
 
 def is_results_json(f):
     # sanity check on files before we try and deserialize
-    return "estimate" in open(f, "r").read(20)
+    return "estimate" in open(f).read(20)
 
 
 def load_results(f):
@@ -56,7 +56,7 @@ def load_results(f):
 
     from gufe.tokenization import JSON_HANDLER
 
-    return json.load(open(f, "r"), cls=JSON_HANDLER.decoder)
+    return json.load(open(f), cls=JSON_HANDLER.decoder)
 
 
 def get_names(result) -> tuple[str, str]:

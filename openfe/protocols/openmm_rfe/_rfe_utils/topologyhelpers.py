@@ -277,13 +277,11 @@ def get_alchemical_waters(
         periodic=True,
     )[0]
 
-    solvent_indices = set(
-        [
-            atom.residue.index
-            for atom in traj.topology.atoms
-            if (atom.index in water_atoms) and (atom.index not in excluded_waters)
-        ],
-    )
+    solvent_indices = {
+        atom.residue.index
+        for atom in traj.topology.atoms
+        if (atom.index in water_atoms) and (atom.index not in excluded_waters)
+    }
 
     if len(solvent_indices) < 1:
         errmsg = (

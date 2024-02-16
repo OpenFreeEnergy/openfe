@@ -68,7 +68,7 @@ def plan_rhfe_network_main(
     default="alchemicalNetwork",
 )
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str):
+def plan_rhfe_network(molecules: list[str], yaml_settings: str, output_dir: str):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.

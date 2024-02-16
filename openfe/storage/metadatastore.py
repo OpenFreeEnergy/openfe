@@ -19,7 +19,7 @@ class MetadataStore(collections.abc.Mapping):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def load_all_metadata(self) -> Dict[str, Metadata]:
+    def load_all_metadata(self) -> dict[str, Metadata]:
         raise NotImplementedError()
 
     @abc.abstractmethod

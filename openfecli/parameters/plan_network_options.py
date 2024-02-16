@@ -113,7 +113,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     )
 
     if path is not None:
-        with open(path, "r") as f:
+        with open(path) as f:
             raw = f.read()
 
         # convert raw yaml to normalised pydantic model

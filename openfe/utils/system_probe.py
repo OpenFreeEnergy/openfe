@@ -4,7 +4,8 @@ import pathlib
 import socket
 import subprocess
 import sys
-from typing import Iterable, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 import psutil
 from psutil._common import bytes2human

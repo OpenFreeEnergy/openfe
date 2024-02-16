@@ -158,7 +158,7 @@ class TestNode:
         event = mock_event("drag", 0.7, 0.7, self.fig)
         # this test some integration, so we need more than a mock
         drawing_graph = GraphDrawing(
-            nx.MultiDiGraph(([("A", "B"), ("B", "C"), ("B", "D")])),
+            nx.MultiDiGraph([("A", "B"), ("B", "C"), ("B", "D")]),
             positions={"A": (0.0, 0.0), "B": (0.5, 0.0), "C": (0.5, 0.5), "D": (0.0, 0.5)},
         )
         # set up things that should happen on mousedown

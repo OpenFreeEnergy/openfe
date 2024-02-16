@@ -31,7 +31,7 @@ def test_quickrun(extra_args, json_file):
 
         if outfile := extra_args.get("-o"):
             assert pathlib.Path(outfile).exists()
-            with open(outfile, mode="r") as outf:
+            with open(outfile) as outf:
                 dct = json.load(outf, cls=JSON_HANDLER.decoder)
 
             assert set(dct) == {"estimate", "uncertainty", "protocol_result", "unit_results"}

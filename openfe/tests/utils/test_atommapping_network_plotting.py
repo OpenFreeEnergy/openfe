@@ -101,7 +101,7 @@ class TestAtomMappingEdge:
         node_dict = {node.smiles: node for node in network_drawing.graph.nodes}
         edge_tuple = tuple(node_dict[node] for node in edge_str)
         edge = network_drawing.edges[edge_tuple]
-        left, right = [network_drawing.nodes[node_dict[node]] for node in left_right]
+        left, right = (network_drawing.nodes[node_dict[node]] for node in left_right)
         # ensure that we have them labelled correctly
         assert left.xy[0] < right.xy[0]
         func = edge._draw_mapped_molecule  # save for bound_args

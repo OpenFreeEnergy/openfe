@@ -24,7 +24,7 @@ from .lambdaprotocol import RelativeAlchemicalState
 logger = logging.getLogger(__name__)
 
 
-class HybridCompatibilityMixin(object):
+class HybridCompatibilityMixin:
     """
     Mixin that allows the MultistateSampler to accommodate the situation where
     unsampled endpoints have a different number of degrees of freedom.
@@ -32,7 +32,7 @@ class HybridCompatibilityMixin(object):
 
     def __init__(self, *args, hybrid_factory=None, **kwargs):
         self._hybrid_factory = hybrid_factory
-        super(HybridCompatibilityMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def setup(
         self,
@@ -167,7 +167,7 @@ class HybridRepexSampler(HybridCompatibilityMixin, replicaexchange.ReplicaExchan
     """
 
     def __init__(self, *args, hybrid_factory=None, **kwargs):
-        super(HybridRepexSampler, self).__init__(*args, hybrid_factory=hybrid_factory, **kwargs)
+        super().__init__(*args, hybrid_factory=hybrid_factory, **kwargs)
         self._factory = hybrid_factory
 
 
@@ -178,7 +178,7 @@ class HybridSAMSSampler(HybridCompatibilityMixin, sams.SAMSSampler):
     """
 
     def __init__(self, *args, hybrid_factory=None, **kwargs):
-        super(HybridSAMSSampler, self).__init__(*args, hybrid_factory=hybrid_factory, **kwargs)
+        super().__init__(*args, hybrid_factory=hybrid_factory, **kwargs)
         self._factory = hybrid_factory
 
 
@@ -189,7 +189,7 @@ class HybridMultiStateSampler(HybridCompatibilityMixin, multistatesampler.MultiS
     """
 
     def __init__(self, *args, hybrid_factory=None, **kwargs):
-        super(HybridMultiStateSampler, self).__init__(*args, hybrid_factory=hybrid_factory, **kwargs)
+        super().__init__(*args, hybrid_factory=hybrid_factory, **kwargs)
         self._factory = hybrid_factory
 
 

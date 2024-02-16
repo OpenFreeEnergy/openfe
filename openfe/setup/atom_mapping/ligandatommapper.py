@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
-from typing import Iterable
+from collections.abc import Iterable
 
 import gufe
 from gufe import SmallMoleculeComponent

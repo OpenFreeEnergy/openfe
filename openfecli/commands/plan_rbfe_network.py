@@ -81,7 +81,7 @@ def plan_rbfe_network_main(
 )
 @print_duration
 def plan_rbfe_network(
-    molecules: List[str],
+    molecules: list[str],
     protein: str,
     cofactors: tuple[str],
     yaml_settings: str,

@@ -5,8 +5,9 @@ import itertools
 import math
 import warnings
 from collections import Counter
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Optional, Union
 
 import networkx as nx
 from gufe import AtomMapper, SmallMoleculeComponent
@@ -330,7 +331,7 @@ def generate_network_from_names(
     nm2idx = {l.name: i for i, l in enumerate(ligands)}
 
     if len(nm2idx) < len(ligands):
-        dupes = Counter((l.name for l in ligands))
+        dupes = Counter(l.name for l in ligands)
         dupe_names = [k for k, v in dupes.items() if v > 1]
         raise ValueError(f"Duplicate names: {dupe_names}")
 
@@ -418,7 +419,7 @@ def load_orion_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, "r") as f:
+    with open(network_file) as f:
         network_lines = [l.strip().split(" ") for l in f if not l.startswith("#")]
 
     names = []
@@ -458,7 +459,7 @@ def load_fepplus_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, "r") as f:
+    with open(network_file) as f:
         network_lines = [l.split() for l in f.readlines()]
 
     names = []

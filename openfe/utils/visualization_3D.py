@@ -1,4 +1,5 @@
-from typing import Dict, Iterable, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -43,7 +44,7 @@ def _get_max_dist_in_x(atom_mapping: AtomMapping) -> float:
     return estm if (estm > 5) else 5
 
 
-def _translate(mol, shift: Union[Tuple[float, float, float], NDArray[np.float64]]):
+def _translate(mol, shift: Union[tuple[float, float, float], NDArray[np.float64]]):
     """
         shifts the molecule by the shift vector
 
@@ -68,7 +69,7 @@ def _translate(mol, shift: Union[Tuple[float, float, float], NDArray[np.float64]
     return mol
 
 
-def _add_spheres(view: py3Dmol.view, mol1: Chem.Mol, mol2: Chem.Mol, mapping: Dict[int, int]):
+def _add_spheres(view: py3Dmol.view, mol1: Chem.Mol, mol2: Chem.Mol, mapping: dict[int, int]):
     """
         will add spheres according to mapping to the view. (inplace!)
 
@@ -111,7 +112,7 @@ def _add_spheres(view: py3Dmol.view, mol1: Chem.Mol, mol2: Chem.Mol, mapping: Di
 def view_components_3d(
     mols: Iterable[ExplicitMoleculeComponent],
     style: Optional[str] = "stick",
-    shift: Optional[Tuple[float, float, float]] = None,
+    shift: Optional[tuple[float, float, float]] = None,
     view: py3Dmol.view = None,
 ) -> py3Dmol.view:
     """visualize multiple component coordinates in one interactive view.
@@ -160,7 +161,7 @@ def view_mapping_3d(
     spheres: Optional[bool] = True,
     show_atomIDs: Optional[bool] = False,
     style: Optional[str] = "stick",
-    shift: Optional[Union[Tuple[float, float, float], NDArray[np.float64]]] = None,
+    shift: Optional[Union[tuple[float, float, float], NDArray[np.float64]]] = None,
 ) -> py3Dmol.view:
     """
     Render relative transformation edge in 3D using py3Dmol.

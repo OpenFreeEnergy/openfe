@@ -33,7 +33,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             ax.axhline(y=i, ls="-", lw=0.5, color="k", alpha=0.25)
         for j in range(num_states):
             val = matrix[i, j]
-            val_str = "{:.2f}".format(val)[1:]
+            val_str = f"{val:.2f}"[1:]
             rel_prob = val / matrix.max()
 
             # shade box

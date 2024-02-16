@@ -1477,7 +1477,7 @@ def tyk2_xml(tmp_path_factory):
 def tyk2_reference_xml():
     with resources.files("openfe.tests.data.openmm_rfe") as d:
         f = d / "reference.xml"
-        with open(f, "r") as i:
+        with open(f) as i:
             xmldata = i.read()
     return ET.fromstring(xmldata)
 
@@ -1620,7 +1620,7 @@ class TestProtocolResult:
 def test_get_charge_difference(mapping_name, result, request):
     mapping = request.getfixturevalue(mapping_name)
     if result != 0:
-        ion = "Na\+" if result == -1 else "Cl\-"
+        ion = r"Na\+" if result == -1 else r"Cl\-"
         wmsg = (
             f"A charge difference of {result} is observed "
             "between the end states. This will be addressed by "

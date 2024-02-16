@@ -14,7 +14,7 @@ def result_client(tmpdir):
     result_client = ResultClient(external)
 
     # store one file with contents "foo"
-    result_client.result_server.store_bytes("transformations/MAIN_TRANS/0/0/file.txt", "foo".encode("utf-8"))
+    result_client.result_server.store_bytes("transformations/MAIN_TRANS/0/0/file.txt", b"foo")
 
     # create some empty files as well
     empty_files = [

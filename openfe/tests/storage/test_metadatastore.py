@@ -75,7 +75,7 @@ class TestJSONMetadataStore(MetadataTests):
         base_path = json_metadata.external_store.root_dir
         metadata_json = base_path / "metadata.json"
         assert metadata_json.exists()
-        with open(metadata_json, mode="r") as f:
+        with open(metadata_json) as f:
             metadata_dict = json.load(f)
 
         metadata = {key: Metadata(**val) for key, val in metadata_dict.items()}
@@ -117,7 +117,7 @@ class TestPerFileJSONMetadataStore(MetadataTests):
         per_file_metadata.store_metadata("path/to/other.txt", meta)
         assert expected_path.exists()
         expected = {"path": "path/to/other.txt", "metadata": {"md5": "other"}}
-        with open(expected_path, mode="r") as f:
+        with open(expected_path) as f:
             assert json.load(f) == expected
 
     def test_load_all_metadata(self, per_file_metadata):
