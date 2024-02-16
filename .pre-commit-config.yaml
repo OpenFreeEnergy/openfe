@@ -43,4 +43,4 @@ repos:
   hooks:
   - id: pyupgrade
     args: ["--py39-plus"]
-    exclude: '(openmm_utils/omm_settings\.py|openmm_afe/equil_afe_settings\.py|openmm_rfe/equil_rfe_settings\.py|openmm_afe/base\.py|openmm_afe/equil_solvation_afe_method\.py|openmm_md/plain_md_methods\.py)'
+    exclude: '(openmm_utils/omm_settings\.py|openmm_afe/equil_afe_settings\.py|openmm_rfe/equil_rfe_settings\.py|openmm_afe/base\.py|openmm_afe/equil_solvation_afe_method\.py|openmm_md/plain_md_methods\.py|openmm_rfe/equil_rfe_methods\.py)'
