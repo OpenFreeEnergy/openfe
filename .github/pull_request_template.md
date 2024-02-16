@@ -7,6 +7,10 @@ Below are a few things we ask you kindly to self-check before getting a review. 
 Please note any issues this fixes using [closing keywords]( https://help.github.com/articles/closing-issues-using-keywords/ ):
 -->
 
+<!--
+see https://regro.github.io/rever-docs/news.html for details on how to add news entry (you do not need to run the rever command)
+-->
+
 Checklist
 * [ ] Added a ``news`` entry
 
