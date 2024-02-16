@@ -282,7 +282,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Frequency for the barostat
         timestep: FloatQuantity["femtosecond"]
           Simulation integration timestep
-        equil_steps_nvt: int
+        equil_steps_nvt: Optional[int]
           number of steps for NVT equilibration
           if None, no NVT equilibration will be performed
         equil_steps_npt: int
