@@ -316,9 +316,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
+          * equil_simulation_settings : MDSimulationSettings
+          * equil_output_settings : MDOutputSettings
           * simulation_settings : MultiStateSimulationSettings
-          * simulation_settings: MDSimulationSettings
-          * output_settings: MDOutputSettings
+          * output_settings : MultiStateOutputSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
