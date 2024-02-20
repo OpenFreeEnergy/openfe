@@ -27,7 +27,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMEngineSettings,
     IntegratorSettings,
     OpenFFPartialChargeSettings,
-    OutputSettings,
+    MultiStateOutputSettings,
     MDSimulationSettings,
     MDOutputSettings,
 )
@@ -202,7 +202,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Simulation output settings for the vacuum non-alchemical equilibration.
     """
-    vacuum_output_settings: OutputSettings
+    vacuum_output_settings: MultiStateOutputSettings
     """
     Simulation output settings for the vacuum transformation.
     """
@@ -210,7 +210,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     Simulation output settings for the solvent non-alchemical equilibration.
     """
-    solvent_output_settings: OutputSettings
+    solvent_output_settings: MultiStateOutputSettings
     """
     Simulation output settings for the solvent transformation.
     """

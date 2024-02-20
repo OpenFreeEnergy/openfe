@@ -56,7 +56,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, LambdaSettings, OutputSettings,
+    IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
@@ -252,7 +252,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             verbose=self.verbose,
             shared_basepath=self.shared_basepath,
         )
- 
+
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
 
@@ -316,10 +316,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
+          * equil_simulation_settings : MDSimulationSettings
+          * equil_output_settings : MDOutputSettings
           * simulation_settings : MultiStateSimulationSettings
-          * output_settings: OutputSettings
-          * equil_simulation_settings: MDSimulationSettings
-          * equil_output_settings: MDOutputSettings
+          * output_settings : MultiStateOutputSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
@@ -654,7 +654,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology: app.Topology,
         positions: openmm.unit.Quantity,
         simulation_settings: MultiStateSimulationSettings,
-        output_settings: OutputSettings,
+        output_settings: MultiStateOutputSettings,
     ) -> multistate.MultiStateReporter:
         """
         Get a MultistateReporter for the simulation you are running.
@@ -668,7 +668,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         simulation_settings : MultiStateSimulationSettings
           Multistate simulation control settings, specifically containing
           the amount of time per state sampling iteration.
-        output_settings: OutputSettings
+        output_settings: MultiStateOutputSettings
           Output settings for the simulations
 
         Returns
