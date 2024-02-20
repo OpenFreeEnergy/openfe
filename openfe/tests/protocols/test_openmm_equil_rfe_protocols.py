@@ -5,11 +5,13 @@ import json
 import xml.etree.ElementTree as ET
 from importlib import resources
 from unittest import mock
+import sys
 
 import gufe
 import mdtraj as mdt
 import numpy as np
 import pytest
+from openff.toolkit import Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
 from openff.units.openmm import to_openmm, from_openmm
@@ -23,6 +25,9 @@ from openmmtools.multistate.multistatesampler import MultiStateSampler
 from rdkit import Chem
 from rdkit.Geometry import Point3D
 
+from kartograf.atom_aligner import align_mol_shape
+from kartograf import KartografAtomMapper
+
 import openfe
 from openfe import setup
 from openfe.protocols import openmm_rfe
@@ -31,6 +36,9 @@ from openfe.protocols.openmm_rfe.equil_rfe_methods import (
     _validate_alchemical_components, _get_alchemical_charge_difference
 )
 from openfe.protocols.openmm_utils import system_creation
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+)
 
 
 def test_compute_platform_warn():
@@ -582,6 +590,97 @@ def test_dry_run_ligand_system_cutoff(
             assert f_cutoff == cutoff
 
 
+@pytest.mark.parametrize('method, backend, ref_key', [
+    ('am1bcc', 'ambertools', 'ambertools'),
+    pytest.param(
+        'am1bcc', 'openeye', 'openeye',
+        marks=pytest.mark.skipif(
+            not HAS_OPENEYE, reason='needs oechem',
+        ),
+    ),
+    pytest.param(
+        'nagl', 'rdkit', 'nagl',
+        marks=pytest.mark.skipif(
+            not HAS_NAGL or sys.platform.startswith('darwin'),
+            reason='needs NAGL and/or on macos',
+        ),
+    ),
+    pytest.param(
+        'espaloma', 'rdkit', 'espaloma',
+        marks=pytest.mark.skipif(
+            not HAS_ESPALOMA, reason='needs espaloma',
+        ),
+    ),
+])
+def test_dry_run_charge_backends(
+    CN_molecule, tmpdir, method, backend, ref_key, am1bcc_ref_charges
+):
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.protocol_repeats = 1
+    vac_settings.partial_charge_settings.partial_charge_method = method
+    vac_settings.partial_charge_settings.off_toolkit_backend = backend
+    vac_settings.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+        settings=vac_settings,
+    )
+
+    # make stateB molecule
+    offmolB = Molecule.from_smiles('CCN')
+    offmolB.generate_conformers()
+    molB = openfe.SmallMoleculeComponent.from_openff(offmolB)
+    a_molB = align_mol_shape(molB, ref_mol=CN_molecule)
+    mapper = KartografAtomMapper(atom_map_hydrogens=True)
+    mapping = next(mapper.suggest_mappings(CN_molecule, a_molB))
+
+    systemA = openfe.ChemicalSystem({'l': CN_molecule})
+    systemB = openfe.ChemicalSystem({'l': a_molB})
+
+    dag = protocol.create(
+        stateA=systemA, stateB=systemB, mapping=mapping,
+    )
+
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        htf = sampler._factory
+        hybrid_system = htf.hybrid_system
+
+        # get the standard nonbonded force
+        nonbond = [f for f in hybrid_system.getForces()
+                   if isinstance(f, NonbondedForce)]
+        assert len(nonbond) == 1
+
+        # get the particle parameter offsets
+        c_offsets = {}
+        for i in range(nonbond[0].getNumParticleParameterOffsets()):
+            offset = nonbond[0].getParticleParameterOffset(i)
+            c_offsets[offset[1]] = ensure_quantity(offset[2], 'openff')
+
+        # See the user charges test below for an idea of what we're doing here
+        # In this particular case we are solely checking that the old atoms
+        # match the reference charges in am1bcc_ref_charges
+        for i in range(hybrid_system.getNumParticles()):
+            c, s, e = nonbond[0].getParticleParameters(i)
+            # get the particle charge (c)
+            c = ensure_quantity(c, 'openff')
+            # particle charge (c) is equal to molA particle charge
+            # offset (c_offsets) is equal to -(molA particle charge)
+            if i in htf._atom_classes['unique_old_atoms']:
+                idx = htf._hybrid_to_old_map[i]
+                ref = am1bcc_ref_charges[ref_key][idx]
+                np.testing.assert_allclose(c, ref, rtol=1e-4)
+                np.testing.assert_allclose(c_offsets[i], -ref, rtol=1e-4)
+            # particle charge (c) is equal to molA particle charge
+            # offset (c_offsets) is equal to difference between molB and molA
+            elif i in htf._atom_classes['core_atoms']:
+                old_i = htf._hybrid_to_old_map[i]
+                ref = am1bcc_ref_charges[ref_key][i]
+                np.testing.assert_allclose(c, ref, rtol=1e-4)
+
+
 @pytest.mark.flaky(reruns=3)  # bad minimisation can happen
 def test_dry_run_user_charges(benzene_modifications, tmpdir):
     """
@@ -594,7 +693,7 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
     vac_settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-            settings=vac_settings,
+        settings=vac_settings,
     )
 
     def assign_fictitious_charges(offmol):

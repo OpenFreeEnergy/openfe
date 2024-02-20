@@ -47,8 +47,13 @@ def test_openmm_run_engine(platform,
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
     s.solvent_output_settings.output_indices = "resname UNK"
+    s.vacuum_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    s.vacuum_equil_simulation_settings.production_length = 0.1 * unit.picosecond
     s.vacuum_simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.vacuum_simulation_settings.production_length = 0.1 * unit.picosecond
+    s.solvent_equil_simulation_settings.equilibration_length_nvt = 0.1 * unit.picosecond
+    s.solvent_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    s.solvent_equil_simulation_settings.production_length = 0.1 * unit.picosecond
     s.solvent_simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.solvent_simulation_settings.production_length = 0.1 * unit.picosecond
     s.vacuum_engine_settings.compute_platform = platform

@@ -51,14 +51,15 @@ from gufe import (
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteSolvationSettings,
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
+    MDSimulationSettings, MDOutputSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, OutputSettings,
+    IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
-from openfe.utils import without_oechem_backend, log_system_probe
+from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
 
@@ -421,21 +422,43 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             vacuum_engine_settings=OpenMMEngineSettings(),
             solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
+            solvent_equil_simulation_settings=MDSimulationSettings(
+                equilibration_length_nvt=0.1 * unit.nanosecond,
+                equilibration_length=0.2 * unit.nanosecond,
+                production_length=0.5 * unit.nanosecond,
+            ),
+            solvent_equil_output_settings=MDOutputSettings(
+                equil_nvt_structure='equil_nvt_structure.pdb',
+                equil_npt_structure='equil_npt_structure.pdb',
+                production_trajectory_filename='production_equil.xtc',
+                log_output='equil_simulation.log',
+            ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
-            solvent_output_settings=OutputSettings(
+            solvent_output_settings=MultiStateOutputSettings(
                 output_filename='solvent.nc',
                 checkpoint_storage_filename='solvent_checkpoint.nc',
+            ),
+            vacuum_equil_simulation_settings=MDSimulationSettings(
+                equilibration_length_nvt=None,
+                equilibration_length=0.2 * unit.nanosecond,
+                production_length=0.5 * unit.nanosecond,
+            ),
+            vacuum_equil_output_settings=MDOutputSettings(
+                equil_nvt_structure=None,
+                equil_npt_structure='equil_structure.pdb',
+                production_trajectory_filename='production_equil.xtc',
+                log_output='equil_simulation.log',
             ),
             vacuum_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
             ),
-            vacuum_output_settings=OutputSettings(
+            vacuum_output_settings=MultiStateOutputSettings(
                 output_filename='vacuum.nc',
                 checkpoint_storage_filename='vacuum_checkpoint.nc'
             ),
@@ -636,6 +659,13 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                       "passed")
             raise ValueError(errmsg)
 
+        # Check vacuum equilibration MD settings is 0 ns
+        nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
+        if nvt_time is not None:
+            if not np.allclose(nvt_time, 0 * unit.nanosecond):
+                errmsg = "NVT equilibration cannot be run in vacuum simulation"
+                raise ValueError(errmsg)
+
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
 
@@ -743,14 +773,16 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * charge_settings: OpenFFPartialChargeSettings
+            * charge_settings : OpenFFPartialChargeSettings
             * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
-            * output_settings: OutputSettings
+            * output_settings: MultiStateOutputSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -763,6 +795,8 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings['lambda_settings'] = prot_settings.lambda_settings
         settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
+        settings['equil_simulation_settings'] = prot_settings.vacuum_equil_simulation_settings
+        settings['equil_output_settings'] = prot_settings.vacuum_equil_output_settings
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
         settings['output_settings'] = prot_settings.vacuum_output_settings
 
@@ -778,9 +812,8 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
@@ -835,8 +868,10 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
             * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : MDOutputSettings
             * simulation_settings : MultiStateSimulationSettings
-            * output_settings: OutputSettings
+            * output_settings: MultiStateOutputSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -849,6 +884,8 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings['lambda_settings'] = prot_settings.lambda_settings
         settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
+        settings['equil_simulation_settings'] = prot_settings.solvent_equil_simulation_settings
+        settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
         settings['output_settings'] = prot_settings.solvent_output_settings
 
@@ -864,9 +901,8 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],

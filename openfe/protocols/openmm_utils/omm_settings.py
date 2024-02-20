@@ -74,7 +74,79 @@ class BasePartialChargeSettings(SettingsBaseModel):
 
 class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     """
-    Empty placeholder class, will implement OpenFF partial charge assignment.
+    Settings for controlling partial charge assignment using the OpenFF tooling
+    """
+    partial_charge_method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'] = 'am1bcc'
+    """
+    Selection of method for partial charge generation.
+
+    Description of options
+    ----------------------
+    ``am1bcc``:
+      Generate partial charges using the AM1-BCC approach, as detailed
+      by Araz Jalkalian et al. J. Comp. Chem. 2000.
+      AM1-BCC charges are either assigned using AmberTools (via SQM)
+      if ``off_toolkit_backend`` is set to ``ambertools`, or
+      using the OpenEye Toolkit (via Quacpac) if ``off_toolkit_backend``
+      is set to ``openeye``. A maximum of one conformer is allowed.
+
+    ``am1bccelf10``:
+      Assign AM1-BCC partialk charges using the `ELF10 method
+      <https://docs.eyesopen.com/toolkits/python/quacpactk/molchargetheory.html#elf-conformer-selection>`_
+      This is only currently possible via the OpenEye toolkit
+      if setting ``off_toolkit_backend`` to ``openeye``.
+      We recommend setting ``number_of_conformers`` to at least `500`.
+
+    ``nagl``:
+      Assign partial charges using the `OpenFF NAGL ML method
+      <https://github.com/openforcefield/openff-nagl>`_
+      All ``off_toolkit_backend`` options are supported.
+      A maximum of one conformer is allowed.
+
+    ``espaloma``:
+      Assign partial charges using the `Espaloma Charge method
+      <https://github.com/choderalab/espaloma_charge>`_
+      Only ``ambertools`` and ``rdkit`` `off_toolkit_backend`` options
+      are supported. A maximum of one conformer is allowed.
+
+    """
+    off_toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'] = 'ambertools'
+    """
+    The OpenFF toolkit registry backend to use for partial charge generation.
+
+
+    OFF backend selection options
+    -----------------------------
+
+    The following are set depending on the option chosen:
+    * ``ambertools``: this will limit partial charge generation to using
+      a mixture of AmberTools and RDKit.
+    * ``openeye``: this will limit partial charge generation to using
+      the OpenEye toolkit. This cannot be used with ``espaloma`` as the
+      ``partial_charge_method``
+    * ``rdkit``: this will limit partial charge generation to using
+      the RDKit toolkit. Note that this alone cannot be used for conventionla
+      am1bcc partial charge generation, but is usually used in combination with
+      the ``nagl`` or ``espaloma`` ``partial_charge_method`` selections.
+    """
+    number_of_conformers: Optional[int] = None
+    """
+    Number of conformers to generate as part of the partial charge assignement.
+
+    If ``None`` (default), the existing conformer of the input
+    SmallMoleculeComponent will be used.
+
+    Values greater than 1 or ``None`` are only allowed when calculating
+    partial charges through ``am1bccelf10``. See ``partial_charge_method``'s
+    ``Description of options`` documentation.
+    """
+    nagl_model: Optional[str] = None
+    """
+    The `NAGL <https://github.com/openforcefield/openff-nagl>`_ model to use
+    for partial charge assignment.
+
+    If ``None`` (default) and ``partial_charge_method`` is set to ``nagl``,
+    the latest available production am1bcc charge model will be used.
     """
 
 
@@ -116,9 +188,10 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency = 25 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: FloatQuantity['timestep'] = 25 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
+    Note: The barostat frequency is ignored for gas-phase simulations.
     Default 25 * unit.timestep.
     """
     remove_com: bool = False
@@ -167,14 +240,6 @@ class OutputSettings(SettingsBaseModel):
         arbitrary_types_allowed = True
 
     # reporter settings
-    output_filename = 'simulation.nc'
-    """Path to the trajectory storage file. Default 'simulation.nc'."""
-    output_structure = 'hybrid_system.pdb'
-    """
-    Path of the output hybrid topology structure file. This is used
-    to visualise and further manipulate the system.
-    Default 'hybrid_system.pdb'.
-    """
     output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.
@@ -201,6 +266,25 @@ class OutputSettings(SettingsBaseModel):
             errmsg = f"Checkpoint intervals must be positive, got {v}."
             raise ValueError(errmsg)
         return v
+
+
+class MultiStateOutputSettings(OutputSettings):
+    """
+    Settings for MultiState simulation output settings,
+    writing to disk, etc...
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    # reporter settings
+    output_filename = 'simulation.nc'
+    """Path to the trajectory storage file. Default 'simulation.nc'."""
+    output_structure = 'hybrid_system.pdb'
+    """
+    Path of the output hybrid topology structure file. This is used
+    to visualise and further manipulate the system.
+    Default 'hybrid_system.pdb'.
+    """
 
 
 class SimulationSettings(SettingsBaseModel):
@@ -377,11 +461,12 @@ class MDSimulationSettings(SimulationSettings):
     class Config:
         arbitrary_types_allowed = True
 
-    equilibration_length_nvt: unit.Quantity
+    equilibration_length_nvt: Optional[FloatQuantity['nanosecond']]
     """
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
     (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
+    If None, no NVT equilibration will be performed.
     """
 
 
@@ -403,12 +488,12 @@ class MDOutputSettings(OutputSettings):
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
-    equil_NVT_structure = 'equil_NVT.pdb'
+    equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
     """Path to the pdb file of the system after NVT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_NVT.pdb'."""
-    equil_NPT_structure = 'equil_NPT.pdb'
+    Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
+    equil_npt_structure: Optional[str] = 'equil_npt.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
+    Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
     log_output = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,

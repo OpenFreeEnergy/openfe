@@ -39,8 +39,8 @@ class PlainMDProtocolSettings(Settings):
         return v
 
     # Things for creating the systems
-    solvation_settings: OpenMMSolvationSettings
     partial_charge_settings: OpenFFPartialChargeSettings
+    solvation_settings: OpenMMSolvationSettings
 
     # MD Engine things
     engine_settings: OpenMMEngineSettings
