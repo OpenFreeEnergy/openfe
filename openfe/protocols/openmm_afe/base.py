@@ -482,7 +482,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             molecules=smc_components,
         )
 
-        return topology, system, positions
+        return topology, system, positions.to_openmm()
 
     def _get_omm_objects_via_interchange(
         self,
@@ -504,15 +504,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ):
             raise NotImplementedError("just doing (one) small molecule in vacuum at first")
 
-        # same thing as in _get_modeller
-        for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
+        # Assign partial charges to smcs, doing the same thing as in _get_modeller
+        self._assign_partial_charges(
+            partial_charge_settings=settings['charge_settings'],
+            smc_components=smc_components,
+        )
 
         component_resids = {component: np.array([0]) for component in smc_components}
 
@@ -524,19 +520,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # settings['forcefield_settings'].hydrogen_mass == 0.0
         assert settings['forcefield_settings'].constraints in ("hbonds", None)
 
-        # not in 0.9.5?
-        if False:
-            settings['forcefield_settings'].nonbonded_method == "PME"
-
-            force_field['vdW'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
-            force_field['Electrostatics'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
+        force_field['vdW'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
+        force_field['Electrostatics'].cutoff = settings['forcefield_settings'].nonbonded_cutoff
 
         topology = Topology.from_molecules(*smc_components.values())
 
-        interchange = force_field.create_interchange(
-            topology=topology,
-            charge_from_molecules=[*topology.molecules],
-        )
+        with without_oechem_backend():
+            interchange = force_field.create_interchange(
+                topology=topology,
+                charge_from_molecules=[*topology.molecules],
+            )
 
         return (
             interchange.to_openmm_topology(),
@@ -562,13 +555,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        system_modeller : app.Modeller
-          OpenMM Modeller object representing the system to be
-          parametrized.
-        system_generator : SystemGenerator
-          SystemGenerator object to create a System with.
-        smc_components : list[openff.toolkit.Molecule]
-          A list of openff Molecules to add to the system.
+        settings
+        protiein_component : Optional[ProteinComponent]
+        solvent_component : Optional[SolventComponent]
+        smc_components : dict[str, OFFMolecule]
 
         Returns
         -------
