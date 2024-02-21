@@ -410,8 +410,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             alchemical_settings=AlchemicalSettings(),
             lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
                 lambda_vdw=[
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                     0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
