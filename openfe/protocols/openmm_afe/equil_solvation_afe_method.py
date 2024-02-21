@@ -410,12 +410,14 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             alchemical_settings=AlchemicalSettings(),
             lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
-                ],
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
+                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
                 lambda_vdw=[
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                     0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+                lambda_restraints=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
@@ -587,14 +589,15 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         n_replicas = simulation_settings.n_replicas
 
         # Ensure that all lambda components have equal amount of windows
-        lambda_components = [lambda_vdw, lambda_elec]
+        lambda_components = [lambda_vdw, lambda_elec, lambda_restraints]
         it = iter(lambda_components)
         the_len = len(next(it))
         if not all(len(l) == the_len for l in it):
             errmsg = (
-                "Components elec and vdw must have equal amount"
+                "Components elec, vdw, and restraints must have equal amount"
                 f" of lambda windows. Got {len(lambda_elec)} elec lambda"
-                f" windows and {len(lambda_vdw)} vdw lambda windows.")
+                f" windows, {len(lambda_vdw)} vdw lambda windows, and"
+                f"{len(lambda_restraints)} restraints lambda windows.")
             raise ValueError(errmsg)
 
         # Ensure that number of overall lambda windows matches number of lambda
