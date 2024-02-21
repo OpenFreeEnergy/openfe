@@ -116,10 +116,6 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     default_settings.lambda_settings.lambda_restraints = val['restraints']
     n_replicas = 3
     default_settings.vacuum_simulation_settings.n_replicas = n_replicas
-    # errmsg = (
-    #     "Components elec and vdw must have equal amount"
-    #     f" of lambda windows. Got {len(val['elec'])} elec lambda"
-    #     f" windows and {len(val['vdw'])} vdw lambda windows.")
     errmsg = (
         "Components elec, vdw, and restraints must have equal amount"
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
