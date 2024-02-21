@@ -6,6 +6,7 @@ recursive-include openfe/tests/data/ *.graphml
 recursive-include openfe/tests/data/ *.edge
 recursive-include openfe/tests/data/ *.dat
 recursive-include openfe/tests/data/ *json.gz
+recursive-include openfe/tests/data/ *json_results.gz
 include openfecli/tests/data/*.json
 include openfecli/tests/data/*.tar.gz
 recursive-include openfecli/tests/ *.sdf
