@@ -111,10 +111,10 @@ def plan_rbfe_network(
     * Protocol is the OpenMM-based relative hybrid topology protocol, with
       default settings.
 
-    These choices can be customised by creating a settings yaml file,
-    which is passed in via the ``-s settings.yaml`` option.
-
-    For customized setups, please consider using the Python layer of openfe.
+    These choices can be customized by creating a settings yaml file,
+    which is passed in via the ``-s settings.yaml`` option,
+    which is detailed in the Options section.
+    For more advanced setups, please consider using the Python layer of openfe.
     """
     write("RBFE-NETWORK PLANNER")
     write("______________________")
