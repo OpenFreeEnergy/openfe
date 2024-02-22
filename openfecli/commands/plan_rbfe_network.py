@@ -2,11 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -88,7 +87,7 @@ def plan_rbfe_network_main(
 )
 @print_duration
 def plan_rbfe_network(
-        molecules: List[str], protein: str, cofactors: tuple[str],
+        molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
 ):
