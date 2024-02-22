@@ -2,11 +2,10 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, MAPPER, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
 )
 from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
@@ -88,7 +87,7 @@ def plan_rbfe_network_main(
 )
 @print_duration
 def plan_rbfe_network(
-        molecules: List[str], protein: str, cofactors: tuple[str],
+        molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
 ):
@@ -98,22 +97,24 @@ def plan_rbfe_network(
 
     This tool is an easy way to set up a RBFE calculation campaign.
     The JSON files this outputs can be used to run each leg of the campaign.
-    For customized setups, please consider using the Python layer of
-    openfe. This tool makes the following choices:
+    openfe.
+    The generated Network will be stored in a folder containing for each
+    transformation a JSON file, that can be run with quickrun.
+
+    By default, this tool makes the following choices:
 
     * Atom mappings performed by LOMAP, with settings max3d=1.0 and
       element_change=False
-
     * Minimal spanning network as the network planner, with LOMAP default
       score as the weight function
-
-    * Water as solvent, with NaCl at 0.15 M.
-
+    * Water as solvent, with NaCl counter ions at 0.15 M concentration.
     * Protocol is the OpenMM-based relative hybrid topology protocol, with
       default settings.
 
-    The generated Network will be stored in a folder containing for each
-    transformation a JSON file, that can be run with quickrun.
+    These choices can be customized by creating a settings yaml file,
+    which is passed in via the ``-s settings.yaml`` option,
+    which is detailed in the Options section.
+    For more advanced setups, please consider using the Python layer of openfe.
     """
     write("RBFE-NETWORK PLANNER")
     write("______________________")
