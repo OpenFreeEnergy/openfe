@@ -192,15 +192,15 @@ the Lomap atom mapper should be used forbidding element changes,
 while the generate_minimal_redundant_network function used to plan the network
 ::
 
-mapper:
-  method: LomapAtomMapper
-  settings:
-    element_change: false
+  mapper:
+    method: LomapAtomMapper
+    settings:
+      element_change: false
 
-network:
-  method: generate_minimal_redundant_network
-  settings:
-    mst_num: 3
+  network:
+    method: generate_minimal_redundant_network
+    settings:
+      mst_num: 3
 """
 
 
