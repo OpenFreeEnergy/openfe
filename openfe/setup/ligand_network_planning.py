@@ -94,7 +94,8 @@ def generate_radial_network(
         ligands = list(ligands)
         possibles = [l for l in ligands if l.name == central_ligand]
         if not possibles:
-            raise ValueError(f"No ligand called '{central_ligand}'")
+            raise ValueError(f"No ligand called '{central_ligand}' "
+                             f"available: {', '.join(l.name for l in ligands)}")
         if len(possibles) > 1:
             raise ValueError(f"Multiple ligands called '{central_ligand}'")
         central_ligand = possibles[0]
