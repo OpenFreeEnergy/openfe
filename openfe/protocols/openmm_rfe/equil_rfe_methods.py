@@ -55,7 +55,7 @@ from .equil_rfe_settings import (
     RelativeHybridTopologyProtocolSettings,
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, OutputSettings,
+    IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -63,7 +63,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
-    multistate_analysis
+    multistate_analysis, charge_generation
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
@@ -469,7 +469,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             ),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            output_settings=OutputSettings(),
+            output_settings=MultiStateOutputSettings(),
         )
 
     def _create(
@@ -591,6 +591,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     ) -> None:
         """
         Assign partial charges to SMCs.
+
         Parameters
         ----------
         charge_settings : OpenFFPartialChargeSettings
@@ -602,14 +603,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         for smc, mol in chain(off_small_mols['stateA'],
                               off_small_mols['stateB'],
                               off_small_mols['both']):
-            # skip if we already have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
-
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -664,7 +665,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
         solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
         sampler_settings: MultiStateSimulationSettings = protocol_settings.simulation_settings
-        output_settings: OutputSettings = protocol_settings.output_settings
+        output_settings: MultiStateOutputSettings = protocol_settings.output_settings
         integrator_settings: IntegratorSettings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?
@@ -702,20 +703,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # 1. Create stateA system
-        # a. get a system generator
-        if output_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / output_settings.forcefield_cache
-        else:
-            ffcache = None
+        self.logger.info("Parameterizing molecules")
 
-        system_generator = system_creation.get_system_generator(
-            forcefield_settings=forcefield_settings,
-            integrator_settings=integrator_settings,
-            thermo_settings=thermo_settings,
-            cache=ffcache,
-            has_solvent=solvent_comp is not None,
-        )
-
+        # a. create offmol dictionaries and assign partial charges
         # workaround for conformer generation failures
         # see openfe issue #576
         # calculate partial charges manually if not already given
@@ -729,32 +719,43 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                      if (m != mapping.componentA and m != mapping.componentB)]
         }
 
-        # b. force the creation of parameters
-        # This is necessary because we need to have the FF generated ahead of
-        # solvating the system.
-        # Note: by default this is cached to ctx.shared/db.json so shouldn't
-        # incur too large a cost
-        self.logger.info("Parameterizing molecules")
-
-        # Start by assigning partial charges
         self._assign_partial_charges(charge_settings, off_small_mols)
 
-        # Then register all the templates
-        for smc, mol in chain(off_small_mols['stateA'],
-                              off_small_mols['stateB'],
-                              off_small_mols['both']):
-            system_generator.create_system(mol.to_topology().to_openmm(),
-                                           molecules=[mol])
+        # b. get a system generator
+        if output_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / output_settings.forcefield_cache
+        else:
+            ffcache = None
 
-        # c. get OpenMM Modeller + a dictionary of resids for each component
-        stateA_modeller, comp_resids = system_creation.get_omm_modeller(
-            protein_comp=protein_comp,
-            solvent_comp=solvent_comp,
-            small_mols=dict(chain(off_small_mols['stateA'],
-                                  off_small_mols['both'])),
-            omm_forcefield=system_generator.forcefield,
-            solvent_settings=solvation_settings,
-        )
+        # Block out oechem backend in system_generator calls to avoid
+        # any issues with smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=forcefield_settings,
+                integrator_settings=integrator_settings,
+                thermo_settings=thermo_settings,
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
+            )
+
+            # c. force the creation of parameters
+            # This is necessary because we need to have the FF templates
+            # registered ahead of solvating the system.
+            for smc, mol in chain(off_small_mols['stateA'],
+                                  off_small_mols['stateB'],
+                                  off_small_mols['both']):
+                system_generator.create_system(mol.to_topology().to_openmm(),
+                                               molecules=[mol])
+
+            # c. get OpenMM Modeller + a dictionary of resids for each component
+            stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+                protein_comp=protein_comp,
+                solvent_comp=solvent_comp,
+                small_mols=dict(chain(off_small_mols['stateA'],
+                                      off_small_mols['both'])),
+                omm_forcefield=system_generator.forcefield,
+                solvent_settings=solvation_settings,
+            )
 
         # d. get topology & positions
         # Note: roundtrip positions to remove vec3 issues
@@ -764,11 +765,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # e. create the stateA System
-        stateA_system = system_generator.create_system(
-            stateA_modeller.topology,
-            molecules=[m for _, m in chain(off_small_mols['stateA'],
-                                           off_small_mols['both'])],
-        )
+        # Block out oechem backend in system_generator calls to avoid
+        # any issues with smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            stateA_system = system_generator.create_system(
+                stateA_modeller.topology,
+                molecules=[m for _, m in chain(off_small_mols['stateA'],
+                                               off_small_mols['both'])],
+            )
 
         # 2. Get stateB system
         # a. get the topology
@@ -780,11 +784,14 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         # b. get a list of small molecules for stateB
-        stateB_system = system_generator.create_system(
-            stateB_topology,
-            molecules=[m for _, m in chain(off_small_mols['stateB'],
-                                           off_small_mols['both'])],
-        )
+        # Block out oechem backend in system_generator calls to avoid
+        # any issues with smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            stateB_system = system_generator.create_system(
+                stateB_topology,
+                molecules=[m for _, m in chain(off_small_mols['stateB'],
+                                               off_small_mols['both'])],
+            )
 
         #  c. Define correspondence mappings between the two systems
         ligand_mappings = _rfe_utils.topologyhelpers.get_system_mappings(
@@ -1084,9 +1091,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         analysis_outputs = self.analyse(ctx.shared)
 

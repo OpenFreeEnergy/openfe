@@ -56,14 +56,17 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, LambdaSettings, OutputSettings,
+    IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_rfe._rfe_utils import compute
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from ..openmm_utils import (
     settings_validation, system_creation,
-    multistate_analysis
+    multistate_analysis, charge_generation
 )
+from openfe.utils import without_oechem_backend
+
 
 logger = logging.getLogger(__name__)
 
@@ -150,37 +153,113 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return atom_ids
 
-    @staticmethod
-    def _pre_minimize(system: openmm.System,
-                      positions: omm_unit.Quantity) -> npt.NDArray:
+    def _pre_equilibrate(
+        self,
+        system: openmm.System,
+        topology: openmm.app.Topology,
+        positions: omm_unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+        dry: bool
+    ) -> omm_unit.Quantity:
         """
-        Short CPU minization of System to avoid GPU NaNs
+        Run a non-alchemical equilibration to get a stable system.
 
         Parameters
         ----------
         system : openmm.System
-          An OpenMM System to minimize.
-        positionns : openmm.unit.Quantity
+          An OpenMM System to equilibrate.
+        topology : openmm.app.Topology
+          OpenMM Topology of the System.
+        positions : openmm.unit.Quantity
           Initial positions for the system.
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings objects. Expects the
+          following entries:
+          * `engine_settings`
+          * `thermo_settings`
+          * `integrator_settings`
+          * `equil_simulation_settings`
+          * `equil_output_settings`
+        dry: bool
+          Whether or not this is a dry run.
 
         Returns
         -------
-        minimized_positions : npt.NDArray
-          Minimized positions
+        equilibrated_positions : npt.NDArray
+          Equilibrated system positions
         """
-        integrator = openmm.VerletIntegrator(0.001)
-        context = openmm.Context(
-            system, integrator,
-            openmm.Platform.getPlatformByName('CPU'),
+        # Prep the simulation object
+        platform = compute.get_openmm_platform(
+            settings['engine_settings'].compute_platform
         )
-        context.setPositions(positions)
-        # Do a quick 100 steps minimization, usually avoids NaNs
-        openmm.LocalEnergyMinimizer.minimize(
-            context, maxIterations=100
+
+        integrator = openmm.LangevinMiddleIntegrator(
+            to_openmm(settings['thermo_settings'].temperature),
+            to_openmm(settings['integrator_settings'].langevin_collision_rate),
+            to_openmm(settings['integrator_settings'].timestep),
         )
-        state = context.getState(getPositions=True)
-        minimized_positions = state.getPositions(asNumpy=True)
-        return minimized_positions
+
+        simulation = openmm.app.Simulation(
+            topology=topology,
+            system=system,
+            integrator=integrator,
+            platform=platform,
+        )
+
+        # Get the necessary number of steps
+        if settings['equil_simulation_settings'].equilibration_length_nvt is not None:
+            equil_steps_nvt = settings_validation.get_simsteps(
+                sim_length=settings[
+                    'equil_simulation_settings'].equilibration_length_nvt,
+                timestep=settings['integrator_settings'].timestep,
+                mc_steps=1,
+            )
+        else:
+            equil_steps_nvt = None
+
+        equil_steps_npt = settings_validation.get_simsteps(
+            sim_length=settings['equil_simulation_settings'].equilibration_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=1,
+        )
+
+        prod_steps_npt = settings_validation.get_simsteps(
+            sim_length=settings['equil_simulation_settings'].production_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=1,
+        )
+
+        if self.verbose:
+            logger.info("running non-alchemical equilibration MD")
+
+        # Don't do anything if we're doing a dry run
+        if dry:
+            return positions
+
+        # Use the _run_MD method from the PlainMDProtocolUnit
+        # Should in-place modify the simulation
+        PlainMDProtocolUnit._run_MD(
+            simulation=simulation,
+            positions=positions,
+            simulation_settings=settings['equil_simulation_settings'],
+            output_settings=settings['equil_output_settings'],
+            temperature=settings['thermo_settings'].temperature,
+            barostat_frequency=settings['integrator_settings'].barostat_frequency,
+            timestep=settings['integrator_settings'].timestep,
+            equil_steps_nvt=equil_steps_nvt,
+            equil_steps_npt=equil_steps_npt,
+            prod_steps=prod_steps_npt,
+            verbose=self.verbose,
+            shared_basepath=self.shared_basepath,
+        )
+
+        state = simulation.context.getState(getPositions=True)
+        equilibrated_positions = state.getPositions(asNumpy=True)
+
+        # cautiously delete out contexts & integrator
+        del simulation.context, integrator
+
+        return equilibrated_positions
 
     def _prepare(
         self, verbose: bool,
@@ -237,8 +316,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           * lambda_settings : LambdaSettings
           * engine_settings : OpenMMEngineSettings
           * integrator_settings : IntegratorSettings
+          * equil_simulation_settings : MDSimulationSettings
+          * equil_output_settings : MDOutputSettings
           * simulation_settings : MultiStateSimulationSettings
-          * output_settings: OutputSettings
+          * output_settings : MultiStateOutputSettings
 
         Settings may change depending on what type of simulation you are
         running. Cherry pick them and return them to be available later on.
@@ -275,13 +356,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if ffcache is not None:
             ffcache = self.shared_basepath / ffcache
 
-        system_generator = system_creation.get_system_generator(
-            forcefield_settings=settings['forcefield_settings'],
-            integrator_settings=settings['integrator_settings'],
-            thermo_settings=settings['thermo_settings'],
-            cache=ffcache,
-            has_solvent=solvent_comp is not None,
-        )
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=settings['forcefield_settings'],
+                integrator_settings=settings['integrator_settings'],
+                thermo_settings=settings['thermo_settings'],
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
+            )
         return system_generator
 
     @staticmethod
@@ -291,6 +375,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
     ) -> None:
         """
         Assign partial charges to SMCs.
+
         Parameters
         ----------
         charge_settings : OpenFFPartialChargeSettings
@@ -300,13 +385,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           SmallMoleculeComponent.
         """
         for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=partial_charge_settings.partial_charge_method,
+                toolkit_backend=partial_charge_settings.off_toolkit_backend,
+                generate_n_conformers=partial_charge_settings.number_of_conformers,
+                nagl_model=partial_charge_settings.nagl_model,
+            )
 
     def _get_modeller(
         self,
@@ -328,7 +414,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         solvent_component : Optional[ProteinCompoinent]
           Solvent Component, if it exists.
         smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
-          Dicationary of OpenFF Molecules to add, keyed by
+          Dictionary of OpenFF Molecules to add, keyed by
           SmallMoleculeComponent.
         system_generator : openmmforcefields.generator.SystemGenerator
           System Generator to parameterise this unit.
@@ -352,24 +438,26 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # Assign partial charges to smcs
         self._assign_partial_charges(partial_charge_settings, smc_components)
 
+        # TODO: guard the following from non-RDKit backends
         # force the creation of parameters for the small molecules
         # this is necessary because we need to have the FF generated ahead
         # of solvating the system.
-        # Note by default this is cached to ctx.shared/db.json which should
-        # reduce some of the costs.
-        for mol in smc_components.values():
-            system_generator.create_system(
-                mol.to_topology().to_openmm(), molecules=[mol]
-            )
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            for mol in smc_components.values():
+                system_generator.create_system(
+                    mol.to_topology().to_openmm(), molecules=[mol]
+                )
 
-        # get OpenMM modeller + dictionary of resids for each component
-        system_modeller, comp_resids = system_creation.get_omm_modeller(
-            protein_comp=protein_component,
-            solvent_comp=solvent_component,
-            small_mols=smc_components,
-            omm_forcefield=system_generator.forcefield,
-            solvent_settings=solvation_settings,
-        )
+            # get OpenMM modeller + dictionary of resids for each component
+            system_modeller, comp_resids = system_creation.get_omm_modeller(
+                protein_comp=protein_component,
+                solvent_comp=solvent_component,
+                small_mols=smc_components,
+                omm_forcefield=system_generator.forcefield,
+                solvent_settings=solvation_settings,
+            )
 
         return system_modeller, comp_resids
 
@@ -390,7 +478,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           parametrized.
         system_generator : SystemGenerator
           SystemGenerator object to create a System with.
-        smc_components : list[openff.toolkit.Molecules]
+        smc_components : list[openff.toolkit.Molecule]
           A list of openff Molecules to add to the system.
 
         Returns
@@ -405,10 +493,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology = system_modeller.getTopology()
         # roundtrip positions to remove vec3 issues
         positions = to_openmm(from_openmm(system_modeller.getPositions()))
-        system = system_generator.create_system(
-            system_modeller.topology,
-            molecules=smc_components,
-        )
+
+        # Block out oechem backend to avoid any issues with
+        # smiles roundtripping between rdkit and oechem
+        with without_oechem_backend():
+            system = system_generator.create_system(
+                system_modeller.topology,
+                molecules=smc_components,
+            )
         return topology, system, positions
 
     def _get_lambda_schedule(
@@ -562,7 +654,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology: app.Topology,
         positions: openmm.unit.Quantity,
         simulation_settings: MultiStateSimulationSettings,
-        output_settings: OutputSettings,
+        output_settings: MultiStateOutputSettings,
     ) -> multistate.MultiStateReporter:
         """
         Get a MultistateReporter for the simulation you are running.
@@ -576,7 +668,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         simulation_settings : MultiStateSimulationSettings
           Multistate simulation control settings, specifically containing
           the amount of time per state sampling iteration.
-        output_settings: OutputSettings
+        output_settings: MultiStateOutputSettings
           Output settings for the simulations
 
         Returns
@@ -862,10 +954,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         dry : bool
           Do a dry run of the calculation, creating all necessary alchemical
           system components (topology, system, sampler, etc...) but without
-          running the simulation.
+          running the simulation, default False
         verbose : bool
           Verbose output of the simulation progress. Output is provided via
-          INFO level logging.
+          INFO level logging, default True
         scratch_basepath : pathlib.Path
           Path to the scratch (temporary) directory space.
         shared_basepath : pathlib.Path
@@ -901,8 +993,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             system_modeller, system_generator, list(smc_comps.values())
         )
 
-        # 6. Pre-minimize System (Test + Avoid NaNs)
-        positions = self._pre_minimize(omm_system, positions)
+        # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        positions = self._pre_equilibrate(
+            omm_system, omm_topology, positions, settings, dry
+        )
 
         # 7. Get lambdas
         lambdas = self._get_lambda_schedule(settings)

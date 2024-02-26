@@ -1,26 +1,35 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from importlib import resources
+import copy
 from pathlib import Path
 import pytest
+import sys
+from pymbar.utils import ParameterError
 import numpy as np
 from numpy.testing import assert_equal, assert_allclose
 from openmm import app, MonteCarloBarostat, NonbondedForce
 from openmm import unit as ommunit
 from openmmtools import multistate
 from openff.toolkit import Molecule as OFFMol
+from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
+from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.units import unit
 from openff.units.openmm import ensure_quantity
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
     settings_validation, system_validation, system_creation,
-    multistate_analysis, omm_settings
+    multistate_analysis, omm_settings, charge_generation
+)
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL, HAS_ESPALOMA, HAS_OPENEYE
 )
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
 )
+from unittest import mock
 
 
 def test_validate_timestep():
@@ -490,3 +499,309 @@ def test_convert_target_error_from_kcal_per_mole_to_kT_zero():
     )
 
     assert kT == 0.0
+
+
+class TestOFFPartialCharge:
+    @pytest.fixture(scope='function')
+    def uncharged_mol(self, CN_molecule):
+        return CN_molecule.to_openff()
+
+    @pytest.mark.parametrize('overwrite', [True, False])
+    def test_offmol_chg_gen_charged_overwrite(
+        self, overwrite, uncharged_mol
+    ):
+        chg = [
+            1 for _ in range(len(uncharged_mol.atoms))
+        ] * unit.elementary_charge
+
+        uncharged_mol.partial_charges = copy.deepcopy(chg)
+    
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=overwrite,
+            method='am1bcc',
+            toolkit_backend='ambertools',
+            generate_n_conformers=None,
+            nagl_model=None,
+        )
+    
+        assert np.allclose(uncharged_mol.partial_charges, chg) != overwrite
+
+    def test_unknown_method(self, uncharged_mol):
+        with pytest.raises(ValueError, match="Unknown partial charge method"):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='foo',
+                toolkit_backend='ambertools',
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+    @pytest.mark.parametrize('method, backend', [
+        ['am1bcc', 'rdkit'],
+        ['am1bccelf10', 'ambertools'],
+        ['nagl', 'bar'],
+        ['espaloma', 'openeye'],
+    ])
+    def test_incompatible_backend_am1bcc(
+        self, method, backend, uncharged_mol
+    ):
+        with pytest.raises(ValueError, match='Selected toolkit_backend'):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method=method,
+                toolkit_backend=backend,
+                generate_n_conformers=None,
+                nagl_model=None
+            )
+
+    def test_no_conformers(self, uncharged_mol):
+        uncharged_mol._conformers = None
+
+        with pytest.raises(ValueError, match='No conformers'):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='am1bcc',
+                toolkit_backend='ambertools',
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+    def test_too_many_existing_conformers(self, uncharged_mol):
+        uncharged_mol.generate_conformers(
+            n_conformers=2,
+            rms_cutoff=0.001 * unit.angstrom,
+            toolkit_registry=RDKitToolkitWrapper(),
+        )
+
+        with pytest.raises(ValueError, match="too many conformers"):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='am1bcc',
+                toolkit_backend='ambertools',
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+    def test_too_many_requested_conformers(self, uncharged_mol):
+        
+        with pytest.raises(ValueError, match="5 conformers were requested"):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='am1bcc',
+                toolkit_backend='ambertools',
+                generate_n_conformers=5,
+                nagl_model=None,
+            )
+
+    def test_am1bcc_no_conformer(self, uncharged_mol):
+
+        uncharged_mol._conformers = None
+
+        with pytest.raises(ValueError, match='at least one conformer'):
+            charge_generation.assign_offmol_am1bcc_charges(
+                uncharged_mol,
+                partial_charge_method='am1bcc',
+                toolkit_registry=ToolkitRegistry([RDKitToolkitWrapper()])
+            )
+
+    @pytest.mark.slow
+    def test_am1bcc_conformer_nochange(self, eg5_ligands):
+
+        lig = eg5_ligands[0].to_openff()
+
+        conf = copy.deepcopy(lig.conformers)
+
+        # Get charges without conf generation
+        charge_generation.assign_offmol_partial_charges(
+            lig,
+            overwrite=False,
+            method='am1bcc',
+            toolkit_backend='ambertools',
+            generate_n_conformers=None,
+            nagl_model=None,
+        )
+
+        # check the conformation hasn't changed
+        assert_allclose(conf, lig.conformers)
+
+        # copy the charges to check that the conf gen will change things
+        charges = copy.deepcopy(lig.partial_charges)
+
+        # now with conformer generation
+        charge_generation.assign_offmol_partial_charges(
+            lig,
+            overwrite=True,
+            method='am1bcc',
+            toolkit_backend='ambertools',
+            generate_n_conformers=1,
+            nagl_model=None
+        )
+
+        # conformer shouldn't have changed
+        assert_allclose(conf, lig.conformers)
+
+        # but the charges should have
+        assert not np.allclose(charges, lig.partial_charges)
+
+    @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
+    def test_no_production_nagl(self, uncharged_mol):
+        
+        with pytest.raises(ValueError, match='No production am1bcc NAGL'):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='nagl',
+                toolkit_backend='rdkit',
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+    # Note: skipping nagl tests on macos/darwin due to known issues
+    # see: https://github.com/openforcefield/openff-nagl/issues/78
+    @pytest.mark.parametrize('method, backend, ref_key, confs', [
+        ('am1bcc', 'ambertools', 'ambertools', None),
+        pytest.param(
+            'am1bcc', 'openeye', 'openeye', None,
+            marks=pytest.mark.skipif(
+                not HAS_OPENEYE, reason='needs oechem',
+            ),
+        ),
+        pytest.param(
+            'am1bccelf10', 'openeye', 'openeye', 500,
+            marks=pytest.mark.skipif(
+                not HAS_OPENEYE, reason='needs oechem',
+            ),
+        ),
+        pytest.param(
+            'nagl', 'rdkit', 'nagl', None,
+            marks=pytest.mark.skipif(
+                not HAS_NAGL or sys.platform.startswith('darwin'),
+                reason='needs NAGL and/or on macos',
+            ),
+        ),
+        pytest.param(
+            'nagl', 'ambertools', 'nagl', None,
+            marks=pytest.mark.skipif(
+                not HAS_NAGL or sys.platform.startswith('darwin')
+                , reason='needs NAGL and/or on macos',
+            ),
+        ),
+        pytest.param(
+            'nagl', 'openeye', 'nagl', None,
+            marks=pytest.mark.skipif(
+                not HAS_NAGL or not HAS_OPENEYE or sys.platform.startswith('darwin'),
+                reason='needs NAGL and oechem and not on macos',
+            ),
+        ),
+        pytest.param(
+            'espaloma', 'rdkit', 'espaloma', None,
+            marks=pytest.mark.skipif(
+                not HAS_ESPALOMA, reason='needs espaloma',
+            ),
+        ),
+        pytest.param(
+            'espaloma', 'ambertools', 'espaloma', None,
+            marks=pytest.mark.skipif(
+                not HAS_ESPALOMA, reason='needs espaloma',
+            ),
+        ),
+    ])
+    def test_am1bcc_reference(
+        self, uncharged_mol, method, backend, ref_key, confs,
+        am1bcc_ref_charges,
+    ):
+        """
+        Check partial charge generation using what would
+        be intended default settings for a CN molecule
+        """
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method=method,
+            toolkit_backend=backend,
+            generate_n_conformers=None,
+            nagl_model="openff-gnn-am1bcc-0.1.0-rc.1.pt",
+        )
+
+        assert_allclose(
+            am1bcc_ref_charges[ref_key],
+            uncharged_mol.partial_charges,
+            rtol=1e-4
+        )
+
+    def test_nagl_import_error(self, monkeypatch, uncharged_mol):
+        monkeypatch.setattr(
+            sys.modules['openfe.protocols.openmm_utils.charge_generation'],
+            'HAS_NAGL',
+            False
+        )
+
+        with pytest.raises(ImportError, match='NAGL toolkit is not available'):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='nagl',
+                toolkit_backend='rdkit',
+                generate_n_conformers=None,
+                nagl_model=None
+            )
+
+    def test_espaloma_import_error(self, monkeypatch, uncharged_mol):
+        monkeypatch.setattr(
+            sys.modules['openfe.protocols.openmm_utils.charge_generation'],
+            'HAS_ESPALOMA',
+            False
+        )
+
+        with pytest.raises(ImportError, match='Espaloma'):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='espaloma',
+                toolkit_backend='rdkit',
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+    def test_openeye_import_error(self, monkeypatch, uncharged_mol):
+        monkeypatch.setattr(
+            sys.modules['openfe.protocols.openmm_utils.charge_generation'],
+            'HAS_OPENEYE',
+            False
+        )
+
+        with pytest.raises(ImportError, match='OpenEye is not available'):
+            charge_generation.assign_offmol_partial_charges(
+                uncharged_mol,
+                overwrite=False,
+                method='am1bcc',
+                toolkit_backend='openeye',
+                generate_n_conformers=None,
+                nagl_model=None,
+            )
+
+
+@pytest.mark.slow
+@pytest.mark.download
+def test_forward_backwards_failure(simulation_nc):
+    rep = multistate.multistatereporter.MultiStateReporter(
+        simulation_nc,
+        open_mode='r'
+    )
+    ana = multistate_analysis.MultistateEquilFEAnalysis(
+        rep,
+        sampling_method='repex',
+        result_units=unit.kilocalorie_per_mole,
+    )
+
+    with mock.patch('openfe.protocols.openmm_utils.multistate_analysis.MultistateEquilFEAnalysis._get_free_energy',
+                    side_effect=ParameterError):
+        ret = ana.get_forward_and_reverse_analysis()
+
+    assert ret is None
