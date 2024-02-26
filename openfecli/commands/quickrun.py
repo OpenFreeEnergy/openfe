@@ -40,14 +40,21 @@ def _format_exception(exception) -> str:
 )
 @print_duration
 def quickrun(transformation, work_dir, output):
-    """Run the transformation (edge) in the given JSON file in serial.
+    """Run the transformation (edge) in the given JSON file.
 
-    A transformation can be saved as JSON using from Python using its dump
+    Simulation JSON files can be created with the
+    :ref:`cli_plan-rbfe-network`
+    or from Python a :class:`.Transformation` can be saved using its dump
     method::
 
         transformation.dump("filename.json")
 
     That will save a JSON file suitable to be input for this command.
+
+    Running this command will execute the simulation defined in the JSON file,
+    creating a directory for each individual task (``Unit``) in the workflow.
+    For example, when running the OpenMM HREX Protocol a directory will be created
+    for each repeat of the sampling process (by default 3).
     """
     import gufe
     import os

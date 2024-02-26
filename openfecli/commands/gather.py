@@ -311,7 +311,9 @@ def gather(rootdir, output, report, allow_partial):
     \b
     * 'dg' (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.
+      from DDG replica averages and standard deviations.  These MLE estimates
+      are centred around 0.0, and when plotted can be shifted to match
+      experimental values.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
     * 'raw' reports the raw results, which each repeat simulation given
