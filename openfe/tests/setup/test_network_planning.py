@@ -58,6 +58,51 @@ def test_radial_network(atom_mapping_basic_test_files, toluene_vs_others,
                for mapping in network.edges)
 
 
+@pytest.mark.parametrize('central_ligand_arg', [0, 'toluene'])
+def test_radial_network_int_str(atom_mapping_basic_test_files, toluene_vs_others,
+                                central_ligand_arg):
+    # check that passing either an integer or string to radial network still works
+    toluene, others = toluene_vs_others
+    ligands = [toluene] + others
+
+    network = openfe.setup.ligand_network_planning.generate_radial_network(
+        ligands=ligands, central_ligand=central_ligand_arg,
+        mappers=openfe.setup.LomapAtomMapper(), scorer=None,
+    )
+    assert len(network.nodes) == len(ligands)
+    assert len(network.edges) == len(others)
+    # check that all ligands are present, i.e. we included everyone
+    ligands_in_network = {mol.name for mol in network.nodes}
+    assert ligands_in_network == set(atom_mapping_basic_test_files.keys())
+    # check that every edge has the central ligand within
+    assert all(('toluene' in {mapping.componentA.name, mapping.componentB.name})
+               for mapping in network.edges)
+
+
+def test_radial_network_bad_str(atom_mapping_basic_test_files, toluene_vs_others):
+    # check failure on missing name
+    toluene, others = toluene_vs_others
+    ligands = [toluene] + others
+
+    with pytest.raises(ValueError, match='No ligand called'):
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=ligands, central_ligand='unobtainium',
+            mappers=openfe.setup.LomapAtomMapper(), scorer=None,
+        )
+
+
+def test_radial_network_multiple_str(atom_mapping_basic_test_files, toluene_vs_others):
+    # check failure on missing name
+    toluene, others = toluene_vs_others
+    ligands = [toluene, toluene] + others
+
+    with pytest.raises(ValueError, match='Multiple ligands called'):
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=ligands, central_ligand='toluene',
+            mappers=openfe.setup.LomapAtomMapper(), scorer=None,
+        )
+
+
 def test_radial_network_self_central(toluene_vs_others):
     # issue #544, include the central ligand in "ligands",
     # shouldn't get self edge
