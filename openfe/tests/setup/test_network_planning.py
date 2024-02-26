@@ -92,7 +92,7 @@ def test_radial_network_bad_str(atom_mapping_basic_test_files, toluene_vs_others
 
 
 def test_radial_network_multiple_str(atom_mapping_basic_test_files, toluene_vs_others):
-    # check failure on missing name
+    # check failure on multiple of specified name, it's ambiguous
     toluene, others = toluene_vs_others
     ligands = [toluene, toluene] + others
 
