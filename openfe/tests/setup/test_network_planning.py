@@ -79,7 +79,7 @@ def test_radial_network_int_str(atom_mapping_basic_test_files, toluene_vs_others
                for mapping in network.edges)
 
 
-def test_radial_network_bad_str(atom_mapping_basic_test_files, toluene_vs_others):
+def test_radial_network_bad_str(toluene_vs_others):
     # check failure on missing name
     toluene, others = toluene_vs_others
     ligands = [toluene] + others
@@ -91,7 +91,7 @@ def test_radial_network_bad_str(atom_mapping_basic_test_files, toluene_vs_others
         )
 
 
-def test_radial_network_multiple_str(atom_mapping_basic_test_files, toluene_vs_others):
+def test_radial_network_multiple_str(toluene_vs_others):
     # check failure on multiple of specified name, it's ambiguous
     toluene, others = toluene_vs_others
     ligands = [toluene, toluene] + others
@@ -99,6 +99,18 @@ def test_radial_network_multiple_str(atom_mapping_basic_test_files, toluene_vs_o
     with pytest.raises(ValueError, match='Multiple ligands called'):
         network = openfe.setup.ligand_network_planning.generate_radial_network(
             ligands=ligands, central_ligand='toluene',
+            mappers=openfe.setup.LomapAtomMapper(), scorer=None,
+        )
+
+
+def test_radial_network_index_error(toluene_vs_others):
+    # check if we ask for a out of bounds ligand we get a meaningful failure
+    toluene, others = toluene_vs_others
+    ligands = [toluene] + others
+
+    with pytest.raises(ValueError, match='out of bounds'):
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=ligands, central_ligand=2077,
             mappers=openfe.setup.LomapAtomMapper(), scorer=None,
         )
 

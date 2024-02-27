@@ -89,7 +89,11 @@ def generate_radial_network(
     # after this, central_ligand is resolved to a SmallMoleculeComponent
     if isinstance(central_ligand, int):
         ligands = list(ligands)
-        central_ligand = ligands[central_ligand]
+        try:
+            central_ligand = ligands[central_ligand]
+        except IndexError:
+            raise ValueError(f"index '{central_ligand}' out of bounds, there are "
+                             f"{len(ligands)} ligands")
     elif isinstance(central_ligand, str):
         ligands = list(ligands)
         possibles = [l for l in ligands if l.name == central_ligand]
