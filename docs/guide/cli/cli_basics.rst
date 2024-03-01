@@ -1,11 +1,5 @@
-Using the CLI
-=============
-
-In addition to the powerful Python API, OpenFE provides a simple command
-line interface to facilitate some more common (and less complicated) tasks.
-The Python API tries to be as easy to use as possible, but the CLI provides
-wrappers around some parts of the Python API to make it easier to integrate
-into non-Python workflows.
+CLI basics
+==========
 
 The ``openfe`` command consists of several subcommands. This is similar to
 tools like ``gmx``, which has subcommands like ``gmx mdrun``, or ``conda``,

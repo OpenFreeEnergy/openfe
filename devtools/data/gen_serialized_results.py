@@ -76,23 +76,33 @@ def execute_and_serialize(dag, protocol, simname):
         json.dump(outdict, zipfile, cls=JSON_HANDLER.encoder)
 
 
-def generate_md_json(smc):
+def generate_md_settings():
     settings = PlainMDProtocol.default_settings()
     settings.simulation_settings.equilibration_length_nvt = 0.01 * unit.nanosecond
     settings.simulation_settings.equilibration_length = 0.01 * unit.nanosecond
     settings.simulation_settings.production_length = 0.01 * unit.nanosecond
     settings.forcefield_settings.nonbonded_method = "nocutoff"
-    protocol = PlainMDProtocol(settings=settings)
+
+    return settings
+
+
+def generate_md_json(smc):
+    protocol = PlainMDProtocol(settings=generate_md_settings())
     system = openfe.ChemicalSystem({"ligand": smc})
     dag = protocol.create(stateA=system, stateB=system, mapping=None)
 
     execute_and_serialize(dag, protocol, "MDProtocol")
 
 
-def generate_ahfe_json(smc):
+def generate_ahfe_settings():
     settings = AbsoluteSolvationProtocol.default_settings()
+    settings.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    settings.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
     settings.solvent_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
+    settings.vacuum_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    settings.vacuum_equil_simulation_settings.production_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
     settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
@@ -109,7 +119,11 @@ def generate_ahfe_json(smc):
     settings.vacuum_engine_settings.compute_platform = 'CPU'
     settings.solvent_engine_settings.compute_platform = 'CUDA'
 
-    protocol = AbsoluteSolvationProtocol(settings=settings)
+    return settings
+
+    
+def generate_ahfe_json(smc):
+    protocol = AbsoluteSolvationProtocol(settings=generate_ahfe_settings())
     sysA = openfe.ChemicalSystem(
         {"ligand": smc, "solvent": openfe.SolventComponent()}
     )
@@ -122,12 +136,17 @@ def generate_ahfe_json(smc):
     execute_and_serialize(dag, protocol, "AHFEProtocol")
 
 
-def generate_rfe_json(smcA, smcB):
+def generate_rfe_settings():
     settings = RelativeHybridTopologyProtocol.default_settings()
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 250 * unit.picosecond
     settings.forcefield_settings.nonbonded_method = "nocutoff"
-    protocol = RelativeHybridTopologyProtocol(settings=settings)
+    
+    return settings
+
+
+def generate_rfe_json(smcA, smcB):
+    protocol = RelativeHybridTopologyProtocol(settings=generate_rfe_settings())
 
     a_smcB = align_mol_shape(smcB, ref_mol=smcA)
     mapper = KartografAtomMapper(atom_map_hydrogens=True)

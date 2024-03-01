@@ -188,9 +188,10 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency = 25 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: FloatQuantity['timestep'] = 25 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
+    Note: The barostat frequency is ignored for gas-phase simulations.
     Default 25 * unit.timestep.
     """
     remove_com: bool = False
@@ -239,14 +240,6 @@ class OutputSettings(SettingsBaseModel):
         arbitrary_types_allowed = True
 
     # reporter settings
-    output_filename = 'simulation.nc'
-    """Path to the trajectory storage file. Default 'simulation.nc'."""
-    output_structure = 'hybrid_system.pdb'
-    """
-    Path of the output hybrid topology structure file. This is used
-    to visualise and further manipulate the system.
-    Default 'hybrid_system.pdb'.
-    """
     output_indices = 'not water'
     """
     Selection string for which part of the system to write coordinates for.
@@ -273,6 +266,25 @@ class OutputSettings(SettingsBaseModel):
             errmsg = f"Checkpoint intervals must be positive, got {v}."
             raise ValueError(errmsg)
         return v
+
+
+class MultiStateOutputSettings(OutputSettings):
+    """
+    Settings for MultiState simulation output settings,
+    writing to disk, etc...
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    # reporter settings
+    output_filename = 'simulation.nc'
+    """Path to the trajectory storage file. Default 'simulation.nc'."""
+    output_structure = 'hybrid_system.pdb'
+    """
+    Path of the output hybrid topology structure file. This is used
+    to visualise and further manipulate the system.
+    Default 'hybrid_system.pdb'.
+    """
 
 
 class SimulationSettings(SettingsBaseModel):
@@ -449,11 +461,12 @@ class MDSimulationSettings(SimulationSettings):
     class Config:
         arbitrary_types_allowed = True
 
-    equilibration_length_nvt: unit.Quantity
+    equilibration_length_nvt: Optional[FloatQuantity['nanosecond']]
     """
     Length of the equilibration phase in the NVT ensemble in units of time. 
     The total number of steps from this equilibration length
     (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
+    If None, no NVT equilibration will be performed.
     """
 
 
@@ -475,12 +488,12 @@ class MDOutputSettings(OutputSettings):
     minimized_structure = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
-    equil_NVT_structure = 'equil_NVT.pdb'
+    equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
     """Path to the pdb file of the system after NVT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_NVT.pdb'."""
-    equil_NPT_structure = 'equil_NPT.pdb'
+    Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
+    equil_npt_structure: Optional[str] = 'equil_npt.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_NPT.pdb'."""
+    Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
     log_output = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,
