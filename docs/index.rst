@@ -60,7 +60,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card:: Using the CLI
         :img-top: _static/CLI.svg
         :text-align: center
-        :link: guide/cli
+        :link: guide/cli/index
         :link-type: doc
 
         Reference guide on using the OpenFE CLI.
