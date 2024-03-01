@@ -174,13 +174,13 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
 
-    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
         Returns
         -------
-        forward_reverse : dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        forward_reverse : dict[str, Optional[list[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
             A dictionary, keyed `solvent` and `vacuum` for each leg of the
             thermodynamic cycle which each contain a list of dictionaries
             containing the forward and reverse analysis of each repeat
@@ -194,6 +194,17 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
               - `forward_dDGs`, `reverse_dDGs`: unit.Quantity
                   The forward and reverse estimate uncertainty for each
                   fraction of data.
+
+            If the forward and reverse dictionary is ``None`` this indicates
+            that the analysis could not be carried out for that repeat. This
+            is most likely due to MBAR convergence issues when attempting to
+            calculate free energies from too few samples.
+
+        Raises
+        ------
+        UserWarning
+          * If any of the forward and reverse dictionaries are ``None`` in a
+            given simulation type.
         """
 
         forward_reverse: dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]] = {}
@@ -203,6 +214,16 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
                 pus[0].outputs['forward_and_reverse_energies']
                 for pus in self.data[key].values()
             ]
+
+            if None in forward_reverse[key]:
+                wmsg = (
+                    "One or more ``None`` entries were found in the forward "
+                    f"and reverse dictionaries of the repeats of the {type} "
+                    "calculations. This is likely caused by an MBAR convergence "
+                    "failure caused by too few independent samples when "
+                    "calculating the free energies of the 10% timeseries slice."
+                )
+                warnings.warn(wmsg)
 
         return forward_reverse
 
