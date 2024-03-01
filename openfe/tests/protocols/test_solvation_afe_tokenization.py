@@ -49,7 +49,7 @@ def protocol_result(afe_solv_transformation_json):
 
 class TestAbsoluteSolvationProtocol(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocol
-    key = "AbsoluteSolvationProtocol-2719b8d54d822cae5c51bdcdd8ef8f78"
+    key = "AbsoluteSolvationProtocol-5caad6cee8aff2f9113a656ac9627a44"
     repr = f"<{key}>"
 
     @pytest.fixture()
@@ -85,7 +85,7 @@ class TestAbsoluteSolvationVacuumUnit(GufeTokenizableTestsMixin):
 
 class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocolResult
-    key = "AbsoluteSolvationProtocolResult-f7ea86ca7515f9d5341934cf02ccaa1c"
+    key = "AbsoluteSolvationProtocolResult-7f80c1cf5a526bde45d385cee7352428"
     repr = f"<{key}>"
 
     @pytest.fixture()
