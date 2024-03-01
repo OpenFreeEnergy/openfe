@@ -25,8 +25,8 @@ Our :any:`showcase notebook <showcase_notebook>`
 walks users through how to use the main components of OpenFE to create a
 relative binding free energy calculation.
 
-MD protocol tutorial
---------------------
+Molecular Dynamics (MD) protocol tutorial
+-----------------------------------------
 
 The :any:`MD protocol <md_tutorial>`
 tutorial walks users through how to run an MD simulation of benzene bound to 
