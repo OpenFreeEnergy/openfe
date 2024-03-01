@@ -8,4 +8,4 @@ User Guide
     setup/index
     execution/index
     results/index
-    cli
+    cli/index

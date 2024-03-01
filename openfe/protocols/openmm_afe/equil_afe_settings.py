@@ -26,7 +26,10 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
     OpenMMEngineSettings,
     IntegratorSettings,
-    OutputSettings,
+    OpenFFPartialChargeSettings,
+    MultiStateOutputSettings,
+    MDSimulationSettings,
+    MDOutputSettings,
 )
 import numpy as np
 
@@ -172,21 +175,48 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
 
     # Simulation run settings
+    vacuum_equil_simulation_settings: MDSimulationSettings
+    """
+    Pre-alchemical vacuum simulation control settings.
+
+    Notes
+    -----
+    The `NVT` equilibration should be set to 0 * unit.nanosecond
+    as it will not be run.
+    """
     vacuum_simulation_settings: MultiStateSimulationSettings
     """
     Simulation control settings, including simulation lengths
     for the vacuum transformation.
+    """
+    solvent_equil_simulation_settings: MDSimulationSettings
+    """
+    Pre-alchemical solvent simulation control settings.
     """
     solvent_simulation_settings: MultiStateSimulationSettings
     """
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    vacuum_output_settings: OutputSettings
+    vacuum_equil_output_settings: MDOutputSettings
+    """
+    Simulation output settings for the vacuum non-alchemical equilibration.
+    """
+    vacuum_output_settings: MultiStateOutputSettings
     """
     Simulation output settings for the vacuum transformation.
     """
-    solvent_output_settings: OutputSettings
+    solvent_equil_output_settings: MDOutputSettings
+    """
+    Simulation output settings for the solvent non-alchemical equilibration.
+    """
+    solvent_output_settings: MultiStateOutputSettings
     """
     Simulation output settings for the solvent transformation.
+    """
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """
+    Settings for controlling how to assign partial charges,
+    including the partial charge assignment method, and the
+    number of conformers used to generate the partial charges.
     """

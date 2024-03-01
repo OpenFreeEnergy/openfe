@@ -60,18 +60,18 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
     .. grid-item-card:: Using the CLI
         :img-top: _static/CLI.svg
         :text-align: center
-        :link: guide/cli
+        :link: guide/cli/index
         :link-type: doc
 
         Reference guide on using the OpenFE CLI.
 
-    .. grid-item-card:: OpenFE Showcase
+    .. grid-item-card:: Changelog
         :img-top: _static/Showcase.svg
         :text-align: center
-        :link: tutorials/showcase_notebook
+        :link: CHANGELOG
         :link-type: doc
 
-        Tutorial notebook showing the sorts of things OpenFE can do.
+        Any notable changes in the package for each released version
         
     .. grid-item-card:: Relative Free Energy Protocol
         :img-top: _static/Rocket.svg
@@ -92,6 +92,7 @@ The **OpenFE** toolkit provides open-source frameworks for calculating alchemica
    guide/index
    cookbook/index
    reference/index
+   CHANGELOG
 
 Indices and tables
 ------------------

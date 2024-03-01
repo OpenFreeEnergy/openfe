@@ -105,9 +105,107 @@ def get_simsteps(sim_length: unit.Quantity,
     return sim_steps
 
 
+def divmod_time(
+    time: unit.Quantity,
+    time_per_iteration: unit.Quantity,
+) -> tuple[int, int]:
+    """
+    Convert a set amount of time to a number of iterations.
+
+    Parameters
+    ---------
+    time: unit.Quantity
+      The time to convert.
+    time_per_iteration : unit.Quantity
+      The amount of time which each iteration takes.
+
+    Returns
+    -------
+    iterations : int
+      The number of iterations covered by the input time.
+    remainder : int
+      The remainder of the input time and time_per_iteration division.
+    """
+    time_ats = round(time.to(unit.attosecond).m)
+    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)
+
+    iterations, remainder = divmod(time_ats, tpi_ats)
+
+    return iterations, remainder
+
+
+def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
+                          numerator_name: str, denominator_name: str) -> int:
+    """Perform a division of time, failing if there is a remainder
+
+    For example numerator 20.0 ps and denominator 4.0 fs gives 5000
+
+    Parameters
+    ----------
+    numerator, denominator : unit.Quantity
+      the division to perform
+    numerator_name, denominator_name : str
+      used for the error generated if there is any remainder
+
+    Returns
+    -------
+    iterations : int
+      the result of the division
+
+    Raises
+    ------
+    ValueError
+      if the division results in any remainder, will include a formatted error
+      message
+    """
+    its, rem = divmod_time(numerator, denominator)
+
+    if rem:
+        errmsg = (f"The {numerator_name} ({numerator}) "
+                  "does not evenly divide by the "
+                  f"{denominator_name} ({denominator})")
+        raise ValueError(errmsg)
+
+    return its
+
+
+def convert_checkpoint_interval_to_iterations(
+    checkpoint_interval: unit.Quantity,
+    time_per_iteration: unit.Quantity,
+) -> int:
+    """
+    Get the number of iterations per checkpoint interval.
+
+    This is necessary as our input settings define checkpoints intervals in
+    units of time, but OpenMMTools' MultiStateReporter requires them defined
+    in the number of MC intervals.
+
+    Parameters
+    ----------
+    checkpoint_interval : unit.Quantity
+      The amount of time per checkpoints written.
+    time_per_iteration : unit.Quantity
+      The amount of time each MC iteration takes.
+
+    Returns
+    -------
+    iterations : int
+      The number of iterations per checkpoint.
+    """
+    iterations, rem = divmod_time(checkpoint_interval, time_per_iteration)
+
+    if rem:
+        errmsg = (f"The amount of time per checkpoint {checkpoint_interval} "
+                  "does not evenly divide by the amount of time per "
+                  f"state MCMC move attempt {time_per_iteration}")
+        raise ValueError(errmsg)
+
+    return iterations
+
+
 def convert_steps_per_iteration(
-        simulation_settings: MultiStateSimulationSettings,
-        integrator_settings: IntegratorSettings,
+    simulation_settings: MultiStateSimulationSettings,
+    integrator_settings: IntegratorSettings,
 ) -> int:
     """Convert time per iteration to steps
 
@@ -121,19 +219,16 @@ def convert_steps_per_iteration(
     steps_per_iteration : int
       suitable for input to Integrator
     """
-    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
-    ts_fs = round(integrator_settings.timestep.to(unit.attosecond).m)
-    steps_per_iteration, rem = divmod(tpi_fs, ts_fs)
-
-    if rem:
-        raise ValueError(f"time_per_iteration ({simulation_settings.time_per_iteration}) "
-                         f"not divisible by timestep ({integrator_settings.timestep})")
-
-    return steps_per_iteration
+    return divmod_time_and_check(
+        simulation_settings.time_per_iteration,
+        integrator_settings.timestep,
+        "time_per_iteration",
+        "timestep",
+    )
 
 
 def convert_real_time_analysis_iterations(
-        simulation_settings: MultiStateSimulationSettings,
+    simulation_settings: MultiStateSimulationSettings,
 ) -> tuple[Optional[int], Optional[int]]:
     """Convert time units in Settings to various other units
 
@@ -159,31 +254,25 @@ def convert_real_time_analysis_iterations(
         # option to turn off real time analysis
         return None, None
 
-    tpi_fs = round(simulation_settings.time_per_iteration.to(unit.attosecond).m)
-
-    # convert real_time_analysis time to interval
-    # rta_its must be number of MCMC iterations
-    # i.e. rta_fs / tpi_fs -> number of iterations
-    rta_fs = round(simulation_settings.real_time_analysis_interval.to(unit.attosecond).m)
-
-    rta_its, rem = divmod(rta_fs, tpi_fs)
-    if rem:
-        raise ValueError(f"real_time_analysis_interval ({simulation_settings.real_time_analysis_interval}) "
-                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
-
-    # convert RTA_minimum_time to iterations
-    rta_min_fs = round(simulation_settings.real_time_analysis_minimum_time.to(unit.attosecond).m)
-    rta_min_its, rem = divmod(rta_min_fs, tpi_fs)
-    if rem:
-        raise ValueError(f"real_time_analysis_minimum_time ({simulation_settings.real_time_analysis_minimum_time}) "
-                         f"is not divisible by time_per_iteration ({simulation_settings.time_per_iteration})")
+    rta_its = divmod_time_and_check(
+        simulation_settings.real_time_analysis_interval,
+        simulation_settings.time_per_iteration,
+        "real_time_analysis_interval",
+        "time_per_iteration",
+    )
+    rta_min_its = divmod_time_and_check(
+        simulation_settings.real_time_analysis_minimum_time,
+        simulation_settings.time_per_iteration,
+        "real_time_analysis_minimum_time",
+        "time_per_iteration",
+    )
 
     return rta_its, rta_min_its
 
 
 def convert_target_error_from_kcal_per_mole_to_kT(
-        temperature,
-        target_error,
+    temperature,
+    target_error,
 ) -> float:
     """Convert kcal/mol target error to kT units
 
