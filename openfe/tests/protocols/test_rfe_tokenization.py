@@ -21,7 +21,7 @@ def protocol():
 def protocol_unit(protocol, benzene_system, toluene_system, benzene_to_toluene_mapping):
     pus = protocol.create(
         stateA=benzene_system, stateB=toluene_system,
-        mapping={'ligand': benzene_to_toluene_mapping},
+        mapping=[benzene_to_toluene_mapping],
     )
     return list(pus.protocol_units)[0]
 
@@ -39,7 +39,7 @@ class TestRelativeHybridTopologyProtocolResult(GufeTokenizableTestsMixin):
 
 class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocol
-    key = "RelativeHybridTopologyProtocol-b6ecbf56c5effbda11d3c10d13f37273"
+    key = "RelativeHybridTopologyProtocol-15f565877e1c79e0a0e4fb473f3fc47a"
     repr = f"<{key}>"
 
     @pytest.fixture()

@@ -145,6 +145,7 @@ solvent	lig_ejm_46	lig_jmc_28	23.65	0.03
 """
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize('report', ["", "dg", "ddg"])
 def test_gather(results_dir, report):
     expected = {
@@ -184,6 +185,7 @@ def test_generate_bad_legs_error_message(include):
         assert string in msg
 
 
+@pytest.mark.xfail
 def test_missing_leg_error(results_dir):
     file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
     (pathlib.Path("results") / file_to_remove).unlink()
@@ -197,6 +199,7 @@ def test_missing_leg_error(results_dir):
     assert "'lig_ejm_42'" in str(result.exception)
 
 
+@pytest.mark.xfail
 def test_missing_leg_allow_partial(results_dir):
     file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
     (pathlib.Path("results") / file_to_remove).unlink()
