@@ -39,7 +39,7 @@ def _hasten_lomap(mapper, ligands):
 
 def generate_radial_network(
     ligands: Iterable[SmallMoleculeComponent],
-    central_ligand: SmallMoleculeComponent,
+    central_ligand: Union[SmallMoleculeComponent, str, int],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
 ) -> LigandNetwork:
@@ -54,8 +54,10 @@ def generate_radial_network(
     ligands : iterable of SmallMoleculeComponents
       the ligands to arrange around the central ligand.  If the central ligand
       is present it will be ignored (i.e. avoiding a self edge)
-    central_ligand : SmallMoleculeComponent
-      the ligand to use as the hub/central ligand
+    central_ligand : SmallMoleculeComponent or str or int
+      the ligand to use as the hub/central ligand.
+      If this is a string, this should match to one and only one ligand name.
+      If this is an integer, this refers to the index from within ligands
     mappers : AtomMapper or iterable of AtomMappers
       mapper(s) to use, at least 1 required
     scorer : scoring function, optional
@@ -82,6 +84,25 @@ def generate_radial_network(
         mappers = [mappers]
     mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
                else m for m in mappers]
+
+    # handle central_ligand arg possibilities
+    # after this, central_ligand is resolved to a SmallMoleculeComponent
+    if isinstance(central_ligand, int):
+        ligands = list(ligands)
+        try:
+            central_ligand = ligands[central_ligand]
+        except IndexError:
+            raise ValueError(f"index '{central_ligand}' out of bounds, there are "
+                             f"{len(ligands)} ligands")
+    elif isinstance(central_ligand, str):
+        ligands = list(ligands)
+        possibles = [l for l in ligands if l.name == central_ligand]
+        if not possibles:
+            raise ValueError(f"No ligand called '{central_ligand}' "
+                             f"available: {', '.join(l.name for l in ligands)}")
+        if len(possibles) > 1:
+            raise ValueError(f"Multiple ligands called '{central_ligand}'")
+        central_ligand = possibles[0]
 
     edges = []
 

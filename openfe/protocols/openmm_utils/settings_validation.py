@@ -160,11 +160,15 @@ def convert_checkpoint_interval_to_iterations(
     iterations : int
       The number of iterations per checkpoint.
     """
-    return divmod_time_and_check(
-        checkpoint_interval, time_per_iteration,
-        "amount of time per checkpoint",
-        "amount of time per state MCM move attempt"
-    )
+    iterations, rem = divmod_time(checkpoint_interval, time_per_iteration)
+
+    if rem:
+        errmsg = (f"The amount of time per checkpoint {checkpoint_interval} "
+                  "does not evenly divide by the amount of time per "
+                  f"state MCMC move attempt {time_per_iteration}")
+        raise ValueError(errmsg)
+
+    return iterations
 
 
 def convert_steps_per_iteration(

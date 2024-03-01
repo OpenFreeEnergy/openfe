@@ -117,9 +117,10 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     n_replicas = 3
     default_settings.vacuum_simulation_settings.n_replicas = n_replicas
     errmsg = (
-        "Components elec and vdw must have equal amount"
+        "Components elec, vdw, and restraints must have equal amount"
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
-        f" windows and {len(val['vdw'])} vdw lambda windows.")
+        f" windows, {len(val['vdw'])} vdw lambda windows, and"
+        f"{len(val['restraints'])} restraints lambda windows.")
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteSolvationProtocol._validate_lambda_schedule(
             default_settings.lambda_settings,
