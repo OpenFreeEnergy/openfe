@@ -180,7 +180,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         Returns
         -------
-        forward_reverse : dict[str, Optional[list[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
+        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
             A dictionary, keyed `solvent` and `vacuum` for each leg of the
             thermodynamic cycle which each contain a list of dictionaries
             containing the forward and reverse analysis of each repeat
@@ -195,19 +195,19 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
                   The forward and reverse estimate uncertainty for each
                   fraction of data.
 
-            If the forward and reverse dictionary is ``None`` this indicates
+            If one of the cycle leg list entries is ``None``, this indicates
             that the analysis could not be carried out for that repeat. This
-            is most likely due to MBAR convergence issues when attempting to
+            is most likely caused by MBAR convergence issues when attempting to
             calculate free energies from too few samples.
 
         Raises
         ------
         UserWarning
           * If any of the forward and reverse dictionaries are ``None`` in a
-            given simulation type.
+            given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]] = {}
+        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]] = {}
 
         for key in ['solvent', 'vacuum']:
             forward_reverse[key] = [
