@@ -43,10 +43,9 @@ from openfe.protocols.openmm_md.plain_md_settings import (
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
-from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
     system_validation, settings_validation, system_creation,
-    charge_generation,
+    charge_generation, omm_compute
 )
 
 logger = logging.getLogger(__name__)
@@ -604,8 +603,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             )
 
         # 10. Get platform
-        platform = compute.get_openmm_platform(
-            protocol_settings.engine_settings.compute_platform
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=protocol_settings.engine_settings.compute_platform,
+            gpu_device_index=protocol_settings.engine_settings.gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         # 11. Set the integrator

@@ -63,7 +63,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
-    multistate_analysis, charge_generation
+    multistate_analysis, charge_generation, omm_compute,
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
@@ -896,9 +896,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 bfactors=bfactors,
             )
 
-        # 10. Get platform
-        platform = _rfe_utils.compute.get_openmm_platform(
-            protocol_settings.engine_settings.compute_platform
+        # 10. Get compute platform
+        # restrict to a single CPU if running vacuum
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=protocol_settings.engine_settings.compute_platform,
+            gpu_device_index=protocol_settings.engine_settings.gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         # 11. Set the integrator

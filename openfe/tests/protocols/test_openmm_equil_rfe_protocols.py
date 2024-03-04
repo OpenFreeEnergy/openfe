@@ -35,15 +35,15 @@ from openfe.protocols.openmm_rfe._rfe_utils import topologyhelpers
 from openfe.protocols.openmm_rfe.equil_rfe_methods import (
     _validate_alchemical_components, _get_alchemical_charge_difference
 )
-from openfe.protocols.openmm_utils import system_creation
+from openfe.protocols.openmm_utils import system_creation, omm_compute
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
 )
 
 
 def test_compute_platform_warn():
-    with pytest.warns(UserWarning, match="Non-GPU platform selected: CPU"):
-        openmm_rfe._rfe_utils.compute.get_openmm_platform('CPU')
+    with pytest.warns(UserWarning, match="Non-CUDA platform selected: CPU"):
+        omm_compute.get_openmm_platform('CPU')
 
 
 def test_append_topology(benzene_complex_system, toluene_complex_system):
