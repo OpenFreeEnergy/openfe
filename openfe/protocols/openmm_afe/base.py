@@ -58,6 +58,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
+    OpenMMSystemGeneratorFFSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from ..openmm_utils import (
