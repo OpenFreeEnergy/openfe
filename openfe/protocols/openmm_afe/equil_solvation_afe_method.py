@@ -218,7 +218,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
             if None in forward_reverse[key]:
                 wmsg = (
                     "One or more ``None`` entries were found in the forward "
-                    f"and reverse dictionaries of the repeats of the {type} "
+                    f"and reverse dictionaries of the repeats of the {key} "
                     "calculations. This is likely caused by an MBAR convergence "
                     "failure caused by too few independent samples when "
                     "calculating the free energies of the 10% timeseries slice."
