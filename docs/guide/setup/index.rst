@@ -32,6 +32,8 @@ for more details.
 .. toctree::
    :hidden:
 
-   define_ligand_network
+   chemical_systems_and_thermodynamic_cycles
+   creating_atom_mappings_and_scores
+   creating_ligand_networks
    alchemical_network
 
