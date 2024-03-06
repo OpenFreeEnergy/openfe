@@ -32,6 +32,7 @@ for more details.
 .. toctree::
    :hidden:
 
+   defining_protocols
    chemical_systems_and_thermodynamic_cycles
    creating_atom_mappings_and_scores
    creating_ligand_networks
