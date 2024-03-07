@@ -150,7 +150,6 @@ List of Cookbooks
     :maxdepth: 1
 
     loading_molecules
-    creating_atom_mappings
     dumping_transformation
     choose_protocol
     generate_ligand_network
