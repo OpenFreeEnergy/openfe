@@ -22,10 +22,8 @@ instructions can be found under:
    defining_protocols
    creating_ligand_networks
    alchemical_network
-    define_rbfe
-    define_rhfe
-
-.. toctree (hidden): chemical components and chemical systems
+   define_rbfe
+   define_rhfe
 
 If you intend to set up your alchemical network using the Python interface,
 but to run it using the CLI, you will want to export the network in the same
