@@ -116,18 +116,22 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
 
 
     OpenFF backend selection options
-    -----------------------------
+    --------------------------------
 
-    The following are set depending on the option chosen:
-    ``ambertools``: this will limit partial charge generation to using
-      a mixture of AmberTools and RDKit.
-    ``openeye``: this will limit partial charge generation to using
-      the OpenEye toolkit. This cannot be used with ``espaloma`` as the
-      ``partial_charge_method``
-    ``rdkit``: this will limit partial charge generation to using
-      the RDKit toolkit. Note that this alone cannot be used for conventionla
-      am1bcc partial charge generation, but is usually used in combination with
+    ``ambertools``:
+      This limits partial charge generation to using a mixture of AmberTools
+      and RDKit.
+
+    ``openeye``:
+      This limits partial charge generation to using the OpenEye toolkit.
+      This cannot be used with ``espaloma`` as the ``partial_charge_method``
+
+    ``rdkit``:
+      This limits partial charge generation to using the RDKit toolkit.
+      Note that this alone cannot be used for conventional am1bcc partial
+      charge generation, but is usually used in combination with
       the ``nagl`` or ``espaloma`` ``partial_charge_method`` selections.
+
     """
     number_of_conformers: Optional[int] = None
     """
