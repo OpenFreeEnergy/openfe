@@ -1,5 +1,5 @@
 =========
-ChangeLog
+Changelog
 =========
 
 .. current developments
