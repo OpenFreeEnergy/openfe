@@ -135,26 +135,26 @@ def apply_onto(settings: SettingsBaseModel, options: dict) -> None:
             setattr(settings, k, v)
 
 
-def resolve_protocol_choices(options: ProtocolSelection):
+def resolve_protocol_choices(options: Optional[ProtocolSelection]):
     """Turn Protocol section into a fully formed Protocol"""
     from openfe.protocols import openmm_rfe
 
     allowed = {'openmm_rfe'}
 
-    if options.method and options.method.lower() not in allowed:
+    if options and options.method and options.method.lower() not in allowed:
         raise ValueError(f"Unsupported protocol {options.method}. "
                          f"Supported methods are {allowed}")
     # todo: we only allow one option, so this is hardcoded for now
     protocol = openmm_rfe.RelativeHybridTopologyProtocol
     settings = protocol.default_settings()
     # work through the fields in yaml input and apply these onto settings
-    if options.settings:
+    if options and options.settings:
         apply_onto(settings, options.settings)
 
     return protocol(settings)
 
 
-def load_yaml_planner_options_from_cliyaml(opt: Optional[CliYaml]) -> PlanNetworkOptions:
+def load_yaml_planner_options_from_cliyaml(opt: CliYaml) -> PlanNetworkOptions:
     from gufe import SolventComponent
     from openfe.setup.ligand_network_planning import (
         generate_radial_network,
@@ -172,7 +172,7 @@ def load_yaml_planner_options_from_cliyaml(opt: Optional[CliYaml]) -> PlanNetwor
     from functools import partial
 
     # convert normalised inputs to objects
-    if opt and opt.mapper:
+    if opt.mapper:
         mapper_choices = {
             'lomap': LomapAtomMapper,
             'lomapatommapper': LomapAtomMapper,
@@ -192,7 +192,7 @@ def load_yaml_planner_options_from_cliyaml(opt: Optional[CliYaml]) -> PlanNetwor
     # todo: choice of scorer goes here
     mapping_scorer = default_lomap_score
 
-    if opt and opt.network:
+    if opt.network:
         network_choices = {
             'generate_radial_network': generate_radial_network,
             'radial': generate_radial_network,
@@ -212,12 +212,15 @@ def load_yaml_planner_options_from_cliyaml(opt: Optional[CliYaml]) -> PlanNetwor
         ligand_network_planner = generate_minimal_spanning_network
 
     # todo: choice of solvent goes here
-    if opt and opt.solvent:
+    if opt.solvent:
         solvent = SolventComponent()
     else:
         solvent = SolventComponent()
 
-    protocol = resolve_protocol_choices(opt.protocol)
+    if opt.protocol:
+        protocol = resolve_protocol_choices(opt.protocol)
+    else:
+        protocol = None
 
     return PlanNetworkOptions(
         mapper=mapper_obj,
@@ -252,7 +255,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         # convert raw yaml to normalised pydantic model
         opt = parse_yaml_planner_options(raw)
     else:
-        opt = None
+        opt = CliYaml()
 
     return load_yaml_planner_options_from_cliyaml(opt)
 
