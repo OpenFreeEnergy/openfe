@@ -39,6 +39,7 @@ class PlainMDProtocolSettings(Settings):
         return v
 
     # Things for creating the systems
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
     partial_charge_settings: OpenFFPartialChargeSettings
     solvation_settings: OpenMMSolvationSettings
 
