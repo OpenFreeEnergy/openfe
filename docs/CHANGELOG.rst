@@ -1,5 +1,5 @@
-=================
-openfe Change Log
-=================
+=========
+Changelog
+=========
 
 .. current developments
