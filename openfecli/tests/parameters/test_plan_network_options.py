@@ -104,3 +104,45 @@ def test_resolving_protocol_yaml(protocol_settings_yaml):
     assert prot.settings.simulation_settings.production_length.u == unit.nanosecond
     assert prot.settings.simulation_settings.equilibration_length.m == pytest.approx(2.2)
     assert prot.settings.simulation_settings.equilibration_length.u == unit.nanosecond
+
+
+def test_nearest_match():
+    # check that misspelt options are given a likely correction
+    # here production -> production_length
+
+    yaml = """\
+protocol:
+  method: openmm_rfe
+  settings:
+    simulation_settings:
+      production: 5 ns
+      equilibration_length: 1 ns
+"""
+    cliyaml = plan_network_options.parse_yaml_planner_options(yaml)
+
+    with pytest.raises(ValueError, match="did you mean 'production_length'"):
+        plan_network_options.load_yaml_planner_options_from_cliyaml(cliyaml)
+
+
+def test_bad_network_option():
+    yaml = """\
+network:
+  method: generate_starmap
+  settings:
+    central_ligand: 0
+"""
+    cliyaml = plan_network_options.parse_yaml_planner_options(yaml)
+
+    with pytest.raises(ValueError, match="Bad network algorithm choice: 'generate_starmap'. Available options are"):
+        plan_network_options.load_yaml_planner_options_from_cliyaml(cliyaml)
+
+
+def test_bad_protocol_option():
+    yaml = """\
+protocol:
+  method: wizardry 
+"""
+    cliyaml = plan_network_options.parse_yaml_planner_options(yaml)
+
+    with pytest.raises(ValueError, match="Unsupported protocol method 'wizardry'. Supported methods are"):
+        plan_network_options.load_yaml_planner_options_from_cliyaml(cliyaml)

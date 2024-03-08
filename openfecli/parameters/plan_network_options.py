@@ -142,8 +142,8 @@ def resolve_protocol_choices(options: Optional[ProtocolSelection]):
     allowed = {'openmm_rfe'}
 
     if options and options.method and options.method.lower() not in allowed:
-        raise ValueError(f"Unsupported protocol {options.method}. "
-                         f"Supported methods are {allowed}")
+        raise ValueError(f"Unsupported protocol method '{options.method}'. "
+                         f"Supported methods are {','.join(allowed)}")
     # todo: we only allow one option, so this is hardcoded for now
     protocol = openmm_rfe.RelativeHybridTopologyProtocol
     settings = protocol.default_settings()
@@ -195,9 +195,7 @@ def load_yaml_planner_options_from_cliyaml(opt: CliYaml) -> PlanNetworkOptions:
     if opt.network:
         network_choices = {
             'generate_radial_network': generate_radial_network,
-            'radial': generate_radial_network,
             'generate_minimal_spanning_network': generate_minimal_spanning_network,
-            'mst': generate_minimal_spanning_network,
             'generate_minimal_redundant_network': generate_minimal_redundant_network,
             'generate_maximal_network': generate_maximal_network,
         }
@@ -205,17 +203,15 @@ def load_yaml_planner_options_from_cliyaml(opt: CliYaml) -> PlanNetworkOptions:
         try:
             func = network_choices[opt.network.method]
         except KeyError:
-            raise KeyError(f"Bad network algorithm choice: '{opt.network.method}'")
+            raise ValueError(f"Bad network algorithm choice: '{opt.network.method}'. "
+                             f"Available options are {', '.join(network_choices.keys())}")
 
         ligand_network_planner = partial(func, **opt.network.settings)
     else:
         ligand_network_planner = generate_minimal_spanning_network
 
     # todo: choice of solvent goes here
-    if opt.solvent:
-        solvent = SolventComponent()
-    else:
-        solvent = SolventComponent()
+    solvent = SolventComponent()
 
     if opt.protocol:
         protocol = resolve_protocol_choices(opt.protocol)
