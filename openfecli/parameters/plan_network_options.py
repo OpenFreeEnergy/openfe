@@ -4,7 +4,9 @@
 
 """
 import click
+import difflib
 from collections import namedtuple
+from gufe.settings import SettingsBaseModel
 try:
     # todo; once we're fully v2, we can use ConfigDict not nested class
     from pydantic.v1 import BaseModel  # , ConfigDict
@@ -18,7 +20,7 @@ import warnings
 
 PlanNetworkOptions = namedtuple('PlanNetworkOptions',
                                 ['mapper', 'scorer',
-                                 'ligand_network_planner', 'solvent'])
+                                 'ligand_network_planner', 'solvent', 'protocol'])
 
 
 class MapperSelection(BaseModel):
@@ -41,6 +43,24 @@ class NetworkSelection(BaseModel):
     settings: dict[str, Any] = {}
 
 
+class SolventSelection(BaseModel):
+    class Config:
+        extra = 'allow'
+        anystr_lower = True
+
+    method: Optional[str] = None
+    settings: dict[str, Any] = {}
+
+
+class ProtocolSelection(BaseModel):
+    class Config:
+        extra = 'allow'
+        anystr_lower = True
+
+    method: Optional[str] = None
+    settings: dict[str, Any] = {}
+
+
 class CliYaml(BaseModel):
     # model_config = ConfigDict(extra='allow')
     class Config:
@@ -48,6 +68,8 @@ class CliYaml(BaseModel):
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
+    solvent: Optional[SolventSelection] = None
+    protocol: Optional[ProtocolSelection] = None
 
 
 def parse_yaml_planner_options(contents: str) -> CliYaml:
@@ -81,23 +103,58 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     return CliYaml(**raw)
 
 
-def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOptions:
-    """Load cli options from yaml file path and resolve these to objects
+def nearest_match(a: str, possible: list[str]) -> str:
+    """figure out what *a* might have been meant from *possible*"""
+    # todo: this is using a standard library approach, others are possible
+    return max(
+        possible,
+        key=lambda x: difflib.SequenceMatcher(a=a, b=x).ratio()
+    )
 
-    Parameters
-    ----------
-    path : str
-      path to the yaml file
-    context
-      unused
 
-    Returns
-    -------
-    PlanNetworkOptions : namedtuple
-      a namedtuple with fields 'mapper', 'scorer', 'network_planning_algorithm',
-      and 'solvent' fields.
-      these fields each hold appropriate objects ready for use
-    """
+def apply_onto(settings: SettingsBaseModel, options: dict) -> None:
+    """recursively apply things from options onto settings"""
+    # this is pydantic v1, v2 has different name for this
+    fields = list(settings.__fields__)
+
+    for k, v in options.items():
+        # print(f"doing k='{k}' v='{v}' on {settings.__class__}")
+        if k not in fields:
+            guess = nearest_match(k, fields)
+            raise ValueError(f"Unknown field '{k}', "
+                             f"did you mean '{guess}'?")
+
+        thing = getattr(settings, k)
+        if isinstance(thing, SettingsBaseModel):
+            if not isinstance(v, dict):
+                raise ValueError(f"must set sub-settings '{k}' to dict, "
+                                 f"got: '{v}'")
+            apply_onto(thing, v)
+        else:
+            # print(f'-> setting {k} to {v}')
+            setattr(settings, k, v)
+
+
+def resolve_protocol_choices(options: ProtocolSelection):
+    """Turn Protocol section into a fully formed Protocol"""
+    from openfe.protocols import openmm_rfe
+
+    allowed = {'openmm_rfe'}
+
+    if options.method and options.method.lower() not in allowed:
+        raise ValueError(f"Unsupported protocol {options.method}. "
+                         f"Supported methods are {allowed}")
+    # todo: we only allow one option, so this is hardcoded for now
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol
+    settings = protocol.default_settings()
+    # work through the fields in yaml input and apply these onto settings
+    if options.settings:
+        apply_onto(settings, options.settings)
+
+    return protocol(settings)
+
+
+def load_yaml_planner_options_from_cliyaml(opt: Optional[CliYaml]) -> PlanNetworkOptions:
     from gufe import SolventComponent
     from openfe.setup.ligand_network_planning import (
         generate_radial_network,
@@ -113,15 +170,6 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         default_lomap_score,
     )
     from functools import partial
-
-    if path is not None:
-        with open(path, 'r') as f:
-            raw = f.read()
-
-        # convert raw yaml to normalised pydantic model
-        opt = parse_yaml_planner_options(raw)
-    else:
-        opt = None
 
     # convert normalised inputs to objects
     if opt and opt.mapper:
@@ -164,14 +212,49 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         ligand_network_planner = generate_minimal_spanning_network
 
     # todo: choice of solvent goes here
-    solvent = SolventComponent()
+    if opt and opt.solvent:
+        solvent = SolventComponent()
+    else:
+        solvent = SolventComponent()
+
+    protocol = resolve_protocol_choices(opt.protocol)
 
     return PlanNetworkOptions(
-        mapper_obj,
-        mapping_scorer,
-        ligand_network_planner,
-        solvent,
+        mapper=mapper_obj,
+        scorer=mapping_scorer,
+        ligand_network_planner=ligand_network_planner,
+        solvent=solvent,
+        protocol=protocol,
     )
+
+
+def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOptions:
+    """Load cli options from yaml file path and resolve these to objects
+
+    Parameters
+    ----------
+    path : str
+      path to the yaml file
+    context
+      unused
+
+    Returns
+    -------
+    PlanNetworkOptions : namedtuple
+      a namedtuple with fields 'mapper', 'scorer', 'network_planning_algorithm',
+      and 'solvent' fields.
+      these fields each hold appropriate objects ready for use
+    """
+    if path is not None:
+        with open(path, 'r') as f:
+            raw = f.read()
+
+        # convert raw yaml to normalised pydantic model
+        opt = parse_yaml_planner_options(raw)
+    else:
+        opt = None
+
+    return load_yaml_planner_options_from_cliyaml(opt)
 
 
 _yaml_help = """\
