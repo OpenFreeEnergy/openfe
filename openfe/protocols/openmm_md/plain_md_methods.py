@@ -113,10 +113,10 @@ class PlainMDProtocol(gufe.Protocol):
 
     See Also
     --------
-    openfe.protocols
-    openfe.protocols.openmm_md.PlainMDProtocolSettings
-    openfe.protocols.openmm_md.PlainMDProtocolUnit
-    openfe.protocols.openmm_md.PlainMDProtocolResult
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolSettings`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolUnit`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolResult`
     """
     result_cls = PlainMDProtocolResult
     _settings: PlainMDProtocolSettings

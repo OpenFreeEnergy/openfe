@@ -443,10 +443,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
     See Also
     --------
-    openfe.protocols
-    openfe.protocols.openmm_rfe.RelativeHybridTopologySettings
-    openfe.protocols.openmm_rfe.RelativeHybridTopologyResult
-    openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologySettings`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyResult`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit`
     """
     result_cls = RelativeHybridTopologyProtocolResult
     _settings: RelativeHybridTopologyProtocolSettings
