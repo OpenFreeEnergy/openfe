@@ -14,6 +14,7 @@ Protocol API specification
    :toctree: generated/
 
    RelativeHybridTopologyProtocol
+   RelativeHybridTopologyProtocolUnit
    RelativeHybridTopologyProtocolResult
 
 Protocol Settings
@@ -36,28 +37,6 @@ Below are the settings which can be tweaked in the protocol. The default setting
 
 .. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
 
-.. autopydantic_model:: OpenMMSystemGeneratorFFSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: ThermoSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
 .. autopydantic_model:: AlchemicalSettings
    :model-show-json: False
    :model-show-field-summary: False
@@ -70,72 +49,6 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :member-order: bysource
 
 .. autopydantic_model:: LambdaSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: OpenMMEngineSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: IntegratorSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: MultiStateSimulationSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: OpenFFPartialChargeSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: MultiStateOutputSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: OpenMMSolvationSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False

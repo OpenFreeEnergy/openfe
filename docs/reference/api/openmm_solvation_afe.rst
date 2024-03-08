@@ -14,6 +14,8 @@ Protocol API specification
    :toctree: generated/
 
    AbsoluteSolvationProtocol
+   AbsoluteSolvationVacuumUnit
+   AbsoluteSolvationSolventUnit
    AbsoluteSolvationProtocolResult
 
 Protocol Settings
@@ -37,30 +39,6 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :exclude-members: get_defaults
    :member-order: bysource
 
-.. autopydantic_model:: OpenMMSystemGeneratorFFSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-   :noindex:
-
-.. autopydantic_model:: ThermoSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-   :noindex:
-
 .. autopydantic_model:: AlchemicalSettings
    :model-show-json: False
    :model-show-field-summary: False
@@ -82,39 +60,3 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
-
-.. autopydantic_model:: OpenMMEngineSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-   :noindex:
-
-.. autopydantic_model:: IntegratorSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-   :noindex:
-
-.. autopydantic_model:: MultiStateSimulationSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-   :noindex:

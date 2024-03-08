@@ -1,7 +1,7 @@
-OpenMM Molecular Dynamics Protocol
-==================================
+OpenMM Molecular Dynamics (MD) Protocol
+=======================================
 
-This Protocol implements a standard MD execution for a solvated protein system.
+A Protocol for running MD simulation using OpenMM.
 
 
 Protocol API Specification
@@ -14,6 +14,7 @@ Protocol API Specification
    :toctree: generated/
 
    PlainMDProtocol
+   PlainMDProtocolUnit
    PlainMDProtocolResult
 
 
@@ -32,27 +33,5 @@ Protocol Settings
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
-   :member-order: bysource
-
-.. autopydantic_model:: MDSimulationSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: MDOutputSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
    :member-order: bysource
 
