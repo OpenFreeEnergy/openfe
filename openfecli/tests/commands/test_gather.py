@@ -88,70 +88,34 @@ solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
 
 _EXPECTED_RAW = b"""\
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
-complex	lig_ejm_31	lig_ejm_42	-14.77	0.04
-complex	lig_ejm_31	lig_ejm_42	-14.74	0.04
-complex	lig_ejm_31	lig_ejm_42	-14.94	0.04
-solvent	lig_ejm_31	lig_ejm_42	-15.68	0.03
-solvent	lig_ejm_31	lig_ejm_42	-15.69	0.03
-solvent	lig_ejm_31	lig_ejm_42	-15.64	0.03
-complex	lig_ejm_31	lig_ejm_46	-40.56	0.06
-complex	lig_ejm_31	lig_ejm_46	-40.76	0.05
-complex	lig_ejm_31	lig_ejm_46	-40.90	0.04
-solvent	lig_ejm_31	lig_ejm_46	-39.92	0.04
-solvent	lig_ejm_31	lig_ejm_46	-39.94	0.04
-solvent	lig_ejm_31	lig_ejm_46	-39.95	0.04
-complex	lig_ejm_31	lig_ejm_47	-27.68	0.08
-complex	lig_ejm_31	lig_ejm_47	-27.80	0.06
-complex	lig_ejm_31	lig_ejm_47	-27.51	0.07
-solvent	lig_ejm_31	lig_ejm_47	-27.83	0.05
-solvent	lig_ejm_31	lig_ejm_47	-27.84	0.05
-solvent	lig_ejm_31	lig_ejm_47	-27.88	0.05
-complex	lig_ejm_31	lig_ejm_48	-16.15	0.08
-complex	lig_ejm_31	lig_ejm_48	-15.96	0.07
-complex	lig_ejm_31	lig_ejm_48	-16.01	0.08
-solvent	lig_ejm_31	lig_ejm_48	-16.83	0.06
-solvent	lig_ejm_31	lig_ejm_48	-16.65	0.07
-solvent	lig_ejm_31	lig_ejm_48	-16.77	0.06
-complex	lig_ejm_31	lig_ejm_50	-57.31	0.04
-complex	lig_ejm_31	lig_ejm_50	-57.45	0.04
-complex	lig_ejm_31	lig_ejm_50	-57.37	0.04
-solvent	lig_ejm_31	lig_ejm_50	-58.33	0.04
-solvent	lig_ejm_31	lig_ejm_50	-58.42	0.04
-solvent	lig_ejm_31	lig_ejm_50	-58.19	0.04
-complex	lig_ejm_42	lig_ejm_43	-19.24	0.04
-complex	lig_ejm_42	lig_ejm_43	-18.72	0.05
-complex	lig_ejm_42	lig_ejm_43	-18.94	0.04
-solvent	lig_ejm_42	lig_ejm_43	-20.17	0.03
-solvent	lig_ejm_42	lig_ejm_43	-20.28	0.03
-solvent	lig_ejm_42	lig_ejm_43	-20.23	0.03
-complex	lig_ejm_46	lig_jmc_23	17.31	0.02
-complex	lig_ejm_46	lig_jmc_23	17.37	0.02
-complex	lig_ejm_46	lig_jmc_23	17.35	0.02
-solvent	lig_ejm_46	lig_jmc_23	17.20	0.02
-solvent	lig_ejm_46	lig_jmc_23	17.40	0.02
-solvent	lig_ejm_46	lig_jmc_23	17.30	0.02
-complex	lig_ejm_46	lig_jmc_27	15.84	0.03
-complex	lig_ejm_46	lig_jmc_27	15.79	0.03
-complex	lig_ejm_46	lig_jmc_27	15.80	0.03
-solvent	lig_ejm_46	lig_jmc_27	16.16	0.03
-solvent	lig_ejm_46	lig_jmc_27	16.01	0.03
-solvent	lig_ejm_46	lig_jmc_27	16.07	0.03
-complex	lig_ejm_46	lig_jmc_28	23.43	0.04
-complex	lig_ejm_46	lig_jmc_28	23.29	0.04
-complex	lig_ejm_46	lig_jmc_28	23.17	0.04
-solvent	lig_ejm_46	lig_jmc_28	23.67	0.03
-solvent	lig_ejm_46	lig_jmc_28	23.61	0.03
-solvent	lig_ejm_46	lig_jmc_28	23.65	0.03
+complex lig_ejm_31      lig_ejm_42      -14.9   0.8
+solvent lig_ejm_31      lig_ejm_42      -15.7   0.8
+complex lig_ejm_31      lig_ejm_46      -40.7   0.8
+solvent lig_ejm_31      lig_ejm_46      -39.8   0.8
+complex lig_ejm_31      lig_ejm_47      -27.8   0.8
+solvent lig_ejm_31      lig_ejm_47      -27.8   0.8
+complex lig_ejm_31      lig_ejm_48      -16.2   0.8
+solvent lig_ejm_31      lig_ejm_48      -16.8   0.8
+complex lig_ejm_31      lig_ejm_50      -57.3   0.8
+solvent lig_ejm_31      lig_ejm_50      -58.3   0.8
+complex lig_ejm_42      lig_ejm_43      -19.0   0.8
+solvent lig_ejm_42      lig_ejm_43      -20.3   0.8
+complex lig_ejm_46      lig_jmc_23      17.3    0.8
+solvent lig_ejm_46      lig_jmc_23      17.2    0.8
+complex lig_ejm_46      lig_jmc_27      15.9    0.8
+solvent lig_ejm_46      lig_jmc_27      16.0    0.8
+complex lig_ejm_46      lig_jmc_28      23.1    0.8
+solvent lig_ejm_46      lig_jmc_28      23.5    0.8
 """
 
 
-@pytest.mark.parametrize('report', ["", "dg", "ddg"])
+@pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 def test_gather(results_dir, report):
     expected = {
         "": _EXPECTED_DG,
         "dg": _EXPECTED_DG,
         "ddg": _EXPECTED_DDG,
-        "dg-raw": _EXPECTED_DG_RAW,
+        "raw": _EXPECTED_RAW,
     }[report]
     runner = CliRunner()
 
