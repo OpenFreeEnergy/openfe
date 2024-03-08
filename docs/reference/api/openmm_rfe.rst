@@ -1,6 +1,8 @@
 OpenMM Relative Free Energy Protocol
 ====================================
 
+.. _rfe protocol api:
+
 This section provides details about the OpenMM Relative Free Energy Protocol
 implemented in OpenFE.
 
@@ -34,6 +36,12 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
    :member-order: bysource
+
+
+Protocol Specific Settings Classes
+----------------------------------
+
+Below are Settings classes which are unique to the `RelativeHybridTopologyProtocol`.
 
 .. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
 

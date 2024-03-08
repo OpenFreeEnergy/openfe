@@ -1,6 +1,8 @@
 OpenMM Molecular Dynamics (MD) Protocol
 =======================================
 
+.. _md protocol api:
+
 A Protocol for running MD simulation using OpenMM.
 
 

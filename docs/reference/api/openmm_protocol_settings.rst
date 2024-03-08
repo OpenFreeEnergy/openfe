@@ -1,14 +1,23 @@
 OpenMM Protocol Settings
 ========================
 
-This page documents settings re-used by several OpenMM-based Protocols.
+This page documents the Settings classes used by OpenMM-based Protocols.
 
-Settings which are specific to a Protocol (e.g. LambdaSettings) are documented
-in the Protocol's individual documentation page.
+Details on which of these Settings classes are used by a given Protocol
+can be found on the individual Protocol API reference documentation pages:
+
+* :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
+* :ref:`OpenMM Relative Free Energy <rfe protocol api>`
+* :ref:`OpenMM Molecular Dynamics Protocol <md protocol api>`
 
 
 Shared OpenMM Protocol Settings
 -------------------------------
+
+The following are Settings clases which are shared between multiple
+OpenMM-based Protocols. Please note that not all Protocols use these
+Settings classes.
+
 
 .. module:: openfe.protocols.openmm_utils.omm_settings
 
@@ -106,12 +115,10 @@ Shared MultiState OpenMM Protocol Settings
 
 Protocol Settings shared between MultiState simulation protocols.
 
-These currently include the OpenMM Absolute and Relative Free Energy Protocols.
+These currently include the following Protocols:
 
-
-.. seealso:
-   :class:`openfe.protocol.openmm_rfe.RelativeHybridTopologyProtocol`
-   :class:`openfe.prtoocol.openmm_afe.AbsoluteSolvationProtocol`
+* :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
+* :ref:`OpenMM Relative Free Energy <rfe protocol api>`
 
 
 .. autopydantic_model:: MultiStateOutputSettings

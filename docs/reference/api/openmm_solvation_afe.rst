@@ -1,6 +1,8 @@
 OpenMM Absolute Solvation Free Energy Protocol
 ==============================================
 
+.. _afe solvation protocol api:
+
 This section provides details about the OpenMM Absolute Solvation Free Energy Protocol
 implemented in OpenFE.
 
@@ -38,6 +40,13 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :inherited-members: SettingsBaseModel
    :exclude-members: get_defaults
    :member-order: bysource
+
+
+Protocol Specific Settings Classes
+----------------------------------
+
+Below are Settings classes which are unique to the `AbsoluteSolvationProtocol`.
+
 
 .. autopydantic_model:: AlchemicalSettings
    :model-show-json: False
