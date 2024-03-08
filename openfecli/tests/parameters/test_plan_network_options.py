@@ -146,3 +146,18 @@ protocol:
 
     with pytest.raises(ValueError, match="Unsupported protocol method 'wizardry'. Supported methods are"):
         plan_network_options.load_yaml_planner_options_from_cliyaml(cliyaml)
+
+
+def test_bad_protocol_settings_input():
+    # input to modifying settings object must be dict
+    # i.e. can't set `simulation_settings = 4'
+    yaml = """\
+protocol:
+  method: openmm_rfe
+  settings:
+    simulation_settings: 24 
+"""
+    cliyaml = plan_network_options.parse_yaml_planner_options(yaml)
+
+    with pytest.raises(ValueError, match="must set sub-settings 'simulation_settings' to dict"):
+        plan_network_options.load_yaml_planner_options_from_cliyaml(cliyaml)
