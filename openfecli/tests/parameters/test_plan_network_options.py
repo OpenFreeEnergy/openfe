@@ -44,7 +44,7 @@ network:
 def protocol_settings_yaml():
     return """\
 protocol:
-  method: openmm_rfe
+  method: RelativeHybridTopologyProtocol
   settings:
     protocol_repeats: 2
     simulation_settings:
@@ -87,7 +87,7 @@ def test_parsing_protocol_yaml(protocol_settings_yaml):
     d = plan_network_options.parse_yaml_planner_options(protocol_settings_yaml)
 
     assert d
-    assert d.protocol.method == 'openmm_rfe'
+    assert d.protocol.method == 'relativehybridtopologyprotocol'
     assert d.protocol.settings['protocol_repeats'] == 2
     assert d.protocol.settings['simulation_settings']['production_length'] == '7.5 ns'
 
@@ -112,7 +112,7 @@ def test_nearest_match():
 
     yaml = """\
 protocol:
-  method: openmm_rfe
+  method: RelativeHybridTopologyProtocol
   settings:
     simulation_settings:
       production: 5 ns
@@ -153,7 +153,7 @@ def test_bad_protocol_settings_input():
     # i.e. can't set `simulation_settings = 4'
     yaml = """\
 protocol:
-  method: openmm_rfe
+  method: RelativeHybridTopologyProtocol
   settings:
     simulation_settings: 24 
 """
