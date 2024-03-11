@@ -210,17 +210,32 @@ def get_omm_modeller(
 
     # Add solvent if neeeded
     if solvent_comp is not None:
-        conc = solvent_comp.ion_concentration
-        pos = solvent_comp.positive_ion
-        neg = solvent_comp.negative_ion
+        # Do unit conversions if necessary
+        solvent_padding = None
+        box_size = None
+        box_vectors = None
+
+        if solvent_settings.solvent_padding is not None:
+            solvent_padding = to_openmm(solvent_settings.solvent_padding)
+
+        if solvent_settings.box_size is not None:
+            box_size = to_openmm(solvent_settings.box_size)
+
+        if solvent_settings.box_vectors is not None:
+            box_vectors = to_openmm(solvent_settings.box_vectors)
 
         system_modeller.addSolvent(
             omm_forcefield,
             model=solvent_settings.solvent_model,
-            padding=to_openmm(solvent_settings.solvent_padding),
-            positiveIon=pos, negativeIon=neg,
-            ionicStrength=to_openmm(conc),
+            padding=solvent_padding,
+            positiveIon=solvent_comp.positive_ion,
+            negativeIon=solvent_comp.negative_ion,
+            ionicStrength=to_openmm(solvent_comp.ion_concentration),
             neutralize=solvent_comp.neutralize,
+            boxSize=box_size,
+            boxVectors=box_vectors,
+            boxShape=solvent_settings.box_shape,
+            numAdded=solvent_settings.number_of_solvent_molecules,
         )
 
         all_resids = np.array(

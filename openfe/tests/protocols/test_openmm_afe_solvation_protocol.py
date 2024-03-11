@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import itertools
 import json
+from math import sqrt
 import sys
 import pytest
 from unittest import mock
@@ -461,6 +462,57 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     with tmpdir.as_cwd():
         sol_sampler = sol_unit[0].run(dry=True)['debug']['sampler']
         assert sol_sampler.is_periodic
+
+
+def test_dry_run_solv_benzene_noncubic(
+    benzene_modifications, tmpdir
+):
+    s = AbsoluteSolvationProtocol.default_settings()
+    s.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
+    s.solvation_settings.box_shape = 'dodecahedron'
+
+    protocol = AbsoluteSolvationProtocol(settings=s)
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    sol_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
+
+    with tmpdir.as_cwd():
+        sampler = sol_unit[0].run(dry=True)['debug']['sampler']
+        system = sampler._thermodynamic_states[0].system
+
+        vectors = system.getDefaultPeriodicBoxVectors()
+        width = float(from_openmm(vectors)[0][0].to('nanometer').m)
+
+        # dodecahedron has the following shape:
+        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+
+        expected_vectors = [
+            [width, 0, 0],
+            [0, width, 0],
+            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+        ] * offunit.nanometer
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors)
+        )
 
 
 def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
