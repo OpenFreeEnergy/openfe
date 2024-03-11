@@ -136,19 +136,42 @@ def apply_onto(settings: SettingsBaseModel, options: dict) -> None:
 
 
 def resolve_protocol_choices(options: Optional[ProtocolSelection]):
-    """Turn Protocol section into a fully formed Protocol"""
-    from openfe.protocols import openmm_rfe
+    """Turn Protocol section into a fully formed Protocol
 
-    allowed = {'openmm_rfe'}
+    Returns
+    -------
+    Optional[Protocol]
 
-    if options and options.method and options.method.lower() not in allowed:
+    Raises
+    ------
+    ValueError
+      if an unsupported method name is input
+    """
+    if not options:
+        return None
+
+    # issue #644, make this selection not static
+    allowed = {'RelativeHybridTopologyProtocol',
+               # 'AbsoluteSolvationProtocol',
+               # 'PlainMDProtocol',
+               }
+    if options.method.lower() == 'relativehybridtopologyprotocol':
+        from openfe.protocols import openmm_rfe
+        protocol = openmm_rfe.RelativeHybridTopologyProtocol
+    # This wouldn't be reachable from any plan command, so leave out
+    #elif options.method.lower() == 'absolutesolvationprotocol':
+    #    from openfe.protocols import openmm_afe
+    #    protocol = openmm_afe.AbsoluteSolvationProtocol
+    #elif options.method.lower() == 'plainmdprotocol':
+    #    from openfe.protocols import openmm_md
+    #    protocol = openmm_md.PlainMDProtocol
+    else:
         raise ValueError(f"Unsupported protocol method '{options.method}'. "
                          f"Supported methods are {','.join(allowed)}")
-    # todo: we only allow one option, so this is hardcoded for now
-    protocol = openmm_rfe.RelativeHybridTopologyProtocol
+
     settings = protocol.default_settings()
     # work through the fields in yaml input and apply these onto settings
-    if options and options.settings:
+    if options.settings:
         apply_onto(settings, options.settings)
 
     return protocol(settings)
@@ -289,19 +312,7 @@ while the generate_minimal_redundant_network function used to plan the network
 
 The Settings of a Protocol can also be customised in this settings yaml file.
 To do this, the nested variable names from the Python API are directly converted
-to the nested yaml format. For example, to customise the production length of
-the RFE Protocol, from Python would require a line of code such as::
-
-   settings.simulation_settings.production_length = '5.4 ns'
-   
-This would be achieved via the yaml file as::
-
-  protocol:
-    method: RelativeHybridTopologyProtocol
-    settings:
-      simulation_settings:
-        production_length: 5.4 ns
-
+to the nested yaml format. 
 """
 
 
