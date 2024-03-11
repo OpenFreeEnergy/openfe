@@ -1,4 +1,4 @@
 Relative Hybrid Topology Protocol
 =================================
 
-issue #xxx
+issue #743
