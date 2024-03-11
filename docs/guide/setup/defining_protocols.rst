@@ -8,9 +8,11 @@ a computational method for estimating the free energy difference between two che
 
 Just as there are multiple possible methods for estimating free energy differences,
 there are multiple available Protocols to choose from.
-Included in the ``openfe`` package are the
-:class:`.RelativeHybridTopologyProtocol` and
-the :class:`.AbsoluteSolvationProtocol`.
+For example, included in the ``openfe`` package are the
+:class:`.RelativeHybridTopologyProtocol`,
+:class:`.AbsoluteSolvationProtocol`,
+and :class:`.PlainMDProtocol`;
+for a full list see :ref:`userguide_protocols`.
 This selection is being built upon,
 both by the openfe development team as well as with external academic groups.
 
@@ -54,12 +56,13 @@ Up until this point, the ``Protocol`` has not involved any of the specific chemi
 This means that a single defined ``Protocol`` can be applied to multiple pairs of ``ChemicalSystem`` objects
 to measure each difference.
 The :class:`.Transformation` object is a handy container for connecting two ``ChemicalSystem`` objects
-and the ``Protocol`` together, and represents a single thermodynamic leg.
+and the ``Protocol`` together.
 Often a :class:`.LigandAtomMapping` object is also required to define the correspondence of atoms,
 for further details refer to the :ref:`userguide_mappings` section.
 
 The ``Transformation`` object is then capable of creating computational work via the :func:`.Transformation.create()` method.
 For further details on this, refer to the :ref:`userguide_execution` section.
-Finaly, a ``Protocol`` is responsible for using the data generated in this process to generate an estimate of the
-free energy difference.
-For further details on this refer to the :ref:`userguide_results` section.
+Finaly, a ``Protocol`` is responsible for using the data generated in this process to perform further analysis,
+such as generating an estimate of the free energy difference.
+For further details on this refer to the :ref:`userguide_results` section,
+or the details of each method in :ref:`userguide_protocols`.

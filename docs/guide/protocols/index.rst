@@ -1,3 +1,5 @@
+.. _userguide_protocols:
+
 Details of Specific Protocols
 =============================
 
