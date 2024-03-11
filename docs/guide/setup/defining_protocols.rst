@@ -43,7 +43,7 @@ For example to customise the production run length of the RFE Protocol::
    from openfe.protocols import openmm_rfe
 
    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-   settings.simulation_settings = '10 ns'
+   settings.simulation_settings.production_length = '10 ns'
 
    prot = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
