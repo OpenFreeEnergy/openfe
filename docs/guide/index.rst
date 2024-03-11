@@ -8,3 +8,4 @@ User Guide
     execution/index
     results/index
     cli/index
+    protocols/index
