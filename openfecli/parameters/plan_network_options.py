@@ -259,15 +259,18 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 _yaml_help = """\
 Path to planning settings yaml file
 
-Currently it can contain sections for customising the
-atom mapper and network planning algorithm,
-these are addressed using a `mapper:` or `network:` key in the yaml file.
-The algorithm to be used for these sections is then specified by the `method:` key. 
-For choosing mappers, either the LomapAtomMapper or KartografAtomMapper are allowed choices,
-while for the network planning algorithm either the generate_minimal_spanning_tree or
-generate_minimal_redundant_network options are allowed.
-Finally, a `settings:` key can be given to customise the algorithm,
-with allowable options corresponding to the keyword arguments of the Python API for these algorithms.
+Currently it can contain sections for customising the atom mapper, network
+planning algorithm, and protocol. These are addressed using a ``mapper:``,
+``network:`` or ``protocol:`` key in the yaml file.  The algorithm to be used
+for these sections is then specified by the ``method:`` key. Finally, a
+``settings:`` key can be given to customise the algorithm, with allowable
+options corresponding to the keyword arguments of the Python API for these
+algorithms.
+
+For choosing mappers, either the ``LomapAtomMapper`` or ``KartografAtomMapper``
+are allowed choices. For the network planning algorithm either the
+``generate_minimal_spanning_tree``, ``generate_radial_network`` or
+``generate_minimal_redundant_network`` options are allowed.
 
 For example, this is a valid settings yaml file to specify that
 the Lomap atom mapper should be used forbidding element changes,
@@ -283,6 +286,22 @@ while the generate_minimal_redundant_network function used to plan the network
     method: generate_minimal_redundant_network
     settings:
       mst_num: 3
+
+The Settings of a Protocol can also be customised in this settings yaml file.
+To do this, the nested variable names from the Python API are directly converted
+to the nested yaml format. For example, to customise the production length of
+the RFE Protocol, from Python would require a line of code such as::
+
+   settings.simulation_settings.production_length = '5.4 ns'
+   
+This would be achieved via the yaml file as::
+
+  protocol:
+    method: RelativeHybridTopologyProtocol
+    settings:
+      simulation_settings:
+        production_length: 5.4 ns
+
 """
 
 
