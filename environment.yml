@@ -44,6 +44,5 @@ dependencies:
   - sphinx-click
   - pip:
     - sphinx-toolbox
-    - espaloma_charge
     - openff-nagl-models>=0.1.2
     - git+https://github.com/OpenFreeEnergy/gufe@main
