@@ -1,5 +1,5 @@
-Defining Protocols
-==================
+Creating and using Protocols
+============================
 
 With a thermodynamic cycle of interest identified and represented using `ChemicalSystem` objects,
 the next step is to choose a method for estimating the free energy differences.
