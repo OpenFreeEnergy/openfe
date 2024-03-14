@@ -458,6 +458,18 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
+    """
+    Relative Free Energy calculations using OpenMM and OpenMMTools.
+
+    Based on `Perses <https://github.com/choderalab/perses>`_
+
+    See Also
+    --------
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologySettings`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyResult`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit`
+    """
     result_cls = RelativeHybridTopologyProtocolResult
     _settings: RelativeHybridTopologyProtocolSettings
 

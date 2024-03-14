@@ -396,11 +396,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
     See Also
     --------
-    openfe.protocols
-    openfe.protocols.openmm_afe.AbsoluteSolvationSettings
-    openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult
-    openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit
-    openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSettings`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit`
     """
     result_cls = AbsoluteSolvationProtocolResult
     _settings: AbsoluteSolvationSettings
@@ -754,6 +754,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
 
 class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
+    """
+    Protocol Unit for the vacuum phase of an absolute solvation free energy
+    """
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -848,6 +851,9 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
+    """
+    Protocol Unit for the solvent phase of an absolute solvation free energy
+    """
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
