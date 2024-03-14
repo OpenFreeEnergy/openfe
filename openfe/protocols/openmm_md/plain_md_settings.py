@@ -15,7 +15,10 @@ from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings, MDOutputSettings,
     OpenFFPartialChargeSettings,
 )
-from gufe.settings import SettingsBaseModel
+from gufe.settings import (
+    SettingsBaseModel,
+    OpenMMSystemGeneratorFFSettings
+)
 try:
     from pydantic.v1 import validator
 except ImportError:
@@ -39,6 +42,7 @@ class PlainMDProtocolSettings(Settings):
         return v
 
     # Things for creating the systems
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
     partial_charge_settings: OpenFFPartialChargeSettings
     solvation_settings: OpenMMSolvationSettings
 
