@@ -793,6 +793,19 @@ class TestProtocolResult:
                 assert isinstance(far1[k], np.ndarray)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
+    def test_get_frwd_reverse_none_return(self, key, protocolresult):
+        # fetch the first result of type key
+        data = [i for i in protocolresult.data[key].values()][0][0]
+        # set the output to None
+        data.outputs['forward_and_reverse_energies'] = None
+
+        # now fetch the analysis results and expect a warning
+        wmsg = ("were found in the forward and reverse dictionaries "
+                f"of the repeats of the {key}")
+        with pytest.warns(UserWarning, match=wmsg):
+            protocolresult.get_forward_and_reverse_energy_analysis()
+
+    @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_overlap_matrices(self, key, protocolresult):
         ovp = protocolresult.get_overlap_matrices()
 
