@@ -249,7 +249,7 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    checkpoint_interval: FloatQuantity['picosecond'] = 250 * unit.picosecond
     """
     Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
