@@ -302,18 +302,13 @@ class SimulationSettings(SettingsBaseModel):
     """Number of minimization steps to perform. Default 5000."""
     equilibration_length: FloatQuantity['nanosecond']
     """
-    Length of the equilibration phase in units of time. The total number of
-    steps from this equilibration length
-    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
-    must be a multiple of the value defined for
-    :class:`AlchemicalSamplerSettings.steps_per_iteration`.
+    Length of the equilibration phase in units of time.
+    Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
     production_length: FloatQuantity['nanosecond']
     """
-    Length of the production phase in units of time. The total number of
-    steps from this production length (i.e.
-    ``production_length`` / :class:`IntegratorSettings.timestep`) must be
-    a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
+    Length of the production phase in units of time.
+    Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
 
     @validator('equilibration_length', 'production_length')
