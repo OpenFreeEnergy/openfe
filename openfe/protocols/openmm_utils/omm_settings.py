@@ -135,7 +135,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     """
     number_of_conformers: Optional[int] = None
     """
-    Number of conformers to generate as part of the partial charge assignement.
+    Number of conformers to generate as part of the partial charge assignment.
 
     If ``None`` (default), the existing conformer of the input
     SmallMoleculeComponent will be used.
@@ -165,13 +165,20 @@ class OpenMMEngineSettings(SettingsBaseModel):
 
     compute_platform: Optional[str] = None
     """
-    OpenMM compute platform to perform MD integration with. If None, will
-    choose fastest available platform. Default None.
+    OpenMM compute platform to perform MD integration with. If ``None``, will
+    choose fastest available platform. Default ``None``.
     """
 
 
 class IntegratorSettings(SettingsBaseModel):
-    """Settings for the LangevinSplittingDynamicsMove integrator"""
+    """Settings for the LangevinDynamicsMove integrator
+
+    Note
+    ----
+    For some Protocols, an MC "move" (e.g. replica exchange swap) is applied
+    at a given frequency. In most Protocols the move frequency is defined in
+    `MultiStateSimulationSettings.time_per_iteration`.
+    """
 
     class Config:
         arbitrary_types_allowed = True
@@ -182,8 +189,8 @@ class IntegratorSettings(SettingsBaseModel):
     """Collision frequency. Default 1.0 / unit.pisecond."""
     reassign_velocities = False
     """
-    If True, velocities are reassigned from the Maxwell-Boltzmann
-    distribution at the beginning of move. Default False.
+    If ``True``, velocities are reassigned from the Maxwell-Boltzmann
+    distribution at the beginning of each MC move. Default ``False``.
     """
     n_restart_attempts = 20
     """
@@ -200,7 +207,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     remove_com: bool = False
     """
-    Whether or not to remove the center of mass motion. Default False.
+    Whether or not to remove the center of mass motion. Default ``False``.
     """
 
     @validator('langevin_collision_rate', 'n_restart_attempts')
@@ -339,10 +346,10 @@ class MultiStateSimulationSettings(SimulationSettings):
     ----
     * It'd be great if we could pass in the sampler object rather than using
       strings to define which one we want.
-    * Make n_replicas optional such that: If `None` or greater than the number
-      of lambda windows set in :class:`AlchemicalSettings`, this will default
-      to the number of lambda windows. If less than the number of lambda
-      windows, the replica lambda states will be picked at equidistant
+    * Make n_replicas optional such that: If ``None`` or greater than the
+      number of lambda windows set in :class:`LambdaSettings`, this will
+      default to the number of lambda windows. If less than the number of
+      lambda windows, the replica lambda states will be picked at equidistant
       intervals along the lambda schedule.
     """
 
