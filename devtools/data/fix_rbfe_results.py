@@ -30,11 +30,9 @@ def replace_settings(fn, new_settings):
         data = json.load(f)
 
     for k in data['protocol_result']['data']:
-        # s = data['protocol_result']['data'][k][0]['inputs']['settings']
         data['protocol_result']['data'][k][0]['inputs']['settings'] = new_settings
 
     for k in data['unit_results']:
-        # s = data['unit_results'][k]['inputs']['settings']
         data['unit_results'][k]['inputs']['settings'] = new_settings
 
     with open(fn, 'w') as f:
