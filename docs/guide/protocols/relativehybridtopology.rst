@@ -15,7 +15,9 @@ and in the solvent (ΔG\ :sub:`solv`\) and vacuum (ΔG\ :sub:`vacuum`\) for RHFE
 .. figure:: img/rbfe_thermocycle.png
    :scale: 50%
 
-This RBFE protocol uses a hybrid topology approach to represent the two
+   Thermodynamic cycle for the relative binding free energy protocol.
+   
+The :class:`.RelativeHybridTopologyProtocol` uses a hybrid topology approach to represent the two
 ligands, meaning that a single set of coordinates is used to represent the
 common core of the two ligands while the atoms that differ between the two
 ligands are represented separately. An atom map defines which atoms belong
