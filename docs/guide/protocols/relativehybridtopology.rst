@@ -8,10 +8,12 @@ provided, the protocol either calculates the relative binding free energy
 cycle, one ligand is converted into the other ligand by alchemically 
 transforming the atoms that vary between the two ligands. The 
 transformation is carried out in both environments, meaning both in the 
-solvent (ΔGsolvent) and in the binding site (ΔGsite) for RBFE calculations 
-and in the solvent (ΔG\ :sub:`solvent`\) and vacuum (ΔGvacuum) for RHFE calculations.
+solvent (ΔG\ :sub:`solv`\) and in the binding site (ΔG\ :sub:`site`\) for RBFE calculations 
+and in the solvent (ΔG\ :sub:`solv`\) and vacuum (ΔG\ :sub:`vacuum`\) for RHFE calculations.
 
-.. image:: img/rbfe_thermocycle.png
+.. _label: Thermodynamic cycle for the relative binding free energy protocol
+.. figure:: img/rbfe_thermocycle.png
+   :scale: 50%
 
 This RBFE protocol uses a hybrid topology approach to represent the two
 ligands, meaning that a single set of coordinates is used to represent the
