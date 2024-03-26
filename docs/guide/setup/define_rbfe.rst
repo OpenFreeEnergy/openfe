@@ -3,23 +3,6 @@
 Defining RBFE Calculations
 ==========================
 
-The relative free energy calculation approach calculates the difference in 
-potency between two similar ligands. In a thermodynamic cycle, one ligand is 
-converted into the other ligand by alchemically transforming the atoms that 
-vary between the two ligands, both in the solvent (ΔGsolvent) and in the 
-binding site (ΔGsite). 
-
-.. image:: rbfe_thermocycle.png
-
-This RBFE protocol uses a hybrid topology approach to represent the two 
-ligands, meaning that a single set of coordinates is used to represent the 
-common core of the two ligands while the atoms that differ between the two 
-ligands are represented separately. An atom map defines which atoms belong 
-to the core (mapped atoms) and which atoms are unmapped and represented 
-separately. During the alchemical transformation, mapped atoms are switched 
-from the type in one ligand to the type in the other ligands, while unmapped 
-atoms are switched on or off, depending on which ligand they belong to.
-
 An :class:`.AlchemicalNetwork` for relative binding free energy calculations
 can be easily created with a :class:`.RBFEAlchemicalNetworkPlanner`.
 
