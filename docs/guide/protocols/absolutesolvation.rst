@@ -12,7 +12,7 @@ In this cycle, the interactions of the molecule are decoupled, meaning turned of
 The absolute hydration free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
 
 .. figure:: img/ahfe_thermocycle.png
-   :scale: 50%
+   :scale: 100%
 
    Thermodynamic cycle for the absolute hydration free energy protocol.
 
