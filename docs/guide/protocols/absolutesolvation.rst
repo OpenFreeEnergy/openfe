@@ -16,6 +16,8 @@ The absolute hydration free energy is then obtained via summation of free energy
 
    Thermodynamic cycle for the absolute hydration free energy protocol.
 
-The :class:`.AbsoluteSolvationProtocol` turns off all intermolecular interactions (meaning molecular interactions between the molecule and its environment), while retaining the intramolecular bonded and nonbonded interactions.
-Intermolecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. All MD simulations are run in the NPT ensemble.
+the coulombic interactions of the molecule are fully turned off (annihilated), while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated),
+while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+Molecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. All MD simulations are run in the NPT ensemble.
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator). 
