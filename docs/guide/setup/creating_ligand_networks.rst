@@ -55,7 +55,9 @@ Visualising LigandNetwork
    This functionality currently lives in Konnektor our future network package, which will be integrated to OpenFE soon.
 
 It is possible to visualize the ``LigandNetwork``. This can be done as follows:
+
 .. code::
+
    from konnektor.visualization.visualization import draw_ligand_network
 
    fig = draw_ligand_network(ligand_network, title="Radial Graph");
