@@ -1,6 +1,9 @@
 Absolute Solvation Protocol
 ===========================
 
+Overview
+--------
+
 The absolute solvation protocol calculates the free energy change 
 associate with transferring a molecule from vacuum into a solvent.
 
@@ -16,6 +19,38 @@ The absolute hydration free energy is then obtained via summation of free energy
 
    Thermodynamic cycle for the absolute hydration free energy protocol.
 
+Scientific Details
+-----------------
+
+Partial annhilation scheme
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated),
+while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+
+The lambda schedule
+~~~~~~~~~~~~~~~
+
+Molecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
+
+Simulation details
+~~~~~~~~~~~~~~~~~~
+All MD simulations are run in the NPT ensemble. cutoffs, and integrators
+
+Getting the free energy estimate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
+what you can get out of the results object's methods
+
+Simulation overview
+-------------------
+
+This section should essentially give an overview of the DAG and what each unit is doing.
+
+For example we would want to say that each unit is doing a non-alchemical equilibration followed by an alchemical production.
+
+We would also mention how the DAG constructs and runs both the vacuum and solvent legs concurrently.
+
 the coulombic interactions of the molecule are fully turned off (annihilated), while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
 In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated),
 while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
@@ -23,27 +58,30 @@ Molecular interactions are turned off during an alchemical path with a discrete 
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
 
 See Also
-~~~~~~~~
+-------
 
 Setting up RFE calculations
-+++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:ref:`define_rbfe`
-:ref:`define_rhfe`
+* :ref:`Setting up RBFE calculations <define_rbfe>`
+* :ref:`Setting up RHFE calculations <define_rhfe>`
 
 Tutorials
-+++++++++
+~~~~~~~~~
 
 <Insert relevant tutorial page, note: see issue 781>
 
 Cookbooks
-+++++++++
+~~~~~~~~~
 
 Maybe a list of relevant cookbooks, otherwise just a link to the cookbook page.
 
 API Documentation
-+++++++++++++++++
+~~~~~~~~~~~~~~~~~
 
-:ref:`afe solvation protocol api`
-<Insert Protocol API docs link>
-<Insert Protocol Settings API docs link> 
+* :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
+* :ref:`OpenMM Protocol Settings <openmm protocol settings api>`
+
+References
+----------
+Some relevant references that folks can look at, maybe links to pymbar/yank/perses/openmmtools/openmm/etc...

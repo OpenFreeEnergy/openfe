@@ -1,6 +1,6 @@
 OpenMM Protocol Settings
 ========================
-
+.. _openmm protocol settings api:
 This page documents the Settings classes used by OpenMM-based Protocols.
 
 Details on which of these Settings classes are used by a given Protocol
