@@ -3,6 +3,6 @@
    "extra-media": [
       "../ExampleNotebooks/ahfe_tutorial/ahfe_json/",
       "../ExampleNotebooks/cookbook/assets/benzene.sdf",
-      "../ExampleNotebooks/ahfe_tutorial/ahfe_cycle.png",
+      "../ExampleNotebooks/ahfe_tutorial/ahfe_cycle.png"
    ]
 }
