@@ -17,20 +17,15 @@ instructions can be found under:
 
 .. toctree::
 
-    define_rbfe
-    define_rhfe
-
-.. toctree (hidden): chemical components and chemical systems
+   chemical_systems_and_thermodynamic_cycles
+   creating_atom_mappings_and_scores
+   defining_protocols
+   creating_ligand_networks
+   alchemical_network
+   define_rbfe
+   define_rhfe
 
 If you intend to set up your alchemical network using the Python interface,
 but to run it using the CLI, you will want to export the network in the same
 format used by the CLI. See :ref:`dumping transformations <dumping_transformations>`
 for more details.
-
-.. TODO link to docs on outputting the network
-
-.. toctree::
-   :hidden:
-
-   define_ligand_network
-

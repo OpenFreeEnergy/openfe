@@ -1,3 +1,5 @@
+.. _userguide_results:
+
 Working with Results
 ====================
 
