@@ -20,7 +20,7 @@ The absolute hydration free energy is then obtained via summation of free energy
    Thermodynamic cycle for the absolute hydration free energy protocol.
 
 Scientific Details
------------------
+------------------
 
 Partial annhilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,7 +29,7 @@ In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the mol
 while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
 
 The lambda schedule
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 Molecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 
@@ -53,7 +53,7 @@ For example we would want to say that each unit is doing a non-alchemical equili
 We would also mention how the DAG constructs and runs both the vacuum and solvent legs concurrently.
 
 See Also
--------
+--------
 
 Setting up RFE calculations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
