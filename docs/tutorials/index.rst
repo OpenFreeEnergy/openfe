@@ -50,6 +50,18 @@ tutorial walks users through how to run a conventional (non-alchemical) MD
 simulation of benzene bound to T4-lysozyme L99A in OpenFE.
 
 
+Post Simulation Analysis
+------------------------
+
+Analyzing and Plotting RFE Networks with Cinnabar
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :any:`Cinnabar tutorial <plotting_with_cinnabar>` demonstrates how to
+use the `Cinnabar Python package <https://github.com/OpenFreeEnergy/cinnabar>`
+to analyze (e.g. generating MLE estimates of absolute free energies)
+and plot networks of relative free energy results.
+
+
 .. toctree::
     :maxdepth: 1
     :hidden:
