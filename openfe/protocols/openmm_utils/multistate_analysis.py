@@ -13,6 +13,37 @@ from openff.units import unit, ensure_quantity
 from pymbar.utils import ParameterError
 from openfe.analysis import plotting
 from typing import Optional, Union
+from openfe.due import due, Doi
+
+
+due.cite(Doi("10.5281/zenodo.596622"),
+         description="OpenMMTools",
+         path="openfe.protocols.openmm_utils.multistate_analysis",
+         cite_module=True)
+
+
+due.cite(Doi("10.1063/1.2978177"),
+         description="MBAR paper",
+         path="openfe.protocols.openmm_utils.multistate_analysis",
+         cite_module=True)
+
+
+due.cite(Doi("10.1021/ct0502864"),
+         description="MBAR timeseries algorithms",
+         path="openfe.protocols.openmm_utils.multistate_analysis",
+         cite_module=True)
+
+
+due.cite(Doi("10.1021/acs.jctc.5b00784"),
+         description="Automatic equilibration detection method",
+         path="openfe.protocols.openmm_utils.multistate_analysis",
+         cite_module=True)
+
+
+due.cite(Doi("10.5281/zenodo.596220"),
+         description="pyMBAR zenodo",
+         path="openfe.protocols.openmm_utils.multistate_analysis",
+         cite_module=True)
 
 
 class MultistateEquilFEAnalysis:
