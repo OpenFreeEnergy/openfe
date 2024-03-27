@@ -5,11 +5,23 @@ Tutorials
 
 OpenFE has several tutorial notebooks which are maintained on our
 `Example Notebooks repository <https://github.com/OpenFreeEnergy/ExampleNotebooks>`_.
-For new users, we recommend the following two:
 
+Here is a list of key tutorials which cover the different aspects of the
+OpenFE tooling:
+
+
+Relative Free Energies
+----------------------
+
+Python API Showcase
+~~~~~~~~~~~~~~~~~~~
+
+Our :any:`shocase notebook <showcase_notebook>` walks users through
+how to use the main Python API components of OpenFE to create a
+relative binding free energy calculation.
 
 Relative Free Energies CLI tutorial
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :any:`Relative Free Energies with the OpenFE CLI <rbfe_cli_tutorial>`
 tutorial walks users through how to use the OpenFE command line to calculate
@@ -18,19 +30,25 @@ relative binding free energies of various ligands against the TYK2 target.
 Associated with it is also a :any:`notebook <rbfe_python_tutorial>`
 for how to achieve the same outcomes using the Python API.
 
-Python API Showcase
--------------------
 
-Our :any:`showcase notebook <showcase_notebook>`
-walks users through how to use the main components of OpenFE to create a
-relative binding free energy calculation.
+Absolute Free Energies
+----------------------
 
-Molecular Dynamics (MD) protocol tutorial
------------------------------------------
+Absolute Solvation Free Energies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :any:`Absolute Solvation Free Energy Protocol <ahfe_tutorial>` tutorial
+walks users through how to calculate the hydration free energy of a benzene
+ligand.
+
+
+Molecular Dynamics (MD)
+-----------------------
 
 The :any:`MD protocol <md_tutorial>`
-tutorial walks users through how to run an MD simulation of benzene bound to 
-T4-lysozyme L99A in OpenFE.
+tutorial walks users through how to run a conventional (non-alchemical) MD
+simulation of benzene bound to T4-lysozyme L99A in OpenFE.
+
 
 .. toctree::
     :maxdepth: 1
