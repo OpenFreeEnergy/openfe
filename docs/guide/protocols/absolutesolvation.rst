@@ -58,8 +58,8 @@ See Also
 Setting up RFE calculations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :ref:`Setting up RBFE calculations <define_rbfe>`
-* :ref:`Setting up RHFE calculations <define_rhfe>`
+* :ref:`Setting up RBFE calculations <define-rbfe>`
+* :ref:`Setting up RHFE calculations <define-rhfe>`
 
 Tutorials
 ~~~~~~~~~
