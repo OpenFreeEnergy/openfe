@@ -1,3 +1,4 @@
+.. _userguide_execution:
 
 Execution
 ---------
@@ -12,3 +13,5 @@ create a :class:`.ProtocolResult`.
 
 .. TODO: add information about failures etc...
 
+.. toctree::
+   execution

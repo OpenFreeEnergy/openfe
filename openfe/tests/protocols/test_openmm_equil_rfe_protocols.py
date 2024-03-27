@@ -1543,6 +1543,17 @@ class TestProtocolResult:
                 assert isinstance(far1[k], unit.Quantity)
                 assert far1[k].is_compatible_with(unit.kilojoule_per_mole)
 
+    def test_none_foward_reverse_energies(self, protocolresult):
+        # get the first entry's results
+        data = [i for i in protocolresult.data.values()][0][0]
+        # set the forward and reverse analysis to None
+        data.outputs['forward_and_reverse_energies'] = None
+
+        # now call the getter and expect a user warning
+        wmsg = "One or more ``None`` entries were found in"
+        with pytest.warns(UserWarning, match=wmsg):
+            protocolresult.get_forward_and_reverse_energy_analysis()
+
     def test_get_overlap_matrices(self, protocolresult):
         ovp = protocolresult.get_overlap_matrices()
 

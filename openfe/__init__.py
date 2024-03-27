@@ -5,6 +5,7 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
     Transformation,
+    NonTransformation,
     AlchemicalNetwork,
     LigandAtomMapping,
 )

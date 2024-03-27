@@ -20,17 +20,17 @@ If you already have a Mamba installation, you can install ``openfe`` with:
 
 Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
-Installation with ``mambaforge`` (recommended)
+Installation with ``miniforge`` (recommended)
 ----------------------------------------------
 
-.. _MambaForge: https://github.com/conda-forge/miniforge#mambaforge
+.. _Miniforge: https://github.com/conda-forge/miniforge?tab=readme-ov-file#miniforge
 
-We recommend installing ``openfe`` with `MambaForge`_ because it provides easy
+We recommend installing ``openfe`` with `Miniforge`_ because it provides easy
 installation of other software that ``openfe`` needs, such as OpenMM and
-AmberTools. We recommend ``mambaforge`` because it is faster than ``conda`` and
+AmberTools. We recommend ``miniforge`` because it is faster than ``conda`` and
 comes preconfigured to use ``conda-forge``.
 
-To install and configure ``mambaforge``, you need to know your operating
+To install and configure ``miniforge``, you need to know your operating
 system, your machine architecture (output of ``uname -m``), and your shell
 (in most cases, can be determined from ``echo $SHELL``). Select
 your operating system and architecture from the tool below, and run the
@@ -38,13 +38,13 @@ commands it suggests.
 
 .. raw:: html
 
-    <select id="mambaforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
+    <select id="miniforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
         <option value="Linux">Linux</option>
         <option value="MacOSX">macOS</option>
     </select>
-    <select id="mambaforge-architecture" onchange="updateInstructions()">
+    <select id="miniforge-architecture" onchange="updateInstructions()">
     </select>
-    <select id="mambaforge-shell" onchange="updateInstructions()">
+    <select id="miniforge-shell" onchange="updateInstructions()">
         <option value="bash">bash</option>
         <option value="zsh">zsh</option>
         <option value="tcsh">tcsh</option>
@@ -52,7 +52,7 @@ commands it suggests.
         <option value="xonsh">xonsh</option>
     </select>
     <br />
-    <pre><span id="mambaforge-curl-install"></span></pre>
+    <pre><span id="miniforge-curl-install"></span></pre>
     <script>
       function setArchitectureOptions(os) {
           let options = {
@@ -71,27 +71,27 @@ commands it suggests.
           for (const [val, extra] of choices) {
               htmlString += `<option value="${val}">${val}${extra}</option>`;
           }
-          let arch = document.getElementById("mambaforge-architecture");
+          let arch = document.getElementById("miniforge-architecture");
           arch.innerHTML = htmlString
           updateInstructions()
       }
 
       function updateInstructions() {
-          let cmd = document.getElementById("mambaforge-curl-install");
-          let osElem = document.getElementById("mambaforge-os");
-          let archElem = document.getElementById("mambaforge-architecture");
-          let shellElem = document.getElementById("mambaforge-shell");
+          let cmd = document.getElementById("miniforge-curl-install");
+          let osElem = document.getElementById("miniforge-os");
+          let archElem = document.getElementById("miniforge-architecture");
+          let shellElem = document.getElementById("miniforge-shell");
           let os = osElem[osElem.selectedIndex].value;
           let arch = archElem[archElem.selectedIndex].value;
           let shell = shellElem[shellElem.selectedIndex].value;
-          let filename = "Mambaforge-" + os + "-" + arch + ".sh"
+          let filename = "Miniforge3-" + os + "-" + arch + ".sh"
           let cmdArr = [
               (
                   "curl -OL https://github.com/conda-forge/miniforge/"
                   + "releases/latest/download/" + filename
               ),
               "sh " + filename + " -b",
-              "~/mambaforge/bin/mamba init " + shell,
+              "~/miniforge3/bin/mamba init " + shell,
               "rm -f " + filename,
           ]
           cmd.innerHTML = cmdArr.join("\n")
