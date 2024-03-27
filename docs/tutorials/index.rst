@@ -33,3 +33,5 @@ relative binding free energy calculation.
     rbfe_cli_tutorial
     rbfe_python_tutorial
     showcase_notebook
+    ahfe_tutorial
+    plotting_with_cinnabar
