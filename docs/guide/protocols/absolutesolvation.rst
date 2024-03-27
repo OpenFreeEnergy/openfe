@@ -59,7 +59,7 @@ Setting up RFE calculations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * :ref:`Setting up RBFE calculations <define-rbfe>`
-* :ref:`Setting up RHFE calculations <define-rhfe>`
+* :ref:`Setting up RHFE calculations <define-rsfe>`
 
 Tutorials
 ~~~~~~~~~
