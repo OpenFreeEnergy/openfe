@@ -61,6 +61,12 @@ use the `Cinnabar Python package <https://github.com/OpenFreeEnergy/cinnabar>`
 to analyze (e.g. generating MLE estimates of absolute free energies)
 and plot networks of relative free energy results.
 
+Molecular Dynamics (MD) protocol tutorial
+-----------------------------------------
+
+The :any:`MD protocol <md_tutorial>`
+tutorial walks users through how to run an MD simulation of benzene bound to 
+T4-lysozyme L99A in OpenFE.
 
 .. toctree::
     :maxdepth: 1
