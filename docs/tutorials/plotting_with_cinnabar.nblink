@@ -1,7 +1,3 @@
 {
-   "path": "../ExampleNotebooks/plotting_rbfes_with_cinnabar/PlottingFreeEnergiesUsingCinnabar.ipynb",
-   "extra-media": [
-      "../ExampleNotebooks/plotting_rbfes_with_cinnabar/experimental.tsv",
-      "../ExampleNotebooks/plotting_rbfes_with_cinnabar/final_results.tsv"
-   ]
+   "path": "../ExampleNotebooks/plotting_rbfes_with_cinnabar/PlottingFreeEnergiesUsingCinnabar.ipynb"
 }
