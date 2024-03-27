@@ -74,8 +74,12 @@ class RelativeAlchemicalNetworkPlanner(
         if protocol is None:
             protocol = RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings())
         if mappers is None:
-            mappers = [LomapAtomMapper(time=20, threed=True,
-                                       element_change=False, max3d=1)]
+            mappers = [LomapAtomMapper(time=20,
+                                       threed=True,
+                                       max3d=1.0,
+                                       element_change=True,
+                                       shift=False,
+                                       )]
 
         self.name = name
         self._mappers = mappers
