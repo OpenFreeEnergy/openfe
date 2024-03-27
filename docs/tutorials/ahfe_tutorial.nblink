@@ -1,0 +1,8 @@
+{
+   "path": "../ExampleNotebooks/ahfe_tutorial/python_tutorial.ipynb",
+   "extra-media": [
+      "../ExampleNotebooks/ahfe_tutorial/ahfe_json/",
+      "../ExampleNotebooks/cookbook/assets/benzene.sdf",
+      "../ExampleNotebooks/ahfe_tutorial/ahfe_cycle.png",
+   ]
+}
