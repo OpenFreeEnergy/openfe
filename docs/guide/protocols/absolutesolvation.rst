@@ -35,12 +35,13 @@ Molecular interactions are turned off during an alchemical path with a discrete 
 
 Simulation details
 ~~~~~~~~~~~~~~~~~~
-All MD simulations are run in the NPT ensemble. cutoffs, and integrators
+The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization (J. Phys. Chem. A 2019, 123, 28, 6056-6079).
+Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
-what you can get out of the results object's methods
+TODO: ADD what you can get out of the results object's methods
 
 Simulation overview
 -------------------
@@ -50,12 +51,6 @@ This section should essentially give an overview of the DAG and what each unit i
 For example we would want to say that each unit is doing a non-alchemical equilibration followed by an alchemical production.
 
 We would also mention how the DAG constructs and runs both the vacuum and solvent legs concurrently.
-
-the coulombic interactions of the molecule are fully turned off (annihilated), while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
-In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated),
-while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
-Molecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. All MD simulations are run in the NPT ensemble.
-The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
 
 See Also
 -------
