@@ -20,4 +20,30 @@ the coulombic interactions of the molecule are fully turned off (annihilated), w
 In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated),
 while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
 Molecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. All MD simulations are run in the NPT ensemble.
-The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator). 
+The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
+
+See Also
+~~~~~~~~
+
+Setting up RFE calculations
++++++++++++++++++++++++++++
+
+:ref:`define_rbfe`
+:ref:`define_rhfe`
+
+Tutorials
++++++++++
+
+<Insert relevant tutorial page, note: see issue 781>
+
+Cookbooks
++++++++++
+
+Maybe a list of relevant cookbooks, otherwise just a link to the cookbook page.
+
+API Documentation
++++++++++++++++++
+
+:ref:`afe solvation protocol api`
+<Insert Protocol API docs link>
+<Insert Protocol Settings API docs link> 
