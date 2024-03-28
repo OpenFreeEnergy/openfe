@@ -29,7 +29,7 @@ relative binding free energy calculation.
 .. toctree::
     :maxdepth: 1
     :hidden:
-
+    
     rbfe_cli_tutorial
     rbfe_python_tutorial
     showcase_notebook

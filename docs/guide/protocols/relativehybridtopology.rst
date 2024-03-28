@@ -78,8 +78,8 @@ Setting up RFE calculations
 Tutorials
 ~~~~~~~~~
 
-* :ref:`RBFE CLI tutorial <rfe cli tutorial>`
-* :ref:`RBFE Python tutorial <rfe python tutorial>`
+* :any:`Relative Free Energies with the OpenFE CLI <../../tutorials/rbfe_cli_tutorial>`
+* :any:`Relative Free Energies with the OpenFE Python API <../../tutorials/rbfe_python_tutorial>`
 
 Cookbooks
 ~~~~~~~~~
