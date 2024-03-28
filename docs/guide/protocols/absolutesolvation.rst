@@ -33,8 +33,6 @@ The lambda schedule
 
 Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 
-.. _Simulation details:
-
 Simulation details
 ~~~~~~~~~~~~~~~~~~
 
@@ -81,7 +79,7 @@ See Also
 Setting up AFE calculations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :ref:`Defining protocol <defining-protocols>`
+* :ref:`Defining the Protocol <defining-protocols>`
 
 To be added: Setting up AHFE calculations
 
