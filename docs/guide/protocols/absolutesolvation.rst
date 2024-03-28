@@ -81,6 +81,7 @@ Setting up AFE calculations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * :ref:`Defining protocol <defining-protocols>`
+
 To be added
 .. * :ref:`Setting up AHFE calculations <define-rbfe>`
 
