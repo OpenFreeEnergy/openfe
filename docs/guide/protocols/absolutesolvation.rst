@@ -5,7 +5,6 @@ Overview
 --------
 
 The :class:`absolute solvation protocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
-calculates the free energy change 
 associate with transferring a molecule from vacuum into a solvent.
 
 .. note::

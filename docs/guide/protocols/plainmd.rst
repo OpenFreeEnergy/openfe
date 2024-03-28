@@ -12,16 +12,23 @@ Scientific Details
 ------------------
 
 The :class:`.PlainMDProtocol` runs MD simulations of a system either in solvent or vacuum, depending on the input provided by the user in the `ChemicalSystem`.
-If there is a ``SolventComponent`` in the ``ChemicalSystem``, the protocol first performs an energy minimization of the system, 
-followed by an equilibration in the canonical ensemble as well as an equilibration in the NPT ensemble. The production run is then carried out in the NPT ensemble.
-A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 The protocol applies a 
 `LangevinMiddleIntegrator <http://docs.openmm.org/development/api-python/generated/openmm.openmm.LangevinMiddleIntegrator.html>`_ 
 which uses Langevin dynamics, with the LFMiddle discretization [1]_.  
 
+Simulation Steps
+~~~~~~~~~~~~~~~~
+
+If there is a ``SolventComponent`` in the ``ChemicalSystem``, the each Protocol simulation Unit carries out the following steps:
+
+1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
+2. Minimize the system
+3. Equilibrate in the canonical ensemble
+4. Equilibrate and production simulate the system (under NPT conditions using a MonteCarloBarostat to maintain constant pressure)
+
 Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
 
-If the ``ChemicalSystem`` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an NVT equilibration, followed by an NVT production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations
+If the ``ChemicalSystem`` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an NVT equilibration, followed by an NVT production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations.
 
 Performance consideration for gas phase MD simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
