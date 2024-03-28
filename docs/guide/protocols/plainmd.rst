@@ -1,6 +1,46 @@
 Plain MD Protocol
 =================
 
-The plain MD protocol enables the user to run an MD simulation of a `ChemicalSystem`, which can contain e.g. a solvated protein-ligand complex, ora ligand and water. 
-The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization (J. Phys. Chem. A 2019, 123, 28, 6056-6079). 
-Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the canonical ensemble as well as an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
+Overview
+--------
+
+The :class:`.PlainMDProtocol` enables the user to run an MD simulation of a ``ChemicalSystem``, which can contain e.g. a solvated protein-ligand complex, or a ligand and water.
+
+Scientific Details
+------------------
+
+The :class:`.PlainMDProtocol` runs MD simulations of a system either in solvent or vacuum, depending on the input provided by the user in the `ChemicalSystem`.
+If there is a ``SolventComponent`` in the ``ChemicalSystem``, the protocol first performs an energy minimization of the system, 
+followed by an equilibration in the canonical ensemble as well as an equilibration in the NPT ensemble. The production run is then carried out in the NPT ensemble.
+A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
+The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization [1]_.  
+
+Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
+
+If the ``ChemicalSystem`` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an NVT equilibration, followed by an NVT production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations
+
+Performance consideration for gas phase MD simulations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For gas phase MD simulations, we suggest setting ``OPENMM_CPU_THREADS=1`` to obtain good performance.
+
+See Also
+--------
+
+Tutorials
+~~~~~~~~~
+
+<Insert relevant tutorial page, note: see issue 781>
+
+API Documentation
+~~~~~~~~~~~~~~~~~
+
+* :ref:`OpenMM plain MD protocol <md protocol api>`
+* :ref:`OpenMM Protocol Settings <openmm protocol settings api>`
+
+References
+----------
+* `OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
+* `OpenMM <https://openmm.org/>`_
+
+.. [1] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079

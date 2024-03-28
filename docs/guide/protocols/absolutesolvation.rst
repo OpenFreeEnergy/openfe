@@ -4,7 +4,7 @@ Absolute Solvation Protocol
 Overview
 --------
 
-The absolute solvation protocol calculates the free energy change 
+The :class:`.AbsoluteSolvationProtocol` calculates the free energy change 
 associate with transferring a molecule from vacuum into a solvent.
 
 .. note::
