@@ -6,6 +6,8 @@ Overview
 
 The :class:`.PlainMDProtocol` enables the user to run an MD simulation of a ``ChemicalSystem``, which can contain e.g. a solvated protein-ligand complex, or a ligand and water.
 
+TODO: Later add ref to ChemicalSystem section
+
 Scientific Details
 ------------------
 
