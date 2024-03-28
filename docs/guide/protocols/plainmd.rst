@@ -32,7 +32,7 @@ See Also
 Tutorials
 ~~~~~~~~~
 
-<Insert relevant tutorial page, note: see issue 781>
+* :any:`MD tutorial <../../tutorials/md_tutorial>`
 
 API Documentation
 ~~~~~~~~~~~~~~~~~

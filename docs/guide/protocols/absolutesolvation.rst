@@ -88,7 +88,7 @@ To be added
 Tutorials
 ~~~~~~~~~
 
-<Insert relevant tutorial page, note: see issue 781>
+* :any:`Absolute Hydration Free Energies tutorial <../../tutorials/ahfe_tutorial>`
 
 Cookbooks
 ~~~~~~~~~
