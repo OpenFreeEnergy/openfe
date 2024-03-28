@@ -4,10 +4,16 @@
 
 Defining the Ligand Network
 ===========================
-A ligand network is a planning unit that we need to plan how we want to calculate the final free energy network graph.
+A ligand network is a set of small molecules connected by mappings of two ligands.
+Such a network can represent a set of drug candidates derived from molecule enumeration that should
+be ranked by free energy calculations, in order to prioritize molecule synthesis efforts.
+The ligand networks are a tool that is used to orchestrate the free energy calculations to efficiently
+compute a ligand ranking.
+It is of course possible to calculate all possible transformations defined by all possible mappings connecting all small molecules with a ``Maximal Network``,
+but usually it is much more efficient to use a network with less transformations like a ``Radial Network`` or a ``Minimimal Spanning Network``.
 
-A simple ligand network generation could be generally conceptualized into three steps for N ligands:
-* Generate the :ref:`Atom Mappings<Creating Atom Mappings>`  of all pairwise combinations of ligands (for atom mappings see here: )
+Any ``LigandNetwork`` generation can be generally conceptualized into three steps:
+* Generate the :ref:`Atom Mappings<Creating Atom Mappings>`  of all pairwise combinations of ligands
 * :ref:`Score all resulting Atom Mappings<Creating Atom Mappings>`
 * Build a ``LigandNetwork`` with all possible mappings directed by their scores.
 
@@ -39,10 +45,6 @@ In the following code, we will show how a ``LigandNetwork`` can be planned:
 
    # Now let's plan the Network
    ligand_network = network_planner(ligands=mols, mappers=[mapper], scorer=scorer)
-
-This network already
-
-
 
 .. note::
    Like the Component objects, a ``LigandNetwork`` object is immutable once created!
