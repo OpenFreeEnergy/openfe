@@ -15,7 +15,9 @@ The :class:`.PlainMDProtocol` runs MD simulations of a system either in solvent 
 If there is a ``SolventComponent`` in the ``ChemicalSystem``, the protocol first performs an energy minimization of the system, 
 followed by an equilibration in the canonical ensemble as well as an equilibration in the NPT ensemble. The production run is then carried out in the NPT ensemble.
 A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
-The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization [1]_.  
+The protocol applies a 
+`LangevinMiddleIntegrator <http://docs.openmm.org/development/api-python/generated/openmm.openmm.LangevinMiddleIntegrator.html>`_ 
+which uses Langevin dynamics, with the LFMiddle discretization [1]_.  
 
 Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
 

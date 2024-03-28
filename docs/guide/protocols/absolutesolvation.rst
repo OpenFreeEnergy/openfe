@@ -104,6 +104,7 @@ API Documentation
 
 References
 ----------
+
 * `pymbar <https://pymbar.readthedocs.io/en/stable/>`_
 * `yank <http://getyank.org/latest/>`_
 * `OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
