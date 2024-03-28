@@ -45,12 +45,13 @@ Getting the free energy estimate
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
 TODO: Link to results page once done
 In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall absolute solvation free energy difference, the protocol also returns some metrics to help assess convergence of the results. The forward and reverse analysis looks at the time convergence of the free energy estimates. The MABR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric. 
-To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the both replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states.  
+To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states. (Todo: link to the results page in case examples of these plots are deposited there) 
 
 Simulation overview
 -------------------
 
-The ``ProtocolDAG`` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations. Therefore, both legs of the thermodynamic cycle are constructured and run concurrently in the same ``ProtocolDAG``.
+The ``ProtocolDAG`` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations. 
+This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same ``ProtocolDAG``.
 If multiple repeats of the protocol are run, the ``ProtocolDAG`` contains multiple units of both vacuum and solvent transformations. 
 For each ``ProtocolUnit`` in the ``ProtocolDAG`` first, a non-alchemical equilibration is carried out (minimization, NVT and NPT equilibration), followed by an alchemical production.
 
@@ -71,7 +72,7 @@ Tutorials
 Cookbooks
 ~~~~~~~~~
 
-Maybe a list of relevant cookbooks, otherwise just a link to the cookbook page.
+:ref:`cookbooks`.
 
 API Documentation
 ~~~~~~~~~~~~~~~~~
