@@ -39,8 +39,9 @@ Molecular interactions are turned off during an alchemical path using a discrete
 Simulation details
 ~~~~~~~~~~~~~~~~~~
 
-The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_
- which uses Langevin dynamics, with the LFMiddle discretization [1]_.
+The protocol applies a 
+`LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which 
+uses Langevin dynamics, with the LFMiddle discretization [1]_.
 Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
