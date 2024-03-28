@@ -35,22 +35,24 @@ Molecular interactions are turned off during an alchemical path using a discrete
 
 Simulation details
 ~~~~~~~~~~~~~~~~~~
+
 The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization [1]_.
 Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
-TODO: ADD what you can get out of the results object's methods
+TODO: Link to results page once done
+In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall absolute solvation free energy difference, the protocol also returns some metrics to help assess convergence of the results. The forward and reverse analysis looks at the time convergence of the free energy estimates. The MABR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric. 
+To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the both replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states.  
 
 Simulation overview
 -------------------
 
-This section should essentially give an overview of the DAG and what each unit is doing.
-
-For example we would want to say that each unit is doing a non-alchemical equilibration followed by an alchemical production.
-
-We would also mention how the DAG constructs and runs both the vacuum and solvent legs concurrently.
+The ``ProtocolDAG`` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations. Therefore, both legs of the thermodynamic cycle are constructured and run concurrently in the same ``ProtocolDAG``.
+If multiple repeats of the protocol are run, the ``ProtocolDAG`` contains multiple units of both vacuum and solvent transformations. 
+For each ``ProtocolUnit`` in the ``ProtocolDAG`` first, a non-alchemical equilibration is carried out (minimization, NVT and NPT equilibration), followed by an alchemical production.
 
 See Also
 --------
@@ -79,6 +81,10 @@ API Documentation
 
 References
 ----------
-Some relevant references that folks can look at, maybe links to pymbar/yank/perses/openmmtools/openmm/etc...
+`pymbar <https://pymbar.readthedocs.io/en/stable/>`_
+`yank <http://getyank.org/latest/>`_
+`perses <https://perses.readthedocs.io/en/latest/>`_
+`OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
+`OpenMM <https://openmm.org/>`_
 
 .. [1] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
