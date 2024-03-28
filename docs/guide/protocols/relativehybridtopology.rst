@@ -61,10 +61,10 @@ To assess the mixing of lambda states in the Hamiltonian replica exchange method
 Simulation overview
 -------------------
 
-The ``ProtocolDAG`` of the :class:`.RelativeHybridTopologyProtocol` contains the ``ProtocolUnits`` from one leg of the thermodynamic
+The :class:`.ProtocolDAG` of the :class:`.RelativeHybridTopologyProtocol` contains the ``ProtocolUnits`` from one leg of the thermodynamic
 cycle. 
-This means that each ``ProtocolDAG`` only runs a single leg of a thermodynamic cycle and therefore two Protocol instances need to be run to get the overall relative free energy difference, DDG. 
-If multiple repeats of the protocol are run, the ``ProtocolDAG`` contains multiple units of the transformation.
+This means that each :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle and therefore two Protocol instances need to be run to get the overall relative free energy difference, DDG. 
+If multiple repeats of the protocol are run, the :class:`.ProtocolDAG` contains multiple units of the transformation.
 
 See Also
 --------
