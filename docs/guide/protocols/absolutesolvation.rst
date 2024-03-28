@@ -31,11 +31,11 @@ while the Lennard-Jones interactions are decoupled, meaning the intermolecular i
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are turned off during an alchemical path with a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
+Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 
 Simulation details
 ~~~~~~~~~~~~~~~~~~
-The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization (J. Phys. Chem. A 2019, 123, 28, 6056-6079).
+The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization [1]_.
 Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
@@ -80,3 +80,5 @@ API Documentation
 References
 ----------
 Some relevant references that folks can look at, maybe links to pymbar/yank/perses/openmmtools/openmm/etc...
+
+.. [1] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
