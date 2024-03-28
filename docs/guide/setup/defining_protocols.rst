@@ -1,3 +1,5 @@
+.. _defining-protocols:
+
 Creating and using Protocols
 ============================
 
