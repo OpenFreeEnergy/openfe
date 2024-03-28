@@ -57,7 +57,7 @@ Analyzing and Plotting RFE Networks with Cinnabar
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :any:`Cinnabar tutorial <plotting_with_cinnabar>` demonstrates how to
-use the :any:`Cinnabar Python package <https://github.com/OpenFreeEnergy/cinnabar>`
+use the `Cinnabar Python package <https://github.com/OpenFreeEnergy/cinnabar>`_
 to analyze (e.g. generating MLE estimates of absolute free energies)
 and plot networks of relative free energy results.
 
