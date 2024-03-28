@@ -4,7 +4,7 @@ Absolute Solvation Protocol
 Overview
 --------
 
-The `absolute solvation protocol <:class:`.AbsoluteSolvationProtocol>` calculates the free energy change 
+The :class:`absolute solvation protocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
 calculates the free energy change 
 associate with transferring a molecule from vacuum into a solvent.
 
@@ -13,7 +13,7 @@ associate with transferring a molecule from vacuum into a solvent.
 
 The absolute solvation free energy is calculated through a thermodynamic cycle. 
 In this cycle, the interactions of the molecule are decoupled, meaning turned off, using a partial annhilation scheme (see below) both in the solvent and in the vacuum phases.
-The absolute hydration free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
+The absolute solvation free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
 
 .. figure:: img/ahfe_thermocycle.png
    :scale: 100%
@@ -39,7 +39,8 @@ Molecular interactions are turned off during an alchemical path using a discrete
 Simulation details
 ~~~~~~~~~~~~~~~~~~
 
-The protocol applies a LangevinMiddleIntegrator which uses Langevin dynamics, with the LFMiddle discretization [1]_.
+The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_
+ which uses Langevin dynamics, with the LFMiddle discretization [1]_.
 Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
@@ -82,8 +83,7 @@ Setting up AFE calculations
 
 * :ref:`Defining protocol <defining-protocols>`
 
-To be added
-.. * :ref:`Setting up AHFE calculations <define-rbfe>`
+To be added: Setting up AHFE calculations
 
 Tutorials
 ~~~~~~~~~
