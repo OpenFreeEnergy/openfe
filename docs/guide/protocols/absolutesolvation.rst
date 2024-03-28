@@ -61,7 +61,7 @@ This means that both legs of the thermodynamic cycle are constructured and run c
 If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple units of both vacuum and solvent transformations.
 
 Simulation Steps
-""""""""""""""""
+~~~~~~~~~~~~~~~~
 
 Each Protocol simulation Unit (whether vacuum or solvent) carries out the following steps:
 
