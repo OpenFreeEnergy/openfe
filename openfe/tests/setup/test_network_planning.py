@@ -9,6 +9,9 @@ import openfe.setup
 from ..conftest import mol_from_smiles
 
 
+def scoring_func(mapping):
+    return len(mapping.componentA_to_componentB)
+
 class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
     @classmethod
     def _defaults(cls):
@@ -176,12 +179,12 @@ def test_radial_network_failure(atom_mapping_basic_test_files):
             scorer=None
         )
 
-
+@pytest.mark.parametrize('n_processes', [1, 2])
 @pytest.mark.parametrize('with_progress', [True, False])
 @pytest.mark.parametrize('with_scorer', [True, False])
 @pytest.mark.parametrize('extra_mapper', [True, False])
 def test_generate_maximal_network(toluene_vs_others, with_progress,
-                                  with_scorer, extra_mapper):
+                                  with_scorer, extra_mapper, n_processes):
     toluene, others = toluene_vs_others
     if extra_mapper:
         mappers = [
@@ -191,8 +194,7 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
     else:
         mappers = openfe.setup.atom_mapping.LomapAtomMapper()
 
-    def scoring_func(mapping):
-        return len(mapping.componentA_to_componentB)
+
 
     scorer = scoring_func if with_scorer else None
 
@@ -200,7 +202,8 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
         ligands=others + [toluene],
         mappers=mappers,
         scorer=scorer,
-        progress=with_progress,
+        show_progress=with_progress,
+        n_processes=n_processes
     )
 
     assert len(network.nodes) == len(others) + 1
