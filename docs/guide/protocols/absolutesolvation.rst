@@ -33,6 +33,8 @@ The lambda schedule
 
 Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 
+.. _Simulation details:
+
 Simulation details
 ~~~~~~~~~~~~~~~~~~
 
@@ -44,6 +46,7 @@ Getting the free energy estimate
 
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
 TODO: Link to results page once done
+
 In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall absolute solvation free energy difference, the protocol also returns some metrics to help assess convergence of the results. The forward and reverse analysis looks at the time convergence of the free energy estimates. The MABR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric. 
 To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states. (Todo: link to the results page in case examples of these plots are deposited there) 
 
@@ -72,7 +75,7 @@ Tutorials
 Cookbooks
 ~~~~~~~~~
 
-:ref:`cookbooks`.
+:ref:`Cookbooks <cookbooks>`
 
 API Documentation
 ~~~~~~~~~~~~~~~~~
@@ -82,10 +85,10 @@ API Documentation
 
 References
 ----------
-`pymbar <https://pymbar.readthedocs.io/en/stable/>`_
-`yank <http://getyank.org/latest/>`_
-`perses <https://perses.readthedocs.io/en/latest/>`_
-`OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
-`OpenMM <https://openmm.org/>`_
+* `pymbar <https://pymbar.readthedocs.io/en/stable/>`_
+* `yank <http://getyank.org/latest/>`_
+* `perses <https://perses.readthedocs.io/en/latest/>`_
+* `OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
+* `OpenMM <https://openmm.org/>`_
 
 .. [1] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
