@@ -53,7 +53,7 @@ Simulation overview
 The ``ProtocolDAG`` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations. 
 This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same ``ProtocolDAG``.
 If multiple repeats of the protocol are run, the ``ProtocolDAG`` contains multiple units of both vacuum and solvent transformations. 
-For each ``ProtocolUnit`` in the ``ProtocolDAG`` first, a non-alchemical equilibration is carried out (minimization, NVT and NPT equilibration), followed by an alchemical production.
+For each ``ProtocolUnit`` in the ``ProtocolDAG`` first, a non-alchemical equilibration is carried out (minimization, NVT and NPT equilibration), followed by an alchemical production (see :ref:`Simulation details`).
 
 See Also
 --------
