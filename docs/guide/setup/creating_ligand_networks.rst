@@ -13,6 +13,7 @@ It is of course possible to calculate all possible transformations defined by al
 but usually it is much more efficient to use a network with less transformations like a ``Radial Network`` or a ``Minimimal Spanning Network``.
 
 Any ``LigandNetwork`` generation can be generally conceptualized into three steps:
+
 * Generate the :ref:`Atom Mappings<Creating Atom Mappings>`  of all pairwise combinations of ligands
 * :ref:`Score all resulting Atom Mappings<Creating Atom Mappings>`
 * Build a ``LigandNetwork`` with all possible mappings directed by their scores.
