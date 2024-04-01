@@ -40,7 +40,7 @@ The lambda schedule
 
 The protocol interpolated molecular interactions between the initial and final state of the perturbation using a discrete set of lambda windows. A function describes how the different lambda components (bonded and nonbonded terms) are interpolated.
 Only parameters that differ between state A (``lambda=0``) and state B (``lambda=1``) are interpolated. 
-In the default lambda function in the :class:`.RelativeHybridTopologyProtocol`, first the electrostatic interactions of state A are turned off while simulataneously turning on the van-der-Waals interactions of state B. Then, the van-der-Waals interactions of state A are turned off while simulatenously turning on the electrostatic interactions of state B. Bonded interactions are interpolated linearly between lambda=0 and lambda=1. 
+In the default lambda function in the :class:`.RelativeHybridTopologyProtocol`, first the electrostatic interactions of state A are turned off while simultaneously turning on the van-der-Waals interactions of state B. Then, the van-der-Waals interactions of state A are turned off while simultaneously turning on the electrostatic interactions of state B. Bonded interactions are interpolated linearly between lambda=0 and lambda=1.
 
 Simulation details
 ~~~~~~~~~~~~~~~~~~
@@ -54,11 +54,11 @@ Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
-In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall realtive binding free energy difference, 
+In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall relative binding free energy difference,
 the protocol also returns some metrics to help assess convergence of the results. 
 The forward and reverse analysis looks at the time convergence of the free energy estimates. 
-The MABR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric.
-To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states. (Todo: link to the results page in case examples of these plots are deposited there)
+The MBAR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric.
+To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states.
 
 Simulation overview
 -------------------
