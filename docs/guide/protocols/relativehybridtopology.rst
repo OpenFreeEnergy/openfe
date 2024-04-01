@@ -81,6 +81,34 @@ Each Protocol simulation Unit carries out the following steps:
 
 Note: three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted). By default the HREX approach is selected, this can be altered using ``simulation_settings.sampler_method`` (default: ``repex``).
 
+Analysis
+~~~~~~~~
+
+As standard, some analysis of the each simulation repeat is performed.
+This analysis is made available through either the dictionary of results in the execution output,
+or through some ready-made plots for quick inspection.
+This analysis can be categorised as relating
+to the energetics of the different lambda states that were sampled,
+or to the analysis of the change in structural conformation over time in each state.
+
+* lambda energetic analysis
+
+  * free energy overlap matrix
+  * replica exchange overlap matrix (for repex only)
+  * timeseries of replica states
+  * forward and reverse estimates of free energies
+
+* relating to structural analysis. If a protein was present, these analyses first center and align the system so that
+  the protein is considered the frame of reference.
+
+  * ligand RMSD  This produces a plot called ``xyz.png`` and a results entry ``xyz``
+  * protein 2D RMSD
+  * ligand COM drift
+
+Further analysis can be performed by inspecting the ``simulation.nc`` and ``hybrid_system.pdb`` files,
+which contain a multistate trajectory and topology for the hybrid system respectively.
+These files can be loaded into an MDAnalysis Universe object using the `openfe_analysis`_ package.
+
 See Also
 --------
 
@@ -115,3 +143,4 @@ References
 * `OpenMM <https://openmm.org/>`_
 
 .. [1] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+.. _openfe_analysis: https://github.com/OpenFreeEnergy/openfe_analysis
