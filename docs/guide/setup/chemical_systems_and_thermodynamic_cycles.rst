@@ -4,9 +4,9 @@ ChemicalSystems, Components and thermodynamic cycles
 ====================================================
 
 When thinking about computing estimates in the free energy differences between different states,
-we need an object model to represent the chemical models of the chemistry we are considering.
-In ``openfe`` a :class:`.ChemicalSystem` is used to capture this information.
-and represents
+we need an object model to represent the chemistry we are considering.
+In ``openfe`` a :class:`.ChemicalSystem` is used to capture this information,
+and represents the chemical models that are present in each end state.
 
 A ``ChemicalSystem`` **does** include information, where present, on:
 
@@ -34,16 +34,6 @@ Splitting the total system into components serves two purposes:
 
 * the thermodynamic cycles can be easily understood by comparing the differences in Components
 * ``Protocol`` \s can know to treat different components differently, for example applying different force fields
-
-Thermodynamic Cycles
---------------------
-
-With
-
-< image of solvation free energy >
-
-
-< image of rbfe >
 
 See Also
 --------
