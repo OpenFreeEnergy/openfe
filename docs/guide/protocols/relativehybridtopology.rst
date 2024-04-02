@@ -49,10 +49,10 @@ In the default lambda function in the :class:`.RelativeHybridTopologyProtocol`, 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
-The :class:`.ProtocolDAG` of the :class:`.RelativeHybridTopologyProtocol` contains the :class:`.ProtocolUnit`s from one leg of the thermodynamic
+The :class:`.ProtocolDAG` of the :class:`.RelativeHybridTopologyProtocol` contains the :class:`.ProtocolUnit`\ s from one leg of the thermodynamic
 cycle. 
 This means that each :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle and therefore two Protocol instances need to be run to get the overall relative free energy difference, DDG. 
-If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`s of both vacuum and solvent transformations.
+If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both vacuum and solvent transformations.
 
 Simulation Steps
 """"""""""""""""
@@ -70,10 +70,10 @@ Note: three different types of multistate sampling (i.e. replica swapping betwee
 Simulation details
 """"""""""""""""""
 
-The protocol applies a
-`LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which
-uses Langevin dynamics, with the LFMiddle discretization [1]_.
-A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
+Here are some details of how the simulation is carried out which are not detailed in the :class:`.RelativeHybridTopologySettings`:
+
+* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [1]_.
+* A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

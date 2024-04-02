@@ -36,9 +36,9 @@ Molecular interactions are turned off during an alchemical path using a discrete
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
-The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`.ProtocolUnit`s from both the vacuum and solvent transformations.
+The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`.ProtocolUnit`\ s from both the vacuum and solvent transformations.
 This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
-If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`s of both vacuum and solvent transformations.
+If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both vacuum and solvent transformations.
 
 Simulation steps
 """"""""""""""""
@@ -59,9 +59,7 @@ Simulation details
 
 Here are some details of how the simulation is carried out which are not detailed in the :class:`.AbsoluteSolvationSettings`:
 
-* The protocol applies a 
-`LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which 
-uses Langevin dynamics, with the LFMiddle discretization [1]_.
+* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [1]_.
 * A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
