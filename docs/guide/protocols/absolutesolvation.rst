@@ -25,25 +25,25 @@ Scientific Details
 Partial annhilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated),
-while the Lennard-Jones interactions are decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated). 
+The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
 
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
+Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
-The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations.
+The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`ProtocolUnit`s from both the vacuum and solvent transformations.
 This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
-If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple units of both vacuum and solvent transformations.
+If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`ProtocolUnit`s of both vacuum and solvent transformations.
 
 Simulation steps
 """"""""""""""""
 
-Each Protocol simulation Unit (whether vacuum or solvent) carries out the following steps:
+Each :class:`.ProtocolUnit` (whether vacuum or solvent) carries out the following steps:
 
 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
 2. Equilibrate the fully interacting system using a short MD simulation using the same approach as the :class:`.PlainMDProtocol` (in the solvent leg this will include rounds of NVT and NPT equilibration)
@@ -57,10 +57,12 @@ Note: three different types of multistate sampling (i.e. replica swapping betwee
 Simulation details
 """"""""""""""""""
 
-The protocol applies a 
+Here are some details of how the simulation is carried out which are not detailed in the :class:`.AbsoluteSolvationSettings`:
+
+* The protocol applies a 
 `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which 
 uses Langevin dynamics, with the LFMiddle discretization [1]_.
-A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
+* A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
