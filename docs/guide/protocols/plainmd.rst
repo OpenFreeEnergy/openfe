@@ -19,7 +19,7 @@ which uses Langevin dynamics, with the LFMiddle discretization [1]_.
 Simulation Steps
 ~~~~~~~~~~~~~~~~
 
-If there is a ``SolventComponent`` in the ``ChemicalSystem``, the each :class:`ProtocolUnit` carries out the following steps:
+If there is a ``SolventComponent`` in the ``ChemicalSystem``, the each :class:`.ProtocolUnit` carries out the following steps:
 
 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
 2. Minimize the system

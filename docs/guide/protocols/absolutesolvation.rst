@@ -36,9 +36,9 @@ Molecular interactions are turned off during an alchemical path using a discrete
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
-The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`ProtocolUnit`s from both the vacuum and solvent transformations.
+The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`.ProtocolUnit`s from both the vacuum and solvent transformations.
 This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
-If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`ProtocolUnit`s of both vacuum and solvent transformations.
+If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`s of both vacuum and solvent transformations.
 
 Simulation steps
 """"""""""""""""
