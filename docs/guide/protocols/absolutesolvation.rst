@@ -33,34 +33,15 @@ The lambda schedule
 
 Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the van-der-Waals interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
 
-Simulation details
-~~~~~~~~~~~~~~~~~~
-
-The protocol applies a 
-`LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which 
-uses Langevin dynamics, with the LFMiddle discretization [1]_.
-Before running the production MD simulation in the NPT ensemble, the protocol performs a minimization of the system, followed by an equilibration in the NPT ensemble. A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
-
-Getting the free energy estimate
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
-Both the MABR estimates of the two legs of the thermodynamic cycle, and the overall absolute solvation free energy (of the entire cycle) are obtained,
-which is different compared to the results in the :class:`.RelativeHybridTopologyProtocol` where results from two legs of the thermodynamic cycle are obtained separately.
-TODO: Link to results page once done
-
-In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results. The forward and reverse analysis looks at the time convergence of the free energy estimates. The MABR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric. 
-To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states. (Todo: link to the results page in case examples of these plots are deposited there) 
-
 Simulation overview
--------------------
+~~~~~~~~~~~~~~~~~~~
 
-The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations. 
+The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains both the units from the vacuum and from the solvent transformations.
 This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
 If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple units of both vacuum and solvent transformations.
 
-Simulation Steps
-~~~~~~~~~~~~~~~~
+Simulation steps
+""""""""""""""""
 
 Each Protocol simulation Unit (whether vacuum or solvent) carries out the following steps:
 
@@ -73,28 +54,43 @@ Each Protocol simulation Unit (whether vacuum or solvent) carries out the follow
 
 Note: three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted). By default the HREX approach is selected, this can be altered using ``solvent_simulation_settings.sampler_method`` or ``vacuum_simulation_settings.sampler_method`` (default: ``repex``).
 
+Simulation details
+""""""""""""""""""
+
+The protocol applies a 
+`LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which 
+uses Langevin dynamics, with the LFMiddle discretization [1]_.
+A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
+
+Getting the free energy estimate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
+Both the MABR estimates of the two legs of the thermodynamic cycle, and the overall absolute solvation free energy (of the entire cycle) are obtained,
+which is different compared to the results in the :class:`.RelativeHybridTopologyProtocol` where results from two legs of the thermodynamic cycle are obtained separately.
+TODO: Link to results page once done
+
+In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results. The forward and reverse analysis looks at the time convergence of the free energy estimates. The MBAR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric. 
+To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states. (Todo: link to the results page in case examples of these plots are deposited there) 
+
 See Also
 --------
 
-Setting up AFE calculations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Setting up AFE calculations**
 
 * :ref:`Defining the Protocol <defining-protocols>`
 
 To be added: Setting up AHFE calculations
 
-Tutorials
-~~~~~~~~~
+**Tutorials**
 
 * :any:`Absolute Hydration Free Energies tutorial <../../tutorials/ahfe_tutorial>`
 
-Cookbooks
-~~~~~~~~~
+**Cookbooks**
 
 :ref:`Cookbooks <cookbooks>`
 
-API Documentation
-~~~~~~~~~~~~~~~~~
+**API Documentation**
 
 * :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
 * :ref:`OpenMM Protocol Settings <openmm protocol settings api>`
