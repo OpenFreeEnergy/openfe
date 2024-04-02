@@ -14,7 +14,35 @@ For exact details on what is produced consult the :ref:`pages for each Protocol<
 
 .. todo crossref to HREX and MD Protocol docs from issue 743
 
-How you can inspect these results depends on whether you are doing this from the Python or command line interface.
+How you can inspect these results depends on whether you are doing this from the command line or a Python script.
+
+From the command line
+---------------------
+
+If you had executed your calculation using the :ref:`quickrun <cli_quickrun>` command,
+then a ``.json`` results log file as well as a directory of files will have been produced.
+Most importantly, the ``.json`` results file has ``estimate`` and ``uncertainty`` keys,
+which serve the same purpose as the ``get_estimate()`` and ``get_uncertainty()`` methods described above.
+
+The ``json`` results file can be loaded into a Python session as::
+
+  >>> import gufe
+  >>> import json
+  >>>
+  >>> with open('././Transformation-97d7223f918bbdb0570edc2a49bbc43e_results.json', 'r') as f:
+  ...     results = json.load(f, cls=gufe.tokenization.JSON_HANDLER.decoder)
+  >>> results['estimate']
+  -19.889719513104342 <Unit('kilocalorie_per_mole')>
+  >>> results['uncertainty']
+  0.574685524681712 <Unit('kilocalorie_per_mole')>
+
+
+See Also
+~~~~~~~~
+
+The :ref:`openfe gather <cli_gather>` command offers a way to collate information across many different individual
+simulations and prepare a table of results.
+
 
 From a Python interface
 -----------------------
@@ -26,13 +54,3 @@ this class takes care of the averaging and concatenation of different iterations
 This ``ProtocolResult`` class has ``.get_estimate()`` and ``.get_uncertainty()`` methods which return the estimates
 of free energy difference along with its uncertainty.
 
-From the command line
----------------------
-
-If you had executed your calculation using the :ref:`quickrun <cli_quickrun>` command,
-then a ``.json`` results log file as well as a directory of files will have been produced.
-Most importantly, the ``.json`` results file has ``estimate`` and ``uncertainty`` keys,
-which serve the same purpose as the ``get_estimate()`` and ``get_uncertainty()`` methods described above.
-
-The :ref:`openfe gather <cli_gather>` command offers a way to collate information across many different individual
-simulations and prepare a table of results.
