@@ -38,13 +38,11 @@ For gas phase MD simulations, we suggest setting ``OPENMM_CPU_THREADS=1`` to obt
 See Also
 --------
 
-Tutorials
-~~~~~~~~~
+**Tutorials**
 
 * :any:`MD tutorial <../../tutorials/md_tutorial>`
 
-API Documentation
-~~~~~~~~~~~~~~~~~
+**API Documentation**
 
 * :ref:`OpenMM plain MD protocol <md protocol api>`
 * :ref:`OpenMM Protocol Settings <openmm protocol settings api>`
