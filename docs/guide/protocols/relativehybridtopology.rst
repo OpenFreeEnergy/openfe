@@ -27,6 +27,8 @@ and in the solvent (ΔG\ :sub:`solv`\) and vacuum (ΔG\ :sub:`vacuum`\) for RHFE
 Scientific Details
 ------------------
 
+This :class:`.RelativeHybridTopologyProtocol` is based off the `Perses implementation <https://perses.readthedocs.io/en/latest/>`_.
+
 The Hybrid Topology approach
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

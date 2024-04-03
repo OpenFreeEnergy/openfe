@@ -31,7 +31,7 @@ The Lennard-Jones interactions are instead decoupled, meaning the intermolecular
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
+Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec`` and ``lambda_vdw``. Note that the ``lambda_restraints`` setting is ignored for the :class:`.AbsoluteSolvationProtocol`.
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
