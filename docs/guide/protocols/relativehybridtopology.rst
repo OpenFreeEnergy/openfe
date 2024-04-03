@@ -5,7 +5,7 @@ Overview
 --------
 
 The relative free energy calculation approach calculates the difference in 
-free energy between two similar ligands. Depending on the ``ChemicalSystem`` 
+free energy between two similar ligands. Depending on the :class:`.ChemicalSystem` 
 provided, the protocol either calculates the relative binding free energy 
 (RBFE), or the relative hydration free energy (RHFE) 
 (see 
@@ -35,16 +35,20 @@ ligands, meaning that a single set of coordinates is used to represent the
 common core of the two ligands while the atoms that differ between the two
 ligands are represented separately. An atom map defines which atoms belong
 to the core (mapped atoms) and which atoms are unmapped and represented
-separately. During the alchemical transformation, mapped atoms are switched
+separately (see :ref:`Creating atom mappings <.. _Creating Atom Mappings:>`. During the alchemical transformation, mapped atoms are switched
 from the type in one ligand to the type in the other ligands, while unmapped
 atoms are switched on or off, depending on which ligand they belong to.
+
+.. note: In this hybrid topology approach, all bonded interactions between the dummy region and the core region are kept. 
+         As pointed out by Fleck et al. [1]_, this can lead to systematic errors if the contribution of the dummy group does not cancel out
+         in the thermodynamic cycle (no separability of the partition function). We are currently working on fixing this issue.
 
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
 The protocol interpolates molecular interactions between the initial and final state of the perturbation using a discrete set of lambda windows. A function describes how the different lambda components (bonded and nonbonded terms) are interpolated.
 Only parameters that differ between state A (``lambda=0``) and state B (``lambda=1``) are interpolated. 
-In the default lambda function in the :class:`.RelativeHybridTopologyProtocol`, first the electrostatic interactions of state A are turned off while simulataneously turning on the van-der-Waals interactions of state B. Then, the van-der-Waals interactions of state A are turned off while simulatenously turning on the electrostatic interactions of state B. Bonded interactions are interpolated linearly between ``lambda=0`` and ``lambda=1``. 
+In the default lambda function in the :class:`.RelativeHybridTopologyProtocol`, first the electrostatic interactions of state A are turned off while simulataneously turning on the van-der-Waals interactions of state B. Then, the van-der-Waals interactions of state A are turned off while simulatenously turning on the electrostatic interactions of state B. Bonded interactions are interpolated linearly between ``lambda=0`` and ``lambda=1``. The ``lambda_settings`` ``lambda_functions`` and ``lambda_windows`` define the alchemical pathway. 
 
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
@@ -72,7 +76,7 @@ Simulation details
 
 Here are some details of how the simulation is carried out which are not detailed in the :class:`.RelativeHybridTopologySettings`:
 
-* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [1]_.
+* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [2]_.
 * A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
@@ -114,4 +118,5 @@ References
 * `OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
 * `OpenMM <https://openmm.org/>`_
 
-.. [1] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+.. [1] Dummy Atoms in Alchemical Free Energy Calculations, Markus Fleck, Marcus Wieder, and Stefan Boresch, J. Chem. Theory Comput.2021, 17, 4403−4419
+.. [2] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
