@@ -4,7 +4,7 @@ Plain MD Protocol
 Overview
 --------
 
-The :class:`.PlainMDProtocol` enables the user to run an MD simulation of a ``ChemicalSystem``, which can contain e.g. a solvated protein-ligand complex, or a ligand and water.
+The :class:`.PlainMDProtocol` enables the user to run a Molecular Dynamics (MD) simulation of a ``ChemicalSystem``, which can contain e.g. a solvated protein-ligand complex, a molecule and water, or a molecule in vacuum.
 
 TODO: Later add ref to ChemicalSystem section
 
@@ -23,12 +23,12 @@ If there is a ``SolventComponent`` in the ``ChemicalSystem``, the each :class:`.
 
 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
 2. Minimize the system
-3. Equilibrate in the canonical ensemble
-4. Equilibrate and production simulate the system (under NPT conditions using a MonteCarloBarostat to maintain constant pressure)
+3. Equilibrate in the canonical (NVT) ensemble
+4. Equilibrate and production simulate the system under isobaric-isothermal (NPT) conditions using a MonteCarloBarostat to maintain constant pressure
 
 Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
 
-If the ``ChemicalSystem`` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an NVT equilibration, followed by an NVT production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations.
+If the ``ChemicalSystem`` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an equilibration, followed by a production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations.
 
 Performance consideration for gas phase MD simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
