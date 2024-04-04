@@ -15,7 +15,7 @@ In this cycle, the interactions of the molecule are decoupled, meaning turned of
 The absolute solvation free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
 
 .. figure:: img/ahfe_thermocycle.png
-   :scale: 100%
+   :scale: 80%
 
    Thermodynamic cycle for the absolute solvation free energy protocol.
 
@@ -33,8 +33,8 @@ The lambda schedule
 
 Molecular interactions are turned off during an alchemical path using a discrete set of lambda windows. The electrostatic interactions are turned off first, followed by the decoupling of the Lennard-Jones interactions. 
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows. 
-Both the soft-core potential function from Beutler et al. [1]_ and from Gapsys et al. [2]_ are available and can be selected in the ``softcore_LJ`` settings
-(default is ``gapsys``).
+Both the soft-core potential functions from Beutler et al. [1]_ and from Gapsys et al. [2]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
+(default: ``gapsys``).
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec`` and ``lambda_vdw``. Note that the ``lambda_restraints`` setting is ignored for the :class:`.AbsoluteSolvationProtocol`.
 
 Simulation overview
@@ -50,11 +50,11 @@ Simulation steps
 Each :class:`.ProtocolUnit` (whether vacuum or solvent) carries out the following steps:
 
 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
-2. Equilibrate the fully interacting system using a short MD simulation using the same approach as the :class:`.PlainMDProtocol` (in the solvent leg this will include rounds of NVT and NPT equilibration)
-3. Create an alchemical system
-4. Minimize the alchemical system
+2. Equilibrate the fully interacting system using a short MD simulation using the same approach as the :class:`.PlainMDProtocol` (in the solvent leg this will include rounds of NVT and NPT equilibration).
+3. Create an alchemical system.
+4. Minimize the alchemical sysem.
 5. Equilibrate and production simulate the alchemical system using the chosen multistate sampling method (under NPT conditions if solvent is present).
-6. Analyze results for the transformation
+6. Analyze results for the transformation.
 
 Note: three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted). By default the HREX approach is selected, this can be altered using ``solvent_simulation_settings.sampler_method`` or ``vacuum_simulation_settings.sampler_method`` (default: ``repex``).
 
