@@ -32,7 +32,7 @@ demonstrates how to use these.
 .. note::
    The Network Planners are provided for user convenience. Whilst they cover
    majority of use cases, they may not currently offer the complete range
-   of options currently available through the Python API.
+   of options available through the Python API.
 
 
 Command-line interface
