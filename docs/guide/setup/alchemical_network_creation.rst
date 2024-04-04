@@ -13,7 +13,7 @@ Python API
 
 You can manually create a :class:`.AlchemicalNetwork` by creating a list
 of :class:`.Transformation` objects.
-The `cookbook on creating alchemical networks <../../cookbook/create_alchemical_network>`_
+The `cookbook on creating alchemical networks <../../cookbook/create_alchemical_network.html>`_
 demonstrates how to do this.
 
 Alchemical Network Planners
