@@ -55,7 +55,7 @@ using:
 
     $ openfe plan-rhfe network -M dir_with_sdfs/
 
-Please see the `RBFE CLI tutorial <../../tutorials/rbfe_cli_tutorial>`_
+Please see the `RBFE CLI tutorial <../../tutorials/rbfe_cli_tutorial.html>`_
 for an example on how to use the CLI to run an RBFE campaign.
 
 .. todo: link to appropriate CLI page in the userguide?
