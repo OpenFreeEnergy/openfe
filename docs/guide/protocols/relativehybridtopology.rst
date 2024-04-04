@@ -87,7 +87,7 @@ Here are some details of how the simulation is carried out which are not detaile
 Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
+The free energy differences are obtained from simulation data using the `MBAR estimator <https://www.alchemistry.org/wiki/Multistate_Bennett_Acceptance_Ratio>`_ (multistate Bennett acceptance ratio estimator) as implemented in the `PyMBAR package <https://pymbar.readthedocs.io/en/master/mbar.html>`_.
 In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall realtive binding free energy difference,
 the protocol also returns some metrics to help assess convergence of the results.
 The forward and reverse analysis looks at the time convergence of the free energy estimates.
