@@ -31,9 +31,8 @@ instructions can be found under:
    creating_atom_mappings_and_scores
    defining_protocols
    creating_ligand_networks
-   alchemical_network
-   define_rbfe
-   define_rhfe
+   alchemical_network_model
+   alchemical_network_creation
 
 If you intend to set up your alchemical network using the Python interface,
 but to run it using the CLI, you will want to export the network in the same
