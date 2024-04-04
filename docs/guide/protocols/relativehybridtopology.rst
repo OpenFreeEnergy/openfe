@@ -52,7 +52,7 @@ The protocol interpolates molecular interactions between the initial and final s
 Only parameters that differ between state A (``lambda=0``) and state B (``lambda=1``) are interpolated. 
 In the default lambda function in the :class:`.RelativeHybridTopologyProtocol`, first the electrostatic interactions of state A are turned off while simulataneously turning on the steric interactions of state B. Then, the steric interactions of state A are turned off while simulatenously turning on the electrostatic interactions of state B. Bonded interactions are interpolated linearly between ``lambda=0`` and ``lambda=1``. The ``lambda_settings`` ``lambda_functions`` and ``lambda_windows`` define the alchemical pathway. 
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
-Both the soft-core potential functions from Beutler et al. [1]_ and from Gapsys et al. [2]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
+Both the soft-core potential functions from Beutler et al. [2]_ and from Gapsys et al. [3]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
 (default: ``gapsys``).
 
 Simulation overview
