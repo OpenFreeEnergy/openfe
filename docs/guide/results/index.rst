@@ -6,25 +6,28 @@ Working with Results
 With :ref:`execution of your calculations <userguide_execution>` completed,
 we can now start looking at what has been produced.
 At the very least, Protocols will produce estimates of free energy differences of the ``ChemicalSystem`` \s
-(with the exception of MD Protocols which just simulate the behaviour of a single system).
+(with the exception of PlainMDProtocol which just simulate the behaviour of a single system).
 Beyond this, the exact data produced by a given Protocol can vary significantly,
-for example the HREX protocol will produce graphs to assess the quality of the simulation,
+for example the RelativeHybridTopologyProtocol protocol will produce graphs to assess the quality of the simulation,
 while the MD Protocol will produce a trajectory file for the simulated system.
 For exact details on what is produced consult the :ref:`pages for each Protocol<userguide_protocols>`.
 
 .. todo crossref to HREX and MD Protocol docs from issue 743
 
-How you can inspect these results depends on whether you are doing this from the command line or a Python script.
+How you can inspect these results depends on whether you have executed your simulations
+from the command line or a Python script.
 
-From the command line
----------------------
+From command line execution
+---------------------------
 
 If you had executed your calculation using the :ref:`quickrun <cli_quickrun>` command,
 then a ``.json`` results log file as well as a directory of files will have been produced.
+This directory will have various plots and results of analysis, the exact details of which are described
+in the :ref:`pages for each Protocol<userguide_protocols>`.
+
 Most importantly, the ``.json`` results file has ``estimate`` and ``uncertainty`` keys,
 which serve the same purpose as the ``get_estimate()`` and ``get_uncertainty()`` methods described above.
-
-The ``json`` results file can be loaded into a Python session as::
+The full ``json`` results file can be reloaded into a Python session as::
 
   >>> import gufe
   >>> import json
@@ -37,15 +40,9 @@ The ``json`` results file can be loaded into a Python session as::
   0.574685524681712 <Unit('kilocalorie_per_mole')>
 
 
-See Also
-~~~~~~~~
 
-The :ref:`openfe gather <cli_gather>` command offers a way to collate information across many different individual
-simulations and prepare a table of results.
-
-
-From a Python interface
------------------------
+From Python execution
+---------------------
 
 Executing a :class:`.ProtocolDAG` using :func:`openfe.execute_DAG` will produce a :class:`.ProtocolDAGResult`,
 representing a single iteration of estimating the free energy difference.
@@ -54,3 +51,8 @@ this class takes care of the averaging and concatenation of different iterations
 This ``ProtocolResult`` class has ``.get_estimate()`` and ``.get_uncertainty()`` methods which return the estimates
 of free energy difference along with its uncertainty.
 
+See Also
+--------
+
+For how to deal with multiple results forming a network consult the :ref:`working with networks<userguide_result_networks>`
+page.
