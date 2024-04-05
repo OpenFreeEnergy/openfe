@@ -94,35 +94,36 @@ or to the analysis of the change in structural conformation over time in each st
 .. todo: issue 792, consolidate this page into its own analysis page and link both RBFE and AFE pages to it
 
 * Energetic and replica exchange analysis.  These analyses consider the swapping and energetic overlap between the
-  different simulated states to try to establish the convergence and correctness of the estimate of free energy
+  different simulated states to help assess the convergence and correctness of the estimate of free energy
   difference produced.
 
   * MBAR overlap matrix.  This plot is used to assess if the different lambda states simulated overlapped energetically.
     Each matrix element represents the probability of a sample from a given row state being observable in a given column
     state.
-    This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected.
+    This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected,
+    with off-diagonal elements being at least 0.03[2]_.
   * Replica exchange overlap matrix (for repex type simulations only).  Similar to the MBAR overlap matrix, this shows
-    the probability a given lambda state exchanged with another.  Again, the diagonal of this matrix should be at least
-    tridiagonal wide for the two end states to be connected.
-  * timeseries of replica states.  This plot shows the evolution of time of the different lambda states as they are
-    exchanged between different configurations.
+    the probability of a given lambda state being exchanged with another.  Again, the diagonal of this matrix should be
+    at least tridiagonal wide for the two end states to be connected.
+  * Timeseries of replica states.  This plot shows the time evolution of the different system configurations as they are
+    exchanged between different lambda states.
     This plot should show that the states are freely mixing and that there are no cliques forming.
-  * forward and reverse estimates of free energies.  This analysis considers the free energy estimate produced using
-    increasingly larger fractions of the total data, and is repeated both forwards and backwards in time.
+  * Forward and reverse convergence of free energy estimates.  Using increasingly larger portions of the total data,
+    this analysis calculates the free energy estimate, and is repeated both forwards and backwards in time.
     To assess convergence the forward and reverse estimates should agree within error using only a fraction of the total
     data[2]_.
 
 * Structural analysis. If a protein was present, these analyses first center and align the system so that
   the protein is considered the frame of reference.
 
-  * ligand RMSD.  This produces a plot called ``ligand_RMSD.png`` and a results entry ``ligand_RMSD`` which gives the
+  * Ligand RMSD.  This produces a plot called ``ligand_RMSD.png`` and a results entry ``ligand_RMSD`` which gives the
     RMSD of the ligand molecule over time relative to the first frame, for each simulated state.  In correct simulations
     this metric should quickly converge to a stable value of less than 5 angstrom.
-  * ligand COM drift.  For simulations with a protein present, this metric gives the total distance of the ligand COM
-    from its initial starting (docked) position.  If this metric increases over the course of the simulation it
-    indicates that the ligand drifted from the binding pocket, and the simulation is unreliable.
+  * Ligand COM drift.  For simulations with a protein present, this metric gives the total distance of the ligand COM
+    from its initial starting (docked) position.  If this metric increases over the course of the simulation (beyond 5
+    angstrom) it indicates that the ligand drifted from the binding pocket, and the simulation is unreliable.
     This produces a plot called ``ligand_COM_drift.png`` and a results entry ``ligand_COM_drift``.
-  * protein 2D RMSD.  For simulations with a protein present, this metric gives, for each lambda state, the RMSD of the
+  * Protein 2D RMSD.  For simulations with a protein present, this metric gives, for each lambda state, the RMSD of the
     protein structure over time, using each frame analysed as a reference frame, to produce a 2 dimensional heatmap.
     This plot should show no significant spikes in RMSD (which will appear as brightly coloured areas).
 
