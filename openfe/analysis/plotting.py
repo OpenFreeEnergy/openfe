@@ -22,6 +22,11 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     -------
     ax : matplotlib.axes.Axes
       An Axes object to plot.
+
+    Notes
+    -----
+    Borrowed from `alchemlyb <https://github.com/alchemistry/alchemlyb/blob/master/src/alchemlyb/visualisation/mbar_matrix.py>`_
+    which itself borrows from `alchemical-analysis <https://github.com/MobleyLab/alchemical-analysis>`_. 
     """
     num_states = len(matrix)
     fig, ax = plt.subplots(figsize=(num_states / 2, num_states / 2))
@@ -32,7 +37,16 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             ax.axhline(y=i, ls="-", lw=0.5, color="k", alpha=0.25)
         for j in range(num_states):
             val = matrix[i, j]
-            val_str = "{:.2f}".format(val)[1:]
+
+            # Truncate if 0.005 from either 0 or 1
+            # https://github.com/OpenFreeEnergy/openfe/issues/806
+            if matrix[j, i] < 0.005:
+                ii = ""
+            elif matrix[j, i] > 0.995:
+                ii = "1.00"
+            else:
+                ii = "{:.2f}".format(matrix[j, i])[1:]
+
             rel_prob = val / matrix.max()
 
             # shade box
@@ -100,6 +114,10 @@ def plot_convergence(
     -------
     ax : matplotlib.axes.Axes
       An Axes object to plot.
+
+    Notes
+    -----
+    Modified from `alchemical analysis <<https://github.com/MobleyLab/alchemical-analysis>>`_
     """
     known_units = {
         'kilojoule_per_mole': 'kJ/mol',
