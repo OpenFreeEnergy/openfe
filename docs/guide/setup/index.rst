@@ -9,12 +9,6 @@ All protocols in OpenFE follow the same general structure:
 * Defining the Protocol with specific ProtocolSettings
 * Creating ``LigandAtomMapping`` \s for relative free energy calculations Protocols
 
-
-This will get you from your SDF/MOL2/PDB files to an
-:class:`.AlchemicalNetwork`, which contains all the information to run a
-simulation campaign.
-
-
 .. image:: img/setup_1x.png
    :width: 60%
    :align: center
