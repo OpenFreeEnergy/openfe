@@ -13,7 +13,7 @@ and represents the chemical models that are present in each end state.
 
 A ``ChemicalSystem`` **does** include information, where present, on:
 
-* the chemical models to be simulated, i.e. which atoms are present, their bonds
+* the chemical models to be simulated, i.e. which atoms are present and their bonds
 * exact protonation state of both the protein and ligand
 * the exact pose of a ligand or conformation of a protein
 * the presence of any crystallographic waters
