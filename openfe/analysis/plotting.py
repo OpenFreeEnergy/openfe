@@ -41,11 +41,11 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             # Truncate if 0.005 from either 0 or 1
             # https://github.com/OpenFreeEnergy/openfe/issues/806
             if matrix[j, i] < 0.005:
-                ii = ""
+                val_str = ""
             elif matrix[j, i] > 0.995:
-                ii = "1.00"
+                val_str = "1.00"
             else:
-                ii = "{:.2f}".format(matrix[j, i])[1:]
+                val_str = "{:.2f}".format(matrix[j, i])[1:]
 
             rel_prob = val / matrix.max()
 
