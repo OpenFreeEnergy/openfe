@@ -8,8 +8,8 @@ we can now start looking at what has been produced.
 The majority of Protocols will produce estimates of free energy differences between two or more ``ChemicalSystem`` \s
 (the current exception being the :class:`.PlainMDProtocol` which just simulates the dynamics of a single system).
 Beyond this, the exact data produced by a given Protocol can vary significantly,
-for example the RelativeHybridTopologyProtocol protocol will produce graphs to assess the quality of the simulation,
-while the MD Protocol will produce a trajectory file for the simulated system.
+for example the :class:`.RelativeHybridTopologyProtocol` protocol will produce graphs to assess the quality of the simulation, alongside trajectory data files.
+By comparison, the :class:`.PlainMDProtocol` will only produce the latter.
 For exact details on what is produced consult the :ref:`pages for each Protocol<userguide_protocols>`.
 
 .. todo crossref to HREX and MD Protocol docs from issue 743
