@@ -22,10 +22,10 @@ Alchemical Network Planners
 OpenFE provides convenience classes for creating :class:`.AlchemicalNetwork`.
 These currently include;
 
-* :class:`.RBFEAlchemicalNetworkPlanner`: creating relative binding free energy networks using :class:`.RelativeHybridTopologyProtocol`
-* :class:`.RHFEAlchemicalNetworkPlanner`: creating relative hydration free energy networks using :class:`.RelativeHybridTopologyProtocol`
+* :class:`.RBFEAlchemicalNetworkPlanner`: creating relative binding free energy networks using the :class:`.RelativeHybridTopologyProtocol`
+* :class:`.RHFEAlchemicalNetworkPlanner`: creating relative hydration free energy networks using the :class:`.RelativeHybridTopologyProtocol`
 
-The `Relative Alchemical Network Planners cookbook <../../cookbook/rfe_alchemical_planners>`_
+The `Relative Alchemical Network Planners cookbook <../../cookbook/rfe_alchemical_planners.html>`_
 demonstrates how to use these.
 
 
