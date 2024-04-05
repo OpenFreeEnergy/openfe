@@ -13,7 +13,7 @@ Python API
 
 You can manually create a :class:`.AlchemicalNetwork` by creating a list
 of :class:`.Transformation` objects.
-The `cookbook on creating alchemical networks <../../cookbook/create_alchemical_network.html>`_
+The :ref:`cookbook on creating alchemical networks <cookbook_create_alchemical_network>`
 demonstrates how to do this.
 
 Alchemical Network Planners
@@ -25,7 +25,7 @@ These currently include;
 * :class:`.RBFEAlchemicalNetworkPlanner`: creating relative binding free energy networks using the :class:`.RelativeHybridTopologyProtocol`
 * :class:`.RHFEAlchemicalNetworkPlanner`: creating relative hydration free energy networks using the :class:`.RelativeHybridTopologyProtocol`
 
-The `Relative Alchemical Network Planners cookbook <../../cookbook/rfe_alchemical_planners.html>`_
+The :ref:`Relative Alchemical Network Planners cookbook <cookbook_rfe_network_planners>`
 demonstrates how to use these.
 
 
@@ -55,7 +55,7 @@ using:
 
     $ openfe plan-rhfe network -M dir_with_sdfs/
 
-Please see the `RBFE CLI tutorial <../../tutorials/rbfe_cli_tutorial.html>`_
+Please see the :ref:`RBFE CLI tutorial <rbfe_cli_tutorial.html>`
 for an example on how to use the CLI to run an RBFE campaign.
 
 .. todo: link to appropriate CLI page in the userguide?
