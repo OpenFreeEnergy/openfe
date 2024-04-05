@@ -5,8 +5,8 @@ Working with Results
 
 With :ref:`execution of your calculations <userguide_execution>` completed,
 we can now start looking at what has been produced.
-At the very least, Protocols will produce estimates of free energy differences of the ``ChemicalSystem`` \s
-(with the exception of PlainMDProtocol which just simulate the behaviour of a single system).
+The majority of Protocols will produce estimates of free energy differences between two or more ``ChemicalSystem`` \s
+(the current exception being the :class:`.PlainMDProtocol` which just simulates the dynamics of a single system).
 Beyond this, the exact data produced by a given Protocol can vary significantly,
 for example the RelativeHybridTopologyProtocol protocol will produce graphs to assess the quality of the simulation,
 while the MD Protocol will produce a trajectory file for the simulated system.
