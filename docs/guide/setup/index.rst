@@ -14,10 +14,7 @@ All protocols in OpenFE follow the same general structure:
    :align: center
    :alt: Concept of a ChemicalSystems and Transformations
 
-For relative free energy calculations, you can plan an entire network of transformations,
-starting from your SDF/MOL2/PDB files to an
-:class:`.AlchemicalNetwork`, which contains all the information to run a
-simulation campaign. 
+The image below demonstrates how, for free energy calculations, you plan a network of ligand transformations starting from input SDF / MOL2 / PDB files:
 
 .. image:: img/setup_2x.png
    :width: 60%
