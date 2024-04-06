@@ -1,18 +1,17 @@
-.. _define_ligand_network:
 .. _userguide_ligand_network:
 
 Defining the Ligand Network
 ===========================
-A ligand network is a set of small molecules connected by mappings of two ligands.
-Such a network can represent a set of drug candidates derived from molecule enumeration that should
-be ranked by free energy calculations, in order to prioritize molecule synthesis efforts.
-The ligand networks are a tool that is used to orchestrate the free energy calculations to efficiently
+A :class:`.LigandNetwork` is a set of small molecules connected by mappings of two small molecules.
+One example for such a network could be a set of drug candidates, that should be ranked using alchemical transformations.
+The :class:`.LigandNetwork` is a tool that is used to orchestrate the free energy calculations to efficiently
 compute a ligand ranking.
-It is of course possible to calculate all possible transformations defined by all possible mappings connecting all small molecules with a ''maximal network'',
-but it is much more efficient to use a network with less transformations like a ''radial network'' (also known as a star map)
-or a ''minimimal spanning network''.
+It is of course possible to calculate all possible :class:`.Transformation` defined by all possible :class:`.AtomMappings`
+connecting all :class:`.SmallMoleculeComponent` with a ''maximal network'' (using :func:`.generate_maximal_network`),
+but it is much more efficient to use a network with less transformations like a ''radial network'' (also known as a star map, using :func:`.generate_radial_network`)
+or a ''minimimal spanning network'' (using :func:`.generate_minimal_spanning_network`).
 
-Any ``LigandNetwork`` generation can be generally conceptualized into three steps:
+Any :class:`.LigandNetwork`` generation can be generally conceptualized into three steps:
 
 * Generate the :ref:`Atom Mappings<Creating Atom Mappings>`  of all pairwise combinations of ligands
 * :ref:`Score all resulting Atom Mappings<Creating Atom Mappings>`
@@ -46,6 +45,9 @@ In the following code, we will show how a ``LigandNetwork`` can be planned:
 
    # Now let's plan the Network
    ligand_network = network_planner(ligands=mols, mappers=[mapper], scorer=scorer)
+
+More on generating ligand networks you can find in our generate_ligand_network_cookbook_ .
+.. _generate_ligand_network_cookbook: cookbook/generate_ligand_network
 
 .. note::
    Like the Component objects, a ``LigandNetwork`` object is immutable once created!
