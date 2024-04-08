@@ -1,15 +1,25 @@
 Simulation Setup
 ================
 
-This section provides details on how to set up a free energy calculation.
-This will get you from your SDF/MOL2/PDB files to an
-:class:`.AlchemicalNetwork`, which contains all the information to run a
-simulation campaign.
+This section provides details on how to set up free energy calculation or MD simulations.
 
-The first thing you will need to do will be to load in your molecules.
-OpenFE can small molecules from anything that RDKit can handle, and can load
-proteins from PDB or PDBx. For details of this, see
-:ref:`loading molecules <Loading Molecules>`.
+All protocols in OpenFE follow the same general structure: 
+
+* Reading in input structures and Creating ``ChemicalSystem`` \s
+* Defining the Protocol with specific ProtocolSettings
+* Creating ``LigandAtomMapping`` \s for relative free energy calculations Protocols
+
+.. image:: img/setup_1x.png
+   :width: 60%
+   :align: center
+   :alt: Concept of a ChemicalSystems and Transformations
+
+The image below demonstrates how, for relative free energy calculations, you plan a network of ligand transformations starting from input SDF / MOL2 / PDB files:
+
+.. image:: img/setup_2x.png
+   :width: 60%
+   :align: center
+   :alt: Concept of a LigandNetwork and AlchemicalNetwork
 
 The procedure for setting up a simulation depends somewhat on the on the
 type of free energy calculation you are running. See more detailed
