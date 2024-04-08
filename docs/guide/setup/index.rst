@@ -14,7 +14,7 @@ All protocols in OpenFE follow the same general structure:
    :align: center
    :alt: Concept of a ChemicalSystems and Transformations
 
-The image below demonstrates how, for free energy calculations, you plan a network of ligand transformations starting from input SDF / MOL2 / PDB files:
+The image below demonstrates how, for relative free energy calculations, you plan a network of ligand transformations starting from input SDF / MOL2 / PDB files:
 
 .. image:: img/setup_2x.png
    :width: 60%
