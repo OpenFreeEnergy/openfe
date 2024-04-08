@@ -33,8 +33,7 @@ relevant, atom mapping information for alchemical transformations. The latter
 is often done through a :class:`.LigandNetwork`.
 
 
-.. figure:: img/basic_alchemicalnetwork.png
-   :scale: 80%
+.. figure:: img/AlchemicalNetwork.png
 
 
 .. TODO where to find details on settings
