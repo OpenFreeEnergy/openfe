@@ -55,10 +55,8 @@ Getting the free energy estimate
 
 The free energy differences are obtained from simulation data using the MBAR estimator (multistate Bennett acceptance ratio estimator).
 In addition to the MBAR estimates of the two legs of the thermodynamic cycle and the overall relative binding free energy difference,
-the protocol also returns some metrics to help assess convergence of the results. 
-The forward and reverse analysis looks at the time convergence of the free energy estimates. 
-The MBAR overlap matrix checks how well lambda states overlap. Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very important metric.
-To assess the mixing of lambda states in the Hamiltonian replica exchange method, the results object returns the replica exchange transition matrix, which can be plotted as the replica exchange overlap matrix, as well as a time series of all replica states.
+the protocol also returns some metrics to help assess convergence of the results,
+these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
 Simulation overview
 -------------------
@@ -81,6 +79,9 @@ Each Protocol simulation Unit carries out the following steps:
 
 Note: three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted). By default the HREX approach is selected, this can be altered using ``simulation_settings.sampler_method`` (default: ``repex``).
 
+.. todo: issue 792, consolidate this page into its own analysis page and link both RBFE and AFE pages to it
+.. _multistate_analysis:
+
 Analysis
 ~~~~~~~~
 
@@ -91,8 +92,6 @@ This analysis can be categorised as relating
 to the energetics of the different lambda states that were sampled,
 or to the analysis of the change in structural conformation over time in each state.
 
-.. todo: issue 792, consolidate this page into its own analysis page and link both RBFE and AFE pages to it
-
 * Energetic and replica exchange analysis.  These analyses consider the swapping and energetic overlap between the
   different simulated states to help assess the convergence and correctness of the estimate of free energy
   difference produced.
@@ -101,7 +100,7 @@ or to the analysis of the change in structural conformation over time in each st
     Each matrix element represents the probability of a sample from a given row state being observable in a given column
     state.
     This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected,
-    with elements adjacent to the diagonal being at least 0.03[2]_.
+    with elements adjacent to the diagonal being at least 0.03 [2]_.
   * Replica exchange probability matrix (for repex type simulations only).  Similar to the MBAR overlap matrix, this shows
     the probability of a given lambda state being exchanged with another.  Again, the diagonal of this matrix should be
     at least tridiagonal wide for the two end states to be connected.
@@ -110,14 +109,15 @@ or to the analysis of the change in structural conformation over time in each st
     This plot should show that the states are freely mixing and that there are no cliques forming.
   * Forward and reverse convergence of free energy estimates.  Using increasingly larger portions of the total data,
     this analysis calculates the free energy difference, both in forward and backward directions.
-    In this analysis, forward and backward estimates that agree within error using only a fraction of the total data suggest convergence[2]_.
-    data[2]_.
+    In this analysis, forward and backward estimates that agree within error using only a fraction of the total data
+    suggest convergence [2]_.
 
 * Structural analysis. If a protein was present, these analyses first center and align the system so that
   the protein is considered the frame of reference.
 
   * Ligand RMSD.  This produces a plot called ``ligand_RMSD.png`` and a results entry ``ligand_RMSD`` which gives the
-    RMSD of the ligand molecule over time relative to the first frame, for each simulated state.  Large RMSD values, e.g. greater than 5 angstrom (system dependent), would indicate an unstable ligand binding mode.
+    RMSD of the ligand molecule over time relative to the first frame of the production phase, for each simulated state.
+    Large RMSD values, e.g. greater than 5 angstrom (system dependent), would indicate an unstable ligand binding mode.
   * Ligand COM drift.  For simulations with a protein present, this metric gives the total distance of the ligand COM
     from its initial starting (docked) position.  If this metric increases over the course of the simulation (beyond 5
     angstrom) it indicates that the ligand drifted from the binding pocket, and the simulation is unreliable.
