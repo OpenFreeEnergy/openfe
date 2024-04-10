@@ -1,5 +1,7 @@
-Protocols and the Execution Model
-=================================
+.. _userguide_execution_theory:
+
+Protocols and the Execution Model Theory
+========================================
 
 Protocols in OpenFE are built on a flexible execution model. 
 Result objects are shaped by this model, and therefore some basic
