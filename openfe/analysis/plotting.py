@@ -41,11 +41,13 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             # Catch if 0.05 from 0 or 1
             # https://github.com/OpenFreeEnergy/openfe/issues/806
             if matrix[j, i] < 0.005:
+                # This replicates the same behaviour as alchemical-analysis & alchemlyb
+                # i.e. near-zero values will just not be annotated
                 val_str = ""
             elif matrix[j, i] > 0.995:
                 val_str = "{:.2f}".format(matrix[j, i])[:4]
                 # Throw a warning if the value is greater than float error
-                # This means your overlap matrix probably wrong
+                # This means your overlap matrix is probably wrong
                 if matrix[j, i] > 1.01:
                     wmsg = (f"Overlap probability exceeds 1.0: {matrix[j, i]} "
                             "This is inddicates an incorrect overlap matrix "
