@@ -43,7 +43,11 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             if matrix[j, i] < 0.005:
                 val_str = ""
             elif matrix[j, i] > 0.995:
-                val_str = "1.00"
+                val_str = "{:.2f}".format(matrix[j, i])[:4]
+                if matrix[j, i] > 1.05:
+                    wmsg = (f"Overlap probability exceeds 1.0: {matrix[j, i]} "
+                            "This is likely related to: https://github.com/OpenFreeEnergy/openfe/issues/806")
+                    warnings.warn(wmsg)
             else:
                 val_str = "{:.2f}".format(matrix[j, i])[1:]
 
