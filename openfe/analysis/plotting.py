@@ -38,15 +38,18 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
         for j in range(num_states):
             val = matrix[i, j]
 
-            # Truncate if 0.005 from either 0 or 1
+            # Catch if 0.05 from 0 or 1
             # https://github.com/OpenFreeEnergy/openfe/issues/806
             if matrix[j, i] < 0.005:
                 val_str = ""
             elif matrix[j, i] > 0.995:
                 val_str = "{:.2f}".format(matrix[j, i])[:4]
-                if matrix[j, i] > 1.05:
+                # Throw a warning if the value is greater than float error
+                # This means your overlap matrix probably wrong
+                if matrix[j, i] > 1.01:
                     wmsg = (f"Overlap probability exceeds 1.0: {matrix[j, i]} "
-                            "This is likely related to: https://github.com/OpenFreeEnergy/openfe/issues/806")
+                            "This is inddicates an incorrect overlap matrix "
+                            "it is likely related to: https://github.com/OpenFreeEnergy/openfe/issues/806")
                     warnings.warn(wmsg)
             else:
                 val_str = "{:.2f}".format(matrix[j, i])[1:]
