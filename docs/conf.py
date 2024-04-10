@@ -246,4 +246,5 @@ nbsphinx_prolog = cleandoc(r"""
 
             :octicon:`rocket` Run in Colab
 
+    .. _{{ env.doc2path(env.docname, base=None) }}:
 """)
