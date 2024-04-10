@@ -5,8 +5,9 @@ Execution with Quickrun
 
 The planning and preparation of a campaign of alchemical simulations using the ``openfe`` package is intended to be
 achievable on a local workstation in a matter of minutes.
-The **execution** of these simulations however requires a large amount of computational power and is intended to be
-distributed across a HPC environment.
+The **execution** of these simulations however requires a large amount of computational power,
+and beyond running single calculations locally,
+is intended to be distributed across a HPC environment.
 Doing this requires storing and sending the details of the simulation from the local workstation to a HPC environment,
 this can be done via the :func:`.Transformation.dump` function which
 :ref:`creates a saved "json" version of the data<dumping_transformations>`.
@@ -20,8 +21,10 @@ therefore this command would execute a simulation saved to a file called "transf
 
 ::
 
-  openfe quickrun transformation.json
+  openfe quickrun transformation.json -o results.json
 
+
+Which will produce a results file called ``results.json``.
 
 Executing within a job submission script
 ----------------------------------------
@@ -40,3 +43,9 @@ The ``quickrun`` command can be integrated into as:
   conda activate openfe_env
 
   openfe quickrun transformation.json -o results.json
+
+
+See Also
+--------
+
+For details on inspecting these results, refer to :ref:`userguide_results`.
