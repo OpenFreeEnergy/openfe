@@ -105,7 +105,8 @@ MBAR_HIGH_FLOAT_ABNORMAL = np.array([
     [MBAR_HIGH_FLOAT_PREC, MBAR_HIGH_FLOAT_ABNORMAL],
 )
 def test_mbar_overlap_plot_high_warn(matrix):
-    with pytest.warns(match="Overlap probability exceeds"):
+    wmsg = "Overlap/probability matrix exceeds"
+    with pytest.warns(match=wmsg):
         ax = plot_lambda_transition_matrix(matrix)
     assert isinstance(ax, matplotlib.axes.Axes)
 

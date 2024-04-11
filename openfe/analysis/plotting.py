@@ -24,12 +24,28 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     ax : matplotlib.axes.Axes
       An Axes object to plot.
 
+    Raises
+    ------
+    UserWarning
+      If any row or column exceeds a sum value of 1.01. This indicates
+      an incorrect overlap/probability matrix.
+
     Notes
     -----
     Borrowed from `alchemlyb <https://github.com/alchemistry/alchemlyb/blob/master/src/alchemlyb/visualisation/mbar_matrix.py>`_
     which itself borrows from `alchemical-analysis <https://github.com/MobleyLab/alchemical-analysis>`_. 
     """
     num_states = len(matrix)
+
+    # Check if any row or column isn't close to 1.0
+    # Throw a warning if it's the case
+    if (not np.allclose(matrix.sum(axis=0), 1.0) or
+        not np.allclose(matrix.sum(axis=1), 1.0)):
+        wmsg = ("Overlap/probability matrix exceeds a sum of 1.0 in one or "
+                "more column or rows of the matrix. This indicates an "
+                "incorrect overlap/probability matrix.")
+        warnings.warn(wmsg)
+
     fig, ax = plt.subplots(figsize=(num_states / 2, num_states / 2))
     ax.axis('off')
     for i in range(num_states):
@@ -47,13 +63,6 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
                 val_str = ""
             elif matrix[j, i] > 0.995:
                 val_str = "{:.2f}".format(matrix[j, i])[:4]
-                # Throw a warning if the value is greater than float error
-                # This means your overlap matrix is probably wrong
-                if matrix[j, i] > 1.01:
-                    wmsg = (f"Overlap probability exceeds 1.0: {matrix[j, i]} "
-                            "This indicates an incorrect overlap matrix "
-                            "it is likely related to: https://github.com/OpenFreeEnergy/openfe/issues/806")
-                    warnings.warn(wmsg)
             else:
                 val_str = "{:.2f}".format(matrix[j, i])[1:]
 
