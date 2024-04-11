@@ -42,7 +42,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     if (not np.allclose(matrix.sum(axis=0), 1.0) or
         not np.allclose(matrix.sum(axis=1), 1.0)):
         wmsg = ("Overlap/probability matrix exceeds a sum of 1.0 in one or "
-                "more column or rows of the matrix. This indicates an "
+                "more columns or rows of the matrix. This indicates an "
                 "incorrect overlap/probability matrix.")
         warnings.warn(wmsg)
 
