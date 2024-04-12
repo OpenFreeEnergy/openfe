@@ -6,7 +6,8 @@ ChemicalSystems, Components and Thermodynamic Cycles
 Chemical Systems
 ----------------
 
-In order to define the input systems to a Protocol, so as the end states of an alchemical transformation,
+In order to define the input systems to a Protocol,
+which correspond as the end states of an alchemical transformation,
 we need an object model to represent their chemical composition.
 In ``openfe`` a :class:`.ChemicalSystem` is used to capture this information,
 and represents the chemical models that are present in each end state.
@@ -43,6 +44,7 @@ Thermodynamic Cycles
 --------------------
 
 With a language to express chemical systems piecewise, we can now also construct thermodynamic cycles based on these.
+The exact end states to construct are detailed in the :ref:`pages for each specific Protocol <userguide_protocols>`.
 For example to  construct the classic relative binding free energy cycle, we will need four components, two ligands,
 a protein, and a solvent.  These four ingredients can then be combined into the four point on the thermodynamic cycle
 that we wish to sample:
@@ -53,15 +55,22 @@ that we wish to sample:
 
   import openfe
 
-  ligand1 = openfe.SmallMoleculeComponent.from_sdf_file('./ligand1.sdf')
-  ligand2 = openfe.SmallMoleculeComponent.from_sdf_file('./ligand2.sdf')
+  # two small molecules defined in a molfile format
+  ligand_A = openfe.SmallMoleculeComponent.from_sdf_file('./ligand_A.sdf')
+  ligand_B = openfe.SmallMoleculeComponent.from_sdf_file('./ligand_B.sdf')
+  # a complete biological assembly
   protein = openfe.ProteinComponent.from_pdb_file('./protein.pdb')
-  solvent = openfe.SolventComponent()
+  # defines an aqueous solvent environment, with a concentration of ions
+  solvent = openfe.SolventComponent(smiles='O')
 
-  ligand1_complex = openfe.ChemicalSystem(components={'ligand': ligand1, 'protein': protein, 'solvent': solvent})
-  ligand2_complex = openfe.ChemicalSystem(components={'ligand': ligand2, 'protein': protein, 'solvent': solvent})
-  ligand1_solvent = openfe.ChemicalSystem(components={'ligand': ligand1, 'solvent': solvent})
-  ligand2_solvent = openfe.ChemicalSystem(components={'ligand': ligand2, 'solvent': solvent})
+  # ligand_A + protein + solvent
+  ligand_A_complex = openfe.ChemicalSystem(components={'ligand': ligand_A, 'protein': protein, 'solvent': solvent})
+  # ligand_B + protein + solvent
+  ligand_B_complex = openfe.ChemicalSystem(components={'ligand': ligand_B, 'protein': protein, 'solvent': solvent})
+  # ligand_A + solvent
+  ligand_A_solvent = openfe.ChemicalSystem(components={'ligand': ligand_A, 'solvent': solvent})
+  # ligand_A + solvent
+  ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
 
 
 See Also
