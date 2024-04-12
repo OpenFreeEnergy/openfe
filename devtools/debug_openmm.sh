@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Run this script with you conda env activated"
+echo "Run this script with your conda env activated"
 echo "Invoke the script like this: "
 echo "./debug_openmm.sh | tee -a debug.log"
 echo "Then send us debug.log"
