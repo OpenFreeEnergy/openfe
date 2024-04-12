@@ -106,45 +106,83 @@ This analysis can be categorised as relating
 to the energetics of the different lambda states that were sampled,
 or to the analysis of the change in structural conformation over time in each state.
 
-* Energetic and replica exchange analysis.  These analyses consider the swapping and energetic overlap between the
-  different simulated states to help assess the convergence and correctness of the estimate of free energy
-  difference produced.
+Energetic and replica exchange analysis
+"""""""""""""""""""""""""""""""""""""""
 
-  * MBAR overlap matrix.  This plot is used to assess if the different lambda states simulated overlapped energetically.
-    Each matrix element represents the probability of a sample from a given row state being observable in a given column
-    state.
-    Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very
-    important metric.
-    This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected,
-    with elements adjacent to the diagonal being at least 0.03 [5]_.
-  * Replica exchange probability matrix (for repex type simulations only).  Similar to the MBAR overlap matrix, this shows
-    the probability of a given lambda state being exchanged with another.  Again, the diagonal of this matrix should be
-    at least tridiagonal wide for the two end states to be connected.
-  * Timeseries of replica states.  This plot shows the time evolution of the different system configurations as they are
-    exchanged between different lambda states.
-    This plot should show that the states are freely mixing and that there are no cliques forming.
-  * Forward and reverse convergence of free energy estimates.  Using increasingly larger portions of the total data,
-    this analysis calculates the free energy difference, both in forward and backward directions.
-    In this analysis, forward and backward estimates that agree within error using only a fraction of the total data
-    suggest convergence [5]_.
+These analyses consider the swapping and energetic overlap between the
+different simulated states to help assess the convergence and correctness of the estimate of free energy
+difference produced.
 
-* Structural analysis. If a protein was present, these analyses first center and align the system so that
-  the protein is considered the frame of reference.
+.. list-table:: Energetic Analysis examples
+  :widths: 75 25
+  :header-rows: 1
 
-  * Ligand RMSD.  This produces a plot called ``ligand_RMSD.png`` and a results entry ``ligand_RMSD`` which gives the
-    RMSD of the ligand molecule over time relative to the first frame of the production phase, for each simulated state.
-    Large RMSD values, e.g. greater than 5 angstrom (system dependent), would indicate an unstable ligand binding mode.
-  * Ligand COM drift.  For simulations with a protein present, this metric gives the total distance of the ligand COM
-    from its initial starting (docked) position.  If this metric increases over the course of the simulation (beyond 5
-    angstrom) it indicates that the ligand drifted from the binding pocket, and the simulation is unreliable.
-    This produces a plot called ``ligand_COM_drift.png`` and a results entry ``ligand_COM_drift``.
-  * Protein 2D RMSD.  For simulations with a protein present, this metric gives, for each lambda state, the RMSD of the
-    protein structure over time, using each frame analysed as a reference frame, to produce a 2 dimensional heatmap.
-    This plot should show no significant spikes in RMSD (which will appear as brightly coloured areas).
+  * - Description
+    - Example
+  * - **MBAR overlap matrix.**
 
+      This plot is used to assess if the different lambda states simulated overlapped energetically.
+      Each matrix element represents the probability of a sample from a given row state being observable in a given column
+      state.
+      Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very
+      important metric.
+      This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected,
+      with elements adjacent to the diagonal being at least 0.03 [5]_.
+    - .. image:: img/mbar_overlap_matrix.png
+  * - **Replica exchange probability matrix** (for replica exchange sampler simulations only).
+
+      Similar to the MBAR overlap matrix, this shows the probability of a given lambda state being exchanged with another.
+      Again, the diagonal of this matrix should be at least tridiagonal wide for the two end states to be connected.
+    - .. image:: img/replica_exchange_matrix.png
+  * - **Forward and reverse convergence of free energy estimates.**
+
+      Using increasingly larger portions of the total data,
+      this analysis calculates the free energy difference, both in forward and backward directions.
+      In this analysis, forward and backward estimates that agree within error using only a fraction of the total data
+      suggest convergence [5]_.
+    - .. image:: img/forward_reverse_convergence.png
+  * - **Timeseries of replica states.**
+
+      This plot shows the time evolution of the different system configurations as they are
+      exchanged between different lambda states.
+      This plot should show that the states are freely mixing and that there are no cliques forming.
+    - .. image:: img/replica_state_timeseries.png
+
+Structural analysis
+"""""""""""""""""""
+
+If a protein was present, these analyses first center and align the system so that
+the protein is considered the frame of reference.
 Further analysis can be performed by inspecting the ``simulation.nc`` and ``hybrid_system.pdb`` files,
 which contain a multistate trajectory and topology for the hybrid system respectively.
 These files can be loaded into an MDAnalysis Universe object using the `openfe_analysis`_ package.
+
+.. list-table:: Structural Analysis examples
+  :widths: 75 25
+  :header-rows: 1
+
+  * - Description
+    - Example
+  * - **Ligand RMSD.**
+
+      This produces a plot called ``ligand_RMSD.png`` and a results entry ``ligand_RMSD`` which gives the
+      RMSD of the ligand molecule over time relative to the first frame of the production phase, for each simulated state.
+      Large RMSD values, e.g. greater than 5 angstrom (system dependent), would indicate an unstable ligand binding mode.
+    - .. image:: img/ligand_RMSD.png
+  * - **Ligand COM drift.**
+
+      For simulations with a protein present, this metric gives the total distance of the ligand COM
+      from its initial starting (docked) position.  If this metric increases over the course of the simulation (beyond 5
+      angstrom) it indicates that the ligand drifted from the binding pocket, and the simulation is unreliable.
+      This produces a plot called ``ligand_COM_drift.png`` and a results entry ``ligand_COM_drift``.
+    - .. image:: img/ligand_COM_drift.png
+  * - **Protein 2D RMSD.**
+
+      For simulations with a protein present, this metric gives, for each lambda state, the RMSD of the
+      protein structure over time, using each frame analysed as a reference frame, to produce a 2 dimensional heatmap.
+      This plot should show no significant spikes in RMSD (which will appear as brightly coloured areas).
+    - .. image:: img/protein_2D_RMSD.png
+
 
 See Also
 --------
