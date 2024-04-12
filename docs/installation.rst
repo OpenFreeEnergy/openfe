@@ -570,6 +570,29 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 
   $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version|
 
+Troubleshooting Your Installation
+---------------------------------
+
+We have create a script that can be ran locally to assist in troubleshooting errors.
+The script does not upload any information and the output may be inspected before the output is sent to us.
+We recomend running the script in the same environment where the error was observed.
+For example, if you had an error when creating a system on your local workstation, run the script locally with the same conda environment active as when the error occurred.
+If the error occurred when running the job on an HPC resource, then run the script (ideally) on the same node where the problem occurred. 
+This helps to debug issues such as a CUDA and NVIDIA driver mismatch (which would be impossible to diagnose if the script was ran on a login node without a GPU).
+
+The script is available here: https://github.com/OpenFreeEnergy/openfe/blob/main/devtools/debug_openmm.sh
+For your convenience, this command will download the script and save the output as ``debug.log``
+
+.. parsed-literal::
+
+
+  $ bash -c "$(curl -Ls https://raw.githubusercontent.com/OpenFreeEnergy/openfe/main/devtools/debug_openmm.sh)" | tee -a debug.log
+
+The output of the script will also be printed to standard out as it is executed.
+While no sensitive information is extracted, it is good practice to review the output before sending it or posting it to ensure that nothing needs to be redacted.
+For example, if your python path was ``/data/SECRET_COMPOUND_NAME/python`` then that would show up in ``debug.log``.
+
+ 
 Common Errors
 -------------
 
