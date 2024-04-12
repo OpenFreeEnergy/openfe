@@ -592,6 +592,8 @@ The openfe package is installable on these platforms, but support is done on a b
 * ``osx-arm64``
 
 For simulation preparation, any supported platform is suitable.
+We test our software regularly by performing vacuum transformations on ``linux-64`` using the OpenMM CUDA platform.
+While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA platform is more performant) so we do not recomend using that platform without performing your own verification of correctness.
 For production use, we recomend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
 When using an OpenMM based protocol on NVIDIA GPUs, we recomend driver version ``525.60.13`` or greater.
 The minimum driver version required when installing from conda-forge is ``450.36.06``, but newer versions of OpenMM may not support that driver version as CUDA 11 will be removed the build matrix.
