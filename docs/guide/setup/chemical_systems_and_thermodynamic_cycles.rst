@@ -14,10 +14,10 @@ and represents the chemical models that are present in each end state.
 
 A :class:`.ChemicalSystem` **does** include information, where present, on:
 
-* the chemical models to be simulated, i.e. which atoms are present and their bonds
-* exact protonation state of both the protein and ligand
-* the exact pose of a ligand or conformation of a protein
-* the presence of any crystallographic waters
+* exact atomic information (including protonation state) of protein, ligands, co-factors, and any crystallographic
+  waters
+* atomic positions of all explicitly  ligand or conformation of a protein
+* the abstract definition of the solvation environment, if present
 
 It **does not** include any information on:
 
