@@ -12,7 +12,7 @@ we need an object model to represent their chemical composition.
 In ``openfe`` a :class:`.ChemicalSystem` is used to capture this information,
 and represents the chemical models that are present in each end state.
 
-A ``ChemicalSystem`` **does** include information, where present, on:
+A :class:`.ChemicalSystem` **does** include information, where present, on:
 
 * the chemical models to be simulated, i.e. which atoms are present and their bonds
 * exact protonation state of both the protein and ligand
@@ -27,7 +27,7 @@ It **does not** include any information on:
 Components
 ----------
 
-A ``ChemicalSystem`` is composed of many ``Component`` objects,
+A :class:`.ChemicalSystem` is composed of many :class:`.Component` objects,
 each representing a single ''piece'' of the overall system.
 Examples of components include:
 
@@ -76,5 +76,5 @@ that we wish to sample:
 See Also
 --------
 
-* To see how to construct ``ChemicalSystem`` \s from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
+* To see how to construct a :class:`.ChemicalSystem` \s from your files, see :ref:`the cookbook entry on loading molecules <Loading Molecules>`
 * For details of what thermodynamic cycles to construct, consult the :ref:`pages for each specific Protocol <userguide_protocols>`
