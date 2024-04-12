@@ -103,9 +103,10 @@ exclude_patterns = [
 
 autodoc_mock_imports = [
     "matplotlib",
-    "openmmtools",
     "mdtraj",
     "openmmforcefields",
+    "openmmtools",
+    "pymbar",
 ]
 
 # Extensions for the myst parser
@@ -185,17 +186,19 @@ except Exception as e:
         f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
     )
 
+
+# First, create links at top of notebook pages
+# All notebooks are in ExampleNotebooks repo, so link to that
+# Finally, add sphinx reference anchor in prolog so that we can make refs
 nbsphinx_prolog = cleandoc(r"""
-    {%- set path = env.doc2path(env.docname, base="ExampleNotebooks") -%}
-    {%- set gh_repo = "OpenFreeEnergy/openfe" -%}
+    {%- set gh_repo = "OpenFreeEnergy/ExampleNotebooks" -%}
     {%- set gh_branch = "main" -%}
     {%- set path = env.doc2path(env.docname, base=None) -%}
     {%- if path.endswith(".nblink") -%}
         {%- set path = env.metadata[env.docname]["nbsphinx-link-target"] -%}
     {%- endif -%}
-    {%- if path.startswith("docs/ExampleNotebooks") -%}
-        {%- set path = path.replace("docs/ExampleNotebooks/", "", 1) -%}
-        {%- set gh_repo = "OpenFreeEnergy/ExampleNotebooks" -%}
+    {%- if path.startswith("ExampleNotebooks/") -%}
+        {%- set path = path.replace("ExampleNotebooks/", "", 1) -%}
     {%- endif -%}
     {%- set gh_url =
         "https://www.github.com/"
@@ -245,4 +248,5 @@ nbsphinx_prolog = cleandoc(r"""
 
             :octicon:`rocket` Run in Colab
 
+    .. _{{ env.doc2path(env.docname, base=None) }}:
 """)

@@ -74,8 +74,12 @@ class RelativeAlchemicalNetworkPlanner(
         if protocol is None:
             protocol = RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings())
         if mappers is None:
-            mappers = [LomapAtomMapper(time=20, threed=True,
-                                       element_change=False, max3d=1)]
+            mappers = [LomapAtomMapper(time=20,
+                                       threed=True,
+                                       max3d=1.0,
+                                       element_change=True,
+                                       shift=False,
+                                       )]
 
         self.name = name
         self._mappers = mappers
@@ -207,9 +211,9 @@ class RelativeAlchemicalNetworkPlanner(
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
         # Todo: Another dirty hack! - START
-        protocol_settings = copy.deepcopy(transformation_protocol.settings)
+        protocol_settings = transformation_protocol.settings.unfrozen_copy()
         if "vacuum" in transformation_name:
-            protocol_settings.system_settings.nonbonded_method = "nocutoff"
+            protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
 
         transformation_protocol = transformation_protocol.__class__(
             settings=protocol_settings
@@ -218,7 +222,7 @@ class RelativeAlchemicalNetworkPlanner(
         return Transformation(
             stateA=stateA,
             stateB=stateB,
-            mapping={RFEComponentLabels.LIGAND: ligand_mapping_edge},
+            mapping=ligand_mapping_edge,
             name=transformation_name,
             protocol=transformation_protocol,
         )

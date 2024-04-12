@@ -30,16 +30,16 @@ from __future__ import annotations
 
 import pathlib
 import logging
+import warnings
 from collections import defaultdict
 import gufe
 from gufe.components import Component
-from openff.toolkit.topology import Molecule as OFFMolecule
 import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from openmmtools import multistate
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 from typing import Any, Iterable
 import uuid
 
@@ -49,15 +49,17 @@ from gufe import (
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteSolvationSettings, SystemSettings,
-    SolvationSettings, AlchemicalSettings,
-    AlchemicalSamplerSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettings,
+    AbsoluteSolvationSettings,
+    OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
+    MDSimulationSettings, MDOutputSettings,
+    MultiStateSimulationSettings, OpenMMEngineSettings,
+    IntegratorSettings, MultiStateOutputSettings,
+    OpenFFPartialChargeSettings,
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
-from openfe.utils import without_oechem_backend, log_system_probe
+from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
 
@@ -172,13 +174,13 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
 
-    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
         Returns
         -------
-        forward_reverse : dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
             A dictionary, keyed `solvent` and `vacuum` for each leg of the
             thermodynamic cycle which each contain a list of dictionaries
             containing the forward and reverse analysis of each repeat
@@ -192,15 +194,36 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
               - `forward_dDGs`, `reverse_dDGs`: unit.Quantity
                   The forward and reverse estimate uncertainty for each
                   fraction of data.
+
+            If one of the cycle leg list entries is ``None``, this indicates
+            that the analysis could not be carried out for that repeat. This
+            is most likely caused by MBAR convergence issues when attempting to
+            calculate free energies from too few samples.
+
+        Raises
+        ------
+        UserWarning
+          * If any of the forward and reverse dictionaries are ``None`` in a
+            given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]] = {}
+        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]] = {}
 
         for key in ['solvent', 'vacuum']:
             forward_reverse[key] = [
                 pus[0].outputs['forward_and_reverse_energies']
                 for pus in self.data[key].values()
             ]
+
+            if None in forward_reverse[key]:
+                wmsg = (
+                    "One or more ``None`` entries were found in the forward "
+                    f"and reverse dictionaries of the repeats of the {key} "
+                    "calculations. This is likely caused by an MBAR convergence "
+                    "failure caused by too few independent samples when "
+                    "calculating the free energies of the 10% timeseries slice."
+                )
+                warnings.warn(wmsg)
 
         return forward_reverse
 
@@ -373,11 +396,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
     See Also
     --------
-    openfe.protocols
-    openfe.protocols.openmm_afe.AbsoluteSolvationSettings
-    openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult
-    openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit
-    openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSettings`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit`
     """
     result_cls = AbsoluteSolvationProtocolResult
     _settings: AbsoluteSolvationSettings
@@ -396,32 +419,71 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
           a set of default settings
         """
         return AbsoluteSolvationSettings(
-            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            protocol_repeats=3,
+            solvent_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            vacuum_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
+                nonbonded_method='nocutoff',
+            ),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            solvent_system_settings=SystemSettings(),
-            vacuum_system_settings=SystemSettings(nonbonded_method='nocutoff'),
             alchemical_settings=AlchemicalSettings(),
-            alchemsampler_settings=AlchemicalSamplerSettings(
-                n_replicas=24,
+            lambda_settings=LambdaSettings(
+                lambda_elec=[
+                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                lambda_vdw=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
+                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+                lambda_restraints=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             ),
-            solvation_settings=SolvationSettings(),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
             vacuum_engine_settings=OpenMMEngineSettings(),
             solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            solvent_simulation_settings=SimulationSettings(
+            solvent_equil_simulation_settings=MDSimulationSettings(
+                equilibration_length_nvt=0.1 * unit.nanosecond,
+                equilibration_length=0.2 * unit.nanosecond,
+                production_length=0.5 * unit.nanosecond,
+            ),
+            solvent_equil_output_settings=MDOutputSettings(
+                equil_nvt_structure='equil_nvt_structure.pdb',
+                equil_npt_structure='equil_npt_structure.pdb',
+                production_trajectory_filename='production_equil.xtc',
+                log_output='equil_simulation.log',
+            ),
+            solvent_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=14,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
-                output_filename='solvent.nc',
-                checkpoint_storage='solvent_checkpoint.nc',
             ),
-            vacuum_simulation_settings=SimulationSettings(
+            solvent_output_settings=MultiStateOutputSettings(
+                output_filename='solvent.nc',
+                checkpoint_storage_filename='solvent_checkpoint.nc',
+            ),
+            vacuum_equil_simulation_settings=MDSimulationSettings(
+                equilibration_length_nvt=None,
+                equilibration_length=0.2 * unit.nanosecond,
+                production_length=0.5 * unit.nanosecond,
+            ),
+            vacuum_equil_output_settings=MDOutputSettings(
+                equil_nvt_structure=None,
+                equil_npt_structure='equil_structure.pdb',
+                production_trajectory_filename='production_equil.xtc',
+                log_output='equil_simulation.log',
+            ),
+            vacuum_simulation_settings=MultiStateSimulationSettings(
+                n_replicas=14,
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
+            ),
+            vacuum_output_settings=MultiStateOutputSettings(
                 output_filename='vacuum.nc',
-                checkpoint_storage='vacuum_checkpoint.nc'
+                checkpoint_storage_filename='vacuum_checkpoint.nc'
             ),
         )
 
@@ -517,11 +579,79 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                           "are not currently supported")
                 raise ValueError(errmsg)
 
+    @staticmethod
+    def _validate_lambda_schedule(
+            lambda_settings: LambdaSettings,
+            simulation_settings: MultiStateSimulationSettings,
+    ) -> None:
+        """
+        Checks that the lambda schedule is set up correctly.
+
+        Parameters
+        ----------
+        lambda_settings : LambdaSettings
+          the lambda schedule Settings
+        simulation_settings : MultiStateSimulationSettings
+          the settings for either the vacuum or solvent phase
+
+        Raises
+        ------
+        ValueError
+          If the number of lambda windows differs for electrostatics and sterics.
+          If the number of replicas does not match the number of lambda windows.
+          If there are states with naked charges.
+        Warnings
+          If there are non-zero values for restraints (lambda_restraints).
+        """
+
+        lambda_elec = lambda_settings.lambda_elec
+        lambda_vdw = lambda_settings.lambda_vdw
+        lambda_restraints = lambda_settings.lambda_restraints
+        n_replicas = simulation_settings.n_replicas
+
+        # Ensure that all lambda components have equal amount of windows
+        lambda_components = [lambda_vdw, lambda_elec, lambda_restraints]
+        it = iter(lambda_components)
+        the_len = len(next(it))
+        if not all(len(l) == the_len for l in it):
+            errmsg = (
+                "Components elec, vdw, and restraints must have equal amount"
+                f" of lambda windows. Got {len(lambda_elec)} elec lambda"
+                f" windows, {len(lambda_vdw)} vdw lambda windows, and"
+                f"{len(lambda_restraints)} restraints lambda windows.")
+            raise ValueError(errmsg)
+
+        # Ensure that number of overall lambda windows matches number of lambda
+        # windows for individual components
+        if n_replicas != len(lambda_vdw):
+            errmsg = (f"Number of replicas {n_replicas} does not equal the"
+                      f" number of lambda windows {len(lambda_vdw)}")
+            raise ValueError(errmsg)
+
+        # Check if there are lambda windows with naked charges
+        for inx, lam in enumerate(lambda_elec):
+            if lam < 1 and lambda_vdw[inx] == 1:
+                errmsg = (
+                    "There are states along this lambda schedule "
+                    "where there are atoms with charges but no LJ "
+                    f"interactions: lambda {inx}: "
+                    f"elec {lam} vdW {lambda_vdw[inx]}")
+                raise ValueError(errmsg)
+
+        # Check if there are lambda windows with non-zero restraints
+        if len([r for r in lambda_restraints if r != 0]) > 0:
+            wmsg = ("Non-zero restraint lambdas applied. The absolute "
+                    "solvation protocol doesn't apply restraints, "
+                    "therefore restraints won't be applied. "
+                    f"Given lambda_restraints: {lambda_restraints}")
+            logger.warning(wmsg)
+            warnings.warn(wmsg)
+
     def _create(
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Dict[str, gufe.ComponentMapping]] = None,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: extensions
@@ -535,9 +665,15 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         )
         self._validate_alchemical_components(alchem_comps)
 
+        # Validate the lambda schedule
+        self._validate_lambda_schedule(self.settings.lambda_settings,
+                                       self.settings.solvent_simulation_settings)
+        self._validate_lambda_schedule(self.settings.lambda_settings,
+                                       self.settings.vacuum_simulation_settings)
+
         # Check nonbond & solvent compatibility
-        solv_nonbonded_method = self.settings.solvent_system_settings.nonbonded_method
-        vac_nonbonded_method = self.settings.vacuum_system_settings.nonbonded_method
+        solv_nonbonded_method = self.settings.solvent_forcefield_settings.nonbonded_method
+        vac_nonbonded_method = self.settings.vacuum_forcefield_settings.nonbonded_method
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, solv_nonbonded_method)
         # Gas phase is always gas phase
@@ -547,6 +683,13 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                       "passed")
             raise ValueError(errmsg)
 
+        # Check vacuum equilibration MD settings is 0 ns
+        nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
+        if nvt_time is not None:
+            if not np.allclose(nvt_time, 0 * unit.nanosecond):
+                errmsg = "NVT equilibration cannot be run in vacuum simulation"
+                raise ValueError(errmsg)
+
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
 
@@ -554,35 +697,37 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         solvent_units = [
             AbsoluteSolvationSolventUnit(
-                stateA=stateA, stateB=stateB,
-                settings=self.settings,
+                protocol=self,
+                stateA=stateA,
+                stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} solvent leg: "
                       f"repeat {i} generation 0"),
             )
-            for i in range(self.settings.alchemsampler_settings.n_repeats)
+            for i in range(self.settings.protocol_repeats)
         ]
 
         vacuum_units = [
             AbsoluteSolvationVacuumUnit(
                 # These don't really reflect the actual transform
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
-                stateA=stateA, stateB=stateB,
-                settings=self.settings,
+                protocol=self,
+                stateA=stateA,
+                stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"Absolute Solvation, {alchname} vacuum leg: "
                       f"repeat {i} generation 0"),
             )
-            for i in range(self.settings.alchemsampler_settings.n_repeats)
+            for i in range(self.settings.protocol_repeats)
         ]
 
         return solvent_units + vacuum_units
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
         unsorted_solvent_repeats = defaultdict(list)
@@ -609,6 +754,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
 
 class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
+    """
+    Protocol Unit for the vacuum phase of an absolute solvation free energy
+    """
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -652,26 +800,32 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * system_settings : SystemSettings
-            * solvation_settings : SolvationSettings
+            * charge_settings : OpenFFPartialChargeSettings
+            * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
-            * sampler_settings : AlchemicalSamplerSettings
+            * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
+            * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs['settings']
+        prot_settings = self._inputs['protocol'].settings
 
         settings = {}
-        settings['forcefield_settings'] = prot_settings.forcefield_settings
+        settings['forcefield_settings'] = prot_settings.vacuum_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['system_settings'] = prot_settings.vacuum_system_settings
+        settings['charge_settings'] = prot_settings.partial_charge_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['sampler_settings'] = prot_settings.alchemsampler_settings
+        settings['lambda_settings'] = prot_settings.lambda_settings
         settings['engine_settings'] = prot_settings.vacuum_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
+        settings['equil_simulation_settings'] = prot_settings.vacuum_equil_simulation_settings
+        settings['equil_output_settings'] = prot_settings.vacuum_equil_output_settings
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
+        settings['output_settings'] = prot_settings.vacuum_output_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -682,12 +836,11 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
@@ -698,6 +851,9 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
+    """
+    Protocol Unit for the solvent phase of an absolute solvation free energy
+    """
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -736,26 +892,32 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
           A dictionary with the following entries:
             * forcefield_settings : OpenMMSystemGeneratorFFSettings
             * thermo_settings : ThermoSettings
-            * system_settings : SystemSettings
-            * solvation_settings : SolvationSettings
+            * charge_settings : OpenFFPartialChargeSettings
+            * solvation_settings : OpenMMSolvationSettings
             * alchemical_settings : AlchemicalSettings
-            * sampler_settings : AlchemicalSamplerSettings
+            * lambda_settings : LambdaSettings
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
-            * simulation_settings : SimulationSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : MDOutputSettings
+            * simulation_settings : MultiStateSimulationSettings
+            * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs['settings']
+        prot_settings = self._inputs['protocol'].settings
 
         settings = {}
-        settings['forcefield_settings'] = prot_settings.forcefield_settings
+        settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['system_settings'] = prot_settings.solvent_system_settings
+        settings['charge_settings'] = prot_settings.partial_charge_settings
         settings['solvation_settings'] = prot_settings.solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['sampler_settings'] = prot_settings.alchemsampler_settings
+        settings['lambda_settings'] = prot_settings.lambda_settings
         settings['engine_settings'] = prot_settings.solvent_engine_settings
         settings['integrator_settings'] = prot_settings.integrator_settings
+        settings['equil_simulation_settings'] = prot_settings.solvent_equil_simulation_settings
+        settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
+        settings['output_settings'] = prot_settings.solvent_output_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -766,12 +928,11 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],

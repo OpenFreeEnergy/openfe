@@ -1,3 +1,4 @@
+.. _userguide_mappings:
 .. _Creating Atom Mappings:
 
 Creating Atom Mappings
@@ -5,7 +6,7 @@ Creating Atom Mappings
 
 Once your :ref:`data has been loaded<Loading Molecules>`
 we can now proceed to defining how Components in these Systems correspond.
-``Mapping`` objects are used to defined how ``Component`` objects from different :class:`ChemicalSystems` are related.
+``Mapping`` objects are used to defined how ``Component`` objects from different :class:`.ChemicalSystem` objects are related.
 This guide will show how this concept applies to the case of a pair of ligands we wish to transform between.
 
 Generating Mappings

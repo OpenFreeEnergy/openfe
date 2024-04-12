@@ -23,6 +23,17 @@ class TestAtomMapper:
             def __init__(self, mappings):
                 self.mappings = mappings
 
+            @classmethod
+            def _defaults(cls):
+                return {}
+
+            def _to_dict(self):
+                return {'mappings': self.mappings}
+
+            @classmethod
+            def _from_dict(cls, dct):
+                return cls(**dct)
+
             def _mappings_generator(self, componentA, componentB):
                 for mapping in self.mappings:
                     yield mapping.componentA_to_componentB

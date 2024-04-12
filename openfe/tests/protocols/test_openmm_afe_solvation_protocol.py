@@ -2,14 +2,16 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import itertools
 import json
+import sys
 import pytest
 from unittest import mock
 from openmm import NonbondedForce, CustomNonbondedForce
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity
+from openff.units.openmm import ensure_quantity, from_openmm
 import mdtraj as mdt
 import numpy as np
+from numpy.testing import assert_allclose
 import gufe
 import openfe
 from openfe import ChemicalSystem, SolventComponent
@@ -19,7 +21,11 @@ from openfe.protocols.openmm_afe import (
     AbsoluteSolvationVacuumUnit,
     AbsoluteSolvationProtocol,
 )
+
 from openfe.protocols.openmm_utils import system_validation
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+)
 
 
 @pytest.fixture()
@@ -33,17 +39,111 @@ def test_create_default_settings():
 
 
 @pytest.mark.parametrize('val', [
-    {'elec': 0, 'vdw': 5},
-    {'elec': -2, 'vdw': 5},
-    {'elec': 5, 'vdw': -2},
-    {'elec': 5, 'vdw': 0},
+    {'elec': [0.0, -1], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
+    {'elec': [0.0, 1.5], 'vdw': [0.0, 1.5], 'restraints': [-0.1, 1.0]}
 ])
 def test_incorrect_window_settings(val, default_settings):
-    errmsg = "lambda steps must be positive"
-    alchem_settings = default_settings.alchemical_settings
+    errmsg = "Lambda windows must be between 0 and 1."
+    lambda_settings = default_settings.lambda_settings
     with pytest.raises(ValueError, match=errmsg):
-        alchem_settings.lambda_elec_windows = val['elec']
-        alchem_settings.lambda_vdw_windows = val['vdw']
+        lambda_settings.lambda_elec = val['elec']
+        lambda_settings.lambda_vdw = val['vdw']
+        lambda_settings.lambda_restraints = val['restraints']
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [0.0, 0.1, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 1.0]},
+])
+def test_monotonic_lambda_windows(val, default_settings):
+    errmsg = "The lambda schedule is not monotonic."
+    lambda_settings = default_settings.lambda_settings
+
+    with pytest.raises(ValueError, match=errmsg):
+        lambda_settings.lambda_elec = val['elec']
+        lambda_settings.lambda_vdw = val['vdw']
+        lambda_settings.lambda_restraints = val['restraints']
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [0.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_validate_lambda_schedule_naked_charge(val, default_settings):
+    errmsg = ("There are states along this lambda schedule "
+              "where there are atoms with charges but no LJ "
+              f"interactions: lambda 0: "
+              f"elec {val['elec'][0]} vdW {val['vdw'][0]}")
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    default_settings.vacuum_simulation_settings.n_replicas = 2
+    default_settings.solvent_simulation_settings.n_replicas = 2
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.vacuum_simulation_settings,
+        )
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.solvent_simulation_settings,
+        )
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_validate_lambda_schedule_nreplicas(val, default_settings):
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    n_replicas = 3
+    default_settings.vacuum_simulation_settings.n_replicas = n_replicas
+    errmsg = (f"Number of replicas {n_replicas} does not equal the"
+              f" number of lambda windows {len(val['vdw'])}")
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.vacuum_simulation_settings,
+        )
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_validate_lambda_schedule_nwindows(val, default_settings):
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    n_replicas = 3
+    default_settings.vacuum_simulation_settings.n_replicas = n_replicas
+    errmsg = (
+        "Components elec, vdw, and restraints must have equal amount"
+        f" of lambda windows. Got {len(val['elec'])} elec lambda"
+        f" windows, {len(val['vdw'])} vdw lambda windows, and"
+        f"{len(val['restraints'])} restraints lambda windows.")
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.vacuum_simulation_settings,
+        )
+
+
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 1.0]},
+])
+def test_validate_lambda_schedule_nonzero_restraints(val, default_settings):
+    wmsg = ("Non-zero restraint lambdas applied. The absolute "
+            "solvation protocol doesn't apply restraints, "
+            "therefore restraints won't be applied.")
+    default_settings.lambda_settings.lambda_elec = val['elec']
+    default_settings.lambda_settings.lambda_vdw = val['vdw']
+    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    default_settings.vacuum_simulation_settings.n_replicas = 2
+    with pytest.warns(UserWarning, match=wmsg):
+        AbsoluteSolvationProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.vacuum_simulation_settings,
+        )
 
 
 def test_create_default_protocol(default_settings):
@@ -65,7 +165,7 @@ def test_serialize_protocol(default_settings):
 
 
 def test_validate_solvent_endstates_protcomp(
-    benzene_modifications,T4_protein_component
+    benzene_modifications, T4_protein_component
 ):
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
@@ -80,7 +180,7 @@ def test_validate_solvent_endstates_protcomp(
     })
 
     with pytest.raises(ValueError, match="Protein components are not allowed"):
-        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_solvent_endstates_nosolvcomp_stateA(
@@ -99,7 +199,7 @@ def test_validate_solvent_endstates_nosolvcomp_stateA(
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateA"
     ):
-        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
 
 
 def test_validate_solvent_endstates_nosolvcomp_stateB(
@@ -118,7 +218,8 @@ def test_validate_solvent_endstates_nosolvcomp_stateB(
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateB"
     ):
-        comps = AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+
 
 def test_validate_alchem_comps_appearingB(benzene_modifications):
     stateA = ChemicalSystem({
@@ -173,9 +274,8 @@ def test_validate_alchem_nonsmc(benzene_modifications):
 
 def test_vac_bad_nonbonded(benzene_modifications):
     settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    settings.vacuum_system_settings.nonbonded_method = 'pme'
+    settings.vacuum_forcefield_settings.nonbonded_method = 'pme'
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=settings)
-
 
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
@@ -185,7 +285,6 @@ def test_vac_bad_nonbonded(benzene_modifications):
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
     })
-
 
     with pytest.raises(ValueError, match='Only the nocutoff'):
         protocol.create(stateA=stateA, stateB=stateB, mapping=None)
@@ -197,8 +296,8 @@ def test_vac_bad_nonbonded(benzene_modifications):
 def test_dry_run_vac_benzene(benzene_modifications,
                              method, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
-    s.alchemsampler_settings.sampler_method = method
+    s.protocol_repeats = 1
+    s.vacuum_simulation_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -240,7 +339,7 @@ def test_dry_run_vac_benzene(benzene_modifications,
 def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
     # check system parametrisation works even if confgen fails
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.protocol_repeats = 1
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
         settings=s,
@@ -275,8 +374,8 @@ def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
 
 def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
-    s.solvent_simulation_settings.output_indices = "resname UNK"
+    s.protocol_repeats = 1
+    s.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -320,10 +419,15 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
 
 def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
-    s.forcefield_settings.forcefields = [
+    s.protocol_repeats = 1
+    s.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
-        "amber/tip4pew_standard.xml", # FF we are testsing with the fun VS
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    s.solvent_forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",    # ff14SB protein force field
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
     s.solvation_settings.solvent_model = 'tip4pew'
@@ -366,7 +470,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     alchemical system.
     """
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
+    s.protocol_repeats = 1
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
@@ -445,17 +549,46 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
             assert pytest.approx(c) == prop_chgs[i]
 
 
-def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
-    s = AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
-    s.alchemsampler_settings.n_replicas = 12
+@pytest.mark.parametrize('method, backend, ref_key', [
+    ('am1bcc', 'ambertools', 'ambertools'),
+    pytest.param(
+        'am1bcc', 'openeye', 'openeye',
+        marks=pytest.mark.skipif(
+            not HAS_OPENEYE, reason='needs oechem',
+        ),
+    ),
+    pytest.param(
+        'nagl', 'rdkit', 'nagl',
+        marks=pytest.mark.skipif(
+            not HAS_NAGL or sys.platform.startswith('darwin'),
+            reason='needs NAGL and/or on macos',
+        ),
+    ),
+    pytest.param(
+        'espaloma', 'rdkit', 'espaloma',
+        marks=pytest.mark.skipif(
+            not HAS_ESPALOMA, reason='needs espaloma',
+        ),
+    ),
+])
+def test_dry_run_charge_backends(
+    CN_molecule, tmpdir, method, backend, ref_key, am1bcc_ref_charges
+):
+    """
+    Check that partial charge generation with different backends
+    works as expected.
+    """
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.partial_charge_settings.partial_charge_method = method
+    s.partial_charge_settings.off_toolkit_backend = backend
+    s.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
 
-    protocol = AbsoluteSolvationProtocol(
-            settings=s,
-    )
+    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=s)
 
+    # Create ChemicalSystems
     stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
+        'benzene': CN_molecule,
         'solvent': SolventComponent()
     })
 
@@ -463,23 +596,43 @@ def test_nreplicas_lambda_mismatch(benzene_modifications, tmpdir):
         'solvent': SolventComponent(),
     })
 
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
     prot_units = list(dag.protocol_units)
 
+    vac_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
+
+    # check vac_unit charges
     with tmpdir.as_cwd():
-        errmsg = "Number of replicas 12"
-        with pytest.raises(ValueError, match=errmsg):
-            prot_units[0].run(dry=True)
+        sampler = vac_unit.run(dry=True)['debug']['sampler']
+        system = sampler._thermodynamic_states[0].system
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, CustomNonbondedForce)]
+        assert len(nonbond) == 4
+
+        custom_elec = [
+            n for n in nonbond if
+            n.getGlobalParameterName(0) == 'lambda_electrostatics'][0]
+
+        charges = []
+        for i in range(system.getNumParticles()):
+            c, s = custom_elec.getParticleParameters(i)
+            charges.append(c)
+
+    assert_allclose(
+        am1bcc_ref_charges[ref_key],
+        charges * offunit.elementary_charge,
+        rtol=1e-4,
+    )
 
 
 def test_high_timestep(benzene_modifications, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
-    s.alchemsampler_settings.n_repeats = 1
-    s.forcefield_settings.hydrogen_mass = 1.0
+    s.protocol_repeats = 1
+    s.solvent_forcefield_settings.hydrogen_mass = 1.0
+    s.vacuum_forcefield_settings.hydrogen_mass = 1.0
 
     protocol = AbsoluteSolvationProtocol(
             settings=s,
@@ -600,7 +753,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-2.977553138764437)
+        assert est.m == pytest.approx(-2.47, abs=0.5)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -608,7 +761,7 @@ class TestProtocolResult:
         est = protocolresult.get_uncertainty()
 
         assert est
-        assert est.m == pytest.approx(0.19617297299036018)
+        assert est.m == pytest.approx(0.2, abs=0.2)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -640,6 +793,19 @@ class TestProtocolResult:
                 assert isinstance(far1[k], np.ndarray)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
+    def test_get_frwd_reverse_none_return(self, key, protocolresult):
+        # fetch the first result of type key
+        data = [i for i in protocolresult.data[key].values()][0][0]
+        # set the output to None
+        data.outputs['forward_and_reverse_energies'] = None
+
+        # now fetch the analysis results and expect a warning
+        wmsg = ("were found in the forward and reverse dictionaries "
+                f"of the repeats of the {key}")
+        with pytest.warns(UserWarning, match=wmsg):
+            protocolresult.get_forward_and_reverse_energy_analysis()
+
+    @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_overlap_matrices(self, key, protocolresult):
         ovp = protocolresult.get_overlap_matrices()
 
@@ -649,7 +815,7 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1['matrix'], np.ndarray)
-        assert ovp1['matrix'].shape == (15, 15)
+        assert ovp1['matrix'].shape == (14, 14)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_get_replica_transition_statistics(self, key, protocolresult):
@@ -661,8 +827,8 @@ class TestProtocolResult:
         rpx1 = rpx[key][0]
         assert 'eigenvalues' in rpx1
         assert 'matrix' in rpx1
-        assert rpx1['eigenvalues'].shape == (15,)
-        assert rpx1['matrix'].shape == (15, 15)
+        assert rpx1['eigenvalues'].shape == (14,)
+        assert rpx1['matrix'].shape == (14, 14)
 
     @pytest.mark.parametrize('key', ['solvent', 'vacuum'])
     def test_equilibration_iterations(self, key, protocolresult):
@@ -687,4 +853,3 @@ class TestProtocolResult:
 
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
-

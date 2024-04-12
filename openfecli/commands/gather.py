@@ -131,10 +131,11 @@ def _generate_bad_legs_error_message(set_vals, ligpair):
 def _parse_raw_units(results: dict) -> list[tuple]:
     # grab individual unit results from master results dict
     # returns list of (estimate, uncertainty) tuples
-    pus = list(results['unit_results'].values())
+    list_of_pur = list(results['protocol_result']['data'].values())[0]
+
     return [(pu['outputs']['unit_estimate'],
              pu['outputs']['unit_estimate_error'])
-            for pu in pus]
+            for pu in list_of_pur]
 
 
 def _get_ddgs(legs, error_on_missing=True):
@@ -284,7 +285,7 @@ def _write_dg_mle(legs, writer, allow_partial):
     default="dg", show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
-        "absolute deltaG,  'ddg' gives delta-delta-G, and 'dg-raw' gives "
+        "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
         "the raw result of the deltaG for a leg."
     )
 )
@@ -311,7 +312,9 @@ def gather(rootdir, output, report, allow_partial):
     \b
     * 'dg' (default) reports the ligand, its absolute free energy, and
       the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.
+      from DDG replica averages and standard deviations.  These MLE estimates
+      are centred around 0.0, and when plotted can be shifted to match
+      experimental values.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
     * 'raw' reports the raw results, which each repeat simulation given

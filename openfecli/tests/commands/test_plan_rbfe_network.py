@@ -187,3 +187,42 @@ def test_custom_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdi
         result = runner.invoke(plan_rbfe_network, args)
 
         assert result.exit_code == 0
+
+
+@pytest.fixture
+def custom_yaml_radial():
+    return """\
+network:
+  method: generate_radial_network
+  settings:
+    central_ligand: lig_CHEMBL1078774
+
+mapper:
+  method: LomapAtomMapper
+  settings:
+    time: 45
+    element_change: True
+"""
+
+
+def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmpdir):
+    protein, ligand, cofactor = eg5_files
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(custom_yaml_radial)
+
+    assert settings_path.exists()
+
+    args = [
+        '-p', protein,
+        '-M', ligand,
+        '-C', cofactor,
+        '-s', settings_path,
+    ]
+
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rbfe_network, args)
+
+        assert result.exit_code == 0

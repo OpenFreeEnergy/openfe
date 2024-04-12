@@ -138,8 +138,13 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
         mapper_obj = cls(**opt.mapper.settings)
     else:
-        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False,
-                                     max3d=1)
+        mapper_obj = LomapAtomMapper(
+            time=20,
+            threed=True,
+            max3d=1.0,
+            element_change=True,
+            shift=False
+        )
 
     # todo: choice of scorer goes here
     mapping_scorer = default_lomap_score
@@ -174,9 +179,39 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     )
 
 
+_yaml_help = """\
+Path to planning settings yaml file
+
+Currently it can contain sections for customising the
+atom mapper and network planning algorithm,
+these are addressed using a `mapper:` or `network:` key in the yaml file.
+The algorithm to be used for these sections is then specified by the `method:` key. 
+For choosing mappers, either the LomapAtomMapper or KartografAtomMapper are allowed choices,
+while for the network planning algorithm either the generate_minimal_spanning_tree or
+generate_minimal_redundant_network options are allowed.
+Finally, a `settings:` key can be given to customise the algorithm,
+with allowable options corresponding to the keyword arguments of the Python API for these algorithms.
+
+For example, this is a valid settings yaml file to specify that
+the Lomap atom mapper should be used forbidding element changes,
+while the generate_minimal_redundant_network function used to plan the network
+::
+
+  mapper:
+    method: LomapAtomMapper
+    settings:
+      element_change: false
+
+  network:
+    method: generate_minimal_redundant_network
+    settings:
+      mst_num: 3
+"""
+
+
 YAML_OPTIONS = Option(
     '-s', "--settings", "yaml_settings",
     type=click.Path(exists=True, dir_okay=False),
-    help="Path to planning settings yaml file.",
+    help=_yaml_help,
     getter=load_yaml_planner_options,
 )

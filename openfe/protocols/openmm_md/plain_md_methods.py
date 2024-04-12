@@ -32,25 +32,33 @@ from gufe import (
     settings, ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
+from openfe.protocols.openmm_utils.omm_settings import (
+    BasePartialChargeSettings,
+)
 from openfe.protocols.openmm_md.plain_md_settings import (
-    PlainMDProtocolSettings, SystemSettings,
-    SolvationSettings, OpenMMEngineSettings,
-    IntegratorSettings, SimulationSettingsMD,
-    RepeatSettings,
+    PlainMDProtocolSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMSolvationSettings, OpenMMEngineSettings,
+    IntegratorSettings, MDSimulationSettings, MDOutputSettings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
-    system_validation, settings_validation, system_creation
+    system_validation, settings_validation, system_creation,
+    charge_generation,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class PlainMDProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a PlainMDProtocol
-    outputs filenames for the pdb file and trajectory"""
+    """
+    Dict-like container for the output of a PlainMDProtocol.
+
+    Provides access to simulation outputs including the pre-minimized
+    system PDB and production trajectory files.
+    """
     def __init__(self, **data):
         super().__init__(**data)
         # data is mapping of str(repeat_id): list[protocolunitresults]
@@ -100,6 +108,16 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
 
 class PlainMDProtocol(gufe.Protocol):
+    """
+    Protocol for running Molecular Dynamics simulations using OpenMM.
+
+    See Also
+    --------
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolSettings`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolUnit`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolResult`
+    """
     result_cls = PlainMDProtocolResult
     _settings: PlainMDProtocolSettings
 
@@ -122,16 +140,17 @@ class PlainMDProtocol(gufe.Protocol):
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
-            system_settings=SystemSettings(),
-            solvation_settings=SolvationSettings(),
+            partial_charge_settings=OpenFFPartialChargeSettings(),
+            solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            simulation_settings=SimulationSettingsMD(
+            simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
             ),
-            repeat_settings=RepeatSettings(),
+            output_settings=MDOutputSettings(),
+            protocol_repeats=1,
         )
 
     def _create(
@@ -146,7 +165,7 @@ class PlainMDProtocol(gufe.Protocol):
             raise NotImplementedError("Can't extend simulations yet")
 
         # Validate solvent component
-        nonbond = self.settings.system_settings.nonbonded_method
+        nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
 
         # Validate protein component
@@ -168,10 +187,10 @@ class PlainMDProtocol(gufe.Protocol):
                 system_name += f" {comp_type}:{comp_name}"
 
         # our DAG has no dependencies, so just list units
-        n_repeats = self.settings.repeat_settings.n_repeats
+        n_repeats = self.settings.protocol_repeats
         units = [PlainMDProtocolUnit(
+            protocol=self,
             stateA=stateA,
-            settings=self.settings,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{system_name} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -179,7 +198,7 @@ class PlainMDProtocol(gufe.Protocol):
         return units
 
     def _gather(
-            self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
+        self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
     ) -> dict[str, Any]:
         # result units will have a repeat_id and generations within this
         # repeat_id
@@ -207,22 +226,23 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     Protocol unit for plain MD simulations (NonTransformation).
     """
 
-    def __init__(self, *,
-                 stateA: ChemicalSystem,
-                 settings: PlainMDProtocolSettings,
-                 generation: int,
-                 repeat_id: int,
-                 name: Optional[str] = None,
-                 ):
+    def __init__(
+        self,
+        *,
+        protocol: PlainMDProtocol,
+        stateA: ChemicalSystem,
+        generation: int,
+        repeat_id: int,
+        name: Optional[str] = None,
+    ):
         """
         Parameters
         ----------
+        protocol : PlainMDProtocol
+          protocol used to create this Unit. Contains key information such
+          as the settings.
         stateA : ChemicalSystem
           the chemical system for the MD simulation
-        settings : settings.Settings
-          the settings for the Method.  This can be constructed using the
-          get_default_settings classmethod to give a starting point that
-          can be updated to suit.
         repeat_id : int
           identifier for which repeat (aka replica/clone) this Unit is
         generation : int
@@ -237,8 +257,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         """
         super().__init__(
             name=name,
+            protocol=protocol,
             stateA=stateA,
-            settings=settings,
             repeat_id=repeat_id,
             generation=generation
         )
@@ -246,14 +266,16 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     @staticmethod
     def _run_MD(simulation: openmm.app.Simulation,
                 positions: omm_unit.Quantity,
-                simulation_settings: SimulationSettingsMD,
-                temperature: settings.ThermoSettings.temperature,
-                barostat_frequency: IntegratorSettings.barostat_frequency,
-                equil_steps_nvt: int,
+                simulation_settings: MDSimulationSettings,
+                output_settings: MDOutputSettings,
+                temperature: unit.Quantity,
+                barostat_frequency: unit.Quantity,
+                timestep: unit.Quantity,
+                equil_steps_nvt: Optional[int],
                 equil_steps_npt: int,
                 prod_steps: int,
                 verbose=True,
-                shared_basepath=None):
+                shared_basepath=None) -> None:
 
         """
         Energy minimization, Equilibration and Production MD to be reused
@@ -267,12 +289,17 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Initial positions for the system.
         simulation_settings : SimulationSettingsMD
           Settings for MD simulation
-        temperature: settings.ThermoSettings.temperature
+        output_settings: OutputSettingsMD
+          Settings for output of MD simulation
+        temperature: FloatQuantity["kelvin"]
           temperature setting
-        barostat_frequency: IntegratorSettings.barostat_frequency
+        barostat_frequency: unit.Quantity
           Frequency for the barostat
-        equil_steps_nvt: int
+        timestep: FloatQuantity["femtosecond"]
+          Simulation integration timestep
+        equil_steps_nvt: Optional[int]
           number of steps for NVT equilibration
+          if None, no NVT equilibration will be performed
         equil_steps_npt: int
           number of steps for NPT equilibration
         prod_steps: int
@@ -282,9 +309,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           INFO level logging.
         shared_basepath : Pathlike, optional
           Where to run the calculation, defaults to current working directory
-
-        Returns
-        -------
 
         """
         if shared_basepath is None:
@@ -300,7 +324,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Get the sub selection of the system to save coords for
         selection_indices = mdtraj.Topology.from_openmm(
-            simulation.topology).select(simulation_settings.output_indices)
+            simulation.topology).select(output_settings.output_indices)
 
         positions = to_openmm(from_openmm(
             simulation.context.getState(getPositions=True,
@@ -314,42 +338,43 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         traj.save_pdb(
-            shared_basepath / simulation_settings.minimized_structure
+            shared_basepath / output_settings.minimized_structure
         )
         # equilibrate
         # NVT equilibration
+        if equil_steps_nvt:
+            if verbose:
+                logger.info("Running NVT equilibration")
 
-        if verbose:
-            logger.info("Running NVT equilibration")
+            # Set barostat frequency to zero for NVT
+            for x in simulation.context.getSystem().getForces():
+                if x.getName() == 'MonteCarloBarostat':
+                    x.setFrequency(0)
 
-        # Set barostat frequency to zero for NVT
-        for x in simulation.context.getSystem().getForces():
-            if x.getName() == 'MonteCarloBarostat':
-                x.setFrequency(0)
+            simulation.context.setVelocitiesToTemperature(
+                to_openmm(temperature))
 
-        simulation.context.setVelocitiesToTemperature(
-            to_openmm(temperature))
+            t0 = time.time()
+            simulation.step(equil_steps_nvt)
+            t1 = time.time()
+            if verbose:
+                logger.info(
+                    f"Completed NVT equilibration in {t1 - t0} seconds")
 
-        t0 = time.time()
-        simulation.step(equil_steps_nvt)
-        t1 = time.time()
-        if verbose:
-            logger.info(
-                f"Completed NVT equilibration in {t1 - t0} seconds")
+            # Save last frame NVT equilibration
+            positions = to_openmm(
+                from_openmm(simulation.context.getState(
+                    getPositions=True, enforcePeriodicBox=False
+                ).getPositions()))
 
-        # Save last frame NVT equilibration
-        positions = to_openmm(
-            from_openmm(simulation.context.getState(
-                getPositions=True, enforcePeriodicBox=False
-            ).getPositions()))
-
-        traj = mdtraj.Trajectory(
-            positions[selection_indices, :],
-            mdtraj_top.subset(selection_indices),
-        )
-        traj.save_pdb(
-            shared_basepath / simulation_settings.equil_NVT_structure
-        )
+            traj = mdtraj.Trajectory(
+                positions[selection_indices, :],
+                mdtraj_top.subset(selection_indices),
+            )
+            if output_settings.equil_nvt_structure is not None:
+                traj.save_pdb(
+                    shared_basepath / output_settings.equil_nvt_structure
+                )
 
         # NPT equilibration
         if verbose:
@@ -379,25 +404,39 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             positions[selection_indices, :],
             mdtraj_top.subset(selection_indices),
         )
-        traj.save_pdb(
-            shared_basepath / simulation_settings.equil_NPT_structure
-        )
+        if output_settings.equil_npt_structure is not None:
+            traj.save_pdb(
+                shared_basepath / output_settings.equil_npt_structure
+            )
 
         # production
         if verbose:
             logger.info("running production phase")
 
         # Setup the reporters
+        write_interval = settings_validation.divmod_time_and_check(
+            output_settings.trajectory_write_interval,
+            timestep,
+            "trajectory_write_interval",
+            "timestep",
+        )
+
+        checkpoint_interval = settings_validation.get_simsteps(
+            sim_length=output_settings.checkpoint_interval,
+            timestep=timestep,
+            mc_steps=1,
+        )
+
         simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / simulation_settings.production_trajectory_filename),
-            reportInterval=simulation_settings.trajectory_write_interval.m,
+            file=str(shared_basepath / output_settings.production_trajectory_filename),
+            reportInterval=write_interval,
             atomSubset=selection_indices))
         simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / simulation_settings.checkpoint_storage_filename),
-            reportInterval=simulation_settings.checkpoint_interval.m))
+            file=str(shared_basepath / output_settings.checkpoint_storage_filename),
+            reportInterval=checkpoint_interval))
         simulation.reporters.append(openmm.app.StateDataReporter(
-            str(shared_basepath / simulation_settings.log_output),
-            simulation_settings.checkpoint_interval.m,
+            str(shared_basepath / output_settings.log_output),
+            checkpoint_interval,
             step=True,
             time=True,
             potentialEnergy=True,
@@ -415,6 +454,32 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             logger.info(f"Completed simulation in {t1 - t0} seconds")
 
         return None
+
+    @staticmethod
+    def _assign_partial_charges(
+        charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> None:
+        """
+        Assign partial charges to SMCs.
+
+        Parameters
+        ----------
+        charge_settings : OpenFFPartialChargeSettings
+          Settings for controlling how the partial charges are assigned.
+        smc_components : dict[SmallMoleculeComponent, openff.toolkit.Molecule]
+          Dictionary of OpenFF Molecules to add, keyed by
+          SmallMoleculeComponent.
+        """
+        for mol in smc_components.values():
+            charge_generation.assign_offmol_partial_charges(
+                offmol=mol,
+                overwrite=False,
+                method=charge_settings.partial_charge_method,
+                toolkit_backend=charge_settings.off_toolkit_backend,
+                generate_n_conformers=charge_settings.number_of_conformers,
+                nagl_model=charge_settings.nagl_model,
+            )
 
     def run(self, *, dry=False, verbose=True,
             scratch_basepath=None,
@@ -455,21 +520,16 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         # 0. General setup and settings dependency resolution step
 
         # Extract relevant settings
-        protocol_settings: PlainMDProtocolSettings = self._inputs[
-            'settings']
+        protocol_settings: PlainMDProtocolSettings = self._inputs['protocol'].settings
         stateA = self._inputs['stateA']
 
-        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = \
-            protocol_settings.forcefield_settings
-        thermo_settings: settings.ThermoSettings = \
-            protocol_settings.thermo_settings
-        system_settings: SystemSettings = protocol_settings.system_settings
-        solvation_settings: SolvationSettings = \
-            protocol_settings.solvation_settings
-        sim_settings: SimulationSettingsMD = \
-            protocol_settings.simulation_settings
+        forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings
+        thermo_settings: settings.ThermoSettings = protocol_settings.thermo_settings
+        solvation_settings: OpenMMSolvationSettings = protocol_settings.solvation_settings
+        charge_settings: BasePartialChargeSettings = protocol_settings.partial_charge_settings
+        sim_settings: MDSimulationSettings = protocol_settings.simulation_settings
+        output_settings: MDOutputSettings = protocol_settings.output_settings
         timestep = protocol_settings.integrator_settings.timestep
-        mc_steps = protocol_settings.integrator_settings.n_steps.m
         integrator_settings = protocol_settings.integrator_settings
 
         # is the timestep good for the mass?
@@ -477,77 +537,82 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             forcefield_settings.hydrogen_mass, timestep
         )
 
-        equil_steps_nvt = settings_validation.get_simsteps(
-            sim_length=sim_settings.equilibration_length_nvt,
-            timestep=timestep, mc_steps=mc_steps
-        )
+        if sim_settings.equilibration_length_nvt is not None:
+            equil_steps_nvt = settings_validation.get_simsteps(
+                sim_length=sim_settings.equilibration_length_nvt,
+                timestep=timestep, mc_steps=1,
+            )
+        else:
+            equil_steps_nvt = None
+
         equil_steps_npt = settings_validation.get_simsteps(
             sim_length=sim_settings.equilibration_length,
-            timestep=timestep, mc_steps=mc_steps
+            timestep=timestep, mc_steps=1,
         )
         prod_steps = settings_validation.get_simsteps(
             sim_length=sim_settings.production_length,
-            timestep=timestep, mc_steps=mc_steps
+            timestep=timestep, mc_steps=1,
         )
 
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         # 1. Create stateA system
-        # a. get a system generator
-        if sim_settings.forcefield_cache is not None:
-            ffcache = shared_basepath / sim_settings.forcefield_cache
-        else:
-            ffcache = None
-
-        system_generator = system_creation.get_system_generator(
-            forcefield_settings=forcefield_settings,
-            thermo_settings=thermo_settings,
-            system_settings=system_settings,
-            cache=ffcache,
-            has_solvent=solvent_comp is not None,
-        )
-
+        # Create a dictionary of OFFMol for each SMC for bookeeping
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
         smc_components = {i: i.to_openff() for i in small_mols}
-        for mol in smc_components.values():
-            # don't do this if we have user charges
-            if not (mol.partial_charges is not None and np.any(
-                    mol.partial_charges)):
-                # due to issues with partial charge generation in ambertools
-                # we default to using the input conformer for charge generation
-                mol.assign_partial_charges(
-                    'am1bcc', use_conformers=mol.conformers
-                )
 
-            system_generator.create_system(
-                mol.to_topology().to_openmm(), molecules=[mol]
+        # a. assign partial charges to smcs
+        self._assign_partial_charges(charge_settings, smc_components)
+
+        # b. get a system generator
+        if output_settings.forcefield_cache is not None:
+            ffcache = shared_basepath / output_settings.forcefield_cache
+        else:
+            ffcache = None
+
+        # Note: we block out the oechem backend for all systemgenerator
+        # linked operations to avoid any smiles operations that can
+        # go wrong when doing rdkit->OEchem roundtripping
+        with without_oechem_backend():
+            system_generator = system_creation.get_system_generator(
+                forcefield_settings=forcefield_settings,
+                integrator_settings=integrator_settings,
+                thermo_settings=thermo_settings,
+                cache=ffcache,
+                has_solvent=solvent_comp is not None,
             )
 
-        # c. get OpenMM Modeller + a dictionary of resids for each component
-        stateA_modeller, comp_resids = system_creation.get_omm_modeller(
-            protein_comp=protein_comp,
-            solvent_comp=solvent_comp,
-            small_mols=smc_components,
-            omm_forcefield=system_generator.forcefield,
-            solvent_settings=solvation_settings,
-        )
+            # Force creation of smc templates so we can solvate later
+            for mol in smc_components.values():
+                system_generator.create_system(
+                    mol.to_topology().to_openmm(), molecules=[mol]
+                )
 
-        # d. get topology & positions
-        # Note: roundtrip positions to remove vec3 issues
-        stateA_topology = stateA_modeller.getTopology()
-        stateA_positions = to_openmm(
-            from_openmm(stateA_modeller.getPositions())
-        )
+            # c. get OpenMM Modeller + a resids dictionary for each component
+            stateA_modeller, comp_resids = system_creation.get_omm_modeller(
+                protein_comp=protein_comp,
+                solvent_comp=solvent_comp,
+                small_mols=smc_components,
+                omm_forcefield=system_generator.forcefield,
+                solvent_settings=solvation_settings,
+            )
 
-        # e. create the stateA System
-        stateA_system = system_generator.create_system(
-            stateA_topology,
-            molecules=[s.to_openff() for s in small_mols],
-        )
+            # d. get topology & positions
+            # Note: roundtrip positions to remove vec3 issues
+            stateA_topology = stateA_modeller.getTopology()
+            stateA_positions = to_openmm(
+                from_openmm(stateA_modeller.getPositions())
+            )
+
+            # e. create the stateA System
+            stateA_system = system_generator.create_system(
+                stateA_topology,
+                molecules=[s.to_openff() for s in small_mols],
+            )
 
         # f. Save pdb of entire system
-        with open(shared_basepath / sim_settings.preminimized_structure, "w") as f:
+        with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
             openmm.app.PDBFile.writeFile(
                 stateA_topology, stateA_positions, file=f, keepIds=True
             )
@@ -560,7 +625,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         # 11. Set the integrator
         integrator = openmm.LangevinMiddleIntegrator(
             to_openmm(thermo_settings.temperature),
-            to_openmm(integrator_settings.collision_rate),
+            to_openmm(integrator_settings.langevin_collision_rate),
             to_openmm(timestep),
         )
 
@@ -574,16 +639,19 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         try:
 
             if not dry:  # pragma: no-cover
-                self._run_MD(simulation,
-                             stateA_positions,
-                             sim_settings,
-                             thermo_settings.temperature,
-                             integrator_settings.barostat_frequency,
-                             equil_steps_nvt,
-                             equil_steps_npt,
-                             prod_steps,
-                             shared_basepath=shared_basepath,
-                             )
+                self._run_MD(
+                    simulation,
+                    stateA_positions,
+                    sim_settings,
+                    output_settings,
+                    thermo_settings.temperature,
+                    integrator_settings.barostat_frequency,
+                    timestep,
+                    equil_steps_nvt,
+                    equil_steps_npt,
+                    prod_steps,
+                    shared_basepath=shared_basepath,
+                )
 
         finally:
 
@@ -591,14 +659,18 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 del integrator, simulation
 
         if not dry:  # pragma: no-cover
-            return {
-                'system_pdb': shared_basepath / sim_settings.preminimized_structure,
-                'minimized_pdb': shared_basepath / sim_settings.minimized_structure,
-                'nvt_equil_pdb': shared_basepath / sim_settings.equil_NVT_structure,
-                'npt_equil_pdb': shared_basepath / sim_settings.equil_NPT_structure,
-                'nc': shared_basepath / sim_settings.production_trajectory_filename,
-                'last_checkpoint': shared_basepath / sim_settings.checkpoint_storage_filename,
+            output = {
+                'system_pdb': shared_basepath / output_settings.preminimized_structure,
+                'minimized_pdb': shared_basepath / output_settings.minimized_structure,
+                'nc': shared_basepath / output_settings.production_trajectory_filename,
+                'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
+            if output_settings.equil_nvt_structure:
+                output['nvt_equil_pdb'] = shared_basepath / output_settings.equil_nvt_structure
+            if output_settings.equil_npt_structure:
+                output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
+
+            return output
         else:
             return {'debug': {'system': stateA_system}}
 
@@ -607,9 +679,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        with without_oechem_backend():
-            outputs = self.run(scratch_basepath=ctx.scratch,
-                               shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch,
+                           shared_basepath=ctx.shared)
 
         return {
             'repeat_id': self._inputs['repeat_id'],
