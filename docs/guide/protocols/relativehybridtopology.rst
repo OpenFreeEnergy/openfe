@@ -113,6 +113,8 @@ or to the analysis of the change in structural conformation over time in each st
   * MBAR overlap matrix.  This plot is used to assess if the different lambda states simulated overlapped energetically.
     Each matrix element represents the probability of a sample from a given row state being observable in a given column
     state.
+    Since the accuracy of the MBAR estimator depends on sufficient overlap between lambda states, this is a very
+    important metric.
     This plot should show that the diagonal of the matrix has some "width" so that the two end states are connected,
     with elements adjacent to the diagonal being at least 0.03 [5]_.
   * Replica exchange probability matrix (for repex type simulations only).  Similar to the MBAR overlap matrix, this shows
