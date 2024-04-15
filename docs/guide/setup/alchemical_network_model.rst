@@ -42,4 +42,4 @@ See Also
 --------
 
 * :ref:`Alchemical Network API reference <Alchemical Network Planning>`
-* :ref:`Chemical Systems UserGuide entry <userguide_chemical_systems>`
+* :ref:`Chemical Systems UserGuide entry <userguide_chemicalsystems_and_components>`
