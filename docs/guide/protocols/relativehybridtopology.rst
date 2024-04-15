@@ -188,13 +188,12 @@ See Also
 
 **Setting up RFE calculations**
 
-* :ref:`Setting up RBFE calculations <define-rbfe>`
-* :ref:`Setting up RHFE calculations <define-rsfe>`
+* :ref:`Setting up alchemical networks <alchemical_network_creation>`
 
 **Tutorials**
 
-* :any:`Relative Free Energies with the OpenFE CLI <../../tutorials/rbfe_cli_tutorial>`
-* :any:`Relative Free Energies with the OpenFE Python API <../../tutorials/rbfe_python_tutorial>`
+* :any:`Relative Free Energies with the OpenFE CLI <rbfe_cli_tutorial>`
+* :any:`Relative Free Energies with the OpenFE Python API <tutorials/rbfe_python_tutorial.nblink>`
 
 **Cookbooks**
 
