@@ -7,7 +7,8 @@ Overview
 The relative free energy calculation approach calculates the difference in 
 free energy between two similar ligands. Depending on the :class:`.ChemicalSystem` 
 provided, the protocol either calculates the relative binding free energy 
-(RBFE), or the relative hydration free energy (RHFE). 
+(RBFE), or the relative hydration free energy (RHFE).
+
 .. todo: Add reference to ChemicalSystem section
 
 In a thermodynamic 
