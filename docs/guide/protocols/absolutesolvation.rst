@@ -73,7 +73,10 @@ The free energy differences are obtained from simulation data using the `MBAR es
 Both the MBAR estimates of the two legs of the thermodynamic cycle, and the overall absolute solvation free energy (of the entire cycle) are obtained,
 which is different compared to the results in the :class:`.RelativeHybridTopologyProtocol` where results from two legs of the thermodynamic cycle are obtained separately.
 
-In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`Results <userguide_results>` section.
+In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
+
+.. todo: issue 792 change this reference to point to the new results section
+
 
 See Also
 --------

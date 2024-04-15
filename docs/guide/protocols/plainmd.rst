@@ -16,15 +16,23 @@ The protocol applies a
 `LangevinMiddleIntegrator <http://docs.openmm.org/development/api-python/generated/openmm.openmm.LangevinMiddleIntegrator.html>`_ 
 which uses Langevin dynamics, with the LFMiddle discretization [1]_.  
 
-Simulation Steps
-~~~~~~~~~~~~~~~~
+Simulation Steps and Outputs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If there is a ``SolventComponent`` in the :class:`.ChemicalSystem`, the each :class:`.ProtocolUnit` carries out the following steps:
 
-1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
-2. Minimize the system
-3. Equilibrate in the canonical (NVT) ensemble
-4. Equilibrate and production simulate the system under isobaric-isothermal (NPT) conditions using a MonteCarloBarostat to maintain constant pressure
+1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_ 
+* Output: Forcefield cache (`db.json`)
+2. OpenMM object creation
+* Output: Structure of the full system (`system.pdb`)
+3. Minimize the system
+* Output: Minimized Structure (`minimized.pdb`)
+4. Equilibrate in the canonical (NVT) ensemble
+* Output: NVT equilibrated structure (`equil_nvt.pdb`)
+5. Equilibrate the system under isobaric-isothermal (NPT) conditions using a MonteCarloBarostat to maintain constant pressure
+* Output: NPT equilibrated structure (`equil_npt.pdb`)
+6. Production simulate the system under isobaric-isothermal (NPT) conditions using a MonteCarloBarostat to maintain constant pressure
+* Output: Simulation trajectory (`simulation.xtc`), Checkpoint file (`checkpoint.chk`), Log output (`simulation.log`)
 
 Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
 
