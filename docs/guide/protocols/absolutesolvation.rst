@@ -4,7 +4,7 @@ Absolute Solvation Protocol
 Overview
 --------
 
-The :class:`absolute solvation Protocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
+The :class:`AbsoluteSolvationProtocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
 associate with transferring a molecule from vacuum into a solvent.
 
 .. note::
@@ -41,7 +41,7 @@ Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
 The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`.ProtocolUnit`\ s from both the vacuum and solvent transformations.
-This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
+This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
 If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both vacuum and solvent transformations.
 
 Simulation steps
@@ -70,7 +70,7 @@ Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The free energy differences are obtained from simulation data using the `MBAR estimator <https://www.alchemistry.org/wiki/Multistate_Bennett_Acceptance_Ratio>`_ (multistate Bennett acceptance ratio estimator) as implemented in the `PyMBAR package <https://pymbar.readthedocs.io/en/master/mbar.html>`_.
-Both the MABR estimates of the two legs of the thermodynamic cycle, and the overall absolute solvation free energy (of the entire cycle) are obtained,
+Both the MBAR estimates of the two legs of the thermodynamic cycle, and the overall absolute solvation free energy (of the entire cycle) are obtained,
 which is different compared to the results in the :class:`.RelativeHybridTopologyProtocol` where results from two legs of the thermodynamic cycle are obtained separately.
 
 In addition to the estimates of the free energy changes and their uncertainty, the protocol also returns some metrics to help assess convergence of the results, these are detailed in the :ref:`Results <userguide_results>` section.

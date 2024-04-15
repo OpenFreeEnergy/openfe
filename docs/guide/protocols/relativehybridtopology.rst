@@ -7,9 +7,8 @@ Overview
 The relative free energy calculation approach calculates the difference in 
 free energy between two similar ligands. Depending on the :class:`.ChemicalSystem` 
 provided, the protocol either calculates the relative binding free energy 
-(RBFE), or the relative hydration free energy (RHFE) 
-(see 
-.. This is a comment to be replaced :any:`ChemicalSystems, Components and thermodynamic cycles <../setup/chemical_systems_and_thermodynamic_cycles>`
+(RBFE), or the relative hydration free energy (RHFE). 
+.. todo: Add reference to ChemicalSystem section
 
 In a thermodynamic 
 cycle, one ligand is converted into the other ligand by alchemically 
@@ -60,7 +59,7 @@ Simulation overview
 
 The :class:`.ProtocolDAG` of the :class:`.RelativeHybridTopologyProtocol` contains the :class:`.ProtocolUnit`\ s from one leg of the thermodynamic
 cycle. 
-This means that each :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle and therefore two Protocol instances need to be run to get the overall relative free energy difference, :math:`{\\Delta\\Delta G}`. 
+This means that each :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle and therefore two Protocol instances need to be run to get the overall relative free energy difference, ΔΔG. 
 If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both vacuum and solvent transformations.
 
 Simulation Steps
