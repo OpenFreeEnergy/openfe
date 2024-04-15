@@ -21,19 +21,26 @@ Simulation Steps and Outputs
 
 If there is a ``SolventComponent`` in the :class:`.ChemicalSystem`, the each :class:`.ProtocolUnit` carries out the following steps:
 
-1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_ 
-* Output: Forcefield cache (`db.json`)
-2. OpenMM object creation
-* Output: Structure of the full system (`system.pdb`)
-3. Minimize the system
-* Output: Minimized Structure (`minimized.pdb`)
-4. Equilibrate in the canonical (NVT) ensemble
-* Output: NVT equilibrated structure (`equil_nvt.pdb`)
-5. Equilibrate the system under isobaric-isothermal (NPT) conditions using a MonteCarloBarostat to maintain constant pressure
-* Output: NPT equilibrated structure (`equil_npt.pdb`)
-6. Production simulate the system under isobaric-isothermal (NPT) conditions using a MonteCarloBarostat to maintain constant pressure
-* Output: Simulation trajectory (`simulation.xtc`), Checkpoint file (`checkpoint.chk`), Log output (`simulation.log`)
+.. list-table:: 
+  :widths: 50 50
+  :header-rows: 1
 
+  * - Step
+    - Outputs (with default names)
+  * - 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_
+    - Forcefield cache (``db.json``)
+  * - 2. OpenMM object creation
+    - Structure of the full system (``system.pdb``)
+  * - 3. Minimize the system
+    - Minimized Structure (``minimized.pdb``)
+  * - 4. Equilibrate in the canonical (NVT) ensemble
+    - NVT equilibrated structure (``equil_nvt.pdb``)
+  * - 5. Equilibrate the system under isobaric-isothermal (NPT) conditions
+    - NPT equilibrated structure (``equil_npt.pdb``)
+  * - 6. Production simulate the system under isobaric-isothermal (NPT) conditions
+    - Simulation trajectory (``simulation.xtc``), Checkpoint file (``checkpoint.chk``), Log output (``simulation.log``)
+
+A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 Relevant settings under solvent conditions include the solvation settings that control the ``solvent_model`` and ``solvent_padding``.
 
 If the :class:`.ChemicalSystem` does not contain a ``SolventComponent``, the protocol runs an MD simulation in vacuum. After a minimization, the protocol performs an equilibration, followed by a production run with no periodic boundary conditions and infinite cutoffs. Settings that control the barostat or the solvation are ignored for vaccum MD simulations.
