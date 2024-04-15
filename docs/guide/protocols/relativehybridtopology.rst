@@ -10,7 +10,7 @@ provided, the protocol either calculates the relative binding free energy
 (RBFE), or the relative hydration free energy (RHFE) 
 (see 
 .. This is a comment to be replaced :any:`ChemicalSystems, Components and thermodynamic cycles <../setup/chemical_systems_and_thermodynamic_cycles>`
-[ToDo: add reference to setup page]). 
+
 In a thermodynamic 
 cycle, one ligand is converted into the other ligand by alchemically 
 transforming the atoms that vary between the two ligands. The 

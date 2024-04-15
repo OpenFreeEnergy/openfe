@@ -6,7 +6,7 @@ Overview
 
 The :class:`.PlainMDProtocol` enables the user to run a Molecular Dynamics (MD) simulation of a :class:`.ChemicalSystem`, which can contain e.g. a solvated protein-ligand complex, a molecule and water, or a molecule in vacuum.
 
-TODO: Later add ref to ChemicalSystem section
+.. todo: Later add ref to ChemicalSystem section
 
 Scientific Details
 ------------------
