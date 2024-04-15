@@ -49,8 +49,6 @@ For example to  construct the classic relative binding free energy cycle, we wil
 a protein, and a solvent.  These four ingredients can then be combined into the four point on the thermodynamic cycle
 that we wish to sample:
 
-.. todo image of RBFE cycle taken from HREX docs
-
 ::
 
   import openfe
@@ -71,6 +69,12 @@ that we wish to sample:
   ligand_A_solvent = openfe.ChemicalSystem(components={'ligand': ligand_A, 'solvent': solvent})
   # ligand_A + solvent
   ligand_B_solvent = openfe.ChemicalSystem(components={'ligand': ligand_B, 'solvent': solvent})
+
+.. figure:: ../protocols/img/rbfe_thermocycle.png
+   :scale: 50%
+   :alt: RBFE thermodynamic cycle
+
+   Illustration of the relative binding free energy thermodynamic cycles and the chemical systems at each end state.
 
 
 See Also
