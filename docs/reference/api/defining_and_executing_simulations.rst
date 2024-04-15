@@ -1,3 +1,5 @@
+.. _reference_execution:
+
 Defining and Executing Simulations
 ==================================
 

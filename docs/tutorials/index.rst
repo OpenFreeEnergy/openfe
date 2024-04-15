@@ -23,7 +23,7 @@ relative binding free energy calculation.
 Relative Free Energies CLI tutorial
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :any:`Relative Free Energies with the OpenFE CLI <rbfe_cli_tutorial>`
+The :ref:`Relative Free Energies with the OpenFE CLI <rbfe_cli_tutorial>`
 tutorial walks users through how to use the OpenFE command line to calculate
 relative binding free energies of various ligands against the TYK2 target.
 
@@ -65,7 +65,7 @@ and plot networks of relative free energy results.
 .. toctree::
     :maxdepth: 1
     :hidden:
-
+    
     rbfe_cli_tutorial
     rbfe_python_tutorial
     showcase_notebook

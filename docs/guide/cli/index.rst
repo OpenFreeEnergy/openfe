@@ -1,3 +1,5 @@
+.. _userguide_cli_interface:
+
 CLI Interface
 =============
 
