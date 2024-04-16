@@ -16,7 +16,7 @@ A :class:`.ChemicalSystem` **does** include information, where present, on:
 
 * exact atomic information (including protonation state) of protein, ligands, co-factors, and any crystallographic
   waters
-* atomic positions of all explicitly  ligand or conformation of a protein
+* atomic positions of all explicitly components such as ligands or proteins
 * the abstract definition of the solvation environment, if present
 
 It **does not** include any information on:
@@ -35,9 +35,10 @@ Examples of components include:
 * :class:`.SmallMoleculeComponent` to represent ligands and cofactors
 * :class:`.SolventComponent` to represent the solvent conditions
 
-Splitting the total system into components serves two purposes:
+Splitting the total system into components serves three purposes:
 
 * alchemical transformations can be easily understood by comparing the differences in Components
+* components can be reused to compose different systems
 * ``Protocol`` \s can treat different components differently, for example applying different force fields
 
 Thermodynamic Cycles
