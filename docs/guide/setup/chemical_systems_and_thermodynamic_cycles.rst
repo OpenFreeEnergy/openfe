@@ -38,7 +38,7 @@ Examples of components include:
 Splitting the total system into components serves two purposes:
 
 * alchemical transformations can be easily understood by comparing the differences in Components
-* ``Protocol`` \s can know to treat different components differently, for example applying different force fields
+* ``Protocol`` \s can treat different components differently, for example applying different force fields
 
 Thermodynamic Cycles
 --------------------
@@ -46,7 +46,7 @@ Thermodynamic Cycles
 With a language to express chemical systems piecewise, we can now also construct thermodynamic cycles based on these.
 The exact end states to construct are detailed in the :ref:`pages for each specific Protocol <userguide_protocols>`.
 For example to  construct the classic relative binding free energy cycle, we will need four components, two ligands,
-a protein, and a solvent.  These four ingredients can then be combined into the four point on the thermodynamic cycle
+a protein, and a solvent.  These four ingredients can then be combined into the four points on the thermodynamic cycle
 that we wish to sample:
 
 ::
