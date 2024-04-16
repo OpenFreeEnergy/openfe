@@ -16,7 +16,7 @@ A :class:`.ChemicalSystem` **does** include information, where present, on:
 
 * exact atomic information (including protonation state) of protein, ligands, co-factors, and any crystallographic
   waters
-* atomic positions of all explicitly components such as ligands or proteins
+* atomic positions of all explicitly defined components such as ligands or proteins
 * the abstract definition of the solvation environment, if present
 
 It **does not** include any information on:
