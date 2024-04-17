@@ -1,5 +1,8 @@
 .. _api:
 
+.. note::
+   We have reproduced API documentation from the `GUFE`_ package here for convenience.
+
 OpenFE API Reference
 ====================
 
@@ -15,3 +18,5 @@ OpenFE API Reference
     openmm_solvation_afe
     openmm_md
     openmm_protocol_settings
+
+.. _GUFE: https://gufe.readthedocs.io/en/latest/api.html
