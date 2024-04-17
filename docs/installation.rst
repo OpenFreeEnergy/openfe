@@ -586,9 +586,6 @@ We currently support the following CPU architectures:
 
 * ``linux-64`` 
 * ``osx-64``
-
-The openfe package is installable on these platforms, but support is done on a best effort basis: 
-
 * ``osx-arm64``
 
 For simulation preparation, any supported platform is suitable.
