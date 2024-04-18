@@ -135,15 +135,15 @@ initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
 happens once per installation.
   
-A more expansive test suite can be ran using ::
+A more expansive test suite can be run using ::
 
   openfe test --long
   
 This test suite contains several hundred individual tests. This may take up to
 an hour, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
-This "long" testsuite might be more suited to running as a job on the intended compute
-hardware to run openfe jobs, as it will test GPU specific features.
+This "long" test suite should be run as a job on the compute
+hardware intended to run openfe jobs, as it will test GPU specific features.
 
 With that, you should be ready to use ``openfe``!
 
