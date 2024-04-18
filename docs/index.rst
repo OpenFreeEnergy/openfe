@@ -29,7 +29,7 @@ and lastly, the API Reference provides a direct technical explanation of our cod
     .. grid-item-card:: Try it out
         :img-top: _static/Rocket.svg
         :text-align: center
-        :link: https://try.openfree.energy
+        :link: http://try.openfree.energy
         :link-type: url
 
         New to *OpenFE*?.  Start here and try it from your browser.
