@@ -1,5 +1,9 @@
 .. _api:
 
+.. note::
+   We have reproduced API documentation from the `GUFE`_ package here for convenience.
+   The GUFE package serves as a foundation layer for openfe, providing abstract base classes and object models, and so might be more useful for developers.
+
 OpenFE API Reference
 ====================
 
@@ -15,3 +19,5 @@ OpenFE API Reference
     openmm_solvation_afe
     openmm_md
     openmm_protocol_settings
+
+.. _GUFE: https://gufe.readthedocs.io/en/latest/api.html
