@@ -126,17 +126,25 @@ Now we need to activate our new environment ::
       mamba activate openfe_env
       mamba env config vars set CONDA_SUBDIR=osx-64
 
-To make sure everything is working, run the tests ::
+To quickly check this is working, run the tests ::
 
-  openfe test --long
+  openfe test
 
-The test suite contains several hundred individual tests. This may take up to
-an hour, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail). The very first time you run this, the
+The very first time you run this, the
 initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
 happens once per installation.
   
+A more expansive test suite can be ran using ::
+
+  openfe test --long
+  
+This test suite contains several hundred individual tests. This may take up to
+an hour, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+This "long" testsuite might be more suited to running as a job on the intended compute
+hardware to run openfe jobs, as it will test GPU specific features.
+
 With that, you should be ready to use ``openfe``!
 
 Single file installer
