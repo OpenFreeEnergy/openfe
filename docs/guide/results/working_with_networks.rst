@@ -12,12 +12,12 @@ Converting relative results to absolute estimates
 -------------------------------------------------
 
 When a network of relative free energies has been calculated,
-a commonly performed task is to transform these pairwise estimations of **relative** free energies
-into **absolute** free energies.
+a commonly performed task is to transform these pairwise estimations of **relative** free energies differences (:math:`\Delta \Delta G`)
+into **absolute** free energy differences (:math:`\Delta G`).
 This is done using a maximum likelihood estimator (MLE) [1]_,
 as implemented in the `cinnabar`_ package.
 This approach uses the matrix of relative pairwise measurements and their uncertainties,
-to estimate the overall ranking of
+to estimate the overall ranking of ligands.
 To use this approach the network of pairwise measurements needs to be fully connected,
 i.e. there should be a way to trace a path along pairwise measurements between any two nodes (ligands) on the network.
 
