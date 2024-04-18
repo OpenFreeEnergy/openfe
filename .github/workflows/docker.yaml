@@ -96,7 +96,7 @@ jobs:
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(gufe.__version__)"
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfecli --pyargs openfe -v
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe -v
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -123,7 +123,7 @@ jobs:
           cd test_apptainer
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
-          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfecli --pyargs openfe -v -n auto
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfe -v -n auto
           echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}-apptainer
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-apptainer

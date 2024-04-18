@@ -577,3 +577,20 @@ openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VE
   This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
   Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
   See :ref:`installation:mamba_hpc` for more details.
+
+
+Supported Hardware
+------------------
+
+We currently support the following CPU architectures:
+
+* ``linux-64`` 
+* ``osx-64``
+* ``osx-arm64``
+
+For simulation preparation, any supported platform is suitable.
+We test our software regularly by performing vacuum transformations on ``linux-64`` using the OpenMM CUDA platform.
+While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA platform is more performant) so we do not recomend using that platform without performing your own verification of correctness.
+For production use, we recomend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
+When using an OpenMM based protocol on NVIDIA GPUs, we recomend driver version ``525.60.13`` or greater.
+The minimum driver version required when installing from conda-forge is ``450.36.06``, but newer versions of OpenMM may not support that driver version as CUDA 11 will be removed the build matrix.

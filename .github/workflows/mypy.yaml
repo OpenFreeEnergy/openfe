@@ -36,6 +36,7 @@ jobs:
           cache-downloads-key: downloads-${{ steps.date.outputs.date }}
           create-args: >-
             python=3.9
+            rdkit=2023.09.5
           init-shell: bash
 
       - name: "Install steps"

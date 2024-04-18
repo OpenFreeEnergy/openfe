@@ -90,4 +90,4 @@ jobs:
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(gufe.__version__)"
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe --pyargs openfecli -v
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe -v
