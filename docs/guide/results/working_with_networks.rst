@@ -4,16 +4,16 @@ Working with networks of results
 ================================
 
 After running a **network** of free energy calculations,
-we often want to consider analysing the corresponding network of results.
+we often want to analyse the corresponding network of results.
 
 .. _userguide_MLE:
 
 Converting relative results to absolute estimates
 -------------------------------------------------
 
-When a network of relative free energies have been calculated,
+When a network of relative free energies has been calculated,
 a commonly performed task is to transform these pairwise estimations of **relative** free energies
-into a **absolute** free energies.
+into **absolute** free energies.
 This is done using a maximum likelihood estimator (MLE) [1]_,
 as implemented in the `cinnabar`_ package.
 This approach uses the matrix of relative pairwise measurements and their uncertainties,
@@ -37,7 +37,7 @@ Gathering using the command line
 After running calculations using the :ref:`quickrun command <userguide_quickrun>`,
 the :ref:`openfe gather <cli_gather>` command offers a way to collate information across many different individual
 simulations and prepare a table of results.
-The tool offers a summary of the relative binding affinities,
+The tool offers a summary of the relative binding affinities (`--report ddg`),
 or their :ref:`corresponding MLE values <userguide_MLE>`.
 
 Using cinnabar directly
@@ -49,7 +49,7 @@ A tutorial on using this is provided here :ref:`here <tutorials/plotting_with_ci
 See also
 --------
 
-* For handling the results of a single calculation, consult :ref:`userguide_individual_results`
+For handling the results of a single calculation, please consult :ref:`userguide_individual_results`
 
 .. [1] Optimal Measurement Network of Pairwise Differences, Huafeng Xu, J. Chem. Inf. Model. 2019, 59, 11, 4720-4728
 .. [2] Accurate and Reliable Prediction of Relative Ligand Binding Potency in Prospective Drug Discovery by Way of a Modern Free-Energy Calculation Protocol and Force Field
