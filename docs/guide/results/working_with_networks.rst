@@ -12,7 +12,7 @@ Converting relative results to absolute estimates
 -------------------------------------------------
 
 When a network of relative free energies has been calculated,
-a commonly performed task is to transform these pairwise estimations of **relative** free energies differences (:math:`\Delta \Delta G`)
+a commonly performed task is to transform these pairwise estimations of **relative** free energy differences (:math:`\Delta \Delta G`)
 into **absolute** free energy differences (:math:`\Delta G`).
 This is done using a maximum likelihood estimator (MLE) [1]_,
 as implemented in the `cinnabar`_ package.
@@ -37,8 +37,8 @@ Gathering using the command line
 After running calculations using the :ref:`quickrun command <userguide_quickrun>`,
 the :ref:`openfe gather <cli_gather>` command offers a way to collate information across many different individual
 simulations and prepare a table of results.
-The tool offers a summary of the relative binding affinities (`--report ddg`),
-or their :ref:`corresponding MLE values <userguide_MLE>`.
+The tool offers a summary of the relative binding affinities (``--report ddg``),
+or their :ref:`corresponding MLE values <userguide_MLE>` (``--report dg``).
 
 Using cinnabar directly
 -----------------------
