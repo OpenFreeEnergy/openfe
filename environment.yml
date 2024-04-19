@@ -18,7 +18,7 @@ dependencies:
   - pyyaml
   - coverage
   - cinnabar ==0.3.0
-  - openff-toolkit>=0.16
+  - openff-toolkit ~=0.13
   - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
   - pint<0.22
