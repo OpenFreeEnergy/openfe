@@ -20,17 +20,17 @@ If you already have a Mamba installation, you can install ``openfe`` with:
 
 Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
-Installation with ``mambaforge`` (recommended)
+Installation with ``miniforge`` (recommended)
 ----------------------------------------------
 
-.. _MambaForge: https://github.com/conda-forge/miniforge#mambaforge
+.. _Miniforge: https://github.com/conda-forge/miniforge?tab=readme-ov-file#miniforge
 
-We recommend installing ``openfe`` with `MambaForge`_ because it provides easy
+We recommend installing ``openfe`` with `Miniforge`_ because it provides easy
 installation of other software that ``openfe`` needs, such as OpenMM and
-AmberTools. We recommend ``mambaforge`` because it is faster than ``conda`` and
+AmberTools. We recommend ``miniforge`` because it is faster than ``conda`` and
 comes preconfigured to use ``conda-forge``.
 
-To install and configure ``mambaforge``, you need to know your operating
+To install and configure ``miniforge``, you need to know your operating
 system, your machine architecture (output of ``uname -m``), and your shell
 (in most cases, can be determined from ``echo $SHELL``). Select
 your operating system and architecture from the tool below, and run the
@@ -38,13 +38,13 @@ commands it suggests.
 
 .. raw:: html
 
-    <select id="mambaforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
+    <select id="miniforge-os" onchange="javascript: setArchitectureOptions(this.options[this.selectedIndex].value)">
         <option value="Linux">Linux</option>
         <option value="MacOSX">macOS</option>
     </select>
-    <select id="mambaforge-architecture" onchange="updateInstructions()">
+    <select id="miniforge-architecture" onchange="updateInstructions()">
     </select>
-    <select id="mambaforge-shell" onchange="updateInstructions()">
+    <select id="miniforge-shell" onchange="updateInstructions()">
         <option value="bash">bash</option>
         <option value="zsh">zsh</option>
         <option value="tcsh">tcsh</option>
@@ -52,7 +52,7 @@ commands it suggests.
         <option value="xonsh">xonsh</option>
     </select>
     <br />
-    <pre><span id="mambaforge-curl-install"></span></pre>
+    <pre><span id="miniforge-curl-install"></span></pre>
     <script>
       function setArchitectureOptions(os) {
           let options = {
@@ -71,27 +71,27 @@ commands it suggests.
           for (const [val, extra] of choices) {
               htmlString += `<option value="${val}">${val}${extra}</option>`;
           }
-          let arch = document.getElementById("mambaforge-architecture");
+          let arch = document.getElementById("miniforge-architecture");
           arch.innerHTML = htmlString
           updateInstructions()
       }
 
       function updateInstructions() {
-          let cmd = document.getElementById("mambaforge-curl-install");
-          let osElem = document.getElementById("mambaforge-os");
-          let archElem = document.getElementById("mambaforge-architecture");
-          let shellElem = document.getElementById("mambaforge-shell");
+          let cmd = document.getElementById("miniforge-curl-install");
+          let osElem = document.getElementById("miniforge-os");
+          let archElem = document.getElementById("miniforge-architecture");
+          let shellElem = document.getElementById("miniforge-shell");
           let os = osElem[osElem.selectedIndex].value;
           let arch = archElem[archElem.selectedIndex].value;
           let shell = shellElem[shellElem.selectedIndex].value;
-          let filename = "Mambaforge-" + os + "-" + arch + ".sh"
+          let filename = "Miniforge3-" + os + "-" + arch + ".sh"
           let cmdArr = [
               (
                   "curl -OL https://github.com/conda-forge/miniforge/"
                   + "releases/latest/download/" + filename
               ),
               "sh " + filename + " -b",
-              "~/mambaforge/bin/mamba init " + shell,
+              "~/miniforge3/bin/mamba init " + shell,
               "rm -f " + filename,
           ]
           cmd.innerHTML = cmdArr.join("\n")
@@ -126,17 +126,25 @@ Now we need to activate our new environment ::
       mamba activate openfe_env
       mamba env config vars set CONDA_SUBDIR=osx-64
 
-To make sure everything is working, run the tests ::
+To quickly check this is working, run the tests ::
 
-  openfe test --long
+  openfe test
 
-The test suite contains several hundred individual tests. This may take up to
-an hour, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail). The very first time you run this, the
+The very first time you run this, the
 initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
 happens once per installation.
   
+A more expansive test suite can be run using ::
+
+  openfe test --long
+  
+This test suite contains several hundred individual tests. This may take up to
+an hour, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+This "long" test suite should be run as a job on the compute
+hardware intended to run openfe jobs, as it will test GPU specific features.
+
 With that, you should be ready to use ``openfe``!
 
 Single file installer
@@ -577,3 +585,20 @@ openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VE
   This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
   Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
   See :ref:`installation:mamba_hpc` for more details.
+
+
+Supported Hardware
+------------------
+
+We currently support the following CPU architectures:
+
+* ``linux-64`` 
+* ``osx-64``
+* ``osx-arm64``
+
+For simulation preparation, any supported platform is suitable.
+We test our software regularly by performing vacuum transformations on ``linux-64`` using the OpenMM CUDA platform.
+While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA platform is more performant) so we do not recomend using that platform without performing your own verification of correctness.
+For production use, we recomend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
+When using an OpenMM based protocol on NVIDIA GPUs, we recomend driver version ``525.60.13`` or greater.
+The minimum driver version required when installing from conda-forge is ``450.36.06``, but newer versions of OpenMM may not support that driver version as CUDA 11 will be removed the build matrix.

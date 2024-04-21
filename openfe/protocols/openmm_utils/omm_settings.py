@@ -115,23 +115,27 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     The OpenFF toolkit registry backend to use for partial charge generation.
 
 
-    OFF backend selection options
-    -----------------------------
+    OpenFF backend selection options
+    --------------------------------
 
-    The following are set depending on the option chosen:
-    * ``ambertools``: this will limit partial charge generation to using
-      a mixture of AmberTools and RDKit.
-    * ``openeye``: this will limit partial charge generation to using
-      the OpenEye toolkit. This cannot be used with ``espaloma`` as the
-      ``partial_charge_method``
-    * ``rdkit``: this will limit partial charge generation to using
-      the RDKit toolkit. Note that this alone cannot be used for conventionla
-      am1bcc partial charge generation, but is usually used in combination with
+    ``ambertools``:
+      This limits partial charge generation to using a mixture of AmberTools
+      and RDKit.
+
+    ``openeye``:
+      This limits partial charge generation to using the OpenEye toolkit.
+      This cannot be used with ``espaloma`` as the ``partial_charge_method``
+
+    ``rdkit``:
+      This limits partial charge generation to using the RDKit toolkit.
+      Note that this alone cannot be used for conventional am1bcc partial
+      charge generation, but is usually used in combination with
       the ``nagl`` or ``espaloma`` ``partial_charge_method`` selections.
+
     """
     number_of_conformers: Optional[int] = None
     """
-    Number of conformers to generate as part of the partial charge assignement.
+    Number of conformers to generate as part of the partial charge assignment.
 
     If ``None`` (default), the existing conformer of the input
     SmallMoleculeComponent will be used.
@@ -179,7 +183,14 @@ class OpenMMEngineSettings(SettingsBaseModel):
 
 
 class IntegratorSettings(SettingsBaseModel):
-    """Settings for the LangevinSplittingDynamicsMove integrator"""
+    """Settings for the LangevinDynamicsMove integrator
+
+    Note
+    ----
+    For some Protocols, an MC "move" (e.g. replica exchange swap) is applied
+    at a given frequency. In most Protocols the move frequency is defined in
+    `MultiStateSimulationSettings.time_per_iteration`.
+    """
 
     class Config:
         arbitrary_types_allowed = True
@@ -190,8 +201,8 @@ class IntegratorSettings(SettingsBaseModel):
     """Collision frequency. Default 1.0 / unit.pisecond."""
     reassign_velocities = False
     """
-    If True, velocities are reassigned from the Maxwell-Boltzmann
-    distribution at the beginning of move. Default False.
+    If ``True``, velocities are reassigned from the Maxwell-Boltzmann
+    distribution at the beginning of each MC move. Default ``False``.
     """
     n_restart_attempts = 20
     """
@@ -208,7 +219,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     remove_com: bool = False
     """
-    Whether or not to remove the center of mass motion. Default False.
+    Whether or not to remove the center of mass motion. Default ``False``.
     """
 
     @validator('langevin_collision_rate', 'n_restart_attempts')
@@ -257,7 +268,7 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    checkpoint_interval: FloatQuantity['picosecond'] = 250 * unit.picosecond
     """
     Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
@@ -310,18 +321,13 @@ class SimulationSettings(SettingsBaseModel):
     """Number of minimization steps to perform. Default 5000."""
     equilibration_length: FloatQuantity['nanosecond']
     """
-    Length of the equilibration phase in units of time. The total number of
-    steps from this equilibration length
-    (i.e. ``equilibration_length`` / :class:`IntegratorSettings.timestep`)
-    must be a multiple of the value defined for
-    :class:`AlchemicalSamplerSettings.steps_per_iteration`.
+    Length of the equilibration phase in units of time.
+    Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
     production_length: FloatQuantity['nanosecond']
     """
-    Length of the production phase in units of time. The total number of
-    steps from this production length (i.e.
-    ``production_length`` / :class:`IntegratorSettings.timestep`) must be
-    a multiple of the value defined for :class:`IntegratorSettings.nsteps`.
+    Length of the production phase in units of time.
+    Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
 
     @validator('equilibration_length', 'production_length')
@@ -352,10 +358,10 @@ class MultiStateSimulationSettings(SimulationSettings):
     ----
     * It'd be great if we could pass in the sampler object rather than using
       strings to define which one we want.
-    * Make n_replicas optional such that: If `None` or greater than the number
-      of lambda windows set in :class:`AlchemicalSettings`, this will default
-      to the number of lambda windows. If less than the number of lambda
-      windows, the replica lambda states will be picked at equidistant
+    * Make n_replicas optional such that: If ``None`` or greater than the
+      number of lambda windows set in :class:`LambdaSettings`, this will
+      default to the number of lambda windows. If less than the number of
+      lambda windows, the replica lambda states will be picked at equidistant
       intervals along the lambda schedule.
     """
 
