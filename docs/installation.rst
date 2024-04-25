@@ -126,17 +126,25 @@ Now we need to activate our new environment ::
       mamba activate openfe_env
       mamba env config vars set CONDA_SUBDIR=osx-64
 
-To make sure everything is working, run the tests ::
+To quickly check this is working, run the tests ::
 
-  openfe test --long
+  openfe test
 
-The test suite contains several hundred individual tests. This may take up to
-an hour, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail). The very first time you run this, the
+The very first time you run this, the
 initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
 happens once per installation.
   
+A more expansive test suite can be run using ::
+
+  openfe test --long
+  
+This test suite contains several hundred individual tests. This may take up to
+an hour, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+This "long" test suite should be run as a job on the compute
+hardware intended to run openfe jobs, as it will test GPU specific features.
+
 With that, you should be ready to use ``openfe``!
 
 Single file installer
@@ -577,3 +585,20 @@ openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VE
   This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
   Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
   See :ref:`installation:mamba_hpc` for more details.
+
+
+Supported Hardware
+------------------
+
+We currently support the following CPU architectures:
+
+* ``linux-64`` 
+* ``osx-64``
+* ``osx-arm64``
+
+For simulation preparation, any supported platform is suitable.
+We test our software regularly by performing vacuum transformations on ``linux-64`` using the OpenMM CUDA platform.
+While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA platform is more performant) so we do not recomend using that platform without performing your own verification of correctness.
+For production use, we recomend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
+When using an OpenMM based protocol on NVIDIA GPUs, we recomend driver version ``525.60.13`` or greater.
+The minimum driver version required when installing from conda-forge is ``450.36.06``, but newer versions of OpenMM may not support that driver version as CUDA 11 will be removed the build matrix.

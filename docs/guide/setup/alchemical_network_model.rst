@@ -1,12 +1,12 @@
-.. _alchemical-network-model:
+.. _alchemical_network_model:
 
-Alchemical Networks: Representation of a Simulation
+Alchemical Networks: Planning a Simulation Campaign
 ===================================================
 
 The goal of the setup stage is to create an :class:`.AlchemicalNetwork`,
 which contains all the information needed for a campaign of simulations.
 This section will describe the composition of the achemical network,
-including describing the OpenFE objects that describe chemistry, as well as
+including the OpenFE objects that define chemistry, as well as
 alchemical transformations.
 
 .. TODO provide a written or image based comparison between alchemical and thermodynamic cycles
@@ -29,20 +29,17 @@ calculate the free energy differences between the two
 :class:`.ChemicalSystem`\ s that are the nodes for that edge. In addition to
 containing the information for each :class:`.ChemicalSystem`, the
 :class:`.Transformation` also contains a :class:`.Protocol` and, when
-relevant, atom mapping information for alchemical transformations.
+relevant, atom mapping information for alchemical transformations. The latter
+is often done through a :class:`.LigandNetwork`.
 
-A :class:`.ChemicalSystem` is made up of one or more ``ChemicalComponent``\
-s. Each component represents a conceptual part of the total molecular
-system. A ligand would be represented by a :class:`.SmallMoleculeComponent`.
-A protein would be a :class:`.ProteinComponent`. The solvent to be added is
-represented as a :class:`.SolventComponent`. This allows us to easily
-identify what is changing between two nodes -- for example, a relative
-binding free energy (RBFE) edge for ligand binding would have the same
-solvent and protein components, but different ligand components.
 
-The :class:`.Protocol` object describes how the simulation should be run.
-This includes choice of algorithm, as well as specific settings for the
-edge. Each protocol has its own :class:`.Settings` subclass, which contains
-all the settings relevant for that protocol.
+.. figure:: img/AlchemicalNetwork.png
+
 
 .. TODO where to find details on settings
+
+See Also
+--------
+
+* :ref:`Alchemical Network API reference <Alchemical Network Planning>`
+* :ref:`Chemical Systems UserGuide entry <userguide_chemicalsystems_and_components>`
