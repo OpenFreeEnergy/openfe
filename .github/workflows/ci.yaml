@@ -3,6 +3,11 @@ on:
   pull_request:
     branches:
       - main
+   # Skip CI if changed files only affect the following folders
+   # - docs: documentation changes don't need code validation
+   # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
+    paths-ignore:
+      - "docs/*"
   push:
     branches:
       - main
@@ -24,12 +29,12 @@ defaults:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu"]
+        os: ["ubuntu-latest"]
         pydantic-version: [">1"]
         python-version:
           - "3.9"
@@ -37,13 +42,13 @@ jobs:
           - "3.11"
         openeye: ["no"]
         include:
-          - os: "macos"
+          - os: "macos-12"
             python-version: "3.11"
             pydantic-version: ">1"
-          - os: "ubuntu"
+          - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: "<2"
-          - os: "ubuntu"
+          - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
@@ -99,6 +104,7 @@ jobs:
         run: |
           micromamba info
           micromamba list
+          pip list
 
       - name: "Run tests"
         env:
