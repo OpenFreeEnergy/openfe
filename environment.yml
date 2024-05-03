@@ -45,3 +45,4 @@ dependencies:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/openmm/openmmforcefields@main
