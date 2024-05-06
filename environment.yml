@@ -28,7 +28,7 @@ dependencies:
   - typing-extensions
   - lomap2>=2.3.0
   - openmmtools
-  - openmmforcefields>=0.11.2
+  - openmmforcefields
   - perses
   - pooch
   - py3dmol
@@ -45,4 +45,3 @@ dependencies:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/openmm/openmmforcefields@fix_gaff_error_msg
