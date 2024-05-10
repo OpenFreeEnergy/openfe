@@ -50,7 +50,7 @@ jobs:
             python-version: "3.11"
             pydantic-version: "<2"
           - os: "ubuntu-latest"
-            python-version: "3.12"
+            python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
           - os: "ubuntu-latest"
