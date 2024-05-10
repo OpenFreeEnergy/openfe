@@ -58,7 +58,6 @@ jobs:
             pydantic-version: ">1"
             openeye: "no"
             ommff-version: "<0.13"
-            name: "Python 3.10 GAFF Test"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
