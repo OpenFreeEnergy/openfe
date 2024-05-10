@@ -264,10 +264,10 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
         with pytest.raises(GAFFNotSupportedError):
             with tmpdir.as_cwd():
-                system = unit.run(dry=True)["debug"]["system"]
+                system = unit.run(dry=True)["debug"]["sampler"]
     else:
         with tmpdir.as_cwd():
-            system = unit.run(dry=True)["debug"]["system"]
+            system = unit.run(dry=True)["debug"]["sampler"]
 
 
 @pytest.mark.slow
