@@ -6,7 +6,7 @@ dependencies:
   - duecredit
   - kartograf>=1.0.0
   - lomap2>=3.0.0
-  - numpy<1.24
+  - numpy
   - networkx
   - rdkit
   - pip
