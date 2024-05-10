@@ -43,7 +43,7 @@ jobs:
         run: |
           python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
           python -m pip install mypy
-          mypy --install-types
+          python -m pip install types-pkg_resources
           python -m pip install --no-deps -e .
 
       - name: "Environment Information"
