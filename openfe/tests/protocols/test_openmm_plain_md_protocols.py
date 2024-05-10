@@ -179,6 +179,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
 
     # If we do a lot of GAFF testing, this should be refactored so we don't
     # have to copy it all over the place.
+    # https://github.com/OpenFreeEnergy/openfe/pull/847#issuecomment-2096810453
 
     import openmmforcefields
     from pkg_resources import packaging
