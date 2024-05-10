@@ -58,6 +58,7 @@ jobs:
             pydantic-version: ">1"
             openeye: "no"
             ommff-version: "<0.13"
+            name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }} GAFF test"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
