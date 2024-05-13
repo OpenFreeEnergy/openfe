@@ -20,6 +20,12 @@ If you already have a Mamba installation, you can install ``openfe`` with:
 
 Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
+.. note::
+   If you plan on using GAFF to parametrize your system, you **must** install ``openmmforcefields`` version ``0.12.0``.
+   This will create an environment with python 3.10 and the correct version of Ambertools.
+
+   ``mamba create -c conda-forge -n openfe_env openfe=1 openmmforcefields=0.12.0``
+
 Installation with ``miniforge`` (recommended)
 ----------------------------------------------
 

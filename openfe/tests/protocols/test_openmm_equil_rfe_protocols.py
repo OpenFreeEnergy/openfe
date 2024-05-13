@@ -245,8 +245,31 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
     )
     unit = list(dag.protocol_units)[0]
 
-    with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)['debug']['sampler']
+    # If we do a lot of GAFF testing, this should be refactored so we don't
+    # have to copy it all over the place.
+    # https://github.com/OpenFreeEnergy/openfe/pull/847#issuecomment-2096810453
+
+
+    import openmmforcefields
+    from pkg_resources import packaging
+
+    ommff_version = openmmforcefields.__version__
+
+    gaff_should_fail = packaging.version.parse(
+        ommff_version
+    ) >= packaging.version.parse("0.13.0")
+
+    if gaff_should_fail:
+        from openmmforcefields.generators.template_generators import (
+            GAFFNotSupportedError,
+        )
+
+        with pytest.raises(GAFFNotSupportedError):
+            with tmpdir.as_cwd():
+                sampler = unit.run(dry=True)["debug"]["sampler"]
+    else:
+        with tmpdir.as_cwd():
+            sampler = unit.run(dry=True)["debug"]["sampler"]
 
 
 @pytest.mark.slow
