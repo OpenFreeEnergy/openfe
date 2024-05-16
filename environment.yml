@@ -3,7 +3,7 @@ channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
-  - duecredit
+  - duecredit<0.10
   - kartograf>=1.0.0
   - lomap2>=3.0.0
   - numpy
