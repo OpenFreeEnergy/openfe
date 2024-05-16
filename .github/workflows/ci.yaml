@@ -58,6 +58,11 @@ jobs:
             pydantic-version: ">1"
             openeye: "no"
             ommff-version: "<0.13"
+          - os: "macos-latest"
+            python-version: "3.12"
+            pydantic-version: ">1"
+            omff-version: "0.13"
+            openeye: ["no"]
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
