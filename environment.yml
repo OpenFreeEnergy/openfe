@@ -26,7 +26,6 @@ dependencies:
   - openfe-analysis>=0.2.0
   - click
   - typing-extensions
-  - lomap2>=2.3.0
   - openmmtools
   - openmmforcefields
   - perses
@@ -44,4 +43,5 @@ dependencies:
   - pip:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
+    - git+https://github.com/OpenFreeEnergy/Lomap@main
     - git+https://github.com/OpenFreeEnergy/gufe@main
