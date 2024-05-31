@@ -182,13 +182,13 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     # https://github.com/OpenFreeEnergy/openfe/pull/847#issuecomment-2096810453
 
     import openmmforcefields
-    from pkg_resources import packaging
+    from packaging import version
 
     ommff_version = openmmforcefields.__version__
 
-    gaff_should_fail = packaging.version.parse(
+    gaff_should_fail = version.parse(
         ommff_version
-    ) >= packaging.version.parse("0.13.0")
+    ) >= version.parse("0.13.0")
 
     if gaff_should_fail:
         from openmmforcefields.generators.template_generators import (
