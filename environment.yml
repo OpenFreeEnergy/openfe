@@ -31,6 +31,7 @@ dependencies:
   - plugcli
   - tqdm
   - pygraphviz
+  - sklearn
   # Issue #443
   - pymbar<4.0
   # docs
