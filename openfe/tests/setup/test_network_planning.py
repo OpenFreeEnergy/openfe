@@ -36,6 +36,13 @@ def toluene_vs_others(atom_mapping_basic_test_files):
 
 @pytest.fixture(scope='session')
 def lomap_old_mapper():
+    """
+    LomapAtomMapper with the old default settings.
+
+    This is necessary as atom_mapping_basic_test_files
+    are not all fully aligned and need both shift and
+    a large max3d value.
+    """
     return openfe.setup.atom_mapping.LomapAtomMapper(
         time=20, threed=True, max3d=1000.0,
         element_change=True, seed='', shift=True

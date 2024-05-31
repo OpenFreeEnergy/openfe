@@ -1117,6 +1117,8 @@ def test_element_change_warning(atom_mapping_basic_test_files):
     l1 = atom_mapping_basic_test_files['2-methylnaphthalene']
     l2 = atom_mapping_basic_test_files['2-naftanol']
 
+    # We use the 'old' lomap defaults because the
+    # basic test files inputs we use aren't fully aligned
     mapper = setup.LomapAtomMapper(
         time=20, threed=True, max3d=1000.0,
         element_change=True, seed='', shift=True

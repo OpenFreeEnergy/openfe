@@ -14,7 +14,10 @@ from .conftest import mol_from_smiles
 @pytest.fixture(scope='module')
 def lomap_old_mapper():
     """
-    Old default options for the LomapAtomMapper
+    Old default options for the LomapAtomMapper.
+
+    This is necessary as the atom_mapping_basic_test_files
+    are not aligned and need shift & a large max3d value
     """
     return LomapAtomMapper(
         time=20, threed=True, max3d=1000.0,
