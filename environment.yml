@@ -4,8 +4,6 @@ channels:
   - conda-forge
 dependencies:
   - duecredit<0.10
-  - kartograf>=1.0.0
-  - lomap2>=3.0.0
   - numpy
   - networkx
   - rdkit
@@ -17,16 +15,13 @@ dependencies:
   - pydantic >1
   - pyyaml
   - coverage
-  - cinnabar ==0.3.0
   - openff-toolkit>=0.13.0
   - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
   - pint<0.22
   - openff-models>=0.0.5
-  - openfe-analysis>=0.2.0
   - click
   - typing-extensions
-  - lomap2>=2.3.0
   - openmmtools
   - openmmforcefields
   - perses
@@ -45,3 +40,8 @@ dependencies:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/Kartograf@main
+    - git+https://github.com/OpenFreeEnergy/cinnabar@main
+    - git+https://github.com/OpenFreeEnergy/openfe_analysis@main
+    - git+https://github.com/OpenFreeEnergy/lomap@main
+
