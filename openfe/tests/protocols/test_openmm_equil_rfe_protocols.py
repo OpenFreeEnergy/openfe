@@ -251,13 +251,13 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
 
     import openmmforcefields
-    from pkg_resources import packaging
+    from packaging import version
 
     ommff_version = openmmforcefields.__version__
 
-    gaff_should_fail = packaging.version.parse(
+    gaff_should_fail = version.parse(
         ommff_version
-    ) >= packaging.version.parse("0.13.0")
+    ) >= version.parse("0.13.0")
 
     if gaff_should_fail:
         from openmmforcefields.generators.template_generators import (
@@ -1117,7 +1117,13 @@ def test_element_change_warning(atom_mapping_basic_test_files):
     l1 = atom_mapping_basic_test_files['2-methylnaphthalene']
     l2 = atom_mapping_basic_test_files['2-naftanol']
 
-    mapper = setup.LomapAtomMapper()
+    # We use the 'old' lomap defaults because the
+    # basic test files inputs we use aren't fully aligned
+    mapper = setup.LomapAtomMapper(
+        time=20, threed=True, max3d=1000.0,
+        element_change=True, seed='', shift=True
+    )
+
     mapping = next(mapper.suggest_mappings(l1, l2))
 
     sys1 = openfe.ChemicalSystem(
