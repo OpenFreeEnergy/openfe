@@ -5,6 +5,7 @@ channels:
 dependencies:
   - duecredit<0.10
   - kartograf>=1.0.0
+  - lomap2>=3.0.0
   - numpy
   - networkx
   - rdkit
@@ -43,5 +44,4 @@ dependencies:
   - pip:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
-    - git+https://github.com/OpenFreeEnergy/Lomap@main
     - git+https://github.com/OpenFreeEnergy/gufe@main
