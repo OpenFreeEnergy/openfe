@@ -1117,7 +1117,11 @@ def test_element_change_warning(atom_mapping_basic_test_files):
     l1 = atom_mapping_basic_test_files['2-methylnaphthalene']
     l2 = atom_mapping_basic_test_files['2-naftanol']
 
-    mapper = setup.LomapAtomMapper()
+    mapper = setup.LomapAtomMapper(
+        time=20, threed=True, max3d=1000.0,
+        element_change=True, seed='', shift=True
+    )
+
     mapping = next(mapper.suggest_mappings(l1, l2))
 
     sys1 = openfe.ChemicalSystem(
