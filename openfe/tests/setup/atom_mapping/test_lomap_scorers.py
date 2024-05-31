@@ -189,7 +189,10 @@ def test_heterocycle_score(base, other, name, hit):
     m1 = openfe.SmallMoleculeComponent.from_rdkit(r1)
     m2 = openfe.SmallMoleculeComponent.from_rdkit(r2)
 
-    mapper = openfe.setup.atom_mapping.LomapAtomMapper(threed=False)
+    mapper = openfe.setup.atom_mapping.LomapAtomMapper(
+        time=20, threed=False, max3d=1000.0,
+        element_change=True, seed='', shift=True,
+    )
     mapping = next(mapper.suggest_mappings(m1, m2))
     score = lomap_scorers.heterocycles_score(mapping)
 

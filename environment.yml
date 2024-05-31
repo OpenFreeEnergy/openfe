@@ -18,7 +18,7 @@ dependencies:
   - pydantic >1
   - pyyaml
   - coverage
-  - cinnabar ==0.3.0
+  - cinnabar ~=0.4.0
   - openff-toolkit>=0.13.0
   - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
@@ -27,6 +27,7 @@ dependencies:
   - openfe-analysis>=0.2.0
   - click
   - typing-extensions
+  - openmm !=8.1.0
   - openmmtools
   - openmmforcefields
   - perses
