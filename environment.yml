@@ -9,6 +9,7 @@ dependencies:
   - numpy
   - networkx
   - rdkit
+  - packaging
   - pip
   - pytest
   - pytest-xdist
@@ -26,7 +27,6 @@ dependencies:
   - openfe-analysis>=0.2.0
   - click
   - typing-extensions
-  - lomap2>=2.3.0
   - openmmtools
   - openmmforcefields
   - perses
