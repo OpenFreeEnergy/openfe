@@ -164,9 +164,13 @@ For example, the Linux installer can be downloaded with ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-Linux-x86_64.sh
 
-And the MacOS installer ::
+And the MacOS (x86_64) installer ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-x86_64.sh
+
+And the MacOS (arm64) installer ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-arm64.sh
 
 The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
 
@@ -344,6 +348,44 @@ Now the CLI tool should work as well ::
      gather    Gather DAG result jsons for network of RFE results into single TSV
                file
      quickrun  Run a given transformation, saved as a JSON file
+
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe openfecli
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+  
+With that, you should be ready to use ``openfe``!
+
+``conda-lock`` file
+-------------------
+
+.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
+
+A `conda-lock`_ file is a cross platform way of specifying a conda environment that specifies packages in a reproducible way.
+Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
+We recomend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
+
+See https://github.com/conda/conda-lock?tab=readme-ov-file#installation for instructions on how to install ``conda-lock``.
+
+.. note::
+
+   You will likely need to install ``conda-lock``
+
+The latest version of the `conda-lock` file we provide can be downloaded with ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/conda-lock-openfe.yml
+
+If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/conda-lock-openfe-1.0.1.yml
+
+Create a conda environment from the lock file and activate it::
+
+  $ conda-lock install -n openfe conda-lock-openfe.yml
+  $ conda activate openfe
 
 To make sure everything is working, run the tests ::
 
