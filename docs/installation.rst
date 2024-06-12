@@ -368,11 +368,19 @@ A `conda-lock`_ file is a cross platform way of specifying a conda environment t
 Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
 We recomend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
 
-See https://github.com/conda/conda-lock?tab=readme-ov-file#installation for instructions on how to install ``conda-lock``.
 
 .. note::
 
-   You will likely need to install ``conda-lock``
+   You will likely need to install ``conda-lock``.
+   We recomend installing ``conda-lock`` in a new virtual environment.
+   This will reduce the chance of dependency conflicts ::
+
+       $ # Install conda lock into a virtual environment
+       $ conda create -n conda-lock -c conda-lock
+       $ # Activate the environment to use the conda-lock command
+       $ conda activate conda-lock
+
+See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
 
 The latest version of the `conda-lock` file we provide can be downloaded with ::
 
