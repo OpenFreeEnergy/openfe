@@ -372,7 +372,7 @@ We recomend the use of a ``conda-lock`` file when the same conda environment is 
 .. note::
 
    You will likely need to install ``conda-lock``.
-   We recomend installing ``conda-lock`` in a new virtual environment.
+   We strongly recomend installing ``conda-lock`` in a new virtual environment.
    This will reduce the chance of dependency conflicts ::
 
        $ # Install conda lock into a virtual environment
