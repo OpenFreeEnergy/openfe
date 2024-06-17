@@ -1,4 +1,4 @@
-name: openfe_dev
+name: openfe_env
 channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
