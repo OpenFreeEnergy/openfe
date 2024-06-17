@@ -1,4 +1,4 @@
-name: openfe_env
+name: openfe_dev
 channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
@@ -37,7 +37,7 @@ dependencies:
   - tqdm
   - pygraphviz
   # Issue #443
-  - pymbar<4.0
+  - pymbar>=4.0
   # docs
   - autodoc-pydantic<2.0
   - pydata-sphinx-theme
