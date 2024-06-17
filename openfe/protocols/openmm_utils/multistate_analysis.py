@@ -43,7 +43,9 @@ class MultistateEquilFEAnalysis:
     def __init__(self, reporter: multistate.MultiStateReporter,
                  sampling_method: str, result_units: unit.Quantity,
                  forward_reverse_samples: int = 10):
-        self.analyzer = multistate.MultiStateSamplerAnalyzer(reporter, analysis_kwargs={"solver_protocol": "robust"})
+        self.analyzer = multistate.MultiStateSamplerAnalyzer(
+            reporter,
+            analysis_kwargs={"solver_protocol": "robust"})
         self.units = result_units
 
         if sampling_method.lower() not in ['repex', 'sams', 'independent']:
