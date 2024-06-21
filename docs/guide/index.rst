@@ -9,3 +9,4 @@ User Guide
     results/index
     cli/index
     protocols/index
+    troubleshooting
