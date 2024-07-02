@@ -38,6 +38,8 @@ dependencies:
   - pygraphviz
   # Issue #443
   - pymbar<4.0
+  # Issue #878
+  - matplotlib-base<3.9
   # docs
   - autodoc-pydantic<2.0
   - pydata-sphinx-theme
