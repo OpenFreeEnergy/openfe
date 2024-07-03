@@ -3,12 +3,13 @@ channels:
   - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
-  - duecredit
+  - duecredit<0.10
   - kartograf>=1.0.0
   - lomap2>=3.0.0
-  - numpy<1.24
+  - numpy
   - networkx
   - rdkit
+  - packaging
   - pip
   - pytest
   - pytest-xdist
@@ -17,7 +18,7 @@ dependencies:
   - pydantic >1
   - pyyaml
   - coverage
-  - cinnabar ==0.3.0
+  - cinnabar ~=0.4.0
   - openff-toolkit>=0.13.0
   - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
@@ -26,9 +27,9 @@ dependencies:
   - openfe-analysis>=0.2.0
   - click
   - typing-extensions
-  - lomap2>=2.3.0
+  - openmm !=8.1.0
   - openmmtools
-  - openmmforcefields>=0.11.2
+  - openmmforcefields
   - perses
   - pooch
   - py3dmol

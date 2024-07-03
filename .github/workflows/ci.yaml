@@ -3,6 +3,11 @@ on:
   pull_request:
     branches:
       - main
+   # Skip CI if changed files only affect the following folders
+   # - docs: documentation changes don't need code validation
+   # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
+    paths-ignore:
+      - "docs/*"
   push:
     branches:
       - main
@@ -24,29 +29,40 @@ defaults:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu"]
+        os: ["ubuntu-latest"]
         pydantic-version: [">1"]
         python-version:
-          - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
         openeye: ["no"]
+        ommff-version: ["0.13"]
         include:
-          - os: "macos"
-            python-version: "3.11"
+          - os: "macos-12"
+            python-version: "3.12"
             pydantic-version: ">1"
-          - os: "ubuntu"
+          - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: "<2"
-          - os: "ubuntu"
+          - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
+          - os: "ubuntu-latest"
+            python-version: "3.10"
+            pydantic-version: ">1"
+            openeye: "no"
+            ommff-version: "<0.13"
+          - os: "macos-latest"
+            python-version: "3.12"
+            pydantic-version: ">1"
+            omff-version: "0.13"
+            openeye: ["no"]
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -72,6 +88,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             pydantic=${{ matrix.pydantic-version }}
+            openmmforcefields=${{ matrix.ommff-version }}
           init-shell: bash
 
       - name: "Install OpenEye"
@@ -99,6 +116,7 @@ jobs:
         run: |
           micromamba info
           micromamba list
+          pip list
 
       - name: "Run tests"
         env:
