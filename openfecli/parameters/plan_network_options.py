@@ -138,8 +138,13 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
         mapper_obj = cls(**opt.mapper.settings)
     else:
-        mapper_obj = LomapAtomMapper(time=20, threed=True, element_change=False,
-                                     max3d=1)
+        mapper_obj = LomapAtomMapper(
+            time=20,
+            threed=True,
+            max3d=1.0,
+            element_change=True,
+            shift=False
+        )
 
     # todo: choice of scorer goes here
     mapping_scorer = default_lomap_score

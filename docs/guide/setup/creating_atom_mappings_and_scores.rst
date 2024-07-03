@@ -1,3 +1,4 @@
+.. _userguide_mappings:
 .. _Creating Atom Mappings:
 
 Creating Atom Mappings
