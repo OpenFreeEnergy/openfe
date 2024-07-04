@@ -288,8 +288,9 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
             vals = [dG.to(u).m for dG in dGs]
             unc = np.std(vals) * u
         else:
+            # use MBAR estimate error directly for a single repeat
             uncs = [pus[0].outputs['unit_estimate_error'] for pus in self.data.values()]
-            assert len(uncs) == 1
+            assert len(uncs) == 1, "Protocol unit estimates and errors number mismatch"
             unc = uncs[0]
         return unc
 
