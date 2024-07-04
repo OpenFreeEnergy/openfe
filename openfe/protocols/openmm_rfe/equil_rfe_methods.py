@@ -281,16 +281,22 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         each independent repeat or the MBAR estimate error for a single repeat
         """
         if len(self.data.values()) > 1:
-            dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+            dGs = [
+                pus[0].outputs['unit_estimate'] for pus in self.data.values()
+            ]
             u = dGs[0].u
-            # convert all values to units of the first value, then take average of magnitude
-            # this would avoid a screwy case where each value was in different units
+            # convert all values to units of the first value, then take 
+            # average of magnitude. this would avoid a screwy case where each
+            # value was in different units
             vals = [dG.to(u).m for dG in dGs]
             unc = np.std(vals) * u
         else:
             # use MBAR estimate error directly for a single repeat
-            uncs = [pus[0].outputs['unit_estimate_error'] for pus in self.data.values()]
-            assert len(uncs) == 1, "Protocol unit estimates and errors number mismatch"
+            uncs = [
+                pus[0].outputs['unit_estimate_error'] 
+                for pus in self.data.values()
+            ]
+            assert len(uncs) == 1, "Protocols and number of errors mismatch"
             unc = uncs[0]
         return unc
 
