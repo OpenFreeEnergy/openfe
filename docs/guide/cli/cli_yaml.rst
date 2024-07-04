@@ -15,10 +15,12 @@ as an example, the settings file which re-specifies the default behaviour would 
       threed: True
       max3d: 0.95
       element_change: True
+  protocol:
+    method: RelativeHybridTopologyProtocol
 
 The name of the algorithm is given behind the ``method:`` key and the arguments to the
 algorithm are then optionally given behind the ``settings:`` key.
-Both the `network:` and `mapper:` sections are optional.
+The ``network:``, ``mapper:``, and ``protocol:`` sections are all optional.
 
 This is then provided to the ``openfe plan-rbfe-network`` command as ::
 
@@ -76,3 +78,20 @@ settings file ::
     method: generate_radial_network
     settings:
       central_ligand: '0'
+
+Customising the Protocol
+-------------------------
+
+The Settings of a Protocol can be customised.  The settings variable names map directly between the Python API and
+yaml settings files.  For example, to customise the production length of
+the RFE Protocol, from Python would require a line of code such as::
+
+   settings.simulation_settings.production_length = '5.4 ns'
+
+This would be achieved via the yaml file as::
+
+  protocol:
+    method: RelativeHybridTopologyProtocol
+    settings:
+      simulation_settings:
+        production_length: 5.4 ns
