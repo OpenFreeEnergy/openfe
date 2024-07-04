@@ -178,16 +178,23 @@ See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more i
 
 The latest version of the `conda-lock` file we provide can be downloaded with ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/conda-lock-openfe.yml
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml 
 
 If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
 
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/conda-lock-openfe-1.0.1.yml
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
 
 Create a conda environment from the lock file and activate it::
 
-  $ conda-lock install -n openfe conda-lock-openfe.yml
+  $ conda-lock install -n openfe openfe-conda-lock.yml
   $ conda activate openfe
+
+.. note::
+
+   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
+
+       $ micromamba create -n openfe --file openfe-conda-lock.yml
+       $ micromamba activate openfe
 
 To make sure everything is working, run the tests ::
 
