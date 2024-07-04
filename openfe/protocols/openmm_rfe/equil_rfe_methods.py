@@ -278,20 +278,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
     def get_uncertainty(self) -> unit.Quantity:
         """The uncertainty/error in the dG value: The std of the estimates of
-        each independent repeat or the MBAR estimate error for a single repeat
+        each independent repeat
         """
-        if len(self.data.values()) > 1:
-            dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
-            u = dGs[0].u
-            # convert all values to units of the first value, then take average of magnitude
-            # this would avoid a screwy case where each value was in different units
-            vals = [dG.to(u).m for dG in dGs]
-            unc = np.std(vals) * u
-        else:
-            uncs = [pus[0].outputs['unit_estimate_error'] for pus in self.data.values()]
-            assert len(uncs) == 1
-            unc = uncs[0]
-        return unc
+        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        u = dGs[0].u
+        # convert all values to units of the first value, then take average of magnitude
+        # this would avoid a screwy case where each value was in different units
+        vals = [dG.to(u).m for dG in dGs]
+
+        return np.std(vals) * u
 
     def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
         """Return a list of tuples containing the individual free energy
