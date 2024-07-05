@@ -198,7 +198,7 @@ def _write_raw(legs, writer, allow_partial=True):
 
     for ligpair, vals in sorted(legs.items()):
         for simtype, repeats in sorted(vals.items()):
-            for rep, (m, u) in enumerate(repeats, 1):
+            for rep, (m, u) in enumerate(repeats):
                 if m is None:
                     m, u = 'NaN', 'NaN'
                 else:
