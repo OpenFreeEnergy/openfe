@@ -28,6 +28,7 @@ dependencies = [
     "networkx",
     "click",
     "plugcli",
+    "packaging",
 ]
 dynamic = ["version"]
 
