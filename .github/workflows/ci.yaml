@@ -124,7 +124,7 @@ jobs:
           # OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
-          OPENMM_CPU_THREADS: '1'
+          # OPENMM_CPU_THREADS: '1'
           OMP_NUM_THREADS: '1'
         run: |
           pytest -v --durations=10
