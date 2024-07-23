@@ -58,7 +58,7 @@ def test_validate_ommsolvation_settings_unique_settings(
     [20 * np.identity(3) * unit.angstrom, None],
     [None, [2, 2, 2] * unit.angstrom],
 ])
-def test_vallidate_ommsolvation_settings_shape_conflicts(
+def test_validate_ommsolvation_settings_shape_conflicts(
     box_vectors, box_size,
 ):
     settings = OpenMMSolvationSettings(

@@ -83,7 +83,7 @@ class TestOpenMMSolvationSettings:
             s.box_vectors = box_vectors
 
     @pytest.mark.parametrize('n_solv', [0, -1])
-    def test_non_postitive_solvent(self, n_solv):
+    def test_non_positive_solvent(self, n_solv):
         s = omm_settings.OpenMMSolvationSettings()
 
         with pytest.raises(ValueError, match="must be positive"):

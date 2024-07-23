@@ -75,7 +75,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     by each water molecule.
 
 
-    Defining the pertiodic cell shape
+    Defining the periodic cell shape
     ---------------------------------
 
     The periodic cell shape is defined by one, and only one, of the following:
