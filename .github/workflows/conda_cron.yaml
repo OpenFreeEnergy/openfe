@@ -10,7 +10,7 @@ on:
   schedule:
     # At 07:00 UTC every day
     - cron: "0 7 * * *"
-
+  
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
@@ -32,6 +32,9 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+        exclude:
+          - os: 'macos-latest'
+            python-version: '3.9'
 
     steps:
       - name: Setup Micromamba
@@ -50,15 +53,13 @@ jobs:
       - name: "Install openfe + optional deps"
         run: |
           micromamba install openfe pytest -c conda-forge
-          python -m pip install pytest-xdist PyGithub
+          python -m pip install pytest-xdist
 
       - name: "env info"
         run: |
           micormamba info
           micromamba list
           pip list
-          ls /Users/runner/micromamba/envs/openfe/lib/python*/site-packages/openfe/tests/data/lomap_basic/
-
       - id: run-tests
         name: "Run tests"
         run: |
