@@ -1,5 +1,6 @@
 name: "conda_cron"
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
