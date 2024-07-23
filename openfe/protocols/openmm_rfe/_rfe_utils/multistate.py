@@ -34,9 +34,10 @@ class HybridCompatibilityMixin(object):
         self._hybrid_factory = hybrid_factory
         super(HybridCompatibilityMixin, self).__init__(*args, **kwargs)
 
-    def setup(self, reporter, platform, lambda_protocol,
+    def setup(self, reporter, lambda_protocol,
               temperature=298.15 * unit.kelvin, n_replicas=None,
-              endstates=True, minimization_steps=100):
+              endstates=True, minimization_steps=100,
+              minimization_platform="CPU"):
         """
         Setup MultistateSampler based on the input lambda protocol and number
         of replicas.
@@ -45,8 +46,6 @@ class HybridCompatibilityMixin(object):
         ----------
         reporter : OpenMM reporter
             Simulation reporter to attach to each simulation replica.
-        platform : openmm.Platform
-            Platform to perform simulation on.
         lambda_protocol : LambdaProtocol
             The lambda protocol to be used for simulation. Default to a default
             class creation of LambdaProtocol.
@@ -60,7 +59,9 @@ class HybridCompatibilityMixin(object):
             Whether or not to generate unsampled endstates (i.e. dispersion
             correction).
         minimization_steps : int
-            Number of steps to minimize states.
+            Number of steps to pre-minimize states.
+        minimization_platform : str
+            Platform to do the initial pre-minimization with.
 
         Attributes
         ----------
@@ -83,8 +84,6 @@ class HybridCompatibilityMixin(object):
         # create lists for storing thermostates and sampler states
         thermodynamic_state_list = []
         sampler_state_list = []
-
-        context_cache = cache.ContextCache(platform)
 
         if n_replicas is None:
             msg = (f"setting number of replicas to number of states: {n_states}")
@@ -118,11 +117,13 @@ class HybridCompatibilityMixin(object):
 
             # now generating a sampler_state for each thermodyanmic state,
             # with relaxed positions
-            context, context_integrator = context_cache.get_context(
-                                             compound_thermostate_copy)
+            # Note: remove once  choderalab/openmmtools#672 is completed
             minimize(compound_thermostate_copy, sampler_state,
-                     max_iterations=minimization_steps)
+                     max_iterations=minimization_steps,
+                     platform_name=minimization_platform)
             sampler_state_list.append(copy.deepcopy(sampler_state))
+
+        del compound_thermostate, sampler_state
 
         # making sure number of sampler states equals n_replicas
         if len(sampler_state_list) != n_replicas:
@@ -261,8 +262,10 @@ def create_endstates(first_thermostate, last_thermostate):
     return unsampled_endstates
 
 
-def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: states.SamplerState,
-             max_iterations: int=100) -> states.SamplerState:
+def minimize(thermodynamic_state: states.ThermodynamicState,
+             sampler_state: states.SamplerState,
+             max_iterations: int=100,
+             platform_name: str="CPU") -> states.SamplerState:
     """
     Adapted from perses.dispersed.feptasks.minimize
 
@@ -277,20 +280,28 @@ def minimize(thermodynamic_state: states.ThermodynamicState, sampler_state: stat
         The starting state at which to minimize the system.
     max_iterations : int, optional, default 100
         The maximum number of minimization steps. Default is 100.
+    platform_name : str
+        The OpenMM platform name to carry out the minimization with.
 
     Returns
     -------
     sampler_state : openmmtools.states.SamplerState
         The posititions and accompanying state following minimization
     """
-    integrator = openmm.VerletIntegrator(1.0) #we won't take any steps, so use a simple integrator
-    context, integrator = cache.global_context_cache.get_context(
+    # we won't take any steps, so use a simple integrator
+    integrator = openmm.VerletIntegrator(1.0)
+    platform = openmm.Platform.getPlatformByName(platform_name)
+    dummy_cache = cache.DummyContextCache(platform=platform)
+    context, integrator = dummy_cache.get_context(
         thermodynamic_state, integrator
     )
-    sampler_state.apply_to_context(
-        context, ignore_velocities=True
-    )
-    openmm.LocalEnergyMinimizer.minimize(
-        context, maxIterations=max_iterations
-    )
-    sampler_state.update_from_context(context)
+    try:
+        sampler_state.apply_to_context(
+            context, ignore_velocities=True
+        )
+        openmm.LocalEnergyMinimizer.minimize(
+            context, maxIterations=max_iterations
+        )
+        sampler_state.update_from_context(context)
+    finally:
+        del context, integrator, dummy_cache

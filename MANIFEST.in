@@ -1,0 +1,14 @@
+recursive-include openfe/tests/data/ *.sdf
+recursive-include openfe/tests/data/ *.pdb
+recursive-include openfe/tests/data/ *.mol2
+recursive-include openfe/tests/data/ *.xml
+recursive-include openfe/tests/data/ *.graphml
+recursive-include openfe/tests/data/ *.edge
+recursive-include openfe/tests/data/ *.dat
+recursive-include openfe/tests/data/ *json.gz
+recursive-include openfe/tests/data/ *json_results.gz
+include openfecli/tests/data/*.json
+include openfecli/tests/data/*.tar.gz
+recursive-include openfecli/tests/ *.sdf
+recursive-include openfecli/tests/ *.pdb
+include openfe/tests/data/openmm_rfe/vacuum_nocoord.nc

@@ -3,12 +3,21 @@ on:
   pull_request:
     branches:
       - main
+   # Skip CI if changed files only affect the following folders
+   # - docs: documentation changes don't need code validation
+   # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
+    paths-ignore:
+      - "docs/*"
   push:
     branches:
       - main
   schedule:
     # At 07:00 UTC on Monday and Thursday.
-    - cron: "0 7 * * 1,4"
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+  release:
+    types:
+      - published
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -20,32 +29,80 @@ defaults:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.OS }}-latest
-    name: "tests"
+    runs-on: ${{ matrix.os }}
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu', 'macos']
+        os: ["ubuntu-latest"]
+        pydantic-version: [">1"]
         python-version:
-          - "3.9"
           - "3.10"
-        exclude:
-          - os: 'macos'
-            python-version: '3.10'
+          - "3.11"
+          - "3.12"
+        openeye: ["no"]
+        ommff-version: [">0.13"]
+        include:
+          - os: "macos-12"
+            python-version: "3.12"
+            pydantic-version: ">1"
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            pydantic-version: "<2"
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            pydantic-version: ">1"
+            openeye: "yes"
+          - os: "ubuntu-latest"
+            python-version: "3.10"
+            pydantic-version: ">1"
+            openeye: "no"
+            ommff-version: "0.13"
+          - os: "macos-latest"
+            python-version: "3.12"
+            pydantic-version: ">1"
+            omff-version: ">0.13"
+            openeye: ["no"]
+
+    env:
+      OE_LICENSE: ${{ github.workspace }}/oe_license.txt
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # More info on options: https://github.com/conda-incubator/setup-miniconda
-      - name: Setup Micromamba
-        uses: mamba-org/provision-with-micromamba@main
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
+
+      - name: "Setup Micromamba"
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment.yml
-          environment-name: openfe
-          extra-specs: |
-            python==${{ matrix.python-version }}
+          environment-name: openfe_env
+          cache-environment: true
+          cache-downloads: true
+          cache-environment-key: environment-${{ steps.date.outputs.date }}
+          cache-downloads-key: downloads-${{ steps.date.outputs.date }}
+          create-args: >-
+            python=${{ matrix.python-version }}
+            pydantic=${{ matrix.pydantic-version }}
+            openmmforcefields=${{ matrix.ommff-version }}
+          init-shell: bash
+
+      - name: "Install OpenEye"
+        if: ${{ !github.event.pull_request.head.repo.fork
+                && matrix.openeye == 'yes' }}
+        env:
+          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
+        run: |
+          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
+          micromamba install -c openeye openeye-toolkits
+          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'oechem license check failed!'"
+
+      - name: "Install GUFE from main@HEAD"
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
@@ -59,17 +116,38 @@ jobs:
         run: |
           micromamba info
           micromamba list
+          pip list
 
       - name: "Run tests"
+        env:
+          # Set the OFE_SLOW_TESTS to True if running a Cron job
+          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
+          DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n 2 -v --cov=openfe --cov=openfecli --cov-report=xml
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
-      - name: codecov
+      - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
-                && github.event_name != 'schedule' }}
+                && github.event_name == 'pull_request' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
           fail_ci_if_error: False
           verbose: True
+          flags: fast-tests
+
+      - name: codecov-merge
+        # we only want to upload a slow report if
+        # 1) it isn't a schedule run
+        # 2) it wasn't from a PR (we don't run slow tests on PRs)
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
+                && github.event_name != 'schedule'            
+                && github.event_name != 'pull_request' }}     
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          fail_ci_if_error: False
+          verbose: True
+          flags: slow-tests

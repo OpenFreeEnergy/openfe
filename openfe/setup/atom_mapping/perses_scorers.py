@@ -39,8 +39,7 @@ def default_perses_scorer(mapping: LigandAtomMapping,
                           use_positions: bool = False,
                           normalize: bool = True) -> float:
     """
-        This function is accessing the default perser scorer function and
-        returns, the score as float.
+    Score an atom mapping with the default Perses score function.
 
     Parameters
     ----------
@@ -73,8 +72,8 @@ def default_perses_scorer(mapping: LigandAtomMapping,
 
     # normalize
     if (normalize):
-        oeyMolA = mapping.componentA.to_openeye()
-        oeyMolB = mapping.componentB.to_openeye()
+        oeyMolA = mapping.componentA.to_openff().to_openeye()
+        oeyMolB = mapping.componentB.to_openff().to_openeye()
         if (use_positions):
             raise NotImplementedError("normalizing using positions is "
                                       "not currently implemented")

@@ -1,84 +1,200 @@
 from click.testing import CliRunner
-import glob
 from importlib import resources
 import tarfile
+import os
+import pathlib
 import pytest
+import pooch
 
-from openfecli.commands.gather import gather
+from openfecli.commands.gather import (
+    gather, format_estimate_uncertainty, _get_column,
+    _generate_bad_legs_error_message,
+)
+
+@pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
+    (12.432, 0.111, 2, "12.43", "0.11"),
+    (0.9999, 0.01, 2, "1.000", "0.010"),
+    (1234, 100, 2, "1230", "100"),
+])
+def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
+    assert format_estimate_uncertainty(est, unc, unc_prec) == (est_str, unc_str)
+
+@pytest.mark.parametrize('val, col', [
+    (1.0, 1), (0.1, -1), (-0.0, 0), (0.0, 0), (0.2, -1), (0.9, -1),
+    (0.011, -2), (9, 1), (10, 2), (15, 2),
+])
+def test_get_column(val, col):
+    assert _get_column(val) == col
 
 
 @pytest.fixture
 def results_dir(tmpdir):
     with tmpdir.as_cwd():
-        with resources.path('openfecli.tests.data', 'results.tar.gz') as f:
-            t = tarfile.open(f, mode='r')
-            t.extractall('res')
+        with resources.files('openfecli.tests.data') as d:
+            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+            t.extractall('.')
 
         yield
 
+_EXPECTED_DG = b"""
+ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
+lig_ejm_31	-0.09	0.05
+lig_ejm_42	0.7	0.1
+lig_ejm_46	-0.98	0.05
+lig_ejm_47	-0.1	0.1
+lig_ejm_48	0.53	0.09
+lig_ejm_50	0.91	0.06
+lig_ejm_43	2.0	0.2
+lig_jmc_23	-0.68	0.09
+lig_jmc_27	-1.1	0.1
+lig_jmc_28	-1.25	0.08
+"""
 
-@pytest.fixture
-def ref_gather():
-    return b"""\
-measurement\testimate (kcal/mol)\tuncertainty
-DDGhyd(lig_15, lig_12)\t-1.1\t+-0.055
-DDGhyd(lig_8, lig_6)\t4.1\t+-0.074
-DDGhyd(lig_3, lig_2)\t0.23\t+-0.044
-DDGhyd(lig_15, lig_10)\t1.4\t+-0.047
-DDGhyd(lig_5, lig_10)\t-8.8\t+-0.099
-DDGhyd(lig_3, lig_14)\t1.3\t+-0.12
-DDGhyd(lig_15, lig_14)\t3.3\t+-0.056
-DDGhyd(lig_15, lig_11)\t5.4\t+-0.045
-DDGhyd(lig_9, lig_6)\t-0.079\t+-0.021
-DDGhyd(lig_6, lig_14)\t-2.1\t+-0.034
-DDGhyd(lig_14, lig_13)\t0.49\t+-0.038
-DDGhyd(lig_7, lig_3)\t73.0\t+-2.0
-DDGhyd(lig_6, lig_1)\t-3.5\t+-0.038
-DDGhyd(lig_16, lig_15)\t-5.7\t+-0.043
-DDGhyd(lig_7, lig_4)\t2.7\t+-0.16
-DGsolvent(lig_12, lig_15)\t-5.1\t+-0.055
-DGvacuum(lig_12, lig_15)\t-4.0\t+-0.0014
-DGvacuum(lig_6, lig_8)\t-10.0\t+-0.027
-DGsolvent(lig_6, lig_8)\t-6.1\t+-0.069
-DGsolvent(lig_2, lig_3)\t15.0\t+-0.03
-DGvacuum(lig_2, lig_3)\t15.0\t+-0.032
-DGvacuum(lig_10, lig_15)\t2.3\t+-0.01
-DGsolvent(lig_10, lig_15)\t3.7\t+-0.046
-DGvacuum(lig_10, lig_5)\t19.0\t+-0.046
-DGsolvent(lig_10, lig_5)\t11.0\t+-0.087
-DGsolvent(lig_14, lig_3)\t-28.0\t+-0.11
-DGvacuum(lig_14, lig_3)\t-29.0\t+-0.051
-DGvacuum(lig_14, lig_15)\t6.9\t+-0.0028
-DGsolvent(lig_14, lig_15)\t10.0\t+-0.056
-DGsolvent(lig_11, lig_15)\t4.1\t+-0.041
-DGvacuum(lig_11, lig_15)\t-1.3\t+-0.019
-DGvacuum(lig_6, lig_9)\t-5.0\t+-0.00056
-DGsolvent(lig_6, lig_9)\t-5.1\t+-0.021
-DGvacuum(lig_14, lig_6)\t16.0\t+-0.011
-DGsolvent(lig_14, lig_6)\t14.0\t+-0.032
-DGvacuum(lig_13, lig_14)\t15.0\t+-0.0057
-DGsolvent(lig_13, lig_14)\t15.0\t+-0.037
-DGsolvent(lig_3, lig_7)\t45.0\t+-1.8
-DGvacuum(lig_3, lig_7)\t-28.0\t+-0.91
-DGsolvent(lig_1, lig_6)\t17.0\t+-0.032
-DGvacuum(lig_1, lig_6)\t20.0\t+-0.022
-DGvacuum(lig_15, lig_16)\t-11.0\t+-0.0064
-DGsolvent(lig_15, lig_16)\t-17.0\t+-0.043
-DGvacuum(lig_4, lig_7)\t-6.1\t+-0.048
-DGsolvent(lig_4, lig_7)\t-3.3\t+-0.15
+_EXPECTED_DDG = b"""
+ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+lig_ejm_31	lig_ejm_42	0.8	0.1
+lig_ejm_31	lig_ejm_46	-0.89	0.06
+lig_ejm_31	lig_ejm_47	0.0	0.1
+lig_ejm_31	lig_ejm_48	0.61	0.09
+lig_ejm_31	lig_ejm_50	1.00	0.04
+lig_ejm_42	lig_ejm_43	1.4	0.2
+lig_ejm_46	lig_jmc_23	0.29	0.09
+lig_ejm_46	lig_jmc_27	-0.1	0.1
+lig_ejm_46	lig_jmc_28	-0.27	0.06
+"""
+
+_EXPECTED_DG_RAW = b"""
+leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+complex	lig_ejm_31	lig_ejm_42	-15.0	0.1
+solvent	lig_ejm_31	lig_ejm_42	-15.71	0.03
+complex	lig_ejm_31	lig_ejm_46	-40.75	0.04
+solvent	lig_ejm_31	lig_ejm_46	-39.86	0.05
+complex	lig_ejm_31	lig_ejm_47	-27.8	0.1
+solvent	lig_ejm_31	lig_ejm_47	-27.83	0.06
+complex	lig_ejm_31	lig_ejm_48	-16.14	0.08
+solvent	lig_ejm_31	lig_ejm_48	-16.76	0.03
+complex	lig_ejm_31	lig_ejm_50	-57.33	0.04
+solvent	lig_ejm_31	lig_ejm_50	-58.33	0.02
+complex	lig_ejm_42	lig_ejm_43	-18.9	0.2
+solvent	lig_ejm_42	lig_ejm_43	-20.28	0.03
+complex	lig_ejm_46	lig_jmc_23	17.42	0.06
+solvent	lig_ejm_46	lig_jmc_23	17.12	0.06
+complex	lig_ejm_46	lig_jmc_27	15.81	0.09
+solvent	lig_ejm_46	lig_jmc_27	15.91	0.05
+complex	lig_ejm_46	lig_jmc_28	23.14	0.04
+solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
 """
 
 
-def test_gather(results_dir, ref_gather):
+_EXPECTED_RAW = b"""\
+leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
+complex\tlig_ejm_31\tlig_ejm_42\t-14.9\t0.8
+solvent\tlig_ejm_31\tlig_ejm_42\t-15.7\t0.8
+complex\tlig_ejm_31\tlig_ejm_46\t-40.7\t0.8
+solvent\tlig_ejm_31\tlig_ejm_46\t-39.8\t0.8
+complex\tlig_ejm_31\tlig_ejm_47\t-27.8\t0.8
+solvent\tlig_ejm_31\tlig_ejm_47\t-27.8\t0.8
+complex\tlig_ejm_31\tlig_ejm_48\t-16.2\t0.8
+solvent\tlig_ejm_31\tlig_ejm_48\t-16.8\t0.8
+complex\tlig_ejm_31\tlig_ejm_50\t-57.3\t0.8
+solvent\tlig_ejm_31\tlig_ejm_50\t-58.3\t0.8
+complex\tlig_ejm_42\tlig_ejm_43\t-19.0\t0.8
+solvent\tlig_ejm_42\tlig_ejm_43\t-20.3\t0.8
+complex\tlig_ejm_46\tlig_jmc_23\t17.3\t0.8
+solvent\tlig_ejm_46\tlig_jmc_23\t17.2\t0.8
+complex\tlig_ejm_46\tlig_jmc_27\t15.9\t0.8
+solvent\tlig_ejm_46\tlig_jmc_27\t16.0\t0.8
+complex\tlig_ejm_46\tlig_jmc_28\t23.1\t0.8
+solvent\tlig_ejm_46\tlig_jmc_28\t23.5\t0.8
+"""
+
+
+@pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
+def test_gather(results_dir, report):
+    expected = {
+        "": _EXPECTED_DG,
+        "dg": _EXPECTED_DG,
+        "ddg": _EXPECTED_DDG,
+        "raw": _EXPECTED_RAW,
+    }[report]
     runner = CliRunner()
 
-    print(glob.glob('res/*'))
+    if report:
+        args = ["--report", report]
+    else:
+        args = []
 
-    result = runner.invoke(gather, ['res', '-'])
+    result = runner.invoke(gather, ['results'] + args + ['-o', '-'])
 
     assert result.exit_code == 0
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
 
-    assert set(ref_gather.split(b'\n')) == actual_lines
+    assert set(expected.split(b'\n')) == actual_lines
 
+
+@pytest.mark.parametrize('include', ['complex', 'solvent', 'vacuum'])
+def test_generate_bad_legs_error_message(include):
+    expected = {
+        'complex': ("appears to be an RBFE", "missing {'solvent'}"),
+        'vacuum': ("appears to be an RHFE", "missing {'solvent'}"),
+        'solvent': ("whether this is an RBFE or an RHFE",
+                    "'complex'", "'solvent'"),
+    }[include]
+    set_vals = {include}
+    ligpair = {'lig1', 'lig2'}
+    msg = _generate_bad_legs_error_message(set_vals, ligpair)
+    for string in expected:
+        assert string in msg
+
+
+@pytest.mark.xfail
+def test_missing_leg_error(results_dir):
+    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+    (pathlib.Path("results") / file_to_remove).unlink()
+
+    runner = CliRunner()
+    result = runner.invoke(gather, ['results'] + ['-o', '-'])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, RuntimeError)
+    assert "Unable to determine" in str(result.exception)
+    assert "'lig_ejm_31'" in str(result.exception)
+    assert "'lig_ejm_42'" in str(result.exception)
+
+
+@pytest.mark.xfail
+def test_missing_leg_allow_partial(results_dir):
+    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+    (pathlib.Path("results") / file_to_remove).unlink()
+
+    runner = CliRunner()
+    result = runner.invoke(gather,
+                           ['results'] + ['--allow-partial', '-o', '-'])
+    assert result.exit_code == 0
+
+
+RBFE_RESULTS = pooch.create(
+    pooch.os_cache('openfe'),
+    base_url="doi:10.6084/m9.figshare.25148945",
+    registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
+)
+
+
+@pytest.fixture
+def rbfe_results():
+    # fetches rbfe results from online
+    # untars into local directory and returns path to this
+    d = RBFE_RESULTS.fetch('results.tar.gz', processor=pooch.Untar())
+
+    return os.path.join(pooch.os_cache('openfe'), 'results.tar.gz.untar', 'results')
+
+
+@pytest.mark.download
+@pytest.mark.xfail
+def test_rbfe_results(rbfe_results):
+    runner = CliRunner()
+
+    result = runner.invoke(gather, ['--report', 'raw', rbfe_results])
+
+    assert result.exit_code == 0
+    assert result.stdout_bytes == _EXPECTED_RAW

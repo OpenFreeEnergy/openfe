@@ -2,11 +2,12 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from openfecli import OFECommandPlugin
-from openfecli.parameters.output import ensure_file_does_not_exist
-from openfecli.utils import write
 import json
 import pathlib
+
+from openfecli import OFECommandPlugin
+from openfecli.parameters.output import ensure_file_does_not_exist
+from openfecli.utils import write, print_duration, configure_logger
 
 
 def _format_exception(exception) -> str:
@@ -37,16 +38,55 @@ def _format_exception(exception) -> str:
     help="output file (JSON format) for the final results",
     callback=ensure_file_does_not_exist,
 )
+@print_duration
 def quickrun(transformation, work_dir, output):
-    """Run the transformation (edge) in the given JSON file in serial.
+    """Run the transformation (edge) in the given JSON file.
 
-    To save a transformation as JSON, create the transformation and then
-    save it with transformation.dump(filename).
+    Simulation JSON files can be created with the
+    :ref:`cli_plan-rbfe-network`
+    or from Python a :class:`.Transformation` can be saved using its dump
+    method::
+
+        transformation.dump("filename.json")
+
+    That will save a JSON file suitable to be input for this command.
+
+    Running this command will execute the simulation defined in the JSON file,
+    creating a directory for each individual task (``Unit``) in the workflow.
+    For example, when running the OpenMM HREX Protocol a directory will be created
+    for each repeat of the sampling process (by default 3).
     """
     import gufe
     import os
+    import sys
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
+    from openfe.utils.logging_filter import MsgIncludesStringFilter
+    import logging
+
+    # avoid problems with output not showing if queueing system kills a job
+    sys.stdout.reconfigure(line_buffering=True)
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+
+    configure_logger('gufekey', handler=stdout_handler)
+    configure_logger('gufe', handler=stdout_handler)
+    configure_logger('openfe', handler=stdout_handler)
+
+    # silence the openmmtools.multistate API warning
+    stfu = MsgIncludesStringFilter(
+        "The openmmtools.multistate API is experimental and may change in "
+        "future releases"
+    )
+    omm_multistate = "openmmtools.multistate"
+    modules = ["multistatereporter", "multistateanalyzer",
+               "multistatesampler"]
+    for module in modules:
+        ms_log = logging.getLogger(omm_multistate + "." + module)
+        ms_log.addFilter(stfu)
+
+    # turn warnings into log message (don't show stack trace)
+    logging.captureWarnings(True)
 
     if work_dir is None:
         work_dir = pathlib.Path(os.getcwd())
@@ -59,13 +99,15 @@ def quickrun(transformation, work_dir, output):
     trans = gufe.Transformation.from_dict(dct)
     write("Planning simulations for this edge...")
     dag = trans.create()
-    write("Running the simulations...")
+    write("Starting the simulations for this edge...")
     dagresult = execute_DAG(dag,
                             shared_basedir=work_dir,
                             scratch_basedir=work_dir,
                             keep_shared=True,
-                            raise_error=False)
-    write("Done! Analyzing the results....")
+                            raise_error=False,
+                            n_retries=2,
+                            )
+    write("Done with all simulations! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
     if dagresult.ok():
@@ -90,12 +132,7 @@ def quickrun(transformation, work_dir, output):
     with open(output, mode='w') as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
-    write(f"Here is the result:\ndG = {estimate} ± {uncertainty}\n")
-    write("Additional information:")
-    for result in dagresult.protocol_unit_results:
-        write(f"{result.name}:")
-        write(result.outputs)
-
+    write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
     write("")
 
     if not dagresult.ok():
@@ -110,6 +147,9 @@ def quickrun(transformation, work_dir, output):
 
 PLUGIN = OFECommandPlugin(
     command=quickrun,
-    section="Simulation",
+    section="Quickrun Executor",
     requires_ofe=(0, 3)
 )
+
+if __name__ == "__main__":
+    quickrun()

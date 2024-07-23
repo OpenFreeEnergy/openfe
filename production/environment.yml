@@ -1,0 +1,14 @@
+name: openfe_env
+channels:
+  - conda-forge
+dependencies:
+  # Issues with 11.8 on    lilac
+  - cudatoolkit==11.7
+  - jupyterlab
+  - notebook
+  - openfe
+  - pip
+  - py3dmol
+  - pytest
+  - pytest-xdist
+  - python==3.10.*

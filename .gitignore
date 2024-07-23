@@ -1,6 +1,8 @@
 # custom ignores
+.duecredit.p
 .xxrun
 .idea/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -75,6 +77,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/reference/api/generated
 
 # PyBuilder
 .pybuilder/
@@ -158,3 +161,18 @@ cython_debug/
 
 # vim
 *.swp
+
+# vscode
+.vscode/
+
+# Example notebooks
+docs/ExampleNotebooks/
+
+# duecredit
+.duecredit.p
+
+# Some charge stuff
+*.model.pt
+
+# Rever
+rever/

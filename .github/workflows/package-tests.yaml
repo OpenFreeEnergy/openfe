@@ -1,0 +1,57 @@
+name: "Package Install Tests"
+on:
+  schedule:
+    # At 07:00 UTC on Monday and Thursday.
+    - cron: "0 7 * * *"
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  package-tests:
+    runs-on: ubuntu-latest
+    name: "package install tests"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
+
+      - name: "Setup Micromamba"
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml
+          environment-name: openfe_env
+          cache-environment: true
+          cache-downloads: true
+          cache-environment-key: environment-${{ steps.date.outputs.date }}
+          cache-downloads-key: downloads-${{ steps.date.outputs.date }}
+          create-args: >-
+            python=3.10
+          init-shell: bash
+
+      - name: "install extra deps"
+        run: pip install pipx wheel twine readme-renderer
+
+      - name: "build sdist"
+        run: pipx run build --sdist --outdir dist
+
+      - name: "check package build"
+        run: |
+          dist=$(ls -t1 dist/openfe-*tar.gz | head -n1)
+          test -n "${dist}" || { echo "no distribution found"; exit 1; }
+          twine check $dist
+
+      - name: "install from source dist"
+        working-directory: ./dist
+        run: python -m pip install openfe-*tar.gz
+
+      - name: "run tests"
+        working-directory: ./dist
+        env:
+          OFE_SLOW_TESTS: "true"
+        run: |
+          pytest -n auto -v --pyargs openfe.tests
+          pytest -n auto -v --pyargs openfecli.tests

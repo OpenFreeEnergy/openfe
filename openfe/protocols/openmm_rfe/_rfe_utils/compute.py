@@ -30,6 +30,15 @@ def get_openmm_platform(platform_name=None):
         from openmmtools.utils import get_fastest_platform
         platform = get_fastest_platform(minimum_precision='mixed')
     else:
+        try:
+            platform_name = {
+                'cpu': 'CPU',
+                'opencl': 'OpenCL',
+                'cuda': 'CUDA',
+            }[str(platform_name).lower()]
+        except KeyError:
+            pass
+
         from openmm import Platform
         platform = Platform.getPlatformByName(platform_name)
     # Set precision and properties
