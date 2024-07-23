@@ -20,32 +20,45 @@ defaults:
 
 jobs:
   condacheck:
-    runs-on: ${{ matrix.OS }}-latest
+    runs-on: ${{ matrix.OS }}
     name: "daily conda check"
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu', 'macos']
+        os: ['ubuntu-latest', 'macos-latest', 'macos-13']
         python-version:
           - "3.9"
           - "3.10"
+          - "3.11"
+          - "3.12"
 
     steps:
       - name: Setup Micromamba
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: False
           environment-name: openfe
-          channels: conda-forge
-          extra-specs: |
-            python==${{ matrix.python-version }}
+          create-args: >-
+            python=${{ matrix.python-version }}
+            pip
+          condarc: |
+            channels:
+              - jaimergp/label/unsupported-cudatoolkit-shim
+              - conda-forge
+          init-shell: bash
 
       - name: "Install openfe + optional deps"
-        run: micromamba install openfe pytest -c conda-forge
-
-      - name: "Run tests"
-        run: pytest --pyargs openfe openfecli
-
-      - name: "WIP"
         run: |
+          micromamba install openfe pytest -c conda-forge
+          python -m pip install pytest-xdist PyGithub
+
+      - name: "env info"
+        run: |
+          micormamba info
           micromamba list
+          pip list
+
+      - id: run-tests
+        name: "Run tests"
+        run: |
+          # note: this only runs the fast tests
+          pytest -n auto --pyargs openfe openfecli
