@@ -262,7 +262,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
     gaff_should_fail = version.parse(
         ommff_version
-    ) >= version.parse("0.13.0")
+    ) == version.parse("0.13.0")
 
     if gaff_should_fail:
         from openmmforcefields.generators.template_generators import (
