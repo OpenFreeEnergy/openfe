@@ -305,7 +305,7 @@ def plot_2D_rmsd(data: list[list[float]],
     # except the last one!
     overage = len(axes.flatten()) - len(twod_rmsd_arrs)  # type: ignore
     for i in range(overage, len(axes.flatten())-1):  # type: ignore
-        axes.flatten()[i].set_axis_off()
+        axes.flatten()[i].set_axis_off()  # type: ignore
 
     plt.colorbar(axes.flatten()[0].images[0],  # type: ignore
                  cax=axes.flatten()[-1],  # type: ignore
