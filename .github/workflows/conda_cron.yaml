@@ -57,6 +57,7 @@ jobs:
           micormamba info
           micromamba list
           pip list
+          ls /Users/runner/micromamba/envs/openfe/lib/python*/site-packages/openfe/tests/data/lomap_basic/
 
       - id: run-tests
         name: "Run tests"
