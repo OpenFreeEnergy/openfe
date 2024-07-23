@@ -301,6 +301,12 @@ def plot_2D_rmsd(data: list[list[float]],
         ax.axis('off')  # turn off ticks/labels
         ax.set_title(f'State {i}')
 
+    # if we have any leftover plots then we turn them off
+    # except the last one!
+    overage = len(axes.flatten()) - len(twod_rmsd_arrs)
+    for i in range(overage, len(axes.flatten())-1):
+        axes.flatten()[i].set_axis_off()
+
     plt.colorbar(axes.flatten()[0].images[0],  # type: ignore
                  cax=axes.flatten()[-1],  # type: ignore
                  label="RMSD scale (A)",
