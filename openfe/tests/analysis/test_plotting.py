@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
 import pytest
 from openfe.analysis.plotting import (
     plot_lambda_transition_matrix,
+    plot_2D_rmsd,
 )
 
 
@@ -150,3 +152,15 @@ MBAR_OVERLAP_NORMAL = np.array([
 def test_mbar_overlap_plot():
     ax = plot_lambda_transition_matrix(MBAR_OVERLAP_NORMAL)
     assert isinstance(ax, matplotlib.axes.Axes)
+
+
+@pytest.mark.parametrize('num', [i for i in range(1, 30)])
+def test_plot_2D_rmsd(num):
+    """
+    Smoke test:
+      Loop through and test plotting fictitious 2D data
+    """
+    points = num * (num-1) // 2
+    data = [[0.5 for x in range(points)] for i in range(num)]
+    fig = plot_2D_rmsd(data)
+    plt.close(fig)
