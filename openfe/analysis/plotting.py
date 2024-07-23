@@ -303,8 +303,8 @@ def plot_2D_rmsd(data: list[list[float]],
 
     # if we have any leftover plots then we turn them off
     # except the last one!
-    overage = len(axes.flatten()) - len(twod_rmsd_arrs)
-    for i in range(overage, len(axes.flatten())-1):
+    overage = len(axes.flatten()) - len(twod_rmsd_arrs)  # type: ignore
+    for i in range(overage, len(axes.flatten())-1):  # type: ignore
         axes.flatten()[i].set_axis_off()
 
     plt.colorbar(axes.flatten()[0].images[0],  # type: ignore
