@@ -35,13 +35,15 @@ jobs:
           cache-environment-key: environment-${{ steps.date.outputs.date }}
           cache-downloads-key: downloads-${{ steps.date.outputs.date }}
           create-args: >-
-            python=3.9
+            python=3
+            rdkit=2023.09.5
           init-shell: bash
 
       - name: "Install steps"
         run: |
           python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
           python -m pip install mypy
+          python -m pip install types-pkg_resources
           python -m pip install --no-deps -e .
 
       - name: "Environment Information"

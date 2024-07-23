@@ -93,7 +93,7 @@ class MultistateEquilFEAnalysis:
           * The free energy overlap matrix
           * The replica exchange overlap matrix (if sampler_method is repex)
           * The timeseries of replica states over time
-          * The foward and reverse estimate of the free energies
+          * The forward and reverse estimate of the free energies
 
         Parameters
         ----------

@@ -1,3 +1,5 @@
+.. _cookbooks:
+
 Cookbook
 ========
 
@@ -150,10 +152,10 @@ List of Cookbooks
     :maxdepth: 1
 
     loading_molecules
-    creating_atom_mappings
     dumping_transformation
     choose_protocol
     generate_ligand_network
+    rfe_alchemical_planners
     network_from_orion_fepp
     hand_write_ligand_network
     ligandnetwork_vis

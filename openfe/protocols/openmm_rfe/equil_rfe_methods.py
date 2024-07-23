@@ -304,7 +304,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
                for pus in self.data.values()]
         return dGs
 
-    def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
         """
         Get a list of forward and reverse analysis of the free energies
         for each repeat using uncorrelated production samples.
@@ -317,12 +317,34 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         The 'fractions' values are a numpy array, while the other arrays are
         Quantity arrays, with units attached.
 
+        If the list entry is ``None`` instead of a dictionary, this indicates
+        that the analysis could not be carried out for that repeat. This
+        is most likely caused by MBAR convergence issues when attempting to
+        calculate free energies from too few samples.
+
+
         Returns
         -------
-        forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
+        forward_reverse : list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+
+
+        Raises
+        ------
+        UserWarning
+          If any of the forward and reverse entries are ``None``.
         """
         forward_reverse = [pus[0].outputs['forward_and_reverse_energies']
                            for pus in self.data.values()]
+
+        if None in forward_reverse:
+            wmsg = (
+                "One or more ``None`` entries were found in the list of "
+                "forward and reverse analyses. This is likely caused by "
+                "an MBAR convergence failure caused by too few independent "
+                "samples when calculating the free energies of the 10% "
+                "timeseries slice."
+            )
+            warnings.warn(wmsg)
 
         return forward_reverse
 
@@ -436,6 +458,18 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
+    """
+    Relative Free Energy calculations using OpenMM and OpenMMTools.
+
+    Based on `Perses <https://github.com/choderalab/perses>`_
+
+    See Also
+    --------
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologySettings`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyResult`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit`
+    """
     result_cls = RelativeHybridTopologyProtocolResult
     _settings: RelativeHybridTopologyProtocolSettings
 

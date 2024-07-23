@@ -5,7 +5,7 @@ on:
 
 defaults:
   run:
-    shell: bash -l {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
   test:
@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, ubuntu-latest]
+        os: [macos-14, macos-12, ubuntu-latest]
 
     steps:
     - name: Checkout Code
@@ -60,7 +60,7 @@ jobs:
         chmod +x ${{ steps.file-name.outputs.FILE_NAME }}
         ./${{ steps.file-name.outputs.FILE_NAME }} -b
         export PATH="$HOME/openfeforge/bin:$PATH"
-        OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe pytest -v --pyargs openfe
+        OFE_SLOW_TESTS=FALSE pytest -v --pyargs openfe
         # Copy for "latest" release by removing version
         # Inspired by https://github.com/conda-forge/miniforge/blob/main/.github/workflows/ci.yml
         cp ${{ steps.file-name.outputs.FILE_NAME }} $(echo ${{ steps.file-name.outputs.FILE_NAME }} | sed -e 's/-[^-]*//')

@@ -7,6 +7,7 @@ import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from typing import Optional, Union
+import warnings
 
 
 def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
@@ -22,8 +23,29 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     -------
     ax : matplotlib.axes.Axes
       An Axes object to plot.
+
+    Raises
+    ------
+    UserWarning
+      If any row or column exceeds a sum value of 1.01. This indicates
+      an incorrect overlap/probability matrix.
+
+    Notes
+    -----
+    Borrowed from `alchemlyb <https://github.com/alchemistry/alchemlyb/blob/master/src/alchemlyb/visualisation/mbar_matrix.py>`_
+    which itself borrows from `alchemical-analysis <https://github.com/MobleyLab/alchemical-analysis>`_. 
     """
     num_states = len(matrix)
+
+    # Check if any row or column isn't close to 1.0
+    # Throw a warning if it's the case
+    if (not np.allclose(matrix.sum(axis=0), 1.0) or
+        not np.allclose(matrix.sum(axis=1), 1.0)):
+        wmsg = ("Overlap/probability matrix exceeds a sum of 1.0 in one or "
+                "more columns or rows of the matrix. This indicates an "
+                "incorrect overlap/probability matrix.")
+        warnings.warn(wmsg)
+
     fig, ax = plt.subplots(figsize=(num_states / 2, num_states / 2))
     ax.axis('off')
     for i in range(num_states):
@@ -32,7 +54,18 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             ax.axhline(y=i, ls="-", lw=0.5, color="k", alpha=0.25)
         for j in range(num_states):
             val = matrix[i, j]
-            val_str = "{:.2f}".format(val)[1:]
+
+            # Catch if 0.05 from 0 or 1
+            # https://github.com/OpenFreeEnergy/openfe/issues/806
+            if matrix[j, i] < 0.005:
+                # This replicates the same behaviour as alchemical-analysis & alchemlyb
+                # i.e. near-zero values will just not be annotated
+                val_str = ""
+            elif matrix[j, i] > 0.995:
+                val_str = "{:.2f}".format(matrix[j, i])[:4]
+            else:
+                val_str = "{:.2f}".format(matrix[j, i])[1:]
+
             rel_prob = val / matrix.max()
 
             # shade box
@@ -100,6 +133,10 @@ def plot_convergence(
     -------
     ax : matplotlib.axes.Axes
       An Axes object to plot.
+
+    Notes
+    -----
+    Modified from `alchemical analysis <<https://github.com/MobleyLab/alchemical-analysis>>`_
     """
     known_units = {
         'kilojoule_per_mole': 'kJ/mol',
