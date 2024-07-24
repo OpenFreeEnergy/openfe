@@ -1676,7 +1676,7 @@ class TestProtocolResult:
 def test_get_charge_difference(mapping_name, result, request):
     mapping = request.getfixturevalue(mapping_name)
     if result != 0:
-        ion = 'Na\+' if result == -1 else 'Cl\-'
+        ion = r'Na\+' if result == -1 else r'Cl\-'
         wmsg = (f"A charge difference of {result} is observed "
                 "between the end states. This will be addressed by "
                 f"transforming a water into a {ion} ion")
