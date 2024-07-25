@@ -46,9 +46,6 @@ jobs:
         with:
           environment-file: environment.yml
           environment-name: openfe_env
-          create-args: >-
-            python="3.12"
-            pydantic=">1"
           init-shell: bash
 
       - name: "Install GUFE from main@HEAD"
