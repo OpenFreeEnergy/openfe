@@ -50,22 +50,27 @@ jobs:
 
       - name: "Install GUFE from main@HEAD"
         run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
+        shell: bash -el {0}
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
+        shell: bash -el {0}
 
       - name: "Test imports"
+        shell: bash -el {0}
         run: |
           # if we add more to this, consider changing to for + env vars
-          python -Ic "import openfe; print(openfe.__version__)"
+          python -Ic "import openfe; print(openfe.__version__)"          
 
       - name: "Environment Information"
+        shell: bash -el {0}
         run: |
           micromamba info
           micromamba list
           pip list
 
       - name: "Run tests"
+        shell: bash -el {0}
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: "true"
