@@ -29,6 +29,7 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
   self-hosted-test:
+    timeout-minutes: 720  # 12 hours  
     runs-on: self-hosted
     needs:
       - start-aws-runner
@@ -76,7 +77,7 @@ jobs:
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
+          pytest -n 4 -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
   stop-aws-runner:
     runs-on: ubuntu-latest
