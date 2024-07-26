@@ -22,9 +22,15 @@ authors:
 - family-names: "Eastwood"
   given-names: "James R. B."
   orcid: "https://orcid.org/0000-0003-3895-5227"
+- given-names: "Joshua A."
+  family-names: "Mitchell"
+  orcid: 'https://orcid.org/0000-0002-8246-5113'
+- given-names: "David"
+  family-names: "Dotson"
+  orcid: "https://orcid.org/0000-0001-5879-2942"
 title: "The Open Free Energy library"
-version: 0.1
-date-released: 2022-03-28
+version: 1.0
+date-released: 2024-04-19
 url: "https://openfree.energy/"
 repository-code: "https://github.com/openfreeEnergy/openfe"
-doi: 10.5281/zenodo.8344248
+doi: 10.5281/zenodo.8344247
