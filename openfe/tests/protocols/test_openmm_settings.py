@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import pytest
+import numpy as np
 from openff.units import unit
 
 from openfe.protocols.openmm_rfe import equil_rfe_settings
@@ -64,3 +65,32 @@ class TestEquilRFESettingsFromString:
         assert s.explicit_charge_correction_cutoff == 0.85 * unit.nanometer
 
 
+class TestOpenMMSolvationSettings:
+    def test_unreduced_box_vectors(self):
+        s = omm_settings.OpenMMSolvationSettings()
+
+        # From interchange tests
+        # rhombic dodecahedron with first and last rows swapped
+        box_vectors = np.asarray(
+            [
+                [0.5, 0.5, np.sqrt(2.0) / 2.0],
+                [0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0],
+            ],
+        )
+
+        with pytest.raises(ValueError, match="not in OpenMM reduced form"):
+            s.box_vectors = box_vectors
+
+    @pytest.mark.parametrize('n_solv', [0, -1])
+    def test_non_positive_solvent(self, n_solv):
+        s = omm_settings.OpenMMSolvationSettings()
+
+        with pytest.raises(ValueError, match="must be positive"):
+            s.number_of_solvent_molecules=n_solv
+
+    def test_box_size_properties_non_1d(self):
+        s = omm_settings.OpenMMSolvationSettings()
+
+        with pytest.raises(ValueError, match="must be a 1-D array"):
+            s.box_size = np.array([[1, 2, 3], [1, 2, 3]]) * unit.angstrom
