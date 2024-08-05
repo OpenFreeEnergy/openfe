@@ -54,7 +54,7 @@ jobs:
       - name: "Install openfe + optional deps"
         run: |
           # get latest version from conda-forge
-          LATEST_VERSION = $(micromamba search --json openmm | jq '.result.pkgs[0].version')
+          LATEST_VERSION=$(micromamba search --json openmm | jq '.result.pkgs[0].version')
           echo "LATEST_VERSION: $LATEST_VERSION"
           micromamba install openfe=$LATEST_VERSION pytest -c conda-forge
           python -m pip install pytest-xdist
