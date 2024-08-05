@@ -1,0 +1,67 @@
+name: "conda_cron"
+on:
+  workflow_dispatch:
+  schedule:
+    # At 07:00 UTC every day
+    - cron: "0 7 * * *"
+  
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  condacheck:
+    runs-on: ${{ matrix.OS }}
+    name: "daily conda check"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest', 'macos-12']
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+        exclude:
+          - os: 'macos-latest'
+            python-version: '3.9'
+
+    steps:
+      - name: Setup Micromamba
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-name: openfe
+          create-args: >-
+            python=${{ matrix.python-version }}
+            pip
+            jq
+          condarc: |
+            channels:
+              - jaimergp/label/unsupported-cudatoolkit-shim
+              - conda-forge
+          init-shell: bash
+
+      - name: "Install openfe + optional deps"
+        run: |
+          # get latest version from conda-forge
+          LATEST_VERSION=$(micromamba search --json openfe | jq '.result.pkgs[0].version')
+          echo "LATEST_VERSION: $LATEST_VERSION"
+          # Removing the quotes from the vesrion number 
+          # https://mywiki.wooledge.org/BashGuide/Parameters#Parameter_Expansion
+          micromamba install openfe=${LATEST_VERSION//\"} pytest -c conda-forge
+          python -m pip install pytest-xdist
+
+      - name: "env info"
+        run: |
+          micromamba info
+          micromamba list
+          pip list
+      - id: run-tests
+        name: "Run tests"
+        run: |
+          # note: this only runs the fast tests
+          pytest -n auto --pyargs openfe openfecli
