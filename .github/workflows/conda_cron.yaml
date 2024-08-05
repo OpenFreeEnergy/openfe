@@ -44,6 +44,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             pip
+            jq
           condarc: |
             channels:
               - jaimergp/label/unsupported-cudatoolkit-shim
@@ -52,7 +53,10 @@ jobs:
 
       - name: "Install openfe + optional deps"
         run: |
-          micromamba install openfe=1.0.1 pytest -c conda-forge
+          # get latest version from conda-forge
+          LATEST_VERSION = $(micromamba search --json openmm | jq '.result.pkgs[0].version')
+          echo "LATEST_VERSION: $LATEST_VERSION"
+          micromamba install openfe=$LATEST_VERSION pytest -c conda-forge
           python -m pip install pytest-xdist
 
       - name: "env info"
