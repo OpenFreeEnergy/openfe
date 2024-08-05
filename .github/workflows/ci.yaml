@@ -122,7 +122,7 @@ jobs:
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
                 && github.event_name == 'pull_request' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
@@ -137,7 +137,7 @@ jobs:
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
                 && github.event_name != 'schedule'            
                 && github.event_name != 'pull_request' }}     
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
