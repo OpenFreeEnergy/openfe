@@ -17,7 +17,7 @@ concurrency:
 
 defaults:
   run:
-    shell: bash -l {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
   condacheck:
@@ -52,7 +52,7 @@ jobs:
 
       - name: "Install openfe + optional deps"
         run: |
-          micromamba install openfe pytest -c conda-forge
+          micromamba install openfe=1.0.1 pytest -c conda-forge
           python -m pip install pytest-xdist
 
       - name: "env info"
