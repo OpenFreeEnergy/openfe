@@ -63,7 +63,7 @@ jobs:
 
       - name: "env info"
         run: |
-          micormamba info
+          micromamba info
           micromamba list
           pip list
       - id: run-tests
