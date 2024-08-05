@@ -56,7 +56,9 @@ jobs:
           # get latest version from conda-forge
           LATEST_VERSION=$(micromamba search --json openfe | jq '.result.pkgs[0].version')
           echo "LATEST_VERSION: $LATEST_VERSION"
-          micromamba install openfe=$LATEST_VERSION pytest -c conda-forge
+          # Removing the quotes from the vesrion number 
+          # https://mywiki.wooledge.org/BashGuide/Parameters#Parameter_Expansion
+          micromamba install openfe=${LATEST_VERSION//\"} pytest -c conda-forge
           python -m pip install pytest-xdist
 
       - name: "env info"
