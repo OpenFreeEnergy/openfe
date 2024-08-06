@@ -33,10 +33,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 import numpy as np
 
-try:
-    from pydantic.v1 import validator
-except ImportError:
-    from pydantic import validator  # type: ignore[assignment]
+from pydantic.v1 import validator
 
 
 class AlchemicalSettings(SettingsBaseModel):
