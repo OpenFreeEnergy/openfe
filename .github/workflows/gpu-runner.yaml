@@ -15,7 +15,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
-          aws-region: us-east-1
+          aws-region: us-east-2
       - name: Create cloud runner
         id: aws-start
         uses: omsf-eco-infra/gha-runner@v0.2.0
