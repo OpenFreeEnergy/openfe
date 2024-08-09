@@ -31,6 +31,7 @@ jobs:
 
   self-hosted-test:
     runs-on: self-hosted
+    timeout-minutes: 720  # 12 hours  
     defaults:
       run:
         shell: bash -leo pipefail {0}
