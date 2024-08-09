@@ -22,7 +22,7 @@ jobs:
         with:
           provider: "aws"
           action: "start"
-          aws_image_id: ami-0f7c4a792e3fb63c8
+          aws_image_id: ami-0b7f661c228e6a4bb
           aws_instance_type: g4dn.xlarge
           aws_region_name: us-east-2
           aws_home_dir: /home/ubuntu
