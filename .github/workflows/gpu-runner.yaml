@@ -28,8 +28,13 @@ jobs:
           aws_home_dir: /home/ubuntu
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+
   self-hosted-test:
     runs-on: self-hosted
+    defaults:
+      run:
+        shell: bash -l {0}
+
     needs:
       - start-aws-runner
     steps:
@@ -49,34 +54,28 @@ jobs:
         with:
           environment-file: environment.yml
           environment-name: openfe_env
-          init-shell: bash
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
 
       - name: "Install GUFE from main@HEAD"
         run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
-        shell: bash -el {0}
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
-        shell: bash -el {0}
 
       - name: "Test imports"
-        shell: bash -el {0}
         run: |
           # if we add more to this, consider changing to for + env vars
           python -Ic "import openfe; print(openfe.__version__)"          
 
       - name: "Environment Information"
-        shell: bash -el {0}
         run: |
           micromamba info
           micromamba list
           pip list
 
       - name: "Run tests"
-        shell: bash -el {0}
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: "true"
