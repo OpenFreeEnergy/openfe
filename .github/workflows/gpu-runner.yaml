@@ -33,7 +33,7 @@ jobs:
     runs-on: self-hosted
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
 
     needs:
       - start-aws-runner
@@ -80,6 +80,7 @@ jobs:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
+          OFE_INTEGRATION_TESTS: TRUE
         run: |
           pytest -n 4 -v --durations=10
 
