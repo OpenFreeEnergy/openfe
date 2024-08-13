@@ -15,7 +15,7 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - pytest-rerunfailures
-  - pydantic >1
+  - pydantic >=1.10.17
   - pyyaml
   - coverage
   - cinnabar ~=0.4.0
