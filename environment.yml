@@ -1,6 +1,5 @@
 name: openfe_env
 channels:
-  - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
   - duecredit<0.10
