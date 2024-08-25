@@ -127,7 +127,7 @@ jobs:
           # OPENMM_CPU_THREADS: '1'
           OMP_NUM_THREADS: '1'
         run: |
-          pytest -n auto -v --durations=10
+          pytest -n logical -v --durations=10
 
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
