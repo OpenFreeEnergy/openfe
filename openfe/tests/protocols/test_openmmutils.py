@@ -202,14 +202,14 @@ class TestFEAnalysis:
             yield r
         finally:
             r.close()
-    
+
     @pytest.fixture()
     def analyzer(self, reporter):
         return multistate_analysis.MultistateEquilFEAnalysis(
             reporter, sampling_method='repex',
             result_units=unit.kilocalorie_per_mole,
         )
-    
+
     def test_free_energies(self, analyzer):
         ret_dict = analyzer.unit_results_dict
         assert len(ret_dict.items()) == 7
@@ -256,7 +256,7 @@ class TestFEAnalysis:
             assert Path('replica_state_timeseries.png').is_file()
 
     def test_plot_convergence_bad_units(self, analyzer):
-        
+
         with pytest.raises(ValueError, match='Unknown plotting units'):
             openfe.analysis.plotting.plot_convergence(
                 analyzer.forward_and_reverse_free_energies,
@@ -515,7 +515,7 @@ class TestOFFPartialCharge:
         ] * unit.elementary_charge
 
         uncharged_mol.partial_charges = copy.deepcopy(chg)
-    
+
         charge_generation.assign_offmol_partial_charges(
             uncharged_mol,
             overwrite=overwrite,
@@ -524,7 +524,7 @@ class TestOFFPartialCharge:
             generate_n_conformers=None,
             nagl_model=None,
         )
-    
+
         assert np.allclose(uncharged_mol.partial_charges, chg) != overwrite
 
     def test_unknown_method(self, uncharged_mol):
@@ -588,7 +588,7 @@ class TestOFFPartialCharge:
             )
 
     def test_too_many_requested_conformers(self, uncharged_mol):
-        
+
         with pytest.raises(ValueError, match="5 conformers were requested"):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
@@ -651,7 +651,7 @@ class TestOFFPartialCharge:
 
     @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
     def test_no_production_nagl(self, uncharged_mol):
-        
+
         with pytest.raises(ValueError, match='No production am1bcc NAGL'):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
@@ -789,6 +789,8 @@ class TestOFFPartialCharge:
 
 @pytest.mark.slow
 @pytest.mark.download
+# Sometimes we get a DOI lookup error from duecredit
+@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,
