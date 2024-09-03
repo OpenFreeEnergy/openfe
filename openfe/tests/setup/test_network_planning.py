@@ -220,7 +220,7 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
 
     network = openfe.setup.ligand_network_planning.generate_maximal_network(
         ligands=others + [toluene],
-        mappers=mappers,
+        mapper=mappers,
         scorer=scorer,
         progress=with_progress,
     )
