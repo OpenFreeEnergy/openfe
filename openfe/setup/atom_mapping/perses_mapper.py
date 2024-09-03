@@ -25,6 +25,28 @@ class PersesAtomMapper(LigandAtomMapper):
     allow_ring_breaking: bool
     preserve_chirality: bool
     use_positions: bool
+    coordinate_tolerance: float
+
+    def _to_dict(self) -> dict:
+        # strip units but record values
+        return {
+            "allow_ring_breaking": self.allow_ring_breaking,
+            "preserve_chirality": self.preserve_chirality,
+            "use_positions": self.use_positions,
+            "coordinate_tolerance": self.coordinate_tolerance.value_in_unit(unit.angstrom),
+            "_tolerance_unit": "angstrom"
+        }
+
+    @classmethod
+    def _from_dict(cls, dct: dict):
+        # attach units again
+        tolerence_unit = dct.pop("_tolerance_unit")
+        dct["coordinate_tolerance"] *= getattr(unit, tolerence_unit)
+        return cls(**dct)
+
+    @classmethod
+    def _defaults(cls):
+        return {}
 
     @requires_package("perses")
     def __init__(self, allow_ring_breaking: bool = True,
