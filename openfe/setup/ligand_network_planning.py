@@ -89,13 +89,7 @@ def generate_radial_network(
         mapper = _hasten_lomap(mapper, ligands)
     nodes = list(ligands)
 
-    # Construct network
-    network_planner = StarNetworkGenerator(mapper=mapper,
-        scorer=scorer,
-        progress = progress,
-        n_processes = n_processes,
-    )
-
+    # Get central Component
     if isinstance(central_ligand, int):
         ligands = list(ligands)
         try:
@@ -113,6 +107,14 @@ def generate_radial_network(
         if len(possibles) > 1:
             raise ValueError(f"Multiple ligands called '{central_ligand}'")
         central_ligand = possibles[0]
+
+
+    # Construct network
+    network_planner = StarNetworkGenerator(mapper=mapper,
+        scorer=scorer,
+        progress = progress,
+        n_processes = n_processes,
+    )
 
     network = network_planner.generate_ligand_network(nodes, central_component=central_ligand)
 
