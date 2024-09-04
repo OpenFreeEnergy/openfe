@@ -23,6 +23,9 @@ from konnektor.network_planners import (StarNetworkGenerator,
                                         MinimalSpanningTreeNetworkGenerator,
                                         ExplicitNetworkGenerator,)
 
+#Konnektor handles:
+from konnektor import network_analysis, network_planners, network_tools
+
 
 def _hasten_lomap(mapper, ligands):
     """take a mapper and some ligands, put a common core arg into the mapper """
