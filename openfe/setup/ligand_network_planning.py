@@ -36,7 +36,8 @@ def _hasten_lomap(mapper, ligands):
 
     try:
         core = _find_common_core(
-            [m.to_rdkit() for m in ligands], element_change=mapper.element_change
+            [m.to_rdkit() for m in ligands],
+            element_change=mapper.element_change,
         )
     except RuntimeError:  # in case MCS throws a hissy fit
         core = ""
@@ -336,7 +337,9 @@ def generate_network_from_names(
 
     network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
 
-    network = network_planner.generate_network_from_names(ligands=nodes, names=names)
+    network = network_planner.generate_network_from_names(
+        ligands=nodes, names=names
+    )
 
     return network
 
@@ -405,18 +408,24 @@ def load_orion_network(
     """
 
     with open(network_file, "r") as f:
-        network_lines = [l.strip().split(" ") for l in f if not l.startswith("#")]
+        network_lines = [
+            line.strip().split(" ") for line in f if not line.startswith("#")
+        ]
 
     names = []
     for entry in network_lines:
         if len(entry) != 3 or entry[1] != ">>":
-            errmsg = "line does not match expected name >> name format: " f"{entry}"
+            errmsg = (
+                "line does not match expected name >> name format: " f"{entry}"
+            )
             raise KeyError(errmsg)
 
         names.append((entry[0], entry[2]))
 
     network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
-    network = network_planner.generate_network_from_names(ligands=ligands, names=names)
+    network = network_planner.generate_network_from_names(
+        ligands=ligands, names=names
+    )
 
     return network
 
@@ -463,5 +472,7 @@ def load_fepplus_network(
         names.append((entry[2], entry[4]))
 
     network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
-    network = network_planner.generate_network_from_names(ligands=ligands, names=names)
+    network = network_planner.generate_network_from_names(
+        ligands=ligands, names=names
+    )
     return network
