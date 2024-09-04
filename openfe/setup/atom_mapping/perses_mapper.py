@@ -33,7 +33,9 @@ class PersesAtomMapper(LigandAtomMapper):
             "allow_ring_breaking": self.allow_ring_breaking,
             "preserve_chirality": self.preserve_chirality,
             "use_positions": self.use_positions,
-            "coordinate_tolerance": self.coordinate_tolerance.value_in_unit(unit.angstrom),
+            "coordinate_tolerance": self.coordinate_tolerance.value_in_unit(
+                unit.angstrom
+            ),
             "_tolerance_unit": "angstrom"
         }
 
