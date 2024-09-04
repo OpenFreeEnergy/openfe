@@ -17,31 +17,37 @@ from openfe.setup.atom_mapping import LigandAtomMapping
 
 from lomap import generate_lomap_network, LomapAtomMapper
 from lomap.dbmol import _find_common_core
-from konnektor.network_planners import (StarNetworkGenerator,
-                                        MaximalNetworkGenerator,
-                                        RedundantMinimalSpanningTreeNetworkGenerator,
-                                        MinimalSpanningTreeNetworkGenerator,
-                                        ExplicitNetworkGenerator,)
+from konnektor.network_planners import (
+    StarNetworkGenerator,
+    MaximalNetworkGenerator,
+    RedundantMinimalSpanningTreeNetworkGenerator,
+    MinimalSpanningTreeNetworkGenerator,
+    ExplicitNetworkGenerator,
+)
 
-#Konnektor handles:
+# Konnektor handles:
 from konnektor import network_analysis, network_planners, network_tools
 
 
 def _hasten_lomap(mapper, ligands):
-    """take a mapper and some ligands, put a common core arg into the mapper """
+    """take a mapper and some ligands, put a common core arg into the mapper"""
     if mapper.seed:
         return mapper
 
     try:
-        core = _find_common_core([m.to_rdkit() for m in ligands],
-                                 element_change=mapper.element_change)
+        core = _find_common_core(
+            [m.to_rdkit() for m in ligands], element_change=mapper.element_change
+        )
     except RuntimeError:  # in case MCS throws a hissy fit
         core = ""
 
     return LomapAtomMapper(
-        time=mapper.time, threed=mapper.threed, max3d=mapper.max3d,
-        element_change=mapper.element_change, seed=core,
-        shift=mapper.shift
+        time=mapper.time,
+        threed=mapper.threed,
+        max3d=mapper.max3d,
+        element_change=mapper.element_change,
+        seed=core,
+        shift=mapper.shift,
     )
 
 
@@ -92,8 +98,10 @@ def generate_radial_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [
+        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
+        for m in mappers
+    ]
 
     # handle central_ligand arg possibilities
     # after this, central_ligand is resolved to a SmallMoleculeComponent
@@ -104,26 +112,31 @@ def generate_radial_network(
         except IndexError:
             raise ValueError(
                 f"index '{central_ligand}' out of bounds, there are "
-                f"{len(ligands)} ligands")
+                f"{len(ligands)} ligands"
+            )
     elif isinstance(central_ligand, str):
         ligands = list(ligands)
         possibles = [l for l in ligands if l.name == central_ligand]
         if not possibles:
-            raise ValueError(f"No ligand called '{central_ligand}' "
-                             f"available: {', '.join(l.name for l in ligands)}")
+            raise ValueError(
+                f"No ligand called '{central_ligand}' "
+                f"available: {', '.join(l.name for l in ligands)}"
+            )
         if len(possibles) > 1:
             raise ValueError(f"Multiple ligands called '{central_ligand}'")
         central_ligand = possibles[0]
 
-
     # Construct network
-    network_planner = StarNetworkGenerator(mappers=mappers,
+    network_planner = StarNetworkGenerator(
+        mappers=mappers,
         scorer=scorer,
-        progress = progress,
-        n_processes = n_processes,
+        progress=progress,
+        n_processes=n_processes,
     )
 
-    network = network_planner.generate_ligand_network(components=ligands, central_component=central_ligand)
+    network = network_planner.generate_ligand_network(
+        components=ligands, central_component=central_ligand
+    )
 
     return network
 
@@ -165,15 +178,18 @@ def generate_maximal_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [
+        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
+        for m in mappers
+    ]
     nodes = list(ligands)
 
     # Construct network
-    network_planner = MaximalNetworkGenerator(mappers=mappers,
+    network_planner = MaximalNetworkGenerator(
+        mappers=mappers,
         scorer=scorer,
-        progress = progress,
-        n_processes = n_processes,
+        progress=progress,
+        n_processes=n_processes,
     )
 
     network = network_planner.generate_ligand_network(nodes)
@@ -208,15 +224,18 @@ def generate_minimal_spanning_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [
+        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
+        for m in mappers
+    ]
     nodes = list(ligands)
 
     # Construct network
-    network_planner = MinimalSpanningTreeNetworkGenerator(mappers=mappers,
+    network_planner = MinimalSpanningTreeNetworkGenerator(
+        mappers=mappers,
         scorer=scorer,
-        progress = progress,
-        n_processes = n_processes,
+        progress=progress,
+        n_processes=n_processes,
     )
 
     network = network_planner.generate_ligand_network(nodes)
@@ -262,16 +281,19 @@ def generate_minimal_redundant_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [
+        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
+        for m in mappers
+    ]
     nodes = list(ligands)
 
     # Construct network
-    network_planner = RedundantMinimalSpanningTreeNetworkGenerator(mappers=mappers,
+    network_planner = RedundantMinimalSpanningTreeNetworkGenerator(
+        mappers=mappers,
         scorer=scorer,
-        progress = progress,
+        progress=progress,
         n_redundancy=mst_num,
-        n_processes = n_processes,
+        n_processes=n_processes,
     )
 
     network = network_planner.generate_ligand_network(nodes)
@@ -280,9 +302,9 @@ def generate_minimal_redundant_network(
 
 
 def generate_network_from_names(
-        ligands: list[SmallMoleculeComponent],
-        mappers: Union[AtomMapper, Iterable[AtomMapper]],
-        names: list[tuple[str, str]],
+    ligands: list[SmallMoleculeComponent],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    names: list[tuple[str, str]],
 ) -> LigandNetwork:
     """
     Generate a :class:`.LigandNetwork` by specifying edges as tuples of names.
@@ -320,9 +342,9 @@ def generate_network_from_names(
 
 
 def generate_network_from_indices(
-        ligands: list[SmallMoleculeComponent],
-        mappers: Union[AtomMapper, Iterable[AtomMapper]],
-        indices: list[tuple[int, int]],
+    ligands: list[SmallMoleculeComponent],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    indices: list[tuple[int, int]],
 ) -> LigandNetwork:
     """
     Generate a :class:`.LigandNetwork` by specifying edges as tuples of indices.
@@ -350,14 +372,16 @@ def generate_network_from_indices(
     nodes = list(ligands)
 
     network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
-    network = network_planner.generate_network_from_indices(ligands=nodes, indices=indices)
+    network = network_planner.generate_network_from_indices(
+        ligands=nodes, indices=indices
+    )
     return network
 
 
 def load_orion_network(
-        ligands: list[SmallMoleculeComponent],
-        mappers: Union[AtomMapper, Iterable[AtomMapper]],
-        network_file: Union[str, Path],
+    ligands: list[SmallMoleculeComponent],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an Orion NES network file.
 
@@ -380,15 +404,13 @@ def load_orion_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, 'r') as f:
-        network_lines = [l.strip().split(' ') for l in f
-                         if not l.startswith('#')]
+    with open(network_file, "r") as f:
+        network_lines = [l.strip().split(" ") for l in f if not l.startswith("#")]
 
     names = []
     for entry in network_lines:
         if len(entry) != 3 or entry[1] != ">>":
-            errmsg = ("line does not match expected name >> name format: "
-                      f"{entry}")
+            errmsg = "line does not match expected name >> name format: " f"{entry}"
             raise KeyError(errmsg)
 
         names.append((entry[0], entry[2]))
@@ -400,9 +422,9 @@ def load_orion_network(
 
 
 def load_fepplus_network(
-        ligands: list[SmallMoleculeComponent],
-        mappers: Union[AtomMapper, Iterable[AtomMapper]],
-        network_file: Union[str, Path],
+    ligands: list[SmallMoleculeComponent],
+    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
 
@@ -425,20 +447,21 @@ def load_fepplus_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, 'r') as f:
+    with open(network_file, "r") as f:
         network_lines = [l.split() for l in f.readlines()]
 
     names = []
     for entry in network_lines:
-        if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
-            errmsg = ("line does not match expected format "
-                      f"hash:hash # name -> name\n"
-                      "line format: {entry}")
+        if len(entry) != 5 or entry[1] != "#" or entry[3] != "->":
+            errmsg = (
+                "line does not match expected format "
+                f"hash:hash # name -> name\n"
+                "line format: {entry}"
+            )
             raise KeyError(errmsg)
 
         names.append((entry[2], entry[4]))
 
     network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
-    network = network_planner.generate_network_from_names(ligands=ligands,
-                                                          names=names)
+    network = network_planner.generate_network_from_names(ligands=ligands, names=names)
     return network
