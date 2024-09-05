@@ -67,7 +67,7 @@ class PersesAtomMapper(LigandAtomMapper):
             if mappings must strictly preserve chirality, default: True
         use_positions: bool, optional
             this option defines, if the
-        coordinate_tolerance: float, optional
+        coordinate_tolerance: openmm.unit.Quantity, optional
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom
 
