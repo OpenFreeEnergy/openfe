@@ -25,7 +25,7 @@ class PersesAtomMapper(LigandAtomMapper):
     allow_ring_breaking: bool
     preserve_chirality: bool
     use_positions: bool
-    coordinate_tolerance: float
+    coordinate_tolerance: unit.Quantity
 
     def _to_dict(self) -> dict:
         # strip units but record values
@@ -54,7 +54,7 @@ class PersesAtomMapper(LigandAtomMapper):
     def __init__(self, allow_ring_breaking: bool = True,
                  preserve_chirality: bool = True,
                  use_positions: bool = True,
-                 coordinate_tolerance: float = 0.25 * unit.angstrom):
+                 coordinate_tolerance: unit.Quantity = 0.25 * unit.angstrom):
         """
         Suggest atom mappings with the Perses atom mapper.
 
