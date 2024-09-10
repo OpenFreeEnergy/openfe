@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
+from openff.units import unit
 
 pytest.importorskip('perses')
 pytest.importorskip('openeye')
@@ -54,6 +55,10 @@ def test_empty_atommappings(mol_pair_to_shock_perses_mapper):
 
 def test_dict_round_trip():
     # use some none defaults
-    mapper1 = PersesAtomMapper(allow_ring_breaking=False, preserve_chirality=False)
+    mapper1 = PersesAtomMapper(
+        allow_ring_breaking=False,
+        preserve_chirality=False,
+        coordinate_tolerance=0.01 * unit.nanometer
+    )
     mapper2 = PersesAtomMapper.from_dict(mapper1.to_dict())
     assert mapper2.to_dict() == mapper1.to_dict()

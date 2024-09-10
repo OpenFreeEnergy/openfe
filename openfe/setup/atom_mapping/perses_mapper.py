@@ -6,8 +6,10 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
-from openmm import unit
 from openfe.utils import requires_package
+from openff.models.types import FloatQuantity
+from openff.units import unit
+from openff.units.openmm import to_openmm
 
 from ...utils.silence_root_logging import silence_root_logging
 try:
@@ -25,7 +27,7 @@ class PersesAtomMapper(LigandAtomMapper):
     allow_ring_breaking: bool
     preserve_chirality: bool
     use_positions: bool
-    coordinate_tolerance: unit.Quantity
+    coordinate_tolerance: FloatQuantity['angstrom']
 
     def _to_dict(self) -> dict:
         # strip units but record values
@@ -33,7 +35,7 @@ class PersesAtomMapper(LigandAtomMapper):
             "allow_ring_breaking": self.allow_ring_breaking,
             "preserve_chirality": self.preserve_chirality,
             "use_positions": self.use_positions,
-            "coordinate_tolerance": self.coordinate_tolerance.value_in_unit(
+            "coordinate_tolerance": self.coordinate_tolerance.m_as(
                 unit.angstrom
             ),
             "_tolerance_unit": "angstrom"
@@ -67,7 +69,7 @@ class PersesAtomMapper(LigandAtomMapper):
             if mappings must strictly preserve chirality, default: True
         use_positions: bool, optional
             this option defines, if the
-        coordinate_tolerance: openmm.unit.Quantity, optional
+        coordinate_tolerance: openff.units.unit.Quantity, optional
             tolerance on how close coordinates need to be, such they
             can be mapped, default: 0.25*unit.angstrom
 
@@ -81,7 +83,7 @@ class PersesAtomMapper(LigandAtomMapper):
         # Construct Perses Mapper
         _atom_mapper = AtomMapper(
             use_positions=self.use_positions,
-            coordinate_tolerance=self.coordinate_tolerance,
+            coordinate_tolerance=to_openmm(self.coordinate_tolerance),
             allow_ring_breaking=self.allow_ring_breaking)
 
         # Try generating a mapping
