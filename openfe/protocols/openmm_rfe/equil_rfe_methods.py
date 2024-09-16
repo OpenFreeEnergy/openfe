@@ -1096,13 +1096,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {'debug': {'sampler': sampler}}
 
     @staticmethod
-    def analyse(where) -> dict:
+    def structural_analysis(scratch, shared) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        analysis_out = where / 'structural_analysis.json'
+        analysis_out = scratch / 'structural_analysis.json'
 
         ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              str(where), str(analysis_out)],
+                              str(scratch), str(analysis_out)],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if ret.returncode:
@@ -1124,21 +1124,43 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         f3.savefig(savedir / "ligand_RMSD.png")
         plt.close(f3)
 
-        return {'structural_analysis': data}
+        # Save to numpy compressed format (~ 6x more space efficient than JSON)
+        np.savez_compressed(
+            shared / "structural_analysis.npz",
+            protein_RMSD=np.asarray(
+                data["protein_RMSD"], dtype=np.float32
+            ),
+            ligand_RMSD=np.asarray(
+                data["ligand_RMSD"], dtype=np.float32
+            ),
+            ligand_wander=np.asarray(
+                data["ligand_wander"], dtype=np.float32
+            ),
+            protein_2D_RMSD=np.asarray(
+                data["protein_2D_RMSD"], dtype=np.float32
+            ),
+            time_ps=np.asarray(
+                data["time(ps)"], dtype=np.int32
+            ),
+        )
+
+        return {'structural_analysis': shared / "structural_analysis.npz"}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        
+
         outputs = self.run(scratch_basepath=ctx.scratch,
                            shared_basepath=ctx.shared)
 
-        analysis_outputs = self.analyse(ctx.shared)
+        structural_analysis_outputs = self.structural_analysis(
+            ctx.scratch, ctx.shared
+        )
 
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
             **outputs,
-            **analysis_outputs,
+            **structural_analysis_outputs,
         }
