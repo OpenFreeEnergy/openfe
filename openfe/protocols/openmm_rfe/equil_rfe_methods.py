@@ -1097,34 +1097,39 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def analyse(where) -> dict:
+        # NB: Structural analysis is disabled for now due to creation of very
+        # large files. This will be re-enabled in the future, see openfe/issues/926
+
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        analysis_out = where / 'structural_analysis.json'
+        # analysis_out = where / 'structural_analysis.json'
 
-        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              str(where), str(analysis_out)],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        if ret.returncode:
-            return {'structural_analysis_error': ret.stderr}
+        # ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
+        #                       str(where), str(analysis_out)],
+        #                      stdout=subprocess.PIPE,
+        #                      stderr=subprocess.PIPE)
+        # if ret.returncode:
+        #     return {'structural_analysis_error': ret.stderr}
 
-        with open(analysis_out, 'rb') as f:
-            data = json.load(f)
+        # with open(analysis_out, 'rb') as f:
+        #     data = json.load(f)
 
-        savedir = pathlib.Path(where)
-        if d := data['protein_2D_RMSD']:
-            fig = plotting.plot_2D_rmsd(d)
-            fig.savefig(savedir / "protein_2D_RMSD.png")
-            plt.close(fig)
-            f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
-            f2.savefig(savedir / "ligand_COM_drift.png")
-            plt.close(f2)
+        # savedir = pathlib.Path(where)
+        # if d := data['protein_2D_RMSD']:
+        #     fig = plotting.plot_2D_rmsd(d)
+        #     fig.savefig(savedir / "protein_2D_RMSD.png")
+        #     plt.close(fig)
+        #     f2 = plotting.plot_ligand_COM_drift(data['time(ps)'], data['ligand_wander'])
+        #     f2.savefig(savedir / "ligand_COM_drift.png")
+        #     plt.close(f2)
 
-        f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
-        f3.savefig(savedir / "ligand_RMSD.png")
-        plt.close(f3)
+        # f3 = plotting.plot_ligand_RMSD(data['time(ps)'], data['ligand_RMSD'])
+        # f3.savefig(savedir / "ligand_RMSD.png")
+        # plt.close(f3)
 
-        return {'structural_analysis': data}
+        # return {'structural_analysis': data}
+
+        return {'structural_analysis': {}}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
