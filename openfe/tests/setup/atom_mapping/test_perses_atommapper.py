@@ -7,8 +7,6 @@ from openff.units import unit
 pytest.importorskip('perses')
 pytest.importorskip('openeye')
 
-USING_NEW_OFF = True  # by default we are now
-
 
 def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
