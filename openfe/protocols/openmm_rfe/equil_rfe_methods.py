@@ -1098,7 +1098,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     @staticmethod
     def analyse(where) -> dict:
         # NB: Structural analysis is disabled for now due to creation of very
-        # large files. This will be re-enabled in the future, see openfe/issues/926
+        # large files. This will be re-enabled in the future, see #926
 
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
