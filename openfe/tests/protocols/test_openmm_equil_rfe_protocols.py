@@ -246,7 +246,8 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         mapping=benzene_to_toluene_mapping,
     )
     unit = list(dag.protocol_units)[0]
-    sampler = unit.run(dry=True)["debug"]["sampler"]
+    with tmpdir.as_cwd():
+        _ = unit.run(dry=True)["debug"]["sampler"]
 
 
 @pytest.mark.slow
@@ -438,7 +439,7 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
 @pytest.fixture(scope='session')
 def tip4p_hybrid_factory(
     benzene_system, toluene_system,
-    benzene_to_toluene_mapping, tmp_path_factory
+    benzene_to_toluene_mapping, tmp_path_factory,
 ):
     """
     Hybrid system with virtual sites in the environment (waters)
@@ -468,9 +469,9 @@ def tip4p_hybrid_factory(
     scratch_temp = tmp_path_factory.mktemp("tip4p_scratch")
 
     dag_unit_result = dag_unit.run(
-            dry=True,
-            scratch_basepath=scratch_temp,
-            shared_basepath=shared_temp,
+        dry=True,
+        scratch_basepath=scratch_temp,
+        shared_basepath=shared_temp,
     )
 
     return dag_unit_result['debug']['sampler']._factory
