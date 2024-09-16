@@ -84,7 +84,8 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
-        assert (unit_shared / "structural_analysis.json").exists()
+        # structural analysis is temporarily disabled see openfe/issues/926
+        # assert (unit_shared / "structural_analysis.json").exists()
 
     # Test results methods that need files present
     results = p.gather([r])
