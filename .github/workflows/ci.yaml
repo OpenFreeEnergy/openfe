@@ -82,6 +82,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             pydantic=${{ matrix.pydantic-version }}
+            openff-forcefields="2024.07.0"
           init-shell: bash
 
       - name: "Install OpenEye"
