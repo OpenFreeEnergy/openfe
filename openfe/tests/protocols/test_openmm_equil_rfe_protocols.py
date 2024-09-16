@@ -5,16 +5,13 @@ from math import sqrt
 import numpy as np
 from numpy.testing import assert_allclose
 import gufe
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import json
 import xml.etree.ElementTree as ET
 from importlib import resources
 from unittest import mock
 import sys
 
-import gufe
 import mdtraj as mdt
-import numpy as np
 import pytest
 from openff.toolkit import Molecule
 from openff.units import unit
@@ -1545,7 +1542,9 @@ class TestProtocolResult:
         d = json.loads(rfe_transformation_json,
                        cls=gufe.tokenization.JSON_HANDLER.decoder)
 
-        pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+        pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(
+            d['protocol_result']
+        )
 
         assert pr
 
@@ -1642,6 +1641,7 @@ class TestProtocolResult:
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
 
+
 @pytest.mark.parametrize('mapping_name,result', [
     ["benzene_to_toluene_mapping", 0],
     ["benzene_to_benzoic_mapping", 1],
@@ -1659,12 +1659,12 @@ def test_get_charge_difference(mapping_name, result, request):
             val = _get_alchemical_charge_difference(
                 mapping, 'pme', True, openfe.SolventComponent()
             )
-            assert result == pytest.approx(result)
+            assert result == pytest.approx(val)
     else:
         val = _get_alchemical_charge_difference(
             mapping, 'pme', True, openfe.SolventComponent()
         )
-        assert result == pytest.approx(result)
+        assert result == pytest.approx(val)
 
 
 def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):

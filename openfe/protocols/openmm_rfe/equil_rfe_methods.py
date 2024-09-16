@@ -36,8 +36,6 @@ from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from typing import Optional
-from openmm import unit as omm_unit
-from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
@@ -48,7 +46,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, ProteinComponent, SolventComponent,
+    SmallMoleculeComponent, SolventComponent,
 )
 
 from .equil_rfe_settings import (

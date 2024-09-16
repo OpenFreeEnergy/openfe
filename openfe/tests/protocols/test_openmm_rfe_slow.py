@@ -42,8 +42,8 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
     # this test actually runs MD
-    # if this passes, you're 99% likely to have a good time
-    # these settings are a small self to self sim, that has enough eq that it doesn't occasionally crash
+    # these settings are a small self to self sim, that has enough eq that
+    # it doesn't occasionally crash
     s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.simulation_settings.production_length = 0.1 * unit.picosecond
@@ -64,10 +64,16 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         'ligand': b_alt
     })
 
-    m = openfe.LigandAtomMapping(componentA=b, componentB=b_alt,
-                                 componentA_to_componentB={i: i for i in range(12)})
-    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_alt_system,
-                   mapping=[m])
+    m = openfe.LigandAtomMapping(
+        componentA=b,
+        componentB=b_alt,
+        componentA_to_componentB={i: i for i in range(12)}
+    )
+    dag = p.create(
+        stateA=benzene_vacuum_system,
+        stateB=benzene_vacuum_alt_system,
+        mapping=[m]
+    )
 
     cwd = pathlib.Path(str(tmpdir))
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
@@ -84,7 +90,10 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
-        assert (unit_shared / "structural_analysis.json").exists()
+        assert pur.outputs['structural_analysis_error'] == None
+        structural_analysis_file = unit_shared / "structural_analysis.npz"
+        assert (structural_analysis_file).exists()
+        assert pur.outputs['structural_analysis'] == structural_analysis_file
 
     # Test results methods that need files present
     results = p.gather([r])
