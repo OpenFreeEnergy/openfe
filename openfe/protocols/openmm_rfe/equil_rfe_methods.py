@@ -1112,7 +1112,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         with open(analysis_out, 'rb') as f:
             data = json.load(f)
 
-        savedir = pathlib.Path(where)
+        savedir = pathlib.Path(shared)
         if d := data['protein_2D_RMSD']:
             fig = plotting.plot_2D_rmsd(d)
             fig.savefig(savedir / "protein_2D_RMSD.png")
