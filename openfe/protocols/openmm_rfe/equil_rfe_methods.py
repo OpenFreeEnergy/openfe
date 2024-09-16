@@ -1099,6 +1099,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
     def structural_analysis(scratch, shared) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
+        # TODO: we should just make openfe_analysis write an npz instead!
         analysis_out = scratch / 'structural_analysis.json'
 
         ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
@@ -1133,7 +1134,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             ligand_RMSD=np.asarray(
                 data["ligand_RMSD"], dtype=np.float32
             ),
-            ligand_wander=np.asarray(
+            ligand_COM_drift=np.asarray(
                 data["ligand_wander"], dtype=np.float32
             ),
             protein_2D_RMSD=np.asarray(
