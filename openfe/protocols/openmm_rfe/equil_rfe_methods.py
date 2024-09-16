@@ -1101,7 +1101,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         analysis_out = scratch / 'structural_analysis.json'
 
         ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              str(scratch), str(analysis_out)],
+                              str(shared), str(analysis_out)],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         if ret.returncode:

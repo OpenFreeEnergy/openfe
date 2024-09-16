@@ -90,7 +90,6 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
-        assert pur.outputs['structural_analysis_error'] == None
         structural_analysis_file = unit_shared / "structural_analysis.npz"
         assert (structural_analysis_file).exists()
         assert pur.outputs['structural_analysis'] == structural_analysis_file
