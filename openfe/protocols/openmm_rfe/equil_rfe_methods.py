@@ -1100,10 +1100,15 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # TODO: we should just make openfe_analysis write an npz instead!
         analysis_out = scratch / 'structural_analysis.json'
 
-        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              str(shared), str(analysis_out)],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        ret = subprocess.run(
+            ['openfe_analysis',  # CLI entry point
+             'RFE_analysis',  # CLI option
+             str(shared),  # Where the simulation.nc fille
+             str(analysis_out) # Where the analysis json file is written
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         if ret.returncode:
             return {'structural_analysis_error': ret.stderr}
 
