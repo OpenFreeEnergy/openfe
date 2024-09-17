@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
+import numpy as np
 from gufe.protocols import execute_DAG
 import pytest
 from openff.units import unit
@@ -84,15 +84,38 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
+
+        # Check the checkpoint file exists
         checkpoint = pur.outputs['last_checkpoint']
         assert checkpoint == "checkpoint.chk"
         assert (unit_shared / checkpoint).exists()
+
+        # Check the nc simulation file exists
+        # TODO: assert the number of frames
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
+
+        # Check structural analysis contents
         structural_analysis_file = unit_shared / "structural_analysis.npz"
         assert (structural_analysis_file).exists()
         assert pur.outputs['structural_analysis'] == structural_analysis_file
+
+        structural_data = np.load(pur.outputs['structural_analysis'])
+        structural_keys = [
+            'protein_RMSD', 'ligand_RMSD', 'ligand_COM_drift',
+            'protein_2D_RMSD', 'time_ps'
+        ]
+        for key in structural_keys:
+            assert key in structural_data.keys()
+
+        # 6 frames being written to file
+        assert structural_data['time_ps'].shape == (6, )
+        assert structural_data['ligand_RMSD'].shape == (11, 6)
+        assert structural_data['ligand_COM_drift'].shape == (11, 6)
+        # No protein so should be empty
+        assert structural_data['protein_RMSD'].size == 0
+        assert structural_data['protein_2D_RMSD'].size == 0
 
     # Test results methods that need files present
     results = p.gather([r])
