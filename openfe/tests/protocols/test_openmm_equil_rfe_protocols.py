@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 from importlib import resources
 from unittest import mock
 import sys
+from pathlib import Path
 
 import mdtraj as mdt
 import pytest
@@ -2103,3 +2104,14 @@ def test_dry_run_complex_alchemwater_totcharge(
         assert len(htf._atom_classes['core_atoms']) == core_atoms
         assert len(htf._atom_classes['unique_new_atoms']) == new_uniq
         assert len(htf._atom_classes['unique_old_atoms']) == old_uniq
+
+
+def test_structural_analysis_error(tmpdir):
+
+    with tmpdir.as_cwd():
+        ret = openmm_rfe.RelativeHybridTopologyProtocolUnit.structural_analysis(
+            Path('.'), Path('.')
+        )
+
+    assert 'structural_analysis_error' in ret
+    assert 'structural_analysis' not in ret
