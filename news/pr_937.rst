@@ -1,0 +1,32 @@
+**Added:**
+
+* <news item>
+
+**Changed:**
+
+* Structural analysis data is no longer written to `structural_analysis.json`
+  but rather a 32bit numpy compressed file named `structural_analysis.npz`
+  (PR #937).
+* Structural analysis array data is no longer directly returned in the
+  RelativeHybridTopologyProtocol result dictionary. Instead it should
+  be accessed from the serialized NPZ file `structural_analysis.npz`.
+  The `structural_analysis` key now contains a path to the NPZ file,
+  if the structural analysis did not fail (the `structural_analysis_error`
+  key will instead be present on failure) (PR #937).
+
+**Deprecated:**
+
+* <news item>
+
+**Removed:**
+
+* <news item>
+
+**Fixed:**
+
+* The RelativeHybridTopologyProtocol result unit is now much smaller,
+  due to the removal of structural analysis data (PR #937).
+
+**Security:**
+
+* <news item>

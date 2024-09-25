@@ -36,8 +36,6 @@ from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from typing import Optional
-from openmm import unit as omm_unit
-from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
@@ -48,7 +46,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, ProteinComponent, SolventComponent,
+    SmallMoleculeComponent, SolventComponent,
 )
 
 from .equil_rfe_settings import (
@@ -527,6 +525,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
 
         # Validate protein component
         system_validation.validate_protein(stateA)
@@ -1091,22 +1094,29 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {'debug': {'sampler': sampler}}
 
     @staticmethod
-    def analyse(where) -> dict:
+    def structural_analysis(scratch, shared) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        analysis_out = where / 'structural_analysis.json'
+        # TODO: we should just make openfe_analysis write an npz instead!
+        analysis_out = scratch / 'structural_analysis.json'
 
-        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              str(where), str(analysis_out)],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        ret = subprocess.run(
+            [
+                'openfe_analysis',  # CLI entry point
+                'RFE_analysis',  # CLI option
+                str(shared),  # Where the simulation.nc fille
+                str(analysis_out)  # Where the analysis json file is written
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         if ret.returncode:
             return {'structural_analysis_error': ret.stderr}
 
         with open(analysis_out, 'rb') as f:
             data = json.load(f)
 
-        savedir = pathlib.Path(where)
+        savedir = pathlib.Path(shared)
         if d := data['protein_2D_RMSD']:
             fig = plotting.plot_2D_rmsd(d)
             fig.savefig(savedir / "protein_2D_RMSD.png")
@@ -1119,21 +1129,43 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         f3.savefig(savedir / "ligand_RMSD.png")
         plt.close(f3)
 
-        return {'structural_analysis': data}
+        # Save to numpy compressed format (~ 6x more space efficient than JSON)
+        np.savez_compressed(
+            shared / "structural_analysis.npz",
+            protein_RMSD=np.asarray(
+                data["protein_RMSD"], dtype=np.float32
+            ),
+            ligand_RMSD=np.asarray(
+                data["ligand_RMSD"], dtype=np.float32
+            ),
+            ligand_COM_drift=np.asarray(
+                data["ligand_wander"], dtype=np.float32
+            ),
+            protein_2D_RMSD=np.asarray(
+                data["protein_2D_RMSD"], dtype=np.float32
+            ),
+            time_ps=np.asarray(
+                data["time(ps)"], dtype=np.int32
+            ),
+        )
+
+        return {'structural_analysis': shared / "structural_analysis.npz"}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        
+
         outputs = self.run(scratch_basepath=ctx.scratch,
                            shared_basepath=ctx.shared)
 
-        analysis_outputs = self.analyse(ctx.shared)
+        structural_analysis_outputs = self.structural_analysis(
+            ctx.scratch, ctx.shared
+        )
 
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
             **outputs,
-            **analysis_outputs,
+            **structural_analysis_outputs,
         }

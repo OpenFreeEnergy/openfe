@@ -41,7 +41,6 @@ jobs:
           - "3.11"
           - "3.12"
         openeye: ["no"]
-        ommff-version: ["0.13"]
         include:
           - os: "macos-12"
             python-version: "3.12"
@@ -53,15 +52,10 @@ jobs:
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
-          - os: "ubuntu-latest"
-            python-version: "3.10"
-            pydantic-version: ">1"
-            openeye: "no"
-            ommff-version: "<0.13"
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
-            omff-version: "0.13"
+            omff-version: ">0.13"
             openeye: ["no"]
 
     env:
@@ -79,6 +73,7 @@ jobs:
       - name: "Setup Micromamba"
         uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-binary-path: ~/.local/bin/micromamba
           environment-file: environment.yml
           environment-name: openfe_env
           cache-environment: true
@@ -88,7 +83,6 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             pydantic=${{ matrix.pydantic-version }}
-            openmmforcefields=${{ matrix.ommff-version }}
           init-shell: bash
 
       - name: "Install OpenEye"
@@ -129,7 +123,7 @@ jobs:
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
                 && github.event_name == 'pull_request' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
@@ -144,7 +138,7 @@ jobs:
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
                 && github.event_name != 'schedule'            
                 && github.event_name != 'pull_request' }}     
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.xml
