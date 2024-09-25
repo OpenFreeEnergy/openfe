@@ -73,6 +73,7 @@ jobs:
       - name: "Setup Micromamba"
         uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-version: '1.5.6-0'
           micromamba-binary-path: ~/.local/bin/micromamba
           environment-file: environment.yml
           environment-name: openfe_env
