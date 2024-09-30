@@ -1,5 +1,6 @@
 name: openfe_env
 channels:
+  - conda-forge/label/openmm_rc
   - conda-forge
 dependencies:
   - duecredit<0.10
@@ -26,7 +27,7 @@ dependencies:
   - openfe-analysis>=0.2.0
   - click
   - typing-extensions
-  - openmm >=8.0.0,!=8.1.0
+  - openmm ==8.2.0beta
   - openmmtools
   - openmmforcefields
   - perses
