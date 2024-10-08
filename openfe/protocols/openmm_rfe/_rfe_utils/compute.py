@@ -50,7 +50,7 @@ def get_openmm_platform(platform_name=None):
         platform.setPropertyDefaultValue(
                 'DeterministicForces', 'true')
 
-    if name != 'CUDA':
+    if name not in ['CUDA', 'HIP']:
         wmsg = (f"Non-GPU platform selected: {name}, this may significantly "
                 "impact simulation performance")
         warnings.warn(wmsg)
