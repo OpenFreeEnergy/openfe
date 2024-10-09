@@ -16,7 +16,7 @@ Relative Free Energies
 Python API Showcase
 ~~~~~~~~~~~~~~~~~~~
 
-Our :any:`shocase notebook <showcase_notebook>` walks users through
+Our :any:`showcase notebook <showcase_notebook>` walks users through
 how to use the main Python API components of OpenFE to create a
 relative binding free energy calculation.
 

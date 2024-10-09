@@ -13,7 +13,7 @@ The Documentation serves as a rapid initiation, offering a brief overview of the
 including an introduction to the OpenFE Showcase and installation instructions.
 For a more in-depth understanding,
 the Tutorials illustrate the application of the package,
-while the User Guide describe the theoretical framework and structure of the package.
+while the User Guide describes the theoretical framework and structure of the package.
 The Cookbook supplies snippets of code for various minor tasks,
 and lastly, the API Reference provides a direct technical explanation of our code.
 

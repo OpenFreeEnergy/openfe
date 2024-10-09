@@ -5,7 +5,7 @@ Overview
 --------
 
 The :class:`AbsoluteSolvationProtocol <.AbsoluteSolvationProtocol>` calculates the free energy change 
-associate with transferring a molecule from vacuum into a solvent.
+associated with transferring a molecule from vacuum into a solvent.
 
 .. note::
    Currently, water is the only supported solvent, however, more solvents might be possible in the future.
@@ -25,8 +25,8 @@ Scientific Details
 Partial annhilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated). 
-The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+In the :class:`.AbsoluteSolvationProtocol` the Coulombic interactions of the molecule are fully turned off (annihilated).
+The Lennard-Jones interactions are instead decoupled, meaning the *inter*molecular interactions are turned off, keeping the *intra*molecular Lennard-Jones interactions.
 
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
@@ -52,7 +52,7 @@ Each :class:`.ProtocolUnit` (whether vacuum or solvent) carries out the followin
 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
 2. Equilibrate the fully interacting system using a short MD simulation using the same approach as the :class:`.PlainMDProtocol` (in the solvent leg this will include rounds of NVT and NPT equilibration).
 3. Create an alchemical system.
-4. Minimize the alchemical sysem.
+4. Minimize the alchemical system.
 5. Equilibrate and production simulate the alchemical system using the chosen multistate sampling method (under NPT conditions if solvent is present).
 6. Analyze results for the transformation.
 

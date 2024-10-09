@@ -55,5 +55,5 @@ Save this configuration file as ``debug_logging.conf`` and then run ``openfe qui
 
    The ``--log debug_logging.conf`` argument goes between ``openfe`` and ``quickrun``.
 
-This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identify what is going on right before the exception is thrown.
-We do not recommend setting the log level to debug for production runs as the logging may slow down the simulation and add a lot of noise to the output.
+This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identifying what is going on right before the exception is thrown.
+We do not recommend setting the log level to debug for production runs, as the logging may slow down the simulation and add a lot of noise to the output.

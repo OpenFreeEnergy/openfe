@@ -35,7 +35,7 @@ the information about what is being simulated (e.g., what ligands, host proteins
 information about how to perform the simulation (the Protocol).
 
 The output of the **execution** stage is the basic results from each edge.
-This can depend of the specific analysis intended, but will either involve a
+This can depend on the specific analysis intended, but will either involve a
 :class:`.ProtocolResult` representing the calculated :math:`\Delta G` for
 each edge or the :class:`.ProtocolDAGResult` linked to the data needed to
 calculate that :math:`\Delta G`.

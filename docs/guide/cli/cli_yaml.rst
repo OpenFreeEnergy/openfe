@@ -1,10 +1,10 @@
 Customising CLI planning with yaml settings
 ===========================================
 
-The planning commands in the CLI can be made more powerful by supplying
+Planning commands in the CLI can be made more powerful by supplying
 "yaml" formatted files to customise the planning algorithms.
-This settings file has a series of sections for customising the different algorithms,
-as an example, the settings file which re-specifies the default behaviour would look like ::
+This settings file has a series of sections for customising the different algorithms.
+As an example, the settings file which re-specifies the default behaviour would look like ::
 
   network:
     method: plan_minimal_spanning_tree

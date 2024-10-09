@@ -7,7 +7,7 @@ which has subcommands like ``conda install``. To get a list of the
 subcommands and a brief description of them, use ``openfe (or
 ``openfe -h``), which will give:
 
-.. TODO autogemerate using sphinxcontrib-programoutput
+.. TODO autogenerate using sphinxcontrib-programoutput
 
 .. code:: none
 
@@ -58,8 +58,8 @@ the subcommand name, e.g., ``openfe quickrun --help``, which returns
     
       Running this command will execute the simulation defined in the JSON file,
       creating a directory for each individual task (``Unit``) in the workflow.
-      For example, when running the OpenMM HREX Protocol a directory will be
-      created for each repeat of the sampling process (by default 3).
+      For example, when running the OpenMM HREX Protocol, a directory will be
+      created for each repeat of the sampling process (3 repeats by default).
     
     Options:
       -d, --work-dir DIRECTORY  directory to store files in (defaults to current
