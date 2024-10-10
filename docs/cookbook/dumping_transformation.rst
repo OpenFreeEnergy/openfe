@@ -5,7 +5,7 @@ Dumping a ``Transformation`` to JSON
 
 If you're trying to run a full campaign of simulations representing an
 alchemical network, we generally recommend saving objects using our storage
-tools, when avoids saving duplicate information to disk.
+tools to avoid saving duplicate information to disk.
 
 .. TODO: add links to storage tools once they're complete
 
