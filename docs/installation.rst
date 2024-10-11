@@ -1,7 +1,7 @@
 Installation
 ============
 
-The page has information for installing ``openfe``, installing software
+This page has information for installing ``openfe``, installing software
 packages that integrate with ``openfe``, and testing that your ``openfe``
 installation is working.
 
@@ -649,12 +649,12 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 Troubleshooting Your Installation
 ---------------------------------
 
-We have create a script that can be ran locally to assist in troubleshooting errors.
+We provide a script that you can run locally to assist in troubleshooting errors.
 The script does not upload any information and the output may be inspected before the output is sent to us.
-We recomend running the script in the same environment where the error was observed.
+We recommend running the script in the same environment where the error was observed.
 For example, if you had an error when creating a system on your local workstation, run the script locally with the same conda environment active as when the error occurred.
 If the error occurred when running the job on an HPC resource, then run the script (ideally) on the same node where the problem occurred. 
-This helps to debug issues such as a CUDA and NVIDIA driver mismatch (which would be impossible to diagnose if the script was ran on a login node without a GPU).
+This helps to debug issues such as a CUDA and NVIDIA driver mismatch (which would be impossible to diagnose if the script was run on a login node without a GPU).
 
 The script is available here: https://github.com/OpenFreeEnergy/openfe/blob/main/devtools/debug_openmm.sh
 For your convenience, this command will download the script and save the output as ``debug.log``
