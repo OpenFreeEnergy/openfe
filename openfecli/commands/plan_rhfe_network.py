@@ -10,8 +10,6 @@ from openfecli import OFECommandPlugin
 from openfecli.parameters import (
     MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
 )
-from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
@@ -100,6 +98,9 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     transformation a JSON file, that can be run with quickrun (or other
     future tools).
     """
+
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+
     write("RHFE-NETWORK PLANNER")
     write("______________________")
     write("")
