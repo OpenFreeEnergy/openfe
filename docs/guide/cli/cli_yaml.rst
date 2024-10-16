@@ -2,9 +2,10 @@ Customising CLI planning with yaml settings
 ===========================================
 
 The planning commands in the CLI can be made more powerful by supplying
-"yaml" formatted files to customise the planning algorithms.
-This settings file has a series of sections for customising the different algorithms,
-as an example, the settings file which re-specifies the default behaviour would look like ::
+``yaml``-formatted files to customise the planning algorithms.
+
+This settings file has a series of sections for customising the different algorithms.
+For example, the settings file which re-specifies the default behaviour would look like ::
 
   network:
     method: plan_minimal_spanning_tree
@@ -18,9 +19,9 @@ as an example, the settings file which re-specifies the default behaviour would 
 
 The name of the algorithm is given behind the ``method:`` key and the arguments to the
 algorithm are then optionally given behind the ``settings:`` key.
-Both the `network:` and `mapper:` sections are optional.
+Both the ``network:`` and ``mapper:`` sections are optional.
 
-This is then provided to the ``openfe plan-rbfe-network`` command as ::
+The settings yaml file is then provided to the ``-s`` option of ``openfe plan-rbfe-network``: ::
 
   openfe plan-rbfe-network -M molecules.sdf -P protein.pdb -s settings.yaml
 
@@ -28,8 +29,13 @@ Customising the atom mapper
 ---------------------------
 
 There is a choice to be made as to which atom mapper is used,
-currently included are the :class:`.LomapAtomMapper` and the :class:`.KartografAtomMapper`
-For example to switch to using the ``Kartograf`` atom mapper, this settings yaml could be used ::
+currently included are the :class:`.LomapAtomMapper` and the :class:`.KartografAtomMapper`.
+
+Full details on these options can be found in the `Kartograf documentation`_.
+
+.. _Kartograf documentation: https://kartograf.readthedocs.io/en/latest/api/kartograf.mappers.html#kartograf.atom_mapper.KartografAtomMapper
+
+For example, to switch to using the ``Kartograf`` atom mapper, this settings yaml could be used ::
 
   mapper:
     method: KartografAtomMapper
@@ -39,9 +45,6 @@ For example to switch to using the ``Kartograf`` atom mapper, this settings yaml
       map_hydrogens_on_hydrogens_only: False
       map_exact_ring_matches_only: True
 
-Full details on these options can be found in the `Kartograf documentation`_.
-
-.. _Kartograf documentation: https://kartograf.readthedocs.io/en/latest/api/kartograf.mappers.html#kartograf.atom_mapper.KartografAtomMapper
 
 Customising the network planner
 -------------------------------
@@ -51,7 +54,7 @@ There are a variety of network planning options available, including
 :func:`.generate_minimal_spanning_network`, and
 :func:`.generate_minimal_redundant_network`.
 
-For example to plan a radial network using a ligand called 'CHEMBL1078774' as the central ligand, this settings yaml
+For example, to plan a radial network using a ligand called 'CHEMBL1078774' as the central ligand, this settings yaml
 could be given ::
 
   network:
