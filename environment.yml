@@ -4,7 +4,7 @@ channels:
 dependencies:
   - duecredit<0.10
   - kartograf>=1.0.0
-  - konnektor>=1.0.0
+  - konnektor
   - lomap2>=3.0.0
   - numpy
   - networkx
