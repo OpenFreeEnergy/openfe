@@ -16,6 +16,7 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
+    protocol=None,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -35,6 +36,8 @@ def plan_rbfe_network_main(
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongisde the protein, can be empty list
+    protocol: Optional[Protocol]
+        fully set up Protocol to use
 
     Returns
     -------
@@ -51,6 +54,7 @@ def plan_rbfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol,
     )
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent, protein=protein,
@@ -145,6 +149,7 @@ def plan_rbfe_network(
     mapping_scorer = yaml_options.scorer
     ligand_network_planner = yaml_options.ligand_network_planner
     solvent = yaml_options.solvent
+    protocol = yaml_options.protocol
 
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -169,6 +174,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
+        protocol=protocol,
     )
     write("\tDone")
     write("")

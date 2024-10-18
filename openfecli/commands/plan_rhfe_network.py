@@ -13,7 +13,7 @@ from openfecli.parameters import (
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent,
+    solvent, protocol=None
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -29,6 +29,7 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
+    protocol : Optional[Protocol]
 
     Returns
     -------
@@ -44,6 +45,7 @@ def plan_rhfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol,
     )
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent
@@ -143,6 +145,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
+        protocol=yaml_options.protocol,
     )
     write("\tDone")
     write("")
