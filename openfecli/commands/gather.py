@@ -131,10 +131,11 @@ def _generate_bad_legs_error_message(set_vals, ligpair):
 def _parse_raw_units(results: dict) -> list[tuple]:
     # grab individual unit results from master results dict
     # returns list of (estimate, uncertainty) tuples
-    list_of_pur = list(results['protocol_result']['data'].values())[0]
+    list_of_pur = list(results['protocol_result']['data'].values())
 
-    return [(pu['outputs']['unit_estimate'],
-             pu['outputs']['unit_estimate_error'])
+    # TODO: is pu always a list of len 1? or do we need to iterate over pu as well?
+    return [(pu[0]['outputs']['unit_estimate'],
+             pu[0]['outputs']['unit_estimate_error'])
             for pu in list_of_pur]
 
 
@@ -317,7 +318,7 @@ def gather(rootdir, output, report, allow_partial):
       experimental values.
     * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
       relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * 'raw' reports the raw results, which each repeat simulation given
+    * 'raw' reports the raw results, with each repeat simulation listed
       separately (i.e. no combining of redundant simulations is performed)
 
     The output is a table of **tab** separated values. By default, this
