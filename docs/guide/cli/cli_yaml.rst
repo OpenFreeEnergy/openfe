@@ -1,8 +1,8 @@
-Customising CLI planning with yaml settings
+Customising CLI planning with YAML settings
 ===========================================
 
 The planning commands in the CLI can be made more powerful by supplying
-yaml-formatted files to customise the planning algorithms.
+YAML-formatted files to customise the planning algorithms.
 
 This settings file has a series of sections for customising the different algorithms.
 For example, the settings file which re-specifies the default behaviour would look like ::
@@ -21,7 +21,7 @@ The name of the algorithm is given behind the ``method:`` key and the arguments 
 algorithm are then optionally given behind the ``settings:`` key.
 Both the ``network:`` and ``mapper:`` sections are optional.
 
-The settings yaml file is then provided to the ``-s`` option of ``openfe plan-rbfe-network``: ::
+The settings YAML file is then provided to the ``-s`` option of ``openfe plan-rbfe-network``: ::
 
   openfe plan-rbfe-network -M molecules.sdf -P protein.pdb -s settings.yaml
 
@@ -33,7 +33,7 @@ currently included are the :class:`.LomapAtomMapper` and the :class:`.KartografA
 
 .. _Kartograf documentation: https://kartograf.readthedocs.io/en/latest/api/kartograf.mappers.html#kartograf.atom_mapper.KartografAtomMapper
 
-For example, to switch to using the ``Kartograf`` atom mapper, this settings yaml could be used ::
+For example, to switch to using the ``Kartograf`` atom mapper, this settings YAML could be used ::
 
   mapper:
     method: KartografAtomMapper
@@ -52,7 +52,7 @@ There are a variety of network planning options available, including
 :func:`.generate_minimal_spanning_network`, and
 :func:`.generate_minimal_redundant_network`.
 
-For example, to plan a radial network using a ligand called 'CHEMBL1078774' as the central ligand, this settings yaml
+For example, to plan a radial network using a ligand called 'CHEMBL1078774' as the central ligand, this settings YAML
 could be given ::
 
   network:
@@ -70,7 +70,7 @@ To select the first ligand, the **integer** 0 can be given ::
     settings:
       central_ligand: 0
 
-Whereas if we wanted to specify the ligand named "0", we would instead explicitly pass this as **a string** to the yaml
+Whereas if we wanted to specify the ligand named "0", we would instead explicitly pass this as **a string** to the YAML
 settings file ::
 
   network:
