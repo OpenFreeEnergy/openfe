@@ -3,11 +3,12 @@ CLI basics
 
 The ``openfe`` command consists of several subcommands. This is similar to
 tools like ``gmx``, which has subcommands like ``gmx mdrun``, or ``conda``,
-which has subcommands like ``conda install``. To get a list of the
-subcommands and a brief description of them, use ``openfe (or
-``openfe -h``), which will give:
+which has subcommands like ``conda install``.
 
-.. TODO autogemerate using sphinxcontrib-programoutput
+To get a list of the subcommands and their descriptions, call ``openfe`` (or
+``openfe -h``):
+
+.. TODO autogenerate using sphinxcontrib-programoutput
 
 .. code:: none
 
