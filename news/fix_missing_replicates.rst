@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* fixed bug where `openfe gather --report raw` was only including first replicates.
+* Fixed bug where `openfe gather --report raw` was only including first replicates.
 
 **Security:**
 
