@@ -193,18 +193,17 @@ def _write_ddg(legs, writer, allow_partial):
 
 
 def _write_raw(legs, writer, allow_partial=True):
-    writer.writerow(["leg", "repeat", "ligand_i", "ligand_j",
+    writer.writerow(["leg", "ligand_i", "ligand_j",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
     for ligpair, vals in sorted(legs.items()):
         for simtype, repeats in sorted(vals.items()):
-            for rep, (m, u) in enumerate(repeats):
+            for m, u in repeats:
                 if m is None:
                     m, u = 'NaN', 'NaN'
                 else:
                     m, u = format_estimate_uncertainty(m.m, u.m)
-
-                writer.writerow([simtype, rep, *ligpair, m, u])
+                writer.writerow([simtype, *ligpair, m, u])
 
 
 def _write_dg_raw(legs, writer, allow_partial):  # pragma: no-cover

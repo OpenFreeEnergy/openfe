@@ -87,61 +87,61 @@ solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
 
 
 _EXPECTED_RAW = b"""\
-leg	repeat	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
-complex	0	lig_ejm_31	lig_ejm_42	-14.9	0.8
-complex	1	lig_ejm_31	lig_ejm_42	-14.8	0.8
-complex	2	lig_ejm_31	lig_ejm_42	-15.1	0.8
-solvent	0	lig_ejm_31	lig_ejm_42	-15.7	0.8
-solvent	1	lig_ejm_31	lig_ejm_42	-15.7	0.8
-solvent	2	lig_ejm_31	lig_ejm_42	-15.7	0.8
-complex	0	lig_ejm_31	lig_ejm_46	-40.7	0.8
-complex	1	lig_ejm_31	lig_ejm_46	-40.7	0.8
-complex	2	lig_ejm_31	lig_ejm_46	-40.8	0.8
-solvent	0	lig_ejm_31	lig_ejm_46	-39.8	0.8
-solvent	1	lig_ejm_31	lig_ejm_46	-39.9	0.8
-solvent	2	lig_ejm_31	lig_ejm_46	-39.8	0.8
-complex	0	lig_ejm_31	lig_ejm_47	-27.8	0.8
-complex	1	lig_ejm_31	lig_ejm_47	-28.0	0.8
-complex	2	lig_ejm_31	lig_ejm_47	-27.7	0.8
-solvent	0	lig_ejm_31	lig_ejm_47	-27.8	0.8
-solvent	1	lig_ejm_31	lig_ejm_47	-27.8	0.8
-solvent	2	lig_ejm_31	lig_ejm_47	-27.9	0.8
-complex	0	lig_ejm_31	lig_ejm_48	-16.2	0.8
-complex	1	lig_ejm_31	lig_ejm_48	-16.2	0.8
-complex	2	lig_ejm_31	lig_ejm_48	-16.0	0.8
-solvent	0	lig_ejm_31	lig_ejm_48	-16.8	0.8
-solvent	1	lig_ejm_31	lig_ejm_48	-16.7	0.8
-solvent	2	lig_ejm_31	lig_ejm_48	-16.8	0.8
-complex	0	lig_ejm_31	lig_ejm_50	-57.3	0.8
-complex	1	lig_ejm_31	lig_ejm_50	-57.3	0.8
-complex	2	lig_ejm_31	lig_ejm_50	-57.4	0.8
-solvent	0	lig_ejm_31	lig_ejm_50	-58.3	0.8
-solvent	1	lig_ejm_31	lig_ejm_50	-58.4	0.8
-solvent	2	lig_ejm_31	lig_ejm_50	-58.3	0.8
-complex	0	lig_ejm_42	lig_ejm_43	-19.0	0.8
-complex	1	lig_ejm_42	lig_ejm_43	-18.7	0.8
-complex	2	lig_ejm_42	lig_ejm_43	-19.0	0.8
-solvent	0	lig_ejm_42	lig_ejm_43	-20.3	0.8
-solvent	1	lig_ejm_42	lig_ejm_43	-20.3	0.8
-solvent	2	lig_ejm_42	lig_ejm_43	-20.3	0.8
-complex	0	lig_ejm_46	lig_jmc_23	17.3	0.8
-complex	1	lig_ejm_46	lig_jmc_23	17.4	0.8
-complex	2	lig_ejm_46	lig_jmc_23	17.5	0.8
-solvent	0	lig_ejm_46	lig_jmc_23	17.2	0.8
-solvent	1	lig_ejm_46	lig_jmc_23	17.1	0.8
-solvent	2	lig_ejm_46	lig_jmc_23	17.1	0.8
-complex	0	lig_ejm_46	lig_jmc_27	15.9	0.8
-complex	1	lig_ejm_46	lig_jmc_27	15.8	0.8
-complex	2	lig_ejm_46	lig_jmc_27	15.7	0.8
-solvent	0	lig_ejm_46	lig_jmc_27	16.0	0.8
-solvent	1	lig_ejm_46	lig_jmc_27	15.9	0.8
-solvent	2	lig_ejm_46	lig_jmc_27	15.9	0.8
-complex	0	lig_ejm_46	lig_jmc_28	23.1	0.8
-complex	1	lig_ejm_46	lig_jmc_28	23.2	0.8
-complex	2	lig_ejm_46	lig_jmc_28	23.1	0.8
-solvent	0	lig_ejm_46	lig_jmc_28	23.5	0.8
-solvent	1	lig_ejm_46	lig_jmc_28	23.3	0.8
-solvent	2	lig_ejm_46	lig_jmc_28	23.4	0.8
+leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
+complex	lig_ejm_31	lig_ejm_42	-14.9	0.8
+complex	lig_ejm_31	lig_ejm_42	-14.8	0.8
+complex	lig_ejm_31	lig_ejm_42	-15.1	0.8
+solvent	lig_ejm_31	lig_ejm_42	-15.7	0.8
+solvent	lig_ejm_31	lig_ejm_42	-15.7	0.8
+solvent	lig_ejm_31	lig_ejm_42	-15.7	0.8
+complex	lig_ejm_31	lig_ejm_46	-40.7	0.8
+complex	lig_ejm_31	lig_ejm_46	-40.7	0.8
+complex	lig_ejm_31	lig_ejm_46	-40.8	0.8
+solvent	lig_ejm_31	lig_ejm_46	-39.8	0.8
+solvent	lig_ejm_31	lig_ejm_46	-39.9	0.8
+solvent	lig_ejm_31	lig_ejm_46	-39.8	0.8
+complex	lig_ejm_31	lig_ejm_47	-27.8	0.8
+complex	lig_ejm_31	lig_ejm_47	-28.0	0.8
+complex	lig_ejm_31	lig_ejm_47	-27.7	0.8
+solvent	lig_ejm_31	lig_ejm_47	-27.8	0.8
+solvent	lig_ejm_31	lig_ejm_47	-27.8	0.8
+solvent	lig_ejm_31	lig_ejm_47	-27.9	0.8
+complex	lig_ejm_31	lig_ejm_48	-16.2	0.8
+complex	lig_ejm_31	lig_ejm_48	-16.2	0.8
+complex	lig_ejm_31	lig_ejm_48	-16.0	0.8
+solvent	lig_ejm_31	lig_ejm_48	-16.8	0.8
+solvent	lig_ejm_31	lig_ejm_48	-16.7	0.8
+solvent	lig_ejm_31	lig_ejm_48	-16.8	0.8
+complex	lig_ejm_31	lig_ejm_50	-57.3	0.8
+complex	lig_ejm_31	lig_ejm_50	-57.3	0.8
+complex	lig_ejm_31	lig_ejm_50	-57.4	0.8
+solvent	lig_ejm_31	lig_ejm_50	-58.3	0.8
+solvent	lig_ejm_31	lig_ejm_50	-58.4	0.8
+solvent	lig_ejm_31	lig_ejm_50	-58.3	0.8
+complex	lig_ejm_42	lig_ejm_43	-19.0	0.8
+complex	lig_ejm_42	lig_ejm_43	-18.7	0.8
+complex	lig_ejm_42	lig_ejm_43	-19.0	0.8
+solvent	lig_ejm_42	lig_ejm_43	-20.3	0.8
+solvent	lig_ejm_42	lig_ejm_43	-20.3	0.8
+solvent	lig_ejm_42	lig_ejm_43	-20.3	0.8
+complex	lig_ejm_46	lig_jmc_23	17.3	0.8
+complex	lig_ejm_46	lig_jmc_23	17.4	0.8
+complex	lig_ejm_46	lig_jmc_23	17.5	0.8
+solvent	lig_ejm_46	lig_jmc_23	17.2	0.8
+solvent	lig_ejm_46	lig_jmc_23	17.1	0.8
+solvent	lig_ejm_46	lig_jmc_23	17.1	0.8
+complex	lig_ejm_46	lig_jmc_27	15.9	0.8
+complex	lig_ejm_46	lig_jmc_27	15.8	0.8
+complex	lig_ejm_46	lig_jmc_27	15.7	0.8
+solvent	lig_ejm_46	lig_jmc_27	16.0	0.8
+solvent	lig_ejm_46	lig_jmc_27	15.9	0.8
+solvent	lig_ejm_46	lig_jmc_27	15.9	0.8
+complex	lig_ejm_46	lig_jmc_28	23.1	0.8
+complex	lig_ejm_46	lig_jmc_28	23.2	0.8
+complex	lig_ejm_46	lig_jmc_28	23.1	0.8
+solvent	lig_ejm_46	lig_jmc_28	23.5	0.8
+solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
+solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
 
