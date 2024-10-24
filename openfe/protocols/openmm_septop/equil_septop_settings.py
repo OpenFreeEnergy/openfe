@@ -126,7 +126,7 @@ class SepTopSettings(SettingsBaseModel):
 
     # Inherited things
     solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
-    vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
+    complex_forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
@@ -146,10 +146,10 @@ class SepTopSettings(SettingsBaseModel):
     """
 
     # MD Engine things
-    vacuum_engine_settings: OpenMMEngineSettings
+    complex_engine_settings: OpenMMEngineSettings
     """
     Settings specific to the OpenMM engine, such as the compute platform
-    for the vacuum transformation.
+    for the complex transformation.
     """
     solvent_engine_settings: OpenMMEngineSettings
     """
@@ -165,19 +165,14 @@ class SepTopSettings(SettingsBaseModel):
     """
 
     # Simulation run settings
-    vacuum_equil_simulation_settings: MDSimulationSettings
+    complex_equil_simulation_settings: MDSimulationSettings
     """
-    Pre-alchemical vacuum simulation control settings.
-
-    Notes
-    -----
-    The `NVT` equilibration should be set to 0 * unit.nanosecond
-    as it will not be run.
+    Pre-alchemical complex simulation control settings.
     """
-    vacuum_simulation_settings: MultiStateSimulationSettings
+    complex_simulation_settings: MultiStateSimulationSettings
     """
     Simulation control settings, including simulation lengths
-    for the vacuum transformation.
+    for the complex transformation.
     """
     solvent_equil_simulation_settings: MDSimulationSettings
     """
@@ -188,13 +183,13 @@ class SepTopSettings(SettingsBaseModel):
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    vacuum_equil_output_settings: MDOutputSettings
+    complex_equil_output_settings: MDOutputSettings
     """
-    Simulation output settings for the vacuum non-alchemical equilibration.
+    Simulation output settings for the complex non-alchemical equilibration.
     """
-    vacuum_output_settings: MultiStateOutputSettings
+    complex_output_settings: MultiStateOutputSettings
     """
-    Simulation output settings for the vacuum transformation.
+    Simulation output settings for the complex transformation.
     """
     solvent_equil_output_settings: MDOutputSettings
     """
