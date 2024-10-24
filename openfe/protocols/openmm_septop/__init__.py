@@ -9,14 +9,14 @@ from .equil_septop_method import (
     SepTopProtocol,
     SepTopSettings,
     SepTopProtocolResult,
-    SepTopComplexUnit,
-    SepTopSolventUnit,
+    SepTopComplexSetupUnit,
+    SepTopSolventSetupUnit,
 )
 
 __all__ = [
     "SepTopProtocol",
     "SepTopSettings",
     "SepTopProtocolResult",
-    "SepTopComplexUnit",
-    "SepTopSolventUnit",
+    "SepTopComplexSetupUnit",
+    "SepTopSolventSetupUnit",
 ]

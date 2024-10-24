@@ -55,7 +55,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
-from .base import BaseSepTopUnit
+from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
 from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
@@ -731,7 +731,7 @@ class SepTopProtocol(gufe.Protocol):
         return repeats
 
 
-class SepTopComplexUnit(BaseSepTopUnit):
+class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     """
     Protocol Unit for the complex phase of a SepTop free energy calculation
     """
@@ -822,7 +822,7 @@ class SepTopComplexUnit(BaseSepTopUnit):
         }
 
 
-class SepTopSolventUnit(BaseSepTopUnit):
+class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """

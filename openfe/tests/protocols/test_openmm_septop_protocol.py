@@ -17,8 +17,8 @@ import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_septop
 from openfe.protocols.openmm_septop import (
-    SepTopSolventUnit,
-    SepTopComplexUnit,
+    SepTopSolventSetupUnit,
+    SepTopComplexSetupUnit,
     SepTopProtocol,
 )
 

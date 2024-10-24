@@ -71,9 +71,9 @@ from openfe.utils import without_oechem_backend
 logger = logging.getLogger(__name__)
 
 
-class BaseSepTopUnit(gufe.ProtocolUnit):
+class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     """
-    Base class for ligand SepTop RBFE free energy transformations.
+    Base class for the setup of ligand SepTop RBFE free energy transformations.
     """
     def __init__(self, *,
                  protocol: gufe.Protocol,
@@ -573,158 +573,6 @@ class BaseSepTopUnit(gufe.ProtocolUnit):
 
         return
 
-    def _get_reporter(
-        self,
-        topology: app.Topology,
-        positions: openmm.unit.Quantity,
-        simulation_settings: MultiStateSimulationSettings,
-        output_settings: MultiStateOutputSettings,
-    ) -> multistate.MultiStateReporter:
-        """
-        Empty placeholder for getting a MultistateReporter for the simulation you are running.
-        """
-
-        return
-
-    def _get_ctx_caches(
-        self,
-        engine_settings: OpenMMEngineSettings
-    ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
-        """
-        Empty placeholder for getting the context caches based on the chosen platform
-
-        """
-
-        return
-
-    @staticmethod
-    def _get_integrator(
-        integrator_settings: IntegratorSettings,
-        simulation_settings: MultiStateSimulationSettings
-    ) -> openmmtools.mcmc.LangevinDynamicsMove:
-        """
-        Return a LangevinDynamicsMove integrator
-
-        Parameters
-        ----------
-        integrator_settings : IntegratorSettings
-        simulation_settings : MultiStateSimulationSettings
-
-        Returns
-        -------
-        integrator : openmmtools.mcmc.LangevinDynamicsMove
-          A configured integrator object.
-        """
-        steps_per_iteration = settings_validation.convert_steps_per_iteration(
-            simulation_settings, integrator_settings
-        )
-
-        integrator = openmmtools.mcmc.LangevinDynamicsMove(
-            timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
-            n_steps=steps_per_iteration,
-            reassign_velocities=integrator_settings.reassign_velocities,
-            n_restart_attempts=integrator_settings.n_restart_attempts,
-            constraint_tolerance=integrator_settings.constraint_tolerance,
-        )
-
-        return integrator
-
-    @staticmethod
-    def _get_sampler(
-        integrator: openmmtools.mcmc.LangevinDynamicsMove,
-        reporter: openmmtools.multistate.MultiStateReporter,
-        simulation_settings: MultiStateSimulationSettings,
-        thermo_settings: ThermoSettings,
-        cmp_states: list[ThermodynamicState],
-        sampler_states: list[SamplerState],
-        energy_context_cache: openmmtools.cache.ContextCache,
-        sampler_context_cache: openmmtools.cache.ContextCache
-    ) -> multistate.MultiStateSampler:
-        """
-        Get a sampler based on the equilibrium sampling method requested.
-
-        Parameters
-        ----------
-        integrator : openmmtools.mcmc.LangevinDynamicsMove
-          The simulation integrator.
-        reporter : openmmtools.multistate.MultiStateReporter
-          The reporter to hook up to the sampler.
-        simulation_settings : MultiStateSimulationSettings
-          Settings for the alchemical sampler.
-        thermo_settings : ThermoSettings
-          Thermodynamic settings
-        cmp_states : list[ThermodynamicState]
-          A list of thermodynamic states to sample.
-        sampler_states : list[SamplerState]
-          A list of sampler states.
-        energy_context_cache : openmmtools.cache.ContextCache
-          Context cache for the energy states.
-        sampler_context_cache : openmmtool.cache.ContextCache
-          Context cache for the sampler states.
-
-        Returns
-        -------
-        sampler : multistate.MultistateSampler
-          A sampler configured for the chosen sampling method.
-        """
-        rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
-            simulation_settings=simulation_settings,
-        )
-        et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
-            thermo_settings.temperature,
-            simulation_settings.early_termination_target_error,
-        )
-
-        # Select the right sampler
-        # Note: doesn't need else, settings already validates choices
-        if simulation_settings.sampler_method.lower() == "repex":
-            sampler = multistate.ReplicaExchangeSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=et_target_err,
-                online_analysis_minimum_iterations=rta_min_its
-            )
-        elif simulation_settings.sampler_method.lower() == "sams":
-            sampler = multistate.SAMSSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_minimum_iterations=rta_min_its,
-                flatness_criteria=simulation_settings.sams_flatness_criteria,
-                gamma0=simulation_settings.sams_gamma0,
-            )
-        elif simulation_settings.sampler_method.lower() == 'independent':
-            sampler = multistate.MultiStateSampler(
-                mcmc_moves=integrator,
-                online_analysis_interval=rta_its,
-                online_analysis_target_error=et_target_err,
-                online_analysis_minimum_iterations=rta_min_its,
-            )
-
-        sampler.create(
-            thermodynamic_states=cmp_states,
-            sampler_states=sampler_states,
-            storage=reporter
-        )
-
-        sampler.energy_context_cache = energy_context_cache
-        sampler.sampler_context_cache = sampler_context_cache
-
-        return sampler
-
-    def _run_simulation(
-        self,
-        sampler: multistate.MultiStateSampler,
-        reporter: multistate.MultiStateReporter,
-        settings: dict[str, SettingsBaseModel],
-        dry: bool
-    ):
-        """
-        Empty placeholder for running the simulation.
-
-        """
-        return
-
     def run(self, dry=False, verbose=True,
             scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
         """
@@ -796,67 +644,13 @@ class BaseSepTopUnit(gufe.ProtocolUnit):
         #     lambdas, solv_comp
         # )
         #
-        # # 11. Create the multistate reporter & create PDB
-        # reporter = self._get_reporter(
-        #     omm_topology, positions,
-        #     settings['simulation_settings'],
-        #     settings['output_settings'],
-        # )
         #
-        # # Wrap in try/finally to avoid memory leak issues
-        # try:
-        #     # 12. Get context caches
-        #     energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
-        #         settings['engine_settings']
-        #     )
-        #
-        #     # 13. Get integrator
-        #     integrator = self._get_integrator(
-        #         settings['integrator_settings'],
-        #         settings['simulation_settings'],
-        #     )
-        #
-        #     # 14. Get sampler
-        #     sampler = self._get_sampler(
-        #         integrator, reporter, settings['simulation_settings'],
-        #         settings['thermo_settings'],
-        #         cmp_states, sampler_states,
-        #         energy_ctx_cache, sampler_ctx_cache
-        #     )
-        #
-        #     # 15. Run simulation
-        #     unit_result_dict = self._run_simulation(
-        #         sampler, reporter, settings, dry
-        #     )
-        #
-        # finally:
-        #     # close reporter when you're done to prevent file handle clashes
-        #     reporter.close()
-        #
-        #     # clear GPU context
-        #     # Note: use cache.empty() when openmmtools #690 is resolved
-        #     for context in list(energy_ctx_cache._lru._data.keys()):
-        #         del energy_ctx_cache._lru._data[context]
-        #     for context in list(sampler_ctx_cache._lru._data.keys()):
-        #         del sampler_ctx_cache._lru._data[context]
-        #     # cautiously clear out the global context cache too
-        #     for context in list(
-        #             openmmtools.cache.global_context_cache._lru._data.keys()):
-        #         del openmmtools.cache.global_context_cache._lru._data[context]
-        #
-        #     del sampler_ctx_cache, energy_ctx_cache
-        #
-        #     # Keep these around in a dry run so we can inspect things
-        #     if not dry:
-        #         del integrator, sampler
-        #
-        # if not dry:
-        #     nc = self.shared_basepath / settings['output_settings'].output_filename
-        #     chk = settings['output_settings'].checkpoint_storage_filename
-        #     return {
-        #         'nc': nc,
-        #         'last_checkpoint': chk,
-        #         **unit_result_dict,
-        #     }
-        # else:
-        #     return {'debug': {'sampler': sampler}}
+        # eventually save the serialized alchemical systems to disc to be
+        # picked up by the run unit
+
+
+class BaseSepTopRunUnit(gufe.ProtocolUnit):
+    """
+    Empty place holder
+    Base class for running ligand SepTop RBFE free energy transformations.
+    """
