@@ -737,31 +737,30 @@ class SepTopComplexUnit(BaseSepTopUnit):
     """
     def _get_components(self):
         """
-        Get the relevant components for complex transformation.
+        Get the relevant components for a complex transformation.
 
         Returns
         -------
-        alchem_comps : dict[str, list[Component]]
+        alchem_comps : dict[str, Component]
           A list of alchemical components
         solv_comp : SolventComponent
-          For the gas phase transformation, None will always be returned
-          for the solvent component of the chemical system.
-        prot_comp : ProteinComponent
-          The protein component of the system.
-        small_mols : dict[Component, OpenFF Molecule]
-          The openff Molecules to add to the system. This
-          is equivalent to the alchemical components in stateA (since
-          we only allow for disappearing ligands).
+          The SolventComponent of the system
+        prot_comp : Optional[ProteinComponent]
+          The protein component of the system, if it exists.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
         """
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
 
-        off_comps = {m: m.to_openff()
-                     for m in alchem_comps['stateA']}
+        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
+        small_mols = {m: m.to_openff() for m in small_mols}
+        # Also get alchemical smc from state B
+        small_mols_B = {m: m.to_openff()
+                        for m in alchem_comps['stateB']}
+        small_mols = small_mols | small_mols_B
 
-        _, prot_comp, _ = system_validation.get_components(stateA)
-
-        return alchem_comps, None, prot_comp, off_comps
+        return alchem_comps, solv_comp, prot_comp, small_mols
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
@@ -827,9 +826,17 @@ class SepTopSolventUnit(BaseSepTopUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
+
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
+
+        Note
+        -----
+        The solvent portion of the transformation is the transformation of one
+        ligand into the other in the solvent. The only thing that
+        should be present is the alchemical species in state A and state B
+        and the SolventComponent.
 
         Returns
         -------
@@ -845,15 +852,20 @@ class SepTopSolventUnit(BaseSepTopUnit):
         stateA = self._inputs['stateA']
         alchem_comps = self._inputs['alchemical_components']
 
-        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        off_comps = {m: m.to_openff() for m in small_mols}
+        small_mols_A = {m: m.to_openff()
+                        for m in alchem_comps['stateA']}
+        small_mols_B = {m: m.to_openff()
+                        for m in alchem_comps['stateB']}
+        small_mols = small_mols_A | small_mols_B
 
-        # We don't need to check that solv_comp is not None, otherwise
+        solv_comp, _, _ = system_validation.get_components(stateA)
+
+        # 1. We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
-        # Similarly we don't need to check prot_comp since that's also
-        # disallowed on create
-        return alchem_comps, solv_comp, prot_comp, off_comps
+        # 2. ProteinComps can't be alchem_comps (for now), so will
+        # be returned as None
+        return alchem_comps, solv_comp, None, small_mols
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
