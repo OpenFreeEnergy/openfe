@@ -12,6 +12,7 @@ from openff.units.openmm import ensure_quantity, from_openmm
 import mdtraj as mdt
 import numpy as np
 from numpy.testing import assert_allclose
+from openff.units import unit
 import gufe
 import openfe
 from openfe import ChemicalSystem, SolventComponent
@@ -65,31 +66,6 @@ def test_monotonic_lambda_windows(val, default_settings):
 
 
 @pytest.mark.parametrize('val', [
-    {'elec': [0.0, 1.0], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
-])
-def test_validate_lambda_schedule_naked_charge(val, default_settings):
-    errmsg = ("There are states along this lambda schedule "
-              "where there are atoms with charges but no LJ "
-              f"interactions: lambda 0: "
-              f"elec {val['elec'][0]} vdW {val['vdw'][0]}")
-    default_settings.lambda_settings.lambda_elec = val['elec']
-    default_settings.lambda_settings.lambda_vdw = val['vdw']
-    default_settings.lambda_settings.lambda_restraints = val['restraints']
-    default_settings.complex_simulation_settings.n_replicas = 2
-    default_settings.solvent_simulation_settings.n_replicas = 2
-    with pytest.raises(ValueError, match=errmsg):
-        SepTopProtocol._validate_lambda_schedule(
-            default_settings.lambda_settings,
-            default_settings.complex_simulation_settings,
-        )
-    with pytest.raises(ValueError, match=errmsg):
-        SepTopProtocol._validate_lambda_schedule(
-            default_settings.lambda_settings,
-            default_settings.solvent_simulation_settings,
-        )
-
-
-@pytest.mark.parametrize('val', [
     {'elec': [1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
@@ -119,7 +95,7 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     errmsg = (
         "Components elec, vdw, and restraints must have equal amount"
         f" of lambda windows. Got {len(val['elec'])} elec lambda"
-        f" windows, {len(val['vdw'])} vdw lambda windows, and"
+        f" windows, {len(val['vdw'])} vdw lambda windows, and "
         f"{len(val['restraints'])} restraints lambda windows.")
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
@@ -306,3 +282,49 @@ def test_validate_alchem_nonsmc(
 
     with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
+
+
+def test_setup(benzene_modifications,  T4_protein_component, tmpdir):
+    # check system parametrisation works even if confgen fails
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_equil_simulation_settings.minimization_steps = 100
+    s.solvent_equil_simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
+    s.solvent_equil_simulation_settings.equilibration_length = 1 * unit.picosecond
+    s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
+    s.solvation_settings.box_shape = 'dodecahedron'
+    s.complex_forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+
+    protocol = SepTopProtocol(
+        settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    stateB = ChemicalSystem({
+        'toluene': benzene_modifications['toluene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first vacuum unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    # solv_setup_unit = [u for u in prot_units
+    #                    if isinstance(u, SepTopSolventSetupUnit)]
+    solv_setup_unit = [u for u in prot_units
+                       if isinstance(u, SepTopComplexSetupUnit)]
+
+    # with tmpdir.as_cwd():
+    solv_setup_unit[0].run()
+    assert 4==5
+

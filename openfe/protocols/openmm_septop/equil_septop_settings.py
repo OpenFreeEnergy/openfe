@@ -52,8 +52,8 @@ class LambdaSettings(SettingsBaseModel):
 
     """
     lambda_elec: list[float] = [
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.75,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
     ]
     """
     List of floats of lambda values for the electrostatics. 
@@ -62,7 +62,7 @@ class LambdaSettings(SettingsBaseModel):
     """
     lambda_vdw: list[float] = [
         0.0, 0.142857143, 0.285714286, 0.428571429, 0.571428571, 0.714285714,
-        0.857142857, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.857142857, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
     ]
     """
     List of floats of lambda values for the van der Waals.
@@ -71,7 +71,7 @@ class LambdaSettings(SettingsBaseModel):
     """
     lambda_restraints: list[float] = [
         0.0, 0.05, 0.3, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0,
     ]
     """
     List of floats of lambda values for the restraints.

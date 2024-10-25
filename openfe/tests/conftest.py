@@ -192,6 +192,17 @@ def benzene_modifications():
     return files
 
 
+@pytest.fixture(scope='session')
+def bace_ligands():
+    files = {}
+    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
+        fn = str(d / 'bace1.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
 @pytest.fixture
 def serialization_template():
     def inner(filename):

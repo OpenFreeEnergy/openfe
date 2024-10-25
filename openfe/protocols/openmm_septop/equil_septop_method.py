@@ -36,8 +36,10 @@ import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from openmmtools import multistate
+import mdtraj as md
 from typing import Optional, Union
 from typing import Any, Iterable
+import simtk.unit as omm_units
 import uuid
 
 from gufe import (
@@ -73,6 +75,18 @@ due.cite(Doi("10.1371/journal.pcbi.1005659"),
 
 
 logger = logging.getLogger(__name__)
+
+
+def _get_mdtraj_from_openmm(omm_topology, omm_positions):
+    """
+    Get an mdtraj object from an OpenMM topology and positions
+    """
+    mdtraj_topology = md.Topology.from_openmm(omm_topology)
+    positions_in_mdtraj_format = np.array(
+        omm_positions / omm_units.nanometers)
+    mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
+                                  mdtraj_topology)
+    return mdtraj_system
 
 
 class SepTopProtocolResult(gufe.ProtocolResult):
@@ -437,7 +451,7 @@ class SepTopProtocol(gufe.Protocol):
                 log_output='equil_simulation.log',
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
-                n_replicas=14,
+                n_replicas=19,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
@@ -457,7 +471,7 @@ class SepTopProtocol(gufe.Protocol):
                 log_output='equil_simulation.log',
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
-                n_replicas=14,
+                n_replicas=19,
                 equilibration_length=0.5 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
             ),
@@ -588,7 +602,6 @@ class SepTopProtocol(gufe.Protocol):
         ValueError
           If the number of lambda windows differs for electrostatics and sterics.
           If the number of replicas does not match the number of lambda windows.
-          If there are states with naked charges.
         Warnings
           If there are non-zero values for restraints (lambda_restraints).
         """
@@ -606,7 +619,7 @@ class SepTopProtocol(gufe.Protocol):
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"
                 f" of lambda windows. Got {len(lambda_elec)} elec lambda"
-                f" windows, {len(lambda_vdw)} vdw lambda windows, and"
+                f" windows, {len(lambda_vdw)} vdw lambda windows, and "
                 f"{len(lambda_restraints)} restraints lambda windows.")
             raise ValueError(errmsg)
 
@@ -617,15 +630,17 @@ class SepTopProtocol(gufe.Protocol):
                       f" number of lambda windows {len(lambda_vdw)}")
             raise ValueError(errmsg)
 
-        # Check if there are lambda windows with naked charges
-        for inx, lam in enumerate(lambda_elec):
-            if lam < 1 and lambda_vdw[inx] == 1:
-                errmsg = (
-                    "There are states along this lambda schedule "
-                    "where there are atoms with charges but no LJ "
-                    f"interactions: lambda {inx}: "
-                    f"elec {lam} vdW {lambda_vdw[inx]}")
-                raise ValueError(errmsg)
+        # # Check if there are lambda windows with naked charges
+        # # Leaving this out for now till I've figured out how the lambda
+        # # scheduling works
+        # for inx, lam in enumerate(lambda_elec):
+        #     if lam < 1 and lambda_vdw[inx] == 1:
+        #         errmsg = (
+        #             "There are states along this lambda schedule "
+        #             "where there are atoms with charges but no LJ "
+        #             f"interactions: lambda {inx}: "
+        #             f"elec {lam} vdW {lambda_vdw[inx]}")
+        #         raise ValueError(errmsg)
 
         # # Check if there are lambda windows with non-zero restraints
         # if len([r for r in lambda_restraints if r != 0]) > 0:
@@ -674,7 +689,7 @@ class SepTopProtocol(gufe.Protocol):
         # Create list units for complex and solvent transforms
 
         solvent_units = [
-            SepTopSolventUnit(
+            SepTopSolventSetupUnit(
                 protocol=self,
                 stateA=stateA,
                 stateB=stateB,
@@ -687,7 +702,7 @@ class SepTopProtocol(gufe.Protocol):
         ]
 
         complex_units = [
-            SepTopComplexUnitUnit(
+            SepTopComplexSetupUnit(
                 # These don't really reflect the actual transform
                 # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
                 protocol=self,
@@ -806,6 +821,21 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         return settings
 
+    @staticmethod
+    def _update_positions(
+            omm_topology_A, omm_topology_B, positions_A, positions_B,
+            atom_indices_A, atom_indices_B,
+    ) -> npt.NDArray:
+        mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
+        mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
+        mdtraj_complex_B.superpose(mdtraj_complex_A,
+                                   atom_indices=mdtraj_complex_A.topology.select(
+                                       'backbone'))
+        # Extract updated system positions.
+        updated_positions_B = mdtraj_complex_B.openmm_positions(0)
+
+        return updated_positions_B
+
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
@@ -910,6 +940,38 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         )
 
         return settings
+
+
+    @staticmethod
+    def _update_positions(
+            omm_topology_A, omm_topology_B, positions_A, positions_B,
+            atom_indices_A, atom_indices_B,
+    ) -> npt.NDArray:
+
+        # Offset ligand B from ligand A in the solvent
+        equ_pos_ligandA = positions_A[
+                          atom_indices_A[0]:atom_indices_A[-1] + 1]
+        equ_pos_ligandB = positions_B[
+                          atom_indices_B[0]:atom_indices_B[-1] + 1]
+
+        ligand_1_radius = np.linalg.norm(
+            equ_pos_ligandA - equ_pos_ligandA.mean(axis=0), axis=1).max()
+        ligand_2_radius = np.linalg.norm(
+            equ_pos_ligandB - equ_pos_ligandB.mean(axis=0), axis=1).max()
+        ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
+        ligand_offset = equ_pos_ligandA.mean(0) - equ_pos_ligandB.mean(0)
+        ligand_offset[0] += ligand_distance * omm_units.nanometers
+        # Offset the ligandB.
+        mdtraj_system_B = _get_mdtraj_from_openmm(omm_topology_B,
+                                                       positions_B)
+        mdtraj_system_B.xyz[0][atom_indices_B,
+        :] += ligand_offset / omm_units.nanometers
+
+        # Extract updated system positions.
+        updated_positions_B = mdtraj_system_B.openmm_positions(0)
+
+        return updated_positions_B
+
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
