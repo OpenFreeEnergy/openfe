@@ -1,15 +1,18 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import copy
+from math import sqrt
+import numpy as np
+from numpy.testing import assert_allclose
+import gufe
 import json
 import xml.etree.ElementTree as ET
 from importlib import resources
 from unittest import mock
 import sys
+from pathlib import Path
 
-import gufe
 import mdtraj as mdt
-import numpy as np
 import pytest
 from openff.toolkit import Molecule
 from openff.units import unit
@@ -244,32 +247,8 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         mapping=benzene_to_toluene_mapping,
     )
     unit = list(dag.protocol_units)[0]
-
-    # If we do a lot of GAFF testing, this should be refactored so we don't
-    # have to copy it all over the place.
-    # https://github.com/OpenFreeEnergy/openfe/pull/847#issuecomment-2096810453
-
-
-    import openmmforcefields
-    from packaging import version
-
-    ommff_version = openmmforcefields.__version__
-
-    gaff_should_fail = version.parse(
-        ommff_version
-    ) == version.parse("0.13.0")
-
-    if gaff_should_fail:
-        from openmmforcefields.generators.template_generators import (
-            GAFFNotSupportedError,
-        )
-
-        with pytest.raises(GAFFNotSupportedError):
-            with tmpdir.as_cwd():
-                sampler = unit.run(dry=True)["debug"]["sampler"]
-    else:
-        with tmpdir.as_cwd():
-            sampler = unit.run(dry=True)["debug"]["sampler"]
+    with tmpdir.as_cwd():
+        _ = unit.run(dry=True)["debug"]["sampler"]
 
 
 @pytest.mark.slow
@@ -461,7 +440,7 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
 @pytest.fixture(scope='session')
 def tip4p_hybrid_factory(
     benzene_system, toluene_system,
-    benzene_to_toluene_mapping, tmp_path_factory
+    benzene_to_toluene_mapping, tmp_path_factory,
 ):
     """
     Hybrid system with virtual sites in the environment (waters)
@@ -491,9 +470,9 @@ def tip4p_hybrid_factory(
     scratch_temp = tmp_path_factory.mktemp("tip4p_scratch")
 
     dag_unit_result = dag_unit.run(
-            dry=True,
-            scratch_basepath=scratch_temp,
-            shared_basepath=shared_temp,
+        dry=True,
+        scratch_basepath=scratch_temp,
+        shared_basepath=shared_temp,
     )
 
     return dag_unit_result['debug']['sampler']._factory
@@ -863,6 +842,44 @@ def test_virtual_sites_no_reassign(benzene_system, toluene_system,
         errmsg = "Simulations with virtual sites without velocity"
         with pytest.raises(ValueError, match=errmsg):
             dag_unit.run(dry=True)
+
+
+def test_dodecahdron_ligand_box(benzene_system, toluene_system,
+                                benzene_to_toluene_mapping, tmpdir):
+    """
+    Test that a hybrid system with a dodechadron is built properly.
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.solvation_settings.box_shape = 'dodecahedron'
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        hs = sampler._factory.hybrid_system
+
+        vectors = hs.getDefaultPeriodicBoxVectors()
+
+        width = float(from_openmm(vectors)[0][0].to('nanometer').m)
+        # dodecahedron has the following shape:
+        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+
+        expected_vectors = [
+            [width, 0, 0],
+            [0, width, 0],
+            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+        ] * unit.nanometer
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors)
+        )
 
 
 @pytest.mark.slow
@@ -1527,7 +1544,9 @@ class TestProtocolResult:
         d = json.loads(rfe_transformation_json,
                        cls=gufe.tokenization.JSON_HANDLER.decoder)
 
-        pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(d['protocol_result'])
+        pr = openmm_rfe.RelativeHybridTopologyProtocolResult.from_dict(
+            d['protocol_result']
+        )
 
         assert pr
 
@@ -1624,6 +1643,7 @@ class TestProtocolResult:
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
 
+
 @pytest.mark.parametrize('mapping_name,result', [
     ["benzene_to_toluene_mapping", 0],
     ["benzene_to_benzoic_mapping", 1],
@@ -1633,7 +1653,7 @@ class TestProtocolResult:
 def test_get_charge_difference(mapping_name, result, request):
     mapping = request.getfixturevalue(mapping_name)
     if result != 0:
-        ion = 'Na\+' if result == -1 else 'Cl\-'
+        ion = r'Na\+' if result == -1 else r'Cl\-'
         wmsg = (f"A charge difference of {result} is observed "
                 "between the end states. This will be addressed by "
                 f"transforming a water into a {ion} ion")
@@ -1641,12 +1661,12 @@ def test_get_charge_difference(mapping_name, result, request):
             val = _get_alchemical_charge_difference(
                 mapping, 'pme', True, openfe.SolventComponent()
             )
-            assert result == pytest.approx(result)
+            assert result == pytest.approx(val)
     else:
         val = _get_alchemical_charge_difference(
             mapping, 'pme', True, openfe.SolventComponent()
         )
-        assert result == pytest.approx(result)
+        assert result == pytest.approx(val)
 
 
 def test_get_charge_difference_no_pme(benzene_to_benzoic_mapping):
@@ -2084,3 +2104,14 @@ def test_dry_run_complex_alchemwater_totcharge(
         assert len(htf._atom_classes['core_atoms']) == core_atoms
         assert len(htf._atom_classes['unique_new_atoms']) == new_uniq
         assert len(htf._atom_classes['unique_old_atoms']) == old_uniq
+
+
+def test_structural_analysis_error(tmpdir):
+
+    with tmpdir.as_cwd():
+        ret = openmm_rfe.RelativeHybridTopologyProtocolUnit.structural_analysis(
+            Path('.'), Path('.')
+        )
+
+    assert 'structural_analysis_error' in ret
+    assert 'structural_analysis' not in ret

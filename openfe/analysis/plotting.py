@@ -82,24 +82,40 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             )
 
         # anotate axes
-        base_settings = {
+        base_settings: dict[str, Union[str, int]] = {
             'size': 10, 'va': 'center', 'ha': 'center', 'color': 'k',
             'family': 'sans-serif'
         }
         for i in range(num_states):
             ax.annotate(
-                i, xy=(i + 0.5, 1), xytext=(i + 0.5, num_states + 0.5),
+                text=f"{i}",
+                xy=(i + 0.5, 1),
+                xytext=(i + 0.5, num_states + 0.5),
+                xycoords='data',
+                textcoords=None,
+                arrowprops=None,
+                annotation_clip=None,
                 **base_settings,
             )
             ax.annotate(
-                i, xy=(-0.5, num_states - (num_states - 0.5)),
+                text=f"{i}",
+                xy=(-0.5, num_states - (num_states - 0.5)),
                 xytext=(-0.5, num_states - (i + 0.5)),
+                xycoords='data',
+                textcoords=None,
+                arrowprops=None,
+                annotation_clip=None,
                 **base_settings,
             )
 
         ax.annotate(
-            r"$\lambda$", xy=(-0.5, num_states - (num_states - 0.5)),
+            r"$\lambda$",
+            xy=(-0.5, num_states - (num_states - 0.5)),
             xytext=(-0.5, num_states + 0.5),
+            xycoords='data',
+            textcoords=None,
+            arrowprops=None,
+            annotation_clip=None,
             **base_settings,
         )
 
@@ -278,15 +294,21 @@ def plot_2D_rmsd(data: list[list[float]],
     fig, axes = plt.subplots(nrows, 4)
 
     for i, (arr, ax) in enumerate(
-            zip(twod_rmsd_arrs, chain.from_iterable(axes))):
+            zip(twod_rmsd_arrs, axes.flatten())):   # type: ignore
         ax.imshow(arr,
                   vmin=0, vmax=vmax,
                   cmap=plt.get_cmap('cividis'))
         ax.axis('off')  # turn off ticks/labels
         ax.set_title(f'State {i}')
 
-    plt.colorbar(axes[0][0].images[0],
-                 cax=axes[-1][-1],
+    # if we have any leftover plots then we turn them off
+    # except the last one!
+    overage = len(axes.flatten()) - len(twod_rmsd_arrs)  # type: ignore
+    for i in range(overage, len(axes.flatten())-1):  # type: ignore
+        axes.flatten()[i].set_axis_off()  # type: ignore
+
+    plt.colorbar(axes.flatten()[0].images[0],  # type: ignore
+                 cax=axes.flatten()[-1],  # type: ignore
                  label="RMSD scale (A)",
                  orientation="horizontal")
 
