@@ -1,6 +1,6 @@
 **Added:**
 
-* use rever to manage changelog
+* <news item>
 
 **Changed:**
 
@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* <news item>
+* Fixed bug where `openfe gather --report raw` was only including first replicates.
 
 **Security:**
 

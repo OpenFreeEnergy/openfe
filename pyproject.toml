@@ -22,12 +22,13 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
 ]
 urls = {Homepage = "https://github.com/OpenFreeEnergy/openfe"}
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 dependencies = [
     "numpy",
     "networkx",
     "click",
     "plugcli",
+    "packaging",
 ]
 dynamic = ["version"]
 

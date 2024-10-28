@@ -131,10 +131,12 @@ def _generate_bad_legs_error_message(set_vals, ligpair):
 def _parse_raw_units(results: dict) -> list[tuple]:
     # grab individual unit results from master results dict
     # returns list of (estimate, uncertainty) tuples
-    pus = list(results['unit_results'].values())
-    return [(pu['outputs']['unit_estimate'],
-             pu['outputs']['unit_estimate_error'])
-            for pu in pus]
+    list_of_pur = list(results['protocol_result']['data'].values())
+
+    # could add to each tuple pu[0]["source_key"] for repeat ID
+    return [(pu[0]['outputs']['unit_estimate'],
+             pu[0]['outputs']['unit_estimate_error'])
+            for pu in list_of_pur]
 
 
 def _get_ddgs(legs, error_on_missing=True):
@@ -191,8 +193,8 @@ def _write_ddg(legs, writer, allow_partial):
 
 
 def _write_raw(legs, writer, allow_partial=True):
-    writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
-                     "MBAR uncertainty (kcal/mol)"])
+    writer.writerow(["leg", "ligand_i", "ligand_j",
+                     "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
     for ligpair, vals in sorted(legs.items()):
         for simtype, repeats in sorted(vals.items()):
@@ -201,7 +203,6 @@ def _write_raw(legs, writer, allow_partial=True):
                     m, u = 'NaN', 'NaN'
                 else:
                     m, u = format_estimate_uncertainty(m.m, u.m)
-
                 writer.writerow([simtype, *ligpair, m, u])
 
 
@@ -284,7 +285,7 @@ def _write_dg_mle(legs, writer, allow_partial):
     default="dg", show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
-        "absolute deltaG,  'ddg' gives delta-delta-G, and 'dg-raw' gives "
+        "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
         "the raw result of the deltaG for a leg."
     )
 )

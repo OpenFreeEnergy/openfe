@@ -133,12 +133,6 @@ def quickrun(transformation, work_dir, output):
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
-
-    write("Additional information:")
-    for result in dagresult.protocol_unit_results:
-        write(f"{result.name}:")
-        write(result.outputs)
-
     write("")
 
     if not dagresult.ok():

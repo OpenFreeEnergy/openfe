@@ -174,13 +174,13 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
 
-    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
         Returns
         -------
-        forward_reverse : dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
             A dictionary, keyed `solvent` and `vacuum` for each leg of the
             thermodynamic cycle which each contain a list of dictionaries
             containing the forward and reverse analysis of each repeat
@@ -194,15 +194,36 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
               - `forward_dDGs`, `reverse_dDGs`: unit.Quantity
                   The forward and reverse estimate uncertainty for each
                   fraction of data.
+
+            If one of the cycle leg list entries is ``None``, this indicates
+            that the analysis could not be carried out for that repeat. This
+            is most likely caused by MBAR convergence issues when attempting to
+            calculate free energies from too few samples.
+
+        Raises
+        ------
+        UserWarning
+          * If any of the forward and reverse dictionaries are ``None`` in a
+            given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[str, list[dict[str, Union[npt.NDArray, unit.Quantity]]]] = {}
+        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]] = {}
 
         for key in ['solvent', 'vacuum']:
             forward_reverse[key] = [
                 pus[0].outputs['forward_and_reverse_energies']
                 for pus in self.data[key].values()
             ]
+
+            if None in forward_reverse[key]:
+                wmsg = (
+                    "One or more ``None`` entries were found in the forward "
+                    f"and reverse dictionaries of the repeats of the {key} "
+                    "calculations. This is likely caused by an MBAR convergence "
+                    "failure caused by too few independent samples when "
+                    "calculating the free energies of the 10% timeseries slice."
+                )
+                warnings.warn(wmsg)
 
         return forward_reverse
 
@@ -375,11 +396,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
     See Also
     --------
-    openfe.protocols
-    openfe.protocols.openmm_afe.AbsoluteSolvationSettings
-    openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult
-    openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit
-    openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSettings`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationProtocolResult`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationVacuumUnit`
+    :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit`
     """
     result_cls = AbsoluteSolvationProtocolResult
     _settings: AbsoluteSolvationSettings
@@ -662,6 +683,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                       "passed")
             raise ValueError(errmsg)
 
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
+    
         # Check vacuum equilibration MD settings is 0 ns
         nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
         if nvt_time is not None:
@@ -733,6 +759,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
 
 class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
+    """
+    Protocol Unit for the vacuum phase of an absolute solvation free energy
+    """
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -827,6 +856,9 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
+    """
+    Protocol Unit for the solvent phase of an absolute solvation free energy
+    """
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.

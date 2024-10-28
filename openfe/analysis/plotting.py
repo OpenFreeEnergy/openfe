@@ -7,6 +7,7 @@ import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from typing import Optional, Union
+import warnings
 
 
 def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
@@ -22,8 +23,29 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     -------
     ax : matplotlib.axes.Axes
       An Axes object to plot.
+
+    Raises
+    ------
+    UserWarning
+      If any row or column exceeds a sum value of 1.01. This indicates
+      an incorrect overlap/probability matrix.
+
+    Notes
+    -----
+    Borrowed from `alchemlyb <https://github.com/alchemistry/alchemlyb/blob/master/src/alchemlyb/visualisation/mbar_matrix.py>`_
+    which itself borrows from `alchemical-analysis <https://github.com/MobleyLab/alchemical-analysis>`_. 
     """
     num_states = len(matrix)
+
+    # Check if any row or column isn't close to 1.0
+    # Throw a warning if it's the case
+    if (not np.allclose(matrix.sum(axis=0), 1.0) or
+        not np.allclose(matrix.sum(axis=1), 1.0)):
+        wmsg = ("Overlap/probability matrix exceeds a sum of 1.0 in one or "
+                "more columns or rows of the matrix. This indicates an "
+                "incorrect overlap/probability matrix.")
+        warnings.warn(wmsg)
+
     fig, ax = plt.subplots(figsize=(num_states / 2, num_states / 2))
     ax.axis('off')
     for i in range(num_states):
@@ -32,7 +54,18 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             ax.axhline(y=i, ls="-", lw=0.5, color="k", alpha=0.25)
         for j in range(num_states):
             val = matrix[i, j]
-            val_str = "{:.2f}".format(val)[1:]
+
+            # Catch if 0.05 from 0 or 1
+            # https://github.com/OpenFreeEnergy/openfe/issues/806
+            if matrix[j, i] < 0.005:
+                # This replicates the same behaviour as alchemical-analysis & alchemlyb
+                # i.e. near-zero values will just not be annotated
+                val_str = ""
+            elif matrix[j, i] > 0.995:
+                val_str = "{:.2f}".format(matrix[j, i])[:4]
+            else:
+                val_str = "{:.2f}".format(matrix[j, i])[1:]
+
             rel_prob = val / matrix.max()
 
             # shade box
@@ -49,24 +82,40 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
             )
 
         # anotate axes
-        base_settings = {
+        base_settings: dict[str, Union[str, int]] = {
             'size': 10, 'va': 'center', 'ha': 'center', 'color': 'k',
             'family': 'sans-serif'
         }
         for i in range(num_states):
             ax.annotate(
-                i, xy=(i + 0.5, 1), xytext=(i + 0.5, num_states + 0.5),
+                text=f"{i}",
+                xy=(i + 0.5, 1),
+                xytext=(i + 0.5, num_states + 0.5),
+                xycoords='data',
+                textcoords=None,
+                arrowprops=None,
+                annotation_clip=None,
                 **base_settings,
             )
             ax.annotate(
-                i, xy=(-0.5, num_states - (num_states - 0.5)),
+                text=f"{i}",
+                xy=(-0.5, num_states - (num_states - 0.5)),
                 xytext=(-0.5, num_states - (i + 0.5)),
+                xycoords='data',
+                textcoords=None,
+                arrowprops=None,
+                annotation_clip=None,
                 **base_settings,
             )
 
         ax.annotate(
-            r"$\lambda$", xy=(-0.5, num_states - (num_states - 0.5)),
+            r"$\lambda$",
+            xy=(-0.5, num_states - (num_states - 0.5)),
             xytext=(-0.5, num_states + 0.5),
+            xycoords='data',
+            textcoords=None,
+            arrowprops=None,
+            annotation_clip=None,
             **base_settings,
         )
 
@@ -100,6 +149,10 @@ def plot_convergence(
     -------
     ax : matplotlib.axes.Axes
       An Axes object to plot.
+
+    Notes
+    -----
+    Modified from `alchemical analysis <<https://github.com/MobleyLab/alchemical-analysis>>`_
     """
     known_units = {
         'kilojoule_per_mole': 'kJ/mol',
@@ -241,15 +294,21 @@ def plot_2D_rmsd(data: list[list[float]],
     fig, axes = plt.subplots(nrows, 4)
 
     for i, (arr, ax) in enumerate(
-            zip(twod_rmsd_arrs, chain.from_iterable(axes))):
+            zip(twod_rmsd_arrs, axes.flatten())):   # type: ignore
         ax.imshow(arr,
                   vmin=0, vmax=vmax,
                   cmap=plt.get_cmap('cividis'))
         ax.axis('off')  # turn off ticks/labels
         ax.set_title(f'State {i}')
 
-    plt.colorbar(axes[0][0].images[0],
-                 cax=axes[-1][-1],
+    # if we have any leftover plots then we turn them off
+    # except the last one!
+    overage = len(axes.flatten()) - len(twod_rmsd_arrs)  # type: ignore
+    for i in range(overage, len(axes.flatten())-1):  # type: ignore
+        axes.flatten()[i].set_axis_off()  # type: ignore
+
+    plt.colorbar(axes.flatten()[0].images[0],  # type: ignore
+                 cax=axes.flatten()[-1],  # type: ignore
                  label="RMSD scale (A)",
                  orientation="horizontal")
 

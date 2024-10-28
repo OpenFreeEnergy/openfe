@@ -53,8 +53,12 @@ logger = logging.getLogger(__name__)
 
 
 class PlainMDProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a PlainMDProtocol
-    outputs filenames for the pdb file and trajectory"""
+    """
+    Dict-like container for the output of a PlainMDProtocol.
+
+    Provides access to simulation outputs including the pre-minimized
+    system PDB and production trajectory files.
+    """
     def __init__(self, **data):
         super().__init__(**data)
         # data is mapping of str(repeat_id): list[protocolunitresults]
@@ -104,6 +108,16 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
 
 
 class PlainMDProtocol(gufe.Protocol):
+    """
+    Protocol for running Molecular Dynamics simulations using OpenMM.
+
+    See Also
+    --------
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolSettings`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolUnit`
+    :class:`openfe.protocols.openmm_md.PlainMDProtocolResult`
+    """
     result_cls = PlainMDProtocolResult
     _settings: PlainMDProtocolSettings
 
@@ -156,6 +170,11 @@ class PlainMDProtocol(gufe.Protocol):
 
         # Validate protein component
         system_validation.validate_protein(stateA)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
 
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents

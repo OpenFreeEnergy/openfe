@@ -176,9 +176,8 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
         mapping=None,
     )
     unit = list(dag.protocol_units)[0]
-
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)['debug']['system']
+        system = unit.run(dry=True)["debug"]["system"]
 
 
 @pytest.mark.parametrize('method, backend, ref_key', [

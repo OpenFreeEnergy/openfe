@@ -29,7 +29,6 @@ def test_quickrun(extra_args, json_file):
         result = runner.invoke(quickrun, [json_file] + extras)
         assert result.exit_code == 0
         assert "Here is the result" in result.output
-        assert "Additional information" in result.output
 
         if outfile := extra_args.get('-o'):
             assert pathlib.Path(outfile).exists()

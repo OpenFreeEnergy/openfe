@@ -36,8 +36,6 @@ from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from typing import Optional
-from openmm import unit as omm_unit
-from openmm.app import PDBFile
 import pathlib
 from typing import Any, Iterable, Union
 import openmmtools
@@ -48,7 +46,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, ProteinComponent, SolventComponent,
+    SmallMoleculeComponent, SolventComponent,
 )
 
 from .equil_rfe_settings import (
@@ -304,7 +302,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
                for pus in self.data.values()]
         return dGs
 
-    def get_forward_and_reverse_energy_analysis(self) -> list[dict[str, Union[npt.NDArray, unit.Quantity]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
         """
         Get a list of forward and reverse analysis of the free energies
         for each repeat using uncorrelated production samples.
@@ -317,12 +315,34 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         The 'fractions' values are a numpy array, while the other arrays are
         Quantity arrays, with units attached.
 
+        If the list entry is ``None`` instead of a dictionary, this indicates
+        that the analysis could not be carried out for that repeat. This
+        is most likely caused by MBAR convergence issues when attempting to
+        calculate free energies from too few samples.
+
+
         Returns
         -------
-        forward_reverse : dict[str, Union[npt.NDArray, unit.Quantity]]
+        forward_reverse : list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+
+
+        Raises
+        ------
+        UserWarning
+          If any of the forward and reverse entries are ``None``.
         """
         forward_reverse = [pus[0].outputs['forward_and_reverse_energies']
                            for pus in self.data.values()]
+
+        if None in forward_reverse:
+            wmsg = (
+                "One or more ``None`` entries were found in the list of "
+                "forward and reverse analyses. This is likely caused by "
+                "an MBAR convergence failure caused by too few independent "
+                "samples when calculating the free energies of the 10% "
+                "timeseries slice."
+            )
+            warnings.warn(wmsg)
 
         return forward_reverse
 
@@ -436,6 +456,18 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
 
 class RelativeHybridTopologyProtocol(gufe.Protocol):
+    """
+    Relative Free Energy calculations using OpenMM and OpenMMTools.
+
+    Based on `Perses <https://github.com/choderalab/perses>`_
+
+    See Also
+    --------
+    :mod:`openfe.protocols`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologySettings`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyResult`
+    :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit`
+    """
     result_cls = RelativeHybridTopologyProtocolResult
     _settings: RelativeHybridTopologyProtocolSettings
 
@@ -493,6 +525,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
 
         # Validate protein component
         system_validation.validate_protein(stateA)
@@ -1057,22 +1094,29 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             return {'debug': {'sampler': sampler}}
 
     @staticmethod
-    def analyse(where) -> dict:
+    def structural_analysis(scratch, shared) -> dict:
         # don't put energy analysis in here, it uses the open file reporter
         # whereas structural stuff requires that the file handle is closed
-        analysis_out = where / 'structural_analysis.json'
+        # TODO: we should just make openfe_analysis write an npz instead!
+        analysis_out = scratch / 'structural_analysis.json'
 
-        ret = subprocess.run(['openfe_analysis', 'RFE_analysis',
-                              str(where), str(analysis_out)],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        ret = subprocess.run(
+            [
+                'openfe_analysis',  # CLI entry point
+                'RFE_analysis',  # CLI option
+                str(shared),  # Where the simulation.nc fille
+                str(analysis_out)  # Where the analysis json file is written
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         if ret.returncode:
             return {'structural_analysis_error': ret.stderr}
 
         with open(analysis_out, 'rb') as f:
             data = json.load(f)
 
-        savedir = pathlib.Path(where)
+        savedir = pathlib.Path(shared)
         if d := data['protein_2D_RMSD']:
             fig = plotting.plot_2D_rmsd(d)
             fig.savefig(savedir / "protein_2D_RMSD.png")
@@ -1085,21 +1129,43 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         f3.savefig(savedir / "ligand_RMSD.png")
         plt.close(f3)
 
-        return {'structural_analysis': data}
+        # Save to numpy compressed format (~ 6x more space efficient than JSON)
+        np.savez_compressed(
+            shared / "structural_analysis.npz",
+            protein_RMSD=np.asarray(
+                data["protein_RMSD"], dtype=np.float32
+            ),
+            ligand_RMSD=np.asarray(
+                data["ligand_RMSD"], dtype=np.float32
+            ),
+            ligand_COM_drift=np.asarray(
+                data["ligand_wander"], dtype=np.float32
+            ),
+            protein_2D_RMSD=np.asarray(
+                data["protein_2D_RMSD"], dtype=np.float32
+            ),
+            time_ps=np.asarray(
+                data["time(ps)"], dtype=np.int32
+            ),
+        )
+
+        return {'structural_analysis': shared / "structural_analysis.npz"}
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        
+
         outputs = self.run(scratch_basepath=ctx.scratch,
                            shared_basepath=ctx.shared)
 
-        analysis_outputs = self.analyse(ctx.shared)
+        structural_analysis_outputs = self.structural_analysis(
+            ctx.scratch, ctx.shared
+        )
 
         return {
             'repeat_id': self._inputs['repeat_id'],
             'generation': self._inputs['generation'],
             **outputs,
-            **analysis_outputs,
+            **structural_analysis_outputs,
         }

@@ -7,8 +7,6 @@ from openfecli import OFECommandPlugin
 from openfecli.parameters import (
     MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
 )
-from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
 
 def plan_rbfe_network_main(
     mapper,
@@ -116,6 +114,8 @@ def plan_rbfe_network(
     which is detailed in the Options section.
     For more advanced setups, please consider using the Python layer of openfe.
     """
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+
     write("RBFE-NETWORK PLANNER")
     write("______________________")
     write("")

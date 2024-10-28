@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
+import numpy as np
+from numpy.testing import assert_equal
 from gufe.protocols import execute_DAG
 import pytest
 from openff.units import unit
@@ -42,8 +43,8 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
     # this test actually runs MD
-    # if this passes, you're 99% likely to have a good time
-    # these settings are a small self to self sim, that has enough eq that it doesn't occasionally crash
+    # these settings are a small self to self sim, that has enough eq that
+    # it doesn't occasionally crash
     s = openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     s.simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.simulation_settings.production_length = 0.1 * unit.picosecond
@@ -64,10 +65,16 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         'ligand': b_alt
     })
 
-    m = openfe.LigandAtomMapping(componentA=b, componentB=b_alt,
-                                 componentA_to_componentB={i: i for i in range(12)})
-    dag = p.create(stateA=benzene_vacuum_system, stateB=benzene_vacuum_alt_system,
-                   mapping=[m])
+    m = openfe.LigandAtomMapping(
+        componentA=b,
+        componentB=b_alt,
+        componentA_to_componentB={i: i for i in range(12)}
+    )
+    dag = p.create(
+        stateA=benzene_vacuum_system,
+        stateB=benzene_vacuum_alt_system,
+        mapping=[m]
+    )
 
     cwd = pathlib.Path(str(tmpdir))
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
@@ -78,13 +85,40 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
+
+        # Check the checkpoint file exists
         checkpoint = pur.outputs['last_checkpoint']
         assert checkpoint == "checkpoint.chk"
         assert (unit_shared / checkpoint).exists()
+
+        # Check the nc simulation file exists
+        # TODO: assert the number of frames
         nc = pur.outputs['nc']
         assert nc == unit_shared / "simulation.nc"
         assert nc.exists()
-        assert (unit_shared / "structural_analysis.json").exists()
+
+        # Check structural analysis contents
+        structural_analysis_file = unit_shared / "structural_analysis.npz"
+        assert (structural_analysis_file).exists()
+        assert pur.outputs['structural_analysis'] == structural_analysis_file
+
+        structural_data = np.load(pur.outputs['structural_analysis'])
+        structural_keys = [
+            'protein_RMSD', 'ligand_RMSD', 'ligand_COM_drift',
+            'protein_2D_RMSD', 'time_ps'
+        ]
+        for key in structural_keys:
+            assert key in structural_data.keys()
+
+        # 6 frames being written to file
+        # Note: the values of this next test are wrong, but in an expected way
+        # See: https://github.com/OpenFreeEnergy/openfe_analysis/issues/33
+        assert_equal(structural_data['time_ps'], [0, 50, 100, 150, 200, 250])
+        assert structural_data['ligand_RMSD'].shape == (11, 6)
+        assert structural_data['ligand_COM_drift'].shape == (11, 6)
+        # No protein so should be empty
+        assert structural_data['protein_RMSD'].size == 0
+        assert structural_data['protein_2D_RMSD'].size == 0
 
     # Test results methods that need files present
     results = p.gather([r])
@@ -133,5 +167,41 @@ def test_run_eg5_sim(eg5_protein, eg5_ligands, eg5_cofactor, tmpdir):
     cwd = pathlib.Path(str(tmpdir))
     r = execute_DAG(dag, shared_basedir=cwd, scratch_basedir=cwd,
                     keep_shared=True)
+
+    assert r.ok()
+
+
+@pytest.mark.integration
+@pytest.mark.flaky(reruns=3)
+def test_run_dodecahedron_sim(
+    benzene_system, toluene_system, benzene_to_toluene_mapping, tmpdir
+):
+    """
+    Test that we can run a ligand in solvent RFE with a non-cubic box
+    """
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    settings.solvation_settings.box_shape = 'dodecahedron'
+    settings.protocol_repeats = 1
+    settings.simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    settings.simulation_settings.production_length = 0.1 * unit.picosecond
+    settings.simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    settings.output_settings.checkpoint_interval = 20 * unit.femtosecond
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
+
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+
+    cwd = pathlib.Path(str(tmpdir))
+
+    r = execute_DAG(
+        dag,
+        shared_basedir=cwd,
+        scratch_basedir=cwd,
+        keep_shared=True
+    )
 
     assert r.ok()
