@@ -35,6 +35,7 @@ def get_openmm_platform(platform_name=None):
                 'cpu': 'CPU',
                 'opencl': 'OpenCL',
                 'cuda': 'CUDA',
+                'hip': 'HIP',
             }[str(platform_name).lower()]
         except KeyError:
             pass
@@ -43,10 +44,10 @@ def get_openmm_platform(platform_name=None):
         platform = Platform.getPlatformByName(platform_name)
     # Set precision and properties
     name = platform.getName()
-    if name in ['CUDA', 'OpenCL']:
+    if name in ['CUDA', 'OpenCL', 'HIP']:
         platform.setPropertyDefaultValue(
                 'Precision', 'mixed')
-    if name == 'CUDA':
+    if name in ['CUDA', 'HIP']:
         platform.setPropertyDefaultValue(
                 'DeterministicForces', 'true')
 
