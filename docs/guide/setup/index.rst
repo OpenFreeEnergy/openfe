@@ -1,13 +1,15 @@
+.. _userguide_setup:
+
 Simulation Setup
 ================
 
-This section provides details on how to set up free energy calculation or MD simulations.
+This section provides details on how to set up a free energy calculation or MD simulations.
 
 All protocols in OpenFE follow the same general structure: 
 
-* Reading in input structures and Creating ``ChemicalSystem`` \s
-* Defining the Protocol with specific ProtocolSettings
-* Creating ``LigandAtomMapping`` \s for relative free energy calculations Protocols
+* Reading in input structures and creating ``ChemicalSystem`` \s
+* Defining the ``Protocol`` with specific ``ProtocolSettings``.
+* Creating ``LigandAtomMapping`` \s for relative free energy calculation ``Protocols``
 
 .. image:: img/setup_1x.png
    :width: 60%

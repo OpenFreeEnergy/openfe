@@ -1,6 +1,6 @@
 .. _userguide_results:
 
-Working with Results
+Gather Results
 =====================
 
 With simulations completed,
