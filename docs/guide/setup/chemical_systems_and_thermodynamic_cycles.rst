@@ -3,6 +3,8 @@
 Chemical Systems, Components and Thermodynamic Cycles
 =====================================================
 
+.. _userguide_chemical_systems:
+
 Chemical Systems
 ----------------
 
@@ -20,6 +22,8 @@ A :class:`.ChemicalSystem` *does NOT* include the following:
 
 * forcefield applied to any component, including details on water model or virtual particles
 * thermodynamic conditions (e.g. temperature or pressure)
+
+.. _userguide_components:
 
 Components
 ----------
