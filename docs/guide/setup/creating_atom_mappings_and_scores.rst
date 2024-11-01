@@ -4,18 +4,18 @@
 Creating Atom Mappings
 ======================
 
-``Mapping`` objects are used to define the relationship between :ref:`components <userguide_components>` from different :ref:`Chemical Systems <userguide_chemical_systems>`.
-This guide will show how atom mapping can describe the transformation between a pair of ligands.
+``Atom Mapping`` objects are used to define the relationship between
+:ref:`components <userguide_components>` from different :class:`.ChemicalSystem`\s.
+This guide will show how ``Atom Mappings``  can describe the transformation between a pair of ligands.
 
 Generating Mappings
 -------------------
 
-The :class:`.LigandAtomMapper` takes pairs of :class:`openfe.SmallMoleculeComponent` /s and returns zero
+The :class:`.LigandAtomMapper` takes pairs of :class:`openfe.SmallMoleculeComponent`\s and returns zero
 (in the case that no mapping can be found) or more possible mappings.
 
 Built in to the ``openfe`` package are bindings to the `Lomap <https://github.com/OpenFreeEnergy/Lomap>`_ package,
-including the :class:`openfe.setup.LomapAtomMapper`, which uses an MCS approach based on RDKit.
-The available parameter inputs can be viewed using ``help(LomapAtomMapper)``.
+including the :class:`.openfe.setup.LomapAtomMapper`, which uses an MCS approach based on RDKit.
 .. TODO: insert example output
 
 This is how we can create a mapping between two ligands: 
@@ -39,12 +39,11 @@ This is how we can create a mapping between two ligands:
    mapping = mappings[0]
 
 
-The two molecules (in the above example, ``m1`` and ``m2``) passed into the ``suggest_mappings()`` method
-are then referred to as ``componentA`` and ``componentB``.
-The correspondence of atoms in these two components is then given via the ``.componentA_to_componentB`` attribute,
-which returns a dictionary of integers.
-Keys in this dictionary refer to the indices of atoms in the "A" molecule,
-while the corresponding values refer to indices of atoms in the "B" molecule.
+The two molecules passed into the ``suggest_mappings()`` method are then referred to
+as ``componentA`` and ``componentB`` (in the above example, ``m1`` is ``componentA``  and  ``m2`` is ``componentB``).
+
+The atom mapping can be accessed through the ``componentA_to_componentB`` attribute, which returns a dictionary 
+where keys refer to the indices of atoms in the "A" molecule, and values refer to indices of atoms in the "B" molecule.
 If a given index does not appear, then it is unmapped.
 
 
@@ -100,15 +99,17 @@ This returns a numpy array.
 Scoring Mappings
 ----------------
 
-With many possible mappings and many ligand pairs we could form mappings between,
-we use **scorers** to rate if a mapping is a good idea.
-These take a :class:`.LigandAtomMapping` object and return a value from 0.0 (indicating a terrible mapping)
-to 1.0 (indicating a great mapping), and so can be used as objective functions for optimizing ligand networks.
+Mapping **scorers** evaluate the quality of an atom mapping and can be used 
+as objective functions for optimizing ligand networks.
 
-Again, the scoring functions from Lomap are included in the ``openfe`` package.
-The :func:`default_lomap_score` function combines many different criteria together
-such as the number of heavy atoms, if certain chemical changes are present,
-and if ring sizes are being mutated, into a single value.
+**Scorers** take a :class:`.LigandAtomMapping` object and return a value from 0.0 (indicating a terrible mapping)
+to 1.0 (indicating a great mapping), 
+Lomap's scoring functions are included in the ``openfe`` package.
+The :func:`default_lomap_score` function combines several criteria
+(such as the number of heavy atoms, if certain chemical changes are present,
+and if ring sizes are being mutated), into a single value.
+It is possible to combine scoring functions in this way because each scoring function returns a normalized value.
+
 
 .. code::
 
@@ -117,8 +118,3 @@ and if ring sizes are being mutated, into a single value.
    mapping = next(mapper.suggest_mappings(m1, m2))
 
    score = lomap_scorers.default_lomap_scorer(mapping)
-
-
-As each scoring function returns a normalised value,
-it is possible to chain together various scoring functions,
-which is how this ``default_lomap_score`` function is constructed!
