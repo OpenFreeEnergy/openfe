@@ -95,6 +95,7 @@ This returns a numpy array.
 
    mapping.get_distances()
 
+.. _Scoring Atom Mappings:
 
 Scoring Mappings
 ----------------
