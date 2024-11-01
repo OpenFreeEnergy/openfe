@@ -36,7 +36,6 @@ instructions can be found in the following sections:
    defining_protocols
    creating_ligand_networks
    alchemical_network_model
-   alchemical_network_creation
 
 To set up your alchemical network using the Python interface, but run it using the CLI,
 export the network in the same format used by the CLI.
