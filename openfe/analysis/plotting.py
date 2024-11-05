@@ -260,7 +260,7 @@ def plot_replica_timeseries(
 
 
 def plot_2D_rmsd(data: list[list[float]],
-                 vmax=6.0) -> plt.Figure:
+                 vmax=5.0) -> plt.Figure:
     """Plots 2D RMSD for many states
 
     Parameters
