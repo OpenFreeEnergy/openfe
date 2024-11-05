@@ -38,5 +38,5 @@ instructions can be found in the following sections:
    alchemical_network_model
 
 To set up your alchemical network using the Python interface, but run it using the CLI,
-export the network in the same format used by the CLI.
+you will need to export the network in the same format used by the CLI.
 See :ref:`dumping transformations <dumping_transformations>` for more details.
