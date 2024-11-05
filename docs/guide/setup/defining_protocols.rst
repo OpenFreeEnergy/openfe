@@ -36,7 +36,7 @@ For example, to create an instance of the OpenMM RFE Protocol with default setti
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
 ``Protocol`` objects **cannot be modified once created**. This is crucial for data provenance.
-Therefore, the ``settings`` objects must be customised *before* the ``Protocol`` object is created.
+Therefore, the ``Settings`` objects must be customised *before* the ``Protocol`` object is created.
 For example, to customise the production run length of the RFE Protocol::
 
    from openfe.protocols import openmm_rfe
