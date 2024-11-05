@@ -33,7 +33,7 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
     Notes
     -----
     Borrowed from `alchemlyb <https://github.com/alchemistry/alchemlyb/blob/master/src/alchemlyb/visualisation/mbar_matrix.py>`_
-    which itself borrows from `alchemical-analysis <https://github.com/MobleyLab/alchemical-analysis>`_. 
+    which itself borrows from `alchemical-analysis <https://github.com/MobleyLab/alchemical-analysis>`_.
     """
     num_states = len(matrix)
 
@@ -260,7 +260,7 @@ def plot_replica_timeseries(
 
 
 def plot_2D_rmsd(data: list[list[float]],
-                 vmax=5.0) -> plt.Figure:
+                 vmax=6.0) -> plt.Figure:
     """Plots 2D RMSD for many states
 
     Parameters
