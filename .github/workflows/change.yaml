@@ -31,15 +31,15 @@ jobs:
         pip install -e .
         griffe check "openfe" --verbose
 
-      - name: Post Comment on Failure
-        if: steps.check.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: '🚨 API breaking changes detected!. 🚨'
-            });
+    - name: Post Comment on Failure
+      if: steps.check.outcome == 'failure'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: '🚨 API breaking changes detected!. 🚨'
+          });
