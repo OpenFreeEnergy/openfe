@@ -41,5 +41,5 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: prNumber,
-            body: '🚨 API breaking changes detected!. 🚨'
+            body: '🚨 API breaking changes detected! 🚨'
           });
