@@ -24,8 +24,6 @@ from konnektor.network_planners import (
     MinimalSpanningTreeNetworkGenerator,
     ExplicitNetworkGenerator,
 )
-
-# Konnektor handles:
 from konnektor import network_analysis, network_planners, network_tools
 
 
@@ -71,16 +69,22 @@ def generate_radial_network(
     ligands : iterable of SmallMoleculeComponents
       the ligands to arrange around the central ligand.  If the central ligand
       is present it will be ignored (i.e. avoiding a self edge)
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use, at least 1 required
     central_ligand : SmallMoleculeComponent or str or int
       the ligand to use as the hub/central ligand.
       If this is a string, this should match to one and only one ligand name.
       If this is an integer, this refers to the index from within ligands
-    mappers : AtomMapper or iterable of AtomMappers
-      mapper(s) to use, at least 1 required
     scorer : scoring function, optional
       a callable which returns a float for any LigandAtomMapping.  Used to
       assign scores to potential mappings; higher scores indicate better
       mappings.
+    progress : Union[bool, Callable[Iterable], Iterable]
+      progress bar: if False, no progress bar will be shown. If True, use a
+      tqdm progress bar that only appears after 1.5 seconds. You can also
+      provide a custom progress bar wrapper as a callable.
+    n_processes: int
+        number of threads to use if parallelizing network generation.
 
     Raises
     ------
@@ -177,7 +181,7 @@ def generate_maximal_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     n_processes: int
-        parallelization of network generation.
+        number of threads to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
@@ -224,6 +228,8 @@ def generate_minimal_spanning_network(
       progress bar: if False, no progress bar will be shown. If True, use a
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
+    n_processes: int
+        number of threads to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
@@ -275,11 +281,12 @@ def generate_minimal_redundant_network(
       progress bar: if False, no progress bar will be shown. If True, use a
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
-    mst_num: int
+    mst_num : int
       Minimum Spanning Tree number: the number of minimum spanning trees to
       generate. If two, the second-best edges are included in the returned
       network. If three, the third-best edges are also included, etc.
     n_processes: int
+        number of threads to use if parallelizing network generation
 
     """
     if isinstance(mappers, AtomMapper):
