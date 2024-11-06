@@ -84,7 +84,7 @@ def generate_radial_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     n_processes: int
-        number of threads to use if parallelizing network generation.
+        number of cpu processes to use if parallelizing network generation.
 
     Raises
     ------
@@ -181,7 +181,7 @@ def generate_maximal_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     n_processes: int
-        number of threads to use if parallelizing network generation.
+        number of cpu processes to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
@@ -229,7 +229,7 @@ def generate_minimal_spanning_network(
       tqdm progress bar that only appears after 1.5 seconds. You can also
       provide a custom progress bar wrapper as a callable.
     n_processes: int
-        number of threads to use if parallelizing network generation.
+        number of cpu processes to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
