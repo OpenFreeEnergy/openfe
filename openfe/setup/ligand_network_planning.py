@@ -70,7 +70,7 @@ def generate_radial_network(
       the ligands to arrange around the central ligand.  If the central ligand
       is present it will be ignored (i.e. avoiding a self edge)
     mappers : AtomMapper or iterable of AtomMappers
-      mapper(s) to use, at least 1 required
+      mapper(s) to use to construct edges, at least 1 required
     central_ligand : SmallMoleculeComponent or str or int
       the ligand to use as the hub/central ligand.
       If this is a string, this should match to one and only one ligand name.
@@ -171,9 +171,8 @@ def generate_maximal_network(
     ----------
     ligands : Iterable[SmallMoleculeComponent]
       the ligands to include in the LigandNetwork
-    mapper : AtomMapper or Iterable[AtomMapper]
-      the AtomMapper(s) to use to propose mappings.  At least 1 required,
-      but many can be given.
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use to construct edges, at least 1 required
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
     progress : Union[bool, Callable[Iterable], Iterable]
@@ -323,8 +322,8 @@ def generate_network_from_names(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
-      the atom mapper to use to construct edges
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use, at least 1 required
     names : list of tuples of names
       the edges to form where the values refer to names of the small molecules,
       eg `[('benzene', 'toluene'), ...]` will create an edge between the
@@ -365,8 +364,8 @@ def generate_network_from_indices(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
-      the atom mapper to use to construct edges
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use to construct edges, at least 1 required
     indices : list of tuples of indices
       the edges to form where the values refer to names of the small molecules,
       eg `[(3, 4), ...]` will create an edge between the 3rd and 4th molecules
@@ -401,8 +400,8 @@ def load_orion_network(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
-      the atom mapper to use to construct edges
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use to construct edges, at least 1 required
     network_file : str
       path to NES network file.
 
@@ -450,8 +449,8 @@ def load_fepplus_network(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
-      the atom mapper to use to construct edges
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use to construct edges, at least 1 required
     network_file : str
       path to edges network file.
 
