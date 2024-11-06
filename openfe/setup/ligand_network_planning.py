@@ -53,7 +53,7 @@ def _hasten_lomap(mapper, ligands):
 def generate_radial_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
-    central_ligand: Union[SmallMoleculeComponent, str, int] = None,
+    central_ligand: Union[SmallMoleculeComponent, str, int, None],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
     n_processes: int = 1,
     progress: bool = False,
