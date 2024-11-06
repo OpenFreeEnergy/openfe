@@ -313,7 +313,7 @@ def generate_minimal_redundant_network(
 
 def generate_network_from_names(
     ligands: list[SmallMoleculeComponent],
-    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    mapper: AtomMapper,
     names: list[tuple[str, str]],
 ) -> LigandNetwork:
     """
@@ -344,7 +344,7 @@ def generate_network_from_names(
     """
     nodes = list(ligands)
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
 
     network = network_planner.generate_network_from_names(
         ligands=nodes, names=names
@@ -355,7 +355,7 @@ def generate_network_from_names(
 
 def generate_network_from_indices(
     ligands: list[SmallMoleculeComponent],
-    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    mapper: AtomMapper,
     indices: list[tuple[int, int]],
 ) -> LigandNetwork:
     """
@@ -383,7 +383,7 @@ def generate_network_from_indices(
     """
     nodes = list(ligands)
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
     network = network_planner.generate_network_from_indices(
         ligands=nodes, indices=indices
     )
@@ -392,7 +392,7 @@ def generate_network_from_indices(
 
 def load_orion_network(
     ligands: list[SmallMoleculeComponent],
-    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    mapper: AtomMapper,
     network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an Orion NES network file.
@@ -431,7 +431,7 @@ def load_orion_network(
 
         names.append((entry[0], entry[2]))
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
     network = network_planner.generate_network_from_names(
         ligands=ligands, names=names
     )
@@ -441,7 +441,7 @@ def load_orion_network(
 
 def load_fepplus_network(
     ligands: list[SmallMoleculeComponent],
-    mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    mapper: AtomMapper,
     network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
@@ -480,7 +480,7 @@ def load_fepplus_network(
 
         names.append((entry[2], entry[4]))
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
     network = network_planner.generate_network_from_names(
         ligands=ligands, names=names
     )

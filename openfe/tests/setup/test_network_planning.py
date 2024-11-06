@@ -470,7 +470,7 @@ def test_network_from_names(atom_mapping_basic_test_files, lomap_old_mapper):
     network = openfe.setup.ligand_network_planning.generate_network_from_names(
         ligands=ligs,
         names=requested,
-        mappers=lomap_old_mapper,
+        mapper=lomap_old_mapper,
     )
 
     assert len(network.nodes) == len(ligs)
@@ -494,7 +494,7 @@ def test_network_from_names_bad_name(
         _ = openfe.setup.ligand_network_planning.generate_network_from_names(
             ligands=ligs,
             names=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
 
 
@@ -513,7 +513,7 @@ def test_network_from_names_duplicate_name(
         _ = openfe.setup.ligand_network_planning.generate_network_from_names(
             ligands=ligs,
             names=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
 
 
@@ -527,7 +527,7 @@ def test_network_from_indices(
     network = openfe.setup.ligand_network_planning.generate_network_from_indices(
         ligands=ligs,
         indices=requested,
-        mappers=lomap_old_mapper,
+        mapper=lomap_old_mapper,
     )
 
     assert len(network.nodes) == len(ligs)
@@ -552,7 +552,7 @@ def test_network_from_indices_indexerror(
         network = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligs,
             indices=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
 
 
@@ -566,7 +566,7 @@ def test_network_from_indices_disconnected_warning(
         _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligs,
             indices=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
 
 
@@ -583,7 +583,7 @@ def test_network_from_external(file_fixture, loader, request,
 
     network = loader(
         ligands=[l for l in benzene_modifications.values()],
-        mappers=openfe.LomapAtomMapper(),
+        mapper=openfe.LomapAtomMapper(),
         network_file=network_file,
     )
 
@@ -619,7 +619,7 @@ def test_network_from_external_unknown_edge(file_fixture, loader, request,
     with pytest.raises(KeyError, match="Invalid name"):
         network = loader(
             ligands=ligs,
-            mappers=openfe.LomapAtomMapper(),
+            mapper=openfe.LomapAtomMapper(),
             network_file=network_file,
         )
 
@@ -644,7 +644,7 @@ def test_bad_orion_network(benzene_modifications, tmpdir):
         with pytest.raises(KeyError, match="line does not match"):
             network = openfe.setup.ligand_network_planning.load_orion_network(
                 ligands=[l for l in benzene_modifications.values()],
-                mappers=openfe.LomapAtomMapper(),
+                mapper=openfe.LomapAtomMapper(),
                 network_file='bad_orion_net.dat',
             )
 
@@ -667,6 +667,6 @@ def test_bad_edges_network(benzene_modifications, tmpdir):
         with pytest.raises(KeyError, match="line does not match"):
             network = openfe.setup.ligand_network_planning.load_fepplus_network(
                 ligands=[l for l in benzene_modifications.values()],
-                mappers=openfe.LomapAtomMapper(),
+                mapper=openfe.LomapAtomMapper(),
                 network_file='bad_edges.edges',
             )
