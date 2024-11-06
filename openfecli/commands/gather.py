@@ -4,7 +4,9 @@
 import click
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
+import os
 import pathlib
+from typing import Literal, Union
 import warnings
 
 
@@ -56,15 +58,15 @@ def load_results(f):
 
 def get_names(result) -> tuple[str, str]:
     # Result to tuple of ligand names
-    nm = list(result['unit_results'].values())[0]['name']
-    toks = nm.split()
-    if toks[2] == 'repeat':
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
+        nm = list(result['unit_results'].values())[0]['name']
+        toks = nm.split()
+        if toks[2] == 'repeat':
+            return toks[0], toks[1]
+        else:
+            return toks[0], toks[2]
 
 
-def get_type(res):
+def get_type(res: dict):
     list_of_pur = list(res['protocol_result']['data'].values())[0]
     pur = list_of_pur[0]
     components = pur['inputs']['stateA']['components']
@@ -299,7 +301,11 @@ def _write_dg_mle(legs, writer, allow_partial):
         "(Skip those edges and issue warning instead.)"
     )
 )
-def gather(rootdir, output, report, allow_partial):
+def gather(rootdir: Union[str, os.PathLike],
+           output: Union[str, os.PathLike],
+           report:Literal['dg','ddg','raw'],
+           allow_partial:bool
+        ):
     """Gather simulation result jsons of relative calculations to a tsv file
 
     This walks ROOTDIR recursively and finds all result JSON files from the
@@ -326,7 +332,7 @@ def gather(rootdir, output, report, allow_partial):
     from collections import defaultdict
     import glob
     import csv
-
+    # import pdb;pdb.set_trace()
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
 
@@ -341,7 +347,7 @@ def gather(rootdir, output, report, allow_partial):
         if result is None:
             continue
         elif result['estimate'] is None or result['uncertainty'] is None:
-            click.echo(f"WARNING: Calculations for {result_fn} did not finish successfully!",
+            click.echo(f"ERROR: Calculations for {result_fn} did not finish successfully!",
                        err=True)
 
         try:
