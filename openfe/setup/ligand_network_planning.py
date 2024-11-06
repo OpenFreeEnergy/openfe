@@ -347,7 +347,7 @@ def generate_network_from_names(
     network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
 
     network = network_planner.generate_network_from_names(
-        ligands=nodes, names=names
+        components=nodes, names=names
     )
 
     return network
@@ -433,7 +433,7 @@ def load_orion_network(
 
     network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
     network = network_planner.generate_network_from_names(
-        ligands=ligands, names=names
+        components=ligands, names=names
     )
 
     return network
@@ -482,6 +482,6 @@ def load_fepplus_network(
 
     network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
     network = network_planner.generate_network_from_names(
-        ligands=ligands, names=names
+        components=ligands, names=names
     )
     return network
