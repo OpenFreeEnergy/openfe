@@ -4,6 +4,20 @@ Changelog
 
 .. current developments
 
+v1.2.0
+====================
+
+**Added:**
+
+* New `cookbook featuring bespokefit <https://docs.openfree.energy/en/stable/cookbook/bespoke_parameters.html>`_
+
+**Fixed:**
+
+* Improved responsiveness of CLI calls
+* Fixed bug where `openfe gather --report raw` was only including first replicates.
+
+
+
 v1.1.0
 ====================
 
