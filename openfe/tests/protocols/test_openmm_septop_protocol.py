@@ -293,6 +293,7 @@ def test_setup(benzene_modifications,  T4_protein_component, tmpdir):
     s.solvent_equil_simulation_settings.equilibration_length = 1 * unit.picosecond
     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
     s.solvation_settings.box_shape = 'dodecahedron'
+    s.solvation_settings.solvent_padding = 1.5 * unit.nanometer
     s.complex_forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
 
     protocol = SepTopProtocol(
@@ -319,10 +320,10 @@ def test_setup(benzene_modifications,  T4_protein_component, tmpdir):
         mapping=None,
     )
     prot_units = list(dag.protocol_units)
-    # solv_setup_unit = [u for u in prot_units
-    #                    if isinstance(u, SepTopSolventSetupUnit)]
     solv_setup_unit = [u for u in prot_units
-                       if isinstance(u, SepTopComplexSetupUnit)]
+                       if isinstance(u, SepTopSolventSetupUnit)]
+    # solv_setup_unit = [u for u in prot_units
+    #                    if isinstance(u, SepTopComplexSetupUnit)]
 
     # with tmpdir.as_cwd():
     solv_setup_unit[0].run()

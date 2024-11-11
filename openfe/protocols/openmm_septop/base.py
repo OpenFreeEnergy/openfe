@@ -71,6 +71,8 @@ from ..openmm_utils import (
 )
 from openfe.utils import without_oechem_backend
 
+from .femto_utils import apply_fep
+
 logger = logging.getLogger(__name__)
 
 
@@ -759,6 +761,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # system AB
         comp_atomids_AB = self._get_atom_indices(omm_topology_AB, comp_resids_AB)
         atom_indices_AB_B = comp_atomids_AB[alchem_comps['stateB'][0]]
+        atom_indices_AB_A = comp_atomids_AB[alchem_comps['stateA'][0]]
 
         # Update positions from AB system
         positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
@@ -770,8 +773,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                                                    open('outputAB_new.pdb',
                                                         'w'))
 
-        # # 7. Get lambdas
-        # lambdas = self._get_lambda_schedule(settings)
+        # 7. Get lambdas
+        lambdas = self._get_lambda_schedule(settings)
+
+        apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
 
         # # 8. Add restraints
         # self._add_restraints(omm_system, omm_topology, settings)
