@@ -24,7 +24,7 @@ network of ligand transformations starting from input SDF / MOL2 / PDB files:
    :align: center
    :alt: Concept of a LigandNetwork and AlchemicalNetwork
 
-The procedure for setting up a simulation depends somewhat on the on the
+The procedure for setting up a simulation depends on the
 type of free energy calculation you are running. More detailed
 instructions can be found in the following sections:
 
