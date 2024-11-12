@@ -100,13 +100,13 @@ This returns a numpy array.
 Scoring Mappings
 ----------------
 
-Mapping **scorers** evaluate the quality of an atom mapping and can be used 
-as objective functions for optimizing ligand networks.
-
+Mapping **scorers**, or "scoring functions", evaluate the quality of an atom mapping and
+can be used as objective functions for optimizing ligand networks.
 **Scorers** take a :class:`.LigandAtomMapping` object and return a value from 0.0 (indicating a terrible mapping)
-to 1.0 (indicating a great mapping), 
-Lomap's scoring functions are included in the ``openfe`` package.
-The :func:`default_lomap_score` function combines several criteria
+to 1.0 (indicating a great mapping). 
+
+Because **scorers** are normalized, it is possible to use multiple **scorers** together.
+For example, the built-in Lomap scorer :func:`default_lomap_score` combines several criteria
 (such as the number of heavy atoms, if certain chemical changes are present,
 and if ring sizes are being mutated), into a single value.
 It is possible to combine scoring functions in this way because each scoring function returns a normalized value.

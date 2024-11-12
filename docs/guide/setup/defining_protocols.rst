@@ -47,8 +47,6 @@ For example, to customise the production run length of the RFE Protocol::
    protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
 
-.. TODO: should we just wait to define transformations in the Execution section?
-
 Creating Transformations from Protocols
 -----------------------------------------
 
