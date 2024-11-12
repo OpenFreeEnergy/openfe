@@ -10,10 +10,5 @@ Make the PR:
 * [ ] Make the PR and verify that CI/CD passes. 
 * [ ] Merge the PR into `main`.
 
-After Merging the PR:
-* [ ] Make a new [release draft through github](https://github.com/OpenFreeEnergy/openfe/releases/new)
-* [ ] Add the link to the [openfe website changelog](https://docs.openfree.energy/en/stable/CHANGELOG.html) in the github release notes.
-* [ ] Wait for PR to be auto-created on [conda-forge openfe-feedstock](https://github.com/conda-forge/openfe-feedstock), verify tests pass, and merge.
+After Merging the PR [follow this guide]https://github.com/OpenFreeEnergy/openfe/releases/new
 
-## Developers certificate of origin
-- [ ] I certify that this contribution is covered by the MIT License [here](https://github.com/OpenFreeEnergy/openfe/blob/main/LICENSE) and the **Developer Certificate of Origin** at <https://developercertificate.org/>.
