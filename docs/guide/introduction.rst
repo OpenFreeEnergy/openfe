@@ -14,9 +14,9 @@ Workflow overview
 The overall workflow of OpenFE involves three stages:
 
 1. :ref:`Simulation setup <userguide_setup>`: Defining the simulation campaign you are going to run.
-2. :ref:`Execution<userguide_execution>`: Running and performing initial analysis of your
+2. :ref:`Execution <userguide_execution>`: Running and performing initial analysis of your
    simulation campaign.
-3. :ref:`Gather results<userguide_results>`: Assembling the results from the simulation
+3. :ref:`Gather results <userguide_results>`: Assembling the results from the simulation
    campaign for further analysis.
 
 In many use cases, these stages may be done on different machines. For
@@ -30,17 +30,17 @@ is then the input for the next stage:
 
     The main stages of a free energy calculation in OpenFE, and the intermediates between them.
 
-The output of the **simulation setup** stage is an :class:`.AlchemicalNetwork`. This contains all
+The output of the :ref:`simulation setup <userguide_setup>` stage is an :class:`.AlchemicalNetwork`. This contains all
 the information about what is being simulated (e.g., what ligands, host proteins, solvation details etc) and the
 information about how to perform the simulation (the Protocol).
 
-The output of the **execution** stage is the basic results from each edge.
+The output of the :ref:`execution <userguide_execution>` stage is the basic results from each edge.
 This can depend of the specific analysis intended, but will either involve a
 :class:`.ProtocolResult` representing the calculated :math:`\Delta G` for
 each edge or the :class:`.ProtocolDAGResult` linked to the data needed to
 calculate that :math:`\Delta G`.
 
-The **gather results** stage aggregates the individual results for further analysis. For example, the CLI's ``gather`` command will create a
+The :ref:`gather results <userguide_results>` stage aggregates the individual results for further analysis. For example, the CLI's ``gather`` command will create a
 table of the :math:`\Delta G` for each leg.
 
 .. TODO: Should the CLI workflow be moved to under "CLI Interface"?
