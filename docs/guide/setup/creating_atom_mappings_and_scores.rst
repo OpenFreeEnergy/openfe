@@ -43,7 +43,7 @@ The two molecules passed into the ``suggest_mappings()`` method are then referre
 as ``componentA`` and ``componentB`` (in the above example, ``m1`` is ``componentA``  and  ``m2`` is ``componentB``).
 
 The atom mapping can be accessed through the ``componentA_to_componentB`` attribute, which returns a dictionary 
-where keys refer to the indices of atoms in the "A" molecule, and values refer to indices of atoms in the "B" molecule.
+where keys refer to the indices of atoms in the "A" component, and values refer to indices of atoms in the "B" component.
 If a given index does not appear, then it is unmapped.
 
 
