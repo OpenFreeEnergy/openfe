@@ -70,6 +70,7 @@ using:
     $ openfe plan-rhfe-network -M dir_with_sdfs/
 
 or a Relative Binding Free Energy (RBFE) network using:
+
 .. code:: bash
 
     $ openfe plan-rbfe-network -p protein.pdb -M dir_with_sdfs/
