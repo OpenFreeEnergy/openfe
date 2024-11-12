@@ -31,7 +31,7 @@ is then the input for the next stage:
     The main stages of a free energy calculation in OpenFE, and the intermediates between them.
 
 The output of the :ref:`simulation setup <userguide_setup>` stage is an :class:`.AlchemicalNetwork`. This contains all
-the information about what is being simulated (e.g., what ligands, host proteins, solvation details etc) and the
+the information about what is being simulated (e.g., what ligands, host proteins, solvation details, etc.) and the
 information about how to perform the simulation (the Protocol).
 
 The output of the :ref:`execution <userguide_execution>` stage is the basic results from each edge.
@@ -88,7 +88,7 @@ from the network planning command with something like this:
 .. TODO Link to example here. I think this is waiting on the CLI example
    being merged into example notebooks?
 
-Finally, assuming all results (and only results) are in the `results/` direcory,
+Finally, assuming all results (and only results) are in the `results/` directory,
 use the :ref:`cli_gather` to generate a summary table:
 
 .. code:: bash

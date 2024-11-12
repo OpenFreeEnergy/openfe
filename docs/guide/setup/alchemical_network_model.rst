@@ -49,7 +49,7 @@ see :ref:`cookbook on creating alchemical networks <cookbook/create_alchemical_n
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 OpenFE also provides the convenience classes :class:`.RBFEAlchemicalNetworkPlanner` and :class:`.RHFEAlchemicalNetworkPlanner`,
-which use the :class:`.RelativeHybridTopologyProtocol` for creating AlchemicalNetworks. For examples using these convenience classes, see :ref:`Relative Alchemical Network Planners cookbook <cookbook/rfe_alchemical_planners.nblink>`.
+which use the :class:`.RelativeHybridTopologyProtocol` for creating :class:`.AlchemicalNetwork`\s. For examples using these convenience classes, see :ref:`Relative Alchemical Network Planners cookbook <cookbook/rfe_alchemical_planners.nblink>`.
 
 .. note::
    The Network Planners are provided for user convenience. While they cover

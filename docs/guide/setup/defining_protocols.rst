@@ -44,12 +44,12 @@ For example, to customise the production run length of the RFE Protocol::
    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
    settings.simulation_settings.production_length = '10 ns'
 
-   prot = openmm_rfe.RelativeHybridTopologyProtocol(settings)
+   protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings)
 
 
 .. TODO: should we just wait to define transformations in the Execution section?
 
-Using Protocols and Transformations
+Creating Transformations from Protocols
 -----------------------------------------
 
 With only ``settings`` defined, a ``Protocol`` contains no chemistry-specific information.

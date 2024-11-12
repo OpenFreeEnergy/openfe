@@ -10,7 +10,7 @@ connecting all :class:`.SmallMoleculeComponent` in a "maximal network" (using :f
 but it is much more efficient to use a network with fewer transformations like a "radial network" (also known as a star map, using :func:`.generate_radial_network`)
 or a "minimimal spanning network" (using :func:`.generate_minimal_spanning_network`).
 
-:class:`.LigandNetwork`` generation can typically be described as three steps:
+:class:`.LigandNetwork` generation can typically be described as three steps:
 
    1. Generate the :ref:`Atom Mappings<Creating Atom Mappings>` of all pairwise combinations of ligands.
    2. :ref:`Score <Scoring Atom Mappings>` all generated Atom Mappings.
