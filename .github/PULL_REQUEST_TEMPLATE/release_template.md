@@ -10,5 +10,5 @@ Make the PR:
 * [ ] Make the PR and verify that CI/CD passes. 
 * [ ] Merge the PR into `main`.
 
-After Merging the PR [follow this guide]https://github.com/OpenFreeEnergy/openfe/releases/new
+After Merging the PR [follow this guide](https://github.com/OpenFreeEnergy/openfe/wiki/How-to-create-a-new-release)
 
