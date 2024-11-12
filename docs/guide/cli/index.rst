@@ -1,7 +1,7 @@
-.. _userguide_cli_interface:
+.. _userguide_cli:
 
-CLI Interface
-=============
+Command Line Interface
+======================
 
 In addition to the powerful Python API, OpenFE provides a simple command
 line interface to facilitate some more common (and less complicated) tasks.

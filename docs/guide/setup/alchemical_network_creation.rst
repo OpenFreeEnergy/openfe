@@ -39,7 +39,7 @@ Command-line interface
 ----------------------
 
 The Alchemical Network Planners can be used directly through the
-:ref:`command line interface <userguide_cli_interface>`.
+:ref:`command line interface <userguide_cli>`.
 
 For example, you can create a relative binding free energy (RBFE) network
 using:
