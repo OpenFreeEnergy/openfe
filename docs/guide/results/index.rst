@@ -1,7 +1,7 @@
 .. _userguide_results:
 
-Gather Results
-=====================
+Results Gathering
+=================
 
 With simulations completed,
 the results of individual simulations can be inspected,
