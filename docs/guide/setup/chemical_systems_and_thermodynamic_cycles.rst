@@ -11,14 +11,14 @@ Chemical Systems
 A :class:`.ChemicalSystem` represents the end state of an alchemical transformation,
 which can then be input to a :class:`.Protocol`. 
 
-A :class:`.ChemicalSystem` *does* contain the following information (when present):
+A :class:`.ChemicalSystem` **does** contain the following information (when present):
 
 * exact atomic information (including protonation state) of protein, ligands, co-factors, and any crystallographic
   waters
 * atomic positions of all explicitly defined components such as ligands or proteins
 * the abstract definition of the solvation environment, if present
 
-A :class:`.ChemicalSystem` *does NOT* include the following:
+A :class:`.ChemicalSystem` does **NOT** include the following:
 
 * forcefield applied to any component, including details on water model or virtual particles
 * thermodynamic conditions (e.g. temperature or pressure)
