@@ -1,19 +1,20 @@
 .. _defining-protocols:
 
-Creating and using Protocols
+Protocols in OpenFE
 ============================
 
 A :class:`.Protocol` is a computational method for estimating the free energy difference between two chemical systems.
 
-Included in the ``openfe`` are the following common protocols:
+Just as there are multiple possible methods for estimating free energy differences,
+there are multiple available ``Protocol``\s to choose from.
+
+For example, included in the ``openfe`` package are the following:
    * :class:`.RelativeHybridTopologyProtocol`
    * :class:`.AbsoluteSolvationProtocol`
    * :class:`.PlainMDProtocol`
 
-For more information, see  :ref:`userguide_protocols`.
-
-The :class:`.Protocol` class is intended to be built upon to create new, custom protocols,
-and several are in development by the openfe development team as well as  external academic groups
+More protocols are in development, and a full list of available protocols
+can be found at :ref:`userguide_protocols`.
 
 Because :class:`.Protocol`\s share a common interface for how they are created and executed,
 it is relatively straightforward to try out a new method,
@@ -22,7 +23,7 @@ or benchmark several to choose the best for a particular project.
 Defining Settings and Creating Protocols
 ----------------------------------------
 
-The ``settings`` for a given ``Protocol`` allow for user-defined behavior.
+A ``Settings`` object contains all the parameters needed by a ``Protocol``.
 Each ``Protocol`` has a ``.default_settings()`` method, which will provide a sensible default
 starting point and relevant documentation.
 
