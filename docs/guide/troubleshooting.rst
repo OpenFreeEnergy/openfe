@@ -15,6 +15,10 @@ Log Debug information
 One of the first troubleshooting steps is to increase the verbosity of the logging.
 ``openfe`` uses Python's native logging library which can be `configured <https://docs.python.org/3/howto/logging.html#configuring-logging>`_ either using a Python API or a configuration file.
 
+.. warning::
+
+   **We do not recommend setting the log level to debug for production runs,** as the logging may slow down the simulation and add a lot of noise to the output.
+
 When using ``openfe quickrun``, the configuration file is more convenient.
 Below is an example logging configuration file that can be used to set the log level to ``DEBUG``:
 
@@ -51,10 +55,6 @@ Save this configuration file as ``debug_logging.conf`` and then run ``openfe qui
 
    $ openfe --log debug_logging.conf quickrun -d results/ -o results/result_lig_ejm_31_solvent_lig_ejm_42_solvent.json transformations/easy_rbfe_lig_ejm_31_solvent_lig_ejm_42_solvent.json
 
-.. note::
-
-   The ``--log debug_logging.conf`` argument goes between ``openfe`` and ``quickrun``.
+Note that the ``--log debug_logging.conf`` argument goes between ``openfe`` and ``quickrun`` on the command line.
 
 This will cause every package to log at the debug level, which may be quite verbose and noisy but should aid in identify what is going on right before the exception is thrown.
-
-**We do not recommend setting the log level to debug for production runs,** as the logging may slow down the simulation and add a lot of noise to the output.
