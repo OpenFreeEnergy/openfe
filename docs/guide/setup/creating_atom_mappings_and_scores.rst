@@ -69,7 +69,7 @@ while bonds that change (either bond order change or element change), are colour
 
 These 2D mappings can be saved to file using the :func:`LigandAtomMapping.draw_to_file()` method.
 
-With the ``py3dmol`` package installed, we can inspect the spatial overlap of the mapping in 3D.
+With the ``py3dmol`` package, we can inspect the spatial overlap of the mapping in 3D.
 In a notebook, this produces an interactive rotatable view of the mapping.
 The left and rightmost views show the "A" and "B" molecules
 with coloured spheres on each showing the correspondence between atoms.
