@@ -2,32 +2,32 @@
 
 Defining the Ligand Network
 ===========================
-A :class:`.LigandNetwork` is a set of small molecules connected by mappings of two small molecules.
-One example for such a network could be a set of drug candidates, that should be ranked using alchemical transformations.
-The :class:`.LigandNetwork` is a tool that is used to orchestrate the free energy calculations to efficiently
-compute a ligand ranking.
-It is of course possible to calculate all possible :class:`.Transformation` defined by all possible :class:`.AtomMappings`
-connecting all :class:`.SmallMoleculeComponent` with a ''maximal network'' (using :func:`.generate_maximal_network`),
-but it is much more efficient to use a network with less transformations like a ''radial network'' (also known as a star map, using :func:`.generate_radial_network`)
-or a ''minimimal spanning network'' (using :func:`.generate_minimal_spanning_network`).
+A :class:`.LigandNetwork` is a set of connected small molecule ``component``\s, such as a set of drug candidates, 
+that can be used to orchestrate free energy calculations and efficiently compute a ligand ranking.
 
-Any :class:`.LigandNetwork`` generation can be generally conceptualized into three steps:
+It is of course possible to calculate all possible :class:`.Transformation`\s,  defined as all possible :class:`.AtomMappings`
+connecting all :class:`.SmallMoleculeComponent` in a "maximal network" (using :func:`.generate_maximal_network`),
+but it is much more efficient to use a network with fewer transformations like a "radial network" (also known as a star map, using :func:`.generate_radial_network`)
+or a "minimimal spanning network" (using :func:`.generate_minimal_spanning_network`).
 
-* Generate the :ref:`Atom Mappings<Creating Atom Mappings>`  of all pairwise combinations of ligands
-* :ref:`Score all resulting Atom Mappings<Creating Atom Mappings>`
-* Build a :class:`.LigandNetwork` with all possible mappings directed by their scores.
+:class:`.LigandNetwork` generation can typically be described as three steps:
+
+   1. Generate the :ref:`Atom Mappings<Creating Atom Mappings>` of all pairwise combinations of ligands.
+   2. :ref:`Score <Scoring Atom Mappings>` all generated Atom Mappings.
+   3. Build a ``LigandNetwork`` of all possible mappings and their scores.
 
 .. image:: img/ligand_network.png
-   :width: 90%
+   :width: 50%
    :align: center
-   :alt: Concept of a simple MST ligand network
+   :alt: Diagram of a simple MST ligand network
 
 
 Generating Ligand Networks
 --------------------------
 
-The ''LigandNetwork'' can be generated with OpenFE employing a :class:`.LigandAtomMapper` and a atom mapping scorer,
-like the :func:`.default_lomap_score` together with a ``LigandNetworkPlanner``, like e.g. the :func:`.generate_radial_network`.
+The :class:`.LigandNetwork` can be generated with OpenFE employing a :class:`.LigandAtomMapper` and an atom mapping scorer,
+like the :func:`.default_lomap_score` together with a ``LigandNetworkPlanner``, such as :func:`.generate_radial_network`.
+
 In the following code, we will show how a ``LigandNetwork`` can be planned:
 
 .. code::

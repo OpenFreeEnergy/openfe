@@ -13,16 +13,16 @@ Workflow overview
 
 The overall workflow of OpenFE involves three stages:
 
-1. **Setup**: Defining the simulation campaign you are going to run.
-2. **Execution**: Running and performing initial analysis of your
+1. :ref:`Simulation setup <userguide_setup>`: Defining the simulation campaign you are going to run.
+2. :ref:`Execution <userguide_execution>`: Running and performing initial analysis of your
    simulation campaign.
-3. **Gather results**: Assembling the results from the simulation
+3. :ref:`Gather results <userguide_results>`: Assembling the results from the simulation
    campaign for further analysis.
 
-In many use cases, these stages may be done on different machines -- for
+In many use cases, these stages may be done on different machines. For
 example, you are likely to make use of HPC or cloud computing resources to
-run the simulation campaign. Because of this, each stage has a certain type
-of output, which is the input to the next stage.
+run the simulation campaign. Because of this, each stage has a defined output which 
+is then the input for the next stage:
 
 .. TODO make figure
 .. .. figure:: ???
@@ -30,25 +30,25 @@ of output, which is the input to the next stage.
 
     The main stages of a free energy calculation in OpenFE, and the intermediates between them.
 
-The output of **setup** is an :class:`.AlchemicalNetwork`. This contains all
-the information about what is being simulated (e.g., what ligands, host proteins, solvation details etc) and the
+The output of the :ref:`simulation setup <userguide_setup>` stage is an :class:`.AlchemicalNetwork`. This contains all
+the information about what is being simulated (e.g., what ligands, host proteins, solvation details, etc.) and the
 information about how to perform the simulation (the Protocol).
 
-The output of the **execution** stage is the basic results from each edge.
+The output of the :ref:`execution <userguide_execution>` stage is the basic results from each edge.
 This can depend of the specific analysis intended, but will either involve a
 :class:`.ProtocolResult` representing the calculated :math:`\Delta G` for
 each edge or the :class:`.ProtocolDAGResult` linked to the data needed to
 calculate that :math:`\Delta G`.
 
-The **gather results** stage takes these results and produces something
-useful to the user. For example, the CLI's ``gather`` command will create a
+The :ref:`gather results <userguide_results>` stage aggregates the individual results for further analysis. For example, the CLI's ``gather`` command will create a
 table of the :math:`\Delta G` for each leg.
 
+.. TODO: Should the CLI workflow be moved to under "CLI Interface"?
 
 CLI Workflow
 ------------
 
-We have separate CLI commands for each stage of setup, running, and
+We have separate CLI commands for each stage of setup, execution, and
 gathering results. With the CLI, the Python objects of
 :class:`.AlchemicalNetwork` and :class:`.ProtocolResult` are stored to disk
 in an intermediate representation between the commands.
@@ -61,7 +61,7 @@ in an intermediate representation between the commands.
    planner to generate the network, before saving each transformation as a
    JSON file.
 
-The commands used to generate an :class:`AlchemicalNetwork` using the CLI are:
+The commands used to generate an :class:`.AlchemicalNetwork` using the CLI are:
 
 * :ref:`cli_plan-rbfe-network`
 * :ref:`cli_plan-rhfe-network`
@@ -72,7 +72,7 @@ For example, you can create a relative binding free energy (RBFE) network using
 
     $ openfe plan-rbfe-network -p protein.pdb -M dir_with_sdfs/
 
-These will save the alchemical network represented as a JSON file for each
+This will save the alchemical network represented as a JSON file for each
 edge of the :class:`.AlchemicalNetwork` (i.e., each leg of the alchemical cycle).
 
 To run a given transformation, use the :ref:`cli_quickrun`; for example:
@@ -88,8 +88,8 @@ from the network planning command with something like this:
 .. TODO Link to example here. I think this is waiting on the CLI example
    being merged into example notebooks?
 
-Finally, to gather the results of that, assuming all results (and only
-results) are in the `results/` direcory, use the :ref:`cli_gather`:
+Finally, assuming all results (and only results) are in the `results/` directory,
+use the :ref:`cli_gather` to generate a summary table:
 
 .. code:: bash
 
