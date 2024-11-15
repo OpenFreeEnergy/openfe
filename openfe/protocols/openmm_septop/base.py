@@ -71,7 +71,8 @@ from ..openmm_utils import (
 )
 from openfe.utils import without_oechem_backend
 
-from .femto_utils import apply_fep
+from .femto_alchemy import apply_fep
+from .femto_restraints import select_ligand_idxs
 
 logger = logging.getLogger(__name__)
 
@@ -545,26 +546,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         return lambdas
 
-    def _add_restraints(self, system, topology, settings):
-        """
-        Placeholder method to add restraints if necessary
-        """
-        return
-
-    def _get_alchemical_system(
-            self,
-            topology: app.Topology,
-            system: openmm.System,
-            comp_resids: dict[Component, npt.NDArray],
-            alchem_comps: dict[str, list[Component]]
-    ):
-        """
-        Empty placeholder for getting
-        an alchemically modified system and its associated factory
-        """
-
-        return
-
     def _get_states(
             self,
             alchemical_system: openmm.System,
@@ -574,25 +555,356 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             solvent_comp: Optional[SolventComponent],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
-        Empty placeholder for getting
-        a list of sampler and thermodynmic states from an
+        Get a list of sampler and thermodynmic states from an
         input alchemical system.
+
+        Parameters
+        ----------
+        alchemical_system : openmm.System
+          Alchemical system to get states for.
+        positions : openmm.unit.Quantity
+          Positions of the alchemical system.
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings for the protocol unit.
+        lambdas : dict[str, npt.NDArray]
+          A dictionary of lambda scales.
+        solvent_comp : Optional[SolventComponent]
+          The solvent component of the system, if there is one.
+
+        Returns
+        -------
+        sampler_states : list[SamplerState]
+          A list of SamplerStates for each replica in the system.
+        cmp_states : list[ThermodynamicState]
+          A list of ThermodynamicState for each replica in the system.
         """
+        alchemical_state = AlchemicalState.from_system(alchemical_system)
+        # Set up the system constants
+        temperature = settings['thermo_settings'].temperature
+        pressure = settings['thermo_settings'].pressure
+        constants = dict()
+        constants['temperature'] = ensure_quantity(temperature, 'openmm')
+        if solvent_comp is not None:
+            constants['pressure'] = ensure_quantity(pressure, 'openmm')
 
-        return
+        cmp_states = create_thermodynamic_state_protocol(
+            alchemical_system, protocol=lambdas,
+            constants=constants, composable_states=[alchemical_state],
+        )
 
+        sampler_state = SamplerState(positions=positions)
+        if alchemical_system.usesPeriodicBoundaryConditions():
+            box = alchemical_system.getDefaultPeriodicBoxVectors()
+            sampler_state.box_vectors = box
+
+        sampler_states = [sampler_state for _ in cmp_states]
+
+        return sampler_states, cmp_states
+
+
+    def _get_reporter(
+        self,
+        topology: app.Topology,
+        positions: openmm.unit.Quantity,
+        simulation_settings: MultiStateSimulationSettings,
+        output_settings: MultiStateOutputSettings,
+    ) -> multistate.MultiStateReporter:
+        """
+        Get a MultistateReporter for the simulation you are running.
+
+        Parameters
+        ----------
+        topology : app.Topology
+          A Topology of the system being created.
+        positions : openmm.unit.Quantity
+          Positions of the pre-alchemical simulation system.
+        simulation_settings : MultiStateSimulationSettings
+          Multistate simulation control settings, specifically containing
+          the amount of time per state sampling iteration.
+        output_settings: MultiStateOutputSettings
+          Output settings for the simulations
+
+        Returns
+        -------
+        reporter : multistate.MultiStateReporter
+          The reporter for the simulation.
+        """
+        mdt_top = mdt.Topology.from_openmm(topology)
+
+        selection_indices = mdt_top.select(
+                output_settings.output_indices
+        )
+
+        nc = self.shared_basepath / output_settings.output_filename
+        chk = output_settings.checkpoint_storage_filename
+        chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
+            checkpoint_interval=output_settings.checkpoint_interval,
+            time_per_iteration=simulation_settings.time_per_iteration,
+        )
+
+        reporter = multistate.MultiStateReporter(
+            storage=nc,
+            analysis_particle_indices=selection_indices,
+            checkpoint_interval=chk_intervals,
+            checkpoint_storage=chk,
+        )
+
+        # Write out the structure's PDB whilst we're here
+        if len(selection_indices) > 0:
+            traj = mdt.Trajectory(
+                positions[selection_indices, :],
+                mdt_top.subset(selection_indices),
+            )
+            traj.save_pdb(
+                self.shared_basepath / output_settings.output_structure
+            )
+
+        return reporter
+
+
+    def _get_ctx_caches(
+        self,
+        engine_settings: OpenMMEngineSettings
+    ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
+        """
+        Set the context caches based on the chosen platform
+
+        Parameters
+        ----------
+        engine_settings : OpenMMEngineSettings,
+
+        Returns
+        -------
+        energy_context_cache : openmmtools.cache.ContextCache
+          The energy state context cache.
+        sampler_context_cache : openmmtools.cache.ContextCache
+          The sampler state context cache.
+        """
+        platform = compute.get_openmm_platform(
+            engine_settings.compute_platform,
+        )
+
+        energy_context_cache = openmmtools.cache.ContextCache(
+            capacity=None, time_to_live=None, platform=platform,
+        )
+
+        sampler_context_cache = openmmtools.cache.ContextCache(
+            capacity=None, time_to_live=None, platform=platform,
+        )
+
+        return energy_context_cache, sampler_context_cache
 
     @staticmethod
-    def _get_mdtraj_from_openmm(omm_topology, omm_positions):
+    def _get_integrator(
+            integrator_settings: IntegratorSettings,
+            simulation_settings: MultiStateSimulationSettings
+    ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
-        Get an mdtraj object from an OpenMM topology and positions
+        Return a LangevinDynamicsMove integrator
+
+        Parameters
+        ----------
+        integrator_settings : IntegratorSettings
+        simulation_settings : MultiStateSimulationSettings
+
+        Returns
+        -------
+        integrator : openmmtools.mcmc.LangevinDynamicsMove
+          A configured integrator object.
         """
-        mdtraj_topology = md.Topology.from_openmm(omm_topology)
-        positions_in_mdtraj_format = np.array(
-            omm_positions / omm_units.nanometers)
-        mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
-                                      mdtraj_topology)
-        return mdtraj_system
+        steps_per_iteration = settings_validation.convert_steps_per_iteration(
+            simulation_settings, integrator_settings
+        )
+
+        integrator = openmmtools.mcmc.LangevinDynamicsMove(
+            timestep=to_openmm(integrator_settings.timestep),
+            collision_rate=to_openmm(
+                integrator_settings.langevin_collision_rate),
+            n_steps=steps_per_iteration,
+            reassign_velocities=integrator_settings.reassign_velocities,
+            n_restart_attempts=integrator_settings.n_restart_attempts,
+            constraint_tolerance=integrator_settings.constraint_tolerance,
+        )
+
+        return integrator
+
+    @staticmethod
+    def _get_sampler(
+            integrator: openmmtools.mcmc.LangevinDynamicsMove,
+            reporter: openmmtools.multistate.MultiStateReporter,
+            simulation_settings: MultiStateSimulationSettings,
+            thermo_settings: ThermoSettings,
+            cmp_states: list[ThermodynamicState],
+            sampler_states: list[SamplerState],
+            energy_context_cache: openmmtools.cache.ContextCache,
+            sampler_context_cache: openmmtools.cache.ContextCache
+    ) -> multistate.MultiStateSampler:
+        """
+        Get a sampler based on the equilibrium sampling method requested.
+
+        Parameters
+        ----------
+        integrator : openmmtools.mcmc.LangevinDynamicsMove
+          The simulation integrator.
+        reporter : openmmtools.multistate.MultiStateReporter
+          The reporter to hook up to the sampler.
+        simulation_settings : MultiStateSimulationSettings
+          Settings for the alchemical sampler.
+        thermo_settings : ThermoSettings
+          Thermodynamic settings
+        cmp_states : list[ThermodynamicState]
+          A list of thermodynamic states to sample.
+        sampler_states : list[SamplerState]
+          A list of sampler states.
+        energy_context_cache : openmmtools.cache.ContextCache
+          Context cache for the energy states.
+        sampler_context_cache : openmmtool.cache.ContextCache
+          Context cache for the sampler states.
+
+        Returns
+        -------
+        sampler : multistate.MultistateSampler
+          A sampler configured for the chosen sampling method.
+        """
+        rta_its, rta_min_its = \
+            settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=simulation_settings,
+        )
+        et_target_err = \
+            settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+            thermo_settings.temperature,
+            simulation_settings.early_termination_target_error,
+        )
+
+        # Select the right sampler
+        # Note: doesn't need else, settings already validates choices
+        if simulation_settings.sampler_method.lower() == "repex":
+            sampler = multistate.ReplicaExchangeSampler(
+                mcmc_moves=integrator,
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=et_target_err,
+                online_analysis_minimum_iterations=rta_min_its
+            )
+        elif simulation_settings.sampler_method.lower() == "sams":
+            sampler = multistate.SAMSSampler(
+                mcmc_moves=integrator,
+                online_analysis_interval=rta_its,
+                online_analysis_minimum_iterations=rta_min_its,
+                flatness_criteria=simulation_settings.sams_flatness_criteria,
+                gamma0=simulation_settings.sams_gamma0,
+            )
+        elif simulation_settings.sampler_method.lower() == 'independent':
+            sampler = multistate.MultiStateSampler(
+                mcmc_moves=integrator,
+                online_analysis_interval=rta_its,
+                online_analysis_target_error=et_target_err,
+                online_analysis_minimum_iterations=rta_min_its,
+            )
+
+        sampler.create(
+            thermodynamic_states=cmp_states,
+            sampler_states=sampler_states,
+            storage=reporter
+        )
+
+        sampler.energy_context_cache = energy_context_cache
+        sampler.sampler_context_cache = sampler_context_cache
+
+        return sampler
+
+    def _run_simulation(
+            self,
+            sampler: multistate.MultiStateSampler,
+            reporter: multistate.MultiStateReporter,
+            settings: dict[str, SettingsBaseModel],
+            dry: bool
+    ):
+        """
+        Run the simulation.
+
+        Parameters
+        ----------
+        sampler : multistate.MultiStateSampler
+          The sampler associated with the simulation to run.
+        reporter : multistate.MultiStateReporter
+          The reporter associated with the sampler.
+        settings : dict[str, SettingsBaseModel]
+          The dictionary of settings for the protocol.
+        dry : bool
+          Whether or not to dry run the simulation
+
+        Returns
+        -------
+        unit_results_dict : Optional[dict]
+          A dictionary containing all the free energy results,
+          if not a dry run.
+        """
+        # Get the relevant simulation steps
+        mc_steps = settings_validation.convert_steps_per_iteration(
+            simulation_settings=settings['simulation_settings'],
+            integrator_settings=settings['integrator_settings'],
+        )
+
+        equil_steps = settings_validation.get_simsteps(
+            sim_length=settings['simulation_settings'].equilibration_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=mc_steps,
+        )
+        prod_steps = settings_validation.get_simsteps(
+            sim_length=settings['simulation_settings'].production_length,
+            timestep=settings['integrator_settings'].timestep,
+            mc_steps=mc_steps,
+        )
+
+        if not dry:  # pragma: no-cover
+            # minimize
+            if self.verbose:
+                self.logger.info("minimizing systems")
+            sampler.minimize(
+                max_iterations=settings[
+                    'simulation_settings'].minimization_steps
+            )
+            # equilibrate
+            if self.verbose:
+                self.logger.info("equilibrating systems")
+
+            sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
+
+            # production
+            if self.verbose:
+                self.logger.info("running production phase")
+            sampler.extend(int(prod_steps / mc_steps))  # type: ignore
+
+            if self.verbose:
+                self.logger.info("production phase complete")
+
+            if self.verbose:
+                self.logger.info("post-simulation result analysis")
+
+            analyzer = multistate_analysis.MultistateEquilFEAnalysis(
+                reporter,
+                sampling_method=settings[
+                    'simulation_settings'].sampler_method.lower(),
+                result_units=unit.kilocalorie_per_mole
+            )
+            analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
+            analyzer.close()
+
+            return analyzer.unit_results_dict
+
+        else:
+            # close reporter when you're done, prevent file handle clashes
+            reporter.close()
+
+            # clean up the reporter file
+            fns = [self.shared_basepath / settings[
+                'output_settings'].output_filename,
+                   self.shared_basepath / settings[
+                       'output_settings'].checkpoint_storage_filename]
+            for fn in fns:
+                os.remove(fn)
+
+            return None
 
 
     @staticmethod
@@ -621,6 +933,33 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         in the solvent phase, the ligand B are offset from ligand A
         """
         ...
+
+    @staticmethod
+    def _set_positions(off_topology, positions):
+        off_topology.clear_positions()
+        off_topology.set_positions(positions)
+        return off_topology
+
+    @staticmethod
+    def _add_restraints(
+            system: openmm.System,
+            positions: np.array,
+            topology: Optional[openmm.Topology],
+            settings,
+            ligand_1_ref_idx: int,
+            ligand_2_ref_idx: int,
+    ) -> openmm.System:
+        """
+        Get new positions for the stateB after equilibration.
+
+        Note
+        ----
+        Must be implemented in the child class.
+        In the complex phase, this is achieved by aligning the proteins,
+        in the solvent phase, the ligand B are offset from ligand A
+        """
+        ...
+
 
     def run(self, dry=False, verbose=True,
             scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
@@ -688,6 +1027,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             None, None, smc_off_B,
             system_generator, settings['solvation_settings'],
         )
+
         # Take the modeller from system A --> every water/ion should be in
         # the same location
         system_modeller_AB = copy.copy(system_modeller_A)
@@ -773,29 +1113,111 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                                                    open('outputAB_new.pdb',
                                                         'w'))
 
-        # 7. Get lambdas
-        lambdas = self._get_lambda_schedule(settings)
-
+        # 9. Create the alchemical system
         apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
 
-        # # 8. Add restraints
-        # self._add_restraints(omm_system, omm_topology, settings)
-        #
-        # # 9. Get alchemical system
-        # alchem_factory, alchem_system, alchem_indices =
-        # self._get_alchemical_system(
-        #     omm_topology, omm_system, comp_resids, alchem_comps
-        # )
+        # 10. Apply Restraints
+        off_A = alchem_comps["stateA"][0].to_openff().to_topology()
+        lig_A_pos = positions_AB[atom_indices_AB_A[0]:atom_indices_AB_A[-1]+1, :] / omm_units.nanometers * unit.nanometer
+        self._set_positions(off_A, lig_A_pos)
+        off_A.to_file('molA.pdb')
+        off_B = alchem_comps["stateB"][0].to_openff().to_topology()
+        lig_B_pos = positions_AB[
+                    atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
+                    :] / omm_units.nanometers * unit.nanometer
+        self._set_positions(off_B, lig_B_pos)
+        off_B.to_file('molB.pdb')
+
+        ligand_A_inxs, ligand_B_inxs = select_ligand_idxs(off_A, off_B)
+
+        ligand_A_inxs = [atom_indices_AB_A[inx] for inx in ligand_A_inxs]
+        ligand_B_inxs = [atom_indices_AB_B[inx] for inx in ligand_B_inxs]
+        print(ligand_A_inxs)
+        print(ligand_B_inxs)
+
+        system = self._add_restraints(omm_system_AB, positions_AB, settings, ligand_A_inxs, ligand_B_inxs)
+        print(system)
+
+        # Here we could also apply REST
+
+        # # 7. Get lambdas
+        # lambdas = self._get_lambda_schedule(settings)
         #
         # # 10. Get compound and sampler states
         # sampler_states, cmp_states = self._get_states(
-        #     alchem_system, positions, settings,
+        #     omm_system_AB, positions_AB, settings,
         #     lambdas, solv_comp
         # )
         #
+        # # 11. Create the multistate reporter & create PDB
+        # reporter = self._get_reporter(
+        #     omm_topology_AB, positions_AB,
+        #     settings['simulation_settings'],
+        #     settings['output_settings'],
+        # )
         #
-        # eventually save the serialized alchemical systems to disc to be
-        # picked up by the run unit
+        # # Wrap in try/finally to avoid memory leak issues
+        # try:
+        #     # 12. Get context caches
+        #     energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
+        #         settings['engine_settings']
+        #     )
+        #
+        #     # 13. Get integrator
+        #     integrator = self._get_integrator(
+        #         settings['integrator_settings'],
+        #         settings['simulation_settings'],
+        #     )
+        #
+        #     # 14. Get sampler
+        #     sampler = self._get_sampler(
+        #         integrator, reporter, settings['simulation_settings'],
+        #         settings['thermo_settings'],
+        #         cmp_states, sampler_states,
+        #         energy_ctx_cache, sampler_ctx_cache
+        #     )
+        #
+        #     # 15. Run simulation
+        #     unit_result_dict = self._run_simulation(
+        #         sampler, reporter, settings, dry
+        #     )
+        #
+        # finally:
+        #     # close reporter when you're done to prevent file handle clashes
+        #     reporter.close()
+        #
+        #     # clear GPU context
+        #     # Note: use cache.empty() when openmmtools #690 is resolved
+        #     for context in list(energy_ctx_cache._lru._data.keys()):
+        #         del energy_ctx_cache._lru._data[context]
+        #     for context in list(sampler_ctx_cache._lru._data.keys()):
+        #         del sampler_ctx_cache._lru._data[context]
+        #     # cautiously clear out the global context cache too
+        #     for context in list(
+        #             openmmtools.cache.global_context_cache._lru._data.keys()):
+        #         del openmmtools.cache.global_context_cache._lru._data[context]
+        #
+        #     del sampler_ctx_cache, energy_ctx_cache
+        #
+        #     # Keep these around in a dry run so we can inspect things
+        #     if not dry:
+        #         del integrator, sampler
+        #
+        # if not dry:
+        #     nc = self.shared_basepath / settings[
+        #         'output_settings'].output_filename
+        #     chk = settings['output_settings'].checkpoint_storage_filename
+        #     return {
+        #         'nc': nc,
+        #         'last_checkpoint': chk,
+        #         **unit_result_dict,
+        #     }
+        # else:
+        #     return {'debug': {'sampler': sampler}}
+        #
+        #
+        # # eventually save the serialized alchemical systems to disc to be
+        # # picked up by the run unit
 
 
 class BaseSepTopRunUnit(gufe.ProtocolUnit):

@@ -8,6 +8,8 @@ import openmm.unit
 
 # import femto.fe.config
 
+# This code was obtained and modified from https://github.com/Psivant/femto
+
 LAMBDA_VDW_LIGAND_1 = "lambda_vdw_lig_1"
 """The global parameter used to scale the vdW interactions of ligand 1."""
 LAMBDA_VDW_LIGAND_2 = "lambda_vdw_lig_2"

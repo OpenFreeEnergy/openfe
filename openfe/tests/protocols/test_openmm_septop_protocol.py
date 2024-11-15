@@ -284,7 +284,7 @@ def test_validate_alchem_nonsmc(
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
-def test_setup(benzene_modifications,  T4_protein_component, tmpdir):
+def test_setup(bace_ligands,  bace_protein_component, tmpdir):
     # check system parametrisation works even if confgen fails
     s = SepTopProtocol.default_settings()
     s.protocol_repeats = 1
@@ -301,14 +301,14 @@ def test_setup(benzene_modifications,  T4_protein_component, tmpdir):
     )
 
     stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
+        'lig_02': bace_ligands['lig_02'],
+        'protein': bace_protein_component,
         'solvent': SolventComponent(),
     })
 
     stateB = ChemicalSystem({
-        'toluene': benzene_modifications['toluene'],
-        'protein': T4_protein_component,
+        'lig_03': bace_ligands['lig_03'],
+        'protein': bace_protein_component,
         'solvent': SolventComponent(),
     })
 

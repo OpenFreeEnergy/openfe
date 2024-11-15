@@ -30,6 +30,7 @@ import logging
 import warnings
 from collections import defaultdict
 import gufe
+import openmm
 from gufe.components import Component
 import itertools
 import numpy as np
@@ -54,13 +55,13 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
-    SettingsBaseModel,
+    SettingsBaseModel, RestraintsSettings,
 )
 from ..openmm_utils import system_validation, settings_validation
-from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
+from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit, _get
 from openfe.utils import log_system_probe
 from openfe.due import due, Doi
-
+from .femto_restraints import select_ligand_idxs, select_receptor_idxs
 
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -479,6 +480,8 @@ class SepTopProtocol(gufe.Protocol):
                 output_filename='complex.nc',
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
+            solvent_restraints_settings=RestraintsSettings(),
+            complex_restraints_settings=RestraintsSettings(),
         )
 
     @staticmethod
@@ -797,6 +800,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
+            * restraint_settings: RestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -813,6 +817,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         settings['equil_output_settings'] = prot_settings.complex_equil_output_settings
         settings['simulation_settings'] = prot_settings.complex_simulation_settings
         settings['output_settings'] = prot_settings.complex_output_settings
+        settings['restraint_settings'] = prot_settings.complex_restraints_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -835,6 +840,36 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         updated_positions_B = mdtraj_complex_B.openmm_positions(0)
 
         return updated_positions_B
+
+    @staticmethod
+    def _add_restraints(
+            system: openmm.System,
+            positions: np.array,
+            topology: openmm.Topology,
+            settings,
+            ligand_1_ref_idx: int,
+            ligand_2_ref_idx: int,
+    ) -> openmm.System:
+
+        traj = _get_mdtraj_from_openmm(topology, positions)
+        receptor_ref_idxs_1 = select_receptor_idxs(
+            traj, ligand_1, ligand_1_ref_idxs
+        )
+        receptor_ref_idxs_2 = receptor_ref_idxs_1
+
+        # Remove the offset of ligand 2 atom indices.
+        # `ligand_2_ref_idxs` should be in the range 0:ligand_2.atoms to match
+        # `ligand_2` parmed.amber.AmberParm.
+        _ligand_2_ref_idxs = tuple(
+            i - len(ligand_1.atoms) for i in ligand_2_ref_idxs)
+        if ligand_2 is not None and not femto.fe.reference.check_receptor_idxs(
+                receptor, receptor_ref_idxs_1, ligand_2, _ligand_2_ref_idxs
+        ):
+            _LOGGER.info(
+                "selecting alternate receptor reference atoms for ligand 2")
+            receptor_ref_idxs_2 = femto.fe.reference.select_receptor_idxs(
+                receptor, ligand_2, _ligand_2_ref_idxs
+
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
@@ -917,6 +952,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             * equil_output_settings : MDOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
+            * restraint_settings: RestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -933,6 +969,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
         settings['output_settings'] = prot_settings.solvent_output_settings
+        settings['restraint_settings'] = prot_settings.solvent_restraints_settings
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -971,6 +1008,44 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         updated_positions_B = mdtraj_system_B.openmm_positions(0)
 
         return updated_positions_B
+
+    @staticmethod
+    def _add_restraints(
+        system: openmm.System,
+        positions,
+        topology,
+        settings,
+        ligand_1_ref_idx: int,
+        ligand_2_ref_idx: int,
+    ) -> openmm.System:
+        """Apply a distance restraints between the ligands.
+
+        Args:
+            system: The OpenMM system to add the restraints to.
+            topology: The full topology of the complex phase.
+            ligand_1_ref_idx: The reference index of the first ligand.
+            ligand_2_ref_idx: The reference index of the second ligand.
+        """
+
+        coords = positions
+
+        distance = np.linalg.norm(
+            coords[ligand_1_ref_idx] - coords[ligand_2_ref_idx])
+        print(distance)
+
+        force = openmm.HarmonicBondForce()
+        force.addBond(
+            ligand_1_ref_idx[1],
+            ligand_2_ref_idx[1],
+            distance * openmm.unit.angstrom,
+            settings['restraint_settings'].k_distance.m,
+        )
+        force.setName("alignment_restraint")
+        force.setForceGroup(6)
+
+        system.addForce(force)
+
+        return system
 
 
     def _execute(

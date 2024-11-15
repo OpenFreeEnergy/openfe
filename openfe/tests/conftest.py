@@ -233,6 +233,14 @@ def T4_protein_component():
 
     return comp
 
+@pytest.fixture(scope='session')
+def bace_protein_component():
+    with resources.files('openfe.tests.data.openmm_septop') as d:
+        fn = str(d / 'bace.pdb')
+        comp = gufe.ProteinComponent.from_pdb_file(fn, name="BACE")
+
+    return comp
+
 
 @pytest.fixture()
 def eg5_protein_pdb():

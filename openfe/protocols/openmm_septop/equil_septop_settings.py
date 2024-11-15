@@ -25,6 +25,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
     MDSimulationSettings,
     MDOutputSettings,
 )
+from openff.units import unit
+from openff.models.types import FloatQuantity
 import numpy as np
 from pydantic.v1 import validator
 
@@ -34,6 +36,15 @@ class AlchemicalSettings(SettingsBaseModel):
 
     Empty place holder for right now.
     """
+
+
+class RestraintsSettings(SettingsBaseModel):
+    """
+    Settings for the restraints.
+    """
+    k_distance: FloatQuantity['kcal/(mol*angstrom**2)'] = 20 * unit.kilocalorie_per_mole / unit.angstrom**2
+    k_theta: FloatQuantity['kcal/(mol*rad**2)'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+
 
 
 class LambdaSettings(SettingsBaseModel):
@@ -51,19 +62,13 @@ class LambdaSettings(SettingsBaseModel):
       the same length, defining all the windows of the transformation.
 
     """
-    lambda_elec: list[float] = [
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.75,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-    ]
+    lambda_elec: list[float] = [0.0] * 8 + [0.25, 0.5, 0.75] + [1.0] * 8
     """
     List of floats of lambda values for the electrostatics. 
     Zero means state A and 1 means state B.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
-    lambda_vdw: list[float] = [
-        0.0, 0.142857143, 0.285714286, 0.428571429, 0.571428571, 0.714285714,
-        0.857142857, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
-    ]
+    lambda_vdw: list[float] = np.linspace(1.0, 0.0, 8).tolist() + [0.0, 0.0, 0.0] + [0.0] * 8
     """
     List of floats of lambda values for the van der Waals.
     Zero means state A and 1 means state B.
@@ -204,4 +209,12 @@ class SepTopSettings(SettingsBaseModel):
     Settings for controlling how to assign partial charges,
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
+    """
+    solvent_restraints_settings: RestraintsSettings
+    """
+    Settings for the harmonic restraint in the solvent
+    """
+    complex_restraints_settings: RestraintsSettings
+    """
+    Settings for the Boresch restraints in the complex
     """
