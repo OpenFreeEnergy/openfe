@@ -9,6 +9,7 @@ Make the PR:
 * [ ] Verify that`docs/CHANGELOG.md` looks correct.
 * [ ] Make the PR and verify that CI/CD passes. 
 * [ ] Merge the PR into `main`.
+* [ ] Make a PR into the [example notebooks repository](https://github.com/OpenFreeEnergy/ExampleNotebooks) to update the version used in `showcase/openfe_showcase.ipynb` and `.binder/environment.yml`
 
 After Merging the PR [follow this guide](https://github.com/OpenFreeEnergy/openfe/wiki/How-to-create-a-new-release)
 
