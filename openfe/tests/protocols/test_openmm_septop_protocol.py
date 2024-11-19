@@ -293,7 +293,7 @@ def test_setup(bace_ligands,  bace_protein_component, tmpdir):
     s.solvent_equil_simulation_settings.equilibration_length = 1 * unit.picosecond
     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
     s.solvation_settings.box_shape = 'dodecahedron'
-    s.solvation_settings.solvent_padding = 1.5 * unit.nanometer
+    s.solvation_settings.solvent_padding = 1.2 * unit.nanometer
     s.complex_forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
 
     protocol = SepTopProtocol(

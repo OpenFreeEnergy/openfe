@@ -945,11 +945,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             system: openmm.System,
             positions: np.array,
             topology: Optional[openmm.Topology],
-            ligand_1: SmallMoleculeComponent,
-            ligand_2: SmallMoleculeComponent,
-            settings,
-            ligand_1_ref_idx: int,
-            ligand_2_ref_idx: int,
+            ligand_1: Optional[OFFMolecule.Topology],
+            ligand_2: Optional[OFFMolecule.Topology],
+            settings: Optional,
+            ligand_1_ref_idxs: list[int],
+            ligand_2_ref_idxs: list[int],
     ) -> openmm.System:
         """
         Get new positions for the stateB after equilibration.
@@ -1137,7 +1137,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         print(ligand_A_inxs)
         print(ligand_B_inxs)
 
-        system = self._add_restraints(omm_system_AB, positions_AB, settings, ligand_A_inxs, ligand_B_inxs)
+        system = self._add_restraints(
+            omm_system_AB, positions_AB, omm_topology_AB,
+            off_A, off_B,
+            settings, ligand_A_inxs, ligand_B_inxs)
         print(system)
 
         # Here we could also apply REST

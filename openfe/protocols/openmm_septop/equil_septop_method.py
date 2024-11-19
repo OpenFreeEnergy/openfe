@@ -849,17 +849,17 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             ligand_1,
             ligand_2,
             settings,
-            ligand_1_ref_idx: int,
-            ligand_2_ref_idx: int,
+            ligand_1_ref_idxs: list[int],
+            ligand_2_ref_idxs: list[int],
     ) -> openmm.System:
 
         traj = _get_mdtraj_from_openmm(topology, positions)
-        ligand_1_mdtraj_top = md.Topology.from_openmm(ligand_1.to_openff().to_topology().to_openmm())
+        ligand_1_mdtraj_top = md.Topology.from_openmm(ligand_1.to_openmm())
         ligand_1_mdtraj_pos = np.array(
-            ligand_1.to_openff().to_topology().get_positions() / openmm.unit.nanometers)
+            ligand_1.get_positions() / openmm.unit.nanometers)
         ligand_1_mdtraj = _get_mdtraj_from_openmm(ligand_1_mdtraj_top, ligand_1_mdtraj_pos)
         receptor_ref_idxs_1 = select_receptor_idxs(
-            traj, ligand_1_mdtraj, ligand_1_ref_idx
+            traj, ligand_1_mdtraj, ligand_1_ref_idxs
         )
         print(receptor_ref_idxs_1)
         receptor_ref_idxs_2 = receptor_ref_idxs_1
@@ -870,6 +870,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         #     receptor_ref_idxs_2 = femto.fe.reference.select_receptor_idxs(
         #         receptor, ligand_2, _ligand_2_ref_idxs
 
+        return system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
@@ -1017,8 +1018,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_1,
         ligand_2,
         settings,
-        ligand_1_ref_idx: int,
-        ligand_2_ref_idx: int,
+        ligand_1_ref_idxs: list[int],
+        ligand_2_ref_idxs: list[int],
     ) -> openmm.System:
         """Apply a distance restraints between the ligands.
 
@@ -1030,15 +1031,15 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         """
 
         coords = positions
-
+        # Taking the middle reference atom
         distance = np.linalg.norm(
-            coords[ligand_1_ref_idx] - coords[ligand_2_ref_idx])
+            coords[ligand_1_ref_idxs[1]] - coords[ligand_2_ref_idxs[1]])
         print(distance)
 
         force = openmm.HarmonicBondForce()
         force.addBond(
-            ligand_1_ref_idx[1],
-            ligand_2_ref_idx[1],
+            ligand_1_ref_idxs[1],
+            ligand_2_ref_idxs[1],
             distance * openmm.unit.angstrom,
             settings['restraint_settings'].k_distance.m,
         )
