@@ -1025,7 +1025,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
 
         # Get modeller B only ligand B
-        modeller_ligandB, comp_resids_B = self._get_modeller(
+        modeller_ligandB, comp_resids_ligB = self._get_modeller(
             None, None, smc_off_B,
             system_generator, settings['solvation_settings'],
         )
@@ -1082,8 +1082,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
         all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
         comp_atomids_B = self._get_atom_indices(omm_topology_B, comp_resids_B)
+        print(comp_resids_A)
+        print(comp_resids_A)
+        print(comp_resids_B)
         print(comp_atomids_B)
-        print(alchem_comps['stateB'][0])
 
         # Get the system A atom indices of ligand A
         atom_indices_A = comp_atomids_A[alchem_comps['stateA'][0]]
