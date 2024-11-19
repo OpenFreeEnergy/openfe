@@ -288,7 +288,7 @@ def test_setup(bace_ligands,  bace_protein_component, tmpdir):
     # check system parametrisation works even if confgen fails
     s = SepTopProtocol.default_settings()
     s.protocol_repeats = 1
-    s.solvent_equil_simulation_settings.minimization_steps = 100
+    s.solvent_equil_simulation_settings.minimization_steps = 1
     s.solvent_equil_simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     s.solvent_equil_simulation_settings.equilibration_length = 1 * unit.picosecond
     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
@@ -322,8 +322,8 @@ def test_setup(bace_ligands,  bace_protein_component, tmpdir):
     prot_units = list(dag.protocol_units)
     solv_setup_unit = [u for u in prot_units
                        if isinstance(u, SepTopSolventSetupUnit)]
-    # solv_setup_unit = [u for u in prot_units
-    #                    if isinstance(u, SepTopComplexSetupUnit)]
+    solv_setup_unit = [u for u in prot_units
+                       if isinstance(u, SepTopComplexSetupUnit)]
 
     # with tmpdir.as_cwd():
     solv_setup_unit[0].run()

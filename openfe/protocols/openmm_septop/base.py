@@ -945,6 +945,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             system: openmm.System,
             positions: np.array,
             topology: Optional[openmm.Topology],
+            ligand_1: SmallMoleculeComponent,
+            ligand_2: SmallMoleculeComponent,
             settings,
             ligand_1_ref_idx: int,
             ligand_2_ref_idx: int,
