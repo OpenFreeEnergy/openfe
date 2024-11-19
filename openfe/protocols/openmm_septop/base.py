@@ -992,6 +992,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         self._prepare(verbose, scratch_basepath, shared_basepath)
 
         # 1. Get components
+        self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
 
         # 2. Get settings
@@ -1067,6 +1068,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                                                    open('outputAB.pdb', 'w'))
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        self.logger.info("Pre-equilibrating the systems")
         equ_positions_A = self._pre_equilibrate(
             omm_system_A, omm_topology_A, positions_A, settings, dry
         )
@@ -1082,10 +1084,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
         all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
         comp_atomids_B = self._get_atom_indices(omm_topology_B, comp_resids_B)
-        print(comp_resids_A)
-        print(comp_resids_A)
-        print(comp_resids_B)
-        print(comp_atomids_B)
 
         # Get the system A atom indices of ligand A
         atom_indices_A = comp_atomids_A[alchem_comps['stateA'][0]]
@@ -1110,10 +1108,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         atom_indices_AB_A = comp_atomids_AB[alchem_comps['stateA'][0]]
 
         # Update positions from AB system
-        print(atom_indices_AB_B)
-        print(atom_indices_B)
-        print(len(positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1, :]))
-        print(len(updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]))
         positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
         :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
@@ -1124,6 +1118,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                                                         'w'))
 
         # 9. Create the alchemical system
+        self.logger.info("Creating the alchemical system and applying restraints")
         apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
 
         # 10. Apply Restraints
@@ -1149,7 +1144,12 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             omm_system_AB, positions_AB, omm_topology_AB,
             off_A, off_B,
             settings, ligand_A_inxs, ligand_B_inxs)
-        print(system)
+        # Check that the restraints are correctly applied by running a short equilibration
+        equ_positions_restraints = self._pre_equilibrate(
+            system, omm_topology_AB, positions_AB, settings, dry
+        )
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(
+            omm_topology_AB, equ_positions_restraints, open('outputAB_restrained.pdb', 'w'))
 
         # Here we could also apply REST
 
