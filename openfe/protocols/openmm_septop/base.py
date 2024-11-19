@@ -1082,6 +1082,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
         all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
         comp_atomids_B = self._get_atom_indices(omm_topology_B, comp_resids_B)
+        print(comp_atomids_B)
+        print(alchem_comps['stateB'][0])
 
         # Get the system A atom indices of ligand A
         atom_indices_A = comp_atomids_A[alchem_comps['stateA'][0]]
@@ -1112,7 +1114,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         print(len(updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]))
         positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
-        :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1, :]
+        :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
 
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
                                                    positions_AB,

@@ -1005,8 +1005,10 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             equ_pos_ligandA - equ_pos_ligandA.mean(axis=0), axis=1).max()
         ligand_2_radius = np.linalg.norm(
             equ_pos_ligandB - equ_pos_ligandB.mean(axis=0), axis=1).max()
-        # ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
-        ligand_distance = (ligand_1_radius + ligand_2_radius) * min(unit_cell) / 2
+        ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5 * unit.nanometer
+        if ligand_distance.m > min(unit_cell.m) / 2:
+            ligand_distance = min(unit_cell) / 2
+
         ligand_offset = equ_pos_ligandA.mean(0) - equ_pos_ligandB.mean(0)
         ligand_offset[0] += ligand_distance
         print(ligand_offset)
