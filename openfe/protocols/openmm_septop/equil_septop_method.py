@@ -858,11 +858,11 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         traj = _get_mdtraj_from_openmm(topology, positions)
         ligand_1_mdtraj = _get_mdtraj_from_openmm(ligand_1.to_openmm(), ligand_1.get_positions())
-        ligand_1_mdtraj_top = md.Topology.from_openmm(ligand_1.to_openmm())
-        ligand_1_mdtraj_pos = np.array(
-            ligand_1.get_positions() / openmm.unit.nanometers)
-        ligand_1_mdtraj = md.Trajectory(ligand_1_mdtraj_pos,
-                                      ligand_1_mdtraj_top)
+        # Convert ligand indices to the indices in the ligand (start with zero)
+        # CAVE: We're assuming here that the atom order did not change!
+        # This needs to be tested!!!
+        ligand_1_ref_idxs = [inx for inx, i in enumerate(ligand_1_ref_idxs)]
+        # Select the reference indices in the receptor
         receptor_ref_idxs_1 = select_receptor_idxs(
             traj, ligand_1_mdtraj, ligand_1_ref_idxs
         )
