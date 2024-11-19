@@ -436,7 +436,10 @@ class SepTopProtocol(gufe.Protocol):
             lambda_settings=LambdaSettings(
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
-            solvation_settings=OpenMMSolvationSettings(),
+            solvent_solvation_settings=OpenMMSolvationSettings(
+                solvent_padding=1.5 * unit.nanometer
+            ),
+            complex_solvation_settings=OpenMMSolvationSettings(),
             complex_engine_settings=OpenMMEngineSettings(),
             solvent_engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -808,7 +811,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         settings['forcefield_settings'] = prot_settings.complex_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
         settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.solvation_settings
+        settings['solvation_settings'] = prot_settings.complex_solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['lambda_settings'] = prot_settings.lambda_settings
         settings['engine_settings'] = prot_settings.complex_engine_settings
@@ -961,7 +964,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
         settings['thermo_settings'] = prot_settings.thermo_settings
         settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.solvation_settings
+        settings['solvation_settings'] = prot_settings.solvent_solvation_settings
         settings['alchemical_settings'] = prot_settings.alchemical_settings
         settings['lambda_settings'] = prot_settings.lambda_settings
         settings['engine_settings'] = prot_settings.solvent_engine_settings

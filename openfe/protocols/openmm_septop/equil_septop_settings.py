@@ -136,8 +136,11 @@ class SepTopSettings(SettingsBaseModel):
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
-    solvation_settings: OpenMMSolvationSettings
-    """Settings for solvating the system."""
+    solvent_solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the solvent system."""
+
+    complex_solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the complex system."""
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings
