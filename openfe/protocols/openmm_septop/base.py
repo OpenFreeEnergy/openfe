@@ -1106,9 +1106,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         atom_indices_AB_A = comp_atomids_AB[alchem_comps['stateA'][0]]
 
         # Update positions from AB system
+        print(atom_indices_AB_B)
+        print(atom_indices_B)
+        print(len(positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1, :]))
+        print(len(updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]))
         positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
-        :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
+        :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1, :]
 
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
                                                    positions_AB,

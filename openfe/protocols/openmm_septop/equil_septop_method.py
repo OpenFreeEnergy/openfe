@@ -995,16 +995,23 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         equ_pos_ligandB = positions_B[
                           atom_indices_B[0]:atom_indices_B[-1] + 1]
 
+        # Get the mdtraj system of ligand B and the unit cell
+        unit_cell = omm_topology_A.getPeriodicBoxVectors()
+        unit_cell = [i[inx] for inx, i in enumerate(unit_cell)]
+        mdtraj_system_B = _get_mdtraj_from_openmm(omm_topology_B,
+                                                  positions_B)
+
         ligand_1_radius = np.linalg.norm(
             equ_pos_ligandA - equ_pos_ligandA.mean(axis=0), axis=1).max()
         ligand_2_radius = np.linalg.norm(
             equ_pos_ligandB - equ_pos_ligandB.mean(axis=0), axis=1).max()
-        ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
+        # ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
+        ligand_distance = (ligand_1_radius + ligand_2_radius) * min(unit_cell) / 2
         ligand_offset = equ_pos_ligandA.mean(0) - equ_pos_ligandB.mean(0)
-        ligand_offset[0] += ligand_distance * omm_units.nanometers
+        ligand_offset[0] += ligand_distance
+        print(ligand_offset)
+
         # Offset the ligandB.
-        mdtraj_system_B = _get_mdtraj_from_openmm(omm_topology_B,
-                                                       positions_B)
         mdtraj_system_B.xyz[0][atom_indices_B,
         :] += ligand_offset / omm_units.nanometers
 
