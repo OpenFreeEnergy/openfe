@@ -13,6 +13,7 @@ import parmed
 import scipy.spatial
 import scipy.spatial.distance
 from .femto_utils import compute_angles, compute_dihedrals
+from .femto_geometry import compute_distances, compute_angles, compute_dihedrals
 
 _COLLINEAR_THRESHOLD = 0.9  # roughly 25 degrees
 
@@ -502,8 +503,6 @@ def select_receptor_idxs(
         ),
         None,
     )
-    print(found_r1)
-    print(found_r2)
 
     if found_r1 is None or found_r2 is None:
         raise ValueError("could not find valid R1 / R2 atoms")
@@ -513,7 +512,6 @@ def select_receptor_idxs(
         for idx in receptor_idxs
         if _is_valid_r3(receptor, idx, found_r1, found_r2, ligand, ligand_ref_idxs)
     ]
-    print(valid_r3_idxs)
 
     if len(valid_r3_idxs) == 0:
         raise ValueError("could not find a valid R3 atom")
@@ -572,10 +570,6 @@ def check_receptor_idxs(
     if not (isinstance(receptor, type(ligand)) or isinstance(ligand, type(receptor))):
         raise ValueError("receptor and ligand must be the same type")
 
-    if isinstance(receptor, parmed.Structure) and isinstance(ligand, parmed.Structure):
-        receptor = _structure_to_mdtraj(receptor)
-        ligand = _structure_to_mdtraj(ligand)
-
     assert (
         receptor.n_frames == ligand.n_frames
     ), "receptor and ligand must have the same number of frames"
@@ -596,3 +590,151 @@ def check_receptor_idxs(
     is_valid_distance = r3_distance_avg.max(axis=-1) < max_distance
 
     return is_valid_r1 and is_valid_r2 and is_valid_r3 and is_valid_distance
+
+
+_BORESCH_ENERGY_FN = (
+    "0.5 * E;"
+    "E = k_dist_a  * (distance(p3,p4) - dist_0)    ^ 2"
+    "  + k_theta_a * (angle(p2,p3,p4) - theta_a_0) ^ 2"
+    "  + k_theta_b * (angle(p3,p4,p5) - theta_b_0) ^ 2"
+    "  + k_phi_a   * (d_phi_a_wrap)                ^ 2"
+    "  + k_phi_b   * (d_phi_b_wrap)                ^ 2"
+    "  + k_phi_c   * (d_phi_c_wrap)                ^ 2;"
+    # compute the periodic dihedral delta (e.g. distance between -180 and 180 is 0)
+    "d_phi_a_wrap = d_phi_a - floor(d_phi_a / (2.0 * pi) + 0.5) * (2.0 * pi);"
+    "d_phi_a = dihedral(p1,p2,p3,p4) - phi_a_0;"
+    "d_phi_b_wrap = d_phi_b - floor(d_phi_b / (2.0 * pi) + 0.5) * (2.0 * pi);"
+    "d_phi_b = dihedral(p2,p3,p4,p5) - phi_b_0;"
+    "d_phi_c_wrap = d_phi_c - floor(d_phi_c / (2.0 * pi) + 0.5) * (2.0 * pi);"
+    "d_phi_c = dihedral(p3,p4,p5,p6) - phi_c_0;"
+    f"pi = {numpy.pi}"
+).replace(" ", "")
+
+
+_ANGSTROM = openmm.unit.angstrom
+_RADIANS = openmm.unit.radian
+
+
+class _BoreschGeometry(typing.NamedTuple):
+    dist_0: openmm.unit.Quantity
+
+    theta_a_0: openmm.unit.Quantity
+    theta_b_0: openmm.unit.Quantity
+
+    phi_a_0: openmm.unit.Quantity
+    phi_b_0: openmm.unit.Quantity
+    phi_c_0: openmm.unit.Quantity
+
+
+def _compute_boresch_geometry(
+    receptor_atoms: tuple[int, int, int],
+    ligand_atoms: tuple[int, int, int],
+    coords: openmm.unit.Quantity,
+) -> _BoreschGeometry:
+    """Computes the equilibrium distances, angles, and dihedrals used by a Boresch
+    restraint."""
+
+    r1, r2, r3 = receptor_atoms
+    l1, l2, l3 = ligand_atoms
+
+    coords = coords.value_in_unit(openmm.unit.angstrom)
+
+    dist_0 = (
+        compute_distances(coords, numpy.array([[r3, l1]]))
+        * _ANGSTROM
+    )
+
+    theta_a_0 = (
+        compute_angles(coords, numpy.array([[r2, r3, l1]]))
+        * _RADIANS
+    )
+    theta_b_0 = (
+        compute_angles(coords, numpy.array([[r3, l1, l2]]))
+        * _RADIANS
+    )
+
+    phi_a_0 = (
+        compute_dihedrals(
+            coords, numpy.array([[r1, r2, r3, l1]])
+        )
+        * _RADIANS
+    )
+    phi_b_0 = (
+        compute_dihedrals(
+            coords, numpy.array([[r2, r3, l1, l2]])
+        )
+        * _RADIANS
+    )
+    phi_c_0 = (
+        compute_dihedrals(
+            coords, numpy.array([[r3, l1, l2, l3]])
+        )
+        * _RADIANS
+    )
+
+    return _BoreschGeometry(dist_0, theta_a_0, theta_b_0, phi_a_0, phi_b_0, phi_c_0)
+
+
+def create_boresch_restraint(
+    receptor_atoms: tuple[int, int, int],
+    ligand_atoms: tuple[int, int, int],
+    coords: openmm.unit.Quantity,
+    restraints_settings,
+    ctx_parameter: str | None = None,
+) -> openmm.CustomCompoundBondForce:
+    """Creates a Boresch restraint force useful in aligning a receptor and ligand.
+
+    Args:
+        settings: RestraintSettings
+        receptor_atoms: The indices of the receptor atoms to restrain.
+        ligand_atoms: The indices of the ligand atoms to restrain.
+        coords: The coordinates of the *full* system.
+        ctx_parameter: An optional context parameter to use to scale the strength of
+            the restraint.
+
+    Returns:
+        The restraint force.
+    """
+    n_particles = 6  # 3 receptor + 3 ligand
+
+    energy_fn = _BORESCH_ENERGY_FN
+
+    # if ctx_parameter is not None:
+    #     energy_fn = f"{ctx_parameter} * {energy_fn}"
+
+    force = openmm.CustomCompoundBondForce(n_particles, energy_fn)
+
+    # if ctx_parameter is not None:
+    #     force.addGlobalParameter(ctx_parameter, 1.0)
+
+    geometry = _compute_boresch_geometry(receptor_atoms, ligand_atoms, coords)
+
+    # Scale the k_theta_a
+    distance_0 = 5.0  # based on original SepTop implementation.
+    scale = (geometry.dist_0 / distance_0) ** 2
+
+    parameters = []
+
+    for key, value in [
+        ("k_dist_a", restraints_settings.k_distance),
+        ("k_theta_a", restraints_settings.k_theta * scale),
+        ("k_theta_b", restraints_settings.k_theta),
+        ("k_phi_a", restraints_settings.k_theta),
+        ("k_phi_b", restraints_settings.k_theta),
+        ("k_phi_c", restraints_settings.k_theta),
+        ("dist_0", geometry.dist_0),
+        ("theta_a_0", geometry.theta_a_0),
+        ("theta_b_0", geometry.theta_b_0),
+        ("phi_a_0", geometry.phi_a_0),
+        ("phi_b_0", geometry.phi_b_0),
+        ("phi_c_0", geometry.phi_c_0),
+    ]:
+        force.addPerBondParameter(key)
+        parameters.append(value.value_in_unit_system(openmm.unit.md_unit_system))
+
+    force.addBond(receptor_atoms + ligand_atoms, parameters)
+    force.setUsesPeriodicBoundaryConditions(False)
+    force.setName("alignment-restraint")
+    force.setForceGroup(6)
+
+    return force

@@ -29,6 +29,7 @@ from openff.units import unit
 from openff.models.types import FloatQuantity
 import numpy as np
 from pydantic.v1 import validator
+from typing import Optional
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -42,8 +43,8 @@ class RestraintsSettings(SettingsBaseModel):
     """
     Settings for the restraints.
     """
-    k_distance: FloatQuantity['kcal/(mol*angstrom**2)'] = 20 * unit.kilocalorie_per_mole / unit.angstrom**2
-    k_theta: FloatQuantity['kcal/(mol*rad**2)'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    k_distance: FloatQuantity['kcal/(mol*angstrom**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
+    k_theta: Optional[FloatQuantity['kcal/(mol*rad**2)']] = 20 * unit.kilocalorie_per_mole / unit.radians**2
 
 
 

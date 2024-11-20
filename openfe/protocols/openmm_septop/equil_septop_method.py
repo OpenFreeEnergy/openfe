@@ -61,7 +61,12 @@ from ..openmm_utils import system_validation, settings_validation
 from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
 from openfe.utils import log_system_probe
 from openfe.due import due, Doi
-from .femto_restraints import select_ligand_idxs, select_receptor_idxs
+from .femto_restraints import (
+    select_receptor_idxs,
+    check_receptor_idxs,
+    create_boresch_restraint,
+)
+from .femto_utils import assign_force_groups
 
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -483,8 +488,13 @@ class SepTopProtocol(gufe.Protocol):
                 output_filename='complex.nc',
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
-            solvent_restraints_settings=RestraintsSettings(),
-            complex_restraints_settings=RestraintsSettings(),
+            solvent_restraints_settings=RestraintsSettings(
+                k_distance=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
+                k_theta=None,
+            ),
+            complex_restraints_settings=RestraintsSettings(
+                k_distance=8368.0 * unit.kilojoule_per_mole / unit.nanometer ** 2
+            ),
         )
 
     @staticmethod
@@ -862,6 +872,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         # CAVE: We're assuming here that the atom order did not change!
         # This needs to be tested!!!
         ligand_1_ref_idxs = [inx for inx, i in enumerate(ligand_1_ref_idxs)]
+        ligand_2_ref_idxs = [inx for inx, i in enumerate(ligand_2_ref_idxs)]
         # Select the reference indices in the receptor
         receptor_ref_idxs_1 = select_receptor_idxs(
             traj, ligand_1_mdtraj, ligand_1_ref_idxs
@@ -869,11 +880,31 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         print(receptor_ref_idxs_1)
         receptor_ref_idxs_2 = receptor_ref_idxs_1
 
-        # if ligand_2 is not None and not femto.fe.reference.check_receptor_idxs(
-        #         receptor, receptor_ref_idxs_1, ligand_2, _ligand_2_ref_idxs
-        # ):
-        #     receptor_ref_idxs_2 = femto.fe.reference.select_receptor_idxs(
-        #         receptor, ligand_2, _ligand_2_ref_idxs
+
+        if not check_receptor_idxs(
+                traj, receptor_ref_idxs_1, ligand_2, ligand_2_ref_idxs
+        ):
+            receptor_ref_idxs_2 = select_receptor_idxs(
+                traj, ligand_2, ligand_2_ref_idxs)
+            print(receptor_ref_idxs_2)
+
+        force_A = create_boresch_restraint(
+            receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
+            ligand_1_ref_idxs,
+            positions,
+            settings["restraint_settings"],
+        )
+        system.addForce(force_A)
+        force_B = create_boresch_restraint(
+            receptor_ref_idxs_2[::-1],
+            # expects [r3, r2, r1], not [r1, r2, r3]
+            ligand_2_ref_idxs,
+            positions,
+            settings["restraint_settings"],
+        )
+        system.addForce(force_B)
+
+        assign_force_groups(system)
 
         return system
 
@@ -1054,7 +1085,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         force.addBond(
             ligand_1_ref_idxs[1],
             ligand_2_ref_idxs[1],
-            distance * openmm.unit.angstrom,
+            distance * openmm.unit.nanometers,
             settings['restraint_settings'].k_distance.m,
         )
         force.setName("alignment_restraint")

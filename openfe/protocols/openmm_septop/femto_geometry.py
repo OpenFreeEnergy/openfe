@@ -1,11 +1,6 @@
 """Common functions for computing the internal coordinates (e.g. bond lengths)."""
 
 import numpy
-import openmm
-import openmm.app
-import openmm.unit
-
-from .femto_constants import OpenMMForceGroup, OpenMMForceName, OpenMMPlatform
 
 
 def compute_bond_vectors(
@@ -133,42 +128,3 @@ def compute_dihedrals(coords: numpy.ndarray, idxs: numpy.ndarray) -> numpy.ndarr
         phi = phi[0]
 
     return phi
-
-def assign_force_groups(system: openmm.System):
-    """Assign standard force groups to forces in a system.
-
-    Notes:
-        * COM, alignment, and position restraints are detected by their name. If their
-          name is not set to a ``OpenMMForceName``, they will be assigned a force group
-          of ``OTHER``.
-
-    Args:
-        system: The system to modify in-place.
-    """
-
-    force: openmm.Force
-
-    for force in system.getForces():
-        if force.getName() == OpenMMForceName.COM_RESTRAINT:
-            force.setForceGroup(OpenMMForceGroup.COM_RESTRAINT)
-        elif force.getName() == OpenMMForceName.ALIGNMENT_RESTRAINT:
-            force.setForceGroup(OpenMMForceGroup.ALIGNMENT_RESTRAINT)
-        elif force.getName().startswith(OpenMMForceName.POSITION_RESTRAINT):
-            force.setForceGroup(OpenMMForceGroup.POSITION_RESTRAINT)
-
-        elif isinstance(force, openmm.HarmonicBondForce):
-            force.setForceGroup(OpenMMForceGroup.BOND)
-        elif isinstance(force, openmm.HarmonicAngleForce):
-            force.setForceGroup(OpenMMForceGroup.ANGLE)
-        elif isinstance(
-            force, (openmm.PeriodicTorsionForce, openmm.CustomTorsionForce)
-        ):
-            force.setForceGroup(OpenMMForceGroup.DIHEDRAL)
-        elif isinstance(force, (openmm.NonbondedForce, openmm.CustomNonbondedForce)):
-            force.setForceGroup(OpenMMForceGroup.NONBONDED)
-        elif isinstance(force, openmm.ATMForce):
-            force.setForceGroup(OpenMMForceGroup.ATM)
-        elif isinstance(force, openmm.MonteCarloBarostat):
-            force.setForceGroup(OpenMMForceGroup.BAROSTAT)
-        else:
-            force.setForceGroup(OpenMMForceGroup.OTHER)
