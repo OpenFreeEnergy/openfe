@@ -19,8 +19,7 @@
 
 **Fixed:**
 
-* OpenMM CPU vacuum calculations now enforce the use of a single
-  CPU to avoid large performance losses.
+* OpenMM CPU vacuum calculations now enforce the use of a single CPU to avoid large performance losses.
 
 **Security:**
 
