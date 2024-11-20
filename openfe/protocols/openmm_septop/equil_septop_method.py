@@ -90,9 +90,11 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
     mdtraj_topology = md.Topology.from_openmm(omm_topology)
     positions_in_mdtraj_format = np.array(
         omm_positions / omm_units.nanometers)
+    unit_cell = omm_topology.getPeriodicBoxVectors()
+    unit_cell_length = [i[inx] for inx, i in enumerate(unit_cell)]
     mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
                                   mdtraj_topology,
-                                  unitcell_vectors=omm_topology.getPeriodicBoxVectors())
+                                  unitcell_lengths=unit_cell_length)
     return mdtraj_system
 
 
