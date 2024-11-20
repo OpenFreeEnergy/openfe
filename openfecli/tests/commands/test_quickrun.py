@@ -54,6 +54,19 @@ def test_quickrun_output_file_exists(json_file):
         assert result.exit_code == 2  # usage error
         assert "File 'foo.json' already exists." in result.output
 
+def test_quickrun_output_file_in_nonexistent_directory(json_file):
+    runner = CliRunner()
+    outfile = "not_dir/foo.json"
+    result = runner.invoke(quickrun, [json_file, '-o', outfile])
+    assert result.exit_code == 0
+    assert "Here is the result" in result.output
+
+    assert pathlib.Path(outfile).exists()
+    with open(outfile, mode='r') as outf:
+        dct = json.load(outf, cls=JSON_HANDLER.decoder)
+
+    assert set(dct) == {'estimate', 'uncertainty',
+                        'protocol_result', 'unit_results'}
 
 def test_quickrun_unit_error():
     with resources.files('openfecli.tests.data') as d:
