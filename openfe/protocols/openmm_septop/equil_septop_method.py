@@ -868,6 +868,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         traj = _get_mdtraj_from_openmm(topology, positions)
         ligand_1_mdtraj = _get_mdtraj_from_openmm(ligand_1.to_openmm(), ligand_1.get_positions())
+        ligand_2_mdtraj = _get_mdtraj_from_openmm(ligand_2.to_openmm(),
+                                                  ligand_2.get_positions())
         # Convert ligand indices to the indices in the ligand (start with zero)
         # CAVE: We're assuming here that the atom order did not change!
         # This needs to be tested!!!
@@ -882,7 +884,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
 
         if not check_receptor_idxs(
-                traj, receptor_ref_idxs_1, ligand_2, ligand_2_ref_idxs
+                traj, receptor_ref_idxs_1, ligand_2_mdtraj, ligand_2_ref_idxs
         ):
             receptor_ref_idxs_2 = select_receptor_idxs(
                 traj, ligand_2, ligand_2_ref_idxs)
