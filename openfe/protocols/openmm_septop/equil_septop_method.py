@@ -91,7 +91,8 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
     positions_in_mdtraj_format = np.array(
         omm_positions / omm_units.nanometers)
     mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
-                                  mdtraj_topology)
+                                  mdtraj_topology,
+                                  unitcell_vectors=omm_topology.getPeriodicBoxVectors())
     return mdtraj_system
 
 
@@ -156,7 +157,6 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         solv_ddG = _get_average(individual_estimates['solvent'])
         complex_ddG = _get_average(individual_estimates['complex'])
         return solv_ddG - complex_ddG
-
 
     def get_uncertainty(self):
         """Get the relative free energy error for this calculation.
@@ -817,20 +817,22 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         """
         prot_settings = self._inputs['protocol'].settings
 
-        settings = {}
-        settings['forcefield_settings'] = prot_settings.complex_forcefield_settings
-        settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.complex_solvation_settings
-        settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['lambda_settings'] = prot_settings.lambda_settings
-        settings['engine_settings'] = prot_settings.complex_engine_settings
-        settings['integrator_settings'] = prot_settings.integrator_settings
-        settings['equil_simulation_settings'] = prot_settings.complex_equil_simulation_settings
-        settings['equil_output_settings'] = prot_settings.complex_equil_output_settings
-        settings['simulation_settings'] = prot_settings.complex_simulation_settings
-        settings['output_settings'] = prot_settings.complex_output_settings
-        settings['restraint_settings'] = prot_settings.complex_restraints_settings
+        settings = {
+            'forcefield_settings': prot_settings.complex_forcefield_settings,
+            'thermo_settings': prot_settings.thermo_settings,
+            'charge_settings': prot_settings.partial_charge_settings,
+            'solvation_settings': prot_settings.complex_solvation_settings,
+            'alchemical_settings': prot_settings.alchemical_settings,
+            'lambda_settings': prot_settings.lambda_settings,
+            'engine_settings': prot_settings.complex_engine_settings,
+            'integrator_settings': prot_settings.integrator_settings,
+            'equil_simulation_settings':
+                prot_settings.complex_equil_simulation_settings,
+            'equil_output_settings':
+                prot_settings.complex_equil_output_settings,
+            'simulation_settings': prot_settings.complex_simulation_settings,
+            'output_settings': prot_settings.complex_output_settings,
+            'restraint_settings': prot_settings.complex_restraints_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -881,7 +883,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         )
         print(receptor_ref_idxs_1)
         receptor_ref_idxs_2 = receptor_ref_idxs_1
-
 
         if not check_receptor_idxs(
                 traj, receptor_ref_idxs_1, ligand_2_mdtraj, ligand_2_ref_idxs
@@ -1035,6 +1036,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         unit_cell = [i[inx] for inx, i in enumerate(unit_cell)]
         mdtraj_system_B = _get_mdtraj_from_openmm(omm_topology_B,
                                                   positions_B)
+        print(mdtraj_system_B.unitcell_vectors)
+        print(mdtraj_system_B.unitcell_lengths)
 
         ligand_1_radius = np.linalg.norm(
             equ_pos_ligandA - equ_pos_ligandA.mean(axis=0), axis=1).max()
