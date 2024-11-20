@@ -1,6 +1,5 @@
 name: openfe_env
 channels:
-  - jaimergp/label/unsupported-cudatoolkit-shim
   - conda-forge
 dependencies:
   - duecredit<0.10
@@ -15,7 +14,7 @@ dependencies:
   - pytest-xdist
   - pytest-cov
   - pytest-rerunfailures
-  - pydantic >1
+  - pydantic >=1.10.17
   - pyyaml
   - coverage
   - cinnabar ~=0.4.0
@@ -27,7 +26,7 @@ dependencies:
   - openfe-analysis>=0.2.0
   - click
   - typing-extensions
-  - openmm !=8.1.0
+  - openmm >=8.0.0,!=8.1.0,<8.2.0
   - openmmtools
   - openmmforcefields
   - perses

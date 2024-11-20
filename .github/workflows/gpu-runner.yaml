@@ -1,0 +1,128 @@
+name: Test Self-Hosted Runner
+on:
+  workflow_dispatch:
+
+jobs:
+  start-aws-runner:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      mapping: ${{ steps.aws-start.outputs.mapping }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
+          aws-region: us-east-2
+      - name: Create cloud runner
+        id: aws-start
+        uses: omsf-eco-infra/gha-runner@v0.2.0
+        with:
+          provider: "aws"
+          action: "start"
+          aws_image_id: ami-0b7f661c228e6a4bb
+          aws_instance_type: g4dn.xlarge
+          aws_region_name: us-east-2
+          aws_home_dir: /home/ubuntu
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+
+  self-hosted-test:
+    runs-on: self-hosted
+    timeout-minutes: 720  # 12 hours  
+    defaults:
+      run:
+        shell: bash -leo pipefail {0}
+    env:
+      OE_LICENSE: ${{ github.workspace }}/oe_license.txt
+
+    needs:
+      - start-aws-runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Print disk usage
+        run: "df -h"
+
+      - name: Print Docker details
+        run: "docker version || true"
+
+      - name: Check for nvidia-smi
+        run: "nvidia-smi"
+
+      - name: "Setup Micromamba"
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          micromamba-version: '1.5.6-0'
+          environment-file: environment.yml
+          environment-name: openfe_env
+          condarc: |
+            channels:
+              - conda-forge
+              - openeye
+          create-args: >-
+            espaloma_charge==0.0.8
+            openeye-toolkits
+
+      - name: "Check if OpenMM can get a GPU"
+        run: python -m openmm.testInstallation
+
+      - name: "Install GUFE from main@HEAD"
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
+
+      - name: "Install"
+        run: python -m pip install --no-deps -e .
+
+      - name: "Test imports"
+        run: |
+          # if we add more to this, consider changing to for + env vars
+          python -Ic "import openfe; print(openfe.__version__)"          
+
+      - name: "Environment Information"
+        run: |
+          micromamba info
+          micromamba list
+          pip list
+
+      - name: Test OE License & Write License to File
+        env:
+          OE_LICENSE_TEXT: ${{ secrets.OE_LICENSE }}
+        run: |
+          echo "${OE_LICENSE_TEXT}" > ${OE_LICENSE}
+          python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'OpenEye license checks failed!'"
+
+      - name: "Run tests"
+        env:
+          # Set the OFE_SLOW_TESTS to True if running a Cron job
+          OFE_SLOW_TESTS: "true"
+          DUECREDIT_ENABLE: 'yes'
+          OFE_INTEGRATION_TESTS: TRUE
+        run: |
+          pytest -n 4 -v --durations=10
+
+  stop-aws-runner:
+    runs-on: ubuntu-latest
+    permissions:
+        id-token: write
+        contents: read
+    needs:
+      - start-aws-runner
+      - self-hosted-test
+    if: ${{ always() }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
+          aws-region: us-east-2
+      - name: Stop instances
+        uses: omsf-eco-infra/gha-runner@v0.2.0
+        with:
+          provider: "aws"
+          action: "stop"
+          instance_mapping: ${{ needs.start-aws-runner.outputs.mapping }}
+          aws_region_name: us-east-2
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}

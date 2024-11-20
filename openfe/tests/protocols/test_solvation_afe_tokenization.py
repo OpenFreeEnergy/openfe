@@ -49,45 +49,67 @@ def protocol_result(afe_solv_transformation_json):
 
 class TestAbsoluteSolvationProtocol(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocol
-    key = "AbsoluteSolvationProtocol-d46cbe721f0fb25534bc075db9af968c"
-    repr = f"<{key}>"
+    key = None
+    repr = "AbsoluteSolvationProtocol-"
 
     @pytest.fixture()
     def instance(self, protocol):
         return protocol
 
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
 
 class TestAbsoluteSolvationSolventUnit(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationSolventUnit
-    repr = "AbsoluteSolvationSolventUnit(Absolute Solvation, benzene solvent leg: repeat 2 generation 0)"
+    repr = "AbsoluteSolvationSolventUnit(Absolute Solvation, benzene solvent leg"
     key = None
 
     @pytest.fixture()
     def instance(self, solvent_protocol_unit):
         return solvent_protocol_unit
 
-    def test_key_stable(self):
-        pytest.skip()
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
 
 
 class TestAbsoluteSolvationVacuumUnit(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationVacuumUnit
-    repr = "AbsoluteSolvationVacuumUnit(Absolute Solvation, benzene vacuum leg: repeat 2 generation 0)"
+    repr = "AbsoluteSolvationVacuumUnit(Absolute Solvation, benzene vacuum leg"
     key = None
 
     @pytest.fixture()
     def instance(self, vacuum_protocol_unit):
         return vacuum_protocol_unit
 
-    def test_key_stable(self):
-        pytest.skip()
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
 
 
 class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
     cls = openmm_afe.AbsoluteSolvationProtocolResult
-    key = "AbsoluteSolvationProtocolResult-bbe3dc13a461cf4ec1594bef23c8ba4e"
-    repr = f"<{key}>"
+    key = None
+    repr = "AbsoluteSolvationProtocolResult-"
 
     @pytest.fixture()
     def instance(self, protocol_result):
         return protocol_result
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)

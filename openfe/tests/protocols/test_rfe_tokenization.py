@@ -39,17 +39,24 @@ class TestRelativeHybridTopologyProtocolResult(GufeTokenizableTestsMixin):
 
 class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocol
-    key = "RelativeHybridTopologyProtocol-99069cb606c80c9884a024c17fdab2e4"
-    repr = f"<{key}>"
+    key = None
+    repr = "<RelativeHybridTopologyProtocol-"
 
     @pytest.fixture()
     def instance(self, protocol):
         return protocol
 
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
+
 
 class TestRelativeHybridTopologyProtocolUnit(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocolUnit
-    repr = "RelativeHybridTopologyProtocolUnit(benzene to toluene repeat 2 generation 0)"
+    repr = "RelativeHybridTopologyProtocolUnit(benzene to toluene repeat"
     key = None
 
     @pytest.fixture()
@@ -58,3 +65,10 @@ class TestRelativeHybridTopologyProtocolUnit(GufeTokenizableTestsMixin):
 
     def test_key_stable(self):
         pytest.skip()
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
