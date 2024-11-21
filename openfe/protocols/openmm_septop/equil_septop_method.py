@@ -90,11 +90,10 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
     mdtraj_topology = md.Topology.from_openmm(omm_topology)
     positions_in_mdtraj_format = np.array(
         omm_positions / omm_units.nanometers)
+
     unit_cell = omm_topology.getPeriodicBoxVectors() / omm_units.nanometers
     print(unit_cell)
     unit_cell_length = np.array([i[inx] for inx, i in enumerate(unit_cell)])
-    if not unit_cell_length.all():
-        unit_cell_length = None
     print(unit_cell_length)
     mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
                                   mdtraj_topology,
@@ -870,14 +869,18 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             ligand_1,
             ligand_2,
             settings,
-            ligand_1_ref_idxs: list[int],
-            ligand_2_ref_idxs: list[int],
+            ligand_1_ref_idxs: tuple[int, int, int],
+            ligand_2_ref_idxs: tuple[int, int, int],
     ) -> openmm.System:
-
+        # Get mdtraj object for system
         traj = _get_mdtraj_from_openmm(topology, positions)
-        ligand_1_mdtraj = _get_mdtraj_from_openmm(ligand_1.to_openmm(), ligand_1.get_positions())
-        ligand_2_mdtraj = _get_mdtraj_from_openmm(ligand_2.to_openmm(),
-                                                  ligand_2.get_positions())
+        # Get mdtraj object for ligands
+        ligand_1_mdtraj = md.Trajectory(
+            np.array(ligand_1.get_positions() / omm_units.nanometers),
+            md.Topology.from_openmm(ligand_1.to_openmm()))
+        ligand_2_mdtraj = md.Trajectory(
+            np.array(ligand_2.get_positions() / omm_units.nanometers),
+            md.Topology.from_openmm(ligand_2.to_openmm()))
         # Convert ligand indices to the indices in the ligand (start with zero)
         # CAVE: We're assuming here that the atom order did not change!
         # This needs to be tested!!!

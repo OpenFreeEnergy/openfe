@@ -43,8 +43,8 @@ class RestraintsSettings(SettingsBaseModel):
     """
     Settings for the restraints.
     """
-    k_distance: FloatQuantity['kcal/(mol*angstrom**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
-    k_theta: Optional[FloatQuantity['kcal/(mol*rad**2)']] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
+    k_theta: Optional[FloatQuantity['kJ/(mol*rad**2)']] = 83.68 * unit.kilojoule_per_mole / unit.radians**2
 
 
 
