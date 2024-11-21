@@ -102,9 +102,9 @@ def quickrun(transformation, work_dir, output):
         output = work_dir / (str(trans.key) + '_results.json')
 
     try:
+        # make sure the output file is writeable before running simulations
         with open(output, mode='w') as outf:
-            # json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
-            outf.write("in-progress")
+            outf.write("in-progress")  # TODO: do we just want to pass here?
     except FileNotFoundError as e:
         raise click.ClickException(f"Unable to write to {output}, please provide a valid path.")
 
