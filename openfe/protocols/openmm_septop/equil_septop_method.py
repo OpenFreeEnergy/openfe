@@ -897,7 +897,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
                 traj, receptor_ref_idxs_1, ligand_2_mdtraj, ligand_2_ref_idxs
         ):
             receptor_ref_idxs_2 = select_receptor_idxs(
-                traj, ligand_2, ligand_2_ref_idxs)
+                traj, ligand_2_mdtraj, ligand_2_ref_idxs)
             print(receptor_ref_idxs_2)
 
         force_A = create_boresch_restraint(
