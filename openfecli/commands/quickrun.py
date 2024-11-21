@@ -33,8 +33,7 @@ def _format_exception(exception) -> str:
 )
 @click.option(
     'output', '-o', default=None,
-    type=click.Path(dir_okay=False, file_okay=True, writable=True,
-                    path_type=pathlib.Path),
+    type=click.Path(dir_okay=False, file_okay=True, path_type=pathlib.Path),
     help="output file (JSON format) for the final results",
     callback=validate_outfile,
 )
@@ -97,7 +96,6 @@ def quickrun(transformation, work_dir, output):
     # TODO: change this to `Transformation.load(transformation)`
     dct = json.load(transformation, cls=JSON_HANDLER.decoder)
     trans = gufe.Transformation.from_dict(dct)
-
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Starting the simulations for this edge...")
