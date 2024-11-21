@@ -6,7 +6,7 @@ import json
 import pathlib
 
 from openfecli import OFECommandPlugin
-from openfecli.parameters.output import ensure_file_does_not_exist
+from openfecli.parameters.output import validate_outfile
 from openfecli.utils import write, print_duration, configure_logger
 
 
@@ -36,7 +36,7 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=False, file_okay=True, writable=True,
                     path_type=pathlib.Path),
     help="output file (JSON format) for the final results",
-    callback=ensure_file_does_not_exist,
+    callback=validate_outfile,
 )
 @print_duration
 def quickrun(transformation, work_dir, output):
@@ -98,18 +98,6 @@ def quickrun(transformation, work_dir, output):
     dct = json.load(transformation, cls=JSON_HANDLER.decoder)
     trans = gufe.Transformation.from_dict(dct)
 
-    if output is None:
-        output = work_dir / (str(trans.key) + '_results.json')
-
-    try:
-        # make sure the output file is writeable before running simulations
-        with open(output, mode='w') as outf:
-            outf.write("in-progress")  # TODO: do we just want to pass here?
-    except FileNotFoundError as e:
-        raise click.ClickException(f"Unable to write to {output}, please provide a valid path.")
-
-    # TODO: if it's just a missing directory, should we try creating it?
-
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Starting the simulations for this edge...")
@@ -139,6 +127,8 @@ def quickrun(transformation, work_dir, output):
         }
     }
 
+    if output is None:
+        output = work_dir / (str(trans.key) + '_results.json')
 
     with open(output, mode='w') as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
