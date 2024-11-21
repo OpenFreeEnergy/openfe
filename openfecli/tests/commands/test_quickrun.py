@@ -58,16 +58,10 @@ def test_quickrun_output_file_in_nonexistent_directory(json_file):
     runner = CliRunner()
     outfile = "not_dir/foo.json"
     result = runner.invoke(quickrun, [json_file, '-o', outfile])
-    assert result.exit_code == 0
-    assert "Here is the result" in result.output
+    assert result.exit_code == 1  # TODO: which error type is appropriate here?
+    assert "Unable to write" in result.output
 
-    assert pathlib.Path(outfile).exists()
-    with open(outfile, mode='r') as outf:
-        dct = json.load(outf, cls=JSON_HANDLER.decoder)
-
-    assert set(dct) == {'estimate', 'uncertainty',
-                        'protocol_result', 'unit_results'}
-
+ 
 def test_quickrun_unit_error():
     with resources.files('openfecli.tests.data') as d:
         json_file = str(d / 'bad_transformation.json')
