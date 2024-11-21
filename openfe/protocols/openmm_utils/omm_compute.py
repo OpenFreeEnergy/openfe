@@ -76,6 +76,7 @@ def get_openmm_platform(
         logging.warning(wmsg)
 
     if name == 'CPU' and restrict_cpu_count:
-        platform.setPropertyDefaultValue('Threads', '1')
+        threads = os.getenv("OPENMM_CPU_THREADS", '1')
+        platform.setPropertyDefaultValue('Threads', threads)
 
     return platform
