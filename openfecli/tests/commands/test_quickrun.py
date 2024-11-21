@@ -1,7 +1,6 @@
 import pytest
 import click
 from importlib import resources
-import os
 import pathlib
 import json
 from click.testing import CliRunner
