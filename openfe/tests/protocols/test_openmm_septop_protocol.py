@@ -13,14 +13,15 @@ import mdtraj as mdt
 import numpy as np
 from numpy.testing import assert_allclose
 from openff.units import unit
+from openfe.protocols.openmm_septop
 import gufe
 import openfe
 from openfe import ChemicalSystem, SolventComponent
-from openfe.protocols import openmm_septop
 from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
     SepTopComplexSetupUnit,
     SepTopProtocol,
+    femto_restraints
 )
 
 from openfe.protocols.openmm_utils import system_validation
@@ -282,6 +283,21 @@ def test_validate_alchem_nonsmc(
 
     with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
+
+
+# def test_create_boresch_restraint(
+#     bace_ligands, bace_protein_component
+# ):
+# Would have to create the OpenMM system to get the positions
+#     receptor_ref_idxs_1 = (492, 510, 3822)
+#     ligand_1_idxs = (6053, 6048, 6055)
+#
+#     force_A = femto_restraints.create_boresch_restraint(
+#         receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
+#         ligand_1_idxs,
+#         positions,
+#         settings["restraint_settings"],
+#     )
 
 
 def test_setup(bace_ligands,  bace_protein_component, tmpdir):
