@@ -948,8 +948,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             ligand_1: Optional[OFFMolecule.Topology],
             ligand_2: Optional[OFFMolecule.Topology],
             settings: Optional,
-            ligand_1_ref_idxs: list[int],
-            ligand_2_ref_idxs: list[int],
+            ligand_1_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
+            ligand_2_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
+            ligand_1_idxs: tuple[int, int, int],  # indices from the full topology
+            ligand_2_idxs: tuple[int, int, int],  # indices from the full topology
     ) -> openmm.System:
         """
         Get new positions for the stateB after equilibration.
@@ -1133,17 +1135,19 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         self._set_positions(off_B, lig_B_pos)
         off_B.to_file('molB.pdb')
 
-        ligand_A_inxs, ligand_B_inxs = select_ligand_idxs(off_A, off_B)
+        ligand_A_ref_inxs, ligand_B_ref_inxs = select_ligand_idxs(off_A, off_B)
 
-        ligand_A_inxs = [atom_indices_AB_A[inx] for inx in ligand_A_inxs]
-        ligand_B_inxs = [atom_indices_AB_B[inx] for inx in ligand_B_inxs]
+        ligand_A_inxs = tuple([atom_indices_AB_A[inx] for inx in ligand_A_ref_inxs])
+        ligand_B_inxs = tuple([atom_indices_AB_B[inx] for inx in ligand_B_ref_inxs])
         print(ligand_A_inxs)
         print(ligand_B_inxs)
 
         system = self._add_restraints(
             omm_system_AB, positions_AB, omm_topology_AB,
             off_A, off_B,
-            settings, ligand_A_inxs, ligand_B_inxs)
+            settings,
+            ligand_A_ref_inxs, ligand_B_ref_inxs,
+            ligand_A_inxs, ligand_B_inxs)
         # Check that the restraints are correctly applied by running a short equilibration
         equ_positions_restraints = self._pre_equilibrate(
             system, omm_topology_AB, positions_AB, settings, dry
@@ -1153,9 +1157,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # Here we could also apply REST
 
-        # # 7. Get lambdas
-        # lambdas = self._get_lambda_schedule(settings)
-        #
+        # 7. Get lambdas
+        lambdas = self._get_lambda_schedule(settings)
+        print(lambdas)
+
         # # 10. Get compound and sampler states
         # sampler_states, cmp_states = self._get_states(
         #     omm_system_AB, positions_AB, settings,

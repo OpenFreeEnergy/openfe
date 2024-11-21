@@ -871,7 +871,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             settings,
             ligand_1_ref_idxs: tuple[int, int, int],
             ligand_2_ref_idxs: tuple[int, int, int],
+            ligand_1_idxs: tuple[int, int, int],
+            ligand_2_idxs: tuple[int, int, int],
     ) -> openmm.System:
+
         # Get mdtraj object for system
         traj = _get_mdtraj_from_openmm(topology, positions)
         # Get mdtraj object for ligands
@@ -881,11 +884,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         ligand_2_mdtraj = md.Trajectory(
             np.array(ligand_2.get_positions() / omm_units.nanometers),
             md.Topology.from_openmm(ligand_2.to_openmm()))
-        # Convert ligand indices to the indices in the ligand (start with zero)
-        # CAVE: We're assuming here that the atom order did not change!
-        # This needs to be tested!!!
-        ligand_1_ref_idxs = [inx for inx, i in enumerate(ligand_1_ref_idxs)]
-        ligand_2_ref_idxs = [inx for inx, i in enumerate(ligand_2_ref_idxs)]
+
         # Select the reference indices in the receptor
         receptor_ref_idxs_1 = select_receptor_idxs(
             traj, ligand_1_mdtraj, ligand_1_ref_idxs
@@ -902,7 +901,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         force_A = create_boresch_restraint(
             receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
-            ligand_1_ref_idxs,
+            ligand_1_idxs,
             positions,
             settings["restraint_settings"],
         )
@@ -910,7 +909,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         force_B = create_boresch_restraint(
             receptor_ref_idxs_2[::-1],
             # expects [r3, r2, r1], not [r1, r2, r3]
-            ligand_2_ref_idxs,
+            ligand_2_idxs,
             positions,
             settings["restraint_settings"],
         )
@@ -1077,6 +1076,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         settings,
         ligand_1_ref_idxs: list[int],
         ligand_2_ref_idxs: list[int],
+        ligand_1_idxs: tuple[int, int, int],
+        ligand_2_idxs: tuple[int, int, int],
     ) -> openmm.System:
         """Apply a distance restraints between the ligands.
 
