@@ -60,7 +60,6 @@ def test_quickrun_output_file_in_nonexistent_directory(json_file):
     result = runner.invoke(quickrun, [json_file, '-o', outfile])
     assert result.exit_code == 1  # TODO: which error type is appropriate here?
     assert "Unable to write" in result.output
-
  
 def test_quickrun_unit_error():
     with resources.files('openfecli.tests.data') as d:
