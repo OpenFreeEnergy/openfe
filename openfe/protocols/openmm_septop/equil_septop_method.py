@@ -90,8 +90,10 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
     mdtraj_topology = md.Topology.from_openmm(omm_topology)
     positions_in_mdtraj_format = np.array(
         omm_positions / omm_units.nanometers)
-    unit_cell = omm_topology.getPeriodicBoxVectors()
-    unit_cell_length = [i[inx] for inx, i in enumerate(unit_cell)]
+    unit_cell = omm_topology.getPeriodicBoxVectors() / omm_units.nanometers
+    print(unit_cell)
+    unit_cell_length = np.array([i[inx] for inx, i in enumerate(unit_cell)])
+    print(unit_cell_length)
     mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
                                   mdtraj_topology,
                                   unitcell_lengths=unit_cell_length)
@@ -1038,7 +1040,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         unit_cell = [i[inx] for inx, i in enumerate(unit_cell)]
         mdtraj_system_B = _get_mdtraj_from_openmm(omm_topology_B,
                                                   positions_B)
-        print(mdtraj_system_B.unitcell_vectors)
         print(mdtraj_system_B.unitcell_lengths)
 
         ligand_1_radius = np.linalg.norm(
