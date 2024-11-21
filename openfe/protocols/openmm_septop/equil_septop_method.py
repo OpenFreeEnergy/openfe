@@ -31,6 +31,7 @@ import warnings
 from collections import defaultdict
 import gufe
 import openmm
+import openmm.unit
 from gufe.components import Component
 import itertools
 import numpy as np
@@ -499,7 +500,7 @@ class SepTopProtocol(gufe.Protocol):
                 k_theta=None,
             ),
             complex_restraints_settings=RestraintsSettings(
-                k_distance=8368.0 * unit.kilojoule_per_mole / unit.nanometer ** 2
+                k_distance=8368.0 * unit.kilojoule_per_mole / unit.nanometer**2
             ),
         )
 
@@ -1100,15 +1101,17 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         coords = positions
         # Taking the middle reference atom
         distance = np.linalg.norm(
-            coords[ligand_1_ref_idxs[1]] - coords[ligand_2_ref_idxs[1]])
+            coords[ligand_1_idxs[1]] - coords[ligand_2_idxs[1]])
         print(distance)
+
+        k_distance = to_openmm(settings['restraint_settings'].k_distance)
 
         force = openmm.HarmonicBondForce()
         force.addBond(
-            ligand_1_ref_idxs[1],
-            ligand_2_ref_idxs[1],
+            ligand_1_idxs[1],
+            ligand_2_idxs[1],
             distance * openmm.unit.nanometers,
-            settings['restraint_settings'].k_distance.m,
+            k_distance,
         )
         force.setName("alignment_restraint")
         force.setForceGroup(6)
