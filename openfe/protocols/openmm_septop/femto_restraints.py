@@ -680,7 +680,8 @@ def create_boresch_restraint(
     receptor_atoms: tuple[int, int, int],
     ligand_atoms: tuple[int, int, int],
     coords: openmm.unit.Quantity,
-    restraints_settings,
+    k_distance,
+    k_theta,
     ctx_parameter: str | None = None,
 ) -> openmm.CustomCompoundBondForce:
     """Creates a Boresch restraint force useful in aligning a receptor and ligand.
@@ -717,12 +718,12 @@ def create_boresch_restraint(
     parameters = []
 
     for key, value in [
-        ("k_dist_a", restraints_settings.k_distance),
-        ("k_theta_a", restraints_settings.k_theta * scale),
-        ("k_theta_b", restraints_settings.k_theta),
-        ("k_phi_a", restraints_settings.k_theta),
-        ("k_phi_b", restraints_settings.k_theta),
-        ("k_phi_c", restraints_settings.k_theta),
+        ("k_dist_a", k_distance),
+        ("k_theta_a", k_theta * scale),
+        ("k_theta_b", k_theta),
+        ("k_phi_a", k_theta),
+        ("k_phi_b", k_theta),
+        ("k_phi_c", k_theta),
         ("dist_0", geometry.dist_0),
         ("theta_a_0", geometry.theta_a_0),
         ("theta_b_0", geometry.theta_b_0),

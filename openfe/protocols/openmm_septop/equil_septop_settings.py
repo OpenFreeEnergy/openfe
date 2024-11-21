@@ -44,8 +44,8 @@ class RestraintsSettings(SettingsBaseModel):
     """
     Settings for the restraints.
     """
-    k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * omm_unit.kilojoule_per_mole / omm_unit.nanometer**2
-    k_theta: Optional[FloatQuantity['kJ/(mol*rad**2)']] = 83.68 * omm_unit.kilojoule_per_mole / omm_unit.radians ** 2
+    k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
+    k_theta: Optional[FloatQuantity['kJ/(mol*rad**2)']] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
 
 
 class LambdaSettings(SettingsBaseModel):

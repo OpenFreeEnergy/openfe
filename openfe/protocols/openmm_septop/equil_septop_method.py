@@ -67,6 +67,7 @@ from .femto_restraints import (
     create_boresch_restraint,
 )
 from .femto_utils import assign_force_groups
+from openff.units.openmm import to_openmm
 
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -899,11 +900,18 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
                 traj, ligand_2_mdtraj, ligand_2_ref_idxs)
             print(receptor_ref_idxs_2)
 
+        # Convert restraint units to openmm
+        k_distance = to_openmm(settings["restraint_settings"].k_distance)
+        print(k_distance)
+        k_theta = to_openmm(settings["restraint_settings"].k_theta)
+        print(k_theta)
+
         force_A = create_boresch_restraint(
             receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
             ligand_1_idxs,
             positions,
-            settings["restraint_settings"],
+            k_distance,
+            k_theta
         )
         system.addForce(force_A)
         force_B = create_boresch_restraint(
@@ -911,7 +919,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             # expects [r3, r2, r1], not [r1, r2, r3]
             ligand_2_idxs,
             positions,
-            settings["restraint_settings"],
+            k_distance,
+            k_theta
         )
         system.addForce(force_B)
 
