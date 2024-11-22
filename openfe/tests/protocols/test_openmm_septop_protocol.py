@@ -13,7 +13,6 @@ import mdtraj as mdt
 import numpy as np
 from numpy.testing import assert_allclose
 from openff.units import unit
-from openfe.protocols.openmm_septop
 import gufe
 import openfe
 from openfe import ChemicalSystem, SolventComponent
@@ -48,9 +47,9 @@ def test_incorrect_window_settings(val, default_settings):
     errmsg = "Lambda windows must be between 0 and 1."
     lambda_settings = default_settings.lambda_settings
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec = val['elec']
-        lambda_settings.lambda_vdw = val['vdw']
-        lambda_settings.lambda_restraints = val['restraints']
+        lambda_settings.lambda_elec_ligandA = val['elec']
+        lambda_settings.lambda_vdw_ligandA = val['vdw']
+        lambda_settings.lambda_restraints_ligandA = val['restraints']
 
 
 @pytest.mark.parametrize('val', [
@@ -61,18 +60,22 @@ def test_monotonic_lambda_windows(val, default_settings):
     lambda_settings = default_settings.lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec = val['elec']
-        lambda_settings.lambda_vdw = val['vdw']
-        lambda_settings.lambda_restraints = val['restraints']
+        lambda_settings.lambda_elec_ligandA = val['elec']
+        lambda_settings.lambda_vdw_ligandA = val['vdw']
+        lambda_settings.lambda_restraints_ligandA = val['restraints']
 
 
 @pytest.mark.parametrize('val', [
     {'elec': [1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
-    default_settings.lambda_settings.lambda_elec = val['elec']
-    default_settings.lambda_settings.lambda_vdw = val['vdw']
-    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    default_settings.lambda_settings.lambda_elec_ligandA = val['elec']
+    default_settings.lambda_settings.lambda_vdw_ligandA = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_ligandA = val['restraints']
+    default_settings.lambda_settings.lambda_elec_ligandB = val['elec']
+    default_settings.lambda_settings.lambda_vdw_ligandB = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_ligandB = val[
+        'restraints']
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     errmsg = (f"Number of replicas {n_replicas} does not equal the"
@@ -88,16 +91,14 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
     {'elec': [1.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nwindows(val, default_settings):
-    default_settings.lambda_settings.lambda_elec = val['elec']
-    default_settings.lambda_settings.lambda_vdw = val['vdw']
-    default_settings.lambda_settings.lambda_restraints = val['restraints']
+    default_settings.lambda_settings.lambda_elec_ligandA = val['elec']
+    default_settings.lambda_settings.lambda_vdw_ligandA = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_ligandA = val['restraints']
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     errmsg = (
-        "Components elec, vdw, and restraints must have equal amount"
-        f" of lambda windows. Got {len(val['elec'])} elec lambda"
-        f" windows, {len(val['vdw'])} vdw lambda windows, and "
-        f"{len(val['restraints'])} restraints lambda windows.")
+        "Components elec, vdw, and restraints must have equal amount of lambda "
+        "windows. Got 3 and 19 elec lambda windows")
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
             default_settings.lambda_settings,
@@ -308,9 +309,8 @@ def test_setup(bace_ligands,  bace_protein_component, tmpdir):
     s.solvent_equil_simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     s.solvent_equil_simulation_settings.equilibration_length = 1 * unit.picosecond
     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
-    s.solvation_settings.box_shape = 'dodecahedron'
-    s.solvation_settings.solvent_padding = 1.2 * unit.nanometer
-    s.complex_forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+    s.solvent_solvation_settings.box_shape = 'dodecahedron'
+    s.solvent_solvation_settings.solvent_padding = 1.5 * unit.nanometer
 
     protocol = SepTopProtocol(
         settings=s,
@@ -338,8 +338,8 @@ def test_setup(bace_ligands,  bace_protein_component, tmpdir):
     prot_units = list(dag.protocol_units)
     solv_setup_unit = [u for u in prot_units
                        if isinstance(u, SepTopSolventSetupUnit)]
-    solv_setup_unit = [u for u in prot_units
-                       if isinstance(u, SepTopComplexSetupUnit)]
+    # solv_setup_unit = [u for u in prot_units
+    #                    if isinstance(u, SepTopComplexSetupUnit)]
 
     # with tmpdir.as_cwd():
     solv_setup_unit[0].run()

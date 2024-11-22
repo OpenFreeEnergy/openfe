@@ -534,15 +534,18 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         """
         lambdas = dict()
 
-        lambda_elec = settings['lambda_settings'].lambda_elec
-        lambda_vdw = settings['lambda_settings'].lambda_vdw
-
-        # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
-        # means fully interacting, not stateB
-        lambda_elec = [1 - x for x in lambda_elec]
-        lambda_vdw = [1 - x for x in lambda_vdw]
-        lambdas['lambda_electrostatics'] = lambda_elec
-        lambdas['lambda_sterics'] = lambda_vdw
+        lambdas['lambda_electrostatics_ligandA'] = settings[
+            'lambda_settings'].lambda_elec_ligandA
+        lambdas['lambda_sterics_ligandA'] = settings[
+            'lambda_settings'].lambda_vdw_ligandA
+        lambdas['lambda_restraints_ligandA'] = settings[
+            'lambda_settings'].lambda_restraints_ligandA
+        lambdas['lambda_electrostatics_ligandB'] = settings[
+            'lambda_settings'].lambda_elec_ligandB
+        lambdas['lambda_sterics_ligandB'] = settings[
+            'lambda_settings'].lambda_vdw_ligandB
+        lambdas['lambda_restraints_ligandB'] = settings[
+            'lambda_settings'].lambda_restraints_ligandB
 
         return lambdas
 

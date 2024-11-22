@@ -449,7 +449,7 @@ class SepTopProtocol(gufe.Protocol):
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvent_solvation_settings=OpenMMSolvationSettings(
-                solvent_padding=1.5 * unit.nanometer
+                solvent_padding=1.8 * unit.nanometer
             ),
             complex_solvation_settings=OpenMMSolvationSettings(),
             complex_engine_settings=OpenMMEngineSettings(),
@@ -629,28 +629,35 @@ class SepTopProtocol(gufe.Protocol):
           If there are non-zero values for restraints (lambda_restraints).
         """
 
-        lambda_elec = lambda_settings.lambda_elec
-        lambda_vdw = lambda_settings.lambda_vdw
-        lambda_restraints = lambda_settings.lambda_restraints
+        lambda_elec_ligandA = lambda_settings.lambda_elec_ligandA
+        lambda_elec_ligandB = lambda_settings.lambda_elec_ligandB
+        lambda_vdw_ligandA = lambda_settings.lambda_vdw_ligandA
+        lambda_vdw_ligandB = lambda_settings.lambda_vdw_ligandB
+        lambda_restraints_ligandA = lambda_settings.lambda_restraints_ligandA
+        lambda_restraints_ligandB = lambda_settings.lambda_restraints_ligandB
         n_replicas = simulation_settings.n_replicas
 
         # Ensure that all lambda components have equal amount of windows
-        lambda_components = [lambda_vdw, lambda_elec, lambda_restraints]
+        lambda_components = [lambda_vdw_ligandA, lambda_vdw_ligandB,
+                             lambda_elec_ligandA, lambda_elec_ligandB,
+                             lambda_restraints_ligandA, lambda_restraints_ligandB]
         it = iter(lambda_components)
         the_len = len(next(it))
         if not all(len(l) == the_len for l in it):
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"
-                f" of lambda windows. Got {len(lambda_elec)} elec lambda"
-                f" windows, {len(lambda_vdw)} vdw lambda windows, and "
-                f"{len(lambda_restraints)} restraints lambda windows.")
+                f" of lambda windows. Got {len(lambda_elec_ligandA)} and "
+                f"{len(lambda_elec_ligandB)} elec lambda windows, "
+                f"{len(lambda_vdw_ligandA)} and {len(lambda_vdw_ligandB)} vdw "
+                f"lambda windows, and {len(lambda_restraints_ligandA)} and "
+                f"{len(lambda_restraints_ligandB)} restraints lambda windows.")
             raise ValueError(errmsg)
 
         # Ensure that number of overall lambda windows matches number of lambda
         # windows for individual components
-        if n_replicas != len(lambda_vdw):
+        if n_replicas != len(lambda_vdw_ligandB):
             errmsg = (f"Number of replicas {n_replicas} does not equal the"
-                      f" number of lambda windows {len(lambda_vdw)}")
+                      f" number of lambda windows {len(lambda_vdw_ligandB)}")
             raise ValueError(errmsg)
 
         # # Check if there are lambda windows with naked charges
@@ -664,15 +671,6 @@ class SepTopProtocol(gufe.Protocol):
         #             f"interactions: lambda {inx}: "
         #             f"elec {lam} vdW {lambda_vdw[inx]}")
         #         raise ValueError(errmsg)
-
-        # # Check if there are lambda windows with non-zero restraints
-        # if len([r for r in lambda_restraints if r != 0]) > 0:
-        #     wmsg = ("Non-zero restraint lambdas applied. The absolute "
-        #             "solvation protocol doesn't apply restraints, "
-        #             "therefore restraints won't be applied. "
-        #             f"Given lambda_restraints: {lambda_restraints}")
-        #     logger.warning(wmsg)
-        #     warnings.warn(wmsg)
 
     def _create(
         self,
