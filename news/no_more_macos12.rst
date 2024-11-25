@@ -12,7 +12,7 @@
 
 **Removed:**
 
-* Removed support for macos-12, macos-14 is now the minimum supported.
+* openfe is no longer tested against macos-12. macos support is, for now, limited to osx-arm64 (macos-14+).
 
 **Fixed:**
 
