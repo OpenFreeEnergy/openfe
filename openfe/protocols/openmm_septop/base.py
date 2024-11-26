@@ -57,6 +57,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
+from openfe.utils import log_system_probe
 from openfe.protocols.openmm_rfe._rfe_utils.compute import get_openmm_platform
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
