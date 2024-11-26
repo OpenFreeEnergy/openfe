@@ -1120,9 +1120,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
         :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
 
+        topology_file = shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
                                                    positions_AB,
-                                                   open('outputAB_new.pdb',
+                                                   open(topology_file,
                                                         'w'))
 
         # 9. Create the alchemical system
@@ -1163,58 +1164,62 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # Here we could also apply REST
 
-        # 7. Get lambdas
-        lambdas = self._get_lambda_schedule(settings)
-        print(lambdas)
+        system_outfile = shared_basepath / "system.xml.bz2"
 
-        # 13. Get integrator
-        integrator = self._get_integrator(
-            settings['integrator_settings'],
-            settings['simulation_settings'],
-        )
+        # Serialize system, state and integrator
+        serialize(system, system_outfile)
 
-        # Set up context
-        platform = get_openmm_platform(
-            settings['engine_settings'].compute_platform)
-        context = openmm.Context(system, integrator, platform)
-        context.setPeriodicBoxVectors(*system.getDefaultPeriodicBoxVectors())
-        context.setPositions(positions_AB)
-
-        try:
-            # SERIALIZE SYSTEM, STATE, INTEGRATOR
-            # need to set velocities to temperature so serialized state
-            # features velocities,
-            # which is important for usability by the Folding@Home openmm-core
-            thermodynamic_settings = settings['thermo_settings']
-            temperature = to_openmm(thermodynamic_settings.temperature)
-            context.setVelocitiesToTemperature(temperature)
-
-            # state needs to include positions, forces, velocities, and energy
-            # to be usable by the Folding@Home openmm-core
-            state_ = context.getState(
-                getPositions=True, getForces=True, getVelocities=True,
-                getEnergy=True
-            )
-            system_ = context.getSystem()
-            integrator_ = context.getIntegrator()
-
-            system_outfile = shared_basepath / "system.xml.bz2"
-            state_outfile = shared_basepath / "state.xml.bz2"
-            integrator_outfile = shared_basepath / "integrator.xml.bz2"
-
-            # Serialize system, state and integrator
-            serialize(system_, system_outfile)
-            serialize(state_, state_outfile)
-            serialize(integrator_, integrator_outfile)
-
-        finally:
-            # Explicit cleanup for GPU resources
-            del context, integrator
+        # # 7. Get lambdas
+        # lambdas = self._get_lambda_schedule(settings)
+        # print(lambdas)
+        #
+        # # 13. Get integrator
+        # integrator = self._get_integrator(
+        #     settings['integrator_settings'],
+        #     settings['simulation_settings'],
+        # )
+        #
+        # # Set up context
+        # platform = get_openmm_platform(
+        #     settings['engine_settings'].compute_platform)
+        # context = openmm.Context(system, integrator, platform)
+        # context.setPeriodicBoxVectors(*system.getDefaultPeriodicBoxVectors())
+        # context.setPositions(positions_AB)
+        #
+        # try:
+        #     # SERIALIZE SYSTEM, STATE, INTEGRATOR
+        #     # need to set velocities to temperature so serialized state
+        #     # features velocities,
+        #     # which is important for usability by the Folding@Home openmm-core
+        #     thermodynamic_settings = settings['thermo_settings']
+        #     temperature = to_openmm(thermodynamic_settings.temperature)
+        #     context.setVelocitiesToTemperature(temperature)
+        #
+        #     # state needs to include positions, forces, velocities, and energy
+        #     # to be usable by the Folding@Home openmm-core
+        #     state_ = context.getState(
+        #         getPositions=True, getForces=True, getVelocities=True,
+        #         getEnergy=True
+        #     )
+        #     system_ = context.getSystem()
+        #     integrator_ = context.getIntegrator()
+        #
+        #     system_outfile = shared_basepath / "system.xml.bz2"
+        #     state_outfile = shared_basepath / "state.xml.bz2"
+        #     integrator_outfile = shared_basepath / "integrator.xml.bz2"
+        #
+        #     # Serialize system, state and integrator
+        #     serialize(system_, system_outfile)
+        #     serialize(state_, state_outfile)
+        #     serialize(integrator_, integrator_outfile)
+        #
+        # finally:
+        #     # Explicit cleanup for GPU resources
+        #     del context, integrator
 
         return {
             "system": system_outfile,
-            "state": state_outfile,
-            "integrator": integrator_outfile,
+            "topology": topology_file,
         }
 
         # # 10. Get compound and sampler states
