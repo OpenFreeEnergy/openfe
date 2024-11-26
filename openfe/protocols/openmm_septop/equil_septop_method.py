@@ -709,7 +709,7 @@ class SepTopProtocol(gufe.Protocol):
 
         # Create list units for complex and solvent transforms
 
-        solvent_units = [
+        solvent_setup = [
             SepTopSolventSetupUnit(
                 protocol=self,
                 stateA=stateA,
@@ -722,10 +722,19 @@ class SepTopProtocol(gufe.Protocol):
             for i in range(self.settings.protocol_repeats)
         ]
 
-        complex_units = [
+        solvent_run = [
+            SepTopSolventRunUnit(
+                protocol=self,
+                setup=solvent_setup[i],
+                generation=0, repeat_id=int(uuid.uuid4()),
+                name=(f"SepTop RBFE, {alchname} solvent leg: "
+                      f"repeat {i} generation 0"),
+            )
+            for i in range(self.settings.protocol_repeats)
+        ]
+
+        complex_setup = [
             SepTopComplexSetupUnit(
-                # These don't really reflect the actual transform
-                # Should these be overriden to be ChemicalSystem{smc} -> ChemicalSystem{} ?
                 protocol=self,
                 stateA=stateA,
                 stateB=stateB,
@@ -737,7 +746,18 @@ class SepTopProtocol(gufe.Protocol):
             for i in range(self.settings.protocol_repeats)
         ]
 
-        return solvent_units + complex_units
+        complex_run = [
+            SepTopComplexRunUnit(
+                protocol=self,
+                setup=complex_setup[i],
+                generation=0, repeat_id=int(uuid.uuid4()),
+                name=(f"SepTop RBFE, {alchname} complex leg: "
+                      f"repeat {i} generation 0"),
+            )
+            for i in range(self.settings.protocol_repeats)
+        ]
+
+        return solvent_setup + solvent_run + complex_setup + complex_run
 
     def _gather(
         self, protocol_dag_results: Iterable[gufe.ProtocolDAGResult]
@@ -1136,6 +1156,12 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
 
 class SepTopSolventRunUnit(BaseSepTopRunUnit):
+    """
+    Protocol Unit for the solvent phase of an relative SepTop free energy
+    """
+
+
+class SepTopComplexRunUnit(BaseSepTopRunUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
