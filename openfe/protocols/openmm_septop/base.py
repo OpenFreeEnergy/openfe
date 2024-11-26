@@ -1175,7 +1175,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # Set up context
         platform = get_openmm_platform(
-            settings.engine_settings.compute_platform)
+            settings['engine_settings'].compute_platform)
         context = openmm.Context(system, integrator, platform)
         context.setPeriodicBoxVectors(*system.getDefaultPeriodicBoxVectors())
         context.setPositions(positions_AB)
