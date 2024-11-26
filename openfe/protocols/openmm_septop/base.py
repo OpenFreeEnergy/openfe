@@ -57,6 +57,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
+from openfe.protocols.openmm_rfe._rfe_utils.compute import get_openmm_platform
+
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
@@ -73,6 +75,7 @@ from openfe.utils import without_oechem_backend
 
 from .femto_alchemy import apply_fep
 from .femto_restraints import select_ligand_idxs
+from .utils import serialize, deserialize
 
 logger = logging.getLogger(__name__)
 
@@ -1151,18 +1154,68 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             settings,
             ligand_A_ref_inxs, ligand_B_ref_inxs,
             ligand_A_inxs, ligand_B_inxs)
-        # Check that the restraints are correctly applied by running a short equilibration
-        equ_positions_restraints = self._pre_equilibrate(
-            system, omm_topology_AB, positions_AB, settings, dry
-        )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_AB, equ_positions_restraints, open('outputAB_restrained.pdb', 'w'))
+        # # Check that the restraints are correctly applied by running a short equilibration
+        # equ_positions_restraints = self._pre_equilibrate(
+        #     system, omm_topology_AB, positions_AB, settings, dry
+        # )
+        # simtk.openmm.app.pdbfile.PDBFile.writeFile(
+        #     omm_topology_AB, equ_positions_restraints, open('outputAB_restrained.pdb', 'w'))
 
         # Here we could also apply REST
 
         # 7. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
         print(lambdas)
+
+        # 13. Get integrator
+        integrator = self._get_integrator(
+            settings['integrator_settings'],
+            settings['simulation_settings'],
+        )
+
+        # Set up context
+        platform = get_openmm_platform(
+            settings.engine_settings.compute_platform)
+        context = openmm.Context(system, integrator, platform)
+        context.setPeriodicBoxVectors(*system.getDefaultPeriodicBoxVectors())
+        context.setPositions(positions_AB)
+
+        try:
+            # SERIALIZE SYSTEM, STATE, INTEGRATOR
+            # need to set velocities to temperature so serialized state
+            # features velocities,
+            # which is important for usability by the Folding@Home openmm-core
+            thermodynamic_settings = settings['thermo_settings']
+            temperature = to_openmm(thermodynamic_settings.temperature)
+            context.setVelocitiesToTemperature(temperature)
+
+            # state needs to include positions, forces, velocities, and energy
+            # to be usable by the Folding@Home openmm-core
+            state_ = context.getState(
+                getPositions=True, getForces=True, getVelocities=True,
+                getEnergy=True
+            )
+            system_ = context.getSystem()
+            integrator_ = context.getIntegrator()
+
+            system_outfile = shared_basepath / "system.xml.bz2"
+            state_outfile = shared_basepath / "state.xml.bz2"
+            integrator_outfile = shared_basepath / "integrator.xml.bz2"
+
+            # Serialize system, state and integrator
+            serialize(system_, system_outfile)
+            serialize(state_, state_outfile)
+            serialize(integrator_, integrator_outfile)
+
+        finally:
+            # Explicit cleanup for GPU resources
+            del context, integrator
+
+        return {
+            "system": system_outfile,
+            "state": state_outfile,
+            "integrator": integrator_outfile,
+        }
 
         # # 10. Get compound and sampler states
         # sampler_states, cmp_states = self._get_states(
