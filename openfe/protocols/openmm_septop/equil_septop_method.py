@@ -435,7 +435,7 @@ class SepTopProtocol(gufe.Protocol):
           a set of default settings
         """
         return SepTopSettings(
-            protocol_repeats=3,
+            protocol_repeats=1,
             solvent_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             complex_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
                 nonbonded_method='nocutoff',
@@ -1133,3 +1133,9 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             'simtype': 'solvent',
             **outputs
         }
+
+
+class SepTopSolventRunUnit(BaseSepTopRunUnit):
+    """
+    Protocol Unit for the solvent phase of an relative SepTop free energy
+    """

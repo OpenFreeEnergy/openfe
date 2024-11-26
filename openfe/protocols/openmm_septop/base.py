@@ -65,6 +65,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
 )
+from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
 from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from ..openmm_utils import (
@@ -1301,6 +1302,46 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
 class BaseSepTopRunUnit(gufe.ProtocolUnit):
     """
-    Empty place holder
     Base class for running ligand SepTop RBFE free energy transformations.
     """
+
+    def _execute(self, ctx: gufe.Context, *, protocol, setup, **inputs,
+                 ) -> dict[str, Any]:
+        """
+        Execute the simulation part of the Gromacs MD protocol.
+
+        Parameters
+        ----------
+        ctx : gufe.protocols.protocolunit.Context
+            The gufe context for the unit.
+        protocol : gufe.protocols.Protocol
+            The Protocol used to create this Unit. Contains key
+            information
+            such as the settings.
+        setup : gufe.protocols.ProtocolUnit
+            The SetupUnit
+
+        Returns
+        -------
+        dict : dict[str, str]
+            Dictionary with paths to ...
+        """
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        if ctx.shared is None:
+            # use cwd
+            shared_basepath = pathlib.Path(".")
+        else:
+            shared_basepath = ctx.shared
+
+        protocol_settings: SepTopSettings = self._inputs[
+            "protocol"].settings
+        serialized_system = setup.outputs["system"]
+        serialized_topology = setup.outputs["topology"]
+
+        system = deserialize(serialized_system)
+        topology = simtk.openmm.app.pdbfile.PDBFile(serialized_topology).topology
+
+        print(system, topology)
+
+        return
