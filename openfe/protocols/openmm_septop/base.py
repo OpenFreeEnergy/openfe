@@ -863,6 +863,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             Phase name. "vacuum", "solvent" or "complex".
         component_keys : list[str]
             List of component keys to extract from states.
+
+        Code obtained from feflow/protocols/nonequilibrium_cycling.py
         """
         states = (state_a, state_b)
         # where to store the data to be returned
@@ -912,7 +914,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         Must be implemented in the child class.
         """
         ...
-
 
     def _get_lambda_schedule(
             self, settings: dict[str, SettingsBaseModel]

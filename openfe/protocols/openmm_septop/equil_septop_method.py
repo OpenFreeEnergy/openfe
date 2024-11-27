@@ -437,9 +437,7 @@ class SepTopProtocol(gufe.Protocol):
         return SepTopSettings(
             protocol_repeats=1,
             solvent_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
-            complex_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
-                nonbonded_method='nocutoff',
-            ),
+            complex_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
