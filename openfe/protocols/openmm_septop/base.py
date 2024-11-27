@@ -77,7 +77,6 @@ from openfe.utils import without_oechem_backend
 from .femto_alchemy import apply_fep
 from .femto_restraints import select_ligand_idxs
 from .utils import serialize, deserialize
-from .femto_equilibrate import create_state_dicts
 
 logger = logging.getLogger(__name__)
 
