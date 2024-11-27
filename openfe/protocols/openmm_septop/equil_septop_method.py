@@ -752,6 +752,9 @@ class SepTopProtocol(gufe.Protocol):
         complex_run = [
             SepTopComplexRunUnit(
                 protocol=self,
+                stateA=stateA,
+                stateB=stateB,
+                alchemical_components=alchem_comps,
                 setup=complex_setup[i],
                 generation=0, repeat_id=int(uuid.uuid4()),
                 name=(f"SepTop RBFE, {alchname} complex leg: "

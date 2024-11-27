@@ -1256,18 +1256,15 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             self, ctx: gufe.Context, *, setup, verbose=True, **kwargs,
                  ) -> dict[str, Any]:
         """
-        Execute the simulation part of the Gromacs MD protocol.
+        Execute the simulation part of the SepTop protocol.
 
         Parameters
         ----------
         ctx : gufe.protocols.protocolunit.Context
             The gufe context for the unit.
-        protocol : gufe.protocols.Protocol
-            The Protocol used to create this Unit. Contains key
-            information
-            such as the settings.
         setup : gufe.protocols.ProtocolUnit
             The SetupUnit
+        verbose: bool
 
         Returns
         -------
@@ -1275,7 +1272,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             Dictionary with paths to ...
         """
         log_system_probe(logging.INFO, paths=[ctx.scratch])
-        dry=False
+        dry = False
         if ctx.shared is None:
             # use cwd
             shared_basepath = pathlib.Path(".")
