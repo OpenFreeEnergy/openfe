@@ -837,6 +837,54 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         """
         ...
 
+    @staticmethod
+    def _detect_phase(state_a, state_b):
+        """
+        Detect phase according to the components in the input chemical state.
+
+        Complex state is assumed if both states have ligands and protein
+        components.
+
+        Solvent state is assumed
+
+        Vacuum state is assumed if only either a ligand or a protein is present
+        in each of the states.
+
+        Parameters
+        ----------
+        state_a : gufe.state.State
+            Source state for the alchemical transformation.
+        state_b : gufe.state.State
+            Destination state for the alchemical transformation.
+
+        Returns
+        -------
+        phase : str
+            Phase name. "vacuum", "solvent" or "complex".
+        component_keys : list[str]
+            List of component keys to extract from states.
+        """
+        states = (state_a, state_b)
+        # where to store the data to be returned
+
+        # Order of phases is important! We have to check complex first and
+        # solvent second.
+        key_options = {
+            "complex": ["ligand", "protein", "solvent"],
+            "solvent": ["ligand", "solvent"],
+            "vacuum": ["ligand"],
+        }
+        for phase, keys in key_options.items():
+            if all([key in state for state in states for key in keys]):
+                detected_phase = phase
+                break
+        else:
+            raise ValueError(
+                "Could not detect phase from system states. Make sure the "
+                "component in both systems match."
+            )
+
+        return detected_phase
 
     @abc.abstractmethod
     def _handle_settings(self):
@@ -1279,6 +1327,10 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         else:
             shared_basepath = ctx.shared
 
+        phase = self._detect_phase(
+            self._inputs['stateA'], self._inputs['stateA']
+        )  # infer phase from systems and components
+        print(phase)
         settings = self._handle_settings()
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         serialized_system = setup.outputs["system"]
@@ -1355,9 +1407,15 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 'output_settings'].output_filename
             chk = settings['output_settings'].checkpoint_storage_filename
             return {
+                'repeat_id': self._inputs['repeat_id'],
+                'generation': self._inputs['generation'],
+                'simtype': phase,
                 'nc': nc,
                 'last_checkpoint': chk,
                 **unit_result_dict,
             }
         else:
-            return {'debug': {'sampler': sampler}}
+            return {
+                'repeat_id': self._inputs['repeat_id'],
+                'generation': self._inputs['generation'],
+                'debug': {'sampler': sampler}}
