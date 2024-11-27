@@ -10,15 +10,15 @@ import openmm.unit
 
 # This code was obtained and modified from https://github.com/Psivant/femto
 
-LAMBDA_VDW_LIGAND_1 = "lambda_vdw_lig_1"
+LAMBDA_VDW_LIGAND_1 = "lambda_sterics_ligandA"
 """The global parameter used to scale the vdW interactions of ligand 1."""
-LAMBDA_VDW_LIGAND_2 = "lambda_vdw_lig_2"
+LAMBDA_VDW_LIGAND_2 = "lambda_sterics_ligandB"
 """The global parameter used to scale the vdW interactions of ligand 2."""
 
-LAMBDA_CHARGES_LIGAND_1 = "lambda_charges_lig_1"
+LAMBDA_CHARGES_LIGAND_1 = "lambda_electrostatics_ligandA"
 """The global parameter used to scale the electrostatic interactions of
 ligand 1."""
-LAMBDA_CHARGES_LIGAND_2 = "lambda_charges_lig_2"
+LAMBDA_CHARGES_LIGAND_2 = "lambda_electrostatics_ligandB"
 """The global parameter used to scale the electrostatic interactions of
 ligand 2."""
 

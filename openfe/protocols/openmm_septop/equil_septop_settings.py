@@ -92,7 +92,9 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
     lambda_restraints_ligandA: list[float] = [
-        0.0, 0.05, 0.1, 0.3, 0.5, 0.75, 1.0, 1.0] + [1.0] * 3 + [1.0] * 8
+                                                 0.0, 0.05, 0.1, 0.3, 0.5,
+                                                 0.75, 1.0, 1.0] + [
+                                                 1.0] * 3 + [1.0] * 8
     """
     List of floats of lambda values for the restraints of ligand A.
     Zero means fully interacting and 1 means fully decoupled.
@@ -105,6 +107,7 @@ class LambdaSettings(SettingsBaseModel):
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
+
 
     @validator('lambda_elec_ligandA', 'lambda_elec_ligandB',
                'lambda_vdw_ligandA', 'lambda_vdw_ligandB',

@@ -701,13 +701,14 @@ def create_boresch_restraint(
 
     energy_fn = _BORESCH_ENERGY_FN
 
-    # if ctx_parameter is not None:
-    #     energy_fn = f"{ctx_parameter} * {energy_fn}"
+    if ctx_parameter is not None:
+        energy_fn = f"{ctx_parameter} * {energy_fn}"
 
     force = openmm.CustomCompoundBondForce(n_particles, energy_fn)
 
-    # if ctx_parameter is not None:
-    #     force.addGlobalParameter(ctx_parameter, 1.0)
+    if ctx_parameter is not None:
+        print(ctx_parameter)
+        force.addGlobalParameter(ctx_parameter, 1.0)
 
     geometry = _compute_boresch_geometry(receptor_atoms, ligand_atoms, coords)
 
