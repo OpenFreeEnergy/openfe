@@ -661,14 +661,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_A,
                                                    positions_A,
-                                                   open('outputA.pdb',
+                                                   open(shared_basepath / 'outputA.pdb',
                                                         'w'))
         omm_topology_B, omm_system_B, positions_B = self._get_omm_objects(
             system_modeller_B, system_generator, list(smc_comps_B.values())
         )
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
                                                    positions_B,
-                                                   open('outputB.pdb',
+                                                   open(shared_basepath / 'outputB.pdb',
                                                         'w'))
 
         omm_topology_AB, omm_system_AB, positions_AB = self._get_omm_objects(
@@ -676,7 +676,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
                                                    positions_AB,
-                                                   open('outputAB.pdb', 'w'))
+                                                   open(shared_basepath / 'outputAB.pdb', 'w'))
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
@@ -687,9 +687,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             omm_system_B, omm_topology_B, positions_B, settings, dry
         )
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_A, equ_positions_A, open('outputA_equ.pdb', 'w'))
+            omm_topology_A, equ_positions_A, open(shared_basepath / 'outputA_equ.pdb', 'w'))
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_B, equ_positions_B, open('outputB_equ.pdb', 'w'))
+            omm_topology_B, equ_positions_B, open(shared_basepath / 'outputB_equ.pdb', 'w'))
 
         # 7. Get all the right atom indices for alignments
         comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
@@ -709,7 +709,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             atom_indices_A, atom_indices_B)
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
                                                    updated_positions_B,
-                                                   open('outputB_new.pdb',
+                                                   open(shared_basepath / 'outputB_new.pdb',
                                                         'w'))
 
         # Get atom indices for ligand A and ligand B and the solvent in the
@@ -737,13 +737,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         off_A = alchem_comps["stateA"][0].to_openff().to_topology()
         lig_A_pos = positions_AB[atom_indices_AB_A[0]:atom_indices_AB_A[-1]+1, :] / omm_units.nanometers * unit.nanometer
         self._set_positions(off_A, lig_A_pos)
-        off_A.to_file('molA.pdb')
         off_B = alchem_comps["stateB"][0].to_openff().to_topology()
         lig_B_pos = positions_AB[
                     atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
                     :] / omm_units.nanometers * unit.nanometer
         self._set_positions(off_B, lig_B_pos)
-        off_B.to_file('molB.pdb')
 
         ligand_A_ref_inxs, ligand_B_ref_inxs = select_ligand_idxs(off_A, off_B)
 
