@@ -1221,7 +1221,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 self.logger.info("running production phase")
             sampler.extend(int(prod_steps / mc_steps))  # type: ignore
 
-            if self.verbose:
+            if verbose:
                 self.logger.info("production phase complete")
 
             if verbose:
