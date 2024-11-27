@@ -127,7 +127,9 @@ class LambdaSettings(SettingsBaseModel):
 
         difference = np.diff(v)
 
-        if not all(i >= 0. for i in difference) or not all(i <= 0. for i in difference):
+        monotonic = np.all(difference <= 0) or np.all(difference >= 0)
+
+        if not monotonic:
             errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
             raise ValueError(errmsg)
 
