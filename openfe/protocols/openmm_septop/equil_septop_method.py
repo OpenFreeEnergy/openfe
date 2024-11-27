@@ -703,7 +703,8 @@ class SepTopProtocol(gufe.Protocol):
         system_validation.validate_protein(stateA)
 
         # Get the name of the alchemical species
-        alchname = alchem_comps['stateA'][0].name
+        alchname_A = alchem_comps['stateA'][0].name
+        alchname_B = alchem_comps['stateB'][0].name
 
         # Create list units for complex and solvent transforms
 
@@ -714,8 +715,8 @@ class SepTopProtocol(gufe.Protocol):
                 stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE, {alchname} solvent leg: "
-                      f"repeat {i} generation 0"),
+                name=(f"SepTop RBFE Setup, transformation {alchname_A} to "
+                      f"{alchname_B}, solvent leg: repeat {i} generation 0"),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -728,8 +729,8 @@ class SepTopProtocol(gufe.Protocol):
                 alchemical_components=alchem_comps,
                 setup=solvent_setup[i],
                 generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE, {alchname} solvent leg: "
-                      f"repeat {i} generation 0"),
+                name=(f"SepTop RBFE Run, transformation {alchname_A} to "
+                      f"{alchname_B}, solvent leg: repeat {i} generation 0"),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -741,8 +742,8 @@ class SepTopProtocol(gufe.Protocol):
                 stateB=stateB,
                 alchemical_components=alchem_comps,
                 generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE, {alchname} complex leg: "
-                      f"repeat {i} generation 0"),
+                name=(f"SepTop RBFE Setup, transformation {alchname_A} to "
+                      f"{alchname_B}, complex leg: repeat {i} generation 0"),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -755,8 +756,8 @@ class SepTopProtocol(gufe.Protocol):
                 alchemical_components=alchem_comps,
                 setup=complex_setup[i],
                 generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE, {alchname} complex leg: "
-                      f"repeat {i} generation 0"),
+                name=(f"SepTop RBFE Run, transformation {alchname_A} to "
+                      f"{alchname_B}, complex leg: repeat {i} generation 0"),
             )
             for i in range(self.settings.protocol_repeats)
         ]
