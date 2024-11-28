@@ -712,7 +712,7 @@ def create_boresch_restraint(
     geometry = _compute_boresch_geometry(receptor_atoms, ligand_atoms, coords)
     print(geometry.dist_0)
     # Scale the k_theta_a
-    distance_0 = 0.5  # based on original SepTop implementation.
+    distance_0 = 5.0 * _ANGSTROM  # based on original SepTop implementation.
     scale = (geometry.dist_0 / distance_0) ** 2
     print(scale)
     parameters = []
