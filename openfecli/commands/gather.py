@@ -4,11 +4,26 @@
 import click
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
+
+import os
 import pathlib
 import warnings
 
 
-def _get_column(val):
+def _get_column(val:float|int)->int:
+    """Determine the index (where the 0th index is the decimal) at which the
+    first non-zero value occurs in a full-precision string representation of a value.
+
+    Parameters
+    ----------
+    val : float|int
+        The raw value.
+
+    Returns
+    -------
+    int
+        Column index
+    """
     import numpy as np
     if val == 0:
         return 0
@@ -27,6 +42,23 @@ def format_estimate_uncertainty(
     unc: float,
     unc_prec: int = 1,
 ) -> tuple[str, str]:
+    """Truncate raw estimate and uncertainty values to the appropriate
+    approximated uncertainty.
+
+    Parameters
+    ----------
+    est : float
+        Raw estimate value.
+    unc : float
+        Raw uncertainty value.
+    unc_prec : int, optional
+        Precision, by default 1
+
+    Returns
+    -------
+    tuple[str, str]
+        The truncated raw and uncertainty values.
+    """
     import numpy as np
     # get the last column needed for uncertainty
     unc_col = _get_column(unc) - (unc_prec - 1)
@@ -41,21 +73,44 @@ def format_estimate_uncertainty(
     return est_str, unc_str
 
 
-def is_results_json(f):
-    # sanity check on files before we try and deserialize
-    return 'estimate' in open(f, 'r').read(20)
+def is_results_json(fpath:os.PathLike|str)->bool:
+    """Sanity check that file is a result json before we try to deserialize"""
+    return 'estimate' in open(fpath, 'r').read(20)
 
 
-def load_results(f):
-    # path to deserialized results
+def load_results(fpath:os.PathLike|str)->dict:
+    """_summary_
+
+    Parameters
+    ----------
+    fpath : os.PathLike | str
+        The path to deserialized results.
+
+
+    Returns
+    -------
+    dict
+        A dict containing data from the results JSON.
+    """
     import json
     from gufe.tokenization import JSON_HANDLER
 
-    return json.load(open(f, 'r'), cls=JSON_HANDLER.decoder)
+    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
 
-def get_names(result) -> tuple[str, str]:
-    # Result to tuple of ligand names
+def get_names(result:dict) -> tuple[str, str]:
+    """_summary_
+
+    Parameters
+    ----------
+    result : dict
+        A results dict.
+
+    Returns
+    -------
+    tuple[str, str]
+        Ligand names corresponding to the results.
+    """
     nm = list(result['unit_results'].values())[0]['name']
     toks = nm.split()
     if toks[2] == 'repeat':
@@ -64,7 +119,7 @@ def get_names(result) -> tuple[str, str]:
         return toks[0], toks[2]
 
 
-def get_type(res):
+def get_type(res:dict):
     list_of_pur = list(res['protocol_result']['data'].values())[0]
     pur = list_of_pur[0]
     components = pur['inputs']['stateA']['components']
