@@ -680,12 +680,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
-        equ_positions_A = self._pre_equilibrate(
-            omm_system_A, omm_topology_A, positions_A, settings, dry
-        )
-        equ_positions_B = self._pre_equilibrate(
-            omm_system_B, omm_topology_B, positions_B, settings, dry
-        )
+        # equ_positions_A = self._pre_equilibrate(
+        #     omm_system_A, omm_topology_A, positions_A, settings, dry
+        # )
+        # equ_positions_B = self._pre_equilibrate(
+        #     omm_system_B, omm_topology_B, positions_B, settings, dry
+        # )
+        equ_positions_A = positions_A
+        equ_positions_B = positions_B
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_A, equ_positions_A, open(shared_basepath / 'outputA_equ.pdb', 'w'))
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
