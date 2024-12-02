@@ -466,6 +466,7 @@ class SepTopProtocol(gufe.Protocol):
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=19,
+                minimization_steps=10000,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
