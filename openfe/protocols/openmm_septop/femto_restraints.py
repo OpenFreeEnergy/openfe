@@ -531,15 +531,21 @@ def select_receptor_idxs(
     # chosen to match the SepTop reference implementation at commit 3705ba5
     max_distance = 0.8 * (receptor.unitcell_lengths.mean(axis=0).min(axis=-1) / 2)
     # max_distance = 3
+    print('max_distance', max_distance)
 
     r3_distances_avg = numpy.stack(r3_distances_per_frame).mean(axis=0)
+    print(r3_distances_avg)
 
     max_distance_mask = r3_distances_avg.max(axis=-1) < max_distance
+    print(max_distance_mask)
     r3_distances_avg = r3_distances_avg[max_distance_mask]
+    print(r3_distances_avg)
 
     valid_r3_idxs = numpy.array(valid_r3_idxs)[max_distance_mask].tolist()
+    print(valid_r3_idxs)
 
     r3_distances_prod = r3_distances_avg[:, 0] * r3_distances_avg[:, 1]
+    print(r3_distances_prod)
     found_r3 = valid_r3_idxs[r3_distances_prod.argmax()]
 
     return found_r1, found_r2, found_r3
