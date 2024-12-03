@@ -1290,12 +1290,13 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         else:
             shared_basepath = ctx.shared
 
-        phase = self._detect_phase(
-            self._inputs['stateA'], self._inputs['stateA']
-        )  # infer phase from systems and components
-        print(phase)
         settings = self._handle_settings()
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+        if prot_comp:
+            phase = "complex"
+        else:
+            phase = "solvent"
+        print(phase)
         serialized_system = setup.outputs["system"]
         serialized_topology = setup.outputs["topology"]
 

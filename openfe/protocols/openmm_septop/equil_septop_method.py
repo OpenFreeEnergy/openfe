@@ -129,12 +129,14 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         solv_dGs = []
 
         for pus in self.data['complex'].values():
+            print(pus)
             complex_dGs.append((
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
             ))
 
         for pus in self.data['solvent'].values():
+            print(pus)
             solv_dGs.append((
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
