@@ -573,6 +573,66 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         """
         ...
 
+    def get_smc_comps(self, alchem_comps, smc_comps):
+        # 6. Get smcs for the different states and the common smcs
+        smc_off_A = {m: m.to_openff() for m in alchem_comps['stateA']}
+        smc_off_B = {m: m.to_openff() for m in alchem_comps['stateB']}
+        smc_off_both = {m: m.to_openff() for m in smc_comps
+                        if (m not in alchem_comps["stateA"] and m not in
+                            alchem_comps["stateB"])}
+        smc_comps_A = smc_off_A | smc_off_both
+        smc_comps_B = smc_off_B | smc_off_both
+        smc_comps_AB = smc_off_A | smc_off_B | smc_off_both
+
+        return smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B
+
+    def get_system(
+            self, solv_comp, prot_comp, smc_comp, settings):
+        # 5. Get system generator
+        system_generator = self._get_system_generator(settings, solv_comp)
+
+        # 8. Get modeller for stateA, stateB, and stateAB
+        system_modeller, comp_resids = self._get_modeller(
+            prot_comp, solv_comp, smc_comp,
+            system_generator, settings['solvation_settings'],
+        )
+
+        # 5. Get OpenMM topology, positions and system
+        omm_topology, omm_system, positions = self._get_omm_objects(
+            system_modeller, system_generator, list(smc_comp.values())
+        )
+
+        return omm_system, omm_topology, positions, system_modeller, comp_resids
+
+
+    def get_system_AB(
+            self, solv_comp, system_modeller_A, smc_comps_AB, smc_off_B, settings, shared_basepath):
+        # 5. Get system generator
+        system_generator = self._get_system_generator(settings, solv_comp)
+
+        # Get modeller B only ligand B
+        modeller_ligandB, comp_resids_ligB = self._get_modeller(
+            None, None, smc_off_B,
+            system_generator, settings['solvation_settings'],
+        )
+
+        # Take the modeller from system A --> every water/ion should be in
+        # the same location
+        system_modeller_AB = copy.copy(system_modeller_A)
+        system_modeller_AB.add(modeller_ligandB.topology,
+                               modeller_ligandB.positions)
+
+        omm_topology_AB, omm_system_AB, positions_AB = self._get_omm_objects(
+            system_modeller_AB, system_generator, list(smc_comps_AB.values())
+        )
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
+                                                   positions_AB,
+                                                   open(
+                                                       shared_basepath / 'outputAB.pdb',
+                                                       'w'))
+
+        return omm_system_AB, omm_topology_AB, positions_AB, system_modeller_AB
+
 
     def run(self, dry=False, verbose=True,
             scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
@@ -605,89 +665,59 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+            alchem_comps, smc_comps)
 
         # 2. Get settings
         settings = self._handle_settings()
-
-        # 5. Get system generator
-        system_generator = self._get_system_generator(settings, solv_comp)
-
-        # 6. Get smcs for the different states and the common smcs
-        smc_off_A = {m: m.to_openff() for m in alchem_comps['stateA']}
-        smc_off_B = {m: m.to_openff() for m in alchem_comps['stateB']}
-        smc_off_both = {m: m.to_openff() for m in smc_comps
-                            if (m not in alchem_comps["stateA"] and m not in
-                                alchem_comps["stateB"])}
-        smc_comps_A = smc_off_A | smc_off_both
-        smc_comps_B = smc_off_B | smc_off_both
-        smc_comps_AB = smc_off_A | smc_off_B | smc_off_both
 
         # 7. Assign partial charges here to only do it once for smcs in stateA
         # and stateB (hence only charge e.g. cofactors ones)
         self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
 
-        # 8. Get modeller for stateA, stateB, and stateAB
-        system_modeller_A, comp_resids_A = self._get_modeller(
-            prot_comp, solv_comp, smc_comps_A,
-            system_generator, settings['solvation_settings'],
-        )
-        system_modeller_B, comp_resids_B = self._get_modeller(
-            prot_comp, solv_comp, smc_comps_B,
-            system_generator, settings['solvation_settings'],
+        # # Get the OpenMM systems
+        omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = self.get_system(
+            solv_comp,
+            prot_comp,
+            smc_comps_A,
+            settings,
         )
 
-        # Get modeller B only ligand B
-        modeller_ligandB, comp_resids_ligB = self._get_modeller(
-            None, None, smc_off_B,
-            system_generator, settings['solvation_settings'],
+        omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = self.get_system(
+            solv_comp,
+            prot_comp,
+            smc_comps_B,
+            settings,
         )
 
-        # Take the modeller from system A --> every water/ion should be in
-        # the same location
-        system_modeller_AB = copy.copy(system_modeller_A)
-        system_modeller_AB.add(modeller_ligandB.topology,
-                               modeller_ligandB.positions)
+        omm_system_AB, omm_topology_AB, positions_AB, modeller_AB = self.get_system_AB(
+            solv_comp,
+            modeller_A,
+            smc_comps_AB,
+            smc_off_B,
+            settings,
+            shared_basepath
+        )
 
         # We assume that modeller.add will always put the ligand B towards
         # the end of the residues
         resids_A = list(itertools.chain(*comp_resids_A.values()))
-        resids_AB = [r.index for r in system_modeller_AB.topology.residues()]
+        resids_AB = [r.index for r in modeller_AB.topology.residues()]
         diff_resids = list(set(resids_AB) - set(resids_A))
-        comp_resids_AB = comp_resids_A | {alchem_comps["stateB"][0]: np.array(diff_resids)}
+        comp_resids_AB = comp_resids_A | {
+            alchem_comps["stateB"][0]: np.array(diff_resids)}
 
-        # 5. Get OpenMM topology, positions and system
-        omm_topology_A, omm_system_A, positions_A = self._get_omm_objects(
-            system_modeller_A, system_generator, list(smc_comps_A.values())
-        )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_A,
-                                                   positions_A,
-                                                   open(shared_basepath / 'outputA.pdb',
-                                                        'w'))
-        omm_topology_B, omm_system_B, positions_B = self._get_omm_objects(
-            system_modeller_B, system_generator, list(smc_comps_B.values())
-        )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
-                                                   positions_B,
-                                                   open(shared_basepath / 'outputB.pdb',
-                                                        'w'))
-
-        omm_topology_AB, omm_system_AB, positions_AB = self._get_omm_objects(
-            system_modeller_AB, system_generator, list(smc_comps_AB.values())
-        )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   positions_AB,
-                                                   open(shared_basepath / 'outputAB.pdb', 'w'))
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
-        # equ_positions_A = self._pre_equilibrate(
-        #     omm_system_A, omm_topology_A, positions_A, settings, dry
-        # )
-        # equ_positions_B = self._pre_equilibrate(
-        #     omm_system_B, omm_topology_B, positions_B, settings, dry
-        # )
-        equ_positions_A = positions_A
-        equ_positions_B = positions_B
+        equ_positions_A = self._pre_equilibrate(
+            omm_system_A, omm_topology_A, positions_A, settings, dry
+        )
+        equ_positions_B = self._pre_equilibrate(
+            omm_system_B, omm_topology_B, positions_B, settings, dry
+        )
+        # equ_positions_A = positions_A
+        # equ_positions_B = positions_B
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_A, equ_positions_A, open(shared_basepath / 'outputA_equ.pdb', 'w'))
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
