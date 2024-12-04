@@ -725,12 +725,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
         :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
 
-        topology_file = shared_basepath / 'topology.pdb'
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   positions_AB,
-                                                   open(topology_file,
-                                                        'w'))
-
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
         apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
@@ -762,8 +756,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         equ_positions_restraints = self._pre_equilibrate(
             system, omm_topology_AB, positions_AB, settings, dry
         )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_AB, equ_positions_restraints, open(shared_basepath / 'outputAB_restrained.pdb', 'w'))
+        topology_file = shared_basepath / 'topology.pdb'
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
+                                                   equ_positions_restraints,
+                                                   open(topology_file,
+                                                        'w'))
 
         # Here we could also apply REST
 
