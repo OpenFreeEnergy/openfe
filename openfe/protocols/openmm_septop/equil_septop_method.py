@@ -772,16 +772,22 @@ class SepTopProtocol(gufe.Protocol):
     ) -> dict[str, dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
+        print("Gathering results test1")
         unsorted_solvent_repeats = defaultdict(list)
         unsorted_complex_repeats = defaultdict(list)
         for d in protocol_dag_results:
+            print(d)
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
+                print(pu)
                 if not pu.ok():
+                    print('PU not ok')
                     continue
                 if pu.outputs['simtype'] == 'solvent':
+                    print('Getting solvent pus')
                     unsorted_solvent_repeats[pu.outputs['repeat_id']].append(pu)
                 else:
+                    print('Getting complex pus')
                     unsorted_complex_repeats[pu.outputs['repeat_id']].append(pu)
 
         repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
@@ -792,6 +798,7 @@ class SepTopProtocol(gufe.Protocol):
 
         for k, v in unsorted_complex_repeats.items():
             repeats['complex'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
+        print(repeats)
         return repeats
 
 

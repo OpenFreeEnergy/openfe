@@ -759,11 +759,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             ligand_A_ref_inxs, ligand_B_ref_inxs,
             ligand_A_inxs, ligand_B_inxs)
         # # Check that the restraints are correctly applied by running a short equilibration
-        # equ_positions_restraints = self._pre_equilibrate(
-        #     system, omm_topology_AB, positions_AB, settings, dry
-        # )
-        # simtk.openmm.app.pdbfile.PDBFile.writeFile(
-        #     omm_topology_AB, equ_positions_restraints, open('outputAB_restrained.pdb', 'w'))
+        equ_positions_restraints = self._pre_equilibrate(
+            system, omm_topology_AB, positions_AB, settings, dry
+        )
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(
+            omm_topology_AB, equ_positions_restraints, open('outputAB_restrained.pdb', 'w'))
 
         # Here we could also apply REST
 
