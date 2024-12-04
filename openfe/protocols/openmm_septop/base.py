@@ -763,7 +763,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             system, omm_topology_AB, positions_AB, settings, dry
         )
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_AB, equ_positions_restraints, open('outputAB_restrained.pdb', 'w'))
+            omm_topology_AB, equ_positions_restraints, open(shared_basepath / 'outputAB_restrained.pdb', 'w'))
 
         # Here we could also apply REST
 
