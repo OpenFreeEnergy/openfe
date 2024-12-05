@@ -30,7 +30,7 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }} gufe: ${{matrix.gufe-version}}"
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem-${{ matrix.openeye }} gufe-${{ matrix.gufe-version }}"
     strategy:
       fail-fast: false
       matrix:
@@ -97,8 +97,8 @@ jobs:
           micromamba install -c openeye openeye-toolkits
           python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'oechem license check failed!'"
 
-      - name: "Install GUFE from ${matrix.gufe-version}"
-        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@${matrix.gufe-version}
+      - name: "Install GUFE from ${{ matrix.gufe-version }}"
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@${{ matrix.gufe-version }}
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
