@@ -97,7 +97,7 @@ jobs:
           python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'oechem license check failed!'"
 
       - name: "Install GUFE from main@HEAD"
-        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@f8c49d59e756130a995d02dfe04d7a91acb1d791
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
