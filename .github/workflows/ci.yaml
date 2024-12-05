@@ -46,22 +46,22 @@ jobs:
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
-            gufe-version: 'latest'
+            gufe-version: 'dev'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: "<2"
-            gufe-version: 'latest'
+            gufe-version: 'dev'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
-            gufe-version: 'latest'
+            gufe-version: 'dev'
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
             omff-version: ">0.13"
             openeye: ["no"]
-            gufe-version: 'latest'
+            gufe-version: 'dev'
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
