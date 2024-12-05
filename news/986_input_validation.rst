@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* ``openfe quickrun`` now fails up-front when the user-supplied output file (``-o``) is invalid.
+* ``openfe quickrun`` now fails up-front when the user-supplied output file (``-o``) already exists or has a non-existent parent directory.
 
 **Deprecated:**
 

@@ -34,7 +34,7 @@ def _format_exception(exception) -> str:
 @click.option(
     'output', '-o', default=None,
     type=click.Path(dir_okay=False, file_okay=True, path_type=pathlib.Path),
-    help="output file (JSON format) for the final results",
+    help="Filepath at which to create and write the JSON-formatted results.",
     callback=validate_outfile,
 )
 @print_duration
