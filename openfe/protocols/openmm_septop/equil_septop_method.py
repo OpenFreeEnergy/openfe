@@ -799,11 +799,11 @@ class SepTopProtocol(gufe.Protocol):
                     print('Getting complex pus')
                     if 'Run' in pu.name:
                         print('Run')
-                        unsorted_solvent_repeats_run[
+                        unsorted_complex_repeats_run[
                             pu.outputs['repeat_id']].append(pu)
                     elif 'Setup' in pu.name:
                         print('Setup')
-                        unsorted_solvent_repeats_setup[
+                        unsorted_complex_repeats_setup[
                             pu.outputs['repeat_id']].append(pu)
 
         repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {

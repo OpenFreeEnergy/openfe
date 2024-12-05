@@ -80,6 +80,7 @@ from .utils import serialize, deserialize
 
 logger = logging.getLogger(__name__)
 
+from openmmtools.tests.test_alchemy import compare_system_energies
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     """
@@ -696,7 +697,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             smc_comps_AB,
             smc_off_B,
             settings,
-            shared_basepath
+            self.shared_basepath
         )
 
         # We assume that modeller.add will always put the ligand B towards
@@ -719,9 +720,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # equ_positions_A = positions_A
         # equ_positions_B = positions_B
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_A, equ_positions_A, open(shared_basepath / 'outputA_equ.pdb', 'w'))
+            omm_topology_A, equ_positions_A, open(self.shared_basepath / 'outputA_equ.pdb', 'w'))
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_B, equ_positions_B, open(shared_basepath / 'outputB_equ.pdb', 'w'))
+            omm_topology_B, equ_positions_B, open(self.shared_basepath / 'outputB_equ.pdb', 'w'))
 
         # 7. Get all the right atom indices for alignments
         comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
@@ -741,7 +742,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             atom_indices_A, atom_indices_B)
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
                                                    updated_positions_B,
-                                                   open(shared_basepath / 'outputB_new.pdb',
+                                                   open(self.shared_basepath / 'outputB_new.pdb',
                                                         'w'))
 
         # Get atom indices for ligand A and ligand B and the solvent in the
@@ -757,7 +758,22 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
+        ref_system = copy.copy(omm_system_AB)
         apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
+        alchemical_regions = openmmtools.alchemy.AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_A + atom_indices_AB_B)
+        print(alchemical_regions)
+        print(openmmtools.tests.test_alchemy.compute_energy(omm_system_A,
+                                                            positions_A))
+        print(openmmtools.tests.test_alchemy.compute_energy(omm_system_B,
+                                                            positions_B))
+        print(openmmtools.tests.test_alchemy.compute_energy(ref_system,
+                                                            positions_AB))
+        print(openmmtools.tests.test_alchemy.compute_energy(omm_system_AB,
+                                                            positions_AB))
+        compare_system_energies(
+            ref_system, omm_system_AB, alchemical_regions, positions_AB)
+
 
         # 10. Apply Restraints
         off_A = alchem_comps["stateA"][0].to_openff().to_topology()
@@ -786,7 +802,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         equ_positions_restraints = self._pre_equilibrate(
             system, omm_topology_AB, positions_AB, settings, dry
         )
-        topology_file = shared_basepath / 'topology.pdb'
+        topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
                                                    equ_positions_restraints,
                                                    open(topology_file,
@@ -794,7 +810,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # Here we could also apply REST
 
-        system_outfile = shared_basepath / "system.xml.bz2"
+        system_outfile = self.shared_basepath / "system.xml.bz2"
 
         # Serialize system, state and integrator
         serialize(system, system_outfile)
@@ -825,57 +841,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         Must be implemented in the child class.
         """
         ...
-
-    @staticmethod
-    def _detect_phase(state_a, state_b):
-        """
-        Detect phase according to the components in the input chemical state.
-
-        Complex state is assumed if both states have ligands and protein
-        components.
-
-        Solvent state is assumed
-
-        Vacuum state is assumed if only either a ligand or a protein is present
-        in each of the states.
-
-        Parameters
-        ----------
-        state_a : gufe.state.State
-            Source state for the alchemical transformation.
-        state_b : gufe.state.State
-            Destination state for the alchemical transformation.
-
-        Returns
-        -------
-        phase : str
-            Phase name. "vacuum", "solvent" or "complex".
-        component_keys : list[str]
-            List of component keys to extract from states.
-
-        Code obtained from feflow/protocols/nonequilibrium_cycling.py
-        """
-        states = (state_a, state_b)
-        # where to store the data to be returned
-
-        # Order of phases is important! We have to check complex first and
-        # solvent second.
-        key_options = {
-            "complex": ["ligand", "protein", "solvent"],
-            "solvent": ["ligand", "solvent"],
-            "vacuum": ["ligand"],
-        }
-        for phase, keys in key_options.items():
-            if all([key in state for state in states for key in keys]):
-                detected_phase = phase
-                break
-        else:
-            raise ValueError(
-                "Could not detect phase from system states. Make sure the "
-                "component in both systems match."
-            )
-
-        return detected_phase
 
     @abc.abstractmethod
     def _handle_settings(self):
@@ -1323,7 +1288,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             phase = "complex"
         else:
             phase = "solvent"
-        print(phase)
+
         serialized_system = setup.outputs["system"]
         serialized_topology = setup.outputs["topology"]
 
