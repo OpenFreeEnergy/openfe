@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - duecredit<0.10
+  - gufe>=1.1.0
   - kartograf>=1.0.0
   - lomap2>=3.0.0
   - numpy
@@ -44,4 +45,3 @@ dependencies:
   - pip:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
-    - git+https://github.com/OpenFreeEnergy/gufe@main
