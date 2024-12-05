@@ -76,8 +76,10 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-version: '1.5.6-0'
+          micromamba-binary-path: ~/.local/bin/micromamba
           environment-file: environment.yml
           environment-name: openfe_env
           cache-environment: true
