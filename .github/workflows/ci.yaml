@@ -41,7 +41,7 @@ jobs:
           - "3.11"
           - "3.12"
         openeye: ["no"]
-        gufe-version: ['latest', 'main']
+        gufe-version: ['v1.1.0', 'main']
         include:
           - os: "macos-latest"
             python-version: "3.12"
