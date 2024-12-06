@@ -36,7 +36,7 @@ from openmmtools import multistate
 from openmmtools.states import (SamplerState,
                                 ThermodynamicState,
                                 create_thermodynamic_state_protocol, )
-from .utils import AlchemicalState
+# from .utils import AlchemicalState
 from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
@@ -79,8 +79,6 @@ from .femto_restraints import select_ligand_idxs
 from .utils import serialize, deserialize
 
 logger = logging.getLogger(__name__)
-
-from openmmtools.tests.test_alchemy import compare_system_energies
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     """
@@ -634,7 +632,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         return omm_system_AB, omm_topology_AB, positions_AB, system_modeller_AB
 
-
     def run(self, dry=False, verbose=True,
             scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
         """
@@ -711,14 +708,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
-        equ_positions_A = self._pre_equilibrate(
-            omm_system_A, omm_topology_A, positions_A, settings, dry
-        )
-        equ_positions_B = self._pre_equilibrate(
-            omm_system_B, omm_topology_B, positions_B, settings, dry
-        )
-        # equ_positions_A = positions_A
-        # equ_positions_B = positions_B
+        # equ_positions_A = self._pre_equilibrate(
+        #     omm_system_A, omm_topology_A, positions_A, settings, dry
+        # )
+        # equ_positions_B = self._pre_equilibrate(
+        #     omm_system_B, omm_topology_B, positions_B, settings, dry
+        # )
+        equ_positions_A = positions_A
+        equ_positions_B = positions_B
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_A, equ_positions_A, open(self.shared_basepath / 'outputA_equ.pdb', 'w'))
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
@@ -758,22 +755,18 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
-        ref_system = copy.copy(omm_system_AB)
-        apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
-        alchemical_regions = openmmtools.alchemy.AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_A + atom_indices_AB_B)
-        print(alchemical_regions)
-        print(openmmtools.tests.test_alchemy.compute_energy(omm_system_A,
-                                                            positions_A))
-        print(openmmtools.tests.test_alchemy.compute_energy(omm_system_B,
-                                                            positions_B))
-        print(openmmtools.tests.test_alchemy.compute_energy(ref_system,
-                                                            positions_AB))
-        print(openmmtools.tests.test_alchemy.compute_energy(omm_system_AB,
-                                                            positions_AB))
-        compare_system_energies(
-            ref_system, omm_system_AB, alchemical_regions, positions_AB)
+        # apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
 
+        # Alternatively use AbsoluteAlchemicalFactory from openmmtools
+        from openfe.protocols.openmm_septop.alchemy_copy import AbsoluteAlchemicalFactory, AlchemicalRegion
+        factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
+        alchemical_region_A = AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_A, name='ligandA')
+        alchemical_region_B = AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_B, name='ligandB')
+        alchemical_system = factory.create_alchemical_system(
+            omm_system_AB, [alchemical_region_A, alchemical_region_B])
+        omm_system_AB = alchemical_system
 
         # 10. Apply Restraints
         off_A = alchem_comps["stateA"][0].to_openff().to_topology()
@@ -944,6 +937,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             sampler_state.box_vectors = box
 
         sampler_states = [sampler_state for _ in cmp_states]
+        potentials = [state.getPotentialEnergy() for state in sampler_states]
+        print(potentials)
 
         return sampler_states, cmp_states
 

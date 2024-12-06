@@ -1290,14 +1290,21 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
 
         lambdas = dict()
 
-        lambdas['lambda_electrostatics_ligandA'] = settings[
-            'lambda_settings'].lambda_elec_ligandA
-        lambdas['lambda_sterics_ligandA'] = settings[
-            'lambda_settings'].lambda_vdw_ligandA
-        lambdas['lambda_electrostatics_ligandB'] = settings[
-            'lambda_settings'].lambda_elec_ligandB
-        lambdas['lambda_sterics_ligandB'] = settings[
-            'lambda_settings'].lambda_vdw_ligandB
+        lambda_elec_A = settings['lambda_settings'].lambda_elec_ligandA
+        lambda_vdw_A = settings['lambda_settings'].lambda_vdw_ligandA
+        lambda_elec_B = settings['lambda_settings'].lambda_elec_ligandB
+        lambda_vdw_B = settings['lambda_settings'].lambda_vdw_ligandB
+
+        # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
+        # means fully interacting, not stateB
+        lambda_elec_A = [1 - x for x in lambda_elec_A]
+        lambda_vdw_A = [1 - x for x in lambda_vdw_A]
+        lambda_elec_B = [1 - x for x in lambda_elec_B]
+        lambda_vdw_B = [1 - x for x in lambda_vdw_B]
+        lambdas['lambda_electrostatics_ligandA'] = lambda_elec_A
+        lambdas['lambda_sterics_ligandA'] = lambda_vdw_A
+        lambdas['lambda_electrostatics_ligandB'] = lambda_elec_B
+        lambdas['lambda_sterics_ligandB'] = lambda_vdw_B
 
         return lambdas
 
@@ -1386,17 +1393,28 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
     ) -> dict[str, npt.NDArray]:
         lambdas = dict()
 
-        lambdas['lambda_electrostatics_ligandA'] = settings[
-            'lambda_settings'].lambda_elec_ligandA
-        lambdas['lambda_sterics_ligandA'] = settings[
-            'lambda_settings'].lambda_vdw_ligandA
-        lambdas['lambda_restraints_ligandA'] = settings[
+        lambda_elec_A = settings['lambda_settings'].lambda_elec_ligandA
+        lambda_vdw_A = settings['lambda_settings'].lambda_vdw_ligandA
+        lambda_elec_B = settings['lambda_settings'].lambda_elec_ligandB
+        lambda_vdw_B = settings['lambda_settings'].lambda_vdw_ligandB
+        lambda_restraints_A = settings[
             'lambda_settings'].lambda_restraints_ligandA
-        lambdas['lambda_electrostatics_ligandB'] = settings[
-            'lambda_settings'].lambda_elec_ligandB
-        lambdas['lambda_sterics_ligandB'] = settings[
-            'lambda_settings'].lambda_vdw_ligandB
-        lambdas['lambda_restraints_ligandB'] = settings[
+        lambda_restraints_B = settings[
             'lambda_settings'].lambda_restraints_ligandB
+
+        # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
+        # means fully interacting, not stateB
+        lambda_elec_A = [1 - x for x in lambda_elec_A]
+        lambda_vdw_A = [1 - x for x in lambda_vdw_A]
+        lambda_elec_B = [1 - x for x in lambda_elec_B]
+        lambda_vdw_B = [1 - x for x in lambda_vdw_B]
+        lambda_restraints_A = [1 - x for x in lambda_restraints_A]
+        lambda_restraints_B = [1 - x for x in lambda_restraints_B]
+        lambdas['lambda_electrostatics_ligandA'] = lambda_elec_A
+        lambdas['lambda_sterics_ligandA'] = lambda_vdw_A
+        lambdas['lambda_electrostatics_ligandB'] = lambda_elec_B
+        lambdas['lambda_sterics_ligandB'] = lambda_vdw_B
+        lambdas['lambda_restraints_ligandA'] = lambda_restraints_A
+        lambdas['lambda_restraints_ligandB'] = lambda_restraints_B
 
         return lambdas
