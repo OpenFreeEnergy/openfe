@@ -368,12 +368,9 @@ class TestNonbondedInteractions:
                 LAMBDA_CHARGES_LIGAND_2: 0.5,
             },
         )
-        print(energy_05_openmm)
-        print(energy_fn(0,1))
         expected_energy_05 = energy_fn(0, 2, 0.5, 0.5) + energy_fn(1, 2, 0.5, 0.5)
         assert is_close(energy_05, expected_energy_05)
         assert is_close(energy_05_openmm, expected_energy_05)
-        assert 4==5
 
     def test_two_ligands_charges(self, three_particle_system):
         """Test scaling the nonbonded interactions of single particles."""

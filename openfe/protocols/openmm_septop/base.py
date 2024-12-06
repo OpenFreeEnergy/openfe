@@ -77,6 +77,7 @@ from openfe.utils import without_oechem_backend
 from .femto_alchemy import apply_fep
 from .femto_restraints import select_ligand_idxs
 from .utils import serialize, deserialize
+from openfe.protocols.openmm_septop.alchemy_copy import AbsoluteAlchemicalFactory, AlchemicalRegion, AlchemicalState
 
 logger = logging.getLogger(__name__)
 
@@ -758,7 +759,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
 
         # Alternatively use AbsoluteAlchemicalFactory from openmmtools
-        from openfe.protocols.openmm_septop.alchemy_copy import AbsoluteAlchemicalFactory, AlchemicalRegion
+
         factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
         alchemical_region_A = AlchemicalRegion(
             alchemical_atoms=atom_indices_AB_A, name='ligandA')
