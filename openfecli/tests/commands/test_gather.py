@@ -34,6 +34,7 @@ def results_dir_serial(tmpdir):
         with resources.files('openfecli.tests.data') as d:
             t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
             t.extractall('.')
+
         yield
 
 @pytest.fixture
@@ -43,8 +44,8 @@ def results_dir_parallel(tmpdir):
         with resources.files('openfecli.tests.data') as d:
             t = tarfile.open(d / 'results_parallel.tar.gz', mode='r')
             t.extractall('.')
-        yield
 
+        yield
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
