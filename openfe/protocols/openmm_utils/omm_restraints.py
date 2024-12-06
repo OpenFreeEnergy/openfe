@@ -16,7 +16,9 @@ TODO
 import abc
 from typing import Optional, Union, Callable
 
+import numpy as np
 import openmm
+from openmm import unit as omm_unit
 from openmmtools.forces import (
     HarmonicRestraintForce,
     HarmonicRestraintBondForce,
@@ -24,6 +26,7 @@ from openmmtools.forces import (
     FlatBottomRestraintBondForce,
 )
 from openmmtools.states import GlobalParameterState, ThermodynamicState
+from openff.units.openmm import to_openmm
 
 from gufe.settings.models import SettingsBaseModel
 from openfe.protocols.openmm_utils.omm_forces import (
@@ -143,7 +146,7 @@ class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
         add_force_in_separate_group(system, force)
         thermodynamic_state.system = system
 
-    def get_standard_state_correction(
+     def get_standard_state_correction(
         self, thermodynamic_state: ThermodynamicState
     ) -> float:
         force = self._get_force()
@@ -157,8 +160,9 @@ class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
 
 class HarmonicBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self) -> openmm.Force:
+        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintBondForce(
-            spring_constant=self.settings.spring_constant,
+            spring_constant=spring_constant,
             restrained_atom_index1=self.host_atoms[0],
             restrained_atom_index2=self.guest_atoms[0],
             controlling_parameter_name=self.controlling_parameter_name,
@@ -167,9 +171,11 @@ class HarmonicBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixi
 
 class FlatBottomBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self) -> openmm.Force:
+        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
+        well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
-            spring_constant=self.settings.spring_constant,
-            well_radius=self.settings.well_radius,
+            spring_constant=spring_constant,
+            well_radius=well_radius,
             restrained_atom_index1=self.host_atoms[0],
             restrained_atom_index2=self.guest_atoms[0],
             controlling_parameter_name=self.controlling_parameter_name,
@@ -178,8 +184,9 @@ class FlatBottomBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMi
 
 class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
     def _get_force(self) -> openmm.Force:
+        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintForce(
-            spring_constant=self.settings.spring_constant,
+            spring_constant=spring_constant,
             restrained_atom_index1=self.host_atoms,
             restrained_atom_index2=self.guest_atoms,
             controlling_parameter_name=self.controlling_parameter_name,
@@ -188,9 +195,11 @@ class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
 
 class CentroidFlatBottomRestraint(BaseRadialllySymmetricRestraintForce):
     def _get_force(self):
+        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
+        well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
-            spring_constant=self.settings.spring_constant,
-            well_radius=self.settings.well_radius,
+            spring_constant=spring_constant,
+            well_radius=well_radius,
             restrained_atom_index1=self.host_atoms,
             restrained_atom_index2=self.guest_atoms,
             controlling_parameter_name=self.controlling_parameter_name,
@@ -209,8 +218,6 @@ class BoreschRestraint(BaseHostGuestRestraints):
 
     def add_force(self, thermodynamic_state: ThermodynamicState) -> None:
         force = self._get_force()
-        force.addGlobalParameter(self.controlling_parameter_name, 1.0)
-        force.addBond(self.host_atoms + self.guest_atoms, [])
         force.setUsesPeriodicBoundaryConditions(thermodynamic_state.is_periodic)
         # Note .system is a call to get_system() so it's returning a copy
         system = thermodynamic_state.system
@@ -220,20 +227,64 @@ class BoreschRestraint(BaseHostGuestRestraints):
     def _get_force(self) -> openmm.Force:
         efunc = _EFUNC_METHOD(
             self.controlling_parameter_name,
-            self.settings.K_r,
-            self.geometry.r_aA0,
-            self.settings.K_thetaA,
-            self.geometry.theta_A0,
-            self.settings.K_thetaB,
-            self.geometry.theta_B0,
-            self.settings.K_phiA,
-            self.geometry.phi_A0,
-            self.settings.K_phiB,
-            self.geometry.phi_B0,
-            self.settings.K_phiC,
-            self.geometry.phi_C0,
         )
 
-        return get_custom_compound_bond_force(
+        force = get_custom_compound_bond_force(
             n_particles=6, energy_function=efunc
         )
+
+        param_values = []
+
+        parameter_dict = {
+            'K_r': self.settings.K_r,
+            'r_aA0': self.geometry.r_aA0,
+            'K_thetaA': self.settings.K_thetaA,
+            'theta_A0': self.geometry.theta_A0,
+            'K_thetaB': self.settings.K_thetaB,
+            'theta_B0': self.geometry.theta_B0,
+            'K_phiA': self.settings.K_phiA,
+            'phi_A0': self.geometry.phi_A0,
+            'K_phiB': self.settings.K_phiB,
+            'phi_B0': self.geometry.phi_B0,
+            'K_phiC': self.settings.K_phiC,
+            'phi_C0': self.geometry.phi_C0,
+        }
+        for key, val in parameter_dict.items():
+            param_values.append(to_openmm(val).value_in_unit_system(omm_unit.md_unit_system))
+            force.addPerBondParameter(key)
+
+        force.addGlobalParameter(self.controlling_parameter_name, 1.0)
+        force.addBond(self.host_atoms + self.guest_atoms, param_values)
+        return force
+
+    def get_standard_state_correction(
+        self, thermodynamic_state: ThermodynamicState
+    ) -> float:
+
+        StandardV = 1660.53928 * unit.angstroms**3
+        kt = from_openmm(thermodynamic_state.kT)
+
+        # distances
+        r_aA0 = self.geometry.r_aA0.to('nm')
+        sin_thetaA0 = np.sin(self.geometry.theta_A0.to('radians'))
+        sin_thetaB0 = np.sin(self.geometry.theta_B0.to('radians'))
+
+        # restraint energies
+        K_r = self.settings.K_r.to('kilojoule_per_mole')
+        K_thetaA = self.settings.K_thetaA.to('kilojoule_per_mole')
+        k_thetaB = self.settings.K_thetaB.to('kilojoule_per_mole')
+        K_phiA = self.settings.K_phiA.to('kilojoule_per_mole')
+        K_phiB = self.settings.K_phiB.to('kilojoule_per_mole')
+        K_phiC = self.settings.K_phiC.to('kilojoule_per_mole')
+
+        numerator1 = 8.0 * (np.pi**2) * StandardV
+        denum1 = (r_aA0**2) * sin_thetaA0 * sin_thetaB0
+        numerator2 = np.sqrt(K_r * K_thetaA * K_thetaB * K_phiA * K_phiB * K_phiC)
+        denum2 = (2.0 * np.pi * kt)**3
+
+        dG = -kt * np.log((numerator1/denum1) * (numerator2/denum2))
+
+        return dG
+
+
+# TODO - implement periodic torsion Boresch restraint

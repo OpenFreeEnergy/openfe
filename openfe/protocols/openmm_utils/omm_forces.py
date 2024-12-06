@@ -13,46 +13,22 @@ import openmm
 
 def get_boresch_energy_function(
     control_parameter: str,
-    K_r: float, r_aA0: float,
-    K_thetaA: float, theta_A0: float,
-    K_thetaB: float, theta_B0: float,
-    K_phiA: float, phi_A0: float,
-    K_phiB: float, phi_B0: float,
-    K_phiC: float, phi_C0: float
 ) -> str:
     energy_function = (
         f"{control_parameter} * E; "
         "E = (K_r/2)*(distance(p3,p4) - r_aA0)^2 "
         "+ (K_thetaA/2)*(angle(p2,p3,p4)-theta_A0)^2 + (K_thetaB/2)*(angle(p3,p4,p5)-theta_B0)^2 "
         "+ (K_phiA/2)*dphi_A^2 + (K_phiB/2)*dphi_B^2 + (K_phiC/2)*dphi_C^2; "
-        "dphi_A = dA - floor(dA/(2*pi)+0.5)*(2*pi); dA = dihedral(p1,p2,p3,p4) - phi_A0; "
-        "dphi_B = dB - floor(dB/(2*pi)+0.5)*(2*pi); dB = dihedral(p2,p3,p4,p5) - phi_B0; "
-        "dphi_C = dC - floor(dC/(2*pi)+0.5)*(2*pi); dC = dihedral(p3,p4,p5,p6) - phi_C0; "
+        "dphi_A = dA - floor(dA/(2.0*pi)+0.5)*(2.0*pi); dA = dihedral(p1,p2,p3,p4) - phi_A0; "
+        "dphi_B = dB - floor(dB/(2.0*pi)+0.5)*(2.0*pi); dB = dihedral(p2,p3,p4,p5) - phi_B0; "
+        "dphi_C = dC - floor(dC/(2.0*pi)+0.5)*(2.0*pi); dC = dihedral(p3,p4,p5,p6) - phi_C0; "
         f"pi = {np.pi}; "
-        f"K_r = {K_r}; "
-        f"r_aA0 = {r_aA0}; "
-        f"K_thetaA = {K_thetaA}; "
-        f"theta_A0 = {theta_A0}; "
-        f"K_thetaB = {K_thetaB}; "
-        f"theta_B0 = {theta_B0}; "
-        f"K_phiA = {K_phiA}; "
-        f"phi_A0 = {phi_A0}; "
-        f"K_phiB = {K_phiB}; "
-        f"phi_B0 = {phi_B0}; "
-        f"K_phiC = {K_phiC}; "
-        f"phi_C0 = {phi_C0}; "
     )
     return energy_function
 
 
 def get_periodic_boresch_energy_function(
     control_parameter: str,
-    K_r: float, r_aA0: float,
-    K_thetaA: float, theta_A0: float,
-    K_thetaB: float, theta_B0: float,
-    K_phiA: float, phi_A0: float,
-    K_phiB: float, phi_B0: float,
-    K_phiC: float, phi_C0: float
 ) -> str:
     energy_function = (
         f"{control_parameter} * E; "
@@ -63,18 +39,6 @@ def get_periodic_boresch_energy_function(
         "uphi_B = (1-cos(dB)); dB = dihedral(p2,p3,p4,p5) - phi_B0; "
         "uphi_C = (1-cos(dC)); dC = dihedral(p3,p4,p5,p6) - phi_C0; "
         f"pi = {np.pi}; "
-        f"K_r = {K_r}; "
-        f"r_aA0 = {r_aA0}; "
-        f"K_thetaA = {K_thetaA}; "
-        f"theta_A0 = {theta_A0}; "
-        f"K_thetaB = {K_thetaB}; "
-        f"theta_B0 = {theta_B0}; "
-        f"K_phiA = {K_phiA}; "
-        f"phi_A0 = {phi_A0}; "
-        f"K_phiB = {K_phiB}; "
-        f"phi_B0 = {phi_B0}; "
-        f"K_phiC = {K_phiC}; "
-        f"phi_C0 = {phi_C0}; "
     )
     return energy_function
 
