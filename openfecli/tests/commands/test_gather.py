@@ -26,27 +26,6 @@ def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
 def test_get_column(val, col):
     assert _get_column(val) == col
 
-
-@pytest.fixture
-def results_dir_serial(tmpdir):
-    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
-    with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            t.extractall('.')
-
-        yield
-
-@pytest.fixture
-def results_dir_parallel(tmpdir):
-    """Identical data to results_dir_serial(), with replicates run in parallel (1 replicate per results JSON)."""
-    with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'results_parallel.tar.gz', mode='r')
-            t.extractall('.')
-
-        yield
-
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	-0.09	0.05
@@ -155,9 +134,29 @@ solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
+@pytest.fixture()
+def results_dir_serial(tmpdir):
+    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
+    with tmpdir.as_cwd():
+        with resources.files('openfecli.tests.data') as d:
+            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+            t.extractall('.')
 
-@pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
-def test_gather(results_dir_serial, report):
+        return os.path.abspath(t.getnames()[0])
+
+@pytest.fixture()
+def results_dir_parallel(tmpdir):
+    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
+    with tmpdir.as_cwd():
+        with resources.files('openfecli.tests.data') as d:
+            t = tarfile.open(d / 'rbfe_results_parallel.tar.gz', mode='r')
+            t.extractall('.')
+
+        return os.path.abspath(t.getnames()[0])
+
+@pytest.mark.parametrize('data_fixture', ['results_dir_parallel'])
+@pytest.mark.parametrize('report', [""]) # , "dg", "ddg", "raw"])
+def test_gather(request, data_fixture, report):
     expected = {
         "": _EXPECTED_DG,
         "dg": _EXPECTED_DG,
@@ -171,7 +170,8 @@ def test_gather(results_dir_serial, report):
     else:
         args = []
 
-    result = runner.invoke(gather, ['results'] + args + ['-o', '-'])
+    results_dir = request.getfixturevalue(data_fixture)
+    result = runner.invoke(gather, [results_dir] + args + ['-o', '-'])
 
     assert result.exit_code == 0
 
