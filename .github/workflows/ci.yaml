@@ -41,26 +41,33 @@ jobs:
           - "3.11"
           - "3.12"
         openeye: ["no"]
-        gufe-version: ['main']
+        gufe-version: ['a9b5982471eb3644ca8c4423c7001e6309a3f544']
         include:
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
-            gufe-version: 'main'
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: "<2"
-            gufe-version: 'main'
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
-            gufe-version: 'main'
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
             omff-version: ">0.13"
             openeye: ["no"]
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
+
+          # temporary test against gufe main while we're pinned to a9b5
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            pydantic-version: ">1"
+            openeye: "yes"
             gufe-version: 'main'
 
     env:
