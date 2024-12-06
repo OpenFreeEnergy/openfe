@@ -261,7 +261,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
         self, thermodynamic_state: ThermodynamicState
     ) -> float:
 
-        StandardV = 1660.53928 * unit.angstroms**3
+        StandardV = 1.66053928 * unit.nanometer**3
         kt = from_openmm(thermodynamic_state.kT)
 
         # distances
@@ -270,12 +270,12 @@ class BoreschRestraint(BaseHostGuestRestraints):
         sin_thetaB0 = np.sin(self.geometry.theta_B0.to('radians'))
 
         # restraint energies
-        K_r = self.settings.K_r.to('kilojoule_per_mole')
-        K_thetaA = self.settings.K_thetaA.to('kilojoule_per_mole')
-        k_thetaB = self.settings.K_thetaB.to('kilojoule_per_mole')
-        K_phiA = self.settings.K_phiA.to('kilojoule_per_mole')
-        K_phiB = self.settings.K_phiB.to('kilojoule_per_mole')
-        K_phiC = self.settings.K_phiC.to('kilojoule_per_mole')
+        K_r = self.settings.K_r.to('kilojoule_per_mole / nm ** 2')
+        K_thetaA = self.settings.K_thetaA.to('kilojoule_per_mole / radians ** 2')
+        k_thetaB = self.settings.K_thetaB.to('kilojoule_per_mole / radians ** 2')
+        K_phiA = self.settings.K_phiA.to('kilojoule_per_mole / radians ** 2')
+        K_phiB = self.settings.K_phiB.to('kilojoule_per_mole / radians ** 2')
+        K_phiC = self.settings.K_phiC.to('kilojoule_per_mole / radians ** 2')
 
         numerator1 = 8.0 * (np.pi**2) * StandardV
         denum1 = (r_aA0**2) * sin_thetaA0 * sin_thetaB0
