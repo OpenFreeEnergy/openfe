@@ -28,10 +28,21 @@ def test_get_column(val, col):
 
 
 @pytest.fixture
-def results_dir(tmpdir):
+def results_dir_serial(tmpdir):
+    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
             t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+            t.extractall('.')
+
+        yield
+
+@pytest.fixture
+def results_dir_parallel(tmpdir):
+    """Identical data to results_dir_serial(), with replicates run in parallel (1 replicate per results JSON)."""
+    with tmpdir.as_cwd():
+        with resources.files('openfecli.tests.data') as d:
+            t = tarfile.open(d / 'results_parallel.tar.gz', mode='r')
             t.extractall('.')
 
         yield
@@ -146,7 +157,7 @@ solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 
 
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
-def test_gather(results_dir, report):
+def test_gather(results_dir_serial, report):
     expected = {
         "": _EXPECTED_DG,
         "dg": _EXPECTED_DG,
@@ -185,7 +196,7 @@ def test_generate_bad_legs_error_message(include):
 
 
 @pytest.mark.xfail
-def test_missing_leg_error(results_dir):
+def test_missing_leg_error(results_dir_serial):
     file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
     (pathlib.Path("results") / file_to_remove).unlink()
 
@@ -199,7 +210,7 @@ def test_missing_leg_error(results_dir):
 
 
 @pytest.mark.xfail
-def test_missing_leg_allow_partial(results_dir):
+def test_missing_leg_allow_partial(results_dir_serial):
     file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
     (pathlib.Path("results") / file_to_remove).unlink()
 
