@@ -30,7 +30,7 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem-${{ matrix.openeye }} gufe-${{ matrix.gufe-version }}"
     strategy:
       fail-fast: false
       matrix:
@@ -41,22 +41,34 @@ jobs:
           - "3.11"
           - "3.12"
         openeye: ["no"]
+        gufe-version: ['a9b5982471eb3644ca8c4423c7001e6309a3f544']
         include:
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: "<2"
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
             omff-version: ">0.13"
             openeye: ["no"]
+            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
+
+          # temporary test against gufe main while we're pinned to a9b5
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            pydantic-version: ">1"
+            openeye: "yes"
+            gufe-version: 'main'
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -96,8 +108,9 @@ jobs:
           micromamba install -c openeye openeye-toolkits
           python -c "import openeye; assert openeye.oechem.OEChemIsLicensed(), 'oechem license check failed!'"
 
-      - name: "Install GUFE from main@HEAD"
-        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
+      - name: "Install GUFE at {{ matrix.gufe-version }}"
+        if: ${{ matrix.gufe-version != 'main' }}
+        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@${{ matrix.gufe-version }}
 
       - name: "Install"
         run: python -m pip install --no-deps -e .

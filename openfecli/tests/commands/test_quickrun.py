@@ -54,7 +54,14 @@ def test_quickrun_output_file_exists(json_file):
         assert result.exit_code == 2  # usage error
         assert "File 'foo.json' already exists." in result.output
 
-
+def test_quickrun_output_file_in_nonexistent_directory(json_file):
+    """Should catch invalid filepaths up front."""
+    runner = CliRunner()
+    outfile = "not_dir/foo.json"
+    result = runner.invoke(quickrun, [json_file, '-o', outfile])
+    assert result.exit_code == 2
+    assert "Cannot write" in result.output
+ 
 def test_quickrun_unit_error():
     with resources.files('openfecli.tests.data') as d:
         json_file = str(d / 'bad_transformation.json')
