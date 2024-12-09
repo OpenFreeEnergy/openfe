@@ -122,7 +122,8 @@ def get_names(result:dict) -> tuple[str, str]:
 
 
 def get_type(res:dict)->Literal['vacuum','solvent','complex']:
-    """Determine the simulation type based on the component types."""
+    """Determine the simulation type based on the component names."""
+    # TODO: use component *types* instead here
 
     list_of_pur = list(res['protocol_result']['data'].values())[0]
     pur = list_of_pur[0]
@@ -137,7 +138,7 @@ def get_type(res:dict)->Literal['vacuum','solvent','complex']:
 
 
 def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
-    """TODO: when to deprecate this?"""
+    # TODO: Deprecate this when we no longer rely on key names in `get_type()`
 
     if 'solvent' in res_fn:
         return 'solvent'
