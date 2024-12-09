@@ -12,6 +12,7 @@ Many of the classes here are at least in part inspired, if not taken from
 TODO
 ----
 * Add relevant duecredit entries.
+* Add Periodic Torsion Boresch class
 """
 import abc
 from typing import Optional, Union, Callable
@@ -26,7 +27,8 @@ from openmmtools.forces import (
     FlatBottomRestraintBondForce,
 )
 from openmmtools.states import GlobalParameterState, ThermodynamicState
-from openff.units.openmm import to_openmm
+from openff.units.openmm import to_openmm, from_openmm
+from openff.units import unit
 
 from gufe.settings.models import SettingsBaseModel
 from openfe.protocols.openmm_utils.omm_forces import (
@@ -148,11 +150,13 @@ class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
 
      def get_standard_state_correction(
         self, thermodynamic_state: ThermodynamicState
-    ) -> float:
+    ) -> unit.Quantity:
         force = self._get_force()
-        return force.compute_standard_state_correction(
+        corr = force.compute_standard_state_correction(
             thermodynamic_state, volume="system"
         )
+        dg = corr * thermodynamic_state.kT
+        return from_openmm(dg).to('kilojoule_per_mole')
 
     def _get_force(self):
         raise NotImplementedError("only implemented in child classes")
@@ -194,7 +198,7 @@ class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
 
 
 class CentroidFlatBottomRestraint(BaseRadialllySymmetricRestraintForce):
-    def _get_force(self):
+    def _get_force(self) -> openmm.Force:
         spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
         well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
@@ -259,7 +263,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
 
     def get_standard_state_correction(
         self, thermodynamic_state: ThermodynamicState
-    ) -> float:
+    ) -> unit.Quantity:
 
         StandardV = 1.66053928 * unit.nanometer**3
         kt = from_openmm(thermodynamic_state.kT)
@@ -285,6 +289,3 @@ class BoreschRestraint(BaseHostGuestRestraints):
         dG = -kt * np.log((numerator1/denum1) * (numerator2/denum2))
 
         return dG
-
-
-# TODO - implement periodic torsion Boresch restraint
