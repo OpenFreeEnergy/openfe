@@ -47,7 +47,7 @@ import openmmtools
 import mdtraj as mdt
 
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
+    ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -57,7 +57,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
 )
 from openfe.utils import log_system_probe
-from openfe.protocols.openmm_rfe._rfe_utils.compute import get_openmm_platform
 
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
@@ -77,9 +76,14 @@ from openfe.utils import without_oechem_backend
 from .femto_alchemy import apply_fep
 from .femto_restraints import select_ligand_idxs
 from .utils import serialize, deserialize
-from openfe.protocols.openmm_septop.alchemy_copy import AbsoluteAlchemicalFactory, AlchemicalRegion, AlchemicalState
+from openfe.protocols.openmm_septop.alchemy_copy import (
+    AbsoluteAlchemicalFactory,
+    AlchemicalRegion,
+    AlchemicalState,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     """
@@ -218,8 +222,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
 
         # Get the necessary number of steps
-        if settings[
-            'equil_simulation_settings'].equilibration_length_nvt is not None:
+        if settings['equil_simulation_settings'].equilibration_length_nvt is not None:
             equil_steps_nvt = settings_validation.get_simsteps(
                 sim_length=settings[
                     'equil_simulation_settings'].equilibration_length_nvt,
@@ -406,8 +409,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                 overwrite=False,
                 method=partial_charge_settings.partial_charge_method,
                 toolkit_backend=partial_charge_settings.off_toolkit_backend,
-                generate_n_conformers=partial_charge_settings
-                    .number_of_conformers,
+                generate_n_conformers=partial_charge_settings.number_of_conformers,
                 nagl_model=partial_charge_settings.nagl_model,
             )
 
@@ -604,7 +606,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         return omm_system, omm_topology, positions, system_modeller, comp_resids
 
-
     def get_system_AB(
             self, solv_comp, system_modeller_A, smc_comps_AB, smc_off_B, settings, shared_basepath):
         # 5. Get system generator
@@ -705,7 +706,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         diff_resids = list(set(resids_AB) - set(resids_A))
         comp_resids_AB = comp_resids_A | {
             alchem_comps["stateB"][0]: np.array(diff_resids)}
-
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")

@@ -1408,8 +1408,8 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
         lambda_vdw_A = [1 - x for x in lambda_vdw_A]
         lambda_elec_B = [1 - x for x in lambda_elec_B]
         lambda_vdw_B = [1 - x for x in lambda_vdw_B]
-        lambda_restraints_A = [1 - x for x in lambda_restraints_A]
-        lambda_restraints_B = [1 - x for x in lambda_restraints_B]
+        # lambda_restraints_A = [1 - x for x in lambda_restraints_A]
+        # lambda_restraints_B = [1 - x for x in lambda_restraints_B]
         lambdas['lambda_electrostatics_ligandA'] = lambda_elec_A
         lambdas['lambda_sterics_ligandA'] = lambda_vdw_A
         lambdas['lambda_electrostatics_ligandB'] = lambda_elec_B
