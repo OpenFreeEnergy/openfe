@@ -5,7 +5,7 @@ Classes for applying restraints to OpenMM Systems.
 
 Acknowledgements
 ----------------
-Many of the classes here are at least in part inspired, if not taken from
+Many of the classes here are at least in part inspired from
 `Yank <https://github.com/choderalab/yank/>`_ and
 `OpenMMTools <https://github.com/choderalab/openmmtools>`_.
 
@@ -37,10 +37,6 @@ from openfe.protocols.openmm_utils.omm_forces import (
     get_boresch_energy_function,
     get_periodic_boresch_energy_function,
 )
-
-
-class BaseRestraintGeometry:
-    pass
 
 
 class RestraintParameterState(GlobalParameterState):
