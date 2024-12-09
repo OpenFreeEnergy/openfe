@@ -78,7 +78,7 @@ def _create_new_dataset(filename: Path, n_atoms: int,
         AMBER Conventions compliant NetCDF dataset to store information
         contained in MultiState reporter generated NetCDF file.
     """
-    ncfile = nc.Dataset(filename, 'w', format='NETCDF3_64BIT')
+    ncfile = nc.Dataset(filename, 'w', format='NETCDF3_64BIT_OFFSET')
     ncfile.Conventions = 'AMBER'
     ncfile.ConventionVersion = "1.0"
     ncfile.application = "openfe"

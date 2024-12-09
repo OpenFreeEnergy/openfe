@@ -311,6 +311,18 @@ class OpenMMEngineSettings(SettingsBaseModel):
     OpenMM compute platform to perform MD integration with. If ``None``, will
     choose fastest available platform. Default ``None``.
     """
+    gpu_device_index: Optional[list[int]] = None
+    """
+    List of integer indices for the GPU device to select when
+    ``compute_platform`` is either set to ``CUDA`` or ``OpenCL``.
+
+    If ``None``, the default OpenMM GPU selection behaviour is used.
+
+    See the `OpenMM platform properties documentation <http://docs.openmm.org/latest/userguide/library/04_platform_specifics.html>`_
+    for more details.
+
+    Default ``None``.
+    """
 
 
 class IntegratorSettings(SettingsBaseModel):

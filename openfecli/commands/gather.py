@@ -2,13 +2,29 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from openfecli import OFECommandPlugin
-from openfecli.clicktypes import HyphenAwareChoice
+import os
 import pathlib
+from typing import Callable, Literal
 import warnings
 
+from openfecli import OFECommandPlugin
+from openfecli.clicktypes import HyphenAwareChoice
 
-def _get_column(val):
+
+def _get_column(val:float|int)->int:
+    """Determine the index (where the 0th index is the decimal) at which the
+    first non-zero value occurs in a full-precision string representation of a value.
+
+    Parameters
+    ----------
+    val : float|int
+        The raw value.
+
+    Returns
+    -------
+    int
+        Column index
+    """
     import numpy as np
     if val == 0:
         return 0
@@ -27,6 +43,23 @@ def format_estimate_uncertainty(
     unc: float,
     unc_prec: int = 1,
 ) -> tuple[str, str]:
+    """Truncate raw estimate and uncertainty values to the appropriate uncertainty.
+
+    Parameters
+    ----------
+    est : float
+        Raw estimate value.
+    unc : float
+        Raw uncertainty value.
+    unc_prec : int, optional
+        Precision, by default 1
+
+    Returns
+    -------
+    tuple[str, str]
+        The truncated raw and uncertainty values.
+    """
+
     import numpy as np
     # get the last column needed for uncertainty
     unc_col = _get_column(unc) - (unc_prec - 1)
@@ -41,21 +74,45 @@ def format_estimate_uncertainty(
     return est_str, unc_str
 
 
-def is_results_json(f):
-    # sanity check on files before we try and deserialize
-    return 'estimate' in open(f, 'r').read(20)
+def is_results_json(fpath:os.PathLike|str)->bool:
+    """Sanity check that file is a result json before we try to deserialize"""
+    return 'estimate' in open(fpath, 'r').read(20)
 
 
-def load_results(f):
-    # path to deserialized results
+def load_results(fpath:os.PathLike|str)->dict:
+    """Load the data from a results JSON into a dict
+
+    Parameters
+    ----------
+    fpath : os.PathLike | str
+        The path to deserialized results.
+
+    Returns
+    -------
+    dict
+        A dict containing data from the results JSON.
+    """
+
     import json
     from gufe.tokenization import JSON_HANDLER
 
-    return json.load(open(f, 'r'), cls=JSON_HANDLER.decoder)
+    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
 
-def get_names(result) -> tuple[str, str]:
-    # Result to tuple of ligand names
+def get_names(result:dict) -> tuple[str, str]:
+    """Get the ligand names from a unit's results data.
+
+    Parameters
+    ----------
+    result : dict
+        A results dict.
+
+    Returns
+    -------
+    tuple[str, str]
+        Ligand names corresponding to the results.
+    """
+
     nm = list(result['unit_results'].values())[0]['name']
     toks = nm.split()
     if toks[2] == 'repeat':
@@ -64,7 +121,10 @@ def get_names(result) -> tuple[str, str]:
         return toks[0], toks[2]
 
 
-def get_type(res):
+def get_type(res:dict)->Literal['vacuum','solvent','complex']:
+    """Determine the simulation type based on the component names."""
+    # TODO: use component *types* instead here
+
     list_of_pur = list(res['protocol_result']['data'].values())[0]
     pur = list_of_pur[0]
     components = pur['inputs']['stateA']['components']
@@ -77,7 +137,9 @@ def get_type(res):
         return 'solvent'
 
 
-def legacy_get_type(res_fn):
+def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
+    # TODO: Deprecate this when we no longer rely on key names in `get_type()`
+
     if 'solvent' in res_fn:
         return 'solvent'
     elif 'vacuum' in res_fn:
@@ -86,7 +148,7 @@ def legacy_get_type(res_fn):
         return 'complex'
 
 
-def _generate_bad_legs_error_message(set_vals, ligpair):
+def _generate_bad_legs_error_message(set_vals:set, ligpair)->str:
     expected_rbfe = {'complex', 'solvent'}
     expected_rhfe = {'solvent', 'vacuum'}
     maybe_rhfe = bool(set_vals & expected_rhfe)
@@ -139,7 +201,7 @@ def _parse_raw_units(results: dict) -> list[tuple]:
             for pu in list_of_pur]
 
 
-def _get_ddgs(legs, error_on_missing=True):
+def _get_ddgs(legs:dict, error_on_missing=True):
     import numpy as np
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
@@ -179,7 +241,7 @@ def _get_ddgs(legs, error_on_missing=True):
     return DDGs
 
 
-def _write_ddg(legs, writer, allow_partial):
+def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
     DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
@@ -192,7 +254,7 @@ def _write_ddg(legs, writer, allow_partial):
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
 
 
-def _write_raw(legs, writer, allow_partial=True):
+def _write_raw(legs:dict, writer:Callable, allow_partial=True):
     writer.writerow(["leg", "ligand_i", "ligand_j",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
@@ -206,7 +268,7 @@ def _write_raw(legs, writer, allow_partial=True):
                 writer.writerow([simtype, *ligpair, m, u])
 
 
-def _write_dg_raw(legs, writer, allow_partial):  # pragma: no-cover
+def _write_dg_raw(legs:dict, writer:Callable,  allow_partial):  # pragma: no-cover
     writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligpair, vals in sorted(legs.items()):
@@ -218,7 +280,7 @@ def _write_dg_raw(legs, writer, allow_partial):  # pragma: no-cover
             writer.writerow([simtype, *ligpair, m, u])
 
 
-def _write_dg_mle(legs, writer, allow_partial):
+def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
@@ -299,7 +361,11 @@ def _write_dg_mle(legs, writer, allow_partial):
         "(Skip those edges and issue warning instead.)"
     )
 )
-def gather(rootdir, output, report, allow_partial):
+def gather(rootdir:os.PathLike|str,
+           output:os.PathLike|str,
+           report:Literal['dg','ddg','raw'],
+           allow_partial:bool
+           ):
     """Gather simulation result jsons of relative calculations to a tsv file
 
     This walks ROOTDIR recursively and finds all result JSON files from the
