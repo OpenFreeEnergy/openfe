@@ -218,8 +218,10 @@ class AlchemicalState(states.GlobalParameterState):
                 raise ValueError('{} must be between 0 and 1.'.format(self.parameter_name))
             return float(parameter_value)
 
-    lambda_sterics = _LambdaParameter('lambda_sterics')
-    lambda_electrostatics = _LambdaParameter('lambda_electrostatics')
+    lambda_sterics = _LambdaParameter('lambda_sterics_ligandA')
+    lambda_sterics = _LambdaParameter('lambda_sterics_ligandB')
+    lambda_electrostatics = _LambdaParameter('lambda_electrostatics_ligandA')
+    lambda_electrostatics = _LambdaParameter('lambda_electrostatics_ligandB')
     lambda_bonds = _LambdaParameter('lambda_bonds')
     lambda_angles = _LambdaParameter('lambda_angles')
     lambda_torsions = _LambdaParameter('lambda_torsions')
