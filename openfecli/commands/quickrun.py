@@ -6,7 +6,7 @@ import json
 import pathlib
 
 from openfecli import OFECommandPlugin
-from openfecli.parameters.output import ensure_file_does_not_exist
+from openfecli.parameters.output import validate_outfile
 from openfecli.utils import write, print_duration, configure_logger
 
 
@@ -33,10 +33,9 @@ def _format_exception(exception) -> str:
 )
 @click.option(
     'output', '-o', default=None,
-    type=click.Path(dir_okay=False, file_okay=True, writable=True,
-                    path_type=pathlib.Path),
-    help="output file (JSON format) for the final results",
-    callback=ensure_file_does_not_exist,
+    type=click.Path(dir_okay=False, file_okay=True, path_type=pathlib.Path),
+    help="Filepath at which to create and write the JSON-formatted results.",
+    callback=validate_outfile,
 )
 @print_duration
 def quickrun(transformation, work_dir, output):
