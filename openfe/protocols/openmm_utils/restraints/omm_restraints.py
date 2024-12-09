@@ -90,14 +90,10 @@ class BaseHostGuestRestraints(abc.ABC):
 
     def __init__(
         self,
-        host_atoms: list[int],
-        guest_atoms: list[int],
         restraint_settings: SettingsBaseModel,
         restraint_geometry: BaseRestraintGeometry,
         controlling_parameter_name: str = "lambda_restraints",
     ):
-        self.host_atoms = host_atoms
-        self.guest_atoms = guest_atoms
         self.settings = restraint_settings
         self.geometry = restraint_geometry
         self._verify_input()
@@ -121,7 +117,7 @@ class BaseHostGuestRestraints(abc.ABC):
 
 class SingleBondMixin:
     def _verify_input(self):
-        if len(self.host_atoms) != 1 or len(self.guest_atoms) != 1:
+        if len(self.geometry.host_atoms) != 1 or len(self.geometry.guest_atoms) != 1:
             errmsg = (
                 "host_atoms and guest_atoms must only include a single index "
                 f"each, got {len(host_atoms)} and "
@@ -148,7 +144,7 @@ class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
         add_force_in_separate_group(system, force)
         thermodynamic_state.system = system
 
-     def get_standard_state_correction(
+    def get_standard_state_correction(
         self, thermodynamic_state: ThermodynamicState
     ) -> unit.Quantity:
         force = self._get_force()
@@ -164,48 +160,48 @@ class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
 
 class HarmonicBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintBondForce(
             spring_constant=spring_constant,
-            restrained_atom_index1=self.host_atoms[0],
-            restrained_atom_index2=self.guest_atoms[0],
+            restrained_atom_index1=self.geometry.host_atoms[0],
+            restrained_atom_index2=self.geometry.guest_atoms[0],
             controlling_parameter_name=self.controlling_parameter_name,
         )
 
 
 class FlatBottomBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
-            restrained_atom_index1=self.host_atoms[0],
-            restrained_atom_index2=self.guest_atoms[0],
+            restrained_atom_index1=self.geometry.host_atoms[0],
+            restrained_atom_index2=self.geometry.guest_atoms[0],
             controlling_parameter_name=self.controlling_parameter_name,
         )
 
 
 class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
     def _get_force(self) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintForce(
             spring_constant=spring_constant,
-            restrained_atom_index1=self.host_atoms,
-            restrained_atom_index2=self.guest_atoms,
+            restrained_atom_index1=self.geometry.host_atoms,
+            restrained_atom_index2=self.geometry.guest_atoms,
             controlling_parameter_name=self.controlling_parameter_name,
         )
 
 
 class CentroidFlatBottomRestraint(BaseRadialllySymmetricRestraintForce):
     def _get_force(self) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.sprint_constant).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
-            restrained_atom_index1=self.host_atoms,
-            restrained_atom_index2=self.guest_atoms,
+            restrained_atom_index1=self.geometry.host_atoms,
+            restrained_atom_index2=self.geometry.guest_atoms,
             controlling_parameter_name=self.controlling_parameter_name,
         )
 
@@ -258,7 +254,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
             force.addPerBondParameter(key)
 
         force.addGlobalParameter(self.controlling_parameter_name, 1.0)
-        force.addBond(self.host_atoms + self.guest_atoms, param_values)
+        force.addBond(self.geometry.host_atoms + self.geometry.guest_atoms, param_values)
         return force
 
     def get_standard_state_correction(
