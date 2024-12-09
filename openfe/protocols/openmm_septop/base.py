@@ -938,8 +938,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             sampler_state.box_vectors = box
 
         sampler_states = [sampler_state for _ in cmp_states]
-        potentials = [state.getPotentialEnergy() for state in sampler_states]
-        print(potentials)
+        # potentials = [state.getPotentialEnergy() for state in sampler_states]
+        # print(potentials)
 
         return sampler_states, cmp_states
 
