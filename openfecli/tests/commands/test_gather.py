@@ -154,7 +154,7 @@ def results_dir_parallel(tmpdir):
 
         return os.path.abspath(t.getnames()[0])
 
-@pytest.mark.parametrize('data_fixture', ['results_dir_parallel'])
+@pytest.mark.parametrize('data_fixture', ['results_dir_serial', 'results_dir_parallel'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 def test_gather(request, data_fixture, report):
     expected = {
