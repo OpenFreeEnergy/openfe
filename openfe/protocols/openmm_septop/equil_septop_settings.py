@@ -29,8 +29,6 @@ from openff.units import unit
 from openff.models.types import FloatQuantity
 import numpy as np
 from pydantic.v1 import validator
-from typing import Optional
-import openmm.unit as omm_unit
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -45,7 +43,22 @@ class RestraintsSettings(SettingsBaseModel):
     Settings for the restraints.
     """
     k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
-    k_theta: Optional[FloatQuantity['kJ/(mol*rad**2)']] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+
+
+class SolventRestraintsSettings(RestraintsSettings):
+    """
+    Settings for the harmonic restraint in the solvent
+    """
+
+
+class ComplexRestraintsSettings(RestraintsSettings):
+    """
+    Settings for the Boresch restraints in the complex
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    k_theta: FloatQuantity['kJ/(mol*rad**2)'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
 
 
 class LambdaSettings(SettingsBaseModel):
@@ -244,11 +257,11 @@ class SepTopSettings(SettingsBaseModel):
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
     """
-    solvent_restraints_settings: RestraintsSettings
+    solvent_restraints_settings: SolventRestraintsSettings
     """
     Settings for the harmonic restraint in the solvent
     """
-    complex_restraints_settings: RestraintsSettings
+    complex_restraints_settings: ComplexRestraintsSettings
     """
     Settings for the Boresch restraints in the complex
     """

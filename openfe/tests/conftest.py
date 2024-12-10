@@ -193,6 +193,17 @@ def benzene_modifications():
 
 
 @pytest.fixture(scope='session')
+def charged_benzene_modifications():
+    files = {}
+    with importlib.resources.files('openfe.tests.data.openmm_rfe') as d:
+        fn = str(d / 'charged_benzenes.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope='session')
 def bace_ligands():
     files = {}
     with importlib.resources.files('openfe.tests.data.openmm_septop') as d:

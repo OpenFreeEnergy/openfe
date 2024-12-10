@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium SepTop RBFE Protocol --- :mod:`openfe.protocols.openmm_septop.equil_septop_method`
+"""OpenMM Equilibrium SepTop RBFE Protocol ---
+   :mod:`openfe.protocols.openmm_septop.equil_septop_method`
 ===============================================================================================================
 
 This module implements the necessary methodology tooling to run a
@@ -21,7 +22,10 @@ Current limitations
 
 Acknowledgements
 ----------------
-
+This Protocol is based on, and leverages components originating from
+the SepTop implementation from the Mobleylab
+(https://github.com/MobleyLab/SeparatedTopologies) as well as
+femto (https://github.com/Psivant/femto).
 """
 from __future__ import annotations
 
@@ -56,7 +60,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
-    SettingsBaseModel, RestraintsSettings,
+    SettingsBaseModel, SolventRestraintsSettings, ComplexRestraintsSettings
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
@@ -69,6 +73,7 @@ from .femto_restraints import (
 )
 from .femto_utils import assign_force_groups
 from openff.units.openmm import to_openmm
+from rdkit import Chem
 
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -94,14 +99,47 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
         omm_positions / omm_units.nanometers)
 
     unit_cell = omm_topology.getPeriodicBoxVectors() / omm_units.nanometers
-    print(unit_cell)
     unit_cell_length = np.array([i[inx] for inx, i in enumerate(unit_cell)])
-    print(unit_cell_length)
     mdtraj_system = md.Trajectory(positions_in_mdtraj_format,
                                   mdtraj_topology,
                                   unitcell_lengths=unit_cell_length)
     return mdtraj_system
 
+def _check_alchemical_charge_difference(
+        ligandA: SmallMoleculeComponent,
+        ligandB: SmallMoleculeComponent,
+):
+    """
+    Checks and returns the difference in formal charge between state A
+    and B.
+
+    Raises
+    ------
+    ValueError
+      * If a change in net charge is detected.
+
+    Parameters
+    ----------
+    ligandA: SmallMoleculeComponent
+    ligandB: SmallMoleculeComponent
+    """
+    chg_A = Chem.rdmolops.GetFormalCharge(
+        ligandA.to_rdkit()
+    )
+    chg_B = Chem.rdmolops.GetFormalCharge(
+        ligandB.to_rdkit()
+    )
+
+    difference = chg_A - chg_B
+
+    if abs(difference) != 0:
+        errmsg = (
+            f"A charge difference of {difference} is observed "
+            "between the end states. Unfortunately this protocol "
+            "currently does not support net charge changes.")
+        raise ValueError(errmsg)
+
+    return
 
 class SepTopProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a SepTopProtocol
@@ -129,14 +167,12 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         solv_dGs = []
 
         for pus in self.data['complex'].values():
-            print(pus)
             complex_dGs.append((
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
             ))
 
         for pus in self.data['solvent'].values():
-            print(pus)
             solv_dGs.append((
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
@@ -457,18 +493,18 @@ class SepTopProtocol(gufe.Protocol):
             integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.2 * unit.nanosecond,
+                equilibration_length=0.1 * unit.nanosecond,
                 production_length=0.5 * unit.nanosecond,
             ),
             solvent_equil_output_settings=MDOutputSettings(
-                equil_nvt_structure='equil_nvt_structure.pdb',
+                equil_nvt_structure=None,
                 equil_npt_structure='equil_npt_structure.pdb',
-                production_trajectory_filename='production_equil.xtc',
+                production_trajectory_filename=None,
                 log_output='equil_simulation.log',
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=19,
-                minimization_steps=10000,
+                minimization_steps=5000,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
@@ -477,30 +513,29 @@ class SepTopProtocol(gufe.Protocol):
                 checkpoint_storage_filename='solvent_checkpoint.nc',
             ),
             complex_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=None,
-                equilibration_length=0.2 * unit.nanosecond,
+                equilibration_length_nvt=0.1 * unit.nanosecond,
+                equilibration_length=0.1 * unit.nanosecond,
                 production_length=0.5 * unit.nanosecond,
             ),
             complex_equil_output_settings=MDOutputSettings(
                 equil_nvt_structure=None,
                 equil_npt_structure='equil_structure.pdb',
-                production_trajectory_filename='production_equil.xtc',
+                production_trajectory_filename=None,
                 log_output='equil_simulation.log',
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=19,
-                equilibration_length=0.5 * unit.nanosecond,
-                production_length=2.0 * unit.nanosecond,
+                equilibration_length=1.0 * unit.nanosecond,
+                production_length=10.0 * unit.nanosecond,
             ),
             complex_output_settings=MultiStateOutputSettings(
                 output_filename='complex.nc',
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
-            solvent_restraints_settings=RestraintsSettings(
+            solvent_restraints_settings=SolventRestraintsSettings(
                 k_distance=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
-                k_theta=None,
             ),
-            complex_restraints_settings=RestraintsSettings(
+            complex_restraints_settings=ComplexRestraintsSettings(
                 k_distance=8368.0 * unit.kilojoule_per_mole / unit.nanometer**2
             ),
         )
@@ -573,6 +608,7 @@ class SepTopProtocol(gufe.Protocol):
           * If there are no or more than one alchemical components in state B.
           * If there are any alchemical components that are not
             SmallMoleculeComponents
+        * If a change in net charge between the alchemical components is detected.
 
         Notes
         -----
@@ -605,6 +641,11 @@ class SepTopProtocol(gufe.Protocol):
                     errmsg = ("Non SmallMoleculeComponent alchemical species "
                               "are not currently supported")
                     raise ValueError(errmsg)
+
+        # Raise an error if there is a change in netcharge
+        _check_alchemical_charge_difference(
+            alchemical_components['stateA'][0],
+            alchemical_components['stateB'][0])
 
     @staticmethod
     def _validate_lambda_schedule(
@@ -661,17 +702,22 @@ class SepTopProtocol(gufe.Protocol):
                       f" number of lambda windows {len(lambda_vdw_ligandB)}")
             raise ValueError(errmsg)
 
-        # # Check if there are lambda windows with naked charges
-        # # Leaving this out for now till I've figured out how the lambda
-        # # scheduling works
-        # for inx, lam in enumerate(lambda_elec):
-        #     if lam < 1 and lambda_vdw[inx] == 1:
-        #         errmsg = (
-        #             "There are states along this lambda schedule "
-        #             "where there are atoms with charges but no LJ "
-        #             f"interactions: lambda {inx}: "
-        #             f"elec {lam} vdW {lambda_vdw[inx]}")
-        #         raise ValueError(errmsg)
+        # Check if there are lambda windows with naked charges
+        for inx, lam in enumerate(lambda_elec_ligandA):
+            if lam < 1 and lambda_vdw_ligandA[inx] == 1:
+                errmsg = (
+                    "There are states along this lambda schedule "
+                    "where there are atoms with charges but no LJ "
+                    f"interactions: Ligand A: lambda {inx}: "
+                    f"elec {lam} vdW {lambda_vdw_ligandA[inx]}")
+                raise ValueError(errmsg)
+            if lambda_elec_ligandB[inx] < 1 and lambda_vdw_ligandB[inx] == 1:
+                errmsg = (
+                    "There are states along this lambda schedule "
+                    "where there are atoms with charges but no LJ interactions"
+                    f": Ligand B: lambda {inx}: elec {lambda_elec_ligandB[inx]}"
+                    f" vdW {lambda_vdw_ligandB[inx]}")
+                raise ValueError(errmsg)
 
     def _create(
         self,
@@ -1070,20 +1116,22 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         """
         prot_settings = self._inputs['protocol'].settings
 
-        settings = {}
-        settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
-        settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.solvent_solvation_settings
-        settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['lambda_settings'] = prot_settings.lambda_settings
-        settings['engine_settings'] = prot_settings.solvent_engine_settings
-        settings['integrator_settings'] = prot_settings.integrator_settings
-        settings['equil_simulation_settings'] = prot_settings.solvent_equil_simulation_settings
-        settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
-        settings['simulation_settings'] = prot_settings.solvent_simulation_settings
-        settings['output_settings'] = prot_settings.solvent_output_settings
-        settings['restraint_settings'] = prot_settings.solvent_restraints_settings
+        settings = {
+            'forcefield_settings': prot_settings.solvent_forcefield_settings,
+            'thermo_settings': prot_settings.thermo_settings,
+            'charge_settings': prot_settings.partial_charge_settings,
+            'solvation_settings': prot_settings.solvent_solvation_settings,
+            'alchemical_settings': prot_settings.alchemical_settings,
+            'lambda_settings': prot_settings.lambda_settings,
+            'engine_settings': prot_settings.solvent_engine_settings,
+            'integrator_settings': prot_settings.integrator_settings,
+            'equil_simulation_settings':
+                prot_settings.solvent_equil_simulation_settings,
+            'equil_output_settings':
+                prot_settings.solvent_equil_output_settings,
+            'simulation_settings': prot_settings.solvent_simulation_settings,
+            'output_settings': prot_settings.solvent_output_settings,
+            'restraint_settings': prot_settings.solvent_restraints_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -1124,8 +1172,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         print(ligand_offset)
 
         # Offset the ligandB.
-        mdtraj_system_B.xyz[0][atom_indices_B,
-        :] += ligand_offset / omm_units.nanometers
+        mdtraj_system_B.xyz[0][atom_indices_B, :] += ligand_offset / omm_units.nanometers
 
         # Extract updated system positions.
         updated_positions_B = mdtraj_system_B.openmm_positions(0)
@@ -1175,7 +1222,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         system.addForce(force)
 
         return system
-
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
@@ -1237,7 +1283,6 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         # be returned as None
         return alchem_comps, solv_comp, None, small_mols
 
-
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Extract the relevant settings for a complex transformation.
@@ -1262,20 +1307,22 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         """
         prot_settings = self._inputs['protocol'].settings
 
-        settings = {}
-        settings['forcefield_settings'] = prot_settings.solvent_forcefield_settings
-        settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.solvent_solvation_settings
-        settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['lambda_settings'] = prot_settings.lambda_settings
-        settings['engine_settings'] = prot_settings.solvent_engine_settings
-        settings['integrator_settings'] = prot_settings.integrator_settings
-        settings['equil_simulation_settings'] = prot_settings.solvent_equil_simulation_settings
-        settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
-        settings['simulation_settings'] = prot_settings.solvent_simulation_settings
-        settings['output_settings'] = prot_settings.solvent_output_settings
-        settings['restraint_settings'] = prot_settings.solvent_restraints_settings
+        settings = {
+            'forcefield_settings': prot_settings.solvent_forcefield_settings,
+            'thermo_settings': prot_settings.thermo_settings,
+            'charge_settings': prot_settings.partial_charge_settings,
+            'solvation_settings': prot_settings.solvent_solvation_settings,
+            'alchemical_settings': prot_settings.alchemical_settings,
+            'lambda_settings': prot_settings.lambda_settings,
+            'engine_settings': prot_settings.solvent_engine_settings,
+            'integrator_settings': prot_settings.integrator_settings,
+            'equil_simulation_settings':
+                prot_settings.solvent_equil_simulation_settings,
+            'equil_output_settings':
+                prot_settings.solvent_equil_output_settings,
+            'simulation_settings': prot_settings.solvent_simulation_settings,
+            'output_settings': prot_settings.solvent_output_settings,
+            'restraint_settings': prot_settings.solvent_restraints_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -1308,6 +1355,7 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
 
         return lambdas
 
+
 class SepTopComplexRunUnit(BaseSepTopRunUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
@@ -1338,7 +1386,6 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
         small_mols = small_mols | small_mols_B
 
         return alchem_comps, solv_comp, prot_comp, small_mols
-
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """

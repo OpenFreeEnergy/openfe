@@ -27,7 +27,6 @@ from gufe.components import Component
 import numpy as np
 import numpy.typing as npt
 import openmm
-import mdtraj as md
 import simtk.unit as omm_units
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
@@ -36,7 +35,6 @@ from openmmtools import multistate
 from openmmtools.states import (SamplerState,
                                 ThermodynamicState,
                                 create_thermodynamic_state_protocol, )
-# from .utils import AlchemicalState
 from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
@@ -1109,12 +1107,10 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         sampler : multistate.MultistateSampler
           A sampler configured for the chosen sampling method.
         """
-        rta_its, rta_min_its = \
-            settings_validation.convert_real_time_analysis_iterations(
+        rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
             simulation_settings=simulation_settings,
         )
-        et_target_err = \
-            settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+        et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
             thermo_settings.temperature,
             simulation_settings.early_termination_target_error,
         )

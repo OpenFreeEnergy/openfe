@@ -20,8 +20,10 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
     SepTopComplexSetupUnit,
     SepTopProtocol,
-    femto_restraints
+    femto_restraints,
 )
+from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
+
 
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
@@ -106,6 +108,37 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
         )
 
 
+@pytest.mark.parametrize('val', [
+    {'elec': [1.0, 0.5], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
+])
+def test_validate_lambda_schedule_nakedcharge(val, default_settings):
+    default_settings.lambda_settings.lambda_elec_ligandA = val['elec']
+    default_settings.lambda_settings.lambda_vdw_ligandA = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_ligandA = val[
+        'restraints']
+    default_settings.lambda_settings.lambda_elec_ligandB = val['elec']
+    default_settings.lambda_settings.lambda_vdw_ligandB = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_ligandB = val[
+        'restraints']
+    n_replicas = 2
+    default_settings.complex_simulation_settings.n_replicas = n_replicas
+    default_settings.solvent_simulation_settings.n_replicas = n_replicas
+    errmsg = (
+        "There are states along this lambda schedule "
+        "where there are atoms with charges but no LJ "
+        "interactions: Ligand A: l")
+    with pytest.raises(ValueError, match=errmsg):
+        SepTopProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.complex_simulation_settings,
+        )
+    with pytest.raises(ValueError, match=errmsg):
+        SepTopProtocol._validate_lambda_schedule(
+            default_settings.lambda_settings,
+            default_settings.solvent_simulation_settings,
+        )
+
+
 def test_create_default_protocol(default_settings):
     # this is roughly how it should be created
     protocol = SepTopProtocol(
@@ -122,6 +155,79 @@ def test_serialize_protocol(default_settings):
     ser = protocol.to_dict()
     ret = SepTopProtocol.from_dict(ser)
     assert protocol == ret
+
+
+def test_create_independent_repeat_ids(
+        benzene_complex_system, toluene_complex_system,
+):
+    # if we create two dags each with 3 repeats, they should give 6 repeat_ids
+    # this allows multiple DAGs in flight for one Transformation that don't clash on gather
+    settings = SepTopProtocol.default_settings()
+    # Default protocol is 1 repeat, change to 3 repeats
+    settings.protocol_repeats = 3
+    protocol = SepTopProtocol(
+            settings=settings,
+    )
+
+    dag1 = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    dag2 = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    # print([u for u in dag1.protocol_units])
+    repeat_ids = set()
+    for u in dag1.protocol_units:
+        repeat_ids.add(u.inputs['repeat_id'])
+    for u in dag2.protocol_units:
+        repeat_ids.add(u.inputs['repeat_id'])
+
+    # There are 4 units per repeat per DAG: 4 * 3 * 2 = 24
+    assert len(repeat_ids) == 24
+
+
+def test_check_alchem_charge_diff(charged_benzene_modifications):
+    errmsg = "A charge difference of 1"
+    with pytest.raises(ValueError, match=errmsg):
+        _check_alchemical_charge_difference(
+            charged_benzene_modifications["benzene"],
+            charged_benzene_modifications["benzoic_acid"],
+        )
+
+
+def test_charge_error_create(
+        charged_benzene_modifications, T4_protein_component,
+):
+    # if we create two dags each with 3 repeats, they should give 6 repeat_ids
+    # this allows multiple DAGs in flight for one Transformation that don't clash on gather
+    settings = SepTopProtocol.default_settings()
+    # Default protocol is 1 repeat, change to 3 repeats
+    settings.protocol_repeats = 3
+    protocol = SepTopProtocol(
+            settings=settings,
+    )
+    stateA = ChemicalSystem({
+        'benzene': charged_benzene_modifications['benzene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'benzoic': charged_benzene_modifications['benzoic_acid'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+    errmsg = "A charge difference of 1"
+    with pytest.raises(ValueError, match=errmsg):
+        protocol.create(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=None,
+        )
 
 
 def test_validate_complex_endstates_protcomp_stateA(
@@ -285,63 +391,48 @@ def test_validate_alchem_nonsmc(
     with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
-
-# def test_create_boresch_restraint(
-#     bace_ligands, bace_protein_component
-# ):
-# Would have to create the OpenMM system to get the positions
-#     receptor_ref_idxs_1 = (492, 510, 3822)
-#     ligand_1_idxs = (6053, 6048, 6055)
 #
-#     force_A = femto_restraints.create_boresch_restraint(
-#         receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
-#         ligand_1_idxs,
-#         positions,
-#         settings["restraint_settings"],
+# def test_setup(bace_ligands,  bace_protein_component, tmpdir):
+#     # check system parametrisation works even if confgen fails
+#     s = SepTopProtocol.default_settings()
+#     s.protocol_repeats = 1
+#     s.solvent_equil_simulation_settings.minimization_steps = 10
+#     s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+#     s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+#     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
+#     s.solvent_solvation_settings.box_shape = 'dodecahedron'
+#     s.solvent_solvation_settings.solvent_padding = 1.5 * unit.nanometer
+#
+#     protocol = SepTopProtocol(
+#         settings=s,
 #     )
-
-
-def test_setup(bace_ligands,  bace_protein_component, tmpdir):
-    # check system parametrisation works even if confgen fails
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_equil_simulation_settings.minimization_steps = 10
-    s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
-    s.solvent_solvation_settings.box_shape = 'dodecahedron'
-    s.solvent_solvation_settings.solvent_padding = 1.5 * unit.nanometer
-
-    protocol = SepTopProtocol(
-        settings=s,
-    )
-
-    stateA = ChemicalSystem({
-        'lig_02': bace_ligands['lig_02'],
-        'protein': bace_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    stateB = ChemicalSystem({
-        'lig_03': bace_ligands['lig_03'],
-        'protein': bace_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first vacuum unit
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
-    solv_setup_unit = [u for u in prot_units
-                       if isinstance(u, SepTopSolventSetupUnit)]
-    # solv_setup_unit = [u for u in prot_units
-    #                    if isinstance(u, SepTopComplexSetupUnit)]
-
-    # with tmpdir.as_cwd():
-    solv_setup_unit[0].run()
-    assert 4==5
+#
+#     stateA = ChemicalSystem({
+#         'lig_02': bace_ligands['lig_02'],
+#         'protein': bace_protein_component,
+#         'solvent': SolventComponent(),
+#     })
+#
+#     stateB = ChemicalSystem({
+#         'lig_03': bace_ligands['lig_03'],
+#         'protein': bace_protein_component,
+#         'solvent': SolventComponent(),
+#     })
+#
+#     # Create DAG from protocol, get the vacuum and solvent units
+#     # and eventually dry run the first vacuum unit
+#     dag = protocol.create(
+#         stateA=stateA,
+#         stateB=stateB,
+#         mapping=None,
+#     )
+#     prot_units = list(dag.protocol_units)
+#     solv_setup_unit = [u for u in prot_units
+#                        if isinstance(u, SepTopSolventSetupUnit)]
+#     # solv_setup_unit = [u for u in prot_units
+#     #                    if isinstance(u, SepTopComplexSetupUnit)]
+#
+#     # with tmpdir.as_cwd():
+#     solv_setup_unit[0].run()
+#     assert 4==5
 
