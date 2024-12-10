@@ -36,16 +36,18 @@ from collections import defaultdict
 import gufe
 import openmm
 import openmm.unit
+import simtk
+import simtk.unit as omm_units
 from gufe.components import Component
 import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
+from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 import mdtraj as md
 from typing import Optional, Union
 from typing import Any, Iterable
-import simtk.unit as omm_units
 import uuid
 
 from gufe import (
@@ -92,11 +94,21 @@ logger = logging.getLogger(__name__)
 
 def _get_mdtraj_from_openmm(omm_topology, omm_positions):
     """
-    Get an mdtraj object from an OpenMM topology and positions
+    Get an mdtraj object from an OpenMM topology and positions.
+
+    Parameters
+    ----------
+    omm_topology: openmm.app.Topology
+      The OpenMM topology
+    omm_positions: simtk.unit.Quantity
+      The OpenMM positions
+
+    Returns
+    -------
+    mdtraj_system: md.Trajectory
     """
     mdtraj_topology = md.Topology.from_openmm(omm_topology)
-    positions_in_mdtraj_format = np.array(
-        omm_positions / omm_units.nanometers)
+    positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
 
     unit_cell = omm_topology.getPeriodicBoxVectors() / omm_units.nanometers
     unit_cell_length = np.array([i[inx] for inx, i in enumerate(unit_cell)])
@@ -104,6 +116,7 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
                                   mdtraj_topology,
                                   unitcell_lengths=unit_cell_length)
     return mdtraj_system
+
 
 def _check_alchemical_charge_difference(
         ligandA: SmallMoleculeComponent,
@@ -140,6 +153,7 @@ def _check_alchemical_charge_difference(
         raise ValueError(errmsg)
 
     return
+
 
 class SepTopProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a SepTopProtocol
@@ -818,37 +832,27 @@ class SepTopProtocol(gufe.Protocol):
     ) -> dict[str, dict[str, Any]]:
         # result units will have a repeat_id and generation
         # first group according to repeat_id
-        print("Gathering results test1")
         unsorted_solvent_repeats_setup = defaultdict(list)
         unsorted_solvent_repeats_run = defaultdict(list)
         unsorted_complex_repeats_setup = defaultdict(list)
         unsorted_complex_repeats_run = defaultdict(list)
         for d in protocol_dag_results:
-            print(d)
             pu: gufe.ProtocolUnitResult
             for pu in d.protocol_unit_results:
-                print(pu)
                 if not pu.ok():
-                    print('PU not ok')
                     continue
                 if pu.outputs['simtype'] == 'solvent':
-                    print('Getting solvent pus')
                     if 'Run' in pu.name:
-                        print('Run')
                         unsorted_solvent_repeats_run[
                             pu.outputs['repeat_id']].append(pu)
                     elif 'Setup' in pu.name:
-                        print('Setup')
                         unsorted_solvent_repeats_setup[
                             pu.outputs['repeat_id']].append(pu)
                 else:
-                    print('Getting complex pus')
                     if 'Run' in pu.name:
-                        print('Run')
                         unsorted_complex_repeats_run[
                             pu.outputs['repeat_id']].append(pu)
                     elif 'Setup' in pu.name:
-                        print('Setup')
                         unsorted_complex_repeats_setup[
                             pu.outputs['repeat_id']].append(pu)
 
@@ -865,7 +869,6 @@ class SepTopProtocol(gufe.Protocol):
             repeats['complex_setup'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
         for k, v in unsorted_complex_repeats_run.items():
             repeats['complex'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
-        print(repeats)
         return repeats
 
 
@@ -952,7 +955,27 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     def _update_positions(
             omm_topology_A, omm_topology_B, positions_A, positions_B,
             atom_indices_A, atom_indices_B,
-    ) -> npt.NDArray:
+    ) -> simtk.unit.Quantity:
+        """
+        Aligns the protein from complex B onto the protein from complex A and
+        updates the positions of complex B.
+
+        Parameters
+        ----------
+        omm_topology_A: openmm.app.Topology
+          OpenMM topology from complex A
+        omm_topology_B: openmm.app.Topology
+          OpenMM topology from complex B
+        positions_A: simtk.unit.Quantity
+          Positions of the system in state A
+        positions_B: simtk.unit.Quantity
+          Positions of the system in state B
+
+        Returns
+        -------
+        updated_positions_B: simtk.unit.Quantity
+          Updated positions of the complex B
+        """
         mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
         mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
         mdtraj_complex_B.superpose(mdtraj_complex_A,
@@ -966,16 +989,47 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     @staticmethod
     def _add_restraints(
             system: openmm.System,
-            positions: np.array,
-            topology: openmm.Topology,
-            ligand_1,
-            ligand_2,
-            settings,
+            positions: simtk.unit.Quantity,
+            topology: Optional[openmm.app.Topology],
+            ligand_1: Optional[OFFMolecule.Topology],
+            ligand_2: Optional[OFFMolecule.Topology],
+            settings: dict[str, SettingsBaseModel],
             ligand_1_ref_idxs: tuple[int, int, int],
             ligand_2_ref_idxs: tuple[int, int, int],
             ligand_1_idxs: tuple[int, int, int],
             ligand_2_idxs: tuple[int, int, int],
     ) -> openmm.System:
+        """
+        Adds Boresch restraints to the system.
+
+        Parameters
+        ----------
+        system: openmm.System
+          The OpenMM system where the restraints will be applied to.
+        positions: simtk.unit.Quantity
+          The positions of the OpenMM system
+        topology: openmm.app.Topology
+          The OpenMM topology of the system
+        ligand_1: OFFMolecule.Topology
+          The topology of the OpenFF Molecule of ligand A
+        ligand_2: OFFMolecule.Topology
+          The topology of the OpenFF Molecule of ligand B
+        settings: dict[str, SettingsBaseModel]
+          The settings dict
+        ligand_1_ref_idxs: tuple[int, int, int]
+          indices from the ligand A topology
+        ligand_2_ref_idxs: tuple[int, int, int]
+          indices from the ligand B topology
+        ligand_1_idxs: tuple[int, int, int]
+          indices from the ligand A in the full topology
+        ligand_1_idxs: tuple[int, int, int]
+          indices from the ligand B in the full topology
+
+        Returns
+        -------
+        system: openmm.System
+          The OpenMM system with the added restraints forces
+        """
 
         # Get mdtraj object for system
         traj = _get_mdtraj_from_openmm(topology, positions)
@@ -1003,9 +1057,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         # Convert restraint units to openmm
         k_distance = to_openmm(settings["restraint_settings"].k_distance)
-        print(k_distance)
         k_theta = to_openmm(settings["restraint_settings"].k_theta)
-        print(k_theta)
 
         force_A = create_boresch_restraint(
             receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
@@ -1145,7 +1197,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
     def _update_positions(
             omm_topology_A, omm_topology_B, positions_A, positions_B,
             atom_indices_A, atom_indices_B,
-    ) -> npt.NDArray:
+    ) -> simtk.unit.Quantity:
 
         # Offset ligand B from ligand A in the solvent
         equ_pos_ligandA = positions_A[
@@ -1169,7 +1221,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         ligand_offset = equ_pos_ligandA.mean(0) - equ_pos_ligandB.mean(0)
         ligand_offset[0] += ligand_distance
-        print(ligand_offset)
 
         # Offset the ligandB.
         mdtraj_system_B.xyz[0][atom_indices_B, :] += ligand_offset / omm_units.nanometers
@@ -1192,13 +1243,36 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_1_idxs: tuple[int, int, int],
         ligand_2_idxs: tuple[int, int, int],
     ) -> openmm.System:
-        """Apply a distance restraints between the ligands.
+        """
+        Apply the distance restraint between the ligands.
 
-        Args:
-            system: The OpenMM system to add the restraints to.
-            topology: The full topology of the complex phase.
-            ligand_1_ref_idx: The reference index of the first ligand.
-            ligand_2_ref_idx: The reference index of the second ligand.
+        Parameters
+        ----------
+        system: openmm.System
+          The OpenMM system where the restraints will be applied to.
+        positions: simtk.unit.Quantity
+          The positions of the OpenMM system
+        topology: openmm.app.Topology
+          The OpenMM topology of the system
+        ligand_1: OFFMolecule.Topology
+          The topology of the OpenFF Molecule of ligand A
+        ligand_2: OFFMolecule.Topology
+          The topology of the OpenFF Molecule of ligand B
+        settings: dict[str, SettingsBaseModel]
+          The settings dict
+        ligand_1_ref_idxs: tuple[int, int, int]
+          indices from the ligand A topology
+        ligand_2_ref_idxs: tuple[int, int, int]
+          indices from the ligand B topology
+        ligand_1_idxs: tuple[int, int, int]
+          indices from the ligand A in the full topology
+        ligand_1_idxs: tuple[int, int, int]
+          indices from the ligand B in the full topology
+
+        Returns
+        -------
+        system: openmm.System
+          The OpenMM system with the added restraints forces
         """
 
         coords = positions

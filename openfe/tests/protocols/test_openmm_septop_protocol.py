@@ -391,48 +391,48 @@ def test_validate_alchem_nonsmc(
     with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
-#
-# def test_setup(bace_ligands,  bace_protein_component, tmpdir):
-#     # check system parametrisation works even if confgen fails
-#     s = SepTopProtocol.default_settings()
-#     s.protocol_repeats = 1
-#     s.solvent_equil_simulation_settings.minimization_steps = 10
-#     s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
-#     s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
-#     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
-#     s.solvent_solvation_settings.box_shape = 'dodecahedron'
-#     s.solvent_solvation_settings.solvent_padding = 1.5 * unit.nanometer
-#
-#     protocol = SepTopProtocol(
-#         settings=s,
-#     )
-#
-#     stateA = ChemicalSystem({
-#         'lig_02': bace_ligands['lig_02'],
-#         'protein': bace_protein_component,
-#         'solvent': SolventComponent(),
-#     })
-#
-#     stateB = ChemicalSystem({
-#         'lig_03': bace_ligands['lig_03'],
-#         'protein': bace_protein_component,
-#         'solvent': SolventComponent(),
-#     })
-#
-#     # Create DAG from protocol, get the vacuum and solvent units
-#     # and eventually dry run the first vacuum unit
-#     dag = protocol.create(
-#         stateA=stateA,
-#         stateB=stateB,
-#         mapping=None,
-#     )
-#     prot_units = list(dag.protocol_units)
-#     solv_setup_unit = [u for u in prot_units
-#                        if isinstance(u, SepTopSolventSetupUnit)]
-#     # solv_setup_unit = [u for u in prot_units
-#     #                    if isinstance(u, SepTopComplexSetupUnit)]
-#
-#     # with tmpdir.as_cwd():
-#     solv_setup_unit[0].run()
-#     assert 4==5
+
+def test_setup(bace_ligands,  bace_protein_component, tmpdir):
+    # check system parametrisation works even if confgen fails
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_equil_simulation_settings.minimization_steps = 100
+    s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
+    s.solvent_solvation_settings.box_shape = 'dodecahedron'
+    s.solvent_solvation_settings.solvent_padding = 1.8 * unit.nanometer
+
+    protocol = SepTopProtocol(
+        settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'lig_02': bace_ligands['lig_02'],
+        'protein': bace_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    stateB = ChemicalSystem({
+        'lig_03': bace_ligands['lig_03'],
+        'protein': bace_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first vacuum unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    solv_setup_unit = [u for u in prot_units
+                       if isinstance(u, SepTopSolventSetupUnit)]
+    # solv_setup_unit = [u for u in prot_units
+    #                    if isinstance(u, SepTopComplexSetupUnit)]
+
+    # with tmpdir.as_cwd():
+    solv_setup_unit[0].run()
+    assert 4==5
 

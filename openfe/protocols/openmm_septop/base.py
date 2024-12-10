@@ -130,16 +130,17 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
 
     @staticmethod
-    def _get_alchemical_indices(omm_top: openmm.Topology,
-                                comp_resids: dict[Component, npt.NDArray],
-                                alchem_comps: dict[str, list[Component]]
-                                ) -> list[int]:
+    def _get_alchemical_indices(
+            omm_top: openmm.app.Topology,
+            comp_resids: dict[Component, npt.NDArray],
+            alchem_comps: dict[str, list[Component]]
+    ) -> list[int]:
         """
         Get a list of atom indices for all the alchemical species
 
         Parameters
         ----------
-        omm_top : openmm.Topology
+        omm_top : openmm.app.Topology
           Topology of OpenMM System.
         comp_resids : dict[Component, npt.NDArray]
           A dictionary of residues for each component in the System.
@@ -350,7 +351,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ...
 
     def _get_system_generator(
-            self, settings: dict[str, SettingsBaseModel],
+            self,
+            settings: dict[str, SettingsBaseModel],
             solvent_comp: Optional[SolventComponent]
     ) -> SystemGenerator:
         """
@@ -517,7 +519,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return topology, system, positions
 
     @staticmethod
-    def _get_atom_indices(omm_topology, comp_resids):
+    def _get_atom_indices(
+            omm_topology: app.Topology,
+            comp_resids: dict[Component, npt.NDArray],
+    ):
         comp_atomids = {}
         for key, values in comp_resids.items():
             atom_indices = []
@@ -529,9 +534,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _update_positions(
-            omm_topology_A, omm_topology_B, positions_A, positions_B,
-            atom_indices_A, atom_indices_B,
-    ) -> npt.NDArray:
+            omm_topology_A: openmm.app.Topology,
+            omm_topology_B: openmm.app.Topology,
+            positions_A: simtk.unit.Quantity,
+            positions_B: simtk.unit.Quantity,
+            atom_indices_A: Optional[list],
+            atom_indices_B: Optional[list],
+    ) -> simtk.unit.Quantity:
         """
         Get new positions for the stateB after equilibration.
 
@@ -544,7 +553,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ...
 
     @staticmethod
-    def _set_positions(off_topology, positions):
+    def _set_positions(
+            off_topology: OFFMolecule.Topology,
+            positions: unit.Quantity,
+    ) -> OFFMolecule.Topology:
         off_topology.clear_positions()
         off_topology.set_positions(positions)
         return off_topology
@@ -552,11 +564,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     @staticmethod
     def _add_restraints(
             system: openmm.System,
-            positions: np.array,
-            topology: Optional[openmm.Topology],
+            positions: simtk.unit.Quantity,
+            topology: Optional[openmm.app.Topology],
             ligand_1: Optional[OFFMolecule.Topology],
             ligand_2: Optional[OFFMolecule.Topology],
-            settings: Optional,
+            settings: Optional[dict[str, SettingsBaseModel]],
             ligand_1_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
             ligand_2_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
             ligand_1_idxs: tuple[int, int, int],  # indices from the full topology
@@ -573,7 +585,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         """
         ...
 
-    def get_smc_comps(self, alchem_comps, smc_comps):
+    @staticmethod
+    def get_smc_comps(
+            alchem_comps: dict[str, list[Component]],
+            smc_comps: dict[SmallMoleculeComponent,OFFMolecule],
+    ) -> tuple[dict[SmallMoleculeComponent,OFFMolecule],
+               dict[SmallMoleculeComponent,OFFMolecule],
+               dict[SmallMoleculeComponent,OFFMolecule],
+               dict[SmallMoleculeComponent,OFFMolecule]]:
         # 6. Get smcs for the different states and the common smcs
         smc_off_A = {m: m.to_openff() for m in alchem_comps['stateA']}
         smc_off_B = {m: m.to_openff() for m in alchem_comps['stateB']}
