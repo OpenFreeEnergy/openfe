@@ -39,6 +39,7 @@ import numpy as np
 import numpy.typing as npt
 from openff.units import unit
 from openmmtools import multistate
+from openmmtools.state import ThermodynamicState, GlobalParameterState
 from typing import Optional, Union
 from typing import Any, Iterable
 import uuid
@@ -792,6 +793,73 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         )
 
         return settings
+
+    def _add_restraints(
+        self,
+        system: openmm.System,
+        topology: openmm.app.Topology,
+        settings: dict[str, SettingsBaseModel]
+    ) -> [GlobalParameterState, unit.Quantity, openmm.System]:
+        """
+        Find and add restraints to the OpenMM System.
+
+        Parameters
+        ----------
+        system : openmm.System
+          The System to add the restraint to.
+        topology : openmm.app.Topology
+          An OpenMM Topology that defines the System.
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings that defines how to find and set
+          the restraint.
+
+        Returns
+        -------
+        restraint_parameter_state : RestraintParameterState
+          A RestraintParameterState object that defines the control
+          parameter for the restraint.
+        correction : unit.Quantity
+          The standard state correction for the restraint.
+        system : openmm.System
+          A copy of the System with the restraint added.
+        """
+        from openfe.protocols.openmm_utils import (
+            omm_restraints, geometry, search
+        )
+
+        if isinstance(settings['restraints_settings'], BoreschRestraintSettings):
+            geom = search.get_boresch_restraint(
+                topology,
+                self.shared_basepath / settings['equil_output_settings'].production_trajectory_filename
+            )
+
+            restraint = omm_restraints.BoreschRestraint(
+                settings['restraints_settings'],
+                geom,
+                controlling_parameter_name='lambda_restraints'
+            )
+        else:
+            # TODO turn this into a direction for different restraint types supported?
+            raise NotImplementedError()
+
+        # We need a temporary thermodynamic state to add the restraint
+        # & get the correction
+        thermodynamic_state = ThermodynamicState(
+            system,
+            temperature=to_openmm(settings['thermo_settings'].temperature),
+            pressure=to_openmm(settings['thermo_settings'].pressure),
+        )
+
+        # Add the force to the thermodynamic state
+        restraint.add_force(thermodynamic_state)
+        # Get the standard state correction as a unit.Quantity
+        correction = restraint.get_standard_state_correction(thermodynamic_state)
+
+        # Get the GlobalParameterState for the restraint
+        retraint_parameter_state = omm_restraints.RestraintParameterState(
+            lambda_restraints=1.0
+        )
+        return restraint_parameter_state, correction, thermodynamic_state.system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,

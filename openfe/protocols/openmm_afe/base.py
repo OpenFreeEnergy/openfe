@@ -576,7 +576,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         Placeholder method to add restraints if necessary
         """
-        return None, None
+        return None, None, system
 
     def _get_alchemical_system(
         self,
@@ -1050,7 +1050,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas = self._get_lambda_schedule(settings)
 
         # 6. Add restraints
-        restraint_parameter_state, standard_state_corr = self._add_restraints(
+        restraint_parameter_state, standard_state_corr, omm_system = self._add_restraints(
             omm_system, omm_topology, settings
         )
 
