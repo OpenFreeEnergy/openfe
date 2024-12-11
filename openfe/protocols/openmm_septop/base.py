@@ -63,7 +63,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     ThermoSettings, OpenFFPartialChargeSettings,
 )
 from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
-from openfe.protocols.openmm_rfe._rfe_utils import compute
+from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from ..openmm_utils import (
     settings_validation, system_creation,
