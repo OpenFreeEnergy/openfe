@@ -557,6 +557,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             off_topology: OFFMolecule.Topology,
             positions: unit.Quantity,
     ) -> OFFMolecule.Topology:
+        """
+        Updates the positions of an OFFMolecule.Topology
+        """
         off_topology.clear_positions()
         off_topology.set_positions(positions)
         return off_topology
@@ -606,7 +609,33 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B
 
     def get_system(
-            self, solv_comp, prot_comp, smc_comp, settings):
+            self,
+            solv_comp: SolventComponent,
+            prot_comp: ProteinComponent,
+            smc_comp: dict[SmallMoleculeComponent,OFFMolecule],
+            settings: dict[str, SettingsBaseModel],
+    ):
+        """
+        Creates an OpenMM system, topology, positions, modeller and also
+        residue IDs of the different components
+
+        Parameters
+        ----------
+        solv_comp: SolventComponent
+        prot_comp: Optional[ProteinComponent]
+        smc_comp: dict[SmallMoleculeComponent,OFFMolecule]
+        settings: dict[str, SettingsBaseModel]
+          A dictionary of settings object for the unit.
+
+        Returns
+        -------
+        omm_system: app.System
+        omm_topology: app.Topology
+        positions: simtk.unit.Quantity
+        system_modeller: app.Modeller
+        comp_resids: dict[Component, npt.NDArray]
+          A dictionary of residues for each component in the System.
+        """
         # 5. Get system generator
         system_generator = self._get_system_generator(settings, solv_comp)
 
@@ -624,7 +653,34 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return omm_system, omm_topology, positions, system_modeller, comp_resids
 
     def get_system_AB(
-            self, solv_comp, system_modeller_A, smc_comps_AB, smc_off_B, settings, shared_basepath):
+            self,
+            solv_comp: SolventComponent,
+            system_modeller_A: app.Modeller,
+            smc_comps_AB: dict[SmallMoleculeComponent,OFFMolecule],
+            smc_off_B: dict[SmallMoleculeComponent,OFFMolecule],
+            settings: dict[str, SettingsBaseModel],
+            shared_basepath: pathlib.Path,
+    ):
+        """
+        Creates an OpenMM system, topology, positions, and modeller.
+
+        Parameters
+        ----------
+        solv_comp: SolventComponent
+        system_modeller_A: app.Modeller
+        smc_comps_AB: dict[SmallMoleculeComponent,OFFMolecule]
+        smc_off_B: dict[SmallMoleculeComponent,OFFMolecule]
+        settings: dict[str, SettingsBaseModel]
+          A dictionary of settings object for the unit.
+        shared_basepath: pathlib.Path
+
+        Returns
+        -------
+        omm_system_AB: app.System
+        omm_topology_AB: app.Topology
+        positions_AB: simtk.unit.Quantity
+        system_modeller_AB: app.Modeller
+        """
         # 5. Get system generator
         system_generator = self._get_system_generator(settings, solv_comp)
 
@@ -726,14 +782,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
-        # equ_positions_A = self._pre_equilibrate(
-        #     omm_system_A, omm_topology_A, positions_A, settings, dry
-        # )
-        # equ_positions_B = self._pre_equilibrate(
-        #     omm_system_B, omm_topology_B, positions_B, settings, dry
-        # )
-        equ_positions_A = positions_A
-        equ_positions_B = positions_B
+        equ_positions_A = self._pre_equilibrate(
+            omm_system_A, omm_topology_A, positions_A, settings, dry
+        )
+        equ_positions_B = self._pre_equilibrate(
+            omm_system_B, omm_topology_B, positions_B, settings, dry
+        )
+
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_A, equ_positions_A, open(self.shared_basepath / 'outputA_equ.pdb', 'w'))
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
@@ -819,7 +874,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                                                    open(topology_file,
                                                         'w'))
 
-        # Here we could also apply REST
+        # ToDo: also apply REST
 
         system_outfile = self.shared_basepath / "system.xml.bz2"
 

@@ -434,5 +434,4 @@ def test_setup(bace_ligands,  bace_protein_component, tmpdir):
 
     # with tmpdir.as_cwd():
     solv_setup_unit[0].run()
-    assert 4==5
 
