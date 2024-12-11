@@ -56,6 +56,9 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
     SettingsBaseModel,
+    HarmonicRestraintSettings,
+    FlatBottomRestraintSettings,
+    BoreschRestraintSettings,
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
@@ -463,6 +466,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
+            restraint_settings=BoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=0.2 * unit.nanosecond,
@@ -494,12 +498,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_trajectory_filename='production_equil.xtc',
                 log_output='equil_simulation.log',
             ),
-            vacuum_simulation_settings=MultiStateSimulationSettings(
+            complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=28,
                 equilibration_length=1 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
-            vacuum_output_settings=MultiStateOutputSettings(
+            complex_output_settings=MultiStateOutputSettings(
                 output_filename='complex.nc',
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
@@ -573,7 +577,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         lambda_settings : LambdaSettings
           the lambda schedule Settings
         simulation_settings : MultiStateSimulationSettings
-          the settings for either the vacuum or solvent phase
+          the settings for either the complex or solvent phase
 
         Raises
         ------
@@ -654,7 +658,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
 
-        # Create list units for vacuum and solvent transforms
+        # Create list units for complex and solvent transforms
 
         solvent_units = [
             AbsoluteBindingSolventUnit(
@@ -712,7 +716,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         return repeats
 
 
-class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
+class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the vacuum phase of an absolute solvation free energy
     """

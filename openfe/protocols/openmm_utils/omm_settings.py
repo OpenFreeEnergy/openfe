@@ -660,3 +660,98 @@ class MDOutputSettings(OutputSettings):
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.
     """
+
+class BaseRestraintSettings(SettingsBaseModel):
+    """
+    Settings contolling how to add restraints to a system.
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class BaseDistanceRestraintSettings(BaseRestraintSettings):
+    """
+    Base settings for a harmonic or flatbottom distance between two groups of
+    atoms.
+    """
+    spring_constant: FloatQuantity['kilojoule_per_mole / nanometer**2']
+    """
+    The spring constant K between the two atom groups.
+    """
+    atom_group1: Union[list[int], str]
+    """
+    A definition for the first atom group to restrain.
+    Can either be a list of atom indices or an mdanalysis atom selection query.
+    """
+    atom_group2: Union[list[int], str]
+    """
+    A definition for the second atom group to restrain.
+    Can either be a list of atom indices or an mdanalysis atom selection query.
+    """
+
+class HarmonicRestraintSettings(BaseDistanceRestraintSettings):
+    """
+    Settings for a harmonic restraint between two groups of atoms.
+    """
+    pass
+
+
+class FlatBottomRestraintSettings(BaseDistanceRestraintSettings):
+    """
+    Settings for a flat bottom restraint between two groups of atoms.
+    """
+    well_radius: FloatQuantity['nanometer']]
+    """
+    The well radius for the flat bottom restraint.
+
+    TODO
+    ----
+    * Implement an option to automatically pick the well radius.
+    """
+
+class BoreschRestraintSettings(SettingsBaseModel):
+    """
+    Settings for a Boresch-style restraint.
+    """
+    host_atoms : Optional[list[int]]
+    """
+    A list 3 host atom indices.
+
+    TODO: How do you relate this back to your input?
+    """
+    guest_atoms : Optional[list[int]]
+    """
+    A list of 3 guest atom indices.
+
+    TODO: How do you relate this back to your input?
+    """
+    K_r: FloatQuantity['kilocalorie_per_mole / nm ** 2'] = 2000.0 * unit.kilocalorie_per_mole / unit.nm **2
+    """
+    The spring constant for the distance restraint between
+    host_atom[2] and guest_atom[0].
+    """
+    K_thetaA: FloatQuantity['kilocalorie_per_mole / radians ** 2'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    """
+    The spring constant for
+      angle(host_atoms[1], host_atoms[2], guest_atoms[2])
+    """
+    K_thetaB: FloatQuantity['kilocalorie_per_mole / radians ** 2'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    """
+    The spring constant for
+      angle(host_atoms[2], guest_atoms[0], guest_atoms[1])
+    """
+    K_phiA: FloatQuantity['kilocalorie_per_mole / radians ** 2'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    """
+    The spring constant for
+      dihedral(host_atoms[0], host_atoms[1], host_atoms[2], guest_atoms[0])
+    """
+    K_phiB: FloatQuantity['kilocalorie_per_mole / radians ** 2'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    """
+    The spring constant for
+      dihedral(host_atoms[1], host_atoms[2], guest_atoms[0], guest_atoms[1])
+    """
+    K_phiC: FloatQuantity['kilocalorie_per_mole / radians ** 2'] = 20 * unit.kilocalorie_per_mole / unit.radians**2
+    """
+    The spring constant for
+      dihedral(host_atoms[2], guest_atoms[0], guest_atoms[1], guest_aotms[2])
+    """
