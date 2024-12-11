@@ -168,7 +168,7 @@ class HarmonicBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixi
 class FlatBottomBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self) -> openmm.Force:
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
-        well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
+        well_radius = to_openmm(self.geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
@@ -192,7 +192,7 @@ class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
 class CentroidFlatBottomRestraint(BaseRadialllySymmetricRestraintForce):
     def _get_force(self) -> openmm.Force:
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
-        well_radius = to_openmm(self.settings.well_radius).value_in_unit_system(omm_unit.md_unit_system)
+        well_radius = to_openmm(self.geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
