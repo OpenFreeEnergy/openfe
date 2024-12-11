@@ -889,7 +889,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
-        Extract the relevant settings for a vacuum transformation.
+        Extract the relevant settings for a solvent transformation.
 
         Returns
         -------
