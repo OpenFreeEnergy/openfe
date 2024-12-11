@@ -258,14 +258,15 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
     writer.writerow(["leg", "ligand_i", "ligand_j",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
-    for ligpair, vals in sorted(legs.items()):
-        for simtype, repeats in sorted(vals.items()):
-            for m, u in repeats:
-                if m is None:
-                    m, u = 'NaN', 'NaN'
-                else:
-                    m, u = format_estimate_uncertainty(m.m, u.m)
-                writer.writerow([simtype, *ligpair, m, u])
+    for ligpair, results in sorted(legs.items()):
+        for simtype, repeats in sorted(results.items()):
+            for repeat in repeats:
+                for m, u in repeat:
+                    if m is None:
+                        m, u = 'NaN', 'NaN'
+                    else:
+                        m, u = format_estimate_uncertainty(m.m, u.m)
+                    writer.writerow([simtype, *ligpair, m, u])
 
 
 def _write_dg_raw(legs:dict, writer:Callable,  allow_partial):  # pragma: no-cover
@@ -395,12 +396,11 @@ def gather(rootdir:os.PathLike|str,
 
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
-
     # 2) filter only result jsons
     result_fns = filter(is_results_json, json_fns)
 
     # 3) pair legs of simulations together into dict of dicts
-    legs = defaultdict(dict)
+    legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
         result = load_results(result_fn)
@@ -420,9 +420,9 @@ def gather(rootdir:os.PathLike|str,
             simtype = legacy_get_type(result_fn)
 
         if report.lower() == 'raw':
-            legs[names][simtype] = _parse_raw_units(result)
+            legs[names][simtype].append(_parse_raw_units(result))
         else:
-            legs[names][simtype] = result['estimate'], result['uncertainty']
+            legs[names][simtype].append(result['estimate'], result['uncertainty'])
 
     writer = csv.writer(
         output,
