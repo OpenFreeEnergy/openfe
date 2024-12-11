@@ -203,7 +203,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
           Equilibrated system positions
         """
         # Prep the simulation object
-        platform = compute.get_openmm_platform(
+        platform = omm_compute.get_openmm_platform(
             settings['engine_settings'].compute_platform
         )
 
@@ -1040,7 +1040,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         sampler_context_cache : openmmtools.cache.ContextCache
           The sampler state context cache.
         """
-        platform = compute.get_openmm_platform(
+        platform = omm_compute.get_openmm_platform(
             engine_settings.compute_platform,
         )
 
