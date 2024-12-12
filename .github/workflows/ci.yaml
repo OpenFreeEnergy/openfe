@@ -41,34 +41,34 @@ jobs:
           - "3.11"
           - "3.12"
         openeye: ["no"]
-        gufe-version: ['a9b5982471eb3644ca8c4423c7001e6309a3f544']
+        gufe-version: ['main']
         include:
           - os: "macos-latest"
             python-version: "3.12"
             pydantic-version: ">1"
-            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
+            gufe-version: 'main'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: "<2"
-            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
-          - os: "ubuntu-latest"
-            python-version: "3.11"
-            pydantic-version: ">1"
-            openeye: "yes"
-            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
-          - os: "macos-latest"
-            python-version: "3.12"
-            pydantic-version: ">1"
-            omff-version: ">0.13"
-            openeye: ["no"]
-            gufe-version: 'a9b5982471eb3644ca8c4423c7001e6309a3f544'
-
-          # temporary test against gufe main while we're pinned to a9b5
+            gufe-version: 'main'
           - os: "ubuntu-latest"
             python-version: "3.11"
             pydantic-version: ">1"
             openeye: "yes"
             gufe-version: 'main'
+          - os: "macos-latest"
+            python-version: "3.12"
+            pydantic-version: ">1"
+            omff-version: ">0.13"
+            openeye: ["no"]
+            gufe-version: 'main'
+
+          # temporary check against v1.1.0 until issue #1033 is closed
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            pydantic-version: ">1"
+            openeye: "yes"
+            gufe-version: 'v1.1.0'
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
