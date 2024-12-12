@@ -26,6 +26,10 @@ from MDAnalysis.lib.distances import calc_bonds, calc_angles
 from openfe_analysis.transformations import Aligner, NoJump
 
 
+DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
+ANGLE_FRC_CONSTANT_TYPE = FloatQuantity["unit.kilojoule_per_mole / unit.radians**2"]
+
+
 def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
     """
     Get a list of tuples with the indices for each ring in an rdkit Molecule.
@@ -156,9 +160,7 @@ def is_collinear(positions, atoms, threshold=0.9):
 
 def check_angle_energy(
     angle: FloatQuantity["radians"],
-    force_constant: FloatQuantity["unit.kilojoule_per_mole / unit.radians**2"] = 83.68
-    * unit.kilojoule_per_mole
-    / unit.radians**2,
+    force_constant: ANGLE_FRC_CONSTANT_TYPE = DEFAULT_ANGLE_FRC_CONSTANT,
     temperature: FloatQuantity["kelvin"] = 298.15 * unit.kelvin,
 ) -> bool:
     """
@@ -170,9 +172,8 @@ def check_angle_energy(
       The angle to check in units compatible with radians.
     force_constant : unit.Quantity
       Force constant of the angle in units compatible with kilojoule_per_mole / radians ** 2.
-    temperature: unit.Quantity
+    temperature : unit.Quantity
       The system temperature in units compatible with Kelvin.
-
 
     Returns
     -------
