@@ -12,20 +12,22 @@ from pydantic.v1 import BaseModel, validator
 
 from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
+from openff.units.types import FloatQuantity
 import networkx as nx
+from rdkit import Chem
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds, calc_angles
 
 
-def _get_aromatic_atom_idxs(rdmol) -> list[int]:
+def get_aromatic_atom_idxs(rdmol: Chem.Mol) -> list[int]:
     """
     Helper method to get aromatic atoms idxs
     in a RDKit Molecule
 
     Parameters
     ----------
-    rdmol : ???
+    rdmol : Chem.Mol
       RDKit Molecule
 
     Returns
@@ -40,13 +42,13 @@ def _get_aromatic_atom_idxs(rdmol) -> list[int]:
     return idxs
 
 
-def _get_heavy_atom_idxs(rdmol) -> list[int]:
+def get_heavy_atom_idxs(rdmol: Chem.Mol) -> list[int]:
     """
     Get idxs of heavy atoms in an RDKit Molecule
 
     Parameters
     ----------
-    rmdol : ???
+    rmdol : Chem.Mol
 
     Returns
     -------
@@ -60,12 +62,130 @@ def _get_heavy_atom_idxs(rdmol) -> list[int]:
     return idxs
 
 
-def _get_central_atom_idx(rdmol) -> int:
+def get_central_atom_idx(rdmol: Chem.Mol) -> int:
+    """
+    Get the central atom in an rdkit Molecule.
+
+    Parameters
+    ----------
+    rdmol : Chem.Mol
+      RDKit Molcule to query
+
+    Returns
+    -------
+    center : int
+      Index of central atom in Molecule
+
+    Note
+    ----
+    If there are equal likelihood centers, will return
+    the first entry.
+    """
+    # TODO: switch to a manual conversion to avoid an OpenFF dependency
     offmol = OFFMol(rdmol, allow_undefined_stereo=True)
+    nx_mol = offmol.to_networkx()
+    if not nx.is_weakly_connected(nx_mol):
+        errmsg = "A disconnected molecule was passed, cannot find the center"
+        raise ValueError(errmsg)
+
     # We take the zero-th entry if there are multiple center
     # atoms (e.g. equal likelihood centers)
-    center = nx.center(offmol.to_networkx())[0]
+    center = nx.center(nx_mol)[0]
     return center
+
+
+def is_collinear(positions, atoms, threshold=0.9):
+    """
+    Check whether any sequential vectors in a sequence of atoms are collinear.
+
+    Parameters
+    ----------
+    positions : openmm.unit.Quantity
+        System positions.
+    atoms : list[int]
+        The indices of the atoms to test.
+    threshold : float
+        Atoms are not collinear if their sequential vector separation dot
+        products are less than ``threshold``. Default 0.9.
+
+    Returns
+    -------
+    result : bool
+        Returns True if any sequential pair of vectors is collinear; False otherwise.
+
+    Notes
+    -----
+    Originally from Yank, with modifications from Separated Topologies
+    """
+    results = False
+    for i in range(len(atoms) - 2):
+        v1 = positions[atoms[i + 1], :] - positions[atoms[i], :]
+        v2 = positions[atoms[i + 2], :] - positions[atoms[i + 1], :]
+        normalized_inner_product = np.dot(v1, v2) / np.sqrt(np.dot(v1, v1) * np.dot(v2, v2))
+        result = result or (np.abs(normalized_inner_product) > threshold)
+    return result
+
+
+def check_angle_energy(
+    angle: FloatQuantity['radians'],
+    force_constant: FloatQuantity['unit.kilojoule_per_mole / unit.radians**2'] = 83.68 * unit.kilojoule_per_mole / unit.radians**2,
+    temperature: FloatQuantity['kelvin'] = 298.15 * unit.kelvin
+) -> bool:
+    """
+    Check whether the chosen angle is less than 10 kT from 0 or 180
+
+    Parameters
+    ----------
+    angle : unit.Quantity
+      The angle to check in units compatible with radians.
+    force_constant : unit.Quantity
+      Force constant of the angle in units compatible with kilojoule_per_mole / radians ** 2.
+    temperature: unit.Quantity
+      The system temperature in units compatible with Kelvin.
+
+    Note
+    ----
+    We assume the temperature to be 298.15 Kelvin.
+    """
+    # Convert things
+    angle_rads = angle.to('radians')
+    frc_const = force_constant.to('unit.kilojoule_per_mole / unit.radians**2')
+    temp_kelvin = temperature.to('kelvin')
+    RT = 8.31445985 * 0.001 * temp_kelvin
+
+    # check if angle is <10kT from 0 or 180
+    check1 = 0.5 * frc_const * np.power((angle - 0.0), 2)
+    check2 = 0.5 * frc_const * np.power((angle - np.pi), 2)
+    ang_check_1 = check1 / RT
+    ang_check_2 = check2 / RT
+    if ang_check_1 < 10.0 or ang_check_2  < 10.0:
+        return False
+    return True
+
+
+def check_dihedral_bounds(
+    dihedral: FloatQuantity['radians']
+    lower_cutoff: FloatQuantity['radians'] = 2.618 * unit.radians,
+    upper_cutoff: FloatQuantity['radians'] = -2.6.18 * unit.radians,
+):
+    """
+    Check that a dihedral does not exceed the bounds set by
+    lower_cutoff and upper_cutoff.
+
+    Parameters
+    ----------
+    dihedral : unit.Quantity
+      Dihedral in units compatible with radians.
+    lower_cutoff : unit.Quantity
+      Dihedral lower cutoff in units compatible with radians.
+    upper_cutoff : unit.Quantity
+      Dihedral upper cutoff in units compatible with radians.
+    """
+    if (dihedral < lower_cutoff) or (dihedral > upper_cutoff):
+        return False
+    return True
+
+
 
 
 def _sort_by_distance_from_target(rdmol, target_idx: int, atom_idxs: list[int]) -> list[int]:
