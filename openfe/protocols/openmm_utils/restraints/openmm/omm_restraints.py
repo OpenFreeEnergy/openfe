@@ -125,7 +125,7 @@ class SingleBondMixin:
         super()._verify_geometry(geometry)
 
 
-class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
+class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     def _verify_inputs(self) -> None:
         if not isinstance(self.settings, BaseDistanceRestraintSettings):
             errmsg = f"Incorrect settings type {self.settings} passed through"
@@ -162,7 +162,7 @@ class BaseRadialllySymmetricRestraintForce(BaseHostGuestRestraints):
         raise NotImplementedError("only implemented in child classes")
 
 
-class HarmonicBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
+class HarmonicBondRestraint(BaseRadiallySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintBondForce(
@@ -173,7 +173,7 @@ class HarmonicBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixi
         )
 
 
-class FlatBottomBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMixin):
+class FlatBottomBondRestraint(BaseRadiallySymmetricRestraintForce, SingleBondMixin):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         well_radius = to_openmm(geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
@@ -186,7 +186,7 @@ class FlatBottomBondRestraint(BaseRadialllySymmetricRestraintForce, SingleBondMi
         )
 
 
-class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
+class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintForce(
@@ -197,7 +197,7 @@ class CentroidHarmonicRestraint(BaseRadialllySymmetricRestraintForce):
         )
 
 
-class CentroidFlatBottomRestraint(BaseRadialllySymmetricRestraintForce):
+class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
         spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
         well_radius = to_openmm(geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
