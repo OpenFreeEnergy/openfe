@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 from importlib import resources
-import os
 import shutil
 from click.testing import CliRunner
 
@@ -10,6 +9,9 @@ from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
 )
+from gufe import AlchemicalNetwork
+from gufe.tokenization import JSON_HANDLER
+import json
 
 
 @pytest.fixture(scope='session')
@@ -148,6 +150,17 @@ def test_plan_rbfe_network_cofactors(eg5_files):
         print(result.output)
 
         assert result.exit_code == 0
+        # make sure the cofactor is in the transformations
+        network = AlchemicalNetwork.from_dict(
+            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+        )
+        for edge in network.edges:
+            if "protein" in edge.stateA.components:
+                assert "cofactor1" in edge.stateA.components
+                assert "cofactor1" in edge.stateB.components
+            else:
+                assert "cofactor1" not in edge.stateA.components
+                assert "cofactor1" not in edge.stateB.components
 
 
 @pytest.fixture
