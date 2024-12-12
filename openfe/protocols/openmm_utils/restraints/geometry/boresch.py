@@ -15,6 +15,8 @@ from rdkit import Chem
 from openff.units import unit
 import MDAnalysis as mda
 from MDAnalysis.lib.distances import calc_bonds, calc_angles
+import numpy as np
+import numpy.typing as npt
 
 from .base import HostGuestRestraintGeometry
 
@@ -152,34 +154,22 @@ def _get_bonded_angles_from_pool(
     return angles
 
 
-def get_small_molecule_atom_candidates(
-    topology: Union[str, openmm.app.Topology],
-    trajectory: Union[str, pathlib.Path],
-    rdmol: Chem.Mol,
-    ligand_idxs: list[int],
-    rmsf_cutoff: unit.Quantity = 1 * unit.angstrom,
-    angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
-):
+def _get_atom_pool(rdmol: Chem.Mol, rmsf: npt.NDArray) -> Optional[set[int]]:
     """
-    Get a list of potential ligand atom choices for a Boresch restraint
-    being applied to a given small molecule.
+    Filter atoms based on rmsf & rings, defaulting to heavy atoms if
+    there are not enough.
 
-    TODO: remember to update the RDMol with the last frame positions
+    Parameters
+    ----------
+    rdmol : Chem.Mol
+      The RDKit Molecule to search through
+    rmsf : npt.NDArray
+      A 1-D array of RMSF values for each atom.
+
+    Returns
+    -------
+    atom_pool : Optional[set[int]]
     """
-    if isinstance(topology, openmm.app.Topology):
-        topology_format = "OPENMMTOPOLOGY"
-    else:
-        topology_format = None
-
-    u = mda.Universe(topology, trajectory, topology_format=topology_format)
-    ligand_ag = u.atoms[ligand_idxs]
-
-    # 0. Get the ligand RMSF
-    rmsf = get_local_rmsf(ligand_ag)
-    u.trajectory[-1]  # forward to the last frame
-
-    # 1. Get the pool of atoms to work with
-    # TODO: move to a helper function to make it easier to test
     # Get a list of all the aromatic rings
     # Note: no need to keep track of rings because we'll filter by
     # bonded terms after, so if we only keep rings then all the bonded
@@ -195,10 +185,73 @@ def get_small_molecule_atom_candidates(
         heavy_atoms = get_heavy_atom_idxs(rdmol)
         atom_pool = set(heavy_atoms[rmsf[heavy_atoms] < rmsf_cutoff])
         if len(atom_pool) < 3:
-            errmsg = (
-                "No suitable ligand atoms for " "the boresch restraint could be found"
-            )
-            raise ValueError(errmsg)
+            return None
+
+    return atom_pool
+
+
+def get_small_molecule_guest_atom_candidates(
+    topology: Union[str, openmm.app.Topology],
+    trajectory: Union[str, pathlib.Path],
+    rdmol: Chem.Mol,
+    ligand_idxs: list[int],
+    rmsf_cutoff: unit.Quantity = 1 * unit.angstrom,
+    angle_force_constant: unit.Quantity = 83.68 * unit.kilojoule_per_mole / unit.radians**2,
+) -> list[tuple[int]]:
+    """
+    Get a list of potential ligand atom choices for a Boresch restraint
+    being applied to a given small molecule.
+
+    Parameters
+    ----------
+    topology : Union[str, openmm.app.Topology]
+      The topology of the system.
+    trajectory : Union[str, pathlib.Path]
+      A path to the system's coordinate trajectory.
+    rdmol : Chem.Mol
+      An RDKit Molecule representing the small molecule ordered in
+      the same way as it is listed in the topology.
+    ligand_idxs : list[int]
+      The ligand indices in the topology.
+    rmsf_cutoff : unit.Quantity
+      The RMSF filter cut-off.
+    angle_force_constant : unit.Quantity
+      The force constant for the l1-l2-l3 atom angle.
+
+    Returns
+    -------
+    angle_list : list[tuple[int]]
+      A list of tuples for each valid l1, l2, l3 angle. If ``None``, no
+      angles could be found.
+
+    Raises
+    ------
+    ValueError
+      If no suitable ligand atoms could be found.
+
+    TODO
+    ----
+    Remember to update the RDMol with the last frame positions.
+    """
+    if isinstance(topology, openmm.app.Topology):
+        topology_format = "OPENMMTOPOLOGY"
+    else:
+        topology_format = None
+
+    u = mda.Universe(topology, trajectory, topology_format=topology_format)
+    ligand_ag = u.atoms[ligand_idxs]
+
+    # 0. Get the ligand RMSF
+    rmsf = get_local_rmsf(ligand_ag)
+    u.trajectory[-1]  # forward to the last frame
+
+    # 1. Get the pool of atoms to work with
+    atom_pool = _get_atom_pool(rdmol: Chem.Mol, rmsf: npt.NDArray)
+
+    if atom_pool is None:
+        # We don't have enough atoms so we raise an error
+        errmsg = "No suitable ligand atoms were found for the restraint"
+        raise ValueError(errmsg)
 
     # 2. Get the central atom
     center = get_central_atom_idx(rdmol)
@@ -211,7 +264,7 @@ def get_small_molecule_atom_candidates(
     for atom in sorted_anchor_pool:
         angles = _get_bonded_angles_from_pool(rdmol, atom, sorted_anchor_pool)
         for angle in _angles:
-            angle_ag = ligand_ag.atoms[angle]
+            angle_ag = ligand_ag.atoms[list(angle)]
             collinear = is_collinear(ligand_ag.positions, angle)
             angle_value = (
                 calc_angle(
@@ -219,8 +272,7 @@ def get_small_molecule_atom_candidates(
                     angle_ag.atoms[1].position,
                     angle_ag.atoms[2].position,
                     box=angle_ag.universe.dimensions,
-                )
-                * unit.radians
+                ) * unit.radians
             )
             energy = check_angle_energy(
                 angle_value, angle_force_constant, 298.15 * unit.kelvin
@@ -239,10 +291,13 @@ def get_host_atom_candidates(
     host_selection: str,
     dssp_filter: bool = False,
     rmsf_cutoff: unit.Quantity = 0.1 * unit.nanometer,
-    min_distance: unit.Quantity = 10 * unit.nanometer,
-    max_distance: unit.Quantity = 30 * unit.nanometer,
+    min_distance: unit.Quantity = 1 * unit.nanometer,
+    max_distance: unit.Quantity = 3 * unit.nanometer,
     angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
 ):
+    """
+
+    """
     if isinstance(topology, openmm.app.Topology):
         topology_format = "OPENMMTOPOLOGY"
     else:
