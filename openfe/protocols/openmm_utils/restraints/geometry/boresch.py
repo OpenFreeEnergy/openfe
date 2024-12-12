@@ -37,6 +37,13 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
 
     def get_bond_distance(self, topology, coordinates) -> unit.Quantity:
+        """
+        Get the H2 - G0 distance
+
+        Parameters
+        ----------
+        topology : 
+        """
         u = mda.Universe(topology, coordinates)
         at1 = u.atoms[host_atoms[2]]
         at2 = u.atoms[guest_atoms[0]]
@@ -293,10 +300,30 @@ def get_host_atom_candidates(
     rmsf_cutoff: unit.Quantity = 0.1 * unit.nanometer,
     min_distance: unit.Quantity = 1 * unit.nanometer,
     max_distance: unit.Quantity = 3 * unit.nanometer,
-    angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
 ):
     """
+    Get a list of suitable host atoms.
 
+    Parameters
+    ----------
+    topology : Union[str, openmm.app.Topology]
+      The topology of the system.
+    trajectory : Union[str, pathlib.Path]
+      A path to the system's coordinate trajectory.
+    host_idxs : list[int]
+      A list of the host indices in the system topology.
+    l1_idx : int
+      The index of the proposed l1 binding atom.
+    host_selection : str
+      An MDAnalysis selection string to fileter the host by.
+    dssp_filter : bool
+      Whether or not to apply a DSSP filter on the host selection.
+    rmsf_cutoff : uni.Quantity
+      The maximum RMSF value allowwed for any candidate host atom.
+    min_distance : unit.Quantity
+      The minimum search distance around l1 for suitable candidate atoms.
+    max_distance : unit.Quantity
+      The maximum search distance around l1 for suitable candidate atoms.
     """
     if isinstance(topology, openmm.app.Topology):
         topology_format = "OPENMMTOPOLOGY"
@@ -322,3 +349,8 @@ def get_host_atom_candidates(
     )
     atom_finder.run()
     return atom_finder.results.host_idxs
+
+
+def select_boresch_atoms(
+
+):
