@@ -3,7 +3,10 @@
 import itertools
 import json
 import sys
+
+import openmmtools.alchemy
 import pytest
+import importlib
 from unittest import mock
 from openmm import NonbondedForce, CustomNonbondedForce
 from openmmtools.multistate.multistatesampler import MultiStateSampler
@@ -15,6 +18,7 @@ from numpy.testing import assert_allclose
 from openff.units import unit
 import gufe
 import openfe
+import simtk
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
@@ -22,13 +26,17 @@ from openfe.protocols.openmm_septop import (
     SepTopProtocol,
     femto_restraints,
 )
+from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
-
+from openmmtools.states import (SamplerState,
+                                ThermodynamicState,
+                                create_thermodynamic_state_protocol, )
 
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
 )
+from openfe.protocols.openmm_septop.alchemy_copy import AlchemicalState
 
 
 @pytest.fixture()
@@ -392,46 +400,99 @@ def test_validate_alchem_nonsmc(
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
-def test_setup(bace_ligands,  bace_protein_component, tmpdir):
-    # check system parametrisation works even if confgen fails
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_equil_simulation_settings.minimization_steps = 100
-    s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
-    s.solvent_solvation_settings.box_shape = 'dodecahedron'
-    s.solvent_solvation_settings.solvent_padding = 1.8 * unit.nanometer
+@pytest.fixture(scope='session')
+def bace_reference_xml():
+    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
+        f = d / 'system.xml.bz2'
+        return deserialize(f)
 
-    protocol = SepTopProtocol(
-        settings=s,
+@pytest.fixture(scope='session')
+def bace_reference_positions():
+    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
+        f = d / 'topology.pdb'
+        pdb = simtk.openmm.app.pdbfile.PDBFile(str(f))
+        positions = pdb.getPositions(asNumpy=True)
+        return positions
+
+
+def test_reference_alchemical_system(bace_reference_xml, bace_reference_positions):
+    settings = SepTopProtocol.default_settings()
+    alchemical_state = AlchemicalState.from_system(bace_reference_xml)
+    print(alchemical_state.lambda_sterics_ligandA)
+    print(alchemical_state.lambda_electrostatics_ligandA)
+    # Remove harmonic distance restraint for now
+    bace_reference_xml.removeForce(13)
+
+    from openfe.protocols.openmm_septop.alchemy_copy import AbsoluteAlchemicalFactory
+    energy = AbsoluteAlchemicalFactory.get_energy_components(
+        bace_reference_xml, alchemical_state, bace_reference_positions
     )
-
-    stateA = ChemicalSystem({
-        'lig_02': bace_ligands['lig_02'],
-        'protein': bace_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    stateB = ChemicalSystem({
-        'lig_03': bace_ligands['lig_03'],
-        'protein': bace_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first vacuum unit
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
+    na_A = 'alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region ligandA'
+    aa_A = 'alchemically modified NonbondedForce for alchemical/alchemical sterics for region ligandA'
+    na_B = 'alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region ligandB'
+    aa_B = 'alchemically modified NonbondedForce for alchemical/alchemical sterics for region ligandB'
+    print(energy)
+    print(energy[na_B])
+    alchemical_state.lambda_electrostatics_ligandA = 0.2
+    alchemical_state.lambda_electrostatics_ligandB = 0.8
+    energy_05 = AbsoluteAlchemicalFactory.get_energy_components(
+        bace_reference_xml, alchemical_state, bace_reference_positions
     )
-    prot_units = list(dag.protocol_units)
-    solv_setup_unit = [u for u in prot_units
-                       if isinstance(u, SepTopSolventSetupUnit)]
-    # solv_setup_unit = [u for u in prot_units
-    #                    if isinstance(u, SepTopComplexSetupUnit)]
+    print(energy_05)
+    print(energy_05[na_B])
 
-    # with tmpdir.as_cwd():
-    solv_setup_unit[0].run()
+    alchemical_state.lambda_sterics_ligandA = 0.5
+    energy_05_2 = AbsoluteAlchemicalFactory.get_energy_components(
+        bace_reference_xml, alchemical_state, bace_reference_positions
+    )
+    print(energy_05_2)
+
+    assert energy[na_A] != energy_05[na_A]
+    assert energy[aa_A] == energy_05[aa_A]
+    assert energy[na_B] == energy_05[na_B]
+    assert energy[aa_B] == energy_05[aa_B]
+
+
+# def test_setup(bace_ligands,  bace_protein_component, tmpdir):
+#     # check system parametrisation works even if confgen fails
+#     s = SepTopProtocol.default_settings()
+#     s.protocol_repeats = 1
+#     s.solvent_equil_simulation_settings.minimization_steps = 100
+#     s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+#     s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+#     s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
+#     s.solvent_solvation_settings.box_shape = 'dodecahedron'
+#     s.solvent_solvation_settings.solvent_padding = 1.8 * unit.nanometer
+#
+#     protocol = SepTopProtocol(
+#         settings=s,
+#     )
+#
+#     stateA = ChemicalSystem({
+#         'lig_02': bace_ligands['lig_02'],
+#         'protein': bace_protein_component,
+#         'solvent': SolventComponent(),
+#     })
+#
+#     stateB = ChemicalSystem({
+#         'lig_03': bace_ligands['lig_03'],
+#         'protein': bace_protein_component,
+#         'solvent': SolventComponent(),
+#     })
+#
+#     # Create DAG from protocol, get the vacuum and solvent units
+#     # and eventually dry run the first vacuum unit
+#     dag = protocol.create(
+#         stateA=stateA,
+#         stateB=stateB,
+#         mapping=None,
+#     )
+#     prot_units = list(dag.protocol_units)
+#     solv_setup_unit = [u for u in prot_units
+#                        if isinstance(u, SepTopSolventSetupUnit)]
+#     # solv_setup_unit = [u for u in prot_units
+#     #                    if isinstance(u, SepTopComplexSetupUnit)]
+#
+#     # with tmpdir.as_cwd():
+#     solv_setup_unit[0].run()
 

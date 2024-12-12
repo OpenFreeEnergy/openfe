@@ -71,7 +71,6 @@ from ..openmm_utils import (
 )
 from openfe.utils import without_oechem_backend
 
-from .femto_alchemy import apply_fep
 from .femto_restraints import select_ligand_idxs
 from .utils import serialize, deserialize
 from openfe.protocols.openmm_septop.alchemy_copy import (
@@ -828,9 +827,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
-        # apply_fep(omm_system_AB, atom_indices_AB_A, atom_indices_AB_B)
-
-        # Alternatively use AbsoluteAlchemicalFactory from openmmtools
 
         factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
         alchemical_region_A = AlchemicalRegion(

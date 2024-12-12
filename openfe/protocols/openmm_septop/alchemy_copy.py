@@ -2423,6 +2423,7 @@ class AbsoluteAlchemicalFactory(object):
                 parameter_found, region_type_suffix = check_energy_expression(force, 'lambda')
                 if parameter_found:
                     _, region_name_suffix = check_energy_expression(force, 'lambda_{}'.format(region_type_suffix))
+                    print(region_name_suffix)
                     if region_type_suffix == 'sterics':
                         if region_name_suffix in sterics_bond_forces:
                             sterics_bond_forces[region_name_suffix].append([force_index, force])

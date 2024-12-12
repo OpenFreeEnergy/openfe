@@ -1,6 +1,7 @@
 import collections
 import copy
 import itertools
+from typing import List, Any
 
 import numpy
 import openmm
@@ -9,6 +10,7 @@ import openmm.unit
 # import femto.fe.config
 
 # This code was obtained and modified from https://github.com/Psivant/femto
+from openmm import NonbondedForce, CustomNonbondedForce
 
 LAMBDA_VDW_LIGAND_1 = "lambda_sterics_ligandA"
 """The global parameter used to scale the vdW interactions of ligand 1."""
@@ -181,7 +183,7 @@ def _apply_lambda_vdw(
     """
 
     if len(ligand_idxs) == 0:
-        return
+        return None
 
     custom_vdw_fn = _beutler_softcore_potential(variable)
 
@@ -232,7 +234,6 @@ def _apply_nonbonded_lambdas(
     force: openmm.NonbondedForce,
     ligand_1_idxs: set[int],
     ligand_2_idxs: set[int] | None,
-    # config: femto.fe.config.FEP,
 ) -> tuple[openmm.NonbondedForce | openmm.CustomNonbondedForce, ...]:
     """Modifies a standard non-bonded force so that vdW and electrostatic interactions
     are scaled by ``lambda_vdw`` and ``lambda_charges`` respectively.
@@ -243,7 +244,6 @@ def _apply_nonbonded_lambdas(
             scaled by lambda.
         ligand_2_idxs: The indices of the ligand atoms whose interactions should be
             scaled by 1 - lambda.
-        config: Configuration options.
 
     Returns:
         The modified non-bonded force containing chemical-chemical and
@@ -289,7 +289,6 @@ def apply_fep(
     system: openmm.System,
     ligand_1_idxs: set[int],
     ligand_2_idxs: set[int] | None,
-    # config: femto.fe.config.FEP,
 ):
     """Modifies an OpenMM system so that different interactions can be scaled by
     corresponding lambda parameters.
@@ -324,7 +323,7 @@ def apply_fep(
             )
         forces_by_type[type(force)].append(force)
 
-    updated_forces = []
+    updated_forces: list[NonbondedForce | CustomNonbondedForce | Any] = []
 
     for force_type, forces in forces_by_type.items():
         if len(forces) != 1:
