@@ -1,0 +1,360 @@
+# This code is part of OpenFE and is licensed under the MIT license.
+# For details, see https://github.com/OpenFreeEnergy/openfe
+"""
+Search methods for generating Geometry objects
+
+TODO
+----
+* Add relevant duecredit entries.
+"""
+import abc
+from pydantic.v1 import BaseModel, validator
+
+from openff.toolkit import Molecule as OFFMol
+from openff.units import unit
+import networkx as nx
+import MDAnalysis as mda
+from MDAnalysis.analysis.base import AnalysisBase
+from MDAnalysis.lib.distances import calc_bonds, calc_angles
+
+
+def _get_aromatic_atom_idxs(rdmol) -> list[int]:
+    """
+    Helper method to get aromatic atoms idxs
+    in a RDKit Molecule
+
+    Parameters
+    ----------
+    rdmol : ???
+      RDKit Molecule
+
+    Returns
+    -------
+    list[int]
+      A list of the aromatic atom idxs
+    """
+    idxs = [
+        at.GetIdx() for at in rdmol.GetAtoms()
+        if at.GetIsAromatic()
+    ]
+    return idxs
+
+
+def _get_heavy_atom_idxs(rdmol) -> list[int]:
+    """
+    Get idxs of heavy atoms in an RDKit Molecule
+
+    Parameters
+    ----------
+    rmdol : ???
+
+    Returns
+    -------
+    list[int]
+      A list of heavy atom idxs
+    """
+    idxs = [
+        at.GetIdx() for at in rdmol.GetAtoms()
+        if at.GetAtomicNum() > 1
+    ]
+    return idxs
+
+
+def _get_central_atom_idx(rdmol) -> int:
+    offmol = OFFMol(rdmol, allow_undefined_stereo=True)
+    # We take the zero-th entry if there are multiple center
+    # atoms (e.g. equal likelihood centers)
+    center = nx.center(offmol.to_networkx())[0]
+    return center
+
+
+def _sort_by_distance_from_target(rdmol, target_idx: int, atom_idxs: list[int]) -> list[int]:
+    """
+    Sort a list of atoms by their distance from a target atom.
+
+    Parameters
+    ----------
+    target_idx : int
+      The idx of the target atom.
+    atom_idxs : list[int]
+      The idx values of the atoms to sort.
+    rdmol : ???
+      RDKit Molecule the atoms belong to
+
+    Returns
+    -------
+    list[int]
+      The input atom idxs sorted by their distance from the target atom.
+    """
+    distances = []
+
+    conformer = rdmol.GetConformer()
+    # Get the target atom position
+    target_pos = conformer.GetAtomPosition(target_idx)
+
+    for idx in atom_idxs:
+        pos = conformer.GetAtomPosition(idx)
+        distances.append(((target_pos - pos).Length(), idx))
+
+    return [i[1] for i in sorted(distances)]
+
+
+def _get_bonded_angles_from_pool(rdmol, atom_idx, atom_pool):
+    angles = []
+    
+    # Get the base atom and its neighbors
+    at1 = rdmol.GetAtomWithIdx(atom_idx)
+    at1_neighbors = [at.GetIdx() for at in at1.GetNeighbors()]
+
+    # We loop at2 and at3 through the sorted atom_pool in order to get
+    # a list of angles in the branch that are sorted by how close the atoms
+    # are from the central atom
+    for at2 in atom_pool:
+        if at2 in at1_neighbors:
+            at2_neighbors = [
+                at.GetIdx()
+                for at in rdmol.GetAtomWithIdx(at2).GetNeighbors()
+            ]
+            for at3 in atom_pool:
+                if at3 != atom_idx and at3 in at2_neighbors:
+                    angles.append((atom_idx, at2, at3))
+    return angles
+
+
+def get_ligand_anchor_atoms(rdmol) -> list[tuple[int, int, int]]:
+    """
+    Get a list of ligand anchor atoms (e.g. l1, l2, and l3 of an orientational restraint).
+    
+    Parameters
+    ----------
+    rdmol : ???
+      Molecule object for the ligand to apply a restraint to.
+      
+    Returns
+    -------
+    angles : list[tuple[int, int, int]]
+      A list of ligand atom triples denoting the possible l1, l2, and l3
+      restraint atoms. Ordered by likelihood of restraint-ability.
+    """
+    # Find the central atom
+    center = _get_central_atom_idx(rdmol)
+
+    # Get a pool of potential anchor atoms looking for aromatic atoms
+    anchor_pool = _get_aromatic_atoms(rdmol)
+
+    # If there are not enough aromatic atoms, then default to heavy atoms
+    if len(anchor_pool) < 3:
+        anchor_pool = _get_heavy_atoms(rdmol)
+     
+    # Raise an error if we have less than 3 anchors
+    if len(anchor_pool) < 3:
+        errmsg = f"Too few potential ligand anchor atoms, {len(anchor_pool)}"
+        raise ValueError(errmsg)
+
+    # Sort the pool of anchor atoms by their distance from the central atom
+    sorted_anchor_pool = _sort_by_distance_from_target(rdmol, center, anchor_pool)
+
+    # Get a list of ligand anchor angle atoms
+    angles = []
+    for atom in sorted_anchor_pool:
+        angles.extend(
+            _get_bonded_angles_from_pool(rdmol, atom, sorted_anchor_pool)
+        )
+
+
+def get_host_anchors(positions, topology, exclude_resids: list[int], lig_anchor_idx: int, selection: str):
+    """
+    Get a list of host anchor atomss sorted by their distance from a ligand anchor atom.
+    
+    Parameters
+    ----------
+    positions : openmm.unit.Quantity
+      Positions of the input system
+    topology : openmm.app.Topology
+      OpenMM Topology for input system
+    exclude_resids : list[int]
+      List of residue numbers to exclude from host selection
+    lig_anchor_idx : int
+      The index of the l1 ligand anchor.
+    selection : str
+      Selection string for the host atoms.
+    """
+    # Create an mdtraj trajectory to manipulate
+    # First fetch the box vectors and pass them as lengths and angles
+    vectors = from_openmm(topology.getPeriodicBoxVectors())
+    a, b, c, alpha, beta, gamma = mdt.utils.box_vectors_to_lengths_and_angles(vectors[0].m, vectors[1].m, vectors[2].m)
+    
+    traj = mdt.Trajectory(
+        positions[np.newaxis, ...],
+        mdt.Topology.from_openmm(topology)
+    )
+    
+    # Get all the potential protein atoms matching the selection
+    host_sel = traj.topology.select(selection)
+    
+    # Get residues to exclude from the selection
+    exclude_sel = np.array([
+        at.index for at in
+        chain(*[traj.topology.residue(i).atoms for i in exclude_resids])
+    ])
+    
+    # Remove exclusion
+    anchors = host_sel[np.isin(host_sel, exclude_sel, invert=True)]
+    
+    # Compute distanecs from ligand l1 anchor atom
+    pairs = np.vstack((anchors, np.array([lig_anchor_idx for _ in range(len(anchors))]))).T
+    
+    distances = mdt.compute_distances(traj, pairs, periodic=True)
+    
+    return np.array([pairs[i][0] for i in np.argsort(distances[0])])
+
+
+def is_collinear(positions, atoms, threshold=0.9):
+    """
+    Check whether any sequential vectors in a sequence of atoms are collinear.
+
+    Parameters
+    ----------
+    positions : openmm.unit.Quantity
+        System positions.
+    atoms : list[int]
+        The indices of the atoms to test.
+    threshold : float
+        Atoms are not collinear if their sequential vector separation dot
+        products are less than ``threshold``. Default 0.9.
+
+    Returns
+    -------
+    result : bool
+        Returns True if any sequential pair of vectors is collinear; False otherwise.
+
+    Notes
+    -----
+    Originally from Yank, with modifications from Separated Topologies
+    """
+    results = False
+    for i in range(len(atoms) - 2):
+        v1 = positions[atoms[i + 1], :] - positions[atoms[i], :]
+        v2 = positions[atoms[i + 2], :] - positions[atoms[i + 1], :]
+        normalized_inner_product = np.dot(v1, v2) / np.sqrt(np.dot(v1, v1) * np.dot(v2, v2))
+        result = result or (np.abs(normalized_inner_product) > threshold)
+    return result
+
+
+def check_angle(angle, force_constant=83.68):
+    """
+    Check whether the chosen angle is less than 10 kT from 0 or 180
+    
+    Parameters
+    ----------
+    angle : float
+      The angle to check in degrees.
+    force_constant : float
+      Force constant of the angle.
+
+    Note
+    ----
+    We assume the temperature to be 298.15 Kelvin.
+    """
+    # TODO: convert this to unit.Quantity so we don't end up with
+    # conversion errors
+    RT = 8.31445985 * 0.001 * 298.15 
+    # check if angle is <10kT from 0 or 180
+    check1 = 0.5 * force_constant * np.power((angle - 0.0) / 180.0 * np.pi, 2)
+    check2 = 0.5 * force_constant * np.power((angle - 180.0) / 180.0 * np.pi, 2)
+    ang_check_1 = check1 / RT
+    ang_check_2 = check2 / RT
+    if ang_check_1 < 10.0 or ang_check_2  < 10.0:
+        return False
+    return True
+
+
+
+
+class FindHostAtoms(AnalysisBase):
+    """
+    Class filter host atoms based on their distance
+    from a set of guest atoms.
+
+    Parameters
+    ----------
+    host_atoms : MDAnalysis.AtomGroup
+      Initial selection of host atoms to filter from.
+    guest_atoms : MDANalysis.AtomGroup
+      Selection of guest atoms to search around.
+    search_distance: unit.Quantity
+      Distance to filter atoms within.
+    """
+    _analysis_algorithm_is_parallelizable = False
+
+    def __init__(self, host_atoms, guest_atoms, search_distance, **kwargs):
+        super().__init__(host_atoms.universe.trajectory, **kwargs)
+
+        self.host_ag = host_atoms
+        self.guest_ag = guest_atoms
+        self.cutoff = search_distance.to('angstrom').m
+
+    def _prepare(self):
+        self.results.host_idxs = set()
+
+    def _single_frame(self):
+        pairs = capped_distance(
+            reference=self.host_ag.positions,
+            configuration=self.guest_ag.positions,
+            max_cutoff=self.cutoff,
+            min_cutoff=None
+            box=self.guest_ag.universe.dimensions,
+            return_distances=False)
+
+        host_idxs = [self.guest_ag.atoms[p].index for p in pairs[:, 1]]
+        self.results.host_idxs.update(set(host_idxs))
+
+    def _conclude(self):
+        pass
+
+
+def find_host_atoms(topology, trajectory, host_selection, guest_selection, cutoff) -> mda.AtomGroup:
+    """
+    Get an AtomGroup of the host atoms based on their distances from the guest atoms.
+    """
+    u = mda.Universe(topology, trajectory)
+
+    def _get_selection(selection):
+        """
+        If it's a str, call select_atoms, if not a list of atom idxs
+        """
+        if isinstance(selection, str):
+            ag = u.select_atoms(host_selection)
+        else:
+            ag = u.atoms[host_ag]
+        return ag
+    
+    host_ag = _get_selection(host_selection)
+    guest_ag = _get_selection(guest_selection)
+
+    finder = FindHostAtoms(host_ag, guest_ag, cutoff)
+    finder.run()
+
+    return u.atoms[list(finder.results.host_idxs)]
+
+def get_molecule_center_idx(atomgroup):
+    offmol = Molecule(atomgroup.convert_to("RDKIT"), allow_undefined_stereo=True)
+    # Check if the molecule is whole, otherwise throw an error.
+    nx = offmol.to_networkx()
+
+
+def get_distance_restraint(topology, trajectory, host_atoms, guest_atoms, host_selection, guest_selection):
+    u = mda.Universe(topology, trajectory)
+
+    if guest_atoms is None:
+        if guest_selection is None:
+            raise ValueError("one of guest_atoms or guest_selections must be defined")
+        guest_ag = u.select_atoms(guest_selection)
+    else:
+
+
+    if host_atoms is None:
+        if host_selection is None:
+            raise ValueError("one of host_atoms or host_selection must be defined")
+
+        host_ag = u.select_atoms(host_selection)
