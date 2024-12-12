@@ -10,9 +10,12 @@ TODO
 import abc
 from pydantic.v1 import BaseModel, validator
 
+import numpy as np
+from scipy.stats import circvar, circmean, circstd
+
 from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
-from openff.units.types import FloatQuantity
+from openff.models.types import FloatQuantity, ArrayQuantity
 import networkx as nx
 from rdkit import Chem
 import MDAnalysis as mda
@@ -132,7 +135,7 @@ def check_angle_energy(
     temperature: FloatQuantity['kelvin'] = 298.15 * unit.kelvin
 ) -> bool:
     """
-    Check whether the chosen angle is less than 10 kT from 0 or 180
+    Check whether the chosen angle is less than 10 kT from 0 or pi radians
 
     Parameters
     ----------
@@ -142,6 +145,12 @@ def check_angle_energy(
       Force constant of the angle in units compatible with kilojoule_per_mole / radians ** 2.
     temperature: unit.Quantity
       The system temperature in units compatible with Kelvin.
+
+
+    Returns
+    -------
+    bool
+      If the angle is less than 10 kT from 0 or pi radians
 
     Note
     ----
@@ -167,7 +176,7 @@ def check_dihedral_bounds(
     dihedral: FloatQuantity['radians']
     lower_cutoff: FloatQuantity['radians'] = 2.618 * unit.radians,
     upper_cutoff: FloatQuantity['radians'] = -2.6.18 * unit.radians,
-):
+) -> bool:
     """
     Check that a dihedral does not exceed the bounds set by
     lower_cutoff and upper_cutoff.
@@ -180,12 +189,42 @@ def check_dihedral_bounds(
       Dihedral lower cutoff in units compatible with radians.
     upper_cutoff : unit.Quantity
       Dihedral upper cutoff in units compatible with radians.
+
+    Returns
+    -------
+    bool
+      ``True`` if the dihedral is within the upper and lower
+      cutoff bounds.
     """
     if (dihedral < lower_cutoff) or (dihedral > upper_cutoff):
         return False
     return True
 
 
+def check_angular_variance(
+    angles: ArrayQuantity['radians']
+    width: FloatQuantity['radians']
+) -> bool:
+    """
+    Check that the variance of a list of ``angles`` does not exceed
+    a given ``width``
+
+    Parameters
+    ----------
+    angles : ArrayLike[unit.Quantity]
+      An array of angles in units compatible with radians.
+    width : unit.Quantity
+      The width to check the variance against, in units compatible with radians.
+
+    Returns
+    -------
+    bool
+      ``True`` if the variance of the angles is less than the width.
+
+    """
+    array = angles.to('radians').m
+    variance = circvar(array)
+    return not (variance * unit.radians > width)
 
 
 def _sort_by_distance_from_target(rdmol, target_idx: int, atom_idxs: list[int]) -> list[int]:
