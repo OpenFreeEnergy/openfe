@@ -7,6 +7,8 @@ import pathlib
 from typing import Callable, Literal
 import warnings
 
+from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
+from openfe.protocols import openmm_rfe
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -199,7 +201,6 @@ def _parse_raw_units(results: dict) -> list[tuple]:
     return [(pu[0]['outputs']['unit_estimate'],
              pu[0]['outputs']['unit_estimate_error'])
             for pu in list_of_pur]
-
 
 def _get_ddgs(legs:dict, error_on_missing=True):
     import numpy as np
@@ -396,6 +397,7 @@ def gather(rootdir:os.PathLike|str,
 
     # 1) find all possible jsons
     json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
+
     # 2) filter only result jsons
     result_fns = filter(is_results_json, json_fns)
 
@@ -422,7 +424,9 @@ def gather(rootdir:os.PathLike|str,
         if report.lower() == 'raw':
             legs[names][simtype].append(_parse_raw_units(result))
         else:
-            legs[names][simtype].append(result['estimate'], result['uncertainty'])
+            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
+            ## for jobs run in parallel, we need to compute these values
+            legs[names][simtype] = (rfe_result.compute_mean_estimate(dGs), rfe_result.compute_uncertainty(dGs))
 
     writer = csv.writer(
         output,
