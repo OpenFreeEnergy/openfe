@@ -35,23 +35,48 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     Where HX represents the X index of ``host_atoms`` and GX
     the X index of ``guest_atoms``.
     """
-
-    def get_bond_distance(self, topology, coordinates) -> unit.Quantity:
+    def get_bond_distance(
+        self,
+        topology: Union[str, openmm.app.Topology], 
+        coordinates: Union[str, npt.NDArray],
+    ) -> unit.Quantity:
         """
-        Get the H2 - G0 distance
+        Get the H2 - G0 distance.
 
         Parameters
         ----------
-        topology : 
+        topology : Union[str, openmm.app.Topology]
+        coordinates : Union[str, npt.NDArray]
+          A coordinate file or NDArray in frame-atom-coordinate
+          order in Angstrom.
         """
-        u = mda.Universe(topology, coordinates)
+        u = mda.Universe(
+            topology,
+            coordinates,
+            format=_get_mda_coord_format(coordinates),
+            topology_format=_get_mda_topology_format(topology)
+        )
         at1 = u.atoms[host_atoms[2]]
         at2 = u.atoms[guest_atoms[0]]
         bond = calc_bonds(at1.position, at2.position, u.atoms.dimensions)
         # convert to float so we avoid having a np.float64
         return float(bond) * unit.angstrom
 
-    def get_angles(self, topology, coordinates) -> unit.Quantity:
+    def get_angles(
+        self,
+        topology: Union[str, openmm.app.Topology],
+        coordinates: Union[str, npt.NDArray],
+    ) -> unit.Quantity:
+        """
+        Get the H1-H2-G0, and H2-G0-G1 angles.
+
+        Parameters
+        ----------
+        topology : Union[str, openmm.app.Topology]
+        coordinates : Union[str, npt.NDArray]
+          A coordinate file or NDArray in frame-atom-coordinate
+          order in Angstrom.
+        """
         u = mda.Universe(topology, coordinates)
         at1 = u.atoms[host_atoms[1]]
         at2 = u.atoms[host_atoms[2]]
@@ -66,7 +91,21 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
         )
         return angleA, angleB
 
-    def get_dihedrals(self, topology, coordinates) -> unit.Quantity:
+    def get_dihedrals(
+        self,
+        topology: Union[str, openmm.app.Topology],
+        coordinates: Union[str, npt.NDArray],
+    ) -> unit.Quantity:
+        """
+        Get the H0-H1-H2-G0, H1-H2-G0-G1, and H2-G0-G1-G2 dihedrals.
+
+        Parameters
+        ----------
+        topology : Union[str, openmm.app.Topology]
+        coordinates : Union[str, npt.NDArray]
+          A coordinate file or NDArray in frame-atom-coordinate
+          order in Angstrom.
+        """
         u = mda.Universe(topology, coordinates)
         at1 = u.atoms[host_atoms[0]]
         at2 = u.atoms[host_atoms[1]]
@@ -84,7 +123,6 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
         dihC = calc_dihedrals(
             at3.position, at4.position, at5.position, at6.position, u.atoms.dimensions
         )
-
         return dihA, dihB, dihC
 
 
@@ -203,7 +241,6 @@ def get_small_molecule_guest_atom_candidates(
     rdmol: Chem.Mol,
     ligand_idxs: list[int],
     rmsf_cutoff: unit.Quantity = 1 * unit.angstrom,
-    angle_force_constant: unit.Quantity = 83.68 * unit.kilojoule_per_mole / unit.radians**2,
 ) -> list[tuple[int]]:
     """
     Get a list of potential ligand atom choices for a Boresch restraint
@@ -222,8 +259,6 @@ def get_small_molecule_guest_atom_candidates(
       The ligand indices in the topology.
     rmsf_cutoff : unit.Quantity
       The RMSF filter cut-off.
-    angle_force_constant : unit.Quantity
-      The force constant for the l1-l2-l3 atom angle.
 
     Returns
     -------
@@ -271,20 +306,9 @@ def get_small_molecule_guest_atom_candidates(
     for atom in sorted_anchor_pool:
         angles = _get_bonded_angles_from_pool(rdmol, atom, sorted_anchor_pool)
         for angle in _angles:
+            # Check that the angle is at least not collinear
             angle_ag = ligand_ag.atoms[list(angle)]
-            collinear = is_collinear(ligand_ag.positions, angle)
-            angle_value = (
-                calc_angle(
-                    angle_ag.atoms[0].position,
-                    angle_ag.atoms[1].position,
-                    angle_ag.atoms[2].position,
-                    box=angle_ag.universe.dimensions,
-                ) * unit.radians
-            )
-            energy = check_angle_energy(
-                angle_value, angle_force_constant, 298.15 * unit.kelvin
-            )
-            if not collinear and energy:
+            if not is_collinear(ligand_ag.positions, angle):
                 angles_list.append(angle)
 
     return angles_list
