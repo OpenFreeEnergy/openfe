@@ -185,7 +185,7 @@ Path to a YAML file specifying the atom mapper (`mapper:`) and/or network planni
 Supported atom mapper choices include `LomapAtomMapper` or `KartografAtomMapper`.
 Supported network planning algorithms include `generate_minimal_spanning_tree` or `generate_minimal_redundant_network`.
 
-The `settings:` allows for customizing the algorithm using the keyword arguments of the corresponding Python API.
+The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
 
 For example:
 ::
