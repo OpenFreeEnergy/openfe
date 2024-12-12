@@ -216,7 +216,6 @@ def _get_ddgs(legs:dict, error_on_missing=True):
         do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
 
         if do_rbfe:
-            # TODO: make this less ugly
             DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
             DG1_unc = rfe_result.compute_uncertainty(vals['complex'])
             DG2_mag = rfe_result.compute_mean_estimate(vals['solvent'])
