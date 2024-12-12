@@ -216,16 +216,21 @@ def _get_ddgs(legs:dict, error_on_missing=True):
         do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
 
         if do_rbfe:
-            DG1_mag, DG1_unc = vals['complex']
-            DG2_mag, DG2_unc = vals['solvent']
+            # TODO: make this less ugly
+            DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
+            DG1_unc = rfe_result.compute_uncertainty(vals['complex'])
+            DG2_mag = rfe_result.compute_mean_estimate(vals['solvent'])
+            DG2_unc = rfe_result.compute_uncertainty(vals['solvent'])
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if do_rhfe:
-            DG1_mag, DG1_unc = vals['solvent']
-            DG2_mag, DG2_unc = vals['vacuum']
+            DG1_mag = rfe_result.compute_mean_estimate(vals['solvent'])
+            DG1_unc = rfe_result.compute_uncertainty(vals['solvent'])
+            DG2_mag = rfe_result.compute_mean_estimate(vals['vacuum'])
+            DG2_unc = rfe_result.compute_uncertainty(vals['vacuum'])
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
@@ -426,7 +431,7 @@ def gather(rootdir:os.PathLike|str,
         else:
             dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
             ## for jobs run in parallel, we need to compute these values
-            legs[names][simtype] = (rfe_result.compute_mean_estimate(dGs), rfe_result.compute_uncertainty(dGs))
+            legs[names][simtype].extend(dGs)
 
     writer = csv.writer(
         output,
