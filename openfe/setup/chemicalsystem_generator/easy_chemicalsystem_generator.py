@@ -112,7 +112,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
                 RFEComponentLabels.PROTEIN: self.protein,
             }
             for i, c in enumerate(self.cofactors):
-                components.update({f'{RFEComponentLabels.COFACTOR}{i+1}': c})
+                components.update({f'{RFEComponentLabels.COFACTOR.value}{i+1}': c})
             if self.solvent is not None:
                 components.update({RFEComponentLabels.SOLVENT: self.solvent})
             chem_sys = ChemicalSystem(
