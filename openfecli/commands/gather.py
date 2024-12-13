@@ -41,7 +41,7 @@ def _get_column(val:float|int)->int:
 def format_estimate_uncertainty(
     est: float,
     unc: float,
-    unc_prec: int = 1,
+    unc_prec: int = 2,
 ) -> tuple[str, str]:
     """Truncate raw estimate and uncertainty values to the appropriate uncertainty.
 
