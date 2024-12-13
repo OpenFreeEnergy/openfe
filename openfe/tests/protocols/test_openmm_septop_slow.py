@@ -107,6 +107,9 @@ def compare_energies(alchemical_system, positions):
     return na_A, na_B, nonbonded, energy, energy_0, energy_7, energy_8, energy_12, energy_13
 
 
+# @pytest.mark.integration  # takes too long to be a slow test ~ 4 mins locally
+# @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
+# @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
 def test_lambda_energies(bace_ligands,  bace_protein_component, tmpdir):
     # check system parametrisation works even if confgen fails
     s = SepTopProtocol.default_settings()
@@ -154,7 +157,7 @@ def test_lambda_energies(bace_ligands,  bace_protein_component, tmpdir):
         positions = pdb.getPositions(asNumpy=True)
 
         # Remove Harmonic restraint force solvent
-        system.removeForce(13)
+        alchemical_system.removeForce(13)
 
         na_A, na_B, nonbonded, energy, energy_0, energy_7, energy_8, \
         energy_12, energy_13 = compare_energies(alchemical_system, positions)
