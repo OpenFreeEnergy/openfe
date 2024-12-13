@@ -22,7 +22,7 @@ from rdkit import Chem
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rmsf import RMSF
-from MDAnalysis.lib.distances import calc_bonds, calc_angles
+from MDAnalysis.lib.distances import calc_bonds, calc_angles, minimize_vectors
 from MDAnalysis.coordinates.memory import MemoryReader
 
 from openfe_analysis.transformations import Aligner, NoJump
@@ -166,19 +166,21 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
     return center
 
 
-def is_collinear(positions, atoms, threshold=0.9):
+def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
     """
     Check whether any sequential vectors in a sequence of atoms are collinear.
 
     Parameters
     ----------
     positions : openmm.unit.Quantity
-        System positions.
+      System positions.
     atoms : list[int]
-        The indices of the atoms to test.
+      The indices of the atoms to test.
+    dimensions : Optional[npt.NDArray]
+      The dimensions of the system to minimize vectors. 
     threshold : float
-        Atoms are not collinear if their sequential vector separation dot
-        products are less than ``threshold``. Default 0.9.
+      Atoms are not collinear if their sequential vector separation dot
+      products are less than ``threshold``. Default 0.9.
 
     Returns
     -------
@@ -187,12 +189,18 @@ def is_collinear(positions, atoms, threshold=0.9):
 
     Notes
     -----
-    Originally from Yank, with modifications from Separated Topologies
+    Originally from Yank.
     """
     results = False
     for i in range(len(atoms) - 2):
-        v1 = positions[atoms[i + 1], :] - positions[atoms[i], :]
-        v2 = positions[atoms[i + 2], :] - positions[atoms[i + 1], :]
+        v1 = minimize_vectors(
+            positions[atoms[i + 1], :] - positions[atoms[i], :],
+            box=dimensions,
+        )
+        v2 = minimize_vectors(
+            positions[atoms[i + 2], :] - positions[atoms[i + 1], :],
+            box=dimensions,
+        )
         normalized_inner_product = np.dot(v1, v2) / np.sqrt(
             np.dot(v1, v1) * np.dot(v2, v2)
         )
