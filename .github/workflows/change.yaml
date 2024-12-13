@@ -27,8 +27,8 @@ jobs:
       id: check
       run: |
         pip install griffe
-        griffe check "openfe" --verbose
-        griffe check "openfecli" --verbose
+        griffe check "openfe" --verbose -a origin/main
+        griffe check "openfecli" --verbose -a origin/main
 
     - name: Post Comment on Failure
       if: steps.check.outcome == 'failure'
