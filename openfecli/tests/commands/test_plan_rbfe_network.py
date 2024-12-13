@@ -10,6 +10,9 @@ from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
 )
+from gufe import AlchemicalNetwork
+from gufe.tokenization import JSON_HANDLER
+import json
 
 
 @pytest.fixture(scope='session')
@@ -148,6 +151,43 @@ def test_plan_rbfe_network_cofactors(eg5_files):
         print(result.output)
 
         assert result.exit_code == 0
+
+@pytest.fixture
+def cdk8_files():
+    with resources.files("openfe.tests.data.cdk8") as p:
+        pdb_path = str(p.joinpath("cdk8_protein.pdb"))
+        lig_path = str(p.joinpath("cdk8_ligands.sdf"))
+
+        yield pdb_path, lig_path
+
+def test_plan_rbfe_network_charge_changes(cdk8_files):
+    """
+    Make sure the protocol settings are changed and a warning is printed when we plan a network
+    with a net charge change.
+    """
+    runner = CliRunner()
+
+    args = [
+        '-p', cdk8_files[0],
+        '-M', cdk8_files[1],
+    ]
+
+    with runner.isolated_filesystem():
+        with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
+            result = runner.invoke(plan_rbfe_network, args)
+
+            print(result.output)
+            assert result.exit_code == 0
+            # load the transformations and check the settings
+            network = AlchemicalNetwork.from_dict(
+                json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+            )
+            for edge in network.edges:
+                settings = edge.protocol.settings
+                assert settings.alchemical_settings.explicit_charge_correction is True
+                assert settings.simulation_settings.production_length.m == 20.0
+                assert settings.simulation_settings.n_replicas == 22
+                assert settings.lambda_settings.lambda_windows == 22
 
 
 @pytest.fixture

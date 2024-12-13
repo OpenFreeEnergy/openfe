@@ -33,7 +33,7 @@ from ..chemicalsystem_generator import (
     RFEComponentLabels,
 )
 from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
-
+from ...utils.ligand_utils import get_alchemical_charge_difference
 
 # TODO: move/or find better structure for protocol_generator combintations!
 PROTOCOL_GENERATOR = {
@@ -314,6 +314,50 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
             ligand_network_planner=ligand_network_planner,
             protocol=protocol,
         )
+
+    def _build_transformation(
+        self,
+        ligand_mapping_edge: LigandAtomMapping,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        transformation_protocol: Protocol,
+    ) -> Transformation:
+        """
+        Overwrite the default method to handle net charge change transformations with our default protocol.
+        """
+        transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
+
+        # Todo: Another dirty hack! - START
+        protocol_settings = transformation_protocol.settings.unfrozen_copy()
+        if "vacuum" in transformation_name:
+            protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
+        elif get_alchemical_charge_difference(ligand_mapping_edge) != 0:
+            from openff.units import unit
+            import warnings
+            wmsg = ("Charge changing transformation between ligands "
+                    f"{ligand_mapping_edge.componentA.name} and {ligand_mapping_edge.componentB.name}. "
+                    "A more expensive protocol with 22 lambda windows, sampled "
+                    "for 20 ns each, will be used here.")
+            warnings.warn(wmsg)
+            # apply the recommended charge change settings taken from the industry benchmarking
+            # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
+            protocol_settings.alchemical_settings.explicit_charge_correction = True
+            protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
+            protocol_settings.simulation_settings.n_replicas = 22
+            protocol_settings.lambda_settings.lambda_windows = 22
+
+        transformation_protocol = transformation_protocol.__class__(
+            settings=protocol_settings
+        )
+
+        return Transformation(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=ligand_mapping_edge,
+            name=transformation_name,
+            protocol=transformation_protocol,
+        )
+
 
     def __call__(
         self,
