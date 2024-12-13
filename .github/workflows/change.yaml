@@ -68,4 +68,11 @@ jobs:
               issue_number: prNumber,
               body: `${identifier}\n🚨 API breaking changes detected! 🚨\n[View logs for this step](${stepUrl})`
             });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `${identifier}\nNo API break detected ✅`
+            });
           }
