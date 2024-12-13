@@ -721,7 +721,6 @@ class AbsoluteAlchemicalFactory(object):
             # TODO switch to functools.singledispatch when we drop Python2 support
             reference_force_name = reference_force.__class__.__name__
             alchemical_force_creator_name = '_alchemically_modify_{}'.format(reference_force_name)
-            print(alchemical_force_creator_name)
             try:
                 alchemical_force_creator_func = getattr(self, alchemical_force_creator_name)
             except AttributeError as e:
@@ -739,10 +738,8 @@ class AbsoluteAlchemicalFactory(object):
                         alchemical_forces_by_lambda[lambda_variable_name] = lambda_forces
 
         # Remove original forces that have been alchemically modified.
-        print(forces_to_remove)
         for force_index in reversed(forces_to_remove):
             alchemical_system.removeForce(force_index)
-        print(alchemical_forces_by_lambda)
         # Add forces and split groups if necessary.
         self._add_alchemical_forces(alchemical_system, alchemical_forces_by_lambda)
 
@@ -2423,7 +2420,6 @@ class AbsoluteAlchemicalFactory(object):
                 parameter_found, region_type_suffix = check_energy_expression(force, 'lambda')
                 if parameter_found:
                     _, region_name_suffix = check_energy_expression(force, 'lambda_{}'.format(region_type_suffix))
-                    print(region_name_suffix)
                     if region_type_suffix == 'sterics':
                         if region_name_suffix in sterics_bond_forces:
                             sterics_bond_forces[region_name_suffix].append([force_index, force])

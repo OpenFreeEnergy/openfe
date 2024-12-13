@@ -184,7 +184,6 @@ def is_close(
 
     if not v1.unit.is_compatible(v2.unit):
         return False
-
     return numpy.isclose(
         v1.value_in_unit(v1.unit),
         v2.value_in_unit(v1.unit),
