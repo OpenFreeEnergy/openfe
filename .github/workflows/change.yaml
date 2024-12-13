@@ -30,8 +30,7 @@ jobs:
         griffe check "openfe" --verbose -a origin/main
         griffe check "openfecli" --verbose -a origin/main
 
-    - name: Post Comment on Failure
-      if: steps.check.outcome == 'failure'
+    - name: Manage PR Comments
       uses: actions/github-script@v7
       with:
         script: |
@@ -58,10 +57,12 @@ jobs:
             }
           }
 
-          // Post a new comment
-          await github.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: prNumber,
-            body: `${identifier}\n🚨 API breaking changes detected! 🚨\n[View logs for this step](${stepUrl})`
-          });
+          // Post a new comment only if the check step failed
+          if (steps.check.outcome === 'failure') {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `${identifier}\n🚨 API breaking changes detected! 🚨\n[View logs for this step](${stepUrl})`
+            });
+          }
