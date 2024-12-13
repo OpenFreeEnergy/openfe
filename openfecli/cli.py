@@ -38,7 +38,7 @@ the OpenFE Python library.
 @click.command(cls=OpenFECLI, name="openfe", help=_MAIN_HELP,
                context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=openfecli.__version__)
-@click.option('--log', type=click.Path(exists=True, readable=True),
+@click.option('--logs', type=click.Path(exists=True, readable=True),
               help="logging configuration file")
 def main(log):
     # Subcommand runs after this is processed.
