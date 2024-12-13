@@ -991,8 +991,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             system: openmm.System,
             positions: simtk.unit.Quantity,
             topology: Optional[openmm.app.Topology],
-            ligand_1: Optional[OFFMolecule.Topology],
-            ligand_2: Optional[OFFMolecule.Topology],
+            ligand_1: Optional[OFFMolecule],
+            ligand_2: Optional[OFFMolecule],
             settings: dict[str, SettingsBaseModel],
             ligand_1_ref_idxs: tuple[int, int, int],
             ligand_2_ref_idxs: tuple[int, int, int],
@@ -1034,6 +1034,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         # Get mdtraj object for system
         traj = _get_mdtraj_from_openmm(topology, positions)
         # Get mdtraj object for ligands
+        ligand_1 = ligand_1.to_topology()
+        ligand_2 = ligand_2.to_topology()
         ligand_1_mdtraj = md.Trajectory(
             np.array(ligand_1.get_positions() / omm_units.nanometers),
             md.Topology.from_openmm(ligand_1.to_openmm()))

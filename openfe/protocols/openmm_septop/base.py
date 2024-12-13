@@ -553,23 +553,24 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _set_positions(
-            off_topology: OFFMolecule.Topology,
+            off_molecule: OFFMolecule,
             positions: unit.Quantity,
-    ) -> OFFMolecule.Topology:
+    ) -> OFFMolecule:
         """
         Updates the positions of an OFFMolecule.Topology
         """
+        off_topology = off_molecule.to_topology()
         off_topology.clear_positions()
         off_topology.set_positions(positions)
-        return off_topology
+        return off_molecule
 
     @staticmethod
     def _add_restraints(
             system: openmm.System,
             positions: simtk.unit.Quantity,
             topology: Optional[openmm.app.Topology],
-            ligand_1: Optional[OFFMolecule.Topology],
-            ligand_2: Optional[OFFMolecule.Topology],
+            ligand_1: Optional[OFFMolecule],
+            ligand_2: Optional[OFFMolecule],
             settings: Optional[dict[str, SettingsBaseModel]],
             ligand_1_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
             ligand_2_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
@@ -838,10 +839,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         omm_system_AB = alchemical_system
 
         # 10. Apply Restraints
-        off_A = alchem_comps["stateA"][0].to_openff().to_topology()
+        off_A = alchem_comps["stateA"][0].to_openff()
         lig_A_pos = positions_AB[atom_indices_AB_A[0]:atom_indices_AB_A[-1]+1, :] / omm_units.nanometers * unit.nanometer
         self._set_positions(off_A, lig_A_pos)
-        off_B = alchem_comps["stateB"][0].to_openff().to_topology()
+        off_B = alchem_comps["stateB"][0].to_openff()
         lig_B_pos = positions_AB[
                     atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
                     :] / omm_units.nanometers * unit.nanometer

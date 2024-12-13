@@ -189,8 +189,8 @@ def _create_ligand_queries(
 
 
 def select_ligand_idxs(
-    ligand_1, # OpenFF Topology
-    ligand_2, # OpenFF Topology
+    ligand_1, # OpenFF Molecule
+    ligand_2, # OpenFF Molecule
     ligand_1_queries: tuple[str, str, str] | None = None,
     ligand_2_queries: tuple[str, str, str] | None = None,
 ) -> tuple[tuple[int, int, int], tuple[int, int, int] | None]:
@@ -212,13 +212,9 @@ def select_ligand_idxs(
         if ligand_1_queries is None:
             # Setting frames to None right now
             # ToDo: Enable use of snapshots
-            ligand_1_queries = _create_ligand_queries(ligand_1, None)
+            ligand_1_queries = _create_ligand_queries(ligand_1.to_topology(), None)
         if ligand_2_queries is None:
-            ligand_2_queries = _create_ligand_queries(ligand_2, None)
-
-    # ligand_1_idxs = queries_to_idxs(ligand_1, ligand_1_queries)
-
-    # ligand_2_idxs = queries_to_idxs(ligand_2, ligand_2_queries)
+            ligand_2_queries = _create_ligand_queries(ligand_2.to_topology(), None)
 
     return ligand_1_queries, ligand_2_queries
 
