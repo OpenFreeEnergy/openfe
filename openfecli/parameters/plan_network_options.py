@@ -70,13 +70,16 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     """
     raw = yaml.safe_load(contents)
 
-    expected = {'mapper', 'network'}
-    for field in raw:
-        if field in expected:
-            continue
+    expected_fields = {'mapper', 'network'}
+    present_fields = set(raw.keys())
+    usable_fields = present_fields.intersection(expected_fields)
+    ignored_fields = present_fields - expected_fields
+
+    for field in ignored_fields:
         warnings.warn(f"Ignoring unexpected section: '{field}'")
 
-    filtered = {k:raw[k] for k in expected}
+    filtered = {k:raw[k] for k in usable_fields}
+
     return CliYaml(**filtered)
 
 
