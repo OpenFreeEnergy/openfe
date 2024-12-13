@@ -73,7 +73,7 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     expected_fields = {'mapper', 'network'}
     present_fields = set(raw.keys())
     usable_fields = present_fields.intersection(expected_fields)
-    ignored_fields = present_fields - expected_fields
+    ignored_fields = present_fields.difference(expected_fields)
 
     for field in ignored_fields:
         warnings.warn(f"Ignoring unexpected section: '{field}'")
