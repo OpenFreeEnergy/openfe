@@ -1,10 +1,10 @@
 **Added:**
 
-* <news item>
+* ``openfe gather`` now supports replicates that have been submitted in parallel across separate directories.
 
 **Changed:**
 
-* ``openfe gather`` now supports replicates that have been submitted in parallel across separate directories.
+* <news item>
 
 **Deprecated:**
 
