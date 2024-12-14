@@ -208,7 +208,7 @@ def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
     return result
 
 
-def check_angle_energy(
+def check_angle_not_flat(
     angle: FloatQuantity["radians"],
     force_constant: ANGLE_FRC_CONSTANT_TYPE = DEFAULT_ANGLE_FRC_CONSTANT,
     temperature: FloatQuantity["kelvin"] = 298.15 * unit.kelvin,
@@ -228,7 +228,7 @@ def check_angle_energy(
     Returns
     -------
     bool
-      If the angle is less than 10 kT from 0 or pi radians
+      False if the angle is less than 10 kT from 0 or pi radians
 
     Note
     ----
@@ -280,7 +280,10 @@ def check_dihedral_bounds(
 
 
 def check_angular_variance(
-    angles: ArrayQuantity["radians"], width: FloatQuantity["radians"]
+    angles: ArrayQuantity["radians"], width: FloatQuantity["radians"],
+    upper_bound: FloatQuantity['radians'],
+    lower_bound: FloatQuantity['radians'],
+    width: FloatQuantity['radians'],
 ) -> bool:
     """
     Check that the variance of a list of ``angles`` does not exceed
@@ -290,6 +293,10 @@ def check_angular_variance(
     ----------
     angles : ArrayLike[unit.Quantity]
       An array of angles in units compatible with radians.
+    upper_bound: FloatQuantity['radians']
+      The upper bound in the angle range.
+    lower_bound: FloatQuantity['radians']
+      The lower bound in the angle range.
     width : unit.Quantity
       The width to check the variance against, in units compatible with radians.
 
@@ -299,8 +306,11 @@ def check_angular_variance(
       ``True`` if the variance of the angles is less than the width.
 
     """
-    array = angles.to("radians").m
-    variance = circvar(array)
+    variance = circvar(
+        angles.to("radians").m,
+        high=upper_bound.to("radians").m,
+        low=lower_bound.to("radians").m
+    )
     return not (variance * unit.radians > width)
 
 
