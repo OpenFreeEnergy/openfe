@@ -25,6 +25,7 @@ class HostGuestRestraintGeometry(BaseRestraintGeometry):
     The order matters! It will be used to define the underlying
     force.
     """
+
     guest_atoms: list[int]
     """
     An ordered list of host atoms to restrain.
@@ -40,17 +41,5 @@ class HostGuestRestraintGeometry(BaseRestraintGeometry):
     def positive_idxs(cls, v):
         if any([i < 0 for i in v]):
             errmsg = "negative indices passed"
-            raise ValueError(errmsg)
-        return v
-
-
-class BondDistanceRestraintGeoemtry(HostGuestRestraintGeometry):
-    @validator("host_atoms", "guest_atoms")
-    def single_atoms(cls, v):
-        if len(v) != 1:
-            errmsg = (
-                "Host and guest atom lists must only include a single atom, "
-                f"got {len(v)} atoms."
-            )
             raise ValueError(errmsg)
         return v
