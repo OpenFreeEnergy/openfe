@@ -32,7 +32,9 @@ DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
 ANGLE_FRC_CONSTANT_TYPE = FloatQuantity["unit.kilojoule_per_mole / unit.radians**2"]
 
 
-def _get_mda_coord_format(coordinates: Union[str, npt.NDArray]) -> Optional[MemoryReader]:
+def _get_mda_coord_format(
+    coordinates: Union[str, npt.NDArray]
+) -> Optional[MemoryReader]:
     """
     Helper to set the coordinate format to MemoryReader
     if the coordinates are an NDArray.
@@ -51,7 +53,10 @@ def _get_mda_coord_format(coordinates: Union[str, npt.NDArray]) -> Optional[Memo
     else:
         return None
 
-def _get_mda_topology_format(topology: Union[str, openmm.app.Topology]) -> Optional[str]:
+
+def _get_mda_topology_format(
+    topology: Union[str, openmm.app.Topology]
+) -> Optional[str]:
     """
     Helper to set the topology format to OPENMMTOPOLOGY
     if the topology is an openmm.app.Topology.
@@ -59,7 +64,7 @@ def _get_mda_topology_format(topology: Union[str, openmm.app.Topology]) -> Optio
     Parameters
     ----------
     topology : Union[str, openmm.app.Topology]
-    
+
 
     Returns
     -------
@@ -177,7 +182,7 @@ def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
     atoms : list[int]
       The indices of the atoms to test.
     dimensions : Optional[npt.NDArray]
-      The dimensions of the system to minimize vectors. 
+      The dimensions of the system to minimize vectors.
     threshold : float
       Atoms are not collinear if their sequential vector separation dot
       products are less than ``threshold``. Default 0.9.
@@ -280,10 +285,11 @@ def check_dihedral_bounds(
 
 
 def check_angular_variance(
-    angles: ArrayQuantity["radians"], width: FloatQuantity["radians"],
-    upper_bound: FloatQuantity['radians'],
-    lower_bound: FloatQuantity['radians'],
-    width: FloatQuantity['radians'],
+    angles: ArrayQuantity["radians"],
+    width: FloatQuantity["radians"],
+    upper_bound: FloatQuantity["radians"],
+    lower_bound: FloatQuantity["radians"],
+    width: FloatQuantity["radians"],
 ) -> bool:
     """
     Check that the variance of a list of ``angles`` does not exceed
@@ -309,7 +315,7 @@ def check_angular_variance(
     variance = circvar(
         angles.to("radians").m,
         high=upper_bound.to("radians").m,
-        low=lower_bound.to("radians").m
+        low=lower_bound.to("radians").m,
     )
     return not (variance * unit.radians > width)
 

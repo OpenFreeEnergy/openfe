@@ -38,9 +38,10 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     Where HX represents the X index of ``host_atoms`` and GX
     the X index of ``guest_atoms``.
     """
+
     def get_bond_distance(
         self,
-        topology: Union[str, pathlib.Path, openmm.app.Topology], 
+        topology: Union[str, pathlib.Path, openmm.app.Topology],
         coordinates: Union[str, pathlib.Path, npt.NDArray],
     ) -> unit.Quantity:
         """
@@ -57,7 +58,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
             topology,
             coordinates,
             format=_get_mda_coord_format(coordinates),
-            topology_format=_get_mda_topology_format(topology)
+            topology_format=_get_mda_topology_format(topology),
         )
         at1 = u.atoms[host_atoms[0]]
         at2 = u.atoms[guest_atoms[0]]
@@ -84,7 +85,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
             topology,
             coordinates,
             format=_get_mda_coord_format(coordinates),
-            topology_format=_get_mda_topology_format(topology)
+            topology_format=_get_mda_topology_format(topology),
         )
         at1 = u.atoms[host_atoms[1]]
         at2 = u.atoms[host_atoms[0]]
@@ -118,7 +119,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
             topology,
             coordinates,
             format=_get_mda_coord_format(coordinates),
-            topology_format=_get_mda_topology_format(topology)
+            topology_format=_get_mda_topology_format(topology),
         )
         at1 = u.atoms[host_atoms[2]]
         at2 = u.atoms[host_atoms[1]]
@@ -292,7 +293,7 @@ def get_guest_atom_candidates(
         topology,
         coordinates,
         format=_get_mda_coord_format(coordinates),
-        topology_format=_get_mda_topology_format(topology)
+        topology_format=_get_mda_topology_format(topology),
     )
 
     ligand_ag = u.atoms[guest_idxs]
@@ -302,7 +303,7 @@ def get_guest_atom_candidates(
     u.trajectory[-1]  # forward to the last frame
 
     # 1. Get the pool of atoms to work with
-    atom_pool = _get_atom_pool(rdmol: Chem.Mol, rmsf: npt.NDArray)
+    atom_pool = _get_atom_pool(rdmol, rmsf)
 
     if atom_pool is None:
         # We don't have enough atoms so we raise an error
@@ -324,11 +325,7 @@ def get_guest_atom_candidates(
             angle_ag = ligand_ag.atoms[list(angle)]
             if not is_collinear(ligand_ag.positions, angle, u.dimensions):
                 angles_list.append(
-                    (
-                        angle_ag.atoms[0].ix,
-                        angle_ag.atoms[1].ix,
-                        angle_ag.atoms[2].ix
-                    )
+                    (angle_ag.atoms[0].ix, angle_ag.atoms[1].ix, angle_ag.atoms[2].ix)
                 )
 
     return angles_list
@@ -378,7 +375,7 @@ def get_host_atom_candidates(
         topology,
         coordinates,
         format=_get_mda_coord_format(coordinates),
-        topology_format=_get_mda_topology_format(topology)
+        topology_format=_get_mda_topology_format(topology),
     )
 
     protein_ag1 = u.atoms[host_idxs]
@@ -419,6 +416,7 @@ class EvaluateHostAtoms1(AnalysisBase):
     temperature : unit.Quantity
       The system temperature in Kelvin
     """
+
     def __init__(
         self,
         reference,
@@ -426,7 +424,7 @@ class EvaluateHostAtoms1(AnalysisBase):
         minimum_distance,
         angle_force_constant,
         temperature,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(reference.universe.trajectory, **kwargs)
 
@@ -436,20 +434,14 @@ class EvaluateHostAtoms1(AnalysisBase):
 
         self.reference = reference
         self.host_atom_pool = host_atom_pool
-        self.minimum_distance = minimum_distance.to('angstrom').m
+        self.minimum_distance = minimum_distance.to("angstrom").m
         self.angle_force_constant = angle_force_constant
         self.temperature = temperature
 
     def _prepare(self):
-        self.results.distances = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
-        self.results.angles = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
-        self.results.dihedrals = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
+        self.results.distances = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.angles = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.dihedrals = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.collinear = np.empty(
             (len(self.host_atom_pool), self.n_frames),
             dtype=bool,
@@ -477,7 +469,7 @@ class EvaluateHostAtoms1(AnalysisBase):
                 self.reference.atoms[0].position,
                 self.reference.atoms[1].position,
                 self.reference.atoms[2].position,
-                box=self.reference.dimensions
+                box=self.reference.dimensions,
             )
             collinear = is_collinear(
                 positions=np.vstack((at.position, self.reference.positions)),
@@ -490,9 +482,7 @@ class EvaluateHostAtoms1(AnalysisBase):
 
     def _conclude(self):
         for i, at in enumerate(self.host_atom_pool):
-            distance_bounds = all(
-                self.results.distances[i] > self.minimum_distance
-            )
+            distance_bounds = all(self.results.distances[i] > self.minimum_distance)
             mean_angle = circmean(self.results.angles[i], high=np.pi, low=0)
             angle_bounds = check_angle_not_flat(
                 angle=mean_angle * unit.radians,
@@ -514,21 +504,24 @@ class EvaluateHostAtoms1(AnalysisBase):
                 width=5.23 * unit.radians,
             )
             not_collinear = not all(self.results.collinear[i])
-            if all([distance_bounds, angle_bounds, angle_variance, dihed_bounds, dihed_variance, not_collinear]):
+            if all(
+                [
+                    distance_bounds,
+                    angle_bounds,
+                    angle_variance,
+                    dihed_bounds,
+                    dihed_variance,
+                    not_collinear,
+                ]
+            ):
                 self.results.valid[i] = True
 
 
 class EvaluateHostAtoms2(EvaluateH21Atoms):
     def _prepare(self):
-        self.results.distances1 = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
-        self.results.ditances2 = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
-        self.results.dihedrals = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
+        self.results.distances1 = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.ditances2 = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.dihedrals = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.collinear = np.empty(
             (len(self.host_atom_pool), self.n_frames),
             dtype=bool,
@@ -555,7 +548,7 @@ class EvaluateHostAtoms2(EvaluateH21Atoms):
                 self.reference.atoms[0].position,
                 self.reference.atoms[1].position,
                 self.reference.atoms[2].position,
-                box=self.reference.dimensions
+                box=self.reference.dimensions,
             )
             collinear = is_collinear(
                 positions=np.vstack((at.position, self.reference.positions)),
@@ -568,12 +561,8 @@ class EvaluateHostAtoms2(EvaluateH21Atoms):
 
     def _conclude(self):
         for i, at in enumerate(self.host_atom_pool):
-            distance1_bounds = all(
-                self.results.distances1[i] > self.minimum_distance
-            )
-            distance2_bounds = all(
-                self.results.distances2[i] > self.minimum_distance
-            )
+            distance1_bounds = all(self.results.distances1[i] > self.minimum_distance)
+            distance2_bounds = all(self.results.distances2[i] > self.minimum_distance)
             mean_dihed = circmean(self.results.dihedrals[i], high=np.pi, low=-np.pi)
             dihed_bounds = check_dihedral_bounds(mean_dihed)
             dihed_variance = check_angular_variance(
@@ -583,21 +572,49 @@ class EvaluateHostAtoms2(EvaluateH21Atoms):
                 width=5.23 * unit.radians,
             )
             not_collinear = not all(self.results.collinear[i])
-            if all([distance1_bounds, distance2_bounds, dihed_bounds, dihed_variance, not_collinear]):
+            if all(
+                [
+                    distance1_bounds,
+                    distance2_bounds,
+                    dihed_bounds,
+                    dihed_variance,
+                    not_collinear,
+                ]
+            ):
                 self.results.valid[i] = True
 
 
-def _find_host_angle(g0g1g2_atoms, host_atom_pool, minimum_distance, angle_force_constant, temperature):
-    h0_eval = EvaluateHAtoms1(g0g1g2_atoms, host_atom_pool, minimum_distance, angle_force_constant, temperature)
+def _find_host_angle(
+    g0g1g2_atoms, host_atom_pool, minimum_distance, angle_force_constant, temperature
+):
+    h0_eval = EvaluateHAtoms1(
+        g0g1g2_atoms,
+        host_atom_pool,
+        minimum_distance,
+        angle_force_constant,
+        temperature,
+    )
     h0_eval.run()
 
     for i, valid_h0 in enumerate(h0_eval.results.valid):
         if valid_h0:
             g1g2h0_atoms = g0g1g2_atoms.atoms[1:] + host_atom_pool.atoms[i]
-            h1_eval = EvaluateHAtoms1(g1g2h0_atoms, host_atom_pool, minimum_distance, angle_force_constant, temperature)
+            h1_eval = EvaluateHAtoms1(
+                g1g2h0_atoms,
+                host_atom_pool,
+                minimum_distance,
+                angle_force_constant,
+                temperature,
+            )
             for j, valid_h1 in enumerate(h1_eval.results.valid):
                 g2h0h1_atoms = g1g2h0_atoms.atoms[1:] + host_atom_pool.atoms[j]
-                h2_eval = EvaluateHAtoms2(g2h0h1_atoms, host_atom_pool, minimum_distance, angle_force_constant, temperature)
+                h2_eval = EvaluateHAtoms2(
+                    g2h0h1_atoms,
+                    host_atom_pool,
+                    minimum_distance,
+                    angle_force_constant,
+                    temperature,
+                )
 
                 if any(h2_eval.ressults.valid):
                     d1_avgs = [d.mean() for d in h2_eval.results.distances1]
@@ -616,13 +633,15 @@ def find_boresch_restraint(
     guest_idxs: list[int],
     host_idxs: list[int],
     guest_restraint_atom_idxs: Optional[list[int]] = None,
-    host_restraint_atoms_idxs Optional[list[int]] = None,
-    host_selection: str = 'all',
+    host_restraint_atoms_idxs: Optional[list[int]] = None,
+    host_selection: str = "all",
     dssp_filter: bool = False,
     rmsf_custoff: unit.Quantity = 0.1 * unit.nanometer,
     host_min_distance: unit.Quantity = 1 * unit.nanometer,
     host_max_distance: unit.Quantity = 3 * unit.nanometer,
-    angle_force_constant: unit.Quantity = 83.68 * unit.kilojoule_per_mole / unit.radians**2,
+    angle_force_constant: unit.Quantity = (
+        83.68 * unit.kilojoule_per_mole / unit.radians**2
+    ),
     temperature: unit.Quantity = 298.15 * unit.kelvin,
 ) -> BoreschRestraintGeometry:
     """
@@ -640,11 +659,13 @@ def find_boresch_restraint(
         topology,
         coordinates,
         format=_get_mda_coord_format(coordinates),
-        topology_format=_get_mda_topology_format(topology)
+        topology_format=_get_mda_topology_format(topology),
     )
     u.trajectory[-1]  # Work with the final frame
 
-    if (guest_restraint_atoms_idxs is not None) and (host_restraint_atoms_idxs is not None):
+    if (guest_restraint_atoms_idxs is not None) and (
+        host_restraint_atoms_idxs is not None
+    ):
         # In this case assume the picked atoms were intentional / representative
         # of the input and go with it
         guest_ag = u.select_atoms[guest_idxs]
@@ -654,7 +675,9 @@ def find_boresch_restraint(
         # TODO sort out the return on this
         return BoreschRestraintGeometry(host_atoms=host_angle, guest_atoms=guest_angle)
 
-    if (guest_restraint_atoms_idxs is not None) ^ (host_restraint_atoms_idxs is not None):
+    if (guest_restraint_atoms_idxs is not None) ^ (
+        host_restraint_atoms_idxs is not None
+    ):
         # This is not an intended outcome, crash out here
         errmsg = (
             "both ``guest_restraints_atoms_idxs`` and ``host_restraint_atoms_idxs`` "
