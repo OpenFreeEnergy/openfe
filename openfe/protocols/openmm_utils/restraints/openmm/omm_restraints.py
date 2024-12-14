@@ -96,14 +96,21 @@ class BaseHostGuestRestraints(abc.ABC):
         controlling_parameter_name: str = "lambda_restraints",
     ):
         self.settings = restraint_settings
+        self.controlling_parameter_name = controlling_parameter_name
         self._verify_settings()
 
     @abc.abstractmethod
     def _verify_settings(self):
+        """
+        Method for validating the settings passed on object construction.
+        """
         pass
 
     @abc.abstractmethod
     def _verify_geometry(self, geometry):
+        """
+        Method for validating that the geometry object passed is correct.
+        """
         pass
 
     @abc.abstractmethod
@@ -112,6 +119,18 @@ class BaseHostGuestRestraints(abc.ABC):
         thermodynamic_state: ThermodynamicState,
         geometry: BaseRestraintGeometry
     ):
+        """
+        Method for in-place adding a force to the System of a
+        ThermodynamicState.
+
+        Parameters
+        ----------
+        thermodymamic_state : ThermodynamicState
+          The ThermodynamicState with a System to inplace modify with the
+          new force.
+        geometry : BaseRestraintGeometry
+          A geometry object defining the restraint parameters.
+        """
         pass
 
     @abc.abstractmethod
@@ -119,7 +138,24 @@ class BaseHostGuestRestraints(abc.ABC):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry: BaseRestraintGeometry
-    ):
+    ) -> unit.Quantity:
+        """
+        Get the standard state correction for the Force.
+
+        Parameters
+        ----------
+        thermodymamic_state : ThermodynamicState
+          The ThermodynamicState with a System to inplace modify with the
+          new force.
+        geometry : BaseRestraintGeometry
+          A geometry object defining the restraint parameters.
+
+        Returns
+        -------
+        correction : unit.Quantity
+          The standard state correction free energy in units compatible
+          with kilojoule per mole.
+        """
         pass
 
     @abc.abstractmethod
@@ -304,7 +340,15 @@ class BoreschRestraint(BaseHostGuestRestraints):
             force.addPerBondParameter(key)
 
         force.addGlobalParameter(self.controlling_parameter_name, 1.0)
-        force.addBond(geometry.host_atoms + geometry.guest_atoms, param_values)
+        atoms = [
+            geometry.host_atoms[2],
+            geometry.host_atoms[1],
+            geometry.host_atoms[0],
+            geometry.guest_atoms[0],
+            geometry.guest_atoms[1],
+            geometry.guest_atoms[2],
+        ]
+        force.addBond(atoms, param_values)
         return force
 
     def get_standard_state_correction(

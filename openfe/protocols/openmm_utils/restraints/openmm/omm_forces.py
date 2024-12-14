@@ -14,6 +14,19 @@ import openmm
 def get_boresch_energy_function(
     control_parameter: str,
 ) -> str:
+    """
+    Return a Boresch-style energy function for a CustomCompoundForce.
+
+    Parameters
+    ----------
+    control_parameter : str
+      A string for the lambda scaling control parameter
+
+    Returns
+    -------
+    str
+      The energy function string.
+    """
     energy_function = (
         f"{control_parameter} * E; "
         "E = (K_r/2)*(distance(p3,p4) - r_aA0)^2 "
