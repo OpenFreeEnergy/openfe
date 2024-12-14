@@ -7,12 +7,12 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import abc
-from pydantic.v1 import BaseModel, validator
-
+import pathlib
+from typing import Union, Optional
+from openmm import app
 from openff.units import unit
 import MDAnalysis as mda
-from MDAnalysis.lib.distances import calc_bonds, calc_angles
+from MDAnalysis.lib.distances import calc_bonds
 from rdkit import Chem
 
 from .base import HostGuestRestraintGeometry
@@ -50,7 +50,7 @@ def _get_selection(universe, atom_list, selection):
 
 
 def get_distance_restraint(
-    topology: Union[str, openmm.app.Topology],
+    topology: Union[str, app.Topology],
     trajectory: pathlib.Path,
     topology_format: Optional[str] = None,
     host_atoms: Optional[list[int]] = None,
@@ -61,34 +61,25 @@ def get_distance_restraint(
     u = mda.Universe(topology, trajectory, topology_format=topology_format)
 
     guest_ag = _get_selection(u, guest_atoms, guest_selection)
+    guest_atoms = [a.ix for a in guest_ag]
     host_ag = _get_selection(u, host_atoms, host_selection)
+    host_atoms = [a.ix for a in host_ag]
 
-    return DistanceRestraintGeometry(guest_atoms=guest_atoms, host_atoms=host_atoms)
+    return DistanceRestraintGeometry(
+        guest_atoms=guest_atoms, host_atoms=host_atoms
+    )
 
 
 def get_molecule_centers_restraint(
-    topology: Union[str, openmm.app.Topology],
-    trajectory: pathlib.Path,
     molA_rdmol: Chem.Mol,
     molB_rdmol: Chem.Mol,
     molA_idxs: list[int],
     molB_idxs: list[int],
-    topology_format: Optional[str] = None,
 ):
     # We assume that the mol idxs are ordered
     centerA = molA_idxs[_get_central_atom_idx(molA_rdmol)]
     centerB = molB_idxs[_get_central_atom_idx(molB_rdmol)]
 
-    u = mda.Universe(topology, trajectory, topology_format=topology_format)
-    guest_ag = _get_selection(
-        u,
-        [centerA],
-        None,
+    return DistanceRestraintGeometry(
+        guest_atoms=[centerA], host_atoms=[centerB]
     )
-    guest_ag = _get_selection(
-        u,
-        [centerB],
-        None,
-    )
-
-    return DistsanceRestraintGeometry(guest_atoms=guest_atoms, host_atoms=host_atoms)

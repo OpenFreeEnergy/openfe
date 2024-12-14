@@ -7,21 +7,34 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import abc
 import pathlib
-from pydantic.v1 import BaseModel, validator
+from typing import Union, Optional, Iterable
 
 from rdkit import Chem
 
+import openmm
 from openff.units import unit
 import MDAnalysis as mda
-from MDANalysis.analysis.base import AnalysisBase
+from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
 import numpy as np
 import numpy.typing as npt
 from scipy.stats import circmean
 
 from .base import HostGuestRestraintGeometry
+from .utils import (
+    _get_mda_coord_format,
+    _get_mda_topology_format,
+    get_aromatic_rings,
+    get_heavy_atom_idxs,
+    get_central_atom_idx,
+    is_collinear,
+    check_angular_variance,
+    check_dihedral_bounds,
+    check_angle_not_flat,
+    FindHostAtoms,
+    get_local_rmsf
+)
 
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
@@ -60,8 +73,8 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
             format=_get_mda_coord_format(coordinates),
             topology_format=_get_mda_topology_format(topology),
         )
-        at1 = u.atoms[host_atoms[0]]
-        at2 = u.atoms[guest_atoms[0]]
+        at1 = u.atoms[self.host_atoms[0]]
+        at2 = u.atoms[self.guest_atoms[0]]
         bond = calc_bonds(at1.position, at2.position, u.atoms.dimensions)
         # convert to float so we avoid having a np.float64
         return float(bond) * unit.angstrom
@@ -87,10 +100,10 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
             format=_get_mda_coord_format(coordinates),
             topology_format=_get_mda_topology_format(topology),
         )
-        at1 = u.atoms[host_atoms[1]]
-        at2 = u.atoms[host_atoms[0]]
-        at3 = u.atoms[guest_atoms[0]]
-        at4 = u.atoms[guest_atoms[1]]
+        at1 = u.atoms[self.host_atoms[1]]
+        at2 = u.atoms[self.host_atoms[0]]
+        at3 = u.atoms[self.guest_atoms[0]]
+        at4 = u.atoms[self.guest_atoms[1]]
 
         angleA = calc_angles(
             at1.position, at2.position, at3.position, u.atoms.dimensions
@@ -121,21 +134,24 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
             format=_get_mda_coord_format(coordinates),
             topology_format=_get_mda_topology_format(topology),
         )
-        at1 = u.atoms[host_atoms[2]]
-        at2 = u.atoms[host_atoms[1]]
-        at3 = u.atoms[host_atoms[0]]
-        at4 = u.atoms[guest_atoms[0]]
-        at5 = u.atoms[guest_atoms[1]]
-        at6 = u.atoms[guest_atoms[2]]
+        at1 = u.atoms[self.host_atoms[2]]
+        at2 = u.atoms[self.host_atoms[1]]
+        at3 = u.atoms[self.host_atoms[0]]
+        at4 = u.atoms[self.guest_atoms[0]]
+        at5 = u.atoms[self.guest_atoms[1]]
+        at6 = u.atoms[self.guest_atoms[2]]
 
         dihA = calc_dihedrals(
-            at1.position, at2.position, at3.position, at4.position, u.atoms.dimensions
+            at1.position, at2.position, at3.position, at4.position,
+            box=u.dimensions
         )
         dihB = calc_dihedrals(
-            at2.position, at3.position, at4.position, at5.position, u.atoms.dimensions
+            at2.position, at3.position, at4.position, at5.position,
+            box=u.dimensions
         )
         dihC = calc_dihedrals(
-            at3.position, at4.position, at5.position, at6.position, u.atoms.dimensions
+            at3.position, at4.position, at5.position, at6.position,
+            box=u.dimensions
         )
         return dihA, dihB, dihC
 
@@ -213,7 +229,11 @@ def _get_bonded_angles_from_pool(
     return angles
 
 
-def _get_atom_pool(rdmol: Chem.Mol, rmsf: npt.NDArray) -> Optional[set[int]]:
+def _get_atom_pool(
+    rdmol: Chem.Mol,
+    rmsf: npt.NDArray,
+    rmsf_cutoff: unit.Quantity
+) -> Optional[set[int]]:
     """
     Filter atoms based on rmsf & rings, defaulting to heavy atoms if
     there are not enough.
@@ -291,8 +311,8 @@ def get_guest_atom_candidates(
     """
     u = mda.Universe(
         topology,
-        coordinates,
-        format=_get_mda_coord_format(coordinates),
+        trajectory,
+        format=_get_mda_coord_format(trajectory),
         topology_format=_get_mda_topology_format(topology),
     )
 
@@ -314,18 +334,22 @@ def get_guest_atom_candidates(
     center = get_central_atom_idx(rdmol)
 
     # 3. Sort the atom pool based on their distance from the center
-    sorted_anchor_pool = _sort_by_distance_from_atom(rdmol, center, anchor_pool)
+    sorted_atom_pool = _sort_by_distance_from_atom(rdmol, center, atom_pool)
 
     # 4. Get a list of probable angles
     angles_list = []
-    for atom in sorted_anchor_pool:
-        angles = _get_bonded_angles_from_pool(rdmol, atom, sorted_anchor_pool)
-        for angle in _angles:
+    for atom in sorted_atom_pool:
+        angles = _get_bonded_angles_from_pool(rdmol, atom, sorted_atom_pool)
+        for angle in angles:
             # Check that the angle is at least not collinear
             angle_ag = ligand_ag.atoms[list(angle)]
             if not is_collinear(ligand_ag.positions, angle, u.dimensions):
                 angles_list.append(
-                    (angle_ag.atoms[0].ix, angle_ag.atoms[1].ix, angle_ag.atoms[2].ix)
+                    (
+                        angle_ag.atoms[0].ix,
+                        angle_ag.atoms[1].ix,
+                        angle_ag.atoms[2].ix
+                    )
                 )
 
     return angles_list
@@ -373,26 +397,29 @@ def get_host_atom_candidates(
     """
     u = mda.Universe(
         topology,
-        coordinates,
-        format=_get_mda_coord_format(coordinates),
+        trajectory,
+        format=_get_mda_coord_format(trajectory),
         topology_format=_get_mda_topology_format(topology),
     )
 
-    protein_ag1 = u.atoms[host_idxs]
-    protein_ag2 = protein_ag.select_atoms(protein_selection)
+    host_ag1 = u.atoms[host_idxs]
+    host_ag2 = host_ag1.select_atoms(host_selection)
 
     # 0. TODO: implement DSSP filter
-    # Should be able to just call MDA's DSSP method, but will need to catch an exception
+    # Should be able to just call MDA's DSSP method
+    # but will need to catch an exception
     if dssp_filter:
-        raise NotImplementedError("DSSP filtering is not currently implemented")
+        raise NotImplementedError(
+            "DSSP filtering is not currently implemented"
+        )
 
     # 1. Get the RMSF & filter
-    rmsf = get_local_rmsf(sub_protein_ag)
-    protein_ag3 = sub_protein_ag.atoms[rmsf[heavy_atoms] < rmsf_cutoff]
+    rmsf = get_local_rmsf(host_ag2)
+    protein_ag3 = host_ag2.atoms[rmsf < rmsf_cutoff]
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
-        protein_ag3, u.atoms[l1_idx], min_search_distance, max_search_distance
+        protein_ag3, u.atoms[l1_idx], min_distance, max_distance
     )
     atom_finder.run()
     return atom_finder.results.host_idxs
@@ -439,9 +466,15 @@ class EvaluateHostAtoms1(AnalysisBase):
         self.temperature = temperature
 
     def _prepare(self):
-        self.results.distances = np.zeros((len(self.host_atom_pool), self.n_frames))
-        self.results.angles = np.zeros((len(self.host_atom_pool), self.n_frames))
-        self.results.dihedrals = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.distances = np.zeros(
+            (len(self.host_atom_pool), self.n_frames)
+        )
+        self.results.angles = np.zeros(
+            (len(self.host_atom_pool), self.n_frames)
+        )
+        self.results.dihedrals = np.zeros(
+            (len(self.host_atom_pool), self.n_frames)
+        )
         self.results.collinear = np.empty(
             (len(self.host_atom_pool), self.n_frames),
             dtype=bool,
@@ -517,7 +550,7 @@ class EvaluateHostAtoms1(AnalysisBase):
                 self.results.valid[i] = True
 
 
-class EvaluateHostAtoms2(EvaluateH21Atoms):
+class EvaluateHostAtoms2(EvaluateHostAtoms1):
     def _prepare(self):
         self.results.distances1 = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.ditances2 = np.zeros((len(self.host_atom_pool), self.n_frames))
@@ -554,8 +587,8 @@ class EvaluateHostAtoms2(EvaluateH21Atoms):
                 positions=np.vstack((at.position, self.reference.positions)),
                 dimensions=self.reference.dimensions,
             )
-            self.results.distances1[i][self._frame_index] = distance
-            self.results.distances2[i][self._frame_index] = angle
+            self.results.distances1[i][self._frame_index] = distance1
+            self.results.distances2[i][self._frame_index] = distance2
             self.results.dihedrals[i][self._frame_index] = dihedral
             self.results.collinear[i][self._frame_index] = collinear
 
@@ -585,9 +618,13 @@ class EvaluateHostAtoms2(EvaluateH21Atoms):
 
 
 def _find_host_angle(
-    g0g1g2_atoms, host_atom_pool, minimum_distance, angle_force_constant, temperature
+    g0g1g2_atoms,
+    host_atom_pool,
+    minimum_distance,
+    angle_force_constant,
+    temperature
 ):
-    h0_eval = EvaluateHAtoms1(
+    h0_eval = EvaluateHostAtoms1(
         g0g1g2_atoms,
         host_atom_pool,
         minimum_distance,
@@ -599,7 +636,7 @@ def _find_host_angle(
     for i, valid_h0 in enumerate(h0_eval.results.valid):
         if valid_h0:
             g1g2h0_atoms = g0g1g2_atoms.atoms[1:] + host_atom_pool.atoms[i]
-            h1_eval = EvaluateHAtoms1(
+            h1_eval = EvaluateHostAtoms1(
                 g1g2h0_atoms,
                 host_atom_pool,
                 minimum_distance,
@@ -608,7 +645,7 @@ def _find_host_angle(
             )
             for j, valid_h1 in enumerate(h1_eval.results.valid):
                 g2h0h1_atoms = g1g2h0_atoms.atoms[1:] + host_atom_pool.atoms[j]
-                h2_eval = EvaluateHAtoms2(
+                h2_eval = EvaluateHostAtoms2(
                     g2h0h1_atoms,
                     host_atom_pool,
                     minimum_distance,
@@ -632,11 +669,11 @@ def find_boresch_restraint(
     guest_rdmol: Chem.Mol,
     guest_idxs: list[int],
     host_idxs: list[int],
-    guest_restraint_atom_idxs: Optional[list[int]] = None,
+    guest_restraint_atoms_idxs: Optional[list[int]] = None,
     host_restraint_atoms_idxs: Optional[list[int]] = None,
     host_selection: str = "all",
     dssp_filter: bool = False,
-    rmsf_custoff: unit.Quantity = 0.1 * unit.nanometer,
+    rmsf_cutoff: unit.Quantity = 0.1 * unit.nanometer,
     host_min_distance: unit.Quantity = 1 * unit.nanometer,
     host_max_distance: unit.Quantity = 3 * unit.nanometer,
     angle_force_constant: unit.Quantity = (
@@ -657,32 +694,35 @@ def find_boresch_restraint(
     """
     u = mda.Universe(
         topology,
-        coordinates,
-        format=_get_mda_coord_format(coordinates),
+        trajectory,
+        format=_get_mda_coord_format(trajectory),
         topology_format=_get_mda_topology_format(topology),
     )
     u.trajectory[-1]  # Work with the final frame
 
-    if (guest_restraint_atoms_idxs is not None) and (
-        host_restraint_atoms_idxs is not None
-    ):
-        # In this case assume the picked atoms were intentional / representative
-        # of the input and go with it
+    if (guest_restraint_atoms_idxs is not None) and (host_restraint_atoms_idxs is not None):  # fmt: skip
+        # In this case assume the picked atoms were intentional /
+        # representative of the input and go with it
         guest_ag = u.select_atoms[guest_idxs]
-        guest_angle = [at.ix for at in guest_ag.atoms[guest_restraint_atom_idxs]]
+        guest_angle = [
+            at.ix for at in guest_ag.atoms[guest_restraint_atoms_idxs]
+        ]
         host_ag = u.select_atoms[host_idxs]
-        host_angle = [at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]]
+        host_angle = [
+            at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]
+        ]
         # TODO sort out the return on this
-        return BoreschRestraintGeometry(host_atoms=host_angle, guest_atoms=guest_angle)
+        return BoreschRestraintGeometry(
+            host_atoms=host_angle, guest_atoms=guest_angle
+        )
 
-    if (guest_restraint_atoms_idxs is not None) ^ (
-        host_restraint_atoms_idxs is not None
-    ):
+    if (guest_restraint_atoms_idxs is not None) ^ (host_restraint_atoms_idxs is not None):  # fmt: skip
         # This is not an intended outcome, crash out here
         errmsg = (
-            "both ``guest_restraints_atoms_idxs`` and ``host_restraint_atoms_idxs`` "
+            "both ``guest_restraints_atoms_idxs`` and "
+            "``host_restraint_atoms_idxs`` "
             "must be set or both must be None. "
-            f"Got {guest_restraint_atoms_idxs} and {host_atoms_restraint_atoms_idxs}"
+            f"Got {guest_restraint_atoms_idxs} and {host_restraint_atoms_idxs}"
         )
         raise ValueError(errmsg)
 
@@ -710,7 +750,7 @@ def find_boresch_restraint(
         l1_idx=guest_angle[0],
         host_selection=host_selection,
         dssp_filter=dssp_filter,
-        rmsf_cutoff=rmsf_custoff,
+        rmsf_cutoff=rmsf_cutoff,
         min_distance=host_min_distance,
         max_distance=host_max_distance,
     )
@@ -732,4 +772,6 @@ def find_boresch_restraint(
         errmsg = "No suitable host atoms could be found"
         raise ValueError(errmsg)
 
-    return BoreschRestraintGeometry(host_atoms=host_angle, guest_atoms=guest_angle)
+    return BoreschRestraintGeometry(
+        host_atoms=host_angle, guest_atoms=guest_angle
+    )

@@ -7,29 +7,26 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import abc
-from pydantic.v1 import BaseModel, validator
-
+from typing import Union, Optional
 import numpy as np
 import numpy.typing as npt
-from scipy.stats import circvar, circmean, circstd
+from scipy.stats import circvar
 
+import openmm
 from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
-from openff.models.types import FloatQuantity, ArrayQuantity
 import networkx as nx
 from rdkit import Chem
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
-from MDAnalysis.analysis.rmsf import RMSF
-from MDAnalysis.lib.distances import calc_bonds, calc_angles, minimize_vectors
+from MDAnalysis.analysis.rms import RMSF
+from MDAnalysis.lib.distances import minimize_vectors, capped_distance
 from MDAnalysis.coordinates.memory import MemoryReader
 
 from openfe_analysis.transformations import Aligner, NoJump
 
 
 DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
-ANGLE_FRC_CONSTANT_TYPE = FloatQuantity["unit.kilojoule_per_mole / unit.radians**2"]
 
 
 def _get_mda_coord_format(
@@ -97,7 +94,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
     aromatic_rings = []
 
     for ring in ringinfo.AtomRings():
-        if all(a in aroms for a in ring):
+        if all(a in arom_idxs for a in ring):
             aromatic_rings.append(ring)
 
     return aromatic_rings
@@ -190,13 +187,14 @@ def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
     Returns
     -------
     result : bool
-        Returns True if any sequential pair of vectors is collinear; False otherwise.
+        Returns True if any sequential pair of vectors is collinear;
+        False otherwise.
 
     Notes
     -----
     Originally from Yank.
     """
-    results = False
+    result = False
     for i in range(len(atoms) - 2):
         v1 = minimize_vectors(
             positions[atoms[i + 1], :] - positions[atoms[i], :],
@@ -214,9 +212,9 @@ def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
 
 
 def check_angle_not_flat(
-    angle: FloatQuantity["radians"],
-    force_constant: ANGLE_FRC_CONSTANT_TYPE = DEFAULT_ANGLE_FRC_CONSTANT,
-    temperature: FloatQuantity["kelvin"] = 298.15 * unit.kelvin,
+    angle: unit.Quantity,
+    force_constant: unit.Quantity = DEFAULT_ANGLE_FRC_CONSTANT,
+    temperature: unit.Quantity = 298.15 * unit.kelvin,
 ) -> bool:
     """
     Check whether the chosen angle is less than 10 kT from 0 or pi radians
@@ -246,8 +244,8 @@ def check_angle_not_flat(
     RT = 8.31445985 * 0.001 * temp_kelvin
 
     # check if angle is <10kT from 0 or 180
-    check1 = 0.5 * frc_const * np.power((angle - 0.0), 2)
-    check2 = 0.5 * frc_const * np.power((angle - np.pi), 2)
+    check1 = 0.5 * frc_const * np.power((angle_rads - 0.0), 2)
+    check2 = 0.5 * frc_const * np.power((angle_rads - np.pi), 2)
     ang_check_1 = check1 / RT
     ang_check_2 = check2 / RT
     if ang_check_1 < 10.0 or ang_check_2 < 10.0:
@@ -256,9 +254,9 @@ def check_angle_not_flat(
 
 
 def check_dihedral_bounds(
-    dihedral: FloatQuantity["radians"],
-    lower_cutoff: FloatQuantity["radians"] = 2.618 * unit.radians,
-    upper_cutoff: FloatQuantity["radians"] = -2.618 * unit.radians,
+    dihedral: unit.Quantity,
+    lower_cutoff: unit.Quantity = 2.618 * unit.radians,
+    upper_cutoff: unit.Quantity = -2.618 * unit.radians,
 ) -> bool:
     """
     Check that a dihedral does not exceed the bounds set by
@@ -285,11 +283,10 @@ def check_dihedral_bounds(
 
 
 def check_angular_variance(
-    angles: ArrayQuantity["radians"],
-    width: FloatQuantity["radians"],
-    upper_bound: FloatQuantity["radians"],
-    lower_bound: FloatQuantity["radians"],
-    width: FloatQuantity["radians"],
+    angles: unit.Quantity,
+    upper_bound: unit.Quantity,
+    lower_bound: unit.Quantity,
+    width: unit.Quantity,
 ) -> bool:
     """
     Check that the variance of a list of ``angles`` does not exceed
@@ -299,12 +296,13 @@ def check_angular_variance(
     ----------
     angles : ArrayLike[unit.Quantity]
       An array of angles in units compatible with radians.
-    upper_bound: FloatQuantity['radians']
-      The upper bound in the angle range.
-    lower_bound: FloatQuantity['radians']
-      The lower bound in the angle range.
+    upper_bound: unit.Quantity
+      The upper bound in the angle range in radians compatible units.
+    lower_bound: unit.Quantity
+      The lower bound in the angle range in radians compatible units.
     width : unit.Quantity
-      The width to check the variance against, in units compatible with radians.
+      The width to check the variance against, in units compatible with
+      radians.
 
     Returns
     -------

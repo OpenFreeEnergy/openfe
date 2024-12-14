@@ -7,14 +7,15 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import abc
-from pydantic.v1 import BaseModel, validator
-
+import pathlib
+from typing import Union, Optional
 import numpy as np
+from openmm import app
 from openff.units import unit
+from openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
-from MDAnalysis.lib.distances import calc_bonds, calc_angles
+from MDAnalysis.lib.distances import calc_bonds
 
 from .harmonic import (
     DistanceRestraintGeometry,
@@ -27,7 +28,6 @@ class FlatBottomDistanceGeometry(DistanceRestraintGeometry):
     A geometry class for a flat bottom distance restraint between two groups
     of atoms.
     """
-
     well_radius: FloatQuantity["nanometer"]
 
 
@@ -45,8 +45,8 @@ class COMDistanceAnalysis(AnalysisBase):
 
     _analysis_algorithm_is_parallelizable = False
 
-    def __init__(self, host_atoms, guest_atoms, search_distance, **kwargs):
-        super().__init__(host_atoms.universe.trajectory, **kwargs)
+    def __init__(self, group1, group2, **kwargs):
+        super().__init__(group1.universe.trajectory, **kwargs)
 
         self.ag1 = group1
         self.ag2 = group2
@@ -67,7 +67,7 @@ class COMDistanceAnalysis(AnalysisBase):
 
 
 def get_flatbottom_distance_restraint(
-    topology: Union[str, openmm.app.Topology],
+    topology: Union[str, app.Topology],
     trajectory: pathlib.Path,
     topology_format: Optional[str] = None,
     host_atoms: Optional[list[int]] = None,

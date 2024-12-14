@@ -10,10 +10,6 @@ TODO
 import abc
 from pydantic.v1 import BaseModel, validator
 
-from openff.units import unit
-import MDAnalysis as mda
-from MDAnalysis.lib.distances import calc_bonds, calc_angles
-
 
 class BaseRestraintGeometry(BaseModel, abc.ABC):
     class Config:
@@ -47,4 +43,3 @@ class HostGuestRestraintGeometry(BaseRestraintGeometry):
             errmsg = "negative indices passed"
             raise ValueError(errmsg)
         return v
-

@@ -44,7 +44,7 @@ def get_periodic_boresch_energy_function(
 
 
 def get_custom_compound_bond_force(
-    n_particles: int = 6, energy_function: str = BORESCH_ENERGY_FUNCTION
+    energy_function: str, n_particles: int = 6,
 ):
     """
     Return an OpenMM CustomCompoundForce

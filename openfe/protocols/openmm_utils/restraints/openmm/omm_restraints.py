@@ -15,7 +15,6 @@ TODO
 * Add Periodic Torsion Boresch class
 """
 import abc
-from typing import Optional, Union, Callable
 
 import numpy as np
 import openmm
@@ -31,11 +30,16 @@ from openff.units.openmm import to_openmm, from_openmm
 from openff.units import unit
 
 from gufe.settings.models import SettingsBaseModel
-from openfe.protocols.openmm_utils.omm_forces import (
+
+from openfe.protocols.openmm_utils.restraints.geometry import (
+    BaseRestraintGeometry,
+    DistanceRestraintGeometry,
+    BoreschRestraintGeometry
+)
+from .omm_forces import (
     get_custom_compound_bond_force,
     add_force_in_separate_group,
     get_boresch_energy_function,
-    get_periodic_boresch_energy_function,
 )
 
 
@@ -49,7 +53,8 @@ class RestraintParameterState(GlobalParameterState):
     ----------
     parameters_name_suffix : Optional[str]
       If specified, the state will control a modified version of the parameter
-      ``lambda_restraints_{parameters_name_suffix}` instead of just ``lambda_restraints``.
+      ``lambda_restraints_{parameters_name_suffix}` instead of just
+      ``lambda_restraints``.
     lambda_restraints : Optional[float]
       The strength of the restraint. If defined, must be between 0 and 1.
 
@@ -66,7 +71,8 @@ class RestraintParameterState(GlobalParameterState):
     def lambda_restraints(self, instance, new_value):
         if new_value is not None and not (0.0 <= new_value <= 1.0):
             errmsg = (
-                "lambda_restraints must be between 0.0 and 1.0, " f"got {new_value}"
+                "lambda_restraints must be between 0.0 and 1.0 "
+                f"and got {new_value}"
             )
             raise ValueError(errmsg)
         # Not crashing out on None to match upstream behaviour
@@ -101,11 +107,19 @@ class BaseHostGuestRestraints(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def add_force(self, thermodynamic_state: ThermodynamicState, geometry: BaseRestraintGeometry):
+    def add_force(
+        self,
+        thermodynamic_state: ThermodynamicState,
+        geometry: BaseRestraintGeometry
+    ):
         pass
 
     @abc.abstractmethod
-    def get_standard_state_correction(self, thermodynamic_state: ThermodynamicState, geometry: BaseRestraintGeometry):
+    def get_standard_state_correction(
+        self,
+        thermodynamic_state: ThermodynamicState,
+        geometry: BaseRestraintGeometry
+    ):
         pass
 
     @abc.abstractmethod
@@ -118,8 +132,8 @@ class SingleBondMixin:
         if len(geometry.host_atoms) != 1 or len(geometry.guest_atoms) != 1:
             errmsg = (
                 "host_atoms and guest_atoms must only include a single index "
-                f"each, got {len(host_atoms)} and "
-                f"{len(guest_atoms)} respectively."
+                f"each, got {len(geometry.host_atoms)} and "
+                f"{len(geometry.guest_atoms)} respectively."
             )
             raise ValueError(errmsg)
         super()._verify_geometry(geometry)
@@ -127,19 +141,25 @@ class SingleBondMixin:
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     def _verify_inputs(self) -> None:
-        if not isinstance(self.settings, BaseDistanceRestraintSettings):
+        if not isinstance(self.settings, DistanceRestraintSettings):
             errmsg = f"Incorrect settings type {self.settings} passed through"
             raise ValueError(errmsg)
 
-    def _verify_geometry(self, geometry: DistanceRestraintGeometry)
+    def _verify_geometry(self, geometry: DistanceRestraintGeometry):
         if not isinstance(geometry, DistanceRestraintGeometry):
             errmsg = f"Incorrect geometry class type {geometry} passed through"
             raise ValueError(errmsg)
 
-    def add_force(self, thermodynamic_state: ThermodynamicState, geometry: DistanceRestraintGeometry) -> None:
+    def add_force(
+        self,
+        thermodynamic_state: ThermodynamicState,
+        geometry: DistanceRestraintGeometry
+    ) -> None:
         self._verify_geometry(geometry)
         force = self._get_force(geometry)
-        force.setUsesPeriodicBoundaryConditions(thermodynamic_state.is_periodic)
+        force.setUsesPeriodicBoundaryConditions(
+            thermodynamic_state.is_periodic
+        )
         # Note .system is a call to get_system() so it's returning a copy
         system = thermodynamic_state.system
         add_force_in_separate_group(system, force)
@@ -162,9 +182,13 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         raise NotImplementedError("only implemented in child classes")
 
 
-class HarmonicBondRestraint(BaseRadiallySymmetricRestraintForce, SingleBondMixin):
+class HarmonicBondRestraint(
+    BaseRadiallySymmetricRestraintForce, SingleBondMixin
+):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(
+            self.settings.spring_constant
+        ).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintBondForce(
             spring_constant=spring_constant,
             restrained_atom_index1=geometry.host_atoms[0],
@@ -173,10 +197,16 @@ class HarmonicBondRestraint(BaseRadiallySymmetricRestraintForce, SingleBondMixin
         )
 
 
-class FlatBottomBondRestraint(BaseRadiallySymmetricRestraintForce, SingleBondMixin):
+class FlatBottomBondRestraint(
+    BaseRadiallySymmetricRestraintForce, SingleBondMixin
+):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
-        well_radius = to_openmm(geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(
+            self.settings.spring_constant
+        ).value_in_unit_system(omm_unit.md_unit_system)
+        well_radius = to_openmm(
+            geometry.well_radius
+        ).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintBondForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
@@ -188,7 +218,9 @@ class FlatBottomBondRestraint(BaseRadiallySymmetricRestraintForce, SingleBondMix
 
 class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
+        spring_constant = to_openmm(
+            self.settings.spring_constant
+        ).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintForce(
             spring_constant=spring_constant,
             restrained_atom_index1=geometry.host_atoms,
@@ -199,9 +231,13 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
 
 class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     def _get_force(self, geometry: DistanceRestraintGeometry) -> openmm.Force:
-        spring_constant = to_openmm(self.settings.spring_constant).value_in_unit_system(omm_unit.md_unit_system)
-        well_radius = to_openmm(geometry.well_radius).value_in_unit_system(omm_unit.md_unit_system)
-        return FlatBottomRestraintBondForce(
+        spring_constant = to_openmm(
+            self.settings.spring_constant
+        ).value_in_unit_system(omm_unit.md_unit_system)
+        well_radius = to_openmm(
+            geometry.well_radius
+        ).value_in_unit_system(omm_unit.md_unit_system)
+        return FlatBottomRestraintForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
             restrained_atom_index1=geometry.host_atoms,
@@ -221,10 +257,16 @@ class BoreschRestraint(BaseHostGuestRestraints):
             errmsg = f"Incorrect geometry class type {geometry} passed through"
             raise ValueError(errmsg)
 
-    def add_force(self, thermodynamic_state: ThermodynamicState, geometry: BoreschRestraintGeometry) -> None:
-        _verify_geometry(geometry)
+    def add_force(
+        self,
+        thermodynamic_state: ThermodynamicState,
+        geometry: BoreschRestraintGeometry
+    ) -> None:
+        self._verify_geometry(geometry)
         force = self._get_force(geometry)
-        force.setUsesPeriodicBoundaryConditions(thermodynamic_state.is_periodic)
+        force.setUsesPeriodicBoundaryConditions(
+            thermodynamic_state.is_periodic
+        )
         # Note .system is a call to get_system() so it's returning a copy
         system = thermodynamic_state.system
         add_force_in_separate_group(system, force)
@@ -236,7 +278,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
         )
 
         force = get_custom_compound_bond_force(
-            n_particles=6, energy_function=efunc
+            energy_function=efunc, n_particles=6,
         )
 
         param_values = []
@@ -256,7 +298,9 @@ class BoreschRestraint(BaseHostGuestRestraints):
             'phi_C0': geometry.phi_C0,
         }
         for key, val in parameter_dict.items():
-            param_values.append(to_openmm(val).value_in_unit_system(omm_unit.md_unit_system))
+            param_values.append(
+                to_openmm(val).value_in_unit_system(omm_unit.md_unit_system)
+            )
             force.addPerBondParameter(key)
 
         force.addGlobalParameter(self.controlling_parameter_name, 1.0)
@@ -264,7 +308,9 @@ class BoreschRestraint(BaseHostGuestRestraints):
         return force
 
     def get_standard_state_correction(
-        self, thermodynamic_state: ThermodynamicState, geometry: BoreschRestraintGeometry
+        self,
+        thermodynamic_state: ThermodynamicState,
+        geometry: BoreschRestraintGeometry
     ) -> unit.Quantity:
         self._verify_geometry(geometry)
 
@@ -279,14 +325,16 @@ class BoreschRestraint(BaseHostGuestRestraints):
         # restraint energies
         K_r = self.settings.K_r.to('kilojoule_per_mole / nm ** 2')
         K_thetaA = self.settings.K_thetaA.to('kilojoule_per_mole / radians ** 2')
-        k_thetaB = self.settings.K_thetaB.to('kilojoule_per_mole / radians ** 2')
+        K_thetaB = self.settings.K_thetaB.to('kilojoule_per_mole / radians ** 2')
         K_phiA = self.settings.K_phiA.to('kilojoule_per_mole / radians ** 2')
         K_phiB = self.settings.K_phiB.to('kilojoule_per_mole / radians ** 2')
         K_phiC = self.settings.K_phiC.to('kilojoule_per_mole / radians ** 2')
 
         numerator1 = 8.0 * (np.pi**2) * StandardV
         denum1 = (r_aA0**2) * sin_thetaA0 * sin_thetaB0
-        numerator2 = np.sqrt(K_r * K_thetaA * K_thetaB * K_phiA * K_phiB * K_phiC)
+        numerator2 = np.sqrt(
+            K_r * K_thetaA * K_thetaB * K_phiA * K_phiB * K_phiC
+        )
         denum2 = (2.0 * np.pi * kt)**3
 
         dG = -kt * np.log((numerator1/denum1) * (numerator2/denum2))
