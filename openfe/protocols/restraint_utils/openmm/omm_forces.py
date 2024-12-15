@@ -43,6 +43,20 @@ def get_boresch_energy_function(
 def get_periodic_boresch_energy_function(
     control_parameter: str,
 ) -> str:
+    """
+    Return a Boresch-style energy function with a periodic torsion for a
+    CustomCompoundForce.
+
+    Parameters
+    ----------
+    control_parameter : str
+      A string for the lambda scaling control parameter
+
+    Returns
+    -------
+    str
+      The energy function string.
+    """
     energy_function = (
         f"{control_parameter} * E; "
         "E = (K_r/2)*(distance(p3,p4) - r_aA0)^2 "
@@ -104,8 +118,12 @@ def add_force_in_separate_group(
     Mostly reproduced from `Yank <https://github.com/choderalab/yank>`_.
     """
     available_force_groups = set(range(32))
-    for force in system.getForces():
-        available_force_groups.discard(force.getForceGroup())
+    for existing_force in system.getForces():
+        available_force_groups.discard(existing_force.getForceGroup())
+
+    if len(available_force_groups) == 0:
+        errmsg = "No available force groups could be found"
+        raise ValueError(errmsg)
 
     force.setForceGroup(min(available_force_groups))
     system.addForce(force)

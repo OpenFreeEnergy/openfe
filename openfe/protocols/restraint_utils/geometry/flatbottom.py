@@ -19,8 +19,9 @@ from MDAnalysis.lib.distances import calc_bonds
 
 from .harmonic import (
     DistanceRestraintGeometry,
-    _get_selection,
 )
+
+from .utils import _get_mda_topology_format, _get_mda_selection
 
 
 class FlatBottomDistanceGeometry(DistanceRestraintGeometry):
@@ -42,7 +43,6 @@ class COMDistanceAnalysis(AnalysisBase):
     group2 : MDANalysis.AtomGroup
       Atoms defining the second centroid.
     """
-
     _analysis_algorithm_is_parallelizable = False
 
     def __init__(self, group1, group2, **kwargs):
@@ -68,18 +68,55 @@ class COMDistanceAnalysis(AnalysisBase):
 
 def get_flatbottom_distance_restraint(
     topology: Union[str, app.Topology],
-    trajectory: pathlib.Path,
-    topology_format: Optional[str] = None,
+    trajectory: Union[str, pathlib.Path],
     host_atoms: Optional[list[int]] = None,
     guest_atoms: Optional[list[int]] = None,
     host_selection: Optional[str] = None,
     guest_selection: Optional[str] = None,
     padding: unit.Quantity = 0.5 * unit.nanometer,
 ) -> FlatBottomDistanceGeometry:
-    u = mda.Universe(topology, trajectory, topology_format=topology_format)
+    """
+    Get a FlatBottomDistanceGeometry by analyzing the COM distance
+    change between two sets of atoms.
 
-    guest_ag = _get_selection(u, guest_atoms, guest_selection)
-    host_ag = _get_selection(u, host_atoms, host_selection)
+    The ``well_radius`` is defined as the maximum COM distance plus
+    ``padding``.
+
+    Parameters
+    ----------
+    topology : Union[str, app.Topology]
+      A topology defining the system.
+    trajectory : Union[str, pathlib.Path]
+      A coordinate trajectory for the system.
+    host_atoms : Optional[list[int]]
+      A list of host atoms indices. Either ``host_atoms`` or
+      ``host_selection`` must be defined.
+    guest_atoms : Optional[list[int]]
+      A list of guest atoms indices. Either ``guest_atoms`` or
+      ``guest_selection`` must be defined.
+    host_selection : Optional[str]
+      An MDAnalysis selection string to define the host atoms.
+      Either ``host_atoms`` or ``host_selection`` must be defined.
+    guest_selection : Optional[str]
+      An MDAnalysis selection string to define the guest atoms.
+      Either ``guest_atoms`` or ``guest_selection`` must be defined.
+    padding : unit.Quantity
+      A padding value to add to the ``well_radius`` definition.
+      Must be in units compatible with nanometers.
+
+    Returns
+    -------
+    FlatBottomDistanceGeometry
+      An object defining a flat bottom restraint geometry.
+    """
+    u = mda.Universe(
+        topology,
+        trajectory,
+        topology_format=_get_mda_topology_format(topology)
+    )
+
+    guest_ag = _get_mda_selection(u, guest_atoms, guest_selection)
+    host_ag = _get_mda_selection(u, host_atoms, host_selection)
 
     com_dists = COMDistanceAnalysis(guest_ag, host_ag)
     com_dists.run()

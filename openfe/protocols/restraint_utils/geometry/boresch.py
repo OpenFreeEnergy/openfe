@@ -14,6 +14,7 @@ from rdkit import Chem
 
 import openmm
 from openff.units import unit
+from openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
@@ -51,107 +52,137 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     Where HX represents the X index of ``host_atoms`` and GX
     the X index of ``guest_atoms``.
     """
+    r_aA0: FloatQuantity['nanometer']
+    """
+    The equilibrium distance between H0 and G0.
+    """
+    theta_A0: FloatQuantity['radians']
+    """
+    The equilibrium angle value between H1, H0, and G0.
+    """
+    theta_B0: FloatQuantity['radians']
+    """
+    The equilibrium angle value between H0, G0, and G1.
+    """
+    phi_A0: FloatQuantity['radians']
+    """
+    The equilibrium dihedral value between H2, H1, H0, and G0.
+    """
+    phi_B0: FloatQuantity['radians']
+
+    """
+    The equilibrium dihedral value between H1, H0, G0, and G1.
+    """
+    phi_C0: FloatQuantity['radians']
+
+    """
+    The equilibrium dihedral value between H0, G0, G1, and G2.
+    """
 
     def get_bond_distance(
         self,
-        topology: Union[str, pathlib.Path, openmm.app.Topology],
-        coordinates: Union[str, pathlib.Path, npt.NDArray],
+        universe: mda.Universe,
     ) -> unit.Quantity:
         """
         Get the H0 - G0 distance.
 
         Parameters
         ----------
-        topology : Union[str, openmm.app.Topology]
-        coordinates : Union[str, npt.NDArray]
-          A coordinate file or NDArray in frame-atom-coordinate
-          order in Angstrom.
+        universe : mda.Universe
+          A Universe representing the system of interest.
+
+        Returns
+        -------
+        bond : unit.Quantity
+          The H0-G0 distance.
         """
-        u = mda.Universe(
-            topology,
-            coordinates,
-            format=_get_mda_coord_format(coordinates),
-            topology_format=_get_mda_topology_format(topology),
+        at1 = universe.atoms[self.host_atoms[0]]
+        at2 = universe.atoms[self.guest_atoms[0]]
+        bond = calc_bonds(
+            at1.position,
+            at2.position,
+            box=universe.atoms.dimensions
         )
-        at1 = u.atoms[self.host_atoms[0]]
-        at2 = u.atoms[self.guest_atoms[0]]
-        bond = calc_bonds(at1.position, at2.position, u.atoms.dimensions)
         # convert to float so we avoid having a np.float64
         return float(bond) * unit.angstrom
 
     def get_angles(
         self,
-        topology: Union[str, pathlib.Path, openmm.app.Topology],
-        coordinates: Union[str, pathlib.Path, npt.NDArray],
-    ) -> unit.Quantity:
+        universe: mda.Universe,
+    ) -> tuple[unit.Quantity, unit.Quantity]:
         """
         Get the H1-H0-G0, and H0-G0-G1 angles.
 
         Parameters
         ----------
-        topology : Union[str, openmm.app.Topology]
-        coordinates : Union[str, npt.NDArray]
-          A coordinate file or NDArray in frame-atom-coordinate
-          order in Angstrom.
+        universe : mda.Universe
+          A Universe representing the system of interest.
+
+        Returns
+        -------
+        angleA : unit.Quantity
+          The H1-H0-G0 angle.
+        angleB : unit.Quantity
+          The H0-G0-G1 angle.
         """
-        u = mda.Universe(
-            topology,
-            coordinates,
-            format=_get_mda_coord_format(coordinates),
-            topology_format=_get_mda_topology_format(topology),
-        )
-        at1 = u.atoms[self.host_atoms[1]]
-        at2 = u.atoms[self.host_atoms[0]]
-        at3 = u.atoms[self.guest_atoms[0]]
-        at4 = u.atoms[self.guest_atoms[1]]
+        at1 = universe.atoms[self.host_atoms[1]]
+        at2 = universe.atoms[self.host_atoms[0]]
+        at3 = universe.atoms[self.guest_atoms[0]]
+        at4 = universe.atoms[self.guest_atoms[1]]
 
         angleA = calc_angles(
-            at1.position, at2.position, at3.position, u.atoms.dimensions
+            at1.position,
+            at2.position,
+            at3.position,
+            box=universe.atoms.dimensions
         )
         angleB = calc_angles(
-            at2.position, at3.position, at4.position, u.atoms.dimensions
+            at2.position,
+            at3.position,
+            at4.position,
+            box=universe.atoms.dimensions
         )
         return angleA, angleB
 
     def get_dihedrals(
         self,
-        topology: Union[str, pathlib.Path, openmm.app.Topology],
-        coordinates: Union[str, pathlib.Path, npt.NDArray],
-    ) -> unit.Quantity:
+        universe: mda.Universe,
+    ) -> tuple[unit.Quantity, unit.Quantity, unit.Quantity]:
         """
         Get the H2-H1-H0-G0, H1-H0-G0-G1, and H0-G0-G1-G2 dihedrals.
 
         Parameters
         ----------
-        topology : Union[str, openmm.app.Topology]
-        coordinates : Union[str, npt.NDArray]
-          A coordinate file or NDArray in frame-atom-coordinate
-          order in Angstrom.
+        universe : mda.Universe
+          A Universe representing the system of interest.
+
+        Returns
+        -------
+        dihA : unit.Quantity
+          The H2-H1-H0-G0 angle.
+        dihB : unit.Quantity
+          The H1-H0-G0-G1 angle.
+        dihC : unit.Quantity
+          The H0-G0-G1-G2 angle.
         """
-        u = mda.Universe(
-            topology,
-            coordinates,
-            format=_get_mda_coord_format(coordinates),
-            topology_format=_get_mda_topology_format(topology),
-        )
-        at1 = u.atoms[self.host_atoms[2]]
-        at2 = u.atoms[self.host_atoms[1]]
-        at3 = u.atoms[self.host_atoms[0]]
-        at4 = u.atoms[self.guest_atoms[0]]
-        at5 = u.atoms[self.guest_atoms[1]]
-        at6 = u.atoms[self.guest_atoms[2]]
+        at1 = universe.atoms[self.host_atoms[2]]
+        at2 = universe.atoms[self.host_atoms[1]]
+        at3 = universe.atoms[self.host_atoms[0]]
+        at4 = universe.atoms[self.guest_atoms[0]]
+        at5 = universe.atoms[self.guest_atoms[1]]
+        at6 = universe.atoms[self.guest_atoms[2]]
 
         dihA = calc_dihedrals(
             at1.position, at2.position, at3.position, at4.position,
-            box=u.dimensions
+            box=universe.dimensions
         )
         dihB = calc_dihedrals(
             at2.position, at3.position, at4.position, at5.position,
-            box=u.dimensions
+            box=universe.dimensions
         )
         dihC = calc_dihedrals(
             at3.position, at4.position, at5.position, at6.position,
-            box=u.dimensions
+            box=universe.dimensions
         )
         return dihA, dihB, dihC
 
@@ -307,7 +338,7 @@ def get_guest_atom_candidates(
 
     TODO
     ----
-    Remember to update the RDMol with the last frame positions.
+    Should the RDMol have a specific frame position?
     """
     u = mda.Universe(
         topology,
@@ -663,6 +694,66 @@ def _find_host_angle(
     return None
 
 
+def _get_restraint_distances(
+    atomgroup: mda.AtomGroup
+) -> tuple[unit.Quantity]:
+    """
+    Get the bond, angle, and dihedral distances for an input atomgroup
+    defining the six atoms for a Boresch-like restraint.
+
+    The atoms must be in the order of H0, H1, H2, G0, G1, G2.
+
+    Parameters
+    ----------
+    atomgroup : mda.AtomGroup
+      An AtomGroup defining the restrained atoms in order.
+
+    Returns
+    -------
+    bond : unit.Quantity
+      The H0-G0 bond value.
+    angle1 : unit.Quantity
+      The H1-H0-G0 angle value.
+    angle2 : unit.Quantity
+      The H0-G0-G1 angle value.
+    dihed1 : unit.Quantity
+      The H2-H1-H0-G0 dihedral value.
+    dihed2 : unit.Quantity
+      The H1-H0-G0-G1 dihedral value.
+    dihed3 : unit.Quantity
+      The H0-G0-G1-G2 dihedral value.
+    """
+
+    bond = calc_bonds(
+        atomgroup.atoms[0].position,
+        atomgroup.atoms[3],
+        box=atomgroup.dimensions
+    )
+
+    angles = []
+    for idx_set in [[1, 0, 3], [0, 3, 4]]:
+        angle = calc_angles(
+            atomgroup.atoms[idx_set[0]].position,
+            atomgroup.atoms[idx_set[1]].position,
+            atomgroup.atoms[idx_set[2]].position,
+            box=atomgroup.dimensions,
+        )
+        angles.append(angle * unit.radians)
+
+    dihedrals = []
+    for idx_set in [[2, 1, 0, 3], [1, 0, 3, 4], [0, 3, 4, 5]]:
+        dihed = calc_dihedrals(
+            atomgroup.atoms[idx_set[0]].position,
+            atomgroup.atoms[idx_set[1]].position,
+            atomgroup.atoms[idx_set[2]].position,
+            atomgroup.atoms[idx_set[3]].position,
+            box=atomgroup.dimensions,
+        )
+        dihedrals.append(dihed * unit.radians)
+
+    return bond, angles[0], angles[1], dihedrals[0], dihedrals[1], dihedrals[2]
+
+
 def find_boresch_restraint(
     topology: Union[str, pathlib.Path, openmm.app.Topology],
     trajectory: Union[str, pathlib.Path],
@@ -682,15 +773,60 @@ def find_boresch_restraint(
     temperature: unit.Quantity = 298.15 * unit.kelvin,
 ) -> BoreschRestraintGeometry:
     """
-    Find suitable Boresch-style restraints between a host and guest entity.
+    Find suitable Boresch-style restraints between a host and guest entity
+    based on the approach of Baumann et al. [1] with some modifications.
 
     Parameters
     ----------
-    ...
+    topology : Union[str, pathlib.Path, openmm.app.Topology]
+      A topology of the system.
+    trajectory : Union[str, pathlib.Path]
+      A path to a coordinate trajectory file.
+    guest_rdmol : Chem.Mol
+      An RDKit Mol for the guest molecule.
+    guest_idxs : list[int]
+      Indices in the topology for the guest molecule.
+    host_idxs : list[int]
+      Indices in the topology for the host molecule.
+    guest_restraint_atoms_idxs : Optional[list[int]]
+      User selected indices of the guest molecule itself (i.e. indexed
+      starting a 0 for the guest molecule). This overrides the
+      restraint search and a restraint using these indices will
+      be retruned. Must be defined alongside ``host_restraint_atoms_idxs``.
+    host_restraint_atoms_idxs : Optional[list[int]]
+      User selected indices of the host molecule itself (i.e. indexed
+      starting a 0 for the hosts molecule). This overrides the
+      restraint search and a restraint using these indices will
+      be returnned. Must be defined alongside ``guest_restraint_atoms_idxs``.
+    host_selection : str
+      An MDAnalysis selection string to sub-select the host atoms.
+    dssp_filter : bool
+      Whether or not to filter the host atoms by their secondary structure.
+    rmsf_cutoff : unit.Quantity
+      The cutoff value for atom root mean square fluction. Atoms with RMSF
+      values above this cutoff will be disregarded.
+      Must be in units compatible with nanometer.
+    host_min_distance : unit.Quantity
+      The minimum distance between any host atom and the guest G0 atom.
+      Must be in units compatible with nanometer.
+    host_max_distance : unit.Quantity
+      The maximum distance between any host atom and the guest G0 atom.
+      Must be in units compatible with nanometer.
+    angle_force_constant : unit.Quantity
+      The force constant for the G1-G0-H0 and G0-H0-H1 angles. Must be
+      in units compatible with kilojoule / mole / radians ** 2.
+    temperature : unit.Quantity
+      The system temperature in units compatible with Kelvin.
 
     Returns
     -------
-    ...
+    BoreschRestraintGeometry
+      An object defining the parameters of the Boresch-like restraint.
+
+    References
+    ----------
+    [1] Baumann, Hannah M., et al. "Broadening the scope of binding free energy
+        calculations using a Separated Topologies approach." (2023).
     """
     u = mda.Universe(
         topology,
@@ -698,7 +834,6 @@ def find_boresch_restraint(
         format=_get_mda_coord_format(trajectory),
         topology_format=_get_mda_topology_format(topology),
     )
-    u.trajectory[-1]  # Work with the final frame
 
     if (guest_restraint_atoms_idxs is not None) and (host_restraint_atoms_idxs is not None):  # fmt: skip
         # In this case assume the picked atoms were intentional /
@@ -711,9 +846,23 @@ def find_boresch_restraint(
         host_angle = [
             at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]
         ]
-        # TODO sort out the return on this
+
+        # Set the equilibrium values as those of the final frame
+        u.trajectory[-1]
+        atomgroup = u.atoms[host_angle + guest_angle]
+        bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
+            atomgroup
+        )
+
         return BoreschRestraintGeometry(
-            host_atoms=host_angle, guest_atoms=guest_angle
+            host_atoms=host_angle,
+            guest_atoms=guest_angle,
+            r_aA0=bond,
+            theta_A0=ang1,
+            theta_B0=ang2,
+            phi_A0=dih1,
+            phi_B0=dih2,
+            phi_C0=dih3
         )
 
     if (guest_restraint_atoms_idxs is not None) ^ (host_restraint_atoms_idxs is not None):  # fmt: skip
@@ -772,6 +921,20 @@ def find_boresch_restraint(
         errmsg = "No suitable host atoms could be found"
         raise ValueError(errmsg)
 
+    # Set the equilibrium values as those of the final frame
+    u.trajectory[-1]
+    atomgroup = u.atoms[host_angle + guest_angle]
+    bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
+        atomgroup
+    )
+
     return BoreschRestraintGeometry(
-        host_atoms=host_angle, guest_atoms=guest_angle
+        host_atoms=host_angle,
+        guest_atoms=guest_angle,
+        r_aA0=bond,
+        theta_A0=ang1,
+        theta_B0=ang2,
+        phi_A0=dih1,
+        phi_B0=dih2,
+        phi_C0=dih3
     )

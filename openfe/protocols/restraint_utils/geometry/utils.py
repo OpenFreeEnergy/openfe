@@ -22,11 +22,57 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rms import RMSF
 from MDAnalysis.lib.distances import minimize_vectors, capped_distance
 from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysis.transformations.nojump import NoJump
 
-from openfe_analysis.transformations import Aligner, NoJump
+from openfe_analysis.transformations import Aligner
 
 
 DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
+
+
+def _get_mda_selection(
+    universe: mda.Universe,
+    atom_list: Optional[list[int]],
+    selection: Optional[str]
+) -> mda.AtomGroup:
+    """
+    Return an AtomGroup based on either a list of atom indices or an
+    mdanalysis string selection.
+
+    Parameters
+    ----------
+    universe : mda.Universe
+      The MDAnalysis Universe to get the AtomGroup from.
+    atom_list : Optional[list[int]]
+      A list of atom indices.
+    selection : Optional[str]
+      An MDAnalysis selection string.
+
+    Returns
+    -------
+    ag : mda.AtomGroup
+      An atom group selected from the inputs.
+
+    Raises
+    ------
+    ValueError
+      If both ``atom_list`` and ``selection`` are ``None``
+      or are defined.
+    """
+    if atom_list is None:
+        if selection is None:
+            raise ValueError(
+                "one of either the atom lists or selections must be defined"
+            )
+
+        ag = universe.select_atoms(selection)
+    else:
+        if selection is not None:
+            raise ValueError(
+                "both atom_list and selection cannot be defined together"
+            )
+        ag = universe.atoms[atom_list]
+    return ag
 
 
 def _get_mda_coord_format(
@@ -224,7 +270,8 @@ def check_angle_not_flat(
     angle : unit.Quantity
       The angle to check in units compatible with radians.
     force_constant : unit.Quantity
-      Force constant of the angle in units compatible with kilojoule_per_mole / radians ** 2.
+      Force constant of the angle in units compatible with
+      kilojoule_per_mole / radians ** 2.
     temperature : unit.Quantity
       The system temperature in units compatible with Kelvin.
 
@@ -334,7 +381,6 @@ class FindHostAtoms(AnalysisBase):
     max_search_distance: unit.Quantity
       Maximum distance to filter atoms within.
     """
-
     _analysis_algorithm_is_parallelizable = False
 
     def __init__(
@@ -372,34 +418,7 @@ class FindHostAtoms(AnalysisBase):
         self.results.host_idxs = np.array(self.results.host_idxs)
 
 
-def find_host_atoms(
-    topology, trajectory, host_selection, guest_selection, cutoff
-) -> mda.AtomGroup:
-    """
-    Get an AtomGroup of the host atoms based on their distances from the guest atoms.
-    """
-    u = mda.Universe(topology, trajectory)
-
-    def _get_selection(selection):
-        """
-        If it's a str, call select_atoms, if not a list of atom idxs
-        """
-        if isinstance(selection, str):
-            ag = u.select_atoms(host_selection)
-        else:
-            ag = u.atoms[host_ag]
-        return ag
-
-    host_ag = _get_selection(host_selection)
-    guest_ag = _get_selection(guest_selection)
-
-    finder = FindHostAtoms(host_ag, guest_ag, cutoff)
-    finder.run()
-
-    return u.atoms[list(finder.results.host_idxs)]
-
-
-def get_local_rmsf(atomgroup: mda.AtomGroup):
+def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     """
     Get the RMSF of an AtomGroup when aligned upon itself.
 
@@ -416,7 +435,7 @@ def get_local_rmsf(atomgroup: mda.AtomGroup):
     copy_u = atomgroup.universe.copy()
     ag = copy_u.atoms[atomgroup.atoms.ix]
 
-    nojump = NoJump(ag)
+    nojump = NoJump()
     align = Aligner(ag)
 
     copy_u.trajectory.add_transformations(nojump, align)
