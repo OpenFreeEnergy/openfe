@@ -685,52 +685,52 @@ class SepTopProtocol(gufe.Protocol):
           If there are non-zero values for restraints (lambda_restraints).
         """
 
-        lambda_elec_ligandA = lambda_settings.lambda_elec_ligandA
-        lambda_elec_ligandB = lambda_settings.lambda_elec_ligandB
-        lambda_vdw_ligandA = lambda_settings.lambda_vdw_ligandA
-        lambda_vdw_ligandB = lambda_settings.lambda_vdw_ligandB
-        lambda_restraints_ligandA = lambda_settings.lambda_restraints_ligandA
-        lambda_restraints_ligandB = lambda_settings.lambda_restraints_ligandB
+        lambda_elec_A = lambda_settings.lambda_elec_A
+        lambda_elec_B = lambda_settings.lambda_elec_B
+        lambda_vdw_A = lambda_settings.lambda_vdw_A
+        lambda_vdw_B = lambda_settings.lambda_vdw_B
+        lambda_restraints_A = lambda_settings.lambda_restraints_A
+        lambda_restraints_B = lambda_settings.lambda_restraints_B
         n_replicas = simulation_settings.n_replicas
 
         # Ensure that all lambda components have equal amount of windows
-        lambda_components = [lambda_vdw_ligandA, lambda_vdw_ligandB,
-                             lambda_elec_ligandA, lambda_elec_ligandB,
-                             lambda_restraints_ligandA, lambda_restraints_ligandB]
+        lambda_components = [lambda_vdw_A, lambda_vdw_B,
+                             lambda_elec_A, lambda_elec_B,
+                             lambda_restraints_A, lambda_restraints_B]
         it = iter(lambda_components)
         the_len = len(next(it))
         if not all(len(l) == the_len for l in it):
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"
-                f" of lambda windows. Got {len(lambda_elec_ligandA)} and "
-                f"{len(lambda_elec_ligandB)} elec lambda windows, "
-                f"{len(lambda_vdw_ligandA)} and {len(lambda_vdw_ligandB)} vdw "
-                f"lambda windows, and {len(lambda_restraints_ligandA)} and "
-                f"{len(lambda_restraints_ligandB)} restraints lambda windows.")
+                f" of lambda windows. Got {len(lambda_elec_A)} and "
+                f"{len(lambda_elec_B)} elec lambda windows, "
+                f"{len(lambda_vdw_A)} and {len(lambda_vdw_B)} vdw "
+                f"lambda windows, and {len(lambda_restraints_A)} and "
+                f"{len(lambda_restraints_B)} restraints lambda windows.")
             raise ValueError(errmsg)
 
         # Ensure that number of overall lambda windows matches number of lambda
         # windows for individual components
-        if n_replicas != len(lambda_vdw_ligandB):
+        if n_replicas != len(lambda_vdw_B):
             errmsg = (f"Number of replicas {n_replicas} does not equal the"
-                      f" number of lambda windows {len(lambda_vdw_ligandB)}")
+                      f" number of lambda windows {len(lambda_vdw_B)}")
             raise ValueError(errmsg)
 
         # Check if there are lambda windows with naked charges
-        for inx, lam in enumerate(lambda_elec_ligandA):
-            if lam < 1 and lambda_vdw_ligandA[inx] == 1:
+        for inx, lam in enumerate(lambda_elec_A):
+            if lam < 1 and lambda_vdw_A[inx] == 1:
                 errmsg = (
                     "There are states along this lambda schedule "
                     "where there are atoms with charges but no LJ "
                     f"interactions: Ligand A: lambda {inx}: "
-                    f"elec {lam} vdW {lambda_vdw_ligandA[inx]}")
+                    f"elec {lam} vdW {lambda_vdw_A[inx]}")
                 raise ValueError(errmsg)
-            if lambda_elec_ligandB[inx] < 1 and lambda_vdw_ligandB[inx] == 1:
+            if lambda_elec_B[inx] < 1 and lambda_vdw_B[inx] == 1:
                 errmsg = (
                     "There are states along this lambda schedule "
                     "where there are atoms with charges but no LJ interactions"
-                    f": Ligand B: lambda {inx}: elec {lambda_elec_ligandB[inx]}"
-                    f" vdW {lambda_vdw_ligandB[inx]}")
+                    f": Ligand B: lambda {inx}: elec {lambda_elec_B[inx]}"
+                    f" vdW {lambda_vdw_B[inx]}")
                 raise ValueError(errmsg)
 
     def _create(
@@ -1413,10 +1413,10 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
 
         lambdas = dict()
 
-        lambda_elec_A = settings['lambda_settings'].lambda_elec_ligandA
-        lambda_vdw_A = settings['lambda_settings'].lambda_vdw_ligandA
-        lambda_elec_B = settings['lambda_settings'].lambda_elec_ligandB
-        lambda_vdw_B = settings['lambda_settings'].lambda_vdw_ligandB
+        lambda_elec_A = settings['lambda_settings'].lambda_elec_A
+        lambda_vdw_A = settings['lambda_settings'].lambda_vdw_A
+        lambda_elec_B = settings['lambda_settings'].lambda_elec_B
+        lambda_vdw_B = settings['lambda_settings'].lambda_vdw_B
 
         # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
         # means fully interacting, not stateB
@@ -1424,10 +1424,10 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         lambda_vdw_A = [1 - x for x in lambda_vdw_A]
         lambda_elec_B = [1 - x for x in lambda_elec_B]
         lambda_vdw_B = [1 - x for x in lambda_vdw_B]
-        lambdas['lambda_electrostatics_ligandA'] = lambda_elec_A
-        lambdas['lambda_sterics_ligandA'] = lambda_vdw_A
-        lambdas['lambda_electrostatics_ligandB'] = lambda_elec_B
-        lambdas['lambda_sterics_ligandB'] = lambda_vdw_B
+        lambdas['lambda_electrostatics_A'] = lambda_elec_A
+        lambdas['lambda_sterics_A'] = lambda_vdw_A
+        lambdas['lambda_electrostatics_B'] = lambda_elec_B
+        lambdas['lambda_sterics_B'] = lambda_vdw_B
 
         return lambdas
 
@@ -1516,14 +1516,14 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
     ) -> dict[str, npt.NDArray]:
         lambdas = dict()
 
-        lambda_elec_A = settings['lambda_settings'].lambda_elec_ligandA
-        lambda_vdw_A = settings['lambda_settings'].lambda_vdw_ligandA
-        lambda_elec_B = settings['lambda_settings'].lambda_elec_ligandB
-        lambda_vdw_B = settings['lambda_settings'].lambda_vdw_ligandB
+        lambda_elec_A = settings['lambda_settings'].lambda_elec_A
+        lambda_vdw_A = settings['lambda_settings'].lambda_vdw_A
+        lambda_elec_B = settings['lambda_settings'].lambda_elec_B
+        lambda_vdw_B = settings['lambda_settings'].lambda_vdw_B
         lambda_restraints_A = settings[
-            'lambda_settings'].lambda_restraints_ligandA
+            'lambda_settings'].lambda_restraints_A
         lambda_restraints_B = settings[
-            'lambda_settings'].lambda_restraints_ligandB
+            'lambda_settings'].lambda_restraints_B
 
         # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
         # means fully interacting, not stateB
@@ -1531,13 +1531,12 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
         lambda_vdw_A = [1 - x for x in lambda_vdw_A]
         lambda_elec_B = [1 - x for x in lambda_elec_B]
         lambda_vdw_B = [1 - x for x in lambda_vdw_B]
-        # lambda_restraints_A = [1 - x for x in lambda_restraints_A]
-        # lambda_restraints_B = [1 - x for x in lambda_restraints_B]
-        lambdas['lambda_electrostatics_ligandA'] = lambda_elec_A
-        lambdas['lambda_sterics_ligandA'] = lambda_vdw_A
-        lambdas['lambda_electrostatics_ligandB'] = lambda_elec_B
-        lambdas['lambda_sterics_ligandB'] = lambda_vdw_B
-        lambdas['lambda_restraints_ligandA'] = lambda_restraints_A
-        lambdas['lambda_restraints_ligandB'] = lambda_restraints_B
+
+        lambdas['lambda_electrostatics_A'] = lambda_elec_A
+        lambdas['lambda_sterics_A'] = lambda_vdw_A
+        lambdas['lambda_electrostatics_B'] = lambda_elec_B
+        lambdas['lambda_sterics_B'] = lambda_vdw_B
+        lambdas['lambda_restraints_A'] = lambda_restraints_A
+        lambdas['lambda_restraints_B'] = lambda_restraints_B
 
         return lambdas

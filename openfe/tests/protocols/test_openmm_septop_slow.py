@@ -54,52 +54,52 @@ def compare_energies(alchemical_system, positions):
     energy = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
     )
-    na_A = 'alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region ligandA'
-    na_B = 'alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region ligandB'
+    na_A = 'alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region A'
+    na_B = 'alchemically modified NonbondedForce for non-alchemical/alchemical sterics for region B'
     nonbonded = 'unmodified NonbondedForce'
 
     # Lambda 0: LigandA sterics on, elec on, ligand B sterics off, elec off
-    alchemical_state.lambda_sterics_ligandA = 1
-    alchemical_state.lambda_sterics_ligandB = 0
-    alchemical_state.lambda_electrostatics_ligandA = 1
-    alchemical_state.lambda_electrostatics_ligandB = 0
+    alchemical_state.lambda_sterics_A = 1
+    alchemical_state.lambda_sterics_B = 0
+    alchemical_state.lambda_electrostatics_A = 1
+    alchemical_state.lambda_electrostatics_B = 0
     energy_0 = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
     )
 
     # Lambda 7: LigandA sterics on, elec on, ligand B sterics on, elec off
-    alchemical_state.lambda_sterics_ligandA = 1
-    alchemical_state.lambda_sterics_ligandB = 1
-    alchemical_state.lambda_electrostatics_ligandA = 1
-    alchemical_state.lambda_electrostatics_ligandB = 0
+    alchemical_state.lambda_sterics_A = 1
+    alchemical_state.lambda_sterics_B = 1
+    alchemical_state.lambda_electrostatics_A = 1
+    alchemical_state.lambda_electrostatics_B = 0
     energy_7 = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
     )
 
     # Lambda 8: LigandA sterics on, elec partially on,
     # ligand B sterics on, elec partially on
-    alchemical_state.lambda_sterics_ligandA = 1
-    alchemical_state.lambda_sterics_ligandB = 1
-    alchemical_state.lambda_electrostatics_ligandA = 0.75
-    alchemical_state.lambda_electrostatics_ligandB = 0.25
+    alchemical_state.lambda_sterics_A = 1
+    alchemical_state.lambda_sterics_B = 1
+    alchemical_state.lambda_electrostatics_A = 0.75
+    alchemical_state.lambda_electrostatics_B = 0.25
     energy_8 = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
     )
 
     # Lambda 12: LigandA sterics on, elec off, ligand B sterics on, elec on
-    alchemical_state.lambda_sterics_ligandA = 1
-    alchemical_state.lambda_sterics_ligandB = 1
-    alchemical_state.lambda_electrostatics_ligandA = 0
-    alchemical_state.lambda_electrostatics_ligandB = 1
+    alchemical_state.lambda_sterics_A = 1
+    alchemical_state.lambda_sterics_B = 1
+    alchemical_state.lambda_electrostatics_A = 0
+    alchemical_state.lambda_electrostatics_B = 1
     energy_12 = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
     )
 
     # Lambda 13: LigandA sterics partially on, elec off, ligand B sterics on, elec on
-    alchemical_state.lambda_sterics_ligandA = 0.857142857
-    alchemical_state.lambda_sterics_ligandB = 1
-    alchemical_state.lambda_electrostatics_ligandA = 0
-    alchemical_state.lambda_electrostatics_ligandB = 1
+    alchemical_state.lambda_sterics_A = 0.857142857
+    alchemical_state.lambda_sterics_B = 1
+    alchemical_state.lambda_electrostatics_A = 0
+    alchemical_state.lambda_electrostatics_B = 1
     energy_13 = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
     )

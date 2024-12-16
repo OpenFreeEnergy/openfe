@@ -58,9 +58,9 @@ def test_incorrect_window_settings(val, default_settings):
     errmsg = "Lambda windows must be between 0 and 1."
     lambda_settings = default_settings.lambda_settings
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec_ligandA = val['elec']
-        lambda_settings.lambda_vdw_ligandA = val['vdw']
-        lambda_settings.lambda_restraints_ligandA = val['restraints']
+        lambda_settings.lambda_elec_A = val['elec']
+        lambda_settings.lambda_vdw_A = val['vdw']
+        lambda_settings.lambda_restraints_A = val['restraints']
 
 
 @pytest.mark.parametrize('val', [
@@ -71,21 +71,21 @@ def test_monotonic_lambda_windows(val, default_settings):
     lambda_settings = default_settings.lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):
-        lambda_settings.lambda_elec_ligandA = val['elec']
-        lambda_settings.lambda_vdw_ligandA = val['vdw']
-        lambda_settings.lambda_restraints_ligandA = val['restraints']
+        lambda_settings.lambda_elec_A = val['elec']
+        lambda_settings.lambda_vdw_A = val['vdw']
+        lambda_settings.lambda_restraints_A = val['restraints']
 
 
 @pytest.mark.parametrize('val', [
     {'elec': [1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
-    default_settings.lambda_settings.lambda_elec_ligandA = val['elec']
-    default_settings.lambda_settings.lambda_vdw_ligandA = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_ligandA = val['restraints']
-    default_settings.lambda_settings.lambda_elec_ligandB = val['elec']
-    default_settings.lambda_settings.lambda_vdw_ligandB = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_ligandB = val[
+    default_settings.lambda_settings.lambda_elec_A = val['elec']
+    default_settings.lambda_settings.lambda_vdw_A = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_A = val['restraints']
+    default_settings.lambda_settings.lambda_elec_B = val['elec']
+    default_settings.lambda_settings.lambda_vdw_B = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_B = val[
         'restraints']
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
@@ -102,9 +102,9 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
     {'elec': [1.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nwindows(val, default_settings):
-    default_settings.lambda_settings.lambda_elec_ligandA = val['elec']
-    default_settings.lambda_settings.lambda_vdw_ligandA = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_ligandA = val['restraints']
+    default_settings.lambda_settings.lambda_elec_A = val['elec']
+    default_settings.lambda_settings.lambda_vdw_A = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_A = val['restraints']
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     errmsg = (
@@ -121,13 +121,13 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     {'elec': [1.0, 0.5], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nakedcharge(val, default_settings):
-    default_settings.lambda_settings.lambda_elec_ligandA = val['elec']
-    default_settings.lambda_settings.lambda_vdw_ligandA = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_ligandA = val[
+    default_settings.lambda_settings.lambda_elec_A = val['elec']
+    default_settings.lambda_settings.lambda_vdw_A = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_A = val[
         'restraints']
-    default_settings.lambda_settings.lambda_elec_ligandB = val['elec']
-    default_settings.lambda_settings.lambda_vdw_ligandB = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_ligandB = val[
+    default_settings.lambda_settings.lambda_elec_B = val['elec']
+    default_settings.lambda_settings.lambda_vdw_B = val['vdw']
+    default_settings.lambda_settings.lambda_restraints_B = val[
         'restraints']
     n_replicas = 2
     default_settings.complex_simulation_settings.n_replicas = n_replicas

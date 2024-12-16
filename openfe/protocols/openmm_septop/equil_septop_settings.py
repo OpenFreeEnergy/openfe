@@ -76,20 +76,20 @@ class LambdaSettings(SettingsBaseModel):
       the same length, defining all the windows of the transformation.
 
     """
-    lambda_elec_ligandA: list[float] = [0.0] * 8 + [0.25, 0.5, 0.75] + [1.0] * 8
+    lambda_elec_A: list[float] = [0.0] * 8 + [0.25, 0.5, 0.75] + [1.0] * 8
     """
     List of floats of the lambda values for the electrostatics of ligand A. 
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
-    lambda_elec_ligandB: list[float] = [1.0] * 8 + [0.75, 0.5, 0.25] + [0.0] * 8
+    lambda_elec_B: list[float] = [1.0] * 8 + [0.75, 0.5, 0.25] + [0.0] * 8
     """
     List of floats of the lambda values for the electrostatics of ligand B. 
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and 
     lambda_restraints.
     """
-    lambda_vdw_ligandA: list[float] = [0.0] * 8 + [
+    lambda_vdw_A: list[float] = [0.0] * 8 + [
         0.00, 0.0, 0.00] + np.linspace(0.0, 1.0, 8).tolist()
     """
     List of floats of lambda values for the van der Waals of ligand A.
@@ -97,14 +97,14 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_elec and 
     lambda_restraints.
     """
-    lambda_vdw_ligandB: list[float] = np.linspace(1.0, 0.0, 8).tolist() + [
+    lambda_vdw_B: list[float] = np.linspace(1.0, 0.0, 8).tolist() + [
         0.0, 0.0, 0.0] + [0.0] * 8
     """
     List of floats of lambda values for the van der Waals of ligand B.
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
-    lambda_restraints_ligandA: list[float] = [
+    lambda_restraints_A: list[float] = [
                                                  0.0, 0.05, 0.1, 0.3, 0.5,
                                                  0.75, 1.0, 1.0] + [
                                                  1.0] * 3 + [1.0] * 8
@@ -113,7 +113,7 @@ class LambdaSettings(SettingsBaseModel):
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
-    lambda_restraints_ligandB: list[float] = [1.0] * 8 + [1.0] * 3 + [
+    lambda_restraints_B: list[float] = [1.0] * 8 + [1.0] * 3 + [
         1.0, 0.95, 0.9, 0.7, 0.5, 0.25, 0.0, 0.0]
     """
     List of floats of lambda values for the restraints of ligand B.
@@ -122,9 +122,9 @@ class LambdaSettings(SettingsBaseModel):
     """
 
 
-    @validator('lambda_elec_ligandA', 'lambda_elec_ligandB',
-               'lambda_vdw_ligandA', 'lambda_vdw_ligandB',
-               'lambda_restraints_ligandA', 'lambda_restraints_ligandB')
+    @validator('lambda_elec_A', 'lambda_elec_B',
+               'lambda_vdw_A', 'lambda_vdw_B',
+               'lambda_restraints_A', 'lambda_restraints_B')
     def must_be_between_0_and_1(cls, v):
         for window in v:
             if not 0 <= window <= 1:
@@ -133,9 +133,9 @@ class LambdaSettings(SettingsBaseModel):
                 raise ValueError(errmsg)
         return v
 
-    @validator('lambda_elec_ligandA', 'lambda_elec_ligandB',
-               'lambda_vdw_ligandA', 'lambda_vdw_ligandB',
-               'lambda_restraints_ligandA', 'lambda_restraints_ligandB')
+    @validator('lambda_elec_A', 'lambda_elec_B',
+               'lambda_vdw_A', 'lambda_vdw_B',
+               'lambda_restraints_A', 'lambda_restraints_B')
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
