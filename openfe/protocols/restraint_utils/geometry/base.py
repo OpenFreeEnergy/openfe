@@ -12,6 +12,9 @@ from pydantic.v1 import BaseModel, validator
 
 
 class BaseRestraintGeometry(BaseModel, abc.ABC):
+    """
+    A base class for a restraint geometry.
+    """
     class Config:
         arbitrary_types_allowed = True
 
