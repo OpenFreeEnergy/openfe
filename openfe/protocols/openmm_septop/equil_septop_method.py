@@ -1067,7 +1067,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             positions,
             k_distance,
             k_theta,
-            "lambda_restraints_ligandA",
+            "lambda_restraints_A",
         )
         system.addForce(force_A)
         force_B = create_boresch_restraint(
@@ -1077,7 +1077,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             positions,
             k_distance,
             k_theta,
-            "lambda_restraints_ligandB",
+            "lambda_restraints_B",
         )
         system.addForce(force_B)
 
