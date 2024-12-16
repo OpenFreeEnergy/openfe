@@ -288,7 +288,7 @@ class HarmonicBondRestraint(
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -335,7 +335,7 @@ class FlatBottomBondRestraint(
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -384,7 +384,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -429,7 +429,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -510,7 +510,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
     (p2, p3, p4) and (p3, p4, p5). They must be provided by the
     Geometry class in units compatible with radians.
 
-    ``phi_A0``, ``phi_B0``, and ``phi_C0`` are the equilibrium constants
+    ``phi_A0``, ``phi_B0``, and ``phi_C0`` are the equilibrium force constants
     for the dihedrals formed by (p1, p2, p3, p4), (p2, p3, p4, p5), and
     (p3, p4, p5, p6). They must be provided in the settings in units
     compatible with kilojoule / mole / radians ** 2.
