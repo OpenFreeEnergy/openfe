@@ -27,7 +27,7 @@ from openfe.protocols.openmm_septop import (
     femto_restraints,
 )
 from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
-from openfe.protocols.openmm_septop.utils import deserialize
+from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
 from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
 from openmmtools.states import (SamplerState,
                                 ThermodynamicState,
@@ -37,7 +37,6 @@ from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
 )
-from openfe.protocols.openmm_septop.alchemy_copy import AlchemicalState
 
 
 @pytest.fixture()
@@ -47,9 +46,9 @@ def default_settings():
 
 def compare_energies(alchemical_system, positions):
 
-    alchemical_state = AlchemicalState.from_system(alchemical_system)
+    alchemical_state = SepTopParameterState.from_system(alchemical_system)
 
-    from openfe.protocols.openmm_septop.alchemy_copy import AbsoluteAlchemicalFactory
+    from openmmtools.alchemy import AbsoluteAlchemicalFactory
 
     energy = AbsoluteAlchemicalFactory.get_energy_components(
         alchemical_system, alchemical_state, positions
