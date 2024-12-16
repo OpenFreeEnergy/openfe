@@ -79,113 +79,6 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     The equilibrium dihedral value between H0, G0, G1, and G2.
     """
 
-    def get_bond_distance(
-        self,
-        universe: mda.Universe,
-    ) -> unit.Quantity:
-        """
-        Get the H0 - G0 distance.
-
-        Parameters
-        ----------
-        universe : mda.Universe
-          A Universe representing the system of interest.
-
-        Returns
-        -------
-        bond : unit.Quantity
-          The H0-G0 distance.
-        """
-        at1 = universe.atoms[self.host_atoms[0]]
-        at2 = universe.atoms[self.guest_atoms[0]]
-        bond = calc_bonds(
-            at1.position,
-            at2.position,
-            box=universe.atoms.dimensions
-        )
-        # convert to float so we avoid having a np.float64
-        return float(bond) * unit.angstrom
-
-    def get_angles(
-        self,
-        universe: mda.Universe,
-    ) -> tuple[unit.Quantity, unit.Quantity]:
-        """
-        Get the H1-H0-G0, and H0-G0-G1 angles.
-
-        Parameters
-        ----------
-        universe : mda.Universe
-          A Universe representing the system of interest.
-
-        Returns
-        -------
-        angleA : unit.Quantity
-          The H1-H0-G0 angle.
-        angleB : unit.Quantity
-          The H0-G0-G1 angle.
-        """
-        at1 = universe.atoms[self.host_atoms[1]]
-        at2 = universe.atoms[self.host_atoms[0]]
-        at3 = universe.atoms[self.guest_atoms[0]]
-        at4 = universe.atoms[self.guest_atoms[1]]
-
-        angleA = calc_angles(
-            at1.position,
-            at2.position,
-            at3.position,
-            box=universe.atoms.dimensions
-        )
-        angleB = calc_angles(
-            at2.position,
-            at3.position,
-            at4.position,
-            box=universe.atoms.dimensions
-        )
-        return angleA, angleB
-
-    def get_dihedrals(
-        self,
-        universe: mda.Universe,
-    ) -> tuple[unit.Quantity, unit.Quantity, unit.Quantity]:
-        """
-        Get the H2-H1-H0-G0, H1-H0-G0-G1, and H0-G0-G1-G2 dihedrals.
-
-        Parameters
-        ----------
-        universe : mda.Universe
-          A Universe representing the system of interest.
-
-        Returns
-        -------
-        dihA : unit.Quantity
-          The H2-H1-H0-G0 angle.
-        dihB : unit.Quantity
-          The H1-H0-G0-G1 angle.
-        dihC : unit.Quantity
-          The H0-G0-G1-G2 angle.
-        """
-        at1 = universe.atoms[self.host_atoms[2]]
-        at2 = universe.atoms[self.host_atoms[1]]
-        at3 = universe.atoms[self.host_atoms[0]]
-        at4 = universe.atoms[self.guest_atoms[0]]
-        at5 = universe.atoms[self.guest_atoms[1]]
-        at6 = universe.atoms[self.guest_atoms[2]]
-
-        dihA = calc_dihedrals(
-            at1.position, at2.position, at3.position, at4.position,
-            box=universe.dimensions
-        )
-        dihB = calc_dihedrals(
-            at2.position, at3.position, at4.position, at5.position,
-            box=universe.dimensions
-        )
-        dihC = calc_dihedrals(
-            at3.position, at4.position, at5.position, at6.position,
-            box=universe.dimensions
-        )
-        return dihA, dihB, dihC
-
 
 def _sort_by_distance_from_atom(
     rdmol: Chem.Mol, target_idx: int, atom_idxs: Iterable[int]
@@ -220,7 +113,7 @@ def _sort_by_distance_from_atom(
     return [i[1] for i in sorted(distances)]
 
 
-def _get_bonded_angles_from_pool(
+def _bonded_angles_from_pool(
     rdmol: Chem.Mol, atom_idx: int, atom_pool: list[int]
 ) -> list[tuple[int, int, int]]:
     """
@@ -300,7 +193,7 @@ def _get_atom_pool(
     return atom_pool
 
 
-def get_guest_atom_candidates(
+def find_guest_atom_candidates(
     topology: Union[str, pathlib.Path, openmm.app.Topology],
     trajectory: Union[str, pathlib.Path],
     rdmol: Chem.Mol,
@@ -370,7 +263,7 @@ def get_guest_atom_candidates(
     # 4. Get a list of probable angles
     angles_list = []
     for atom in sorted_atom_pool:
-        angles = _get_bonded_angles_from_pool(rdmol, atom, sorted_atom_pool)
+        angles = _bonded_angles_from_pool(rdmol, atom, sorted_atom_pool)
         for angle in angles:
             # Check that the angle is at least not collinear
             angle_ag = ligand_ag.atoms[list(angle)]
@@ -386,7 +279,7 @@ def get_guest_atom_candidates(
     return angles_list
 
 
-def get_host_atom_candidates(
+def find_host_atom_candidates(
     topology: Union[str, pathlib.Path, openmm.app.Topology],
     trajectory: Union[str, pathlib.Path],
     host_idxs: list[int],
@@ -459,7 +352,7 @@ def get_host_atom_candidates(
 class EvaluateHostAtoms1(AnalysisBase):
     """
     Class to evaluate the suitability of a set of host atoms
-    as H1 atoms (i.e. the second host atom).
+    as either H0 or H1 atoms (i.e. the first and second host atoms).
 
     Parameters
     ----------
@@ -474,7 +367,6 @@ class EvaluateHostAtoms1(AnalysisBase):
     temperature : unit.Quantity
       The system temperature in Kelvin
     """
-
     def __init__(
         self,
         reference,
@@ -582,6 +474,23 @@ class EvaluateHostAtoms1(AnalysisBase):
 
 
 class EvaluateHostAtoms2(EvaluateHostAtoms1):
+    """
+    Class to evaluate the suitability of a set of host atoms
+    as H2 atoms (i.e. the third host atoms).
+
+    Parameters
+    ----------
+    reference : MDAnalysis.AtomGroup
+      The reference preceeding three atoms.
+    host_atom_pool : MDAnalysis.AtomGroup
+      The pool of atoms to pick an atom from.
+    minimum_distance : unit.Quantity
+      The minimum distance from the bound reference atom.
+    angle_force_constant : unit.Quantity
+      The force constant for the angle.
+    temperature : unit.Quantity
+      The system temperature in Kelvin
+    """
     def _prepare(self):
         self.results.distances1 = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.ditances2 = np.zeros((len(self.host_atom_pool), self.n_frames))
@@ -648,15 +557,36 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
                 self.results.valid[i] = True
 
 
-def _find_host_angle(
-    g0g1g2_atoms,
-    host_atom_pool,
-    minimum_distance,
-    angle_force_constant,
-    temperature
-):
+def _find_host_anchor(
+    guest_atoms: mda.AtomGroup,
+    host_atom_pool: mda.AtomGroup,
+    minimum_distance: unit.Quantity,
+    angle_force_constant: unit.Quantity,
+    temperature: unit.Quantity
+) -> Optional[list[int]]:
+    """
+    Find suitable atoms for the H0-H1-H2 portion of the restraint.
+
+    Parameters
+    ----------
+    guest_atoms : mda.AtomGroup
+      The guest anchor atoms for G0-G1-G2
+    host_atom_pool : mda.AtomGroup
+      The host atoms to search from.
+    minimum_distance : unit.Quantity
+      The minimum distance to pick host atoms from each other.
+    angle_force_constant : unit.Quantity
+      The force constant for the G1-G0-H0 and G0-H0-H1 angles.
+    temperature : unit.Quantity
+      The target system temperature.
+
+    Returns
+    -------
+    Optional[list[int]]
+      A list of indices for a selected combination of H0, H1, and H2.
+    """
     h0_eval = EvaluateHostAtoms1(
-        g0g1g2_atoms,
+        guest_atoms,
         host_atom_pool,
         minimum_distance,
         angle_force_constant,
@@ -666,7 +596,7 @@ def _find_host_angle(
 
     for i, valid_h0 in enumerate(h0_eval.results.valid):
         if valid_h0:
-            g1g2h0_atoms = g0g1g2_atoms.atoms[1:] + host_atom_pool.atoms[i]
+            g1g2h0_atoms = guest_atoms.atoms[1:] + host_atom_pool.atoms[i]
             h1_eval = EvaluateHostAtoms1(
                 g1g2h0_atoms,
                 host_atom_pool,
@@ -690,7 +620,7 @@ def _find_host_angle(
                     dsum_avgs = d1_avgs + d2_avgs
                     k = dsum_avgs.argmin()
 
-                    return host_atom_pool.atoms[[i, j, k]].ix
+                    return list(host_atom_pool.atoms[[i, j, k]].ix)
     return None
 
 
@@ -839,24 +769,24 @@ def find_boresch_restraint(
         # In this case assume the picked atoms were intentional /
         # representative of the input and go with it
         guest_ag = u.select_atoms[guest_idxs]
-        guest_angle = [
+        guest_anchor = [
             at.ix for at in guest_ag.atoms[guest_restraint_atoms_idxs]
         ]
         host_ag = u.select_atoms[host_idxs]
-        host_angle = [
+        host_anchor = [
             at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]
         ]
 
         # Set the equilibrium values as those of the final frame
         u.trajectory[-1]
-        atomgroup = u.atoms[host_angle + guest_angle]
+        atomgroup = u.atoms[host_anchor + guest_anchor]
         bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
             atomgroup
         )
 
         return BoreschRestraintGeometry(
-            host_atoms=host_angle,
-            guest_atoms=guest_angle,
+            host_atoms=host_anchor,
+            guest_atoms=guest_anchor,
             r_aA0=bond,
             theta_A0=ang1,
             theta_B0=ang2,
@@ -875,8 +805,8 @@ def find_boresch_restraint(
         )
         raise ValueError(errmsg)
 
-    # 1. Fetch the guest angles
-    guest_angles = get_guest_atom_candidates(
+    # 1. Fetch the guest anchors
+    guest_anchors = find_guest_atom_candidates(
         topology=topology,
         trajectory=trajectory,
         rdmol=guest_rdmol,
@@ -884,53 +814,50 @@ def find_boresch_restraint(
         rmsf_cutoff=rmsf_cutoff,
     )
 
-    if len(guest_angles) != 0:
+    if len(guest_anchors) != 0:
         errmsg = "No suitable ligand atoms found for the restraint."
         raise ValueError(errmsg)
 
-    # We pick the first angle / ligand atom set as the one to use
-    guest_angle = guest_angles[0]
+    # 2. We then loop through the guest anchors to find suitable host atoms
+    for guest_anchor in guest_anchors:
+        # We next fetch the host atom pool
+        host_pool = find_host_atom_candidates(
+            topology=topology,
+            trajectory=trajectory,
+            host_idxs=host_idxs,
+            l1_idx=guest_anchor,
+            host_selection=host_selection,
+            dssp_filter=dssp_filter,
+            rmsf_cutoff=rmsf_cutoff,
+            min_distance=host_min_distance,
+            max_distance=host_max_distance,
+        )
 
-    # 2. We next fetch the host atom pool
-    host_pool = get_host_atom_candidates(
-        topology=topology,
-        trajectory=trajectory,
-        host_idxs=host_idxs,
-        l1_idx=guest_angle[0],
-        host_selection=host_selection,
-        dssp_filter=dssp_filter,
-        rmsf_cutoff=rmsf_cutoff,
-        min_distance=host_min_distance,
-        max_distance=host_max_distance,
-    )
-
-    # 3. We then loop through the guest angles to find suitable host atoms
-    for guest_angle in guest_angles:
-        host_angle = _find_host_angle(
-            g0g1g2_atoms=u.atoms[list(guest_angle)],
+        host_anchor = _find_host_anchor(
+            guest_atoms=u.atoms[list(guest_anchor)],
             host_atom_pool=u.atoms[host_pool],
             minimum_distance=0.5 * unit.nanometer,
             angle_force_constant=angle_force_constant,
             temperature=temperature,
         )
         # continue if it's empty, otherwise stop
-        if host_angle is not None:
+        if host_anchor is not None:
             break
 
-    if host_angle is None:
+    if host_anchor is None:
         errmsg = "No suitable host atoms could be found"
         raise ValueError(errmsg)
 
     # Set the equilibrium values as those of the final frame
     u.trajectory[-1]
-    atomgroup = u.atoms[host_angle + guest_angle]
+    atomgroup = u.atoms[host_anchor + guest_anchor]
     bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
         atomgroup
     )
 
     return BoreschRestraintGeometry(
-        host_atoms=host_angle,
-        guest_atoms=guest_angle,
+        host_atoms=host_anchor,
+        guest_atoms=guest_anchor,
         r_aA0=bond,
         theta_A0=ang1,
         theta_B0=ang2,

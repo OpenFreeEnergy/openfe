@@ -10,9 +10,7 @@ TODO
 import pathlib
 from typing import Union, Optional
 from openmm import app
-from openff.units import unit
 import MDAnalysis as mda
-from MDAnalysis.lib.distances import calc_bonds
 from rdkit import Chem
 
 from .base import HostGuestRestraintGeometry
@@ -27,30 +25,6 @@ class DistanceRestraintGeometry(HostGuestRestraintGeometry):
     """
     A geometry class for a distance restraint between two groups of atoms.
     """
-
-    def get_distance(self, universe: mda.Universe) -> unit.Quantity:
-        """
-        Get the center of mass distance between the host and guest atoms.
-
-        Parameters
-        ----------
-        universe : mda.Universe
-          A Universe representing the system of interest.
-
-        Returns
-        -------
-        bond : unit.Quantity
-          The center of mass distance between the two groups of atoms.
-        """
-        ag1 = universe.atoms[self.host_atoms]
-        ag2 = universe.atoms[self.guest_atoms]
-        bond = calc_bonds(
-            ag1.center_of_mass(),
-            ag2.center_of_mass(),
-            box=universe.atoms.dimensions
-        )
-        # convert to float so we avoid having a np.float64
-        return float(bond) * unit.angstrom
 
 
 def get_distance_restraint(
