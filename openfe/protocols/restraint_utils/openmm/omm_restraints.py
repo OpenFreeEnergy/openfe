@@ -36,6 +36,12 @@ from openfe.protocols.restraint_utils.geometry import (
     DistanceRestraintGeometry,
     BoreschRestraintGeometry
 )
+
+from openfe.protocols.restraint_utils.settings import (
+    DistanceRestraintSettings,
+    BoreschRestraintSettings,
+)
+
 from .omm_forces import (
     get_custom_compound_bond_force,
     add_force_in_separate_group,
