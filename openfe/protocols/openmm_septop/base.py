@@ -72,11 +72,10 @@ from ..openmm_utils import (
 from openfe.utils import without_oechem_backend
 
 from .femto_restraints import select_ligand_idxs
-from .utils import serialize, deserialize
-from openfe.protocols.openmm_septop.alchemy_copy import (
+from .utils import serialize, deserialize, SepTopParameterState
+from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
     AlchemicalRegion,
-    AlchemicalState,
 )
 
 logger = logging.getLogger(__name__)
@@ -986,7 +985,15 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         cmp_states : list[ThermodynamicState]
           A list of ThermodynamicState for each replica in the system.
         """
-        alchemical_state = AlchemicalState.from_system(alchemical_system)
+        # alchemical_state = AlchemicalState.from_system(alchemical_system)
+        alchemical_state = SepTopParameterState(
+            lambda_sterics_A=1.0,
+            lambda_electrostatics_A=1.0,
+            lambda_restraints_A=1.0,
+            lambda_sterics_B=1.0,
+            lambda_electrostatics_B=1.0,
+            lambda_restraints_B=1.0,
+        )
         # Set up the system constants
         temperature = settings['thermo_settings'].temperature
         pressure = settings['thermo_settings'].pressure
