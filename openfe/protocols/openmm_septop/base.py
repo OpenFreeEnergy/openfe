@@ -830,9 +830,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
         alchemical_region_A = AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_A, name='ligandA')
+            alchemical_atoms=atom_indices_AB_A, name='A')
         alchemical_region_B = AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_B, name='ligandB')
+            alchemical_atoms=atom_indices_AB_B, name='B')
         alchemical_system = factory.create_alchemical_system(
             omm_system_AB, [alchemical_region_A, alchemical_region_B])
         omm_system_AB = alchemical_system

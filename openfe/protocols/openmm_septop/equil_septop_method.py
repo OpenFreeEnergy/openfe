@@ -923,7 +923,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: RestraintsSettings
+            * restraint_settings: ComplexRestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -1166,7 +1166,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             * equil_output_settings : MDOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: RestraintsSettings
+            * restraint_settings: SolventRestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -1379,7 +1379,7 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
             * equil_output_settings : MDOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: RestraintsSettings
+            * restraint_settings: SolventRestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -1483,7 +1483,7 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
             * equil_output_settings : MDOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: RestraintsSettings
+            * restraint_settings: ComplexRestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
