@@ -4,17 +4,7 @@ import itertools
 import json
 import sys
 
-import openmmtools.alchemy
 import pytest
-import importlib
-from unittest import mock
-from openmm import NonbondedForce, CustomNonbondedForce
-from openmmtools.multistate.multistatesampler import MultiStateSampler
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
-import mdtraj as mdt
-import numpy as np
-from numpy.testing import assert_allclose
 from openff.units import unit
 import gufe
 import openfe
@@ -22,21 +12,10 @@ import simtk
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
-    SepTopComplexSetupUnit,
     SepTopProtocol,
-    femto_restraints,
 )
 from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
 from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
-from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
-from openmmtools.states import (SamplerState,
-                                ThermodynamicState,
-                                create_thermodynamic_state_protocol, )
-
-from openfe.protocols.openmm_utils import system_validation
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
-)
 
 
 @pytest.fixture()
