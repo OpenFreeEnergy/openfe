@@ -168,6 +168,9 @@ def _get_atom_pool(
       The RDKit Molecule to search through
     rmsf : npt.NDArray
       A 1-D array of RMSF values for each atom.
+    rmsf_cutoff : unit.Quantity
+      The rmsf cutoff value for selecting atoms in units compatible with
+      nanometer.
 
     Returns
     -------
@@ -177,7 +180,7 @@ def _get_atom_pool(
     # Note: no need to keep track of rings because we'll filter by
     # bonded terms after, so if we only keep rings then all the bonded
     # atoms should be within the same ring system.
-    atom_pool = set()
+    atom_pool: set[tuple[int]] = set()
     for ring in get_aromatic_rings(rdmol):
         max_rmsf = rmsf[list(ring)].max()
         if max_rmsf < rmsf_cutoff:
@@ -195,7 +198,7 @@ def _get_atom_pool(
 
 def find_guest_atom_candidates(
     topology: Union[str, pathlib.Path, openmm.app.Topology],
-    trajectory: Union[str, pathlib.Path],
+    trajectory: Union[str, pathlib.Path, npt.NDArray],
     rdmol: Chem.Mol,
     guest_idxs: list[int],
     rmsf_cutoff: unit.Quantity = 1 * unit.nanometer,
@@ -208,7 +211,7 @@ def find_guest_atom_candidates(
     ----------
     topology : Union[str, openmm.app.Topology]
       The topology of the system.
-    trajectory : Union[str, pathlib.Path]
+    trajectory : Union[str, pathlib.Path, npt.NDArray]
       A path to the system's coordinate trajectory.
     rdmol : Chem.Mol
       An RDKit Molecule representing the small molecule ordered in
@@ -247,7 +250,7 @@ def find_guest_atom_candidates(
     u.trajectory[-1]  # forward to the last frame
 
     # 1. Get the pool of atoms to work with
-    atom_pool = _get_atom_pool(rdmol, rmsf)
+    atom_pool = _get_atom_pool(rdmol, rmsf, rmsf_cutoff)
 
     if atom_pool is None:
         # We don't have enough atoms so we raise an error
@@ -281,7 +284,7 @@ def find_guest_atom_candidates(
 
 def find_host_atom_candidates(
     topology: Union[str, pathlib.Path, openmm.app.Topology],
-    trajectory: Union[str, pathlib.Path],
+    trajectory: Union[str, pathlib.Path, npt.NDArray],
     host_idxs: list[int],
     l1_idx: int,
     host_selection: str,
@@ -297,8 +300,8 @@ def find_host_atom_candidates(
     ----------
     topology : Union[str, openmm.app.Topology]
       The topology of the system.
-    trajectory : Union[str, pathlib.Path]
-      A path to the system's coordinate trajectory.
+    trajectory : Union[str, pathlib.Path, npt.NDArray]
+      The system's coordinate trajectory.
     host_idxs : list[int]
       A list of the host indices in the system topology.
     l1_idx : int
@@ -615,8 +618,8 @@ def _find_host_anchor(
                 )
 
                 if any(h2_eval.ressults.valid):
-                    d1_avgs = [d.mean() for d in h2_eval.results.distances1]
-                    d2_avgs = [d.mean() for d in h2_eval.results.distances2]
+                    d1_avgs = np.array([d.mean() for d in h2_eval.results.distances1])
+                    d2_avgs = np.array([d.mean() for d in h2_eval.results.distances2])
                     dsum_avgs = d1_avgs + d2_avgs
                     k = dsum_avgs.argmin()
 

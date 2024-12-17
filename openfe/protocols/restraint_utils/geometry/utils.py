@@ -76,7 +76,7 @@ def _get_mda_selection(
 
 
 def _get_mda_coord_format(
-    coordinates: Union[str, npt.NDArray]
+    coordinates: Union[str, pathlib.Path, npt.NDArray]
 ) -> Optional[MemoryReader]:
     """
     Helper to set the coordinate format to MemoryReader
@@ -84,7 +84,7 @@ def _get_mda_coord_format(
 
     Parameters
     ----------
-    coordinates : Union[str, npt.NDArray]
+    coordinates : Union[str, pathlib.Path, npt.NDArray]
 
     Returns
     -------

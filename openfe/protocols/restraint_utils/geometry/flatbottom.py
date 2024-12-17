@@ -117,11 +117,21 @@ def get_flatbottom_distance_restraint(
 
     guest_ag = _get_mda_selection(u, guest_atoms, guest_selection)
     host_ag = _get_mda_selection(u, host_atoms, host_selection)
+    guest_idxs = [a.ix for a in guest_ag]
+    host_idxs = [a.ix for a in host_ag]
+
+    if len(host_idxs) == 0 or len(guest_idxs) == 0:
+        errmsg = (
+            "no atoms found in either the host or guest atom groups"
+            f"host_atoms: {host_idxs}"
+            f"guest_atoms: {guest_idxs}"
+        )
+        raise ValueError(errmsg)
 
     com_dists = COMDistanceAnalysis(guest_ag, host_ag)
     com_dists.run()
 
     well_radius = com_dists.results.distances.max() * unit.angstrom + padding
     return FlatBottomDistanceGeometry(
-        guest_atoms=guest_atoms, host_atoms=host_atoms, well_radius=well_radius
+        guest_atoms=guest_idxs, host_atoms=host_idxs, well_radius=well_radius
     )
