@@ -75,3 +75,21 @@ def test_boresch_restraint_settings_default():
         phi_C0=10 * unit.kilojoule_per_mole / unit.radians ** 2,
     )
     assert isinstance(settings, BoreschRestraintSettings)
+
+
+def test_boresch_restraint_negative_idxs():
+    """
+    Check that the positive_idxs_list validator is
+    working as expected.
+    """
+    with pytest.raises(ValueError, match='negative indices'):
+        settings = BoreschRestraintSettings(
+            K_r=10 * unit.kilojoule_per_mole / unit.nm ** 2,
+            K_thetaA=10 * unit.kilojoule_per_mole / unit.radians ** 2,
+            K_thetaB=10 * unit.kilojoule_per_mole / unit.radians ** 2,
+            phi_A0=10 * unit.kilojoule_per_mole / unit.radians ** 2,
+            phi_B0=10 * unit.kilojoule_per_mole / unit.radians ** 2,
+            phi_C0=10 * unit.kilojoule_per_mole / unit.radians ** 2,
+            host_atoms=[-1, 0],
+            guest_atoms=[0, 1],
+        )
