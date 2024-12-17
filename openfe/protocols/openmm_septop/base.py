@@ -476,17 +476,17 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     def _get_omm_objects(
             self,
-            system_modeller: app.Modeller,
+            system_modeller: openmm.app.Modeller,
             system_generator: SystemGenerator,
             smc_components: list[OFFMolecule],
-    ) -> tuple[app.Topology, openmm.unit.Quantity, openmm.System]:
+    ) -> tuple[openmm.app.Topology, openmm.unit.Quantity, openmm.System]:
         """
         Get the OpenMM Topology, Positions and System of the
         parameterised system.
 
         Parameters
         ----------
-        system_modeller : app.Modeller
+        system_modeller : openmm.app.Modeller
           OpenMM Modeller object representing the system to be
           parametrized.
         system_generator : SystemGenerator
@@ -496,11 +496,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        topology : app.Topology
+        topology : openmm.app.Topology
           Topology object describing the parameterized system
         system : openmm.System
           An OpenMM System of the alchemical system.
-        positionns : openmm.unit.Quantity
+        positions : openmm.unit.Quantity
           Positions of the system.
         """
         topology = system_modeller.getTopology()
@@ -518,7 +518,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_atom_indices(
-            omm_topology: app.Topology,
+            omm_topology: openmm.app.Topology,
             comp_resids: dict[Component, npt.NDArray],
     ):
         comp_atomids = {}
@@ -654,7 +654,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     def get_system_AB(
             self,
             solv_comp: SolventComponent,
-            system_modeller_A: app.Modeller,
+            system_modeller_A: openmm.app.Modeller,
             smc_comps_AB: dict[SmallMoleculeComponent,OFFMolecule],
             smc_off_B: dict[SmallMoleculeComponent,OFFMolecule],
             settings: dict[str, SettingsBaseModel],
@@ -675,10 +675,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        omm_system_AB: app.System
-        omm_topology_AB: app.Topology
+        omm_system_AB: openmm.System
+        omm_topology_AB: openmm.app.Topology
         positions_AB: simtk.unit.Quantity
-        system_modeller_AB: app.Modeller
+        system_modeller_AB: openmm.app.Modeller
         """
         # 5. Get system generator
         system_generator = self._get_system_generator(settings, solv_comp)
@@ -740,14 +740,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
             alchem_comps, smc_comps)
 
-        # 2. Get settings
+        # 3. Get settings
         settings = self._handle_settings()
 
-        # 7. Assign partial charges here to only do it once for smcs in stateA
-        # and stateB (hence only charge e.g. cofactors ones)
+        # 4. Assign partial charges
         self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
 
-        # # Get the OpenMM systems
+        # 5. Get the OpenMM systems
         omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = self.get_system(
             solv_comp,
             prot_comp,
