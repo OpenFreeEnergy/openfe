@@ -52,6 +52,13 @@ class DistanceRestraintSettings(BaseRestraintSettings):
     represent small molecules.
     """
 
+    @validator("guest_atoms", "host_atoms")
+    def positive_idxs(cls, v):
+        if v is not None and any([i < 0 for i in v]):
+            errmsg = "negative indices passed"
+            raise ValueError(errmsg)
+        return v
+
 
 class FlatBottomRestraintSettings(DistanceRestraintSettings):
     """
@@ -63,6 +70,12 @@ class FlatBottomRestraintSettings(DistanceRestraintSettings):
     The distance at which the harmonic restraint is imposed
     in units of distance.
     """
+    @validator("well_radius")
+    def positive_value(cls, v):
+        if v is not None and v.m < 0:
+            errmsg = f"well radius cannot be negative {v}"
+            raise ValueError(errmsg)
+        return v
 
 
 class BoreschRestraintSettings(BaseRestraintSettings):
@@ -129,3 +142,10 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     The indices of the guest component atoms to restraint.
     If defined, these will override any automatic selection.
     """
+
+    @validator("guest_atoms", "host_atoms")
+    def positive_idxs_list(cls, v):
+        if v is not None and any([i < 0 for i in v]):
+            errmsg = "negative indices passed"
+            raise ValueError(errmsg)
+        return v

@@ -42,7 +42,7 @@ class HostGuestRestraintGeometry(BaseRestraintGeometry):
 
     @validator("guest_atoms", "host_atoms")
     def positive_idxs(cls, v):
-        if any([i < 0 for i in v]):
+        if v is not None and any([i < 0 for i in v]):
             errmsg = "negative indices passed"
             raise ValueError(errmsg)
         return v
