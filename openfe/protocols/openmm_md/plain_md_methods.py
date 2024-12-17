@@ -578,7 +578,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         self._assign_partial_charges(charge_settings, smc_components)
 
         # b. get a system generator
-        if output_settings.forcefield_cache:
+        if output_settings.forcefield_cache is not None:
             ffcache = shared_basepath / output_settings.forcefield_cache
         else:
             ffcache = None
