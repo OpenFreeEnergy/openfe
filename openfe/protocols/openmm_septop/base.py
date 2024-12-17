@@ -829,13 +829,14 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         self.logger.info("Creating the alchemical system and applying restraints")
 
         factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
+        # Alchemical Region for ligand A
         alchemical_region_A = AlchemicalRegion(
             alchemical_atoms=atom_indices_AB_A, name='A')
+        # Alchemical Region for ligand B
         alchemical_region_B = AlchemicalRegion(
             alchemical_atoms=atom_indices_AB_B, name='B')
         alchemical_system = factory.create_alchemical_system(
             omm_system_AB, [alchemical_region_A, alchemical_region_B])
-        omm_system_AB = alchemical_system
 
         # 10. Apply Restraints
         off_A = alchem_comps["stateA"][0].to_openff()
@@ -855,7 +856,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         print(ligand_B_inxs)
 
         system = self._add_restraints(
-            omm_system_AB, positions_AB, omm_topology_AB,
+            alchemical_system, positions_AB, omm_topology_AB,
             off_A, off_B,
             settings,
             ligand_A_ref_inxs, ligand_B_ref_inxs,
