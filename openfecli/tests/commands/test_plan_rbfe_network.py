@@ -176,7 +176,6 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
         with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
             result = runner.invoke(plan_rbfe_network, args)
 
-            print(result.output)
             assert result.exit_code == 0
             # load the transformations and check the settings
             network = AlchemicalNetwork.from_dict(

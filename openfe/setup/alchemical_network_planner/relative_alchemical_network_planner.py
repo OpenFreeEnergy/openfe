@@ -3,6 +3,7 @@
 import abc
 import copy
 from typing import Iterable, Callable, Type, Optional
+import warnings
 
 from gufe import (
     Protocol,
@@ -15,6 +16,7 @@ from gufe import (
     SmallMoleculeComponent, ProteinComponent, SolventComponent,
     LigandNetwork,
 )
+from openff.units import unit
 
 
 from .abstract_alchemical_network_planner import (
@@ -327,13 +329,10 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         """
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
-        # Todo: Another dirty hack! - START
         protocol_settings = transformation_protocol.settings.unfrozen_copy()
         if "vacuum" in transformation_name:
             protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
         elif get_alchemical_charge_difference(ligand_mapping_edge) != 0:
-            from openff.units import unit
-            import warnings
             wmsg = ("Charge changing transformation between ligands "
                     f"{ligand_mapping_edge.componentA.name} and {ligand_mapping_edge.componentB.name}. "
                     "A more expensive protocol with 22 lambda windows, sampled "
