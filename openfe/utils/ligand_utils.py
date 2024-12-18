@@ -1,9 +1,6 @@
-from typing import TYPE_CHECKING
+from gufe import LigandAtomMapping
 
-if TYPE_CHECKING:
-    from gufe import LigandAtomMapping
-
-def get_alchemical_charge_difference(mapping: "LigandAtomMapping") -> int:
+def get_alchemical_charge_difference(mapping: LigandAtomMapping) -> int:
     """
     Return the difference in formal charge between stateA and stateB defined as (formal charge A - formal charge B)
 
