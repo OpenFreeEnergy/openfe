@@ -154,9 +154,11 @@ def test_plan_rbfe_network_cofactors(eg5_files):
 
 @pytest.fixture
 def cdk8_files():
-    with resources.files("openfe.tests.data.cdk8") as p:
-        pdb_path = str(p.joinpath("cdk8_protein.pdb"))
-        lig_path = str(p.joinpath("cdk8_ligands.sdf"))
+    with resources.files("openfe.tests.data") as p:
+        if not (cdk8_dir := p.joinpath("cdk8")).exists():
+            shutil.unpack_archive(cdk8_dir.with_suffix(".zip"), p)
+        pdb_path = str(cdk8_dir.joinpath("cdk8_protein.pdb"))
+        lig_path = str(cdk8_dir.joinpath("cdk8_ligands.sdf"))
 
         yield pdb_path, lig_path
 
@@ -175,7 +177,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
     with runner.isolated_filesystem():
         with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
             result = runner.invoke(plan_rbfe_network, args)
-
+            print(result.output)
             assert result.exit_code == 0
             # load the transformations and check the settings
             network = AlchemicalNetwork.from_dict(
