@@ -182,8 +182,14 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 _yaml_help = """\
 Path to a YAML file specifying the atom mapper (`mapper:`) and/or network planning algorithm (`network:`) to use.
 
-Supported atom mapper choices include `LomapAtomMapper` or `KartografAtomMapper`.
-Supported network planning algorithms include `generate_minimal_spanning_tree` or `generate_minimal_redundant_network`.
+Supported atom mapper choices are:
+    - `LomapAtomMapper`
+    - `KartografAtomMapper`
+
+Supported network planning algorithms include (but are not limited to):
+    - `generate_minimal_spanning_tree`
+    - `generate_minimal_redundant_network`
+    - `generate_radial_network`
 
 The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
 
