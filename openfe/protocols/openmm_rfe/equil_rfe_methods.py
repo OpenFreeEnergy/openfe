@@ -257,7 +257,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
             raise NotImplementedError("Can't stitch together results yet")
 
     @staticmethod
-    def compute_mean_estimate(dGs:list[dict]):
+    def compute_mean_estimate(dGs:list[unit.Quantity]):
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
