@@ -70,15 +70,17 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     """
     raw = yaml.safe_load(contents)
 
-    if False:
-        # todo: warnings about extra fields we don't expect?
-        expected = {'mapper', 'network'}
-        for field in raw:
-            if field in expected:
-                continue
-            warnings.warn(f"Ignoring unexpected section: '{field}'")
+    expected_fields = {'mapper', 'network'}
+    present_fields = set(raw.keys())
+    usable_fields = present_fields.intersection(expected_fields)
+    ignored_fields = present_fields.difference(expected_fields)
 
-    return CliYaml(**raw)
+    for field in ignored_fields:
+        warnings.warn(f"Ignoring unexpected section: '{field}'")
+
+    filtered = {k:raw[k] for k in usable_fields}
+
+    return CliYaml(**filtered)
 
 
 def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOptions:

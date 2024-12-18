@@ -637,16 +637,16 @@ class MDOutputSettings(OutputSettings):
         arbitrary_types_allowed = True
 
     # reporter settings
-    production_trajectory_filename = 'simulation.xtc'
+    production_trajectory_filename: Optional[str] = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
     trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
-    preminimized_structure = 'system.pdb'
+    preminimized_structure: Optional[str] = 'system.pdb'
     """Path to the pdb file of the full pre-minimized system. 
     Default 'system.pdb'."""
-    minimized_structure = 'minimized.pdb'
+    minimized_structure: Optional[str] = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
     equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
@@ -655,7 +655,7 @@ class MDOutputSettings(OutputSettings):
     equil_npt_structure: Optional[str] = 'equil_npt.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
     Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
-    log_output = 'simulation.log'
+    log_output: Optional[str] = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.
