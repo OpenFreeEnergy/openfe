@@ -177,7 +177,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
     with runner.isolated_filesystem():
         with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
             result = runner.invoke(plan_rbfe_network, args)
-            print(result.output)
+
             assert result.exit_code == 0
             # load the transformations and check the settings
             network = AlchemicalNetwork.from_dict(
@@ -185,10 +185,17 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
             )
             for edge in network.edges:
                 settings = edge.protocol.settings
-                assert settings.alchemical_settings.explicit_charge_correction is True
-                assert settings.simulation_settings.production_length.m == 20.0
-                assert settings.simulation_settings.n_replicas == 22
-                assert settings.lambda_settings.lambda_windows == 22
+                # check the charged transform
+                if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_41":
+                    assert settings.alchemical_settings.explicit_charge_correction is True
+                    assert settings.simulation_settings.production_length.m == 20.0
+                    assert settings.simulation_settings.n_replicas == 22
+                    assert settings.lambda_settings.lambda_windows == 22
+                else:
+                    assert settings.alchemical_settings.explicit_charge_correction is False
+                    assert settings.simulation_settings.production_length.m == 5.0
+                    assert settings.simulation_settings.n_replicas == 11
+                    assert settings.lambda_settings.lambda_windows == 11
 
 
 @pytest.fixture
