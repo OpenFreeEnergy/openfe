@@ -256,6 +256,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
+    @staticmethod
+    def compute_mean_estimate(dGs:list[unit.Quantity]):
+        u = dGs[0].u
+        # convert all values to units of the first value, then take average of magnitude
+        # this would avoid a screwy case where each value was in different units
+        vals = [dG.to(u).m for dG in dGs]
+
+        return np.average(vals) * u
+
     def get_estimate(self) -> unit.Quantity:
         """Average free energy difference of this transformation
 
@@ -267,24 +276,25 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         """
         # TODO: Check this holds up completely for SAMS.
         dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
-        u = dGs[0].u
-        # convert all values to units of the first value, then take average of magnitude
-        # this would avoid a screwy case where each value was in different units
-        vals = [dG.to(u).m for dG in dGs]
+        return self.compute_mean_estimate(dGs)
 
-        return np.average(vals) * u
-
-    def get_uncertainty(self) -> unit.Quantity:
-        """The uncertainty/error in the dG value: The std of the estimates of
-        each independent repeat
-        """
-        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+    @staticmethod
+    def compute_uncertainty(dGs:list[unit.Quantity]):
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
         vals = [dG.to(u).m for dG in dGs]
 
         return np.std(vals) * u
+
+    def get_uncertainty(self) -> unit.Quantity:
+        """The uncertainty/error in the dG value: The std of the estimates of
+        each independent repeat
+        """
+
+        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        return self.compute_uncertainty(dGs)
+
 
     def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
         """Return a list of tuples containing the individual free energy
