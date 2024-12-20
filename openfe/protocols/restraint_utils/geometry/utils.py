@@ -8,6 +8,7 @@ TODO
 * Add relevant duecredit entries.
 """
 from typing import Union, Optional
+from itertools import combinations
 import numpy as np
 import numpy.typing as npt
 from scipy.stats import circvar
@@ -134,14 +135,22 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
     list[tuple[int]]
       List of tuples for each ring.
     """
+
     ringinfo = rdmol.GetRingInfo()
     arom_idxs = get_aromatic_atom_idxs(rdmol)
 
     aromatic_rings = []
 
+    # Add to the aromatic_rings list if all the atoms in a ring are aromatic
     for ring in ringinfo.AtomRings():
         if all(a in arom_idxs for a in ring):
-            aromatic_rings.append(ring)
+            aromatic_rings.append(set(ring))
+
+    # Reduce the ring list by merging any rings that have colliding atoms
+    for x, y in combinations(aromatic_rings, 2):
+        if not x.isdisjoint(y):
+            x.update(y)
+            aromatic_rings.remove(y)
 
     return aromatic_rings
 

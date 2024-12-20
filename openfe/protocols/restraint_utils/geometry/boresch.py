@@ -114,7 +114,10 @@ def _sort_by_distance_from_atom(
 
 
 def _bonded_angles_from_pool(
-    rdmol: Chem.Mol, atom_idx: int, atom_pool: list[int]
+    rdmol: Chem.Mol,
+    atom_idx: int,
+    atom_pool: list[int],
+    aromatic_only: bool,
 ) -> list[tuple[int, int, int]]:
     """
     Get all bonded angles starting from ``atom_idx`` from a pool of atoms.
@@ -127,11 +130,19 @@ def _bonded_angles_from_pool(
       The index of the atom to search angles from.
     atom_pool : list[int]
       The list of indices to pick possible angle partners from.
+    aromatic_only : bool
+      Prune any angles that include non-aromatic bonds.
 
     Returns
     -------
     list[tuple[int, int, int]]
       A list of tuples containing all the angles.
+
+    Notes
+    -----
+    * In the original SepTop code at3 is picked as directly bonded to at1.
+      By comparison here we instead follow the case that at3 is bonded to
+      at2 but not bonded to at1.
     """
     angles = []
 
@@ -150,14 +161,28 @@ def _bonded_angles_from_pool(
             for at3 in atom_pool:
                 if at3 != atom_idx and at3 in at2_neighbors:
                     angles.append((atom_idx, at2, at3))
+
+    if aromatic_only:
+        aromatic_rings = get_aromatic_rings(rdmol)
+
+        def _belongs_to_ring(angle, aromatic_rings):
+            for ring in aromatic_rings:
+                if all(a in ring for a in angle):
+                    return True
+            return False
+
+        for angle in angles:
+            if not _belongs_to_ring(angle, aromatic_rings):
+                angles.remove(angle)
+
     return angles
 
 
-def _get_atom_pool(
+def _get_guest_atom_pool(
     rdmol: Chem.Mol,
     rmsf: npt.NDArray,
     rmsf_cutoff: unit.Quantity
-) -> Optional[set[int]]:
+) -> tuple[Optional[set[int]], bool]:
     """
     Filter atoms based on rmsf & rings, defaulting to heavy atoms if
     there are not enough.
@@ -175,12 +200,16 @@ def _get_atom_pool(
     Returns
     -------
     atom_pool : Optional[set[int]]
+      A pool of candidate atoms.
+    ring_atoms_only : bool
+      True if only ring atoms were selected.
     """
     # Get a list of all the aromatic rings
     # Note: no need to keep track of rings because we'll filter by
     # bonded terms after, so if we only keep rings then all the bonded
     # atoms should be within the same ring system.
     atom_pool: set[tuple[int]] = set()
+    ring_atoms_only: bool = True
     for ring in get_aromatic_rings(rdmol):
         max_rmsf = rmsf[list(ring)].max()
         if max_rmsf < rmsf_cutoff:
@@ -188,12 +217,13 @@ def _get_atom_pool(
 
     # if we don't have enough atoms just get all the heavy atoms
     if len(atom_pool) < 3:
+        ring_atoms_only = False
         heavy_atoms = get_heavy_atom_idxs(rdmol)
         atom_pool = set(heavy_atoms[rmsf[heavy_atoms] < rmsf_cutoff])
         if len(atom_pool) < 3:
-            return None
+            return None, False
 
-    return atom_pool
+    return atom_pool, ring_atoms_only
 
 
 def find_guest_atom_candidates(
@@ -250,7 +280,7 @@ def find_guest_atom_candidates(
     u.trajectory[-1]  # forward to the last frame
 
     # 1. Get the pool of atoms to work with
-    atom_pool = _get_atom_pool(rdmol, rmsf, rmsf_cutoff)
+    atom_pool, rings_only = _get_guest_atom_pool(rdmol, rmsf, rmsf_cutoff)
 
     if atom_pool is None:
         # We don't have enough atoms so we raise an error
@@ -266,7 +296,12 @@ def find_guest_atom_candidates(
     # 4. Get a list of probable angles
     angles_list = []
     for atom in sorted_atom_pool:
-        angles = _bonded_angles_from_pool(rdmol, atom, sorted_atom_pool)
+        angles = _bonded_angles_from_pool(
+            rdmol=rdmol,
+            atom_idx=atom,
+            atom_pool=sorted_atom_pool,
+            aromatic_only=rings_only,
+        )
         for angle in angles:
             # Check that the angle is at least not collinear
             angle_ag = ligand_ag.atoms[list(angle)]
@@ -342,11 +377,11 @@ def find_host_atom_candidates(
 
     # 1. Get the RMSF & filter
     rmsf = get_local_rmsf(host_ag2)
-    protein_ag3 = host_ag2.atoms[rmsf < rmsf_cutoff]
+    host_ag3 = host_ag2.atoms[rmsf < rmsf_cutoff]
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
-        protein_ag3, u.atoms[l1_idx], min_distance, max_distance
+        host_ag3, u.atoms[l1_idx], min_distance, max_distance
     )
     atom_finder.run()
     return atom_finder.results.host_idxs
@@ -599,9 +634,9 @@ def _find_host_anchor(
 
     for i, valid_h0 in enumerate(h0_eval.results.valid):
         if valid_h0:
-            g1g2h0_atoms = guest_atoms.atoms[1:] + host_atom_pool.atoms[i]
+            g1g0h0_atoms = guest_atoms.atoms[:2] + host_atom_pool.atoms[i]
             h1_eval = EvaluateHostAtoms1(
-                g1g2h0_atoms,
+                g1g0h0_atoms,
                 host_atom_pool,
                 minimum_distance,
                 angle_force_constant,
@@ -617,7 +652,7 @@ def _find_host_anchor(
                     temperature,
                 )
 
-                if any(h2_eval.ressults.valid):
+                if any(h2_eval.results.valid):
                     d1_avgs = np.array([d.mean() for d in h2_eval.results.distances1])
                     d2_avgs = np.array([d.mean() for d in h2_eval.results.distances2])
                     dsum_avgs = d1_avgs + d2_avgs
@@ -828,7 +863,7 @@ def find_boresch_restraint(
             topology=topology,
             trajectory=trajectory,
             host_idxs=host_idxs,
-            l1_idx=guest_anchor,
+            l1_idx=guest_anchor[0],
             host_selection=host_selection,
             dssp_filter=dssp_filter,
             rmsf_cutoff=rmsf_cutoff,

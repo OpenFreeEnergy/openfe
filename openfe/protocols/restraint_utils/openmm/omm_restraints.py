@@ -62,13 +62,16 @@ class RestraintParameterState(GlobalParameterState):
       ``lambda_restraints_{parameters_name_suffix}` instead of just
       ``lambda_restraints``.
     lambda_restraints : Optional[float]
-      The strength of the restraint. If defined, must be between 0 and 1.
+      The scaling parameter for the restraint. If defined,
+      must be between 0 and 1. In most cases, a value of 1 indicates that the
+      restraint is fully turned on, whilst a value of 0 indicates that it is
+      innactive.
 
     Acknowledgement
     ---------------
     Partially reproduced from Yank.
     """
-
+    # We set the standard system to a fully interacting restraint
     lambda_restraints = GlobalParameterState.GlobalParameter(
         "lambda_restraints", standard_value=1.0
     )

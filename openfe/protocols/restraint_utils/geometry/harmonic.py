@@ -96,12 +96,12 @@ def get_molecule_centers_restraint(
     molA_rdmol : Chem.Mol
       An RDKit Molecule for the first molecule.
     molB_rdmol : Chem.Mol
-      An RDKit Molecule for the first molecule.
+      An RDKit Molecule for the second molecule.
     molA_idxs : list[int]
       The indices of the first molecule in the system. Note we assume these
       to be sorted in the same order as the input rdmol.
     molB_idxs : list[int]
-      The indices of the first molecule in the system. Note we assume these
+      The indices of the second molecule in the system. Note we assume these
       to be sorted in the same order as the input rdmol.
 
     Returns
