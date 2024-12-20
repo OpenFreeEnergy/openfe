@@ -582,7 +582,8 @@ def check_receptor_idxs(
     ]
     r3_distance_avg = numpy.stack(r3_distances_per_frame).mean(axis=0)
 
-    max_distance = 0.8 * (receptor.unitcell_lengths[-1][0] / 2)
+    max_distance = 0.5 * (receptor.unitcell_lengths[-1][0] / 2)
+    print(max_distance)
     is_valid_distance = r3_distance_avg.max(axis=-1) < max_distance
     print(is_valid_r1, is_valid_r2, is_valid_r3, is_valid_distance)
 
