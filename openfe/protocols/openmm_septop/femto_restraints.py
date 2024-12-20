@@ -525,8 +525,9 @@ def select_receptor_idxs(
         r3_distances_per_frame.append(numpy.hstack([r3_r_distances, r3_l_distances]))
 
     # chosen to match the SepTop reference implementation at commit 3705ba5
-    max_distance = 0.8 * (receptor.unitcell_lengths.mean(axis=0).min(axis=-1) / 2)
-
+    # Edit to make them be closer
+    max_distance = 0.5 * (receptor.unitcell_lengths.mean(axis=0).min(axis=-1) / 2)
+    print(max_distance)
     r3_distances_avg = numpy.stack(r3_distances_per_frame).mean(axis=0)
 
     max_distance_mask = r3_distances_avg.max(axis=-1) < max_distance
