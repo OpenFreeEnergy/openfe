@@ -656,6 +656,8 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     solv_repeats = set()
     complex_repeats = set()
     for ret in results:
+        print(ret)
+        print(ret.outputs)
         assert isinstance(ret, gufe.ProtocolUnitResult)
         assert ret.outputs['generation'] == 0
         if ret.outputs['simtype'] == 'complex':
