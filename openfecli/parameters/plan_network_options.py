@@ -193,7 +193,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     # We default to am1bcc on ambertools
     partial_charge_settings = OpenFFPartialChargeSettings()
     if opt and opt.partial_charge:
-        partial_charge_settings.method = opt.partial_charge.method
+        partial_charge_settings.partial_charge_method = opt.partial_charge.method
         for setting in opt.partial_charge.settings:
             setattr(
                 partial_charge_settings,
