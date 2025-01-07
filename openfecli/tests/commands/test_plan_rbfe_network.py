@@ -147,8 +147,6 @@ def test_plan_rbfe_network_cofactors(eg5_files):
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, args)
 
-        print(result.output)
-
         assert result.exit_code == 0
         # make sure the cofactor is in the transformations
         network = AlchemicalNetwork.from_dict(
