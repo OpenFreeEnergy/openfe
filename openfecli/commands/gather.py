@@ -7,6 +7,8 @@ import pathlib
 from typing import Callable, Literal
 import warnings
 
+from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
+from openfe.protocols import openmm_rfe
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -200,7 +202,6 @@ def _parse_raw_units(results: dict) -> list[tuple]:
              pu[0]['outputs']['unit_estimate_error'])
             for pu in list_of_pur]
 
-
 def _get_ddgs(legs:dict, error_on_missing=True):
     import numpy as np
     DDGs = []
@@ -215,16 +216,20 @@ def _get_ddgs(legs:dict, error_on_missing=True):
         do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
 
         if do_rbfe:
-            DG1_mag, DG1_unc = vals['complex']
-            DG2_mag, DG2_unc = vals['solvent']
+            DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
+            DG1_unc = rfe_result.compute_uncertainty(vals['complex'])
+            DG2_mag = rfe_result.compute_mean_estimate(vals['solvent'])
+            DG2_unc = rfe_result.compute_uncertainty(vals['solvent'])
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if do_rhfe:
-            DG1_mag, DG1_unc = vals['solvent']
-            DG2_mag, DG2_unc = vals['vacuum']
+            DG1_mag = rfe_result.compute_mean_estimate(vals['solvent'])
+            DG1_unc = rfe_result.compute_uncertainty(vals['solvent'])
+            DG2_mag = rfe_result.compute_mean_estimate(vals['vacuum'])
+            DG2_unc = rfe_result.compute_uncertainty(vals['vacuum'])
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
@@ -258,14 +263,15 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
     writer.writerow(["leg", "ligand_i", "ligand_j",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
-    for ligpair, vals in sorted(legs.items()):
-        for simtype, repeats in sorted(vals.items()):
-            for m, u in repeats:
-                if m is None:
-                    m, u = 'NaN', 'NaN'
-                else:
-                    m, u = format_estimate_uncertainty(m.m, u.m)
-                writer.writerow([simtype, *ligpair, m, u])
+    for ligpair, results in sorted(legs.items()):
+        for simtype, repeats in sorted(results.items()):
+            for repeat in repeats:
+                for m, u in repeat:
+                    if m is None:
+                        m, u = 'NaN', 'NaN'
+                    else:
+                        m, u = format_estimate_uncertainty(m.m, u.m)
+                    writer.writerow([simtype, *ligpair, m, u])
 
 
 def _write_dg_raw(legs:dict, writer:Callable,  allow_partial):  # pragma: no-cover
@@ -400,7 +406,7 @@ def gather(rootdir:os.PathLike|str,
     result_fns = filter(is_results_json, json_fns)
 
     # 3) pair legs of simulations together into dict of dicts
-    legs = defaultdict(dict)
+    legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
         result = load_results(result_fn)
@@ -420,9 +426,11 @@ def gather(rootdir:os.PathLike|str,
             simtype = legacy_get_type(result_fn)
 
         if report.lower() == 'raw':
-            legs[names][simtype] = _parse_raw_units(result)
+            legs[names][simtype].append(_parse_raw_units(result))
         else:
-            legs[names][simtype] = result['estimate'], result['uncertainty']
+            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
+            ## for jobs run in parallel, we need to compute these values
+            legs[names][simtype].extend(dGs)
 
     writer = csv.writer(
         output,
