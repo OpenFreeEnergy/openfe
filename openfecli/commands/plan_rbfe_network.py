@@ -16,6 +16,7 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
+    partial_charge_settings,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -35,7 +36,7 @@ def plan_rbfe_network_main(
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongisde the protein, can be empty list
-    partial_charge : OpenFFPartialChargeSettings
+    partial_charge_settings : OpenFFPartialChargeSettings
         how to assign partial charges to the input ligands
         (if they don't already have partial charges).
 
@@ -58,10 +59,10 @@ def plan_rbfe_network_main(
         charge_generation.assign_offmol_partial_charges(
             offmol=offmol,
             overwrite=False,
-            method=partial_charge.partial_charge_method,
-            toolkit_backend=partial_charge.off_toolkit_backend,
-            generate_n_conformers=partial_charge.number_of_conformers,
-            nagl_model=partial_charge.nagl_model
+            method=partial_charge_settings.partial_charge_method,
+            toolkit_backend=partial_charge_settings.off_toolkit_backend,
+            generate_n_conformers=partial_charge_settings.number_of_conformers,
+            nagl_model=partial_charge_settings.nagl_model
         )
         charge_small_molecules.append(SmallMoleculeComponent.from_openff(offmol))
 
@@ -190,7 +191,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
-        partial_charge=partial_charge,
+        partial_charge_settings=partial_charge,
     )
     write("\tDone")
     write("")
