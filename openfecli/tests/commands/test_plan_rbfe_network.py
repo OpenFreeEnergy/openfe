@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 from importlib import resources
-import os
 import shutil
 from click.testing import CliRunner
 
@@ -148,9 +147,18 @@ def test_plan_rbfe_network_cofactors(eg5_files):
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, args)
 
-        print(result.output)
-
         assert result.exit_code == 0
+        # make sure the cofactor is in the transformations
+        network = AlchemicalNetwork.from_dict(
+            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+        )
+        for edge in network.edges:
+            if "protein" in edge.stateA.components:
+                assert "cofactor1" in edge.stateA.components
+                assert "cofactor1" in edge.stateB.components
+            else:
+                assert "cofactor1" not in edge.stateA.components
+                assert "cofactor1" not in edge.stateB.components
 
 @pytest.fixture
 def cdk8_files():
