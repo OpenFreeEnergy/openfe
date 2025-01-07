@@ -90,7 +90,7 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
 
         if self.do_vacuum:
             chem_sys = ChemicalSystem(
-                components={RFEComponentLabels.LIGAND: component},
+                components={RFEComponentLabels.LIGAND.value: component},
                 name=component.name + "_vacuum",
             )
             yield chem_sys
@@ -98,8 +98,8 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         if self.solvent is not None:
             chem_sys = ChemicalSystem(
                 components={
-                    RFEComponentLabels.LIGAND: component,
-                    RFEComponentLabels.SOLVENT: self.solvent,
+                    RFEComponentLabels.LIGAND.value: component,
+                    RFEComponentLabels.SOLVENT.value: self.solvent,
                 },
                 name=component.name + "_solvent",
             )
@@ -108,13 +108,13 @@ class EasyChemicalSystemGenerator(AbstractChemicalSystemGenerator):
         components: dict[str, Component]
         if self.protein is not None:
             components = {
-                RFEComponentLabels.LIGAND: component,
-                RFEComponentLabels.PROTEIN: self.protein,
+                RFEComponentLabels.LIGAND.value: component,
+                RFEComponentLabels.PROTEIN.value: self.protein,
             }
             for i, c in enumerate(self.cofactors):
                 components.update({f'{RFEComponentLabels.COFACTOR.value}{i+1}': c})
             if self.solvent is not None:
-                components.update({RFEComponentLabels.SOLVENT: self.solvent})
+                components.update({RFEComponentLabels.SOLVENT.value: self.solvent})
             chem_sys = ChemicalSystem(
                 components=components, name=component.name + "_complex"
             )
