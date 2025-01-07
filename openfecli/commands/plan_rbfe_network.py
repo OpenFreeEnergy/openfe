@@ -35,6 +35,9 @@ def plan_rbfe_network_main(
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongisde the protein, can be empty list
+    partial_charge : OpenFFPartialChargeSettings
+        how to assign partial charges to the input ligands
+        (if they don't already have partial charges).
 
     Returns
     -------
@@ -47,13 +50,28 @@ def plan_rbfe_network_main(
         RBFEAlchemicalNetworkPlanner,
     )
 
+    write("assigning partial charges -- this may be slow")
+
+    charged_small_molecules = []
+    for smc in small_molecules:
+        offmol = smc.to_openff()
+        charge_generation.assign_offmol_partial_charges(
+            offmol=offmol,
+            overwrite=False,
+            method=partial_charge.partial_charge_method,
+            toolkit_backend=partial_charge.off_toolkit_backend,
+            generate_n_conformers=partial_charge.number_of_conformers,
+            nagl_model=partial_charge.nagl_model
+        )
+        charge_small_molecules.append(SmallMoleculeComponent.from_openff(offmol))
+
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent, protein=protein,
+        ligands=charged_small_molecules, solvent=solvent, protein=protein,
         cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
@@ -145,6 +163,7 @@ def plan_rbfe_network(
     mapping_scorer = yaml_options.scorer
     ligand_network_planner = yaml_options.ligand_network_planner
     solvent = yaml_options.solvent
+    partial_charge = yaml_options.partial_charge
 
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -156,7 +175,9 @@ def plan_rbfe_network(
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO:  write nice parameter
-    write("\tNetworker: " + str(ligand_network_planner))
+    write("\tNetwork Generation: " + str(ligand_network_planner))
+
+    write("\tPartial Charge Generation: " + str(partial_charge.method))
     write("")
 
     # DO
@@ -169,6 +190,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
+        partial_charge=partial_charge,
     )
     write("\tDone")
     write("")
