@@ -50,13 +50,15 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
+    from openfe.protocols.openmm_utils.charge_generation import assign_offmol_partial_charges
+    from openfe import SmallMoleculeComponent
 
     write("assigning partial charges -- this may be slow")
 
     charged_small_molecules = []
     for smc in small_molecules:
         offmol = smc.to_openff()
-        charge_generation.assign_offmol_partial_charges(
+        assign_offmol_partial_charges(
             offmol=offmol,
             overwrite=False,
             method=partial_charge_settings.partial_charge_method,

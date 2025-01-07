@@ -13,7 +13,7 @@ from openfecli.parameters import (
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent,
+    solvent, partial_charge_settings,
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -29,6 +29,9 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
+    partial_charge_settings : OpenFFPartialChargeSettings
+        how to assign partial charges to the input ligands
+        (if they don't already have partial charges).
 
     Returns
     -------
@@ -39,6 +42,21 @@ def plan_rhfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner
     )
+    from openfe.protocols.openmm_utils.charge_generation import assign_offmol_partial_charges
+    from openfe import SmallMoleculeComponent
+
+    charged_small_molecules = []
+    for smc im small_molecules:
+        offmol = smc.to_openff()
+        assign_offmol_partial_charges(
+            offmol=offmol,
+            overwrite=False,
+            method=partial_charge_settings.partial_charge_method,
+            toolkit_backend=partial_charge_settings.off_toolkit_backend,
+            generate_n_conformers=partial_charge_settings.number_of_conformers,
+            nagl_model=partial_charge_settings.nagl_model
+        )
+        charged_small_molecules.append(SmallMoleculeComponent.from_openff(offmol))
 
     network_planner = RHFEAlchemicalNetworkPlanner(
         mappers=mapper,
