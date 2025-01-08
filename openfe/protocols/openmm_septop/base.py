@@ -567,10 +567,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     def _add_restraints(
             system: openmm.System,
             positions: simtk.unit.Quantity,
-            topology: Optional[openmm.app.Topology],
-            ligand_1: Optional[OFFMolecule],
-            ligand_2: Optional[OFFMolecule],
-            settings: Optional[dict[str, SettingsBaseModel]],
+            topology: openmm.app.Topology,
+            ligand_1: OFFMolecule,
+            ligand_2: OFFMolecule,
+            settings: dict[str, SettingsBaseModel],
             ligand_1_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
             ligand_2_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
             ligand_1_idxs: tuple[int, int, int],  # indices from the full topology

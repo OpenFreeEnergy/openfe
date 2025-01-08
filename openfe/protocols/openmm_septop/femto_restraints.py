@@ -118,7 +118,7 @@ def _are_collinear(
 
 def _create_ligand_queries(
     ligand, snapshots: list[openmm.unit.Quantity] | None
-) -> tuple[str, str, str]:
+) -> tuple[int, int, int]:
     """Selects three atoms from a ligand for use in
     Boresch-likes restraints using the method described by Baumann et al.
 
@@ -283,18 +283,18 @@ def _filter_receptor_atoms(
                                                                          "E"]
     min_motif_size = {"H": min_helix_size, "E": min_sheet_size}
 
-    residues_to_keep = []
+    residues_to_keep: list[int | None] = []
 
     structure = structure[skip_residues_start: -(skip_residues_end + 1)]
 
     for motif, idxs in itertools.groupby(enumerate(structure), lambda x: x[1]):
 
-        idxs = [(idx + skip_residues_start, motif) for idx, motif in idxs]
+        idxs_new = [(idx + skip_residues_start, motif) for idx, motif in idxs]
 
-        if motif not in allowed_motifs or len(idxs) < min_motif_size[motif]:
+        if motif not in allowed_motifs or len(idxs_new) < min_motif_size[motif]:
             continue
         # discard the first and last 3 residues of the helix / sheet
-        start_idx, end_idx = idxs[0][0] + 3, idxs[-1][0] - 3
+        start_idx, end_idx = idxs_new[0][0] + 3, idxs_new[-1][0] - 3
 
         residues_to_keep.extend(
             f"resid {idx}" for idx in range(start_idx, end_idx + 1))
