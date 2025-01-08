@@ -626,6 +626,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     # test that executing the units includes correct gen and repeat info
 
     dag_units = benzene_toluene_dag.protocol_units
+    print(dag_units)
 
     with (
         mock.patch('openfe.protocols.openmm_septop.equil_septop_method.SepTopComplexSetupUnit.run',
@@ -649,15 +650,14 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
         results = []
         # For right now only testing the two SetupUnits
         #ToDo: Add tests for RunUnits
-        for u in dag_units[:2]:
-            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-            results.append(ret)
+        for u in dag_units:
+            if isinstance(u, SepTopSolventSetupUnit) or isinstance(u, SepTopComplexSetupUnit):
+                ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
+                results.append(ret)
 
     solv_repeats = set()
     complex_repeats = set()
     for ret in results:
-        print(ret)
-        print(ret.outputs)
         assert isinstance(ret, gufe.ProtocolUnitResult)
         assert ret.outputs['generation'] == 0
         if ret.outputs['simtype'] == 'complex':
