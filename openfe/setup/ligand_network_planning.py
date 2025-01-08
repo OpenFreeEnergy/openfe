@@ -171,7 +171,7 @@ def generate_maximal_network(
     ----------
     ligands : Iterable[SmallMoleculeComponent]
       the ligands to include in the LigandNetwork
-    mapper : AtomMapper or Iterable[AtomMapper]
+    mappers : AtomMapper or Iterable[AtomMapper]
       the AtomMapper(s) to use to propose mappings.  At least 1 required,
       but many can be given.
     scorer : Scoring function
