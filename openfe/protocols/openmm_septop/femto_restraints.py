@@ -193,7 +193,7 @@ def select_ligand_idxs(
     ligand_2, # OpenFF Molecule
     ligand_1_queries: tuple[str, str, str] | None = None,
     ligand_2_queries: tuple[str, str, str] | None = None,
-) -> tuple[tuple[int, int, int], tuple[int, int, int] | None]:
+) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
     """Returns the indices of the reference atoms that may be used to align ligands.
 
     Args:
