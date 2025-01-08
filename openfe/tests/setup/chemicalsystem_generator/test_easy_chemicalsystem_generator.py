@@ -11,7 +11,7 @@ from openfe.setup.chemicalsystem_generator.easy_chemicalsystem_generator import 
 
 from ...conftest import T4_protein_component
 from gufe import SolventComponent
-from .component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys
+from .component_checks import proteinC_in_chem_sys, solventC_in_chem_sys, ligandC_in_chem_sys, cofactorC_in_chem_sys
 
 
 def test_easy_chemical_system_generator_init(T4_protein_component):
@@ -55,7 +55,6 @@ def test_build_solvent_chemical_system(ethane):
 
 
 def test_build_protein_chemical_system(ethane, T4_protein_component):
-    # TODO: cofactors with eg5 system
     chem_sys_generator = EasyChemicalSystemGenerator(
         protein=T4_protein_component,
     )
@@ -66,6 +65,21 @@ def test_build_protein_chemical_system(ethane, T4_protein_component):
     assert proteinC_in_chem_sys(chem_sys)
     assert not solventC_in_chem_sys(chem_sys)
     assert ligandC_in_chem_sys(chem_sys)
+    assert not cofactorC_in_chem_sys(chem_sys)
+
+def test_build_cofactor_chemical_system(eg5_cofactor, eg5_ligands, eg5_protein):
+    chem_sys_generator = EasyChemicalSystemGenerator(
+        cofactors=[eg5_cofactor], protein=eg5_protein
+    )
+    chem_sys = next(chem_sys_generator(eg5_ligands[0]))
+
+    assert chem_sys is not None
+    assert isinstance(chem_sys, ChemicalSystem)
+    assert proteinC_in_chem_sys(chem_sys)
+    assert not solventC_in_chem_sys(chem_sys)
+    assert ligandC_in_chem_sys(chem_sys)
+    assert cofactorC_in_chem_sys(chem_sys)
+
 
 
 def test_build_hydr_scenario_chemical_systems(ethane):
@@ -91,7 +105,6 @@ def test_build_binding_scenario_chemical_systems(ethane, T4_protein_component):
 
     assert len(chem_syss) == 2
     assert all([isinstance(chem_sys, ChemicalSystem) for chem_sys in chem_syss])
-    print(chem_syss)
     assert [proteinC_in_chem_sys(chem_sys) for chem_sys in chem_syss] == [False, True]
     assert [solventC_in_chem_sys(chem_sys) for chem_sys in chem_syss] == [True, True]
     assert [ligandC_in_chem_sys(chem_sys) for chem_sys in chem_syss] == [True, True]
