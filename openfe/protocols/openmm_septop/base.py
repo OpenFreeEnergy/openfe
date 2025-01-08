@@ -611,7 +611,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             self,
             solv_comp: SolventComponent,
             prot_comp: ProteinComponent,
-            smc_comp: dict[SmallMoleculeComponent,OFFMolecule],
+            smc_comp: dict[SmallMoleculeComponent, OFFMolecule],
             settings: dict[str, SettingsBaseModel],
     ):
         """
@@ -655,8 +655,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             self,
             solv_comp: SolventComponent,
             system_modeller_A: openmm.app.Modeller,
-            smc_comps_AB: dict[SmallMoleculeComponent,OFFMolecule],
-            smc_off_B: dict[SmallMoleculeComponent,OFFMolecule],
+            smc_comps_AB: dict[SmallMoleculeComponent, OFFMolecule],
+            smc_off_B: dict[SmallMoleculeComponent, OFFMolecule],
             settings: dict[str, SettingsBaseModel],
             shared_basepath: pathlib.Path,
     ):
@@ -822,7 +822,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # Update positions from AB system
         positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
-        :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
+                     :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
 
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
@@ -931,6 +931,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         """
         ...
 
+    @abc.abstractmethod
     def _get_lambda_schedule(
             self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, npt.NDArray]:
@@ -951,7 +952,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         Must be implemented in the child class.
         """
         ...
-
 
     def _get_states(
             self,
@@ -986,7 +986,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
           A list of ThermodynamicState for each replica in the system.
         """
         alchemical_state = SepTopParameterState.from_system(alchemical_system)
-        
+
         # Set up the system constants
         temperature = settings['thermo_settings'].temperature
         pressure = settings['thermo_settings'].pressure
@@ -1072,7 +1072,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             )
 
         return reporter
-
 
     def _get_ctx_caches(
         self,

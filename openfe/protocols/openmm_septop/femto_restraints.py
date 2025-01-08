@@ -191,8 +191,8 @@ def _create_ligand_queries(
 def select_ligand_idxs(
     ligand_1, # OpenFF Molecule
     ligand_2, # OpenFF Molecule
-    ligand_1_queries: tuple[str, str, str] | None = None,
-    ligand_2_queries: tuple[str, str, str] | None = None,
+    ligand_1_queries: tuple[int, int, int] | None = None,
+    ligand_2_queries: tuple[int, int, int] | None = None,
 ) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
     """Returns the indices of the reference atoms that may be used to align ligands.
 
@@ -283,7 +283,7 @@ def _filter_receptor_atoms(
                                                                          "E"]
     min_motif_size = {"H": min_helix_size, "E": min_sheet_size}
 
-    residues_to_keep: list[int | None] = []
+    residues_to_keep: list[str | None] = []
 
     structure = structure[skip_residues_start: -(skip_residues_end + 1)]
 
