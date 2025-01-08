@@ -1317,6 +1317,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
             return None
 
+
     def _execute(
             self, ctx: gufe.Context, *, setup, verbose=True, **kwargs,
                  ) -> dict[str, Any]:

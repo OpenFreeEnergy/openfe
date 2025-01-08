@@ -298,7 +298,8 @@ def _filter_receptor_atoms(
 
         residues_to_keep.extend(
             f"resid {idx}" for idx in range(start_idx, end_idx + 1))
-    rigid_backbone_idxs = backbone.top.select(" ".join(residues_to_keep))
+    if residues_to_keep:
+        rigid_backbone_idxs = backbone.top.select(" ".join(residues_to_keep))
 
     if len(rigid_backbone_idxs) == 0:
         raise ValueError("no suitable receptor atoms could be found")

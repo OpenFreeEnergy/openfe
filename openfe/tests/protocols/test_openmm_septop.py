@@ -624,37 +624,42 @@ def benzene_toluene_dag(benzene_complex_system, toluene_complex_system):
 
 def test_unit_tagging(benzene_toluene_dag, tmpdir):
     # test that executing the units includes correct gen and repeat info
-
     dag_units = benzene_toluene_dag.protocol_units
-    print(dag_units)
-
     with (
-        mock.patch('openfe.protocols.openmm_septop.equil_septop_method.SepTopComplexSetupUnit.run',
-                   return_value={'system': 'system.xml.bz2', 'topology':
-                   'topology.pdb'}),
-        # mock.patch(
-        #     'openfe.protocols.openmm_septop.equil_septop_method'
-        #     '.SepTopComplexRunUnit.execute',
-        #     return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'},
-        # ),
-        mock.patch(
-            'openfe.protocols.openmm_septop.equil_septop_method'
-            '.SepTopSolventSetupUnit.run',
-            return_value={'system': 'system.xml.bz2', 'topology':
-                'topology.pdb'}),
-        # mock.patch(
-        #     'openfe.protocols.openmm_septop.equil_septop_method'
-        #     '.SepTopSolventRunUnit.execute',
-        #     return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopComplexSetupUnit.run',
+                return_value={'system': pathlib.Path('system.xml.bz2'),
+                              'topology':
+                                  'topology.pdb'}),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopComplexRunUnit._execute',
+                return_value={'repeat_id': 0,
+                              'generation': 0,
+                              'simtype': 'complex',
+                              'nc': 'file.nc',
+                              'last_checkpoint': 'chck.nc'},
+            ),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopSolventSetupUnit.run',
+                return_value={'system': pathlib.Path('system.xml.bz2'),
+                              'topology':
+                                  'topology.pdb'}),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopSolventRunUnit._execute',
+                return_value={'repeat_id': 0,
+                              'generation': 0,
+                              'simtype': 'solvent',
+                              'nc': 'file.nc',
+                              'last_checkpoint': 'chck.nc'}),
     ):
         results = []
-        # For right now only testing the two SetupUnits
-        #ToDo: Add tests for RunUnits
         for u in dag_units:
-            if isinstance(u, SepTopSolventSetupUnit) or isinstance(u, SepTopComplexSetupUnit):
-                ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-                results.append(ret)
-
+            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
+            results.append(ret)
     solv_repeats = set()
     complex_repeats = set()
     for ret in results:
@@ -665,45 +670,53 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
         else:
             solv_repeats.add(ret.outputs['repeat_id'])
     # Repeat ids are random ints so just check their lengths
-    assert len(complex_repeats) == len(solv_repeats) == 1
+    # Length is two, one for Setup, one for the Run Unit
+    assert len(complex_repeats) == len(solv_repeats) == 2
 
 
-# def test_gather(benzene_toluene_dag, tmpdir):
-#     # check that .gather behaves as expected
-#     with (
-#             mock.patch(
-#                 'openfe.protocols.openmm_septop.equil_septop_method'
-#                 '.SepTopComplexSetupUnit.run',
-#                 return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
-#                     'topology.pdb'}),
-#             # mock.patch(
-#             #     'openfe.protocols.openmm_septop.equil_septop_method'
-#             #     '.SepTopComplexRunUnit.execute',
-#             #     return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'},
-#             # ),
-#             mock.patch(
-#                 'openfe.protocols.openmm_septop.equil_septop_method'
-#                 '.SepTopSolventSetupUnit.run',
-#                 return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
-#                     'topology.pdb'}),
-#             # mock.patch(
-#             #     'openfe.protocols.openmm_septop.equil_septop_method'
-#             #     '.SepTopSolventRunUnit.execute',
-#             #     return_value={'nc': 'file.nc', 'last_checkpoint':
-#             #     'chck.nc'}),
-#     ):
-#         dagres = gufe.protocols.execute_DAG(benzene_toluene_dag,
-#                                             shared_basedir=tmpdir,
-#                                             scratch_basedir=tmpdir,
-#                                             keep_shared=True)
-#
-#     protocol = SepTopProtocol(
-#         settings=SepTopProtocol.default_settings(),
-#     )
-#
-#     res = protocol.gather([dagres])
-#
-#     assert isinstance(res, openfe.protocols.openmm_septop.SepTopProtocolResult)
+def test_gather(benzene_toluene_dag, tmpdir):
+    # check that .gather behaves as expected
+    with (
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopComplexSetupUnit.run',
+                return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
+                    'topology.pdb'}),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopComplexRunUnit._execute',
+                return_value={'repeat_id': 0,
+                              'generation': 0,
+                              'simtype': 'complex',
+                              'nc': 'file.nc',
+                              'last_checkpoint': 'chck.nc'},
+            ),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopSolventSetupUnit.run',
+                return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
+                    'topology.pdb'}),
+            mock.patch(
+                'openfe.protocols.openmm_septop.equil_septop_method'
+                '.SepTopSolventRunUnit._execute',
+                return_value={'repeat_id': 0,
+                              'generation': 0,
+                              'simtype': 'solvent',
+                              'nc': 'file.nc',
+                              'last_checkpoint': 'chck.nc'}),
+    ):
+        dagres = gufe.protocols.execute_DAG(benzene_toluene_dag,
+                                            shared_basedir=tmpdir,
+                                            scratch_basedir=tmpdir,
+                                            keep_shared=True)
+
+    protocol = SepTopProtocol(
+        settings=SepTopProtocol.default_settings(),
+    )
+
+    res = protocol.gather([dagres])
+
+    assert isinstance(res, openfe.protocols.openmm_septop.SepTopProtocolResult)
 
 
 class TestProtocolResult:
