@@ -62,6 +62,15 @@ def test_quickrun_output_file_in_nonexistent_directory(json_file):
     assert result.exit_code == 2
     assert "Cannot write" in result.output
  
+def test_quickrun_dir_created_at_runtime(json_file):
+    """It should be valid to have a directory created with the -d flag, such that it exists for -o."""
+    runner = CliRunner()
+    outdir = "not_dir"
+    outfile = outdir+"foo.json"
+    result = runner.invoke(quickrun, [json_file, '-d', outdir, '-o', outfile])
+    assert result.exit_code == 0
+    # assert "Cannot write" in result.output
+
 def test_quickrun_unit_error():
     with resources.files('openfecli.tests.data') as d:
         json_file = str(d / 'bad_transformation.json')
