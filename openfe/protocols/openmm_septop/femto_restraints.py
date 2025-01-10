@@ -163,7 +163,6 @@ def _create_ligand_queries(
 
     distances = [path_lengths[(center_idx, atom_idx)] for atom_idx in open_list]
     closest_idx = open_list[numpy.argmin(distances)]
-    print(closest_idx)
 
     if len(cycles) >= 1:
         # restrict the list of reference atoms to select from to those that are in the
@@ -708,16 +707,14 @@ def create_boresch_restraint(
         force.addGlobalParameter(ctx_parameter, 1.0)
 
     geometry = _compute_boresch_geometry(receptor_atoms, ligand_atoms, coords)
-    print(geometry.dist_0)
     # Scale the k_theta_a
     distance_0 = 5.0 * _ANGSTROM  # based on original SepTop implementation.
     scale = (geometry.dist_0 / distance_0) ** 2
-    print(scale)
     parameters = []
 
     for key, value in [
         ("k_dist_a", k_distance),
-        ("k_theta_a", k_theta * 2),
+        ("k_theta_a", k_theta * 2 * 10),
         ("k_theta_b", k_theta),
         ("k_phi_a", k_theta),
         ("k_phi_b", k_theta),
