@@ -590,11 +590,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     @staticmethod
     def get_smc_comps(
             alchem_comps: dict[str, list[Component]],
-            smc_comps: dict[SmallMoleculeComponent,OFFMolecule],
-    ) -> tuple[dict[SmallMoleculeComponent,OFFMolecule],
-               dict[SmallMoleculeComponent,OFFMolecule],
-               dict[SmallMoleculeComponent,OFFMolecule],
-               dict[SmallMoleculeComponent,OFFMolecule]]:
+            smc_comps: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> tuple[dict[SmallMoleculeComponent, OFFMolecule],
+               dict[SmallMoleculeComponent, OFFMolecule],
+               dict[SmallMoleculeComponent, OFFMolecule],
+               dict[SmallMoleculeComponent, OFFMolecule]]:
         # 6. Get smcs for the different states and the common smcs
         smc_off_A = {m: m.to_openff() for m in alchem_comps['stateA']}
         smc_off_B = {m: m.to_openff() for m in alchem_comps['stateB']}
@@ -888,6 +888,37 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
     Base class for running ligand SepTop RBFE free energy transformations.
     """
 
+    def _prepare(
+            self, verbose: bool,
+            scratch_basepath: Optional[pathlib.Path],
+            shared_basepath: Optional[pathlib.Path],
+    ):
+        """
+        Set basepaths and do some initial logging.
+
+        Parameters
+        ----------
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging.
+        basepath : Optional[pathlib.Path]
+          Optional base path to write files to.
+        """
+        self.verbose = verbose
+
+        if self.verbose:
+            self.logger.info("setting up alchemical system")
+
+        # set basepaths
+        def _set_optional_path(basepath):
+            if basepath is None:
+                return pathlib.Path('.')
+            return basepath
+
+        self.scratch_basepath = _set_optional_path(scratch_basepath)
+        self.shared_basepath = _set_optional_path(shared_basepath)
+
+
     @abc.abstractmethod
     def _get_components(self) -> tuple[dict[str, list[Component]],
                                        Optional[gufe.SolventComponent],
@@ -1018,7 +1049,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         positions: openmm.unit.Quantity,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
-        shared_basepath: pathlib.Path,
     ) -> multistate.MultiStateReporter:
         """
         Get a MultistateReporter for the simulation you are running.
@@ -1047,7 +1077,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 output_settings.output_indices
         )
 
-        nc = shared_basepath / output_settings.output_filename
+        nc = self.shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
         chk_intervals = settings_validation.convert_checkpoint_interval_to_iterations(
             checkpoint_interval=output_settings.checkpoint_interval,
@@ -1068,7 +1098,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 mdt_top.subset(selection_indices),
             )
             traj.save_pdb(
-                shared_basepath / output_settings.output_structure
+               self.shared_basepath / output_settings.output_structure
             )
 
         return reporter
@@ -1308,18 +1338,18 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             reporter.close()
 
             # clean up the reporter file
-            fns = [shared_basepath / settings[
+            fns = [self.shared_basepath / settings[
                 'output_settings'].output_filename,
-                   shared_basepath / settings[
+                   self.shared_basepath / settings[
                        'output_settings'].checkpoint_storage_filename]
             for fn in fns:
                 os.remove(fn)
 
             return None
 
-
-    def _execute(
-            self, ctx: gufe.Context, *, setup, verbose=True, **kwargs,
+    def run(
+            self, serialized_system, serialized_topology, dry=False, verbose=True,
+            scratch_basepath=None, shared_basepath=None,
                  ) -> dict[str, Any]:
         """
         Execute the simulation part of the SepTop protocol.
@@ -1337,23 +1367,14 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         dict : dict[str, str]
             Dictionary with paths to ...
         """
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-        dry = False
-        if ctx.shared is None:
-            # use cwd
-            shared_basepath = pathlib.Path(".")
-        else:
-            shared_basepath = ctx.shared
+        # 0. General preparation tasks
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # 1. Get components
+        self.logger.info("Running the SepTop simulation.")
 
         settings = self._handle_settings()
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        if prot_comp:
-            phase = "complex"
-        else:
-            phase = "solvent"
-
-        serialized_system = setup.outputs["system"]
-        serialized_topology = setup.outputs["topology"]
 
         system = deserialize(serialized_system)
         pdb = simtk.openmm.app.pdbfile.PDBFile(str(serialized_topology))
@@ -1371,7 +1392,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             pdb.topology, positions,
             settings['simulation_settings'],
             settings['output_settings'],
-            shared_basepath,
+            # shared_basepath,
         )
 
         # Wrap in try/finally to avoid memory leak issues
@@ -1438,3 +1459,123 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 'repeat_id': self._inputs['repeat_id'],
                 'generation': self._inputs['generation'],
                 'debug': {'sampler': sampler}}
+
+    # def _execute(
+    #         self, ctx: gufe.Context, *, setup, dry=False, verbose=True, **kwargs,
+    #              ) -> dict[str, Any]:
+    #     """
+    #     Execute the simulation part of the SepTop protocol.
+    #
+    #     Parameters
+    #     ----------
+    #     ctx : gufe.protocols.protocolunit.Context
+    #         The gufe context for the unit.
+    #     setup : gufe.protocols.ProtocolUnit
+    #         The SetupUnit
+    #     verbose: bool
+    #
+    #     Returns
+    #     -------
+    #     dict : dict[str, str]
+    #         Dictionary with paths to ...
+    #     """
+    #     log_system_probe(logging.INFO, paths=[ctx.scratch])
+    #     if ctx.shared is None:
+    #         # use cwd
+    #         shared_basepath = pathlib.Path(".")
+    #     else:
+    #         shared_basepath = ctx.shared
+    #
+    #     settings = self._handle_settings()
+    #     alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+    #     if prot_comp:
+    #         phase = "complex"
+    #     else:
+    #         phase = "solvent"
+    #
+    #     serialized_system = setup.outputs["system"]
+    #     serialized_topology = setup.outputs["topology"]
+    #
+    #     system = deserialize(serialized_system)
+    #     pdb = simtk.openmm.app.pdbfile.PDBFile(str(serialized_topology))
+    #     positions = pdb.getPositions(asNumpy=True)
+    #     lambdas = self._get_lambda_schedule(settings)
+    #
+    #     # 10. Get compound and sampler states
+    #     sampler_states, cmp_states = self._get_states(
+    #         system, positions, settings,
+    #         lambdas, solv_comp
+    #     )
+    #
+    #     # 11. Create the multistate reporter & create PDB
+    #     reporter = self._get_reporter(
+    #         pdb.topology, positions,
+    #         settings['simulation_settings'],
+    #         settings['output_settings'],
+    #         shared_basepath,
+    #     )
+    #
+    #     # Wrap in try/finally to avoid memory leak issues
+    #     try:
+    #         # 12. Get context caches
+    #         energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
+    #             settings['engine_settings']
+    #         )
+    #
+    #         # 13. Get integrator
+    #         integrator = self._get_integrator(
+    #             settings['integrator_settings'],
+    #             settings['simulation_settings'],
+    #         )
+    #
+    #         # 14. Get sampler
+    #         sampler = self._get_sampler(
+    #             integrator, reporter, settings['simulation_settings'],
+    #             settings['thermo_settings'],
+    #             cmp_states, sampler_states,
+    #             energy_ctx_cache, sampler_ctx_cache
+    #         )
+    #
+    #         # 15. Run simulation
+    #         unit_result_dict = self._run_simulation(
+    #             sampler, reporter, settings, dry, verbose, shared_basepath
+    #         )
+    #
+    #     finally:
+    #         # close reporter when you're done to prevent file handle clashes
+    #         reporter.close()
+    #
+    #         # clear GPU context
+    #         # Note: use cache.empty() when openmmtools #690 is resolved
+    #         for context in list(energy_ctx_cache._lru._data.keys()):
+    #             del energy_ctx_cache._lru._data[context]
+    #         for context in list(sampler_ctx_cache._lru._data.keys()):
+    #             del sampler_ctx_cache._lru._data[context]
+    #         # cautiously clear out the global context cache too
+    #         for context in list(
+    #                 openmmtools.cache.global_context_cache._lru._data.keys()):
+    #             del openmmtools.cache.global_context_cache._lru._data[context]
+    #
+    #         del sampler_ctx_cache, energy_ctx_cache
+    #
+    #         # Keep these around in a dry run so we can inspect things
+    #         if not dry:
+    #             del integrator, sampler
+    #
+    #     if not dry:
+    #         nc = shared_basepath / settings[
+    #             'output_settings'].output_filename
+    #         chk = settings['output_settings'].checkpoint_storage_filename
+    #         return {
+    #             'repeat_id': self._inputs['repeat_id'],
+    #             'generation': self._inputs['generation'],
+    #             'simtype': phase,
+    #             'nc': nc,
+    #             'last_checkpoint': chk,
+    #             **unit_result_dict,
+    #         }
+    #     else:
+    #         return {
+    #             'repeat_id': self._inputs['repeat_id'],
+    #             'generation': self._inputs['generation'],
+    #             'debug': {'sampler': sampler}}

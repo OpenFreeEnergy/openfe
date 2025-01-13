@@ -1431,6 +1431,26 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
 
         return lambdas
 
+    def _execute(
+        self, ctx: gufe.Context, *, setup, **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        serialized_system = setup.outputs["system"]
+        serialized_topology = setup.outputs["topology"]
+        outputs = self.run(
+            serialized_system,
+            serialized_topology,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared)
+
+        return {
+            'repeat_id': self._inputs['repeat_id'],
+            'generation': self._inputs['generation'],
+            'simtype': 'solvent',
+            **outputs
+        }
+
 
 class SepTopComplexRunUnit(BaseSepTopRunUnit):
     """
@@ -1540,3 +1560,23 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
         lambdas['lambda_restraints_B'] = lambda_restraints_B
 
         return lambdas
+
+    def _execute(
+        self, ctx: gufe.Context, *, setup, **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        serialized_system = setup.outputs["system"]
+        serialized_topology = setup.outputs["topology"]
+        outputs = self.run(
+            serialized_system,
+            serialized_topology,
+            scratch_basepath=ctx.scratch,
+            shared_basepath=ctx.shared)
+
+        return {
+            'repeat_id': self._inputs['repeat_id'],
+            'generation': self._inputs['generation'],
+            'simtype': 'complex',
+            **outputs
+        }

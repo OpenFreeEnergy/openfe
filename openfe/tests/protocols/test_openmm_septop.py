@@ -10,6 +10,7 @@ from openfe.protocols.openmm_septop import (
     SepTopProtocol,
     SepTopComplexSetupUnit,
     SepTopSolventSetupUnit,
+    SepTopSolventRunUnit,
     SepTopProtocolResult,
 )
 from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
@@ -22,6 +23,7 @@ from openff.units import unit as offunit
 import gufe
 from unittest import mock
 import json
+import mdtraj as md
 import itertools
 import numpy as np
 
@@ -620,6 +622,31 @@ def benzene_toluene_dag(benzene_complex_system, toluene_complex_system):
     protocol = SepTopProtocol(settings=s)
 
     return protocol.create(stateA=benzene_complex_system, stateB=toluene_complex_system, mapping=None)
+
+
+def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
+
+    prot_units = list(benzene_toluene_dag.protocol_units)
+
+    assert len(prot_units) == 4
+
+    solv_setup_unit = [u for u in prot_units
+                if isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in prot_units
+                if isinstance(u, SepTopSolventRunUnit)]
+
+    assert len(solv_setup_unit) == 1
+    assert len(sol_run_unit) == 1
+
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        serialized_topology = solv_setup_output['topology']
+        serialized_system = solv_setup_output['system']
+        pdb = md.load_pdb(serialized_topology)
+        assert pdb.n_atoms == 4481
+        solv_run = sol_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True)['debug']['sampler']
+        assert solv_run.is_periodic
 
 
 def test_unit_tagging(benzene_toluene_dag, tmpdir):

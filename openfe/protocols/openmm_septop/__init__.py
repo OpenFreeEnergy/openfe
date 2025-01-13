@@ -11,6 +11,8 @@ from .equil_septop_method import (
     SepTopProtocolResult,
     SepTopComplexSetupUnit,
     SepTopSolventSetupUnit,
+    SepTopSolventRunUnit,
+    SepTopComplexRunUnit,
 )
 
 __all__ = [
