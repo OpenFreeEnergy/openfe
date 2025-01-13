@@ -63,7 +63,7 @@ def test_plan_rbfe_network_main():
             for f in ['ligand_23.sdf', 'ligand_55.sdf']
         ]
     with resources.files("openfe.tests.data") as d:
-        protein_compontent = ProteinComponent.from_pdb_file(
+        protein_component = ProteinComponent.from_pdb_file(
             str(d / "181l_only.pdb")
         )
 
@@ -74,7 +74,7 @@ def test_plan_rbfe_network_main():
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
-        protein=protein_compontent,
+        protein=protein_component,
         cofactors=[],
     )
     print(alchemical_network)
