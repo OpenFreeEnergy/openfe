@@ -9,6 +9,7 @@ from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopProtocol,
     SepTopComplexSetupUnit,
+    SepTopComplexRunUnit,
     SepTopSolventSetupUnit,
     SepTopSolventRunUnit,
     SepTopProtocolResult,
@@ -16,6 +17,9 @@ from openfe.protocols.openmm_septop import (
 from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
 from openfe.protocols.openmm_utils import system_validation
 import numpy
+from numpy.testing import assert_allclose
+from math import sqrt
+from openfe.protocols.openmm_septop.utils import deserialize
 import openmm
 import openmm.app
 import openmm.unit
@@ -29,6 +33,7 @@ import numpy as np
 
 from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
 from openmmtools.alchemy import AlchemicalRegion, AbsoluteAlchemicalFactory
+from openff.units.openmm import ensure_quantity, from_openmm
 
 
 KJ_PER_MOL = openmm.unit.kilojoule_per_mole
@@ -634,9 +639,14 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
                 if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in prot_units
                 if isinstance(u, SepTopSolventRunUnit)]
-
+    complex_setup_unit = [u for u in prot_units
+                       if isinstance(u, SepTopComplexSetupUnit)]
+    complex_run_unit = [u for u in prot_units
+                    if isinstance(u, SepTopComplexRunUnit)]
     assert len(solv_setup_unit) == 1
     assert len(sol_run_unit) == 1
+    assert len(complex_setup_unit) == 1
+    assert len(complex_run_unit) == 1
 
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
@@ -647,6 +657,209 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         solv_run = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True)['debug']['sampler']
         assert solv_run.is_periodic
+
+        complex_setup_output = complex_setup_unit[0].run(dry=True)
+        serialized_topology = complex_setup_output['topology']
+        serialized_system = complex_setup_output['system']
+        pdb = md.load_pdb(serialized_topology)
+        assert pdb.n_atoms == 37555
+        complex_run = complex_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True)['debug'][
+            'sampler']
+        assert complex_run.is_periodic
+
+
+def test_dry_run_benzene_toluene_tip4p(
+        benzene_complex_system, toluene_complex_system, tmpdir):
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",  # ff14SB protein force field
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    s.solvent_solvation_settings.solvent_model = 'tip4pew'
+    s.integrator_settings.reassign_velocities = True
+
+    protocol = SepTopProtocol(settings=s)
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 4
+
+    solv_setup_unit = [u for u in prot_units
+                if isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in prot_units
+                if isinstance(u, SepTopSolventRunUnit)]
+
+    assert len(solv_setup_unit) == 1
+    assert len(sol_run_unit) == 1
+
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        serialized_topology = solv_setup_output['topology']
+        serialized_system = solv_setup_output['system']
+        solv_run = sol_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True)['debug']['sampler']
+        assert solv_run.is_periodic
+
+
+def test_dry_run_benzene_toluene_noncubic(
+        benzene_complex_system, toluene_complex_system, tmpdir):
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
+    s.solvent_solvation_settings.box_shape = 'dodecahedron'
+
+    protocol = SepTopProtocol(settings=s)
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 4
+
+    solv_setup_unit = [u for u in prot_units
+                if isinstance(u, SepTopSolventSetupUnit)]
+
+    assert len(solv_setup_unit) == 1
+
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        serialized_system = solv_setup_output['system']
+        system = deserialize(serialized_system)
+        vectors = system.getDefaultPeriodicBoxVectors()
+        width = float(from_openmm(vectors)[0][0].to('nanometer').m)
+
+        # dodecahedron has the following shape:
+        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+
+        expected_vectors = [
+                               [width, 0, 0],
+                               [0, width, 0],
+                               [0.5 * width, 0.5 * width,
+                                0.5 * sqrt(2) * width],
+                           ] * offunit.nanometer
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors)
+        )
+
+
+def test_dry_run_solv_user_charges_benzene_toluene(
+        benzene_modifications, T4_protein_component, tmpdir):
+    """
+    Create a test system with fictitious user supplied charges and
+    ensure that they are properly passed through to the constructed
+    alchemical system.
+    """
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+
+    protocol = SepTopProtocol(settings=s)
+
+    def assign_fictitious_charges(offmol):
+        """
+        Get a random array of fake partial charges for your offmol.
+        """
+        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
+        rand_arr[-1] = -sum(rand_arr[:-1])
+        return rand_arr * offunit.elementary_charge
+
+    def check_partial_charges(offmol):
+        offmol_pchgs = assign_fictitious_charges(offmol)
+        offmol.partial_charges = offmol_pchgs
+        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
+
+        # check propchgs
+        prop_chgs = smc.to_dict()['molprops'][
+            'atom.dprop.PartialCharge']
+        prop_chgs = np.array(prop_chgs.split(), dtype=float)
+        np.testing.assert_allclose(prop_chgs, offmol_pchgs)
+        return smc, prop_chgs
+
+    benzene_offmol = benzene_modifications['benzene'].to_openff()
+    toluene_offmol = benzene_modifications['toluene'].to_openff()
+
+    benzene_smc, benzene_charge = check_partial_charges(benzene_offmol)
+    toluene_smc, toluene_charge = check_partial_charges(toluene_offmol)
+
+    # Create ChemicalSystems
+    stateA = ChemicalSystem({
+        'benzene': benzene_smc,
+        'T4l': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    stateB = ChemicalSystem({
+        'toluene': toluene_smc,
+        'T4l': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None,)
+    prot_units = list(dag.protocol_units)
+
+    solv_setup_unit = [u for u in prot_units
+                if isinstance(u, SepTopSolventSetupUnit)]
+    complex_setup_unit = [u for u in prot_units
+                       if isinstance(u, SepTopComplexSetupUnit)]
+
+    # check sol_unit charges
+    with tmpdir.as_cwd():
+        serialized_system = solv_setup_unit[0].run(dry=True)['system']
+        system = deserialize(serialized_system)
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, openmm.NonbondedForce)]
+        assert len(nonbond) == 1
+
+        # loop through the 12 benzene atoms
+        # partial charge is stored in the offset
+        for i in range(12):
+            offsets = nonbond[0].getParticleParameterOffset(i)
+            c = ensure_quantity(offsets[2], 'openff')
+            assert pytest.approx(c) == benzene_charge[i]
+        # loop through 15 toluene atoms
+        for inx, i in enumerate(range(12, 27)):
+            offsets = nonbond[0].getParticleParameterOffset(i)
+            c = ensure_quantity(offsets[2], 'openff')
+            assert pytest.approx(c) == toluene_charge[inx]
+
+    # check complex_unit charges
+    with tmpdir.as_cwd():
+        serialized_system = complex_setup_unit[0].run(dry=True)['system']
+        system = deserialize(serialized_system)
+        nonbond = [f for f in system.getForces()
+                   if isinstance(f, openmm.NonbondedForce)]
+        assert len(nonbond) == 1
+
+        # loop through the 12 benzene atoms
+        # partial charge is stored in the offset
+        for i in range(12):
+            offsets = nonbond[0].getParticleParameterOffset(i)
+            c = ensure_quantity(offsets[2], 'openff')
+            assert pytest.approx(c) == benzene_charge[i]
+        # loop through 15 toluene atoms
+        for inx, i in enumerate(range(12, 27)):
+            offsets = nonbond[0].getParticleParameterOffset(i)
+            c = ensure_quantity(offsets[2], 'openff')
+            assert pytest.approx(c) == toluene_charge[inx]
 
 
 def test_unit_tagging(benzene_toluene_dag, tmpdir):
