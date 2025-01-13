@@ -5,7 +5,7 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, N_PROTOCOL_REPEATS
 )
 
 def plan_rbfe_network_main(
@@ -16,6 +16,7 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
+    protocol,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -34,7 +35,9 @@ def plan_rbfe_network_main(
     protein : ProteinComponent
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
-        any cofactors alongisde the protein, can be empty list
+        any cofactors alongside the protein, can be empty list
+    protocol: Protocol
+        The Protocol to perform on the transformations within this network
 
     Returns
     -------
@@ -51,6 +54,7 @@ def plan_rbfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol
     )
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent, protein=protein,
@@ -83,11 +87,13 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
 @print_duration
 def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
+        n_protocol_repeats: int,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -115,6 +121,8 @@ def plan_rbfe_network(
     For more advanced setups, please consider using the Python layer of openfe.
     """
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+
 
     write("RBFE-NETWORK PLANNER")
     write("______________________")
@@ -140,6 +148,10 @@ def plan_rbfe_network(
         cofactors = []
     write("\t\tCofactors: " + str(cofactors))
 
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
+
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     mapper_obj = yaml_options.mapper
     mapping_scorer = yaml_options.scorer
@@ -150,9 +162,9 @@ def plan_rbfe_network(
     write("")
 
     write("Using Options:")
-    write("\tMapper: " + str(mapper_obj))
+    write("\tMapper: " + str(mapper_obj)) 
 
-    # TODO:  write nice parameter
+    # TODO:  write nice parameter  
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO:  write nice parameter
@@ -169,6 +181,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
+        protocol=protocol,
     )
     write("\tDone")
     write("")
