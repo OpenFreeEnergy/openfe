@@ -9,6 +9,8 @@ from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
 )
+from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+
 from gufe import AlchemicalNetwork
 from gufe.tokenization import JSON_HANDLER
 import json
@@ -76,6 +78,7 @@ def test_plan_rbfe_network_main():
         solvent=solvent_component,
         protein=protein_component,
         cofactors=[],
+        protocol=RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings()),
     )
     print(alchemical_network)
 
