@@ -10,6 +10,7 @@ from openfecli.commands.plan_rhfe_network import (
     plan_rhfe_network,
     plan_rhfe_network_main,
 )
+from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
 
 
 @pytest.fixture(scope='session')
@@ -54,6 +55,7 @@ def test_plan_rhfe_network_main():
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
+        protocol=RelativeHybridTopologyProtocol(RelativeHybridTopologyProtocol.default_settings())
     )
 
     assert alchemical_network
