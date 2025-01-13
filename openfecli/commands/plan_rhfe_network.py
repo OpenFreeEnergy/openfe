@@ -8,12 +8,12 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, N_PROTOCOL_REPEATS
 )
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent,
+    solvent, protocol,
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -29,6 +29,8 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
+    protocol: Protocol
+        The Protocol to perform on the transformations within this network
 
     Returns
     -------
@@ -44,6 +46,7 @@ def plan_rhfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol
     )
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent
@@ -70,8 +73,10 @@ def plan_rhfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
+
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_protocol_repeats:int):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -100,7 +105,8 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     """
 
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+    
     write("RHFE-NETWORK PLANNER")
     write("______________________")
     write("")
@@ -115,6 +121,10 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
         "\t\tSmall Molecules: "
         + " ".join([str(sm) for sm in small_molecules])
     )
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     mapper_obj = yaml_options.mapper
@@ -143,6 +153,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
+        protocol=protocol,
     )
     write("\tDone")
     write("")
