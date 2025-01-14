@@ -858,6 +858,27 @@ def test_dry_run_solv_user_charges_benzene_toluene(
             assert pytest.approx(c) == toluene_charge[inx]
 
 
+def test_high_timestep(benzene_complex_system, toluene_complex_system, tmpdir):
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_forcefield_settings.hydrogen_mass = 1.0
+    s.complex_forcefield_settings.hydrogen_mass = 1.0
+
+    protocol = SepTopProtocol(settings=s)
+
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    with tmpdir.as_cwd():
+        errmsg = "too large for hydrogen mass"
+        with pytest.raises(ValueError, match=errmsg):
+            prot_units[0].run(dry=True)
+
+
 def test_unit_tagging(benzene_toluene_dag, tmpdir):
     # test that executing the units includes correct gen and repeat info
     dag_units = benzene_toluene_dag.protocol_units
@@ -866,8 +887,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopComplexSetupUnit.run',
                 return_value={'system': pathlib.Path('system.xml.bz2'),
-                              'topology':
-                                  'topology.pdb'}),
+                              'topology': 'topology.pdb'}),
             mock.patch(
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopComplexRunUnit._execute',
@@ -881,8 +901,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopSolventSetupUnit.run',
                 return_value={'system': pathlib.Path('system.xml.bz2'),
-                              'topology':
-                                  'topology.pdb'}),
+                              'topology': 'topology.pdb'}),
             mock.patch(
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopSolventRunUnit._execute',

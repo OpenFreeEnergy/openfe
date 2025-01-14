@@ -1444,19 +1444,14 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 del integrator, sampler
 
         if not dry:
-            nc = shared_basepath / settings[
+            nc = self.shared_basepath / settings[
                 'output_settings'].output_filename
             chk = settings['output_settings'].checkpoint_storage_filename
             return {
-                'repeat_id': self._inputs['repeat_id'],
-                'generation': self._inputs['generation'],
-                'simtype': phase,
                 'nc': nc,
                 'last_checkpoint': chk,
                 **unit_result_dict,
             }
         else:
             return {
-                'repeat_id': self._inputs['repeat_id'],
-                'generation': self._inputs['generation'],
                 'debug': {'sampler': sampler}}
