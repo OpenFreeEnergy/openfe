@@ -282,7 +282,7 @@ def _filter_receptor_atoms(
                                                                          "E"]
     min_motif_size = {"H": min_helix_size, "E": min_sheet_size}
 
-    residues_to_keep: list[str | None] = []
+    residues_to_keep: list = []
 
     structure = structure[skip_residues_start: -(skip_residues_end + 1)]
 

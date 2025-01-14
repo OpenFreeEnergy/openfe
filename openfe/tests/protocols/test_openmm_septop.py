@@ -35,8 +35,10 @@ import numpy as np
 from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
 from openmmtools.alchemy import AlchemicalRegion, AbsoluteAlchemicalFactory
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import MonteCarloBarostat
-
+from openmm import (
+    app, XmlSerializer, MonteCarloBarostat,
+    NonbondedForce, CustomNonbondedForce
+)
 
 KJ_PER_MOL = openmm.unit.kilojoule_per_mole
 
@@ -287,7 +289,6 @@ def test_validate_complex_endstates_protcomp_stateB(
         SepTopProtocol._validate_complex_endstates(stateA, stateB)
 
 
-
 def test_validate_complex_endstates_nosolvcomp_stateA(
     benzene_modifications, T4_protein_component,
 ):
@@ -413,8 +414,8 @@ def test_validate_alchem_nonsmc(
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
-### Tests for the alchemical systems. This tests were modified from
-### femto (https://github.com/Psivant/femto/tree/main)
+# Tests for the alchemical systems. This tests were modified from
+# femto (https://github.com/Psivant/femto/tree/main)
 def compute_interaction_energy(
     epsilon,
     sigma,
@@ -628,7 +629,11 @@ def benzene_toluene_dag(benzene_complex_system, toluene_complex_system):
 
     protocol = SepTopProtocol(settings=s)
 
-    return protocol.create(stateA=benzene_complex_system, stateB=toluene_complex_system, mapping=None)
+    return protocol.create(
+             stateA=benzene_complex_system,
+             stateB=toluene_complex_system,
+             mapping=None,
+    )
 
 
 def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
@@ -638,13 +643,13 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     assert len(prot_units) == 4
 
     solv_setup_unit = [u for u in prot_units
-                if isinstance(u, SepTopSolventSetupUnit)]
+                       if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in prot_units
-                if isinstance(u, SepTopSolventRunUnit)]
+                    if isinstance(u, SepTopSolventRunUnit)]
     complex_setup_unit = [u for u in prot_units
-                       if isinstance(u, SepTopComplexSetupUnit)]
+                          if isinstance(u, SepTopComplexSetupUnit)]
     complex_run_unit = [u for u in prot_units
-                    if isinstance(u, SepTopComplexRunUnit)]
+                        if isinstance(u, SepTopComplexRunUnit)]
     assert len(solv_setup_unit) == 1
     assert len(sol_run_unit) == 1
     assert len(complex_setup_unit) == 1
@@ -682,6 +687,86 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert pdb.n_atoms == 2713
 
 
+@pytest.mark.parametrize('pressure',
+                         [1.0 * openmm.unit.bar,
+                          0.9 * openmm.unit.bar,
+                          1.1 * openmm.unit.bar]
+                         )
+def test_dry_run_ligand_system_pressure(
+    pressure, benzene_complex_system, toluene_complex_system, tmpdir
+):
+    """
+    Test that the right nonbonded cutoff is propagated to the system.
+    """
+    settings = SepTopProtocol.default_settings()
+    settings.thermo_settings.pressure = pressure
+
+    protocol = SepTopProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    dag_units = list(dag.protocol_units)
+    # Only check the cutoff for the Solvent SetUp Unit
+    solv_setup_unit = [u for u in dag_units
+                       if isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in dag_units
+                    if isinstance(u, SepTopSolventRunUnit)]
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        serialized_topology = solv_setup_output['topology']
+        serialized_system = solv_setup_output['system']
+        solv_sampler = sol_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True)['debug']['sampler']
+        # CAVE: The pressure does not fully equal the pressure in the settings,
+        # likely because the second ligand that is inserted in the first system
+        # slightly changes the pressure?
+        assert is_close(solv_sampler._thermodynamic_states[1].pressure, pressure)
+
+
+@pytest.mark.parametrize('cutoff',
+                         [1.0 * offunit.nanometer,
+                          12.0 * offunit.angstrom,
+                          0.9 * offunit.nanometer]
+                         )
+def test_dry_run_ligand_system_cutoff(
+    cutoff, benzene_complex_system, toluene_complex_system, tmpdir
+):
+    """
+    Test that the right nonbonded cutoff is propagated to the system.
+    """
+    settings = SepTopProtocol.default_settings()
+    settings.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
+    settings.solvent_forcefield_settings.nonbonded_cutoff = cutoff
+
+    protocol = SepTopProtocol(
+            settings=settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    dag_units = list(dag.protocol_units)
+    # Only check the cutoff for the Solvent SetUp Unit
+    solv_setup_unit = [u for u in dag_units
+                       if isinstance(u, SepTopSolventSetupUnit)]
+
+    with tmpdir.as_cwd():
+        serialized_system = solv_setup_unit[0].run(dry=True)['system']
+        system = deserialize(serialized_system)
+        nbfs = [f for f in system.getForces() if
+                isinstance(f, CustomNonbondedForce) or
+                isinstance(f, NonbondedForce)]
+
+        for f in nbfs:
+            f_cutoff = from_openmm(f.getCutoffDistance())
+            assert f_cutoff == cutoff
+
+
 def test_dry_run_benzene_toluene_tip4p(
         benzene_complex_system, toluene_complex_system, tmpdir):
     s = SepTopProtocol.default_settings()
@@ -709,9 +794,9 @@ def test_dry_run_benzene_toluene_tip4p(
     assert len(prot_units) == 4
 
     solv_setup_unit = [u for u in prot_units
-                if isinstance(u, SepTopSolventSetupUnit)]
+                       if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in prot_units
-                if isinstance(u, SepTopSolventRunUnit)]
+                    if isinstance(u, SepTopSolventRunUnit)]
 
     assert len(solv_setup_unit) == 1
     assert len(sol_run_unit) == 1
@@ -747,7 +832,7 @@ def test_dry_run_benzene_toluene_noncubic(
     assert len(prot_units) == 4
 
     solv_setup_unit = [u for u in prot_units
-                if isinstance(u, SepTopSolventSetupUnit)]
+                       if isinstance(u, SepTopSolventSetupUnit)]
 
     assert len(solv_setup_unit) == 1
 
@@ -830,9 +915,9 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     prot_units = list(dag.protocol_units)
 
     solv_setup_unit = [u for u in prot_units
-                if isinstance(u, SepTopSolventSetupUnit)]
+                       if isinstance(u, SepTopSolventSetupUnit)]
     complex_setup_unit = [u for u in prot_units
-                       if isinstance(u, SepTopComplexSetupUnit)]
+                          if isinstance(u, SepTopComplexSetupUnit)]
 
     # check sol_unit charges
     with tmpdir.as_cwd():
@@ -953,7 +1038,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopComplexSetupUnit.run',
                 return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
-                    'topology.pdb'}),
+                              'topology.pdb'}),
             mock.patch(
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopComplexRunUnit._execute',
@@ -967,7 +1052,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopSolventSetupUnit.run',
                 return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
-                    'topology.pdb'}),
+                              'topology.pdb'}),
             mock.patch(
                 'openfe.protocols.openmm_septop.equil_septop_method'
                 '.SepTopSolventRunUnit._execute',
@@ -1005,8 +1090,7 @@ class TestProtocolResult:
         d = json.loads(septop_json,
                        cls=gufe.tokenization.JSON_HANDLER.decoder)
 
-        pr = SepTopProtocolResult.from_dict(d[
-        'protocol_result'])
+        pr = SepTopProtocolResult.from_dict(d['protocol_result'])
 
         assert pr
 
@@ -1036,7 +1120,7 @@ class TestProtocolResult:
             assert e.is_compatible_with(offunit.kilojoule_per_mole)
             assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
-    #ToDo: Add Results from longer test run that has this analysis
+    # ToDo: Add Results from longer test run that has this analysis
 
     # @pytest.mark.parametrize('key', ['solvent', 'complex'])
     # def test_get_forwards_etc(self, key, protocolresult):
