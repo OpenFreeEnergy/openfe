@@ -23,6 +23,7 @@ from openfe.protocols.openmm_septop.utils import deserialize
 import openmm
 import openmm.app
 import openmm.unit
+from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openff.units import unit as offunit
 import gufe
 from unittest import mock
@@ -34,6 +35,7 @@ import numpy as np
 from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
 from openmmtools.alchemy import AlchemicalRegion, AbsoluteAlchemicalFactory
 from openff.units.openmm import ensure_quantity, from_openmm
+from openmm import MonteCarloBarostat
 
 
 KJ_PER_MOL = openmm.unit.kilojoule_per_mole
@@ -652,17 +654,32 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         serialized_topology = solv_setup_output['topology']
         serialized_system = solv_setup_output['system']
-        solv_run = sol_run_unit[0].run(
+        solv_sampler = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True)['debug']['sampler']
-        assert solv_run.is_periodic
+        assert solv_sampler.is_periodic
+        assert isinstance(solv_sampler, MultiStateSampler)
+        assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+        # Check we have the right number of atoms in the PDB
+        pdb = md.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 35
 
         complex_setup_output = complex_setup_unit[0].run(dry=True)
         serialized_topology = complex_setup_output['topology']
         serialized_system = complex_setup_output['system']
-        complex_run = complex_run_unit[0].run(
+        complex_sampler = complex_run_unit[0].run(
             serialized_system, serialized_topology, dry=True)['debug'][
             'sampler']
-        assert complex_run.is_periodic
+        assert complex_sampler.is_periodic
+        assert isinstance(complex_sampler, MultiStateSampler)
+        assert isinstance(complex_sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert complex_sampler._thermodynamic_states[
+                   1].pressure == 1 * openmm.unit.bar
+        # Check we have the right number of atoms in the PDB
+        pdb = md.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 2713
 
 
 def test_dry_run_benzene_toluene_tip4p(

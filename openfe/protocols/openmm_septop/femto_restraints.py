@@ -297,7 +297,7 @@ def _filter_receptor_atoms(
 
         residues_to_keep.extend(
             f"resid {idx}" for idx in range(start_idx, end_idx + 1))
-    if residues_to_keep:
+    if len(residues_to_keep) > 0:
         rigid_backbone_idxs = backbone.top.select(" ".join(residues_to_keep))
 
     if len(rigid_backbone_idxs) == 0:
