@@ -29,8 +29,8 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
-    protocol: Protocol
-        The Protocol to perform on the transformations within this network
+    n_protocol_repeats: int
+        number of completely independent repeats of the entire sampling process
 
     Returns
     -------

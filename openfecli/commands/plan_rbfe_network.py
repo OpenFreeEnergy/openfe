@@ -37,6 +37,7 @@ def plan_rbfe_network_main(
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
     n_protocol_repeats: int
+        number of completely independent repeats of the entire sampling process
 
     Returns
     -------
