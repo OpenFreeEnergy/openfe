@@ -6,7 +6,6 @@ import json
 import pathlib
 
 from openfecli import OFECommandPlugin
-from openfecli.parameters.output import validate_outfile
 from openfecli.utils import write, print_duration, configure_logger
 
 
@@ -28,14 +27,14 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=True, file_okay=False, writable=True,
                     path_type=pathlib.Path),
     help=(
-        "directory to store files in (defaults to current directory)"
+        "Directory in which to store files in (defaults to current directory).\
+        If the directory does not exist, it will be created at runtime."
     ),
 )
 @click.option(
     'output', '-o', default=None,
-    type=click.Path(dir_okay=False, file_okay=True, path_type=pathlib.Path),
+    type=click.Path(dir_okay=False, file_okay=False, path_type=pathlib.Path),
     help="Filepath at which to create and write the JSON-formatted results.",
-    callback=validate_outfile,
 )
 @print_duration
 def quickrun(transformation, work_dir, output):
@@ -96,6 +95,12 @@ def quickrun(transformation, work_dir, output):
     # TODO: change this to `Transformation.load(transformation)`
     dct = json.load(transformation, cls=JSON_HANDLER.decoder)
     trans = gufe.Transformation.from_dict(dct)
+
+    if output is None:
+        output = work_dir / (str(trans.key) + '_results.json')
+    else:
+        output.parent.mkdir(exist_ok=True, parents=True)
+
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Starting the simulations for this edge...")
@@ -124,9 +129,6 @@ def quickrun(transformation, work_dir, output):
             for unit in dagresult.protocol_unit_results
         }
     }
-
-    if output is None:
-        output = work_dir / (str(trans.key) + '_results.json')
 
     with open(output, mode='w') as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
