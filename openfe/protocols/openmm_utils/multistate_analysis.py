@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from openmmtools import multistate
 from openff.units import unit, ensure_quantity
+from pymbar import MBAR
 from pymbar.utils import ParameterError
 from openfe.analysis import plotting
 from typing import Optional, Union
@@ -220,13 +221,14 @@ class MultistateEquilFEAnalysis:
         * Allow folks to pass in extra options for bootstrapping etc..
         * Add standard test against analyzer.get_free_energy()
         """
-        mbar = analyzer._create_mbar(u_ln, N_l)
-
         try:
             # pymbar 3
-            DF_ij, dDF_ij = mbar.getFreeEnergyDifferences()
+            mbar = MBAR(u_ln, N_l, nbootstraps=1000)
+            DF_ij, dDF_ij = mbar.getFreeEnergyDifferences(compute_uncertainty=True, uncertainty_method="bootstrap")
         except AttributeError:
-            r = mbar.compute_free_energy_differences()
+            # pymbar 4
+            mbar = MBAR(u_ln, N_l, solver_protocol="robust", n_bootstraps=1000, bootstrap_solver_protocol="robust")
+            r = mbar.compute_free_energy_differences(compute_uncertainty=True, uncertainty_method="bootstrap")
             DF_ij = r['Delta_f']
             dDF_ij = r['dDelta_f']
 
