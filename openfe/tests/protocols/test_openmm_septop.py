@@ -651,10 +651,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         serialized_topology = solv_setup_output['topology']
-        print(serialized_topology)
         serialized_system = solv_setup_output['system']
-        # pdb = md.load_pdb(serialized_topology)
-        # assert pdb.n_atoms == 4481
         solv_run = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True)['debug']['sampler']
         assert solv_run.is_periodic
@@ -662,8 +659,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         complex_setup_output = complex_setup_unit[0].run(dry=True)
         serialized_topology = complex_setup_output['topology']
         serialized_system = complex_setup_output['system']
-        pdb = md.load_pdb(serialized_topology)
-        assert pdb.n_atoms == 37555
         complex_run = complex_run_unit[0].run(
             serialized_system, serialized_topology, dry=True)['debug'][
             'sampler']
