@@ -13,7 +13,7 @@ from openfecli.parameters import (
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, protocol,
+    solvent, n_protocol_repeats,
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -41,6 +41,12 @@ def plan_rhfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner
     )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     network_planner = RHFEAlchemicalNetworkPlanner(
         mappers=mapper,
@@ -105,7 +111,6 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     """
 
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
     
     write("RHFE-NETWORK PLANNER")
     write("______________________")
@@ -121,10 +126,6 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
         "\t\tSmall Molecules: "
         + " ".join([str(sm) for sm in small_molecules])
     )
-
-    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
-    protocol_settings.protocol_repeats = n_protocol_repeats
-    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     mapper_obj = yaml_options.mapper
@@ -153,7 +154,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
-        protocol=protocol,
+        n_protocol_repeats=n_protocol_repeats,
     )
     write("\tDone")
     write("")

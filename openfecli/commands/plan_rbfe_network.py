@@ -16,7 +16,7 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
-    protocol,
+    n_protocol_repeats,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -36,8 +36,7 @@ def plan_rbfe_network_main(
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongside the protein, can be empty list
-    protocol: Protocol
-        The Protocol to perform on the transformations within this network
+    n_protocol_repeats: int
 
     Returns
     -------
@@ -49,6 +48,11 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
@@ -121,8 +125,6 @@ def plan_rbfe_network(
     For more advanced setups, please consider using the Python layer of openfe.
     """
     from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
-
 
     write("RBFE-NETWORK PLANNER")
     write("______________________")
@@ -147,10 +149,6 @@ def plan_rbfe_network(
     else:
         cofactors = []
     write("\t\tCofactors: " + str(cofactors))
-
-    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
-    protocol_settings.protocol_repeats = n_protocol_repeats
-    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     mapper_obj = yaml_options.mapper
@@ -181,7 +179,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
-        protocol=protocol,
+        n_protocol_repeats=n_protocol_repeats,
     )
     write("\tDone")
     write("")
