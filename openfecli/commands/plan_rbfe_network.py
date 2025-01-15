@@ -16,6 +16,7 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
+    partial_charge_settings,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -35,6 +36,9 @@ def plan_rbfe_network_main(
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
         any cofactors alongisde the protein, can be empty list
+    partial_charge_settings : OpenFFPartialChargeSettings
+        how to assign partial charges to the input ligands
+        (if they don't already have partial charges).
 
     Returns
     -------
@@ -46,6 +50,23 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
+    from openfe.protocols.openmm_utils.charge_generation import assign_offmol_partial_charges
+    from openfe import SmallMoleculeComponent
+
+    write("assigning partial charges -- this may be slow")
+
+    charged_small_molecules = []
+    for smc in small_molecules:
+        offmol = smc.to_openff()
+        assign_offmol_partial_charges(
+            offmol=offmol,
+            overwrite=False,
+            method=partial_charge_settings.partial_charge_method,
+            toolkit_backend=partial_charge_settings.off_toolkit_backend,
+            generate_n_conformers=partial_charge_settings.number_of_conformers,
+            nagl_model=partial_charge_settings.nagl_model
+        )
+        charge_small_molecules.append(SmallMoleculeComponent.from_openff(offmol))
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
@@ -53,7 +74,7 @@ def plan_rbfe_network_main(
         ligand_network_planner=ligand_network_planner,
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent, protein=protein,
+        ligands=charged_small_molecules, solvent=solvent, protein=protein,
         cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
@@ -145,6 +166,7 @@ def plan_rbfe_network(
     mapping_scorer = yaml_options.scorer
     ligand_network_planner = yaml_options.ligand_network_planner
     solvent = yaml_options.solvent
+    partial_charge = yaml_options.partial_charge
 
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -156,7 +178,9 @@ def plan_rbfe_network(
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO:  write nice parameter
-    write("\tNetworker: " + str(ligand_network_planner))
+    write("\tNetwork Generation: " + str(ligand_network_planner))
+
+    write("\tPartial Charge Generation: " + str(partial_charge.method))
     write("")
 
     # DO
@@ -169,6 +193,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
+        partial_charge_settings=partial_charge,
     )
     write("\tDone")
     write("")
