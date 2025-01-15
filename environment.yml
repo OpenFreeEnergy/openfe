@@ -29,7 +29,7 @@ dependencies:
   - openmm >=8.0.0,!=8.1.0,<8.2.0
   - openmmtools
   - openmmforcefields
-  - perses
+  - perses>=0.10.3
   - pooch
   - py3dmol
   - plugcli
