@@ -221,16 +221,12 @@ class MultistateEquilFEAnalysis:
         * Allow folks to pass in extra options for bootstrapping etc..
         * Add standard test against analyzer.get_free_energy()
         """
-        try:
-            # pymbar 3
-            mbar = MBAR(u_ln, N_l, nbootstraps=1000)
-            DF_ij, dDF_ij = mbar.getFreeEnergyDifferences(compute_uncertainty=True, uncertainty_method="bootstrap")
-        except AttributeError:
-            # pymbar 4
-            mbar = MBAR(u_ln, N_l, solver_protocol="robust", n_bootstraps=1000, bootstrap_solver_protocol="robust")
-            r = mbar.compute_free_energy_differences(compute_uncertainty=True, uncertainty_method="bootstrap")
-            DF_ij = r['Delta_f']
-            dDF_ij = r['dDelta_f']
+
+        # pymbar 4
+        mbar = MBAR(u_ln, N_l, solver_protocol="robust", n_bootstraps=1000, bootstrap_solver_protocol="robust")
+        r = mbar.compute_free_energy_differences(compute_uncertainty=True, uncertainty_method="bootstrap")
+        DF_ij = r['Delta_f']
+        dDF_ij = r['dDelta_f']
 
         DG = DF_ij[0, -1] * analyzer.kT
         dDG = dDF_ij[0, -1] * analyzer.kT
