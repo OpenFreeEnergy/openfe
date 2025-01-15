@@ -350,15 +350,8 @@ class MultistateEquilFEAnalysis:
             * ``matrix``: Estimated overlap matrix of observing a sample from
               state i in state j
         """
-        try:
-            # pymbar 3
-            overlap_matrix = self.analyzer.mbar.computeOverlap()
-            # convert matrix to np array
-            overlap_matrix['matrix'] = np.array(overlap_matrix['matrix'])
-        except AttributeError:
-            overlap_matrix = self.analyzer.mbar.compute_overlap()
+        return self.analyzer.mbar.compute_overlap()
 
-        return overlap_matrix
 
     def get_exchanges(self) -> dict[str, npt.NDArray]:
         """
