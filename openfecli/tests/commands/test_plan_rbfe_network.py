@@ -4,6 +4,7 @@ import pytest
 from importlib import resources
 import shutil
 from click.testing import CliRunner
+from ..utils import assert_click_success
 
 from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
@@ -125,6 +126,30 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
 
+            network = AlchemicalNetwork.from_dict(
+            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+            )
+            for edge in network.edges:
+                if "protein" in edge.stateA.components:
+                    assert "cofactor1" in edge.stateA.components
+                    assert "cofactor1" in edge.stateB.components
+
+@pytest.mark.parametrize(['input_n_repeat', 'expected_n_repeat'], [([], 3), (["-n 1"], 1)])
+def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat, expected_n_repeat):
+    runner = CliRunner()
+
+    args = mol_dir_args + protein_args + input_n_repeat
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rbfe_network, args)
+        assert_click_success(result)
+
+        # make sure the number of repeats is correct
+        network = AlchemicalNetwork.from_dict(
+            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+        )
+        for edge in network.edges:
+            assert edge.protocol.settings.protocol_repeats == expected_n_repeat
 
 @pytest.fixture
 def eg5_files():
