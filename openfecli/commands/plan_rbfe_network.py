@@ -161,9 +161,9 @@ def plan_rbfe_network(
     write("")
 
     write("Using Options:")
-    write("\tMapper: " + str(mapper_obj)) 
+    write("\tMapper: " + str(mapper_obj))
 
-    # TODO:  write nice parameter  
+    # TODO:  write nice parameter
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO:  write nice parameter
