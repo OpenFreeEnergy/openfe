@@ -69,7 +69,7 @@ class MultistateEquilFEAnalysis:
     result_units : unit.Quantity
       Units to report results in.
     forward_reverse_samples : int
-      The number of samples to use in the foward and reverse analysis
+      The number of samples to use in the forward and reverse analysis
       of the free energies. Default 10.
     """
     def __init__(self, reporter: multistate.MultiStateReporter,
@@ -199,15 +199,13 @@ class MultistateEquilFEAnalysis:
         Parameters
         ----------
         analyzer : multistate.MultiStateSamplerAnalyzer
-          MultiStateSamplerAnalyzer to extract free eneriges from.
+          MultiStateSamplerAnalyzer to extract free energies from.
         u_ln : npt.NDArray
           A n_states x (n_sampled_states * n_iterations)
           array of energies (in kT).
         N_l : npt.NDArray
           An array containing the total number of samples drawn from each
           state.
-        unit_type : unit.Quantity
-          What units to return the free energies in.
 
         Returns
         -------
@@ -364,7 +362,7 @@ class MultistateEquilFEAnalysis:
           A dictionary containing the following:
             * ``eigenvalues``: The sorted (descending) eigenvalues of the
               lambda state transition matrix
-            * ``matrix``: The transition matrix estimate of a replica switchin
+            * ``matrix``: The transition matrix estimate of a replica switching
               from state i to state j.
         """
         # Get replica mixing statistics
