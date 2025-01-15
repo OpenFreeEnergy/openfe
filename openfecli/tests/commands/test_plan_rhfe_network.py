@@ -11,7 +11,6 @@ from openfecli.commands.plan_rhfe_network import (
     plan_rhfe_network_main,
 )
 
-
 @pytest.fixture(scope='session')
 def mol_dir_args(tmpdir_factory):
     ofe_dir_path = tmpdir_factory.mktemp('moldir')
@@ -54,6 +53,7 @@ def test_plan_rhfe_network_main():
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
+        n_protocol_repeats=3,
     )
 
     assert alchemical_network
