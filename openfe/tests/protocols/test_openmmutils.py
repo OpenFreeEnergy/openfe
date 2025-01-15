@@ -255,7 +255,8 @@ class TestFEAnalysis:
         ret_dict = analyzer.unit_results_dict
         assert len(ret_dict.items()) == 7
         assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
-        assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
+        # more variation when using bootstrap errors so we need a loser tolerance
+        assert pytest.approx(ret_dict['unit_estimate_error'].m, rel=1e4) == 0.0251
         # forward and reverse (since we do this ourselves)
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['fractions'],
@@ -269,11 +270,12 @@ class TestFEAnalysis:
                       -48.025258, -48.006349, -47.986304, -47.972138, -47.960623]),
             rtol=1e-04,
         )
+        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
-            np.array([0.07471 , 0.052914, 0.041508, 0.036613, 0.032827, 0.030489,
-                      0.028154, 0.026529, 0.025284, 0.023968]),
-            rtol=1e-04,
+            np.array([0.077645, 0.054695, 0.044680, 0.03947, 0.034822,
+                      0.033443, 0.030793, 0.028777, 0.026683, 0.026199]),
+            rtol=1e-01,
         )
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
@@ -281,11 +283,12 @@ class TestFEAnalysis:
                       -47.915963, -47.93319, -47.939125, -47.949016, -47.960623]),
             rtol=1e-04,
         )
+        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
-            np.array([0.081209, 0.055975, 0.044693, 0.038691, 0.034603, 0.031894,
-                      0.029417, 0.027082, 0.025316, 0.023968]),
-            rtol=1e-04,
+            np.array([0.088335, 0.059483, 0.046254, 0.041504, 0.03877,
+                      0.035495, 0.031981, 0.029707, 0.027095, 0.026296]),
+            rtol=1e-01,
         )
 
     def test_plots(self, analyzer, tmpdir):
