@@ -3,7 +3,7 @@
 import pathlib
 
 import pytest
-
+import math
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
@@ -658,6 +658,14 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
 
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
+        pdb = md.load_pdb('topology.pdb')
+        print(pdb.n_atoms)
+        assert pdb.n_atoms == 4481
+        central_atoms = np.array([[2, 4475]], dtype=np.int32)
+        distance = md.compute_distances(pdb, central_atoms)[0][0]
+        print(distance)
+        print(type(distance))
+        assert np.isclose(distance, 0.76336)
         serialized_topology = solv_setup_output['topology']
         serialized_system = solv_setup_output['system']
         solv_sampler = sol_run_unit[0].run(
