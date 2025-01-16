@@ -7,8 +7,6 @@ import pathlib
 from typing import Callable, Literal
 import warnings
 
-from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
-from openfe.protocols import openmm_rfe
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -204,6 +202,8 @@ def _parse_raw_units(results: dict) -> list[tuple]:
 
 def _get_ddgs(legs:dict, error_on_missing=True):
     import numpy as np
+    from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
+
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
         set_vals = set(vals)

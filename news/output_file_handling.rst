@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* <news item>
+* ``openfe quickrun`` now creates the parent directory as-needed for user-defined output json paths (``-o``).
 
 **Deprecated:**
 
@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* ``openfe quickrun`` now creates the parent directory as-needed for user-defined output json paths (``-o``).
+* <news item>
 
 **Security:**
 
