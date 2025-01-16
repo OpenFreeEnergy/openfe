@@ -39,6 +39,7 @@ from openmm import (
     app, XmlSerializer, MonteCarloBarostat,
     NonbondedForce, CustomNonbondedForce
 )
+from importlib import resources
 
 KJ_PER_MOL = openmm.unit.kilojoule_per_mole
 
@@ -688,9 +689,9 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
 
 
 @pytest.mark.parametrize('pressure',
-                         [1.0 * openmm.unit.bar,
-                          0.9 * openmm.unit.bar,
-                          1.1 * openmm.unit.bar]
+                         [1.0 * openmm.unit.atmosphere,
+                          0.9 * openmm.unit.atmosphere,
+                          1.1 * openmm.unit.atmosphere]
                          )
 def test_dry_run_ligand_system_pressure(
     pressure, benzene_complex_system, toluene_complex_system, tmpdir
@@ -721,10 +722,8 @@ def test_dry_run_ligand_system_pressure(
         serialized_system = solv_setup_output['system']
         solv_sampler = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True)['debug']['sampler']
-        # CAVE: The pressure does not fully equal the pressure in the settings,
-        # likely because the second ligand that is inserted in the first system
-        # slightly changes the pressure?
-        assert is_close(solv_sampler._thermodynamic_states[1].pressure, pressure)
+
+        assert solv_sampler._thermodynamic_states[1].pressure == pressure
 
 
 @pytest.mark.parametrize('cutoff',
@@ -979,6 +978,70 @@ def test_high_timestep(benzene_complex_system, toluene_complex_system, tmpdir):
         errmsg = "too large for hydrogen mass"
         with pytest.raises(ValueError, match=errmsg):
             prot_units[0].run(dry=True)
+
+
+@pytest.fixture
+def T4L_xml(benzene_complex_system, toluene_complex_system, tmp_path_factory):
+    s = SepTopProtocol.default_settings()
+
+    protocol = SepTopProtocol(settings=s)
+
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    # Get the SepTopSolventSetupUnit
+    prot_units = list(dag.protocol_units)
+    solv_setup_unit = [u for u in prot_units
+                           if isinstance(u, SepTopSolventSetupUnit)]
+
+    tmp = tmp_path_factory.mktemp('xml_reg')
+
+    dryrun = solv_setup_unit[0].run(dry=True, shared_basepath=tmp)
+
+    system = dryrun['system']
+    return deserialize(system)
+
+
+@pytest.fixture
+def T4L_reference_xml():
+    with resources.files('openfe.tests.data.openmm_septop') as d:
+        f = d / 'system.xml.bz2'
+    return deserialize(pathlib.Path(f))
+
+
+# @pytest.mark.slow
+class TestT4LXmlRegression:
+    """Generates SepTop system XML (solvent) and performs regression test"""
+    @staticmethod
+    def test_particles(T4L_xml, T4L_reference_xml):
+        nr_particles = T4L_xml.getNumParticles()
+        nr_particles_ref = T4L_reference_xml.getNumParticles()
+        assert nr_particles == nr_particles_ref
+        particle_masses = [T4L_xml.getParticleMass(i) for i in range(nr_particles)]
+        particle_masses_ref = [T4L_reference_xml.getParticleMass(i) for i in range(nr_particles)]
+        assert particle_masses
+
+        for a, b in zip(particle_masses, particle_masses_ref):
+            assert a == b
+
+    @staticmethod
+    def test_constraints(T4L_xml, T4L_reference_xml):
+        nr_constraints = T4L_xml.getNumConstraints()
+        nr_constraints_ref = T4L_reference_xml.getNumConstraints()
+        assert nr_constraints == nr_constraints_ref
+        constraints = [T4L_xml.getConstraintParameters(i) for i in range(nr_constraints)]
+        constraints_ref = [T4L_reference_xml.getConstraintParameters(i) for i in range(nr_constraints)]
+        assert constraints
+
+        for a, b in zip(constraints, constraints_ref):
+            # Particle 1
+            assert a[0] == b[0]
+            # Particle 2
+            assert a[1] == b[1]
+            # Constraint Quantity
+            assert a[2] == b[2]
 
 
 def test_unit_tagging(benzene_toluene_dag, tmpdir):
