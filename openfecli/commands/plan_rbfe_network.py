@@ -5,7 +5,7 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, WORKERS
 )
 
 def plan_rbfe_network_main(
@@ -17,6 +17,7 @@ def plan_rbfe_network_main(
     protein,
     cofactors,
     partial_charge_settings,
+    processors,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -39,6 +40,8 @@ def plan_rbfe_network_main(
     partial_charge_settings : OpenFFPartialChargeSettings
         how to assign partial charges to the input ligands
         (if they don't already have partial charges).
+    processors: int
+        The number of processors that should be used when generating the charges
 
     Returns
     -------
@@ -50,23 +53,32 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
-    from openfe.protocols.openmm_utils.charge_generation import assign_offmol_partial_charges
-    from openfe import SmallMoleculeComponent
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
-    write("assigning partial charges -- this may be slow")
+    write("assigning ligand partial charges -- this may be slow")
 
-    charged_small_molecules = []
-    for smc in small_molecules:
-        offmol = smc.to_openff()
-        assign_offmol_partial_charges(
-            offmol=offmol,
+    charged_small_molecules = bulk_assign_partial_charges(
+        molecules=small_molecules,
+        overwrite=False,
+        method=partial_charge_settings.partial_charge_method,
+        toolkit_backend=partial_charge_settings.off_toolkit_backend,
+        generate_n_conformers=partial_charge_settings.number_of_conformers,
+        nagl_model=partial_charge_settings.nagl_model,
+        processors=processors
+    )
+
+    if cofactors:
+        write("assigning cofactor partial charges -- this may be slow")
+
+        cofactors = bulk_assign_partial_charges(
+            molecules=cofactors,
             overwrite=False,
             method=partial_charge_settings.partial_charge_method,
             toolkit_backend=partial_charge_settings.off_toolkit_backend,
             generate_n_conformers=partial_charge_settings.number_of_conformers,
-            nagl_model=partial_charge_settings.nagl_model
+            nagl_model=partial_charge_settings.nagl_model,
+            processors=processors
         )
-        charge_small_molecules.append(SmallMoleculeComponent.from_openff(offmol))
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
@@ -104,11 +116,16 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@WORKERS.parameter(
+    help=WORKERS.kwargs["help"],
+    default=1,
+)
 @print_duration
 def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
+        workers: int
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -180,7 +197,7 @@ def plan_rbfe_network(
     # TODO:  write nice parameter
     write("\tNetwork Generation: " + str(ligand_network_planner))
 
-    write("\tPartial Charge Generation: " + str(partial_charge.method))
+    write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
     write("")
 
     # DO
@@ -194,6 +211,7 @@ def plan_rbfe_network(
         protein=protein,
         cofactors=cofactors,
         partial_charge_settings=partial_charge,
+        processors=workers
     )
     write("\tDone")
     write("")

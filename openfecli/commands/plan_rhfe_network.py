@@ -8,12 +8,12 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, WORKERS
 )
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, partial_charge_settings,
+    solvent, partial_charge_settings, processors
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -32,6 +32,8 @@ def plan_rhfe_network_main(
     partial_charge_settings : OpenFFPartialChargeSettings
         how to assign partial charges to the input ligands
         (if they don't already have partial charges).
+    processors: int
+        The number of processors that should be used when generating the charges
 
     Returns
     -------
@@ -42,21 +44,19 @@ def plan_rhfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner
     )
-    from openfe.protocols.openmm_utils.charge_generation import assign_offmol_partial_charges
-    from openfe import SmallMoleculeComponent
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
-    charged_small_molecules = []
-    for smc im small_molecules:
-        offmol = smc.to_openff()
-        assign_offmol_partial_charges(
-            offmol=offmol,
-            overwrite=False,
-            method=partial_charge_settings.partial_charge_method,
-            toolkit_backend=partial_charge_settings.off_toolkit_backend,
-            generate_n_conformers=partial_charge_settings.number_of_conformers,
-            nagl_model=partial_charge_settings.nagl_model
-        )
-        charged_small_molecules.append(SmallMoleculeComponent.from_openff(offmol))
+    write("assigning ligand partial charges -- this may be slow")
+
+    charged_small_molecules = bulk_assign_partial_charges(
+        molecules=small_molecules,
+        overwrite=False,
+        method=partial_charge_settings.partial_charge_method,
+        toolkit_backend=partial_charge_settings.off_toolkit_backend,
+        generate_n_conformers=partial_charge_settings.number_of_conformers,
+        nagl_model=partial_charge_settings.nagl_model,
+        processors=processors
+    )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
         mappers=mapper,
@@ -64,7 +64,7 @@ def plan_rhfe_network_main(
         ligand_network_planner=ligand_network_planner,
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent
+        ligands=charged_small_molecules, solvent=solvent
     )
 
     return alchemical_network, network_planner._ligand_network
@@ -88,8 +88,12 @@ def plan_rhfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@WORKERS.parameter(
+    help=WORKERS.kwargs["help"],
+    default=1,
+)
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, workers: int):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -139,6 +143,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     mapping_scorer = yaml_options.scorer
     ligand_network_planner = yaml_options.ligand_network_planner
     solvent = yaml_options.solvent
+    partial_charge = yaml_options.partial_charge
 
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -153,6 +158,9 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     write("\tNetworker: " + str(ligand_network_planner))
     write("")
 
+    write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
+    write("")
+
     # DO
     write("Planning RHFE-Campaign:")
     alchemical_network, ligand_network = plan_rhfe_network_main(
@@ -161,6 +169,8 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
+        partial_charge_settings=partial_charge,
+        processors=workers
     )
     write("\tDone")
     write("")
