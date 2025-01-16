@@ -212,7 +212,7 @@ class MultistateEquilFEAnalysis:
         DG : unit.Quantity
           The free energy difference between the end states.
         dDG : unit.Quantity
-          The MBAR error for the free energy difference estimate.
+          The MBAR bootstrap (1000 iterations) error estimate for the free energy difference.
 
         TODO
         ----
