@@ -156,7 +156,6 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
 
     # TODO: write nice parameter
     write("\tNetworker: " + str(ligand_network_planner))
-    write("")
 
     write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
     write("")

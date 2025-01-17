@@ -22,7 +22,7 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, WOR
     default=1,
 )
 @click.option(
-    "--overwrite",
+    "--overwrite-charges",
     is_flag=True,
     default=False,
     help="If we should overwrite the charges already present in the molecules."
@@ -32,7 +32,7 @@ def charge_molecules(
         yaml_settings,
         output,
         workers,
-        overwrite
+        overwrite_charges
 ):
     """
     Generate partial charges for the set of input molecules and write them to file.
@@ -64,7 +64,7 @@ def charge_molecules(
 
     charged_molecules = bulk_assign_partial_charges(
         molecules=small_molecules,
-        overwrite=overwrite,
+        overwrite=overwrite_charges,
         method=partial_charge.partial_charge_method,
         toolkit_backend=partial_charge.off_toolkit_backend,
         generate_n_conformers=partial_charge.number_of_conformers,

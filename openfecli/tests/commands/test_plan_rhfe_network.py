@@ -31,6 +31,14 @@ def print_test_with_file(
     print(small_molecules)
     print(solvent)
 
+def validate_charges(smc):
+    """
+    Validate that the SmallMoleculeComponent has partial charges assigned.
+    """
+    off_mol = smc.to_openff()
+    assert off_mol.partial_charges is not None
+    assert len(off_mol.partial_charges) == off_mol.n_atoms
+
 
 def test_plan_rhfe_network_main():
     import os
@@ -39,6 +47,9 @@ def test_plan_rhfe_network_main():
         LomapAtomMapper,
         lomap_scorers,
         ligand_network_planning,
+    )
+    from openfe.protocols.openmm_utils.omm_settings import (
+        OpenFFPartialChargeSettings
     )
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
@@ -54,21 +65,47 @@ def test_plan_rhfe_network_main():
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
+        partial_charge_settings=OpenFFPartialChargeSettings(
+            partial_charge_method="nagl",
+            nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
+        ),
+        processors=1
     )
 
     assert alchemical_network
     assert ligand_network
 
+    # check the ligands have charges
+    for node in alchemical_network.nodes:
+        validate_charges(node.components["ligand"])
 
-def test_plan_rhfe_network(mol_dir_args):
+
+@pytest.fixture
+def yaml_nagl_settings():
+    return """\
+partial_charge:
+  method: nagl
+  settings:
+    nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
+"""
+
+def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
     """
+    # use nagl charges for CI speed!
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(yaml_nagl_settings)
+
     args = mol_dir_args
     expected_output_always = [
         "RHFE-NETWORK PLANNER",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
+        # make sure the partial charge settings are picked up
+        "Partial Charge Generation: nagl",
+        "assigning ligand partial charges -- this may be slow"
     ]
     # we can get these in either order: 22 then 55 or 55 then 22
     expected_output_1 = [
@@ -86,6 +123,7 @@ def test_plan_rhfe_network(mol_dir_args):
         "openfecli.commands.plan_rhfe_network."
     )
     args += ["-o", "tmp_network"]
+    args += ["-s", settings_path]
 
     patch_loc = patch_base + "plan_rhfe_network"
     patch_func = print_test_with_file
@@ -116,6 +154,11 @@ mapper:
   settings:
     time: 45
     element_change: True
+    
+partial_charge:
+  method: nagl
+  settings:
+    nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
 

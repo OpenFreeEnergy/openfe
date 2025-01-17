@@ -44,6 +44,14 @@ def print_test_with_file(
     print(solvent)
     print(protein)
 
+def validate_charges(smc):
+    """
+    Validate that the SmallMoleculeComponent has partial charges assigned.
+    """
+    off_mol = smc.to_openff()
+    assert off_mol.partial_charges is not None
+    assert len(off_mol.partial_charges) == off_mol.n_atoms
+
 
 def test_plan_rbfe_network_main():
     from gufe import (
@@ -55,6 +63,9 @@ def test_plan_rbfe_network_main():
         LomapAtomMapper,
         lomap_scorers,
         ligand_network_planning,
+    )
+    from openfe.protocols.openmm_utils.omm_settings import (
+        OpenFFPartialChargeSettings
     )
 
     with resources.files("openfe.tests.data.openmm_rfe") as d:
@@ -76,20 +87,47 @@ def test_plan_rbfe_network_main():
         solvent=solvent_component,
         protein=protein_compontent,
         cofactors=[],
+        # use nagl to keep testing fast
+        partial_charge_settings=OpenFFPartialChargeSettings(
+            partial_charge_method="nagl",
+            nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
+        ),
+        processors=1
     )
+    # check the ligands have charges assigned
+    for node in alchemical_network.nodes:
+        validate_charges(node.components["ligand"])
+
     print(alchemical_network)
 
+@pytest.fixture
+def yaml_nagl_settings():
+    return """\
+partial_charge:
+  method: nagl
+  settings:
+    nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
+"""
 
-def test_plan_rbfe_network(mol_dir_args, protein_args):
+
+def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
     """
+    # use nagl charges for CI speed!
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(yaml_nagl_settings)
+
     args = mol_dir_args + protein_args
     expected_output_always = [
         "RBFE-NETWORK PLANNER",
         "Protein: ProteinComponent(name=)",
         "Solvent: SolventComponent(name=O, Na+, Cl-)",
         "- tmp_network.json",
+        # make sure the partial charge settings are picked up
+        "Partial Charge Generation: nagl",
+        "assigning ligand partial charges -- this may be slow"
     ]
     # we can get these in either order: 22 first or 55 first
     expected_output_1 = [
@@ -107,6 +145,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
         "openfecli.commands.plan_rbfe_network."
     )
     args += ["-o", "tmp_network"]
+    args += ["-s", settings_path]
 
     patch_loc = patch_base + "plan_rbfe_network"
     patch_func = print_test_with_file
@@ -134,7 +173,11 @@ def eg5_files():
         yield pdb_path, lig_path, cof_path
 
 
-def test_plan_rbfe_network_cofactors(eg5_files):
+def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
+    # use nagl charges for CI speed!
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(yaml_nagl_settings)
 
     runner = CliRunner()
 
@@ -142,6 +185,7 @@ def test_plan_rbfe_network_cofactors(eg5_files):
         '-p', eg5_files[0],
         '-M', eg5_files[1],
         '-C', eg5_files[2],
+        '-s', settings_path
     ]
 
     with runner.isolated_filesystem():
@@ -159,6 +203,12 @@ def test_plan_rbfe_network_cofactors(eg5_files):
             else:
                 assert "cofactor1" not in edge.stateA.components
                 assert "cofactor1" not in edge.stateB.components
+        # make sure the ligands and cofactors have charges
+        for node in network.nodes:
+            validate_charges(node.components["ligand"])
+            if "cofactor1" in node.components:
+                validate_charges(node.components["cofactor1"])
+
 
 @pytest.fixture
 def cdk8_files():
@@ -170,16 +220,22 @@ def cdk8_files():
 
         yield pdb_path, lig_path
 
-def test_plan_rbfe_network_charge_changes(cdk8_files):
+def test_plan_rbfe_network_charge_changes(cdk8_files, tmpdir, yaml_nagl_settings):
     """
     Make sure the protocol settings are changed and a warning is printed when we plan a network
     with a net charge change.
     """
+    # use nagl charges for CI speed!
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(yaml_nagl_settings)
+
     runner = CliRunner()
 
     args = [
         '-p', cdk8_files[0],
         '-M', cdk8_files[1],
+        "-s", settings_path
     ]
 
     with runner.isolated_filesystem():
@@ -219,6 +275,11 @@ mapper:
   settings:
     time: 45
     element_change: True
+    
+partial_charge:
+  method: nagl
+  settings:
+    nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
 
@@ -258,6 +319,11 @@ mapper:
   settings:
     time: 45
     element_change: True
+
+partial_charge:
+  method: nagl
+  settings:
+    nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
 
