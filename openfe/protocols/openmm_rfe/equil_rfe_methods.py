@@ -925,6 +925,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
+            position_interval=100,
+            velocity_interval=0,
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
