@@ -451,6 +451,26 @@ class MultiStateOutputSettings(OutputSettings):
     to visualise and further manipulate the system.
     Default 'hybrid_system.pdb'.
     """
+    positions_write_frequency: Optional[FloatQuantity['picosecond']] = 100 * unit.picosecond
+    """
+    Frequency at which positions are written to the simulation trajectory
+    storage file (defined by ``output_filename``).
+
+    If ``None``, no positions will be written to the trajectory.
+
+    Unless set to ``None``, must be divisible by
+    ``MultiStateSimulationSettings.time_per_iteration``.
+    """
+    velocities_write_frequency: Optional[FloatQuantity['picosecond']] = None
+    """
+    Frequency at which velocities are written to the simulation
+    trajectory storage file (defined by ``output_filename``).
+
+    If ``None`` (default), no velocities will be written to the trajectory.
+
+    Unless set to ``None``, must be divisible by
+    ``MultiStateSimulationSettings.time_per_iteration``.
+    """
 
 
 class SimulationSettings(SettingsBaseModel):
