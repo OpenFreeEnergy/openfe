@@ -237,7 +237,7 @@ Supported partial charge method choices are:
     - ``am1bcc``
     - ``am1bccelf10`` (only possible if `off_toolkit_backend` in settings is set to `openeye`)
     - ``nagl``
-    - ``espaloma`` (must have `espaloma charge installed`)
+    - ``espaloma`` (must have `espaloma_charge` installed)
 
 Settings
 --------
