@@ -1,6 +1,6 @@
 import click
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, WORKERS
+from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES
 
 
 @click.command(
@@ -17,8 +17,8 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, WOR
 @OUTPUT_FILE_AND_EXT.parameter(
     help="The name of the SDF file the charged ligands should be writen to."
 )
-@WORKERS.parameter(
-    help=WORKERS.kwargs["help"],
+@NCORES.parameter(
+    help=NCORES.kwargs["help"],
     default=1,
 )
 @click.option(
@@ -31,7 +31,7 @@ def charge_molecules(
         molecules,
         yaml_settings,
         output,
-        workers,
+        n_cores,
         overwrite_charges
 ):
     """
@@ -69,7 +69,7 @@ def charge_molecules(
         toolkit_backend=partial_charge.off_toolkit_backend,
         generate_n_conformers=partial_charge.number_of_conformers,
         nagl_model=partial_charge.nagl_model,
-        processors=workers
+        processors=n_cores
     )
 
     write("\tDone")

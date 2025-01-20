@@ -5,7 +5,7 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, WORKERS
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES
 )
 
 def plan_rbfe_network_main(
@@ -116,8 +116,8 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
-@WORKERS.parameter(
-    help=WORKERS.kwargs["help"],
+@NCORES.parameter(
+    help=NCORES.kwargs["help"],
     default=1,
 )
 @print_duration
@@ -125,7 +125,7 @@ def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
-        workers: int
+        n_cores: int
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -211,7 +211,7 @@ def plan_rbfe_network(
         protein=protein,
         cofactors=cofactors,
         partial_charge_settings=partial_charge,
-        processors=workers
+        processors=n_cores
     )
     write("\tDone")
     write("")

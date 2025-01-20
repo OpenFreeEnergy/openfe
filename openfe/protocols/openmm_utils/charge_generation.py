@@ -18,7 +18,7 @@ from openff.toolkit.utils.toolkits import (
     RDKitToolkitWrapper
 )
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
-from openfe.utils.context_managers import temp_env
+from threadpoolctl import threadpool_limits
 
 try:
     import openeye
@@ -416,7 +416,7 @@ def assign_offmol_partial_charges(
 
     # limit the number of threads used by SQM
     # <https://github.com/openforcefield/openff-toolkit/issues/1831>
-    with temp_env({"OMP_NUM_THREADS": "2"}):
+    with threadpool_limits(limits=2):
         # Call selected method to assign partial charges
         CHARGE_METHODS[method.lower()]['charge_func'](
             offmol=offmol_copy,
@@ -495,9 +495,8 @@ def bulk_assign_partial_charges(
 
     if processors > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
-        from multiprocessing import get_context
 
-        with ProcessPoolExecutor(max_workers=processors, mp_context=get_context("spawn")) as pool:
+        with ProcessPoolExecutor(max_workers=processors) as pool:
 
             work_list = [
                 pool.submit(

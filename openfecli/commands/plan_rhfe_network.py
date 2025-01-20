@@ -8,7 +8,7 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, WORKERS
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES
 )
 
 def plan_rhfe_network_main(
@@ -88,12 +88,12 @@ def plan_rhfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
-@WORKERS.parameter(
-    help=WORKERS.kwargs["help"],
+@NCORES.parameter(
+    help=NCORES.kwargs["help"],
     default=1,
 )
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, workers: int):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -169,7 +169,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
         small_molecules=small_molecules,
         solvent=solvent,
         partial_charge_settings=partial_charge,
-        processors=workers
+        processors=n_cores
     )
     write("\tDone")
     write("")
