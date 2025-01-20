@@ -248,7 +248,7 @@ The following settings can also be set:
       either ``ambertools`` (default), ``openeye`` or ``rdkit``.
     - ``number_of_conformer``: the number of conformers to use for partial charge generation.
       If unset (default), the input conformer will be used.
-    - ``nagl_model``: a string defining the NAGL model to use.
+    - ``nagl_model``: The NAGL model to use.
       If unset (default), the latest available production charge model will be used.
 
 For more information on the different options, please refer to https://docs.openfree.energy/en/stable/reference/api/openmm_protocol_settings.html#openfe.protocols.openmm_utils.omm_settings.OpenFFPartialChargeSettings.
