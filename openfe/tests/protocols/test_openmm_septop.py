@@ -663,8 +663,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert pdb.n_atoms == 4481
         central_atoms = np.array([[2, 4475]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
-        print(distance)
-        print(type(distance))
         assert np.isclose(distance, 0.76336)
         serialized_topology = solv_setup_output['topology']
         serialized_system = solv_setup_output['system']

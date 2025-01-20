@@ -17,6 +17,8 @@ from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterSta
 from openmm import Platform
 import os
 import pathlib
+import mdtraj as md
+import numpy as np
 
 
 @pytest.fixture()
@@ -268,3 +270,45 @@ def test_openmm_run_engine(platform,
     assert len(states.items()) == 2
     assert len(states['solvent']) == 1
     assert states['solvent'][0].shape[1] == 19
+
+
+@pytest.mark.integration
+@pytest.mark.flaky(reruns=1)  # pytest-rerunfailures; we can get bad minimisation
+@pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
+def test_restraints_solvent(platform,
+                           available_platforms,
+                           benzene_complex_system,
+                           toluene_complex_system,
+                           set_openmm_threads_1, tmpdir):
+    if platform not in available_platforms:
+        pytest.skip(f"OpenMM Platform: {platform} not available")
+
+    # Run a really short calculation to check everything is going well
+    s = SepTopProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    s.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
+    s.solvent_engine_settings.compute_platform = platform
+
+    protocol = SepTopProtocol(
+            settings=s,
+    )
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    solv_setup_unit = [u for u in prot_units
+                       if isinstance(u, SepTopSolventSetupUnit)]
+    solv_setup_output = solv_setup_unit[0].run()
+    pdb = md.load_pdb('topology.pdb')
+    assert pdb.n_atoms == 4481
+    central_atoms = np.array([[2, 4475]], dtype=np.int32)
+    distance = md.compute_distances(pdb, central_atoms)[0][0]
+    # For right now just checking that ligands at least somewhat apart
+    assert distance > 0.5
