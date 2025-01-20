@@ -239,7 +239,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files, tmpdir, yaml_nagl_settings
     ]
 
     with runner.isolated_filesystem():
-        with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
+        with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_30"):
             result = runner.invoke(plan_rbfe_network, args)
 
             assert result.exit_code == 0
@@ -250,7 +250,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files, tmpdir, yaml_nagl_settings
             for edge in network.edges:
                 settings = edge.protocol.settings
                 # check the charged transform
-                if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_41":
+                if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_30":
                     assert settings.alchemical_settings.explicit_charge_correction is True
                     assert settings.simulation_settings.production_length.m == 20.0
                     assert settings.simulation_settings.n_replicas == 22
