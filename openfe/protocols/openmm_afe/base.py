@@ -703,7 +703,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 denominator_name="simulation settings' time_per_iteration"
             )
         else:
-            pos_interval = None
+            pos_interval = 0
 
         if output_settings.velocities_write_frequency is not None:
             vel_interval = settings_validation.divmod_time_and_check(
@@ -713,7 +713,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 denominator_name="simulation settings' time_per_iteration"
             )
         else:
-            vel_interval = None
+            vel_interval = 0
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
