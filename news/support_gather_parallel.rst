@@ -1,6 +1,6 @@
 **Added:**
 
-* <news item>
+* ``openfe gather`` now supports replicates that have been submitted in parallel across separate directories.
 
 **Changed:**
 
@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* ``openfe quickrun`` now creates the parent directory as-needed for user-defined output json paths (``-o``).
+* <news item>
 
 **Security:**
 

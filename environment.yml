@@ -35,6 +35,7 @@ dependencies:
   - plugcli
   - tqdm
   - pygraphviz
+  - zstandard
   # Issue #443
   - pymbar<4.0
   # docs

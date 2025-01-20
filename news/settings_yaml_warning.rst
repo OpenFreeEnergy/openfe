@@ -1,6 +1,6 @@
 **Added:**
 
-* <news item>
+* CLI setup will raise warnings for unsupported top-level fields.
 
 **Changed:**
 
@@ -16,7 +16,7 @@
 
 **Fixed:**
 
-* ``openfe quickrun`` now creates the parent directory as-needed for user-defined output json paths (``-o``).
+* <news item>
 
 **Security:**
 
