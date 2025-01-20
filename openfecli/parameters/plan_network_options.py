@@ -244,8 +244,7 @@ Settings
 
 The following settings can also be set:
 
-    - ``off_toolkit_backend``: this selects the backend of partial charge generation and can be
-      either ``ambertools`` (default), ``openeye`` or ``rdkit``.
+    - ``off_toolkit_backend``: The backend to use for partial charge generation. Choose from  ``ambertools`` (default), ``openeye`` or ``rdkit``.
     - ``number_of_conformers``: The number of conformers to use for partial charge generation.
       If unset (default), the input conformer will be used.
     - ``nagl_model``: The NAGL model to use.
