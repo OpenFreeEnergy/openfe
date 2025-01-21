@@ -20,7 +20,6 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
 import numpy as np
 import numpy.typing as npt
-from scipy.stats import circmean
 
 from .base import HostGuestRestraintGeometry
 from .utils import (
@@ -162,7 +161,7 @@ def _bonded_angles_from_pool(
                 if at3 != atom_idx and at3 in at2_neighbors:
                     angles.append((atom_idx, at2, at3))
 
-    if aromatic_only:
+    if aromatic_only:  # TODO: move this to its own method?
         aromatic_rings = get_aromatic_rings(rdmol)
 
         def _belongs_to_ring(angle, aromatic_rings):
@@ -342,7 +341,7 @@ def find_host_atom_candidates(
     l1_idx : int
       The index of the proposed l1 binding atom.
     host_selection : str
-      An MDAnalysis selection string to fileter the host by.
+      An MDAnalysis selection string to filter the host by.
     dssp_filter : bool
       Whether or not to apply a DSSP filter on the host selection.
     rmsf_cutoff : uni.Quantity
@@ -364,8 +363,10 @@ def find_host_atom_candidates(
         topology_format=_get_mda_topology_format(topology),
     )
 
-    host_ag1 = u.atoms[host_idxs]
-    host_ag2 = host_ag1.select_atoms(host_selection)
+    # Get an AtomGroup for the host based on the input host indices
+    host_ag = u.atoms[host_idxs]
+    # Filter the host AtomGroup based on ``host_selection`
+    selected_host_ag = host_ag.select_atoms(host_selection)
 
     # 0. TODO: implement DSSP filter
     # Should be able to just call MDA's DSSP method
@@ -375,13 +376,13 @@ def find_host_atom_candidates(
             "DSSP filtering is not currently implemented"
         )
 
-    # 1. Get the RMSF & filter
-    rmsf = get_local_rmsf(host_ag2)
-    host_ag3 = host_ag2.atoms[rmsf < rmsf_cutoff]
+    # 1. Get the RMSF & filter to create a new AtomGroup
+    rmsf = get_local_rmsf(selected_host_ag)
+    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
-        host_ag3, u.atoms[l1_idx], min_distance, max_distance
+        filtered_host_ag, u.atoms[l1_idx], min_distance, max_distance
     )
     atom_finder.run()
     return atom_finder.results.host_idxs
@@ -444,6 +445,8 @@ class EvaluateHostAtoms1(AnalysisBase):
             len(self.host_atom_pool),
             dtype=bool,
         )
+        # Set everything to False to begin with
+        self.results.valid = False
 
     def _single_frame(self):
         for i, at in enumerate(self.host_atom_pool):
@@ -476,12 +479,18 @@ class EvaluateHostAtoms1(AnalysisBase):
 
     def _conclude(self):
         for i, at in enumerate(self.host_atom_pool):
-            distance_bounds = all(self.results.distances[i] > self.minimum_distance)
-            mean_angle = circmean(self.results.angles[i], high=np.pi, low=0)
-            angle_bounds = check_angle_not_flat(
-                angle=mean_angle * unit.radians,
-                force_constant=self.angle_force_constant,
-                temperature=self.temperature,
+            # Check distances
+            distance_bounds = all(
+                self.results.distances[i] > self.minimum_distance
+            )
+            # Check angles
+            angle_bounds = all(
+                check_angle_not_flat(
+                    angle=angle * unit.radians,
+                    force_constant=self.angle_force_constant,
+                    temperature=self.temperature
+                )
+                for angle in self.results.angles
             )
             angle_variance = check_angular_variance(
                 self.results.angles[i] * unit.radians,
@@ -489,8 +498,11 @@ class EvaluateHostAtoms1(AnalysisBase):
                 lower_bound=0 * unit.radians,
                 width=1.745 * unit.radians,
             )
-            mean_dihed = circmean(self.results.dihedrals[i], high=np.pi, low=-np.pi)
-            dihed_bounds = check_dihedral_bounds(mean_dihed)
+            # Check dihedrals
+            dihed_bounds = all(
+                check_dihedral_bounds(dihed * unit.radians)
+                for dihed in self.results.dihedrals
+            )
             dihed_variance = check_angular_variance(
                 self.results.dihedrals[i] * unit.radians,
                 upper_bound=np.pi * unit.radians,
@@ -541,6 +553,8 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
             len(self.host_atom_pool),
             dtype=bool,
         )
+        # Default to valid == False
+        self.results.valid = False
 
     def _single_frame(self):
         for i, at in enumerate(self.host_atom_pool):
@@ -572,10 +586,16 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
 
     def _conclude(self):
         for i, at in enumerate(self.host_atom_pool):
-            distance1_bounds = all(self.results.distances1[i] > self.minimum_distance)
-            distance2_bounds = all(self.results.distances2[i] > self.minimum_distance)
-            mean_dihed = circmean(self.results.dihedrals[i], high=np.pi, low=-np.pi)
-            dihed_bounds = check_dihedral_bounds(mean_dihed)
+            distance1_bounds = all(
+                self.results.distances1[i] > self.minimum_distance
+            )
+            distance2_bounds = all(
+                self.results.distances2[i] > self.minimum_distance
+            )
+            dihed_bounds = all(
+                check_dihedral_bounds(dihed * unit.radians)
+                for dihed in self.results.dihedrals
+            )
             dihed_variance = check_angular_variance(
                 self.results.dihedrals[i] * unit.radians,
                 upper_bound=np.pi * unit.radians,
@@ -623,6 +643,7 @@ def _find_host_anchor(
     Optional[list[int]]
       A list of indices for a selected combination of H0, H1, and H2.
     """
+    # Evalulate the host_atom_pool for suitability as H0 atoms
     h0_eval = EvaluateHostAtoms1(
         guest_atoms,
         host_atom_pool,
@@ -633,32 +654,52 @@ def _find_host_anchor(
     h0_eval.run()
 
     for i, valid_h0 in enumerate(h0_eval.results.valid):
+        # If valid H0 atom, evaluate rest of host_atom_pool for suitability
+        # as H1 atoms.
         if valid_h0:
-            g1g0h0_atoms = guest_atoms.atoms[:2] + host_atom_pool.atoms[i]
+            h0g0g1_atoms = host_atom_pool.atoms[i] + guest_atoms.atoms[:2]
             h1_eval = EvaluateHostAtoms1(
-                g1g0h0_atoms,
+                h0g0g1_atoms,
                 host_atom_pool,
                 minimum_distance,
                 angle_force_constant,
                 temperature,
             )
             for j, valid_h1 in enumerate(h1_eval.results.valid):
-                g2h0h1_atoms = g1g2h0_atoms.atoms[1:] + host_atom_pool.atoms[j]
-                h2_eval = EvaluateHostAtoms2(
-                    g2h0h1_atoms,
-                    host_atom_pool,
-                    minimum_distance,
-                    angle_force_constant,
-                    temperature,
-                )
+                # If valid H1 atom, evaluate rest of host_atom_pool for
+                # suitability as H2 atoms
+                if valid_h1:
+                    h1h0g0_atoms = host_atom_pool.atoms[j] + h0g0g1_atoms.atoms[:2]
+                    h2_eval = EvaluateHostAtoms2(
+                        h1h0g0_atoms,
+                        host_atom_pool,
+                        minimum_distance,
+                        angle_force_constant,
+                        temperature,
+                    )
 
-                if any(h2_eval.results.valid):
-                    d1_avgs = np.array([d.mean() for d in h2_eval.results.distances1])
-                    d2_avgs = np.array([d.mean() for d in h2_eval.results.distances2])
-                    dsum_avgs = d1_avgs + d2_avgs
-                    k = dsum_avgs.argmin()
+                    if any(h2_eval.results.valid):
+                        # Get the sum of the average distances (dsum_avgs)
+                        # for all the host_atom_pool atoms
+                        distance1_avgs = np.array(
+                            [d.mean() for d in h2_eval.results.distances1]
+                        )
+                        distance2_avgs = np.array(
+                            [d.mean() for d in h2_eval.results.distances2]
+                        )
+                        dsum_avgs = distance1_avgs + distance2_avgs
 
-                    return list(host_atom_pool.atoms[[i, j, k]].ix)
+                        # Now filter by validity as H2 atom
+                        h2_dsum_avgs = [
+                            (idx, val) for idx, val in enumerate(dsum_avgs)
+                            if h2_eval.results.valid[idx]
+                        ]
+
+                        # Get the index of the H2 atom with the lowest
+                        # average distance
+                        k = sorted(h2_dsum_avgs, key=lambda x: x[1])[0][0]
+
+                        return list(host_atom_pool.atoms[[i, j, k]].ix)
     return None
 
 
@@ -821,6 +862,9 @@ def find_boresch_restraint(
         bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
             atomgroup
         )
+
+        # TODO: add checks to warn if this is a badly picked
+        # set of atoms.
 
         return BoreschRestraintGeometry(
             host_atoms=host_anchor,

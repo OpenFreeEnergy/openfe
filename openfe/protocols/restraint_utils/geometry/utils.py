@@ -202,7 +202,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
 
     Returns
     -------
-    center : int
+    int
       Index of central atom in Molecule
 
     Note
@@ -213,14 +213,23 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
     # TODO: switch to a manual conversion to avoid an OpenFF dependency
     offmol = OFFMol(rdmol, allow_undefined_stereo=True)
     nx_mol = offmol.to_networkx()
+
     if not nx.is_weakly_connected(nx_mol):
         errmsg = "A disconnected molecule was passed, cannot find the center"
         raise ValueError(errmsg)
 
-    # We take the zero-th entry if there are multiple center
-    # atoms (e.g. equal likelihood centers)
-    center = nx.center(nx_mol)[0]
-    return center
+    # Get a list of all shortest paths
+    shortest_paths = [
+        path
+        for node_paths in nx.shortest_path(nx_mol).values()
+        for path in node_paths.values()
+    ]
+
+    # Get the longest of these paths (returns first instance)
+    longest_path = max(shortest_paths, key=len)
+
+    # Return the index of the central atom
+    return longest_path[len(longest_path) // 2]
 
 
 def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
