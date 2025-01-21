@@ -502,7 +502,7 @@ def bulk_assign_partial_charges(
                 pool.submit(
                     assign_offmol_partial_charges,
                     m.to_openff(),
-                    **charge_keywords,
+                    **charge_keywords, # type: ignore
                 )
                 for m in molecules
             ]
@@ -512,7 +512,7 @@ def bulk_assign_partial_charges(
 
     else:
         for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
-            mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords)
+            mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords) # type: ignore
             charged_ligands.append(SmallMoleculeComponent.from_openff(mol_with_charge))
 
     return charged_ligands

@@ -35,42 +35,29 @@ def expected_transformations():
     return ['easy_rbfe_lig_ejm_31_complex_lig_ejm_46_complex.json',
             'easy_rbfe_lig_ejm_31_complex_lig_ejm_47_complex.json',
             'easy_rbfe_lig_ejm_31_complex_lig_ejm_48_complex.json',
+            'easy_rbfe_lig_ejm_31_complex_lig_ejm_50_complex.json',
             'easy_rbfe_lig_ejm_31_solvent_lig_ejm_46_solvent.json',
             'easy_rbfe_lig_ejm_31_solvent_lig_ejm_47_solvent.json',
             'easy_rbfe_lig_ejm_31_solvent_lig_ejm_48_solvent.json',
-            'easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json',
-            'easy_rbfe_lig_ejm_31_solvent_lig_ejm_42_solvent.json',
+            'easy_rbfe_lig_ejm_31_solvent_lig_ejm_50_solvent.json',
             'easy_rbfe_lig_ejm_42_complex_lig_ejm_43_complex.json',
             'easy_rbfe_lig_ejm_42_complex_lig_ejm_50_complex.json',
             'easy_rbfe_lig_ejm_42_solvent_lig_ejm_43_solvent.json',
             'easy_rbfe_lig_ejm_42_solvent_lig_ejm_50_solvent.json',
+            'easy_rbfe_lig_jmc_23_solvent_lig_jmc_27_solvent.json',
+            'easy_rbfe_lig_jmc_23_complex_lig_jmc_27_complex.json',
             'easy_rbfe_lig_jmc_23_solvent_lig_jmc_28_solvent.json',
             'easy_rbfe_lig_jmc_23_complex_lig_jmc_28_complex.json',
-            'easy_rbfe_lig_jmc_27_complex_lig_jmc_28_complex.json',
-            'easy_rbfe_lig_jmc_27_solvent_lig_jmc_28_solvent.json',
             'easy_rbfe_lig_ejm_46_solvent_lig_jmc_23_solvent.json',
             'easy_rbfe_lig_ejm_46_complex_lig_jmc_23_complex.json']
 
-@pytest.fixture
-def yaml_nagl_settings():
-    return """\
-partial_charge:
-  method: nagl
-  settings:
-    nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
-"""
 
-def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations, tmpdir, yaml_nagl_settings):
-    # use nagl charges for CI speed!
-    settings_path = tmpdir / "settings.yaml"
-    with open(settings_path, "w") as f:
-        f.write(yaml_nagl_settings)
-
+def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
     runner = CliRunner()
 
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
-                                                   '-p', tyk2_protein, "-s", settings_path])
+                                                   '-p', tyk2_protein])
 
         assert result.exit_code == 0
 
@@ -104,30 +91,25 @@ def mock_execute(expected_transformations):
 def ref_gather():
     return """\
 ligand_i\tligand_j\tDDG(i->j) (kcal/mol)\tuncertainty (kcal/mol)
-lig_ejm_31\tlig_ejm_42\t0.0\t0.0
 lig_ejm_31\tlig_ejm_46\t0.0\t0.0
 lig_ejm_31\tlig_ejm_47\t0.0\t0.0
 lig_ejm_31\tlig_ejm_48\t0.0\t0.0
+lig_ejm_31\tlig_ejm_50\t0.0\t0.0
 lig_ejm_42\tlig_ejm_43\t0.0\t0.0
 lig_ejm_42\tlig_ejm_50\t0.0\t0.0
 lig_ejm_46\tlig_jmc_23\t0.0\t0.0
+lig_jmc_23\tlig_jmc_27\t0.0\t0.0
 lig_jmc_23\tlig_jmc_28\t0.0\t0.0
-lig_jmc_27\tlig_jmc_28\t0.0\t0.0
 """
 
 
 def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
-                  mock_execute, ref_gather, tmpdir, yaml_nagl_settings):
-
-    # use nagl charges for CI speed!
-    settings_path = tmpdir / "settings.yaml"
-    with open(settings_path, "w") as f:
-        f.write(yaml_nagl_settings)
+                  mock_execute, ref_gather):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
-                                                   '-p', tyk2_protein, "-s", settings_path])
+                                                   '-p', tyk2_protein])
 
         assert result.exit_code == 0
 

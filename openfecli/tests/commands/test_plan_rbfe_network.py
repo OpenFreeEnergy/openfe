@@ -220,26 +220,21 @@ def cdk8_files():
 
         yield pdb_path, lig_path
 
-def test_plan_rbfe_network_charge_changes(cdk8_files, tmpdir, yaml_nagl_settings):
+def test_plan_rbfe_network_charge_changes(cdk8_files):
     """
     Make sure the protocol settings are changed and a warning is printed when we plan a network
     with a net charge change.
     """
-    # use nagl charges for CI speed!
-    settings_path = tmpdir / "settings.yaml"
-    with open(settings_path, "w") as f:
-        f.write(yaml_nagl_settings)
 
     runner = CliRunner()
 
     args = [
         '-p', cdk8_files[0],
         '-M', cdk8_files[1],
-        "-s", settings_path
     ]
 
     with runner.isolated_filesystem():
-        with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_30"):
+        with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
             result = runner.invoke(plan_rbfe_network, args)
 
             assert result.exit_code == 0
@@ -250,7 +245,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files, tmpdir, yaml_nagl_settings
             for edge in network.edges:
                 settings = edge.protocol.settings
                 # check the charged transform
-                if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_30":
+                if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_41":
                     assert settings.alchemical_settings.explicit_charge_correction is True
                     assert settings.simulation_settings.production_length.m == 20.0
                     assert settings.simulation_settings.n_replicas == 22
