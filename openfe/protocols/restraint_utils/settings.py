@@ -7,9 +7,8 @@ TODO
 ----
 * Rename from host/guest to molA/molB?
 """
-from typing import Optional, Literal
-from openff.units import unit
-from openff.models.types import FloatQuantity, ArrayQuantity
+from typing import Optional
+from openff.models.types import FloatQuantity
 from pydantic.v1 import validator
 from gufe.settings import (
     SettingsBaseModel,

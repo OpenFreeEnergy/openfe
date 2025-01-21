@@ -301,6 +301,10 @@ def check_angle_not_flat(
     Note
     ----
     We assume the temperature to be 298.15 Kelvin.
+
+    Acknowledgements
+    ----------------
+    This code was initially contributed by Vytautas Gapsys.
     """
     # Convert things
     angle_rads = angle.to("radians")
