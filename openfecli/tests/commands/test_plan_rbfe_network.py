@@ -126,7 +126,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args):
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
 
-@pytest.mark.parametrize(['input_n_repeat', 'expected_n_repeat'], [([], 3), (["-n 1"], 1)])
+@pytest.mark.parametrize(['input_n_repeat', 'expected_n_repeat'], [([], 3), (["--n-protocol-repeats", "1"], 1)])
 def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat, expected_n_repeat):
     runner = CliRunner()
 
