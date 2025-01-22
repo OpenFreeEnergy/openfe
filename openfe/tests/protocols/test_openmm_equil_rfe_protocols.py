@@ -2115,3 +2115,80 @@ def test_structural_analysis_error(tmpdir):
 
     assert 'structural_analysis_error' in ret
     assert 'structural_analysis' not in ret
+
+
+@pytest.mark.parametrize('positions_write_frequency,velocities_write_frequency',
+                         [[100 * unit.picosecond, None],
+                         [None, None],
+                         [None, 100 * unit.picosecond]])
+def test_dry_run_vacuum_write_frequency(benzene_vacuum_system,
+                                        toluene_vacuum_system,
+                                        benzene_to_toluene_mapping,
+                                        positions_write_frequency,
+                                        velocities_write_frequency,
+                                        tmpdir,
+                                        ):
+
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.output_settings.positions_write_frequency = positions_write_frequency
+    vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
+    vac_settings.protocol_repeats = 1
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        reporter = sampler._reporter
+        if positions_write_frequency:
+            assert reporter.position_interval == positions_write_frequency.m
+        else:
+            assert reporter.position_interval == 0
+        if velocities_write_frequency:
+            assert reporter.velocity_interval == velocities_write_frequency.m
+        else:
+            assert reporter.velocity_interval == 0
+
+
+@pytest.mark.parametrize('positions_write_frequency,velocities_write_frequency',
+                         [[100.1 * unit.picosecond, 100 * unit.picosecond]])
+def test_pos_write_frequency_not_divisible(benzene_vacuum_system,
+                                           toluene_vacuum_system,
+                                           benzene_to_toluene_mapping,
+                                           positions_write_frequency,
+                                           velocities_write_frequency,
+                                           tmpdir,
+                                           ):
+
+    vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.output_settings.positions_write_frequency = positions_write_frequency
+    vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
+    vac_settings.protocol_repeats = 1
+
+    protocol = openmm_rfe.RelativeHybridTopologyProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=toluene_vacuum_system,
+        mapping=benzene_to_toluene_mapping,
+    )
+    dag_unit = list(dag.protocol_units)[0]
+
+    with tmpdir.as_cwd():
+        errmsg = "The output settings' position_write_frequency"
+        with pytest.raises(ValueError, match=errmsg):
+            dag_unit.run(dry=True)['debug']['sampler']
