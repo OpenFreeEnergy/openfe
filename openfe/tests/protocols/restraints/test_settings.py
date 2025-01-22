@@ -4,8 +4,6 @@
 Test the restraint settings.
 """
 import pytest
-import numpy as np
-import openmm
 from openff.units import unit
 from openfe.protocols.restraint_utils.settings import (
     DistanceRestraintSettings,
@@ -83,7 +81,7 @@ def test_boresch_restraint_negative_idxs():
     working as expected.
     """
     with pytest.raises(ValueError, match='negative indices'):
-        settings = BoreschRestraintSettings(
+        _ = BoreschRestraintSettings(
             K_r=10 * unit.kilojoule_per_mole / unit.nm ** 2,
             K_thetaA=10 * unit.kilojoule_per_mole / unit.radians ** 2,
             K_thetaB=10 * unit.kilojoule_per_mole / unit.radians ** 2,

@@ -382,7 +382,10 @@ def find_host_atom_candidates(
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
-        filtered_host_ag, u.atoms[l1_idx], min_distance, max_distance
+        host_atoms=filtered_host_ag,
+        guest_atoms=u.atoms[l1_idx],
+        min_search_distance=min_distance,
+        max_search_distance=max_distance,
     )
     atom_finder.run()
     return atom_finder.results.host_idxs
@@ -446,7 +449,7 @@ class EvaluateHostAtoms1(AnalysisBase):
             dtype=bool,
         )
         # Set everything to False to begin with
-        self.results.valid = False
+        self.results.valid[:] = False
 
     def _single_frame(self):
         for i, at in enumerate(self.host_atom_pool):
@@ -470,6 +473,7 @@ class EvaluateHostAtoms1(AnalysisBase):
             )
             collinear = is_collinear(
                 positions=np.vstack((at.position, self.reference.positions)),
+                atoms=[0, 1, 2, 3],
                 dimensions=self.reference.dimensions,
             )
             self.results.distances[i][self._frame_index] = distance
@@ -490,7 +494,7 @@ class EvaluateHostAtoms1(AnalysisBase):
                     force_constant=self.angle_force_constant,
                     temperature=self.temperature
                 )
-                for angle in self.results.angles
+                for angle in self.results.angles[i]
             )
             angle_variance = check_angular_variance(
                 self.results.angles[i] * unit.radians,
@@ -501,7 +505,7 @@ class EvaluateHostAtoms1(AnalysisBase):
             # Check dihedrals
             dihed_bounds = all(
                 check_dihedral_bounds(dihed * unit.radians)
-                for dihed in self.results.dihedrals
+                for dihed in self.results.dihedrals[i]
             )
             dihed_variance = check_angular_variance(
                 self.results.dihedrals[i] * unit.radians,
@@ -543,7 +547,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
     """
     def _prepare(self):
         self.results.distances1 = np.zeros((len(self.host_atom_pool), self.n_frames))
-        self.results.ditances2 = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.distances2 = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.dihedrals = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.collinear = np.empty(
             (len(self.host_atom_pool), self.n_frames),
@@ -554,7 +558,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
             dtype=bool,
         )
         # Default to valid == False
-        self.results.valid = False
+        self.results.valid[:] = False
 
     def _single_frame(self):
         for i, at in enumerate(self.host_atom_pool):
@@ -577,6 +581,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
             )
             collinear = is_collinear(
                 positions=np.vstack((at.position, self.reference.positions)),
+                atoms=[0, 1, 2, 3],
                 dimensions=self.reference.dimensions,
             )
             self.results.distances1[i][self._frame_index] = distance1
@@ -594,7 +599,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
             )
             dihed_bounds = all(
                 check_dihedral_bounds(dihed * unit.radians)
-                for dihed in self.results.dihedrals
+                for dihed in self.results.dihedrals[i]
             )
             dihed_variance = check_angular_variance(
                 self.results.dihedrals[i] * unit.radians,
@@ -665,6 +670,7 @@ def _find_host_anchor(
                 angle_force_constant,
                 temperature,
             )
+            h1_eval.run()
             for j, valid_h1 in enumerate(h1_eval.results.valid):
                 # If valid H1 atom, evaluate rest of host_atom_pool for
                 # suitability as H2 atoms
@@ -677,6 +683,7 @@ def _find_host_anchor(
                         angle_force_constant,
                         temperature,
                     )
+                    h2_eval.run()
 
                     if any(h2_eval.results.valid):
                         # Get the sum of the average distances (dsum_avgs)
@@ -732,12 +739,11 @@ def _get_restraint_distances(
     dihed3 : unit.Quantity
       The H0-G0-G1-G2 dihedral value.
     """
-
     bond = calc_bonds(
         atomgroup.atoms[0].position,
-        atomgroup.atoms[3],
+        atomgroup.atoms[3].position,
         box=atomgroup.dimensions
-    )
+    ) * unit.angstroms
 
     angles = []
     for idx_set in [[1, 0, 3], [0, 3, 4]]:
@@ -896,13 +902,14 @@ def find_boresch_restraint(
         rmsf_cutoff=rmsf_cutoff,
     )
 
-    if len(guest_anchors) != 0:
+    if len(guest_anchors) == 0:
         errmsg = "No suitable ligand atoms found for the restraint."
         raise ValueError(errmsg)
 
     # 2. We then loop through the guest anchors to find suitable host atoms
     for guest_anchor in guest_anchors:
         # We next fetch the host atom pool
+        # Note: return is a set, so need to convert it later on
         host_pool = find_host_atom_candidates(
             topology=topology,
             trajectory=trajectory,
@@ -917,7 +924,7 @@ def find_boresch_restraint(
 
         host_anchor = _find_host_anchor(
             guest_atoms=u.atoms[list(guest_anchor)],
-            host_atom_pool=u.atoms[host_pool],
+            host_atom_pool=u.atoms[list(host_pool)],
             minimum_distance=0.5 * unit.nanometer,
             angle_force_constant=angle_force_constant,
             temperature=temperature,
@@ -932,7 +939,7 @@ def find_boresch_restraint(
 
     # Set the equilibrium values as those of the final frame
     u.trajectory[-1]
-    atomgroup = u.atoms[host_anchor + guest_anchor]
+    atomgroup = u.atoms[list(host_anchor) + list(guest_anchor)]
     bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
         atomgroup
     )

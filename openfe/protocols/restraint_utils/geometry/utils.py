@@ -11,6 +11,7 @@ from typing import Union, Optional
 from itertools import combinations
 import numpy as np
 import numpy.typing as npt
+import pathlib
 from scipy.stats import circvar
 
 import openmm
@@ -92,7 +93,7 @@ def _get_mda_coord_format(
     Optional[MemoryReader]
       Either the MemoryReader class or None.
     """
-    if isinstance(coordinates, npt.NDArray):
+    if isinstance(coordinates, np.ndarray):
         return MemoryReader
     else:
         return None
@@ -214,7 +215,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
     offmol = OFFMol(rdmol, allow_undefined_stereo=True)
     nx_mol = offmol.to_networkx()
 
-    if not nx.is_weakly_connected(nx_mol):
+    if not nx.is_weakly_connected(nx_mol.to_directed()):
         errmsg = "A disconnected molecule was passed, cannot find the center"
         raise ValueError(errmsg)
 
@@ -317,15 +318,15 @@ def check_angle_not_flat(
     check2 = 0.5 * frc_const * np.power((angle_rads - np.pi), 2)
     ang_check_1 = check1 / RT
     ang_check_2 = check2 / RT
-    if ang_check_1 < 10.0 or ang_check_2 < 10.0:
+    if ang_check_1.m < 10.0 or ang_check_2.m < 10.0:
         return False
     return True
 
 
 def check_dihedral_bounds(
     dihedral: unit.Quantity,
-    lower_cutoff: unit.Quantity = 2.618 * unit.radians,
-    upper_cutoff: unit.Quantity = -2.618 * unit.radians,
+    lower_cutoff: unit.Quantity = -2.618 * unit.radians,
+    upper_cutoff: unit.Quantity = 2.618 * unit.radians,
 ) -> bool:
     """
     Check that a dihedral does not exceed the bounds set by
@@ -415,8 +416,13 @@ class FindHostAtoms(AnalysisBase):
     ):
         super().__init__(host_atoms.universe.trajectory, **kwargs)
 
-        self.host_ag = host_atoms
-        self.guest_ag = guest_atoms
+        def get_atomgroup(ag):
+            if ag._is_group:
+                return ag
+            return mda.AtomGroup([ag])
+
+        self.host_ag = get_atomgroup(host_atoms)
+        self.guest_ag = get_atomgroup(guest_atoms)
         self.min_cutoff = min_search_distance.to("angstrom").m
         self.max_cutoff = max_search_distance.to("angstrom").m
 
@@ -433,11 +439,11 @@ class FindHostAtoms(AnalysisBase):
             return_distances=False,
         )
 
-        host_idxs = [self.guest_ag.atoms[p].ix for p in pairs[:, 1]]
+        host_idxs = [self.host_ag.atoms[p].ix for p in pairs[:, 0]]
         self.results.host_idxs.update(set(host_idxs))
 
     def _conclude(self):
-        self.results.host_idxs = np.array(self.results.host_idxs)
+        self.results.host_idxs = np.array(list(self.results.host_idxs))
 
 
 def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
