@@ -2161,7 +2161,8 @@ def test_dry_run_vacuum_write_frequency(benzene_vacuum_system,
 
 
 @pytest.mark.parametrize('positions_write_frequency,velocities_write_frequency',
-                         [[100.1 * unit.picosecond, 100 * unit.picosecond]])
+                         [[100.1 * unit.picosecond, 100 * unit.picosecond],
+                          [100 * unit.picosecond, 100.1 * unit.picosecond]])
 def test_pos_write_frequency_not_divisible(benzene_vacuum_system,
                                            toluene_vacuum_system,
                                            benzene_to_toluene_mapping,
@@ -2189,6 +2190,6 @@ def test_pos_write_frequency_not_divisible(benzene_vacuum_system,
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        errmsg = "The output settings' position_write_frequency"
+        errmsg = "The output settings' "
         with pytest.raises(ValueError, match=errmsg):
             dag_unit.run(dry=True)['debug']['sampler']

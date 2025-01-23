@@ -905,3 +905,57 @@ class TestProtocolResult:
 
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
+
+
+@pytest.mark.parametrize('positions_write_frequency,velocities_write_frequency',
+                         [[100 * offunit.picosecond, None],
+                         [None, None],
+                         [None, 100 * offunit.picosecond]])
+def test_dry_run_vacuum_write_frequency(benzene_modifications,
+                                        positions_write_frequency,
+                                        velocities_write_frequency,
+                                        tmpdir):
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_output_settings.output_indices = "resname UNK"
+    s.solvent_output_settings.positions_write_frequency = positions_write_frequency
+    s.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
+    s.vacuum_output_settings.positions_write_frequency = positions_write_frequency
+    s.vacuum_output_settings.velocities_write_frequency = velocities_write_frequency
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+            settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 2
+
+    with tmpdir.as_cwd():
+        for u in prot_units:
+            sampler = u.run(dry=True)['debug']['sampler']
+            reporter = sampler._reporter
+            if positions_write_frequency:
+                assert reporter.position_interval == positions_write_frequency.m
+            else:
+                assert reporter.position_interval == 0
+            if velocities_write_frequency:
+                assert reporter.velocity_interval == velocities_write_frequency.m
+            else:
+                assert reporter.velocity_interval == 0
