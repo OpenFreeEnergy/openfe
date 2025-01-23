@@ -15,7 +15,7 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCO
     help=YAML_OPTIONS.kwargs["help"],
 )
 @OUTPUT_FILE_AND_EXT.parameter(
-    help="The name of the SDF file the charged ligands should be writen to."
+    help="The name of the SDF file the charged ligands should be written to."
 )
 @NCORES.parameter(
     help=NCORES.kwargs["help"],
