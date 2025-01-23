@@ -156,21 +156,6 @@ def results_dir_parallel(tmpdir)->str:
 
         return os.path.abspath(tar.getnames()[0])
 
-@pytest.fixture()
-def results_dir_serial_missing_leg(tmpdir)->str:
-    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
-    with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            tar.extractall('.')
-
-            results_dir_path = os.path.abspath(tar.getnames()[0])
-            file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-            (pathlib.Path(results_dir_path)/ file_to_remove).unlink()
-
-        return results_dir_path
-
-
 @pytest.mark.parametrize('data_fixture', ['results_dir_serial', 'results_dir_parallel'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 def test_gather(request, data_fixture, report):
@@ -211,23 +196,36 @@ def test_generate_bad_legs_error_message(include):
     for string in expected:
         assert string in msg
 
+class TestGatherFailedEdges:
+    @pytest.fixture()
+    def results_dir_serial_missing_leg(self, tmpdir)->str:
+        """Example output data, with replicates run in serial (3 replicates per results JSON)."""
+        with tmpdir.as_cwd():
+            with resources.files('openfecli.tests.data') as d:
+                tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+                tar.extractall('.')
 
-def test_missing_leg_error(results_dir_serial_missing_leg):
-    runner = CliRunner()
-    result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['-o', '-'])
+                results_dir_path = os.path.abspath(tar.getnames()[0])
+                file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+                (pathlib.Path(results_dir_path)/ file_to_remove).unlink()
+        return results_dir_path
 
-    assert result.exit_code == 1
-    assert isinstance(result.exception, RuntimeError)
-    assert "Unable to determine" in str(result.exception)
-    assert "'lig_ejm_31'" in str(result.exception)
-    assert "'lig_ejm_42'" in str(result.exception)
+    def test_missing_leg_error(self, results_dir_serial_missing_leg: str):
+        runner = CliRunner()
+        result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['-o', '-'])
+
+        assert result.exit_code == 1
+        assert isinstance(result.exception, RuntimeError)
+        assert "Unable to determine" in str(result.exception)
+        assert "'lig_ejm_31'" in str(result.exception)
+        assert "'lig_ejm_42'" in str(result.exception)
 
 
-def test_missing_leg_allow_partial(results_dir_serial_missing_leg):
-    runner = CliRunner()
-    result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['--allow-partial', '-o', '-'])
+    def test_missing_leg_allow_partial(self, results_dir_serial_missing_leg: str):
+        runner = CliRunner()
+        result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['--allow-partial', '-o', '-'])
 
-    assert_click_success(result)
+        assert_click_success(result)
 
 RBFE_RESULTS = pooch.create(
     pooch.os_cache('openfe'),
@@ -246,7 +244,7 @@ def rbfe_results():
 
 
 @pytest.mark.download
-@pytest.mark.xfail
+@pytest.mark.xfail  # these results are outdated
 def test_rbfe_results(rbfe_results):
     runner = CliRunner()
 
