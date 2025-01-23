@@ -1,4 +1,3 @@
-from ast import Str
 from click.testing import CliRunner
 from importlib import resources
 import tarfile
