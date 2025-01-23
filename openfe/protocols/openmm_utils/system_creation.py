@@ -11,7 +11,7 @@ from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
-from typing import Optional
+from typing import Optional, Iterable
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
@@ -134,9 +134,9 @@ ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 
 
 def get_omm_modeller(
-    protein_comp: Optional[ProteinComponent],
+    protein_comps: Iterable[ProteinComponent] | ProteinComponent,
     solvent_comp: Optional[SolventComponent],
-    small_mols: dict[SmallMoleculeComponent, OFFMol],
+    small_mols: Iterable[SmallMoleculeComponent] | SmallMoleculeComponent,
     omm_forcefield : app.ForceField,
     solvent_settings : OpenMMSolvationSettings
 ) -> ModellerReturn:
@@ -146,11 +146,11 @@ def get_omm_modeller(
 
     Parameters
     ----------
-    protein_comp : Optional[ProteinComponent]
+    protein_comps : Iterable[ProteinComponent] or ProteinComponent
       Protein Component, if it exists.
-    solvent_comp : Optional[ProteinCompoinent]
+    solvent_comp : Optional[SolventComponent]
       Solvent Component, if it exists.
-    small_mols : dict
+    small_mols : Iterable[SmallMoleculeComponent] or SmallMoleculeComponent
       Small molecules to add.
     omm_forcefield : app.ForceField
       ForceField object for system.
@@ -188,28 +188,33 @@ def get_omm_modeller(
     # Create empty modeller
     system_modeller = app.Modeller(app.Topology(), [])
 
-    # If there's a protein in the system, we add it first to the Modeller
-    if protein_comp is not None:
-        system_modeller.add(protein_comp.to_openmm_topology(),
-                            protein_comp.to_openmm_positions())
-        # add missing virtual particles (from crystal waters)
-        system_modeller.addExtraParticles(omm_forcefield)
-        component_resids[protein_comp] = np.array(
-          [r.index for r in system_modeller.topology.residues()]
-        )
-        # if we solvate temporarily rename water molecules to 'WAT'
-        # see openmm issue #4103
-        if solvent_comp is not None:
-            for r in system_modeller.topology.residues():
-                if r.name == 'HOH':
-                    r.name = 'WAT'
+    # We first add all the protein components, if any
+    if protein_comps:
+        protein_comps = iter(protein_comps)  # Support both input iterable or not
+        for protein_comp in protein_comps:
+            system_modeller.add(protein_comp.to_openmm_topology(),
+                                protein_comp.to_openmm_positions())
+            # add missing virtual particles (from crystal waters)
+            system_modeller.addExtraParticles(omm_forcefield)
+            component_resids[protein_comp] = np.array(
+              [r.index for r in system_modeller.topology.residues()]
+            )
+            # if we solvate temporarily rename water molecules to 'WAT'
+            # see openmm issue #4103
+            if solvent_comp is not None:
+                for r in system_modeller.topology.residues():
+                    if r.name == 'HOH':
+                        r.name = 'WAT'
 
     # Now loop through small mols
-    for comp, mol in small_mols.items():
-        _add_small_mol(comp, mol, system_modeller, component_resids)
+    if small_mols:
+        small_mols = iter(small_mols)  # Support both input iterable or not
+        for small_mol_comp in small_mols:
+            _add_small_mol(small_mol_comp, small_mol_comp.to_openff(), system_modeller,
+                           component_resids)
 
-    # Add solvent if neeeded
-    if solvent_comp is not None:
+    # Add solvent if needed
+    if solvent_comp:
         conc = solvent_comp.ion_concentration
         pos = solvent_comp.positive_ion
         neg = solvent_comp.negative_ion
