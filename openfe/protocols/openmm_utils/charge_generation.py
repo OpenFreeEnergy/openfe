@@ -416,7 +416,7 @@ def assign_offmol_partial_charges(
 
     # limit the number of threads used by SQM
     # <https://github.com/openforcefield/openff-toolkit/issues/1831>
-    with threadpool_limits(limits=2):
+    with threadpool_limits(limits=1):
         # Call selected method to assign partial charges
         CHARGE_METHODS[method.lower()]['charge_func'](
             offmol=offmol_copy,

@@ -44,12 +44,12 @@ def expected_transformations():
             'easy_rbfe_lig_ejm_42_complex_lig_ejm_50_complex.json',
             'easy_rbfe_lig_ejm_42_solvent_lig_ejm_43_solvent.json',
             'easy_rbfe_lig_ejm_42_solvent_lig_ejm_50_solvent.json',
-            'easy_rbfe_lig_jmc_23_solvent_lig_jmc_27_solvent.json',
-            'easy_rbfe_lig_jmc_23_complex_lig_jmc_27_complex.json',
-            'easy_rbfe_lig_jmc_23_solvent_lig_jmc_28_solvent.json',
-            'easy_rbfe_lig_jmc_23_complex_lig_jmc_28_complex.json',
             'easy_rbfe_lig_ejm_46_solvent_lig_jmc_23_solvent.json',
-            'easy_rbfe_lig_ejm_46_complex_lig_jmc_23_complex.json']
+            'easy_rbfe_lig_ejm_46_complex_lig_jmc_23_complex.json',
+            'easy_rbfe_lig_jmc_23_complex_lig_jmc_27_complex.json',
+            'easy_rbfe_lig_jmc_23_solvent_lig_jmc_27_solvent.json',
+            'easy_rbfe_lig_jmc_23_solvent_lig_jmc_28_solvent.json',
+            'easy_rbfe_lig_jmc_23_complex_lig_jmc_28_complex.json']
 
 
 def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
@@ -105,7 +105,6 @@ lig_jmc_23\tlig_jmc_28\t0.0\t0.0
 
 def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
                   mock_execute, ref_gather):
-
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
