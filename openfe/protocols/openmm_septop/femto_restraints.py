@@ -714,7 +714,7 @@ def create_boresch_restraint(
 
     for key, value in [
         ("k_dist_a", k_distance),
-        ("k_theta_a", k_theta * 2 * 10),
+        ("k_theta_a", k_theta * 2),
         ("k_theta_b", k_theta),
         ("k_phi_a", k_theta),
         ("k_phi_b", k_theta),

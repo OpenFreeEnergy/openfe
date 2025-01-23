@@ -58,7 +58,9 @@ class ComplexRestraintsSettings(RestraintsSettings):
     class Config:
         arbitrary_types_allowed = True
 
-    k_theta: FloatQuantity['kJ/(mol*rad**2)'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+    # k_theta: FloatQuantity['kJ/(mol*rad**2)'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+    k_theta: FloatQuantity[
+        'kJ/(mol*rad**2)'] = 836.8 * unit.kilojoule_per_mole / unit.radians ** 2
 
 
 class LambdaSettings(SettingsBaseModel):
