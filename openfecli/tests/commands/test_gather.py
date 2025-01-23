@@ -1,3 +1,4 @@
+from ast import Str
 from click.testing import CliRunner
 from importlib import resources
 import tarfile
@@ -136,7 +137,7 @@ solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
 @pytest.fixture()
-def results_dir_serial(tmpdir):
+def results_dir_serial(tmpdir)->str:
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
@@ -146,7 +147,7 @@ def results_dir_serial(tmpdir):
         return os.path.abspath(tar.getnames()[0])
 
 @pytest.fixture()
-def results_dir_parallel(tmpdir):
+def results_dir_parallel(tmpdir)->str:
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
@@ -156,7 +157,7 @@ def results_dir_parallel(tmpdir):
         return os.path.abspath(tar.getnames()[0])
 
 @pytest.fixture()
-def results_dir_serial_missing_leg(tmpdir):
+def results_dir_serial_missing_leg(tmpdir)->str:
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
