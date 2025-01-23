@@ -5,6 +5,7 @@ import os
 import pathlib
 import pytest
 import pooch
+from ..utils import assert_click_success
 
 from openfecli.commands.gather import (
     gather, format_estimate_uncertainty, _get_column,
@@ -139,20 +140,35 @@ def results_dir_serial(tmpdir):
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            t.extractall('.')
+            tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+            tar.extractall('.')
 
-        return os.path.abspath(t.getnames()[0])
+        return os.path.abspath(tar.getnames()[0])
 
 @pytest.fixture()
 def results_dir_parallel(tmpdir):
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results_parallel.tar.gz', mode='r')
-            t.extractall('.')
+            tar = tarfile.open(d / 'rbfe_results_parallel.tar.gz', mode='r')
+            tar.extractall('.')
 
-        return os.path.abspath(t.getnames()[0])
+        return os.path.abspath(tar.getnames()[0])
+
+@pytest.fixture()
+def results_dir_serial_missing_leg(tmpdir):
+    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
+    with tmpdir.as_cwd():
+        with resources.files('openfecli.tests.data') as d:
+            tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+            tar.extractall('.')
+
+            results_dir_path = os.path.abspath(tar.getnames()[0])
+            file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
+            (pathlib.Path(results_dir_path)/ file_to_remove).unlink()
+
+        return results_dir_path
+
 
 @pytest.mark.parametrize('data_fixture', ['results_dir_serial', 'results_dir_parallel'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
@@ -195,13 +211,10 @@ def test_generate_bad_legs_error_message(include):
         assert string in msg
 
 
-@pytest.mark.xfail
-def test_missing_leg_error(results_dir_serial):
-    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-    (pathlib.Path("results") / file_to_remove).unlink()
-
+def test_missing_leg_error(results_dir_serial_missing_leg):
     runner = CliRunner()
-    result = runner.invoke(gather, ['results'] + ['-o', '-'])
+    result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['-o', '-'])
+
     assert result.exit_code == 1
     assert isinstance(result.exception, RuntimeError)
     assert "Unable to determine" in str(result.exception)
@@ -209,16 +222,11 @@ def test_missing_leg_error(results_dir_serial):
     assert "'lig_ejm_42'" in str(result.exception)
 
 
-@pytest.mark.xfail
-def test_missing_leg_allow_partial(results_dir_serial):
-    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-    (pathlib.Path("results") / file_to_remove).unlink()
-
+def test_missing_leg_allow_partial(results_dir_serial_missing_leg):
     runner = CliRunner()
-    result = runner.invoke(gather,
-                           ['results'] + ['--allow-partial', '-o', '-'])
-    assert result.exit_code == 0
+    result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['--allow-partial', '-o', '-'])
 
+    assert_click_success(result)
 
 RBFE_RESULTS = pooch.create(
     pooch.os_cache('openfe'),
