@@ -25,7 +25,7 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCO
     "--overwrite-charges",
     is_flag=True,
     default=False,
-    help="If we should overwrite the charges already present in the molecules."
+    help="If the charges already present in the molecules should be overwritten."
 )
 def charge_molecules(
         molecules,
