@@ -199,7 +199,7 @@ def test_generate_bad_legs_error_message(include):
 class TestGatherFailedEdges:
     @pytest.fixture()
     def results_dir_serial_missing_leg(self, tmpdir)->str:
-        """Example output data, with replicates run in serial (3 replicates per results JSON)."""
+        """Example output data, with replicates run in serial and one deleted results JSON."""
         with tmpdir.as_cwd():
             with resources.files('openfecli.tests.data') as d:
                 tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
