@@ -8,12 +8,12 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES, OVERWRITE
 )
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, partial_charge_settings, processors
+    solvent, partial_charge_settings, processors, overwrite_charges
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -34,6 +34,8 @@ def plan_rhfe_network_main(
         (if they don't already have partial charges).
     processors: int
         The number of processors that should be used when generating the charges
+    overwrite_charges: bool
+        If any partial charges already present on the small molecules should be overwritten
 
     Returns
     -------
@@ -50,7 +52,7 @@ def plan_rhfe_network_main(
 
     charged_small_molecules = bulk_assign_partial_charges(
         molecules=small_molecules,
-        overwrite=False,
+        overwrite=overwrite_charges,
         method=partial_charge_settings.partial_charge_method,
         toolkit_backend=partial_charge_settings.off_toolkit_backend,
         generate_n_conformers=partial_charge_settings.number_of_conformers,
@@ -92,8 +94,13 @@ def plan_rhfe_network_main(
     help=NCORES.kwargs["help"],
     default=1,
 )
+@OVERWRITE.parameter(
+    help=OVERWRITE.kwargs["help"],
+    default=OVERWRITE.kwargs["default"],
+    is_flag=True
+)
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int, overwrite_charges: bool):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -169,7 +176,8 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
         small_molecules=small_molecules,
         solvent=solvent,
         partial_charge_settings=partial_charge,
-        processors=n_cores
+        processors=n_cores,
+        overwrite_charges=overwrite_charges
     )
     write("\tDone")
     write("")

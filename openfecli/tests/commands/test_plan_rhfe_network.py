@@ -2,7 +2,6 @@ from unittest import mock
 
 import pytest
 from importlib import resources
-import os
 import shutil
 from click.testing import CliRunner
 
@@ -10,7 +9,10 @@ from openfecli.commands.plan_rhfe_network import (
     plan_rhfe_network,
     plan_rhfe_network_main,
 )
-
+from gufe import SmallMoleculeComponent, AlchemicalNetwork, SolventComponent
+from gufe.tokenization import JSON_HANDLER
+import json
+import numpy as np
 
 @pytest.fixture(scope='session')
 def mol_dir_args(tmpdir_factory):
@@ -18,6 +20,17 @@ def mol_dir_args(tmpdir_factory):
 
     with resources.files('openfe.tests.data.openmm_rfe') as d:
         for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+            shutil.copyfile(d / f, ofe_dir_path / f)
+
+    return ["--molecules", ofe_dir_path]
+
+
+@pytest.fixture(scope="session")
+def dummy_charge_dir_args(tmpdir_factory):
+    ofe_dir_path = tmpdir_factory.mktemp('charge_moldir')
+
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
@@ -41,8 +54,6 @@ def validate_charges(smc):
 
 
 def test_plan_rhfe_network_main():
-    import os
-    from gufe import SmallMoleculeComponent, SolventComponent
     from openfe.setup import (
         LomapAtomMapper,
         lomap_scorers,
@@ -177,3 +188,45 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
         result = runner.invoke(plan_rhfe_network, args)
 
         assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("overwrite", [
+    pytest.param(True, id="Overwrite"),
+    pytest.param(False, id="No overwrite")
+])
+def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_nagl_settings, overwrite):
+    # make sure the dummy charges are overwritten when requested
+
+    # use nagl charges for CI speed!
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(yaml_nagl_settings)
+
+    args = dummy_charge_dir_args + ["-s", settings_path]
+
+    # get the input charges for the molecules to check they have been overwritten
+    charges_by_name = {}
+    for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
+        smc = SmallMoleculeComponent.from_sdf_file(dummy_charge_dir_args[1] / f)
+        charges_by_name[smc.name] = smc.to_openff().partial_charges.m
+
+    if overwrite:
+        args.append("--overwrite-charges")
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rhfe_network, args)
+
+        assert result.exit_code == 0
+
+        network = AlchemicalNetwork.from_dict(
+            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+        )
+        # make sure the ligands don't have dummy charges
+        for node in network.nodes:
+            off_mol = node.components["ligand"].to_openff()
+
+            if overwrite:
+                assert not np.allclose(off_mol.partial_charges.m, charges_by_name[off_mol.name])
+            else:
+                assert np.allclose(off_mol.partial_charges.m, charges_by_name[off_mol.name])

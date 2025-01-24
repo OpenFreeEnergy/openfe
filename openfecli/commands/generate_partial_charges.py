@@ -1,6 +1,6 @@
 import click
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES
+from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES, OVERWRITE
 
 
 @click.command(
@@ -21,11 +21,10 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCO
     help=NCORES.kwargs["help"],
     default=1,
 )
-@click.option(
-    "--overwrite-charges",
-    is_flag=True,
-    default=False,
-    help="If the charges already present in the molecules should be overwritten."
+@OVERWRITE.parameter(
+    help=OVERWRITE.kwargs["help"],
+    default=OVERWRITE.kwargs["default"],
+    is_flag=True
 )
 def charge_molecules(
         molecules,

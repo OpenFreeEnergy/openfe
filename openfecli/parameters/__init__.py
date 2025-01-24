@@ -8,4 +8,4 @@ from .output_dir import OUTPUT_DIR
 from .protein import PROTEIN
 from .molecules import MOL_DIR, COFACTORS
 from .plan_network_options import YAML_OPTIONS
-from .misc import NCORES
+from .misc import NCORES, OVERWRITE

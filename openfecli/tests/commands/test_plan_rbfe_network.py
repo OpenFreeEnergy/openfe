@@ -9,9 +9,10 @@ from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
 )
-from gufe import AlchemicalNetwork
+from gufe import AlchemicalNetwork, SmallMoleculeComponent
 from gufe.tokenization import JSON_HANDLER
 import json
+import numpy as np
 
 
 @pytest.fixture(scope='session')
@@ -20,6 +21,16 @@ def mol_dir_args(tmpdir_factory):
 
     with resources.files('openfe.tests.data.openmm_rfe') as d:
         for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+            shutil.copyfile(d / f, ofe_dir_path / f)
+
+    return ["--molecules", ofe_dir_path]
+
+@pytest.fixture(scope="session")
+def dummy_charge_dir_args(tmpdir_factory):
+    ofe_dir_path = tmpdir_factory.mktemp('charge_moldir')
+
+    with resources.files('openfe.tests.data.openmm_rfe') as d:
+        for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
@@ -92,13 +103,13 @@ def test_plan_rbfe_network_main():
             partial_charge_method="nagl",
             nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
         ),
-        processors=1
+        processors=1,
+        overwrite_charges=False
     )
     # check the ligands have charges assigned
     for node in alchemical_network.nodes:
         validate_charges(node.components["ligand"])
 
-    print(alchemical_network)
 
 @pytest.fixture
 def yaml_nagl_settings():
@@ -154,13 +165,54 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_setting
     with mock.patch(patch_loc, patch_func):
         with runner.isolated_filesystem():
             result = runner.invoke(plan_rbfe_network, args)
-            print(result.output)
             assert result.exit_code == 0
             for line in expected_output_always:
                 assert line in result.output
 
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
+
+
+@pytest.mark.parametrize("overwrite", [
+    pytest.param(True, id="Overwrite"),
+    pytest.param(False, id="No overwrite")
+])
+def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args, tmpdir, yaml_nagl_settings, overwrite):
+    # make sure the dummy charges are overwritten when requested
+
+    # use nagl charges for CI speed!
+    settings_path = tmpdir / "settings.yaml"
+    with open(settings_path, "w") as f:
+        f.write(yaml_nagl_settings)
+
+    args = dummy_charge_dir_args + protein_args + ["-s", settings_path]
+
+    # get the input charges for the molecules to check they have been overwritten
+    charges_by_name = {}
+    for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
+        smc = SmallMoleculeComponent.from_sdf_file(dummy_charge_dir_args[1] / f)
+        charges_by_name[smc.name] = smc.to_openff().partial_charges.m
+
+    if overwrite:
+        args.append("--overwrite-charges")
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(plan_rbfe_network, args)
+
+        assert result.exit_code == 0
+
+        network = AlchemicalNetwork.from_dict(
+            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
+        )
+        # make sure the ligands don't have dummy charges
+        for node in network.nodes:
+            off_mol = node.components["ligand"].to_openff()
+
+            if overwrite:
+                assert not np.allclose(off_mol.partial_charges.m, charges_by_name[off_mol.name])
+            else:
+                assert np.allclose(off_mol.partial_charges.m, charges_by_name[off_mol.name])
 
 
 @pytest.fixture
@@ -192,6 +244,11 @@ def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
         result = runner.invoke(plan_rbfe_network, args)
 
         assert result.exit_code == 0
+        # check charges are assigned
+        assert "Partial Charge Generation: nagl" in result.output
+        assert "assigning ligand partial charges -- this may be slow" in result.output
+        assert "assigning cofactor partial charges -- this may be slow"
+
         # make sure the cofactor is in the transformations
         network = AlchemicalNetwork.from_dict(
             json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)

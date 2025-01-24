@@ -5,7 +5,7 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE
 )
 
 def plan_rbfe_network_main(
@@ -18,6 +18,7 @@ def plan_rbfe_network_main(
     cofactors,
     partial_charge_settings,
     processors,
+    overwrite_charges
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -36,12 +37,14 @@ def plan_rbfe_network_main(
     protein : ProteinComponent
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
-        any cofactors alongisde the protein, can be empty list
+        any cofactors alongside the protein, can be empty list
     partial_charge_settings : OpenFFPartialChargeSettings
         how to assign partial charges to the input ligands
         (if they don't already have partial charges).
     processors: int
         The number of processors that should be used when generating the charges
+    overwrite_charges: bool
+        If any partial charges already present on the small molecules should be overwritten
 
     Returns
     -------
@@ -59,7 +62,7 @@ def plan_rbfe_network_main(
 
     charged_small_molecules = bulk_assign_partial_charges(
         molecules=small_molecules,
-        overwrite=False,
+        overwrite=overwrite_charges,
         method=partial_charge_settings.partial_charge_method,
         toolkit_backend=partial_charge_settings.off_toolkit_backend,
         generate_n_conformers=partial_charge_settings.number_of_conformers,
@@ -72,7 +75,7 @@ def plan_rbfe_network_main(
 
         cofactors = bulk_assign_partial_charges(
             molecules=cofactors,
-            overwrite=False,
+            overwrite=overwrite_charges,
             method=partial_charge_settings.partial_charge_method,
             toolkit_backend=partial_charge_settings.off_toolkit_backend,
             generate_n_conformers=partial_charge_settings.number_of_conformers,
@@ -120,12 +123,18 @@ def plan_rbfe_network_main(
     help=NCORES.kwargs["help"],
     default=1,
 )
+@OVERWRITE.parameter(
+    help=OVERWRITE.kwargs["help"],
+    default=OVERWRITE.kwargs["default"],
+    is_flag=True
+)
 @print_duration
 def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
-        n_cores: int
+        n_cores: int,
+        overwrite_charges: bool
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -211,7 +220,8 @@ def plan_rbfe_network(
         protein=protein,
         cofactors=cofactors,
         partial_charge_settings=partial_charge,
-        processors=n_cores
+        processors=n_cores,
+        overwrite_charges=overwrite_charges
     )
     write("\tDone")
     write("")
