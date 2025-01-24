@@ -7,9 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import pathlib
-from typing import Union, Optional
-from openmm import app
+from typing import Optional
 import MDAnalysis as mda
 from rdkit import Chem
 
@@ -17,7 +15,6 @@ from .base import HostGuestRestraintGeometry
 from .utils import (
     get_central_atom_idx,
     _get_mda_selection,
-    _get_mda_topology_format,
 )
 
 
@@ -28,8 +25,7 @@ class DistanceRestraintGeometry(HostGuestRestraintGeometry):
 
 
 def get_distance_restraint(
-    topology: Union[str, pathlib.Path, app.Topology],
-    trajectory: Union[str, pathlib.Path],
+    universe: mda.Universe,
     host_atoms: Optional[list[int]] = None,
     guest_atoms: Optional[list[int]] = None,
     host_selection: Optional[str] = None,
@@ -43,10 +39,8 @@ def get_distance_restraint(
 
     Parameters
     ----------
-    topology : Union[str, pathlib.Path, app.Topology]
-      A path or object defining the system topology.
-    trajectory : Union[str, pathlib.Path]
-      Coordinates for the system.
+    universe : mda.Universe
+      An MDAnalysis Universe defining the system and its coordinates.
     host_atoms : Optional[list[int]]
       A list of host atoms indices. Either ``host_atoms`` or
       ``host_selection`` must be defined.
@@ -65,15 +59,9 @@ def get_distance_restraint(
     DistanceRestraintGeometry
       An object that defines a distance restraint geometry.
     """
-    u = mda.Universe(
-        topology,
-        trajectory,
-        topology_format=_get_mda_topology_format(topology)
-    )
-
-    guest_ag = _get_mda_selection(u, guest_atoms, guest_selection)
+    guest_ag = _get_mda_selection(universe, guest_atoms, guest_selection)
     guest_atoms = [a.ix for a in guest_ag]
-    host_ag = _get_mda_selection(u, host_atoms, host_selection)
+    host_ag = _get_mda_selection(universe, host_atoms, host_selection)
     host_atoms = [a.ix for a in host_ag]
 
     return DistanceRestraintGeometry(

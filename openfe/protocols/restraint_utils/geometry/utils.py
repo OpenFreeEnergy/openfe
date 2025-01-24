@@ -8,11 +8,12 @@ TODO
 * Add relevant duecredit entries.
 """
 from typing import Union, Optional
-from itertools import combinations
+from itertools import combinations, groupby
 import numpy as np
 import numpy.typing as npt
 import pathlib
 from scipy.stats import circvar
+import warnings
 
 import openmm
 from openff.toolkit import Molecule as OFFMol
@@ -22,6 +23,7 @@ from rdkit import Chem
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rms import RMSF
+from MDAnalysis.analysis.dssp import DSSP
 from MDAnalysis.lib.distances import minimize_vectors, capped_distance
 from MDAnalysis.coordinates.memory import MemoryReader
 from MDAnalysis.transformations.nojump import NoJump
@@ -441,7 +443,8 @@ class FindHostAtoms(AnalysisBase):
 
         host_idxs = set(self.host_ag.atoms[p].ix for p in pairs[:, 1])
 
-        # Only keep indices that fit the distance criteria
+        # We do an intersection as we go along to prune atoms that don't pass
+        # the distance selection criteria
         self.results.host_idxs = self.results.host_idxs.intersection(
             host_idxs
         )
@@ -475,3 +478,137 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     rmsf = RMSF(ag)
     rmsf.run()
     return rmsf.results.rmsf * unit.angstrom
+
+
+def stable_secondary_structure_selection(
+    atomgroup: mda.AtomGroup,
+    trim_chain_start: int = 10,
+    trim_chain_end: int = 10,
+    min_structure_size: int = 8,
+    trim_structure_ends: int = 3,
+) -> mda.AtomGroup:
+    """
+    Select all atoms in a given AtomGroup which belong to residues with a
+    stable secondary structure as defined by Baumann et al.[1]
+
+    The selection algorithm works in the following manner:
+      1. Protein residues are selected from the ``atomgroup``.
+      2. If there are fewer than 30 protein residues, raise an error.
+      3. Split the protein residues by fragment, guessing bonds if necessary.
+      4. Discard the first ``trim_chain_start`` and the last
+         ``trim_chain_end`` residues per fragment.
+      5. Run DSSP using the last trajectory frame on the remaining
+         fragment residues.
+      6. Extract all contiguous structure units that are longer than
+         ``min_structure_size``, removing ``trim_structure_ends``
+         residues from each end of the structure.
+      7. For all extract structures, if there are more beta-sheet
+         residues than there are alpha-helix residues, then allow
+         residues to be selected from either structure type. If not,
+         then only allow alpha-helix residues.
+      8. Select all atoms in the ``atomgroup`` that belong to residues
+         from extracted structure units of the selected structure type.
+
+    Parameters
+    ----------
+    atomgroup : mda.AtomgGroup
+      The AtomGroup to select atoms from.
+    trim_chain_start: int
+      The number of residues to trim from the start of each
+      protein chain. Default 10.
+    trim_chain_end : int
+      The number of residues to trim from the end of each
+      protein chain. Default 10.
+    min_structure_size : int
+      The minimum number of residues needed in a given
+      secondary structure unit to be considered stable. Default 8.
+    trim_structure_ends : int
+      The number of residues to trim from the end of each
+      secondary structure units. Default 3.
+
+    Returns
+    -------
+    AtomGroup
+      An AtomGroup containing all the atoms from the input AtomGroup
+      which belong to stable secondary structure residues.
+
+    Raises
+    ------
+    ValueError
+      If fewer than 30 protein residues are present in the input
+      ``atomgroup``.
+    UserWarning
+      If there are no bonds for the protein atoms in the input
+      host residue. In this case, the bonds will be guessed
+      using a simple distance metric.
+
+    Notes
+    -----
+    * This selection algorithm assumes contiguous & ordered residues.
+    * We recommend always trimming at least one residue at the ends of
+      each chain using ``trim_chain_start`` and ``trim_chain_end`` to
+      avoid issues with capping residues.
+    * DSSP assignement is done on the final frame of the trajectory.
+
+    References
+    ----------
+    [1] Baumann, Hannah M., et al. "Broadening the scope of binding free energy
+        calculations using a Separated Topologies approach." (2023).
+    """
+    # We use "host_ag" to get the entire host
+    protein_ag = atomgroup.select_atoms('protein')
+    if len(protein_ag.residues) < 30:
+        # TODO: make this not fail but warn?
+        errmsg = ("Insufficient protein residues were found -"
+                  " cannot run DSSP filter")
+        raise ValueError(errmsg)
+
+    # We need to split by fragments to account for multiple chains
+    # To do this, we need bonds!
+    if not hasattr(protein_ag, 'bonds'):
+        wmsg = (
+            "No bounds found in input Universe, "
+            "will attempt to guess for DSSP assignment"
+        )
+        warnings.warn(wmsg)
+        protein_ag.guess_bonds()
+
+    structures = []  # container for all contiguous secondary structure units
+    structure_residue_counts = {'H': 0, 'E': 0, '-': 0}
+    for frag in protein_ag.fragments:
+        chain = frag.residues[trim_chain_start:-trim_chain_end].atoms
+        # Run on the last frame
+        dssp = DSSP(chain).run(start=-1)
+
+        # Tag each residue structure by its resindex
+        dssp_results = [
+            (structure, resid) for structure, resid in
+            zip(dssp.results.dssp[0], chain.residues.resindices)
+        ]
+
+        for _, group_iter in groupby(dssp_results, lambda x: x[0]):
+            group = list(group_iter)
+            if len(group) > min_structure_size:
+                structures.append(
+                    group[trim_structure_ends:-trim_structure_ends]
+                )
+                num_residues = len(group) - (2 * trim_structure_ends)
+                structure_residue_counts[group[0][0]] += num_residues
+
+    # If we have fewer alpha-helix residues than beta-sheet residues
+    # then we allow picking from beta-sheets too.
+    allowed_structures = ['H']
+    if structure_residue_counts['H'] < structure_residue_counts['E']:
+        allowed_structures.append('E')
+
+    allowed_residxs = []
+    for structure in structures:
+        if structure[0][0] in allowed_structures:
+            allowed_residxs.extend([residue[1] for residue in structure])
+
+    # Resindexes are keyed at the Universe scale not AtomGroup
+    allowed_atoms = atomgroup.universe.residues[allowed_residxs].atoms
+
+    # Pick up all the atoms that intersect the initial selection and
+    # those allowed.
+    return atomgroup.intersection(allowed_atoms)
