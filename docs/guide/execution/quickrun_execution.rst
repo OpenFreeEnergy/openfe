@@ -44,6 +44,68 @@ The ``quickrun`` command can be integrated into as:
 
   openfe quickrun transformation.json -o results.json
 
+Parallel execution of repeats with Quickrun
+===========================================
+
+Serial execution of multiple repeats of a transformation can be inefficient when working with a HPC, in this case higher
+throughput can be achieved by running one repeat per HPC job allowing for parallel execution. Most protocols are setup to
+run ``three repeats in seral`` by default, however, this can be changed via the protocol setting ``protocol_repeats``, see the
+:ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details. Each transformation can then be executed
+multiple times via the ``openfe quickrun`` command to produce a set of repeats, however, you need to ensure to use unique results
+files for each repeat to ensure they don't overwrite each other. We recommend using folders named ``results_x`` where x is 0-2
+to store the repeated calculations as our :ref:`openfe gather <cli_gather>` command also supports this file structure.
+
+Here is an example of a simple script that will create and submit a separate job script (\*.job named file)
+for every alchemical transformation (for the simplest SLURM use case) in a network running each repeat in parallel and writing the
+results to a unique folder:
+
+.. code-block:: bash
+
+   for file in network_setup/transformations/*.json; do
+     relpath="${file:30}"  # strip off "network_setup/"
+     dirpath=${relpath%.*}  # strip off final ".json"
+     jobpath="network_setup/transformations/${dirpath}.job"
+     if [ -f "${jobpath}" ]; then
+       echo "${jobpath} already exists"
+       exit 1
+     fi
+     for repeat in {0..2}; do
+       cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath}"
+       echo -e "#!/usr/bin/env bash\n${cmd}" > "${jobpath}"
+       sbatch "${jobpath}"
+     done
+   done
+
+This should result in the following file structure after execution:
+
+::
+
+    results_parallel/
+    ├── results_0
+    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex
+    │   │   └── shared_RelativeHybridTopologyProtocolUnit-79c279f04ec84218b7935bc0447539a9_attempt_0
+    │   │       ├── checkpoint.nc
+    │   │       ├── simulation.nc
+    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    ├── results_1
+    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex
+    │   │   └── shared_RelativeHybridTopologyProtocolUnit-a3cef34132aa4e9cbb824fcbcd043b0e_attempt_0
+    │   │       ├── checkpoint.nc
+    │   │       ├── simulation.nc
+    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    └── results_2
+        ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex
+        │   └── shared_RelativeHybridTopologyProtocolUnit-abb2b104151c45fc8b0993fa0a7ee0af_attempt_0
+        │       ├── checkpoint.nc
+        │       ├── simulation.nc
+        └── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+
+The results of which can be gathered from the CLI using the ``openfe gather`` command, in this case you should direct
+it to the root directory which includes the repeat results and it will automatically collate the information
+
+::
+
+ openfe gather results_parallel
 
 See Also
 --------
