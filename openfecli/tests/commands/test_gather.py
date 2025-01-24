@@ -174,7 +174,7 @@ def test_gather(request, data_fixture, report):
     results_dir = request.getfixturevalue(data_fixture)
     result = runner.invoke(gather, [results_dir] + args + ['-o', '-'])
 
-    assert result.exit_code == 0
+    assert_click_success(result)
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
 
