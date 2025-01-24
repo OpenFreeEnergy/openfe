@@ -363,7 +363,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
 @click.option(
     '--allow-partial', is_flag=True, default=False,
     help=(
-        "Do not raise errors is results are missing parts for some edges. "
+        "Do not raise errors if results are missing parts for some edges. "
         "(Skip those edges and issue warning instead.)"
     )
 )
