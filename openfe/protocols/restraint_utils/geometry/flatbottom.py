@@ -7,10 +7,8 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import pathlib
-from typing import Union, Optional
+from typing import Optional
 import numpy as np
-from openmm import app
 from openff.units import unit
 from openff.models.types import FloatQuantity
 import MDAnalysis as mda
@@ -21,7 +19,7 @@ from .harmonic import (
     DistanceRestraintGeometry,
 )
 
-from .utils import _get_mda_topology_format, _get_mda_selection
+from .utils import _get_mda_selection
 
 
 class FlatBottomDistanceGeometry(DistanceRestraintGeometry):
@@ -67,8 +65,7 @@ class COMDistanceAnalysis(AnalysisBase):
 
 
 def get_flatbottom_distance_restraint(
-    topology: Union[str, app.Topology],
-    trajectory: Union[str, pathlib.Path],
+    universe: mda.Universe,
     host_atoms: Optional[list[int]] = None,
     guest_atoms: Optional[list[int]] = None,
     host_selection: Optional[str] = None,
@@ -84,10 +81,8 @@ def get_flatbottom_distance_restraint(
 
     Parameters
     ----------
-    topology : Union[str, app.Topology]
-      A topology defining the system.
-    trajectory : Union[str, pathlib.Path]
-      A coordinate trajectory for the system.
+    universe : mda.Universe
+      An MDAnalysis Universe defining the system and its coordinates.
     host_atoms : Optional[list[int]]
       A list of host atoms indices. Either ``host_atoms`` or
       ``host_selection`` must be defined.
@@ -109,14 +104,8 @@ def get_flatbottom_distance_restraint(
     FlatBottomDistanceGeometry
       An object defining a flat bottom restraint geometry.
     """
-    u = mda.Universe(
-        topology,
-        trajectory,
-        topology_format=_get_mda_topology_format(topology)
-    )
-
-    guest_ag = _get_mda_selection(u, guest_atoms, guest_selection)
-    host_ag = _get_mda_selection(u, host_atoms, host_selection)
+    guest_ag = _get_mda_selection(universe, guest_atoms, guest_selection)
+    host_ag = _get_mda_selection(universe, host_atoms, host_selection)
     guest_idxs = [a.ix for a in guest_ag]
     host_idxs = [a.ix for a in host_ag]
 
