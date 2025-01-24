@@ -7,6 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+import itertools
 import pathlib
 from typing import Union, Optional, Iterable
 
@@ -17,6 +18,7 @@ from openff.units import unit
 from openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
+from MDAnalysis.analysis.dssp import DSSP
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
 import numpy as np
 import numpy.typing as npt
@@ -372,9 +374,62 @@ def find_host_atom_candidates(
     # Should be able to just call MDA's DSSP method
     # but will need to catch an exception
     if dssp_filter:
-        raise NotImplementedError(
-            "DSSP filtering is not currently implemented"
-        )
+        # TODO: make this a method
+        # We use "host_ag" to get the entire host
+        protein_ag = host_ag.select_atoms('protein')
+        if len(protein_ag) < 50:
+            # TODO: make this not fail but warn?
+            errmsg = "Insufficient protein residues were found - cannot run DSSP filter"
+            raise ValueError(errmsg)
+
+        # Split by fragments
+        if not hasattr(protein_ag, 'bonds'):
+            protein_ag.guess_bonds()
+
+        fragments = protein_ag.fragments
+
+        structure = []
+        helix_count = 0
+        sheet_count = 0
+        for frag in fragments:
+            # Note: will want to always skip the first and last residues because that trips up DSSP
+            # TODO: make the skip a user-supplied thing
+            chain = frag.residues[10:-10].atoms
+            # Run on the last frame
+            dssp = DSSP(chain).run(start=-1)
+
+            # Tag each residue motif by its resindex
+            dssp_results = [
+                (motif, resid) for motif, resid in
+                zip(dssp.results.dssp[0], chain.residues.resindices)
+            ]
+
+            helix_count += list(dssp.results.dssp[0]).count('H')
+            sheet_count += list(dssp.results.dssp[0]).count('E')
+
+            for _, group in itertools.groupby(dssp_results, lambda x: x[0]):
+                structure.append(list(group))
+
+        allowed_motifs = ['H']
+        if helix_count < sheet_count:
+            allowed_motifs.append('E')
+
+        allowed_residxs = []
+        for motif_chain in structure:
+            # TODO: make the value of a "stable sheet/helix" user selectable
+            if motif_chain[0][0] in allowed_motifs and len(motif_chain) > 7:
+                # TODO: make the amount of residues to remove at the edges user
+                # selectable?
+                allowed_residxs.extend(
+                    [residue[1] for residue in motif_chain[3:-3]]
+                )
+
+        # Resindexes at key at the Universe scale not atomgroup
+        allowed_atoms = protein_ag.universe.residues[allowed_residxs].atoms
+
+        # Pick up all the atoms that intersect the initial selection and
+        # those allowed.
+        selected_host_ag = selected_host_ag.intersection(allowed_atoms)
 
     # 1. Get the RMSF & filter to create a new AtomGroup
     rmsf = get_local_rmsf(selected_host_ag)

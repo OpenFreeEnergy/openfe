@@ -427,20 +427,24 @@ class FindHostAtoms(AnalysisBase):
         self.max_cutoff = max_search_distance.to("angstrom").m
 
     def _prepare(self):
-        self.results.host_idxs = set()
+        self.results.host_idxs = set(self.host_ag.atoms.ix)
 
     def _single_frame(self):
         pairs = capped_distance(
-            reference=self.host_ag.positions,
-            configuration=self.guest_ag.positions,
+            reference=self.guest_ag.positions,
+            configuration=self.host_ag.positions,
             max_cutoff=self.max_cutoff,
             min_cutoff=self.min_cutoff,
             box=self.guest_ag.universe.dimensions,
             return_distances=False,
         )
 
-        host_idxs = [self.host_ag.atoms[p].ix for p in pairs[:, 0]]
-        self.results.host_idxs.update(set(host_idxs))
+        host_idxs = set(self.host_ag.atoms[p].ix for p in pairs[:, 1])
+
+        # Only keep indices that fit the distance criteria
+        self.results.host_idxs = self.results.host_idxs.intersection(
+            host_idxs
+        )
 
     def _conclude(self):
         self.results.host_idxs = np.array(list(self.results.host_idxs))
