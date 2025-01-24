@@ -239,7 +239,7 @@ def find_guest_atom_candidates(
         for angle in angles:
             # Check that the angle is at least not collinear
             angle_ag = ligand_ag.atoms[list(angle)]
-            if not is_collinear(ligand_ag.positions, angle, u.dimensions):
+            if not is_collinear(ligand_ag.positions, angle, universe.dimensions):
                 angles_list.append(
                     (
                         angle_ag.atoms[0].ix,
