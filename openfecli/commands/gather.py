@@ -205,6 +205,8 @@ def _get_ddgs(legs:dict, error_on_missing=True):
     from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
 
     DDGs = []
+    err_msg = ""
+
     for ligpair, vals in sorted(legs.items()):
         # import pdb;pdb.set_trace()
         leg_types = set(vals)
@@ -236,13 +238,16 @@ def _get_ddgs(legs:dict, error_on_missing=True):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            msg = _generate_bad_legs_error_message(leg_types, ligpair)
-            if error_on_missing:
-                raise RuntimeError(msg)
-            else:
-                warnings.warn(msg)
+            err_msg += _generate_bad_legs_error_message(leg_types, ligpair)
+            continue
+        else:
+            DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
-        DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
+    if err_msg:
+        if error_on_missing:
+            raise RuntimeError(err_msg)
+        else:
+            warnings.warn(err_msg)
 
     return DDGs
 
