@@ -80,7 +80,8 @@ def test_plan_rhfe_network_main():
             partial_charge_method="nagl",
             nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
         ),
-        processors=1
+        processors=1,
+        overwrite_charges=False
     )
 
     assert alchemical_network
