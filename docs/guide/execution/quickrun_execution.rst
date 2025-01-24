@@ -49,9 +49,10 @@ Parallel execution of repeats with Quickrun
 
 Serial execution of multiple repeats of a transformation can be inefficient when working with a HPC, in this case higher
 throughput can be achieved by running one repeat per HPC job allowing for parallel execution. Most protocols are setup to
-run ``three repeats in seral`` by default, however, this can be changed via the protocol setting ``protocol_repeats``, see the
-:ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details. Each transformation can then be executed
-multiple times via the ``openfe quickrun`` command to produce a set of repeats, however, you need to ensure to use unique results
+run ``three repeats in seral`` by default, however, this can be changed either via the protocol setting ``protocol_repeats``, see the
+:ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details or overridden via the
+``--n-protocol-repeats`` flag of the ``openfe quickrun`` command. Each transformation can then be executed multiple times via the
+``openfe quickrun`` command to produce a set of repeats, however, you need to ensure to use unique results
 files for each repeat to ensure they don't overwrite each other. We recommend using folders named ``results_x`` where x is 0-2
 to store the repeated calculations as our :ref:`openfe gather <cli_gather>` command also supports this file structure.
 
@@ -70,7 +71,7 @@ results to a unique folder:
        exit 1
      fi
      for repeat in {0..2}; do
-       cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath}"
+       cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath} --n-protocol-repeats 1"
        echo -e "#!/usr/bin/env bash\n${cmd}" > "${jobpath}"
        sbatch "${jobpath}"
      done
