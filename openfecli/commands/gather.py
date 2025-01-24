@@ -148,36 +148,36 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
         return 'complex'
 
 
-def _generate_bad_legs_error_message(set_vals:set, ligpair:tuple[str])->str:
+def _generate_bad_legs_error_message(leg_types:set[str], ligpair:tuple[str])->str:
     expected_rbfe = {'complex', 'solvent'}
     expected_rhfe = {'solvent', 'vacuum'}
-    maybe_rhfe = bool(set_vals & expected_rhfe)
-    maybe_rbfe = bool(set_vals & expected_rbfe)
+    maybe_rhfe = bool(leg_types & expected_rhfe)
+    maybe_rbfe = bool(leg_types & expected_rbfe)
     if maybe_rhfe and not maybe_rbfe:
         msg = (
                 "This appears to be an RHFE calculation, but we're "
-                f"missing {expected_rhfe - set_vals} runs for the "
+                f"missing {expected_rhfe - leg_types} runs for the "
                 f"edge with ligands {ligpair}."
             )
     elif maybe_rbfe and not maybe_rhfe:
         msg = (
             "This appears to be an RBFE calculation, but we're "
-            f"missing {expected_rbfe - set_vals} runs for the "
+            f"missing {expected_rbfe - leg_types} runs for the "
             f"edge with ligands {ligpair}."
         )
     elif maybe_rbfe and maybe_rhfe:
         msg = (
             "Unable to determine whether this is an RBFE "
-            f"or an RHFE calculation. Found legs {set_vals} "
+            f"or an RHFE calculation. Found legs {leg_types} "
             f"for ligands {ligpair}. Those ligands are missing one "
-            f"of: {(expected_rhfe | expected_rbfe) - set_vals}."
+            f"of: {(expected_rhfe | expected_rbfe) - leg_types}."
         )
     else:  # -no-cov-
         # this should never happen
         msg = (
             "Something went very wrong while determining the type "
             f"of RFE calculation. For the ligand pair {ligpair}, "
-            f"we found legs labelled {set_vals}. We expected either "
+            f"we found legs labelled {leg_types}. We expected either "
             f"{expected_rhfe} or {expected_rbfe}."
         )
 
@@ -206,14 +206,15 @@ def _get_ddgs(legs:dict, error_on_missing=True):
 
     DDGs = []
     for ligpair, vals in sorted(legs.items()):
-        set_vals = set(vals)
+        # import pdb;pdb.set_trace()
+        leg_types = set(vals)
         DDGbind = None
         DDGhyd = None
         bind_unc = None
         hyd_unc = None
 
-        do_rbfe = (len(set_vals & {'complex', 'solvent'}) == 2)
-        do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
+        do_rbfe = (len(leg_types & {'complex', 'solvent'}) == 2)
+        do_rhfe = (len(leg_types & {'vacuum', 'solvent'}) == 2)
 
         if do_rbfe:
             DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
@@ -235,7 +236,7 @@ def _get_ddgs(legs:dict, error_on_missing=True):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            msg = _generate_bad_legs_error_message(set_vals, ligpair)
+            msg = _generate_bad_legs_error_message(leg_types, ligpair)
             if error_on_missing:
                 raise RuntimeError(msg)
             else:

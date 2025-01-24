@@ -177,7 +177,6 @@ def test_gather(request, data_fixture, report):
     assert_click_success(result)
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
-
     assert set(expected.split(b'\n')) == actual_lines
 
 
