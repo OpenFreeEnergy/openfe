@@ -197,7 +197,7 @@ def test_generate_bad_legs_error_message(include):
 
 class TestGatherFailedEdges:
     @pytest.fixture()
-    def results_dir_serial_missing_leg(self, tmpdir)->str:
+    def results_dir_serial_missing_legs(self, tmpdir)->str:
         """Example output data, with replicates run in serial and one deleted results JSON."""
         with tmpdir.as_cwd():
             with resources.files('openfecli.tests.data') as d:
@@ -205,24 +205,28 @@ class TestGatherFailedEdges:
                 tar.extractall('.')
 
                 results_dir_path = os.path.abspath(tar.getnames()[0])
-                file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-                (pathlib.Path(results_dir_path)/ file_to_remove).unlink()
+                files_to_remove = ["easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
+                                   "easy_rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
+                                   ]
+                for fname in files_to_remove:
+                    (pathlib.Path(results_dir_path)/ fname).unlink()
         return results_dir_path
 
-    def test_missing_leg_error(self, results_dir_serial_missing_leg: str):
+    def test_missing_leg_error(self, results_dir_serial_missing_legs: str):
         runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['-o', '-'])
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['-o', '-'])
 
         assert result.exit_code == 1
         assert isinstance(result.exception, RuntimeError)
         assert "Unable to determine" in str(result.exception)
         assert "'lig_ejm_31'" in str(result.exception)
         assert "'lig_ejm_42'" in str(result.exception)
+        assert "'lig_ejm_46'" in str(result.exception)
+        assert "'lig_jmc_28'" in str(result.exception)
 
-
-    def test_missing_leg_allow_partial(self, results_dir_serial_missing_leg: str):
+    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
         runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_leg] + ['--allow-partial', '-o', '-'])
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
 
         assert_click_success(result)
 

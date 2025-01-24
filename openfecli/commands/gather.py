@@ -148,7 +148,7 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
         return 'complex'
 
 
-def _generate_bad_legs_error_message(set_vals:set, ligpair)->str:
+def _generate_bad_legs_error_message(set_vals:set, ligpair:tuple[str])->str:
     expected_rbfe = {'complex', 'solvent'}
     expected_rhfe = {'solvent', 'vacuum'}
     maybe_rhfe = bool(set_vals & expected_rhfe)
