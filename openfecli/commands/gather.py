@@ -149,20 +149,20 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
 
 
 def _generate_bad_legs_error_message(leg_types:set[str], ligpair:tuple[str])->str:
-    expected_rbfe = {'complex', 'solvent'}
-    expected_rhfe = {'solvent', 'vacuum'}
-    maybe_rhfe = bool(leg_types & expected_rhfe)
-    maybe_rbfe = bool(leg_types & expected_rbfe)
+    expected_rbfe_types = {'complex', 'solvent'}
+    expected_rhfe_types = {'solvent', 'vacuum'}
+    maybe_rhfe = bool(leg_types & expected_rhfe_types)
+    maybe_rbfe = bool(leg_types & expected_rbfe_types)
     if maybe_rhfe and not maybe_rbfe:
         msg = (
                 "This appears to be an RHFE calculation, but we're "
-                f"missing {expected_rhfe - leg_types} runs for the "
+                f"missing {expected_rhfe_types - leg_types} runs for the "
                 f"edge with ligands {ligpair}."
             )
     elif maybe_rbfe and not maybe_rhfe:
         msg = (
             "This appears to be an RBFE calculation, but we're "
-            f"missing {expected_rbfe - leg_types} runs for the "
+            f"missing {expected_rbfe_types - leg_types} runs for the "
             f"edge with ligands {ligpair}."
         )
     elif maybe_rbfe and maybe_rhfe:
@@ -170,7 +170,7 @@ def _generate_bad_legs_error_message(leg_types:set[str], ligpair:tuple[str])->st
             "Unable to determine whether this is an RBFE "
             f"or an RHFE calculation. Found legs {leg_types} "
             f"for ligands {ligpair}. Those ligands are missing one "
-            f"of: {(expected_rhfe | expected_rbfe) - leg_types}."
+            f"of: {(expected_rhfe_types | expected_rbfe_types) - leg_types}."
         )
     else:  # -no-cov-
         # this should never happen
@@ -178,7 +178,7 @@ def _generate_bad_legs_error_message(leg_types:set[str], ligpair:tuple[str])->st
             "Something went very wrong while determining the type "
             f"of RFE calculation. For the ligand pair {ligpair}, "
             f"we found legs labelled {leg_types}. We expected either "
-            f"{expected_rhfe} or {expected_rbfe}."
+            f"{expected_rhfe_types} or {expected_rbfe_types}."
         )
 
     msg += (
