@@ -32,9 +32,9 @@ DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
 
 
 def _get_mda_selection(
-    universe: mda.Universe,
-    atom_list: Optional[list[int]],
-    selection: Optional[str]
+    universe: Union[mda.Universe, mda.AtomGroup],
+    atom_list: Optional[list[int]] = None,
+    selection: Optional[str] = None,
 ) -> mda.AtomGroup:
     """
     Return an AtomGroup based on either a list of atom indices or an
@@ -42,8 +42,8 @@ def _get_mda_selection(
 
     Parameters
     ----------
-    universe : mda.Universe
-      The MDAnalysis Universe to get the AtomGroup from.
+    universe : Union[mda.Universe, mda.AtomGroup]
+      The MDAnalysis Universe or AtomGroup to get the AtomGroup from.
     atom_list : Optional[list[int]]
       A list of atom indices.
     selection : Optional[str]
@@ -244,6 +244,28 @@ def is_collinear(
     return result
 
 
+def _wrap_angle(angle: unit.Quantity) -> unit.Quantity:
+    """
+    Wrap an angle to -pi to pi radians.
+
+    Parameters
+    ----------
+    angle : unit.Quantity
+      An angle in radians compatible units.
+
+    Returns
+    -------
+    unit.Quantity
+      The angle in units of radians wrapped.
+
+    Notes
+    -----
+    Print automatically converts the angle to radians
+    as it passes it through arctan2.
+    """
+    return np.arctan2(np.sin(angle), np.cos(angle))
+
+
 def check_angle_not_flat(
     angle: unit.Quantity,
     force_constant: unit.Quantity = DEFAULT_ANGLE_FRC_CONSTANT,
@@ -276,7 +298,7 @@ def check_angle_not_flat(
     This code was initially contributed by Vytautas Gapsys.
     """
     # Convert things
-    angle_rads = angle.to("radians")
+    angle_rads = _wrap_angle(angle)
     frc_const = force_constant.to("unit.kilojoule_per_mole / unit.radians**2")
     temp_kelvin = temperature.to("kelvin")
     RT = 8.31445985 * 0.001 * temp_kelvin
@@ -298,7 +320,10 @@ def check_dihedral_bounds(
 ) -> bool:
     """
     Check that a dihedral does not exceed the bounds set by
-    lower_cutoff and upper_cutoff.
+    lower_cutoff and upper_cutoff on a -pi to pi range.
+
+    All angles and cutoffs are wrapped to -pi to pi before
+    applying the check.
 
     Parameters
     ----------
@@ -315,7 +340,10 @@ def check_dihedral_bounds(
       ``True`` if the dihedral is within the upper and lower
       cutoff bounds.
     """
-    if (dihedral < lower_cutoff) or (dihedral > upper_cutoff):
+    dihed = _wrap_angle(dihedral)
+    lower = _wrap_angle(lower_cutoff)
+    upper = _wrap_angle(upper_cutoff)
+    if (dihed < lower) or (dihed > upper):
         return False
     return True
 
@@ -348,6 +376,8 @@ def check_angular_variance(
       ``True`` if the variance of the angles is less than the width.
 
     """
+    # scipy circ methods already recasts internally so we shouldn't
+    # need to wrap the angles
     variance = circvar(
         angles.to("radians").m,
         high=upper_bound.to("radians").m,
@@ -447,7 +477,7 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
 
 
 def _atomgroup_has_bonds(
-    atomgroup: Union[mda.Atomgroup, mda.Universe]
+    atomgroup: Union[mda.AtomGroup, mda.Universe]
 ) -> bool:
     """
     Check if all residues in an AtomGroup or Univese has bonds.

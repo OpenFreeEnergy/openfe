@@ -223,7 +223,7 @@ def T4_protein_component():
     return comp
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def eg5_protein_pdb():
     with resources.files('openfe.tests.data.eg5') as d:
         yield str(d / 'eg5_protein.pdb')
