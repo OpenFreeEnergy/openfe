@@ -14,6 +14,8 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     get_aromatic_rings,
     get_aromatic_atom_idxs,
     get_heavy_atom_idxs,
+    get_central_atom_idx,
+    is_collinear,
     _wrap_angle,
     check_dihedral_bounds,
 )
@@ -113,6 +115,34 @@ def test_heavy_atoms(smiles, nheavy, nlight):
 
     assert len(heavy_atoms) == nheavy
     assert n_atoms == nheavy + nlight
+
+
+def test_central_atom_disconnected():
+    mol = Chem.AddHs(Chem.MolFromSmiles('C.C'))
+
+    with pytest.raises(ValueError, match='disconnected molecule'):
+        _ = get_central_atom_idx(mol)
+
+
+def test_collinear_too_few_atoms():
+    with pytest.raises(ValueError, match='Too few atoms passed'):
+        _ = is_collinear(None, [1, 2], None)
+
+
+def test_collinear_index_match_error_length():
+    with pytest.raises(ValueError, match='indices do not match'):
+        _ = is_collinear(
+            positions=np.zeros((3, 3)),
+            atoms=[0, 1, 2, 3],
+        )
+
+
+def test_collinear_index_match_error_index():
+    with pytest.raises(ValueError, match='indices do not match'):
+        _ = is_collinear(
+            positions=np.zeros((3, 3)),
+            atoms=[1, 2, 3],
+        )
 
 
 def test_wrap_angle_degrees():
