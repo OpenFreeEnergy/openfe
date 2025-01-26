@@ -13,6 +13,7 @@ from rdkit import Chem
 
 from openff.units import unit
 import MDAnalysis as mda
+import numpy as np
 import numpy.typing as npt
 
 from openfe.protocols.restraint_utils.geometry.utils import (
@@ -152,7 +153,7 @@ def _get_guest_atom_pool(
     # Note: no need to keep track of rings because we'll filter by
     # bonded terms after, so if we only keep rings then all the bonded
     # atoms should be within the same ring system.
-    atom_pool: set[tuple[int]] = set()
+    atom_pool: set[int] = set()
     ring_atoms_only: bool = True
     for ring in get_aromatic_rings(rdmol):
         max_rmsf = rmsf[list(ring)].max()
@@ -162,7 +163,7 @@ def _get_guest_atom_pool(
     # if we don't have enough atoms just get all the heavy atoms
     if len(atom_pool) < 3:
         ring_atoms_only = False
-        heavy_atoms = get_heavy_atom_idxs(rdmol)
+        heavy_atoms = np.array(get_heavy_atom_idxs(rdmol))
         atom_pool = set(heavy_atoms[rmsf[heavy_atoms] < rmsf_cutoff])
         if len(atom_pool) < 3:
             return None, False

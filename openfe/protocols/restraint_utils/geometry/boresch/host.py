@@ -67,20 +67,34 @@ def find_host_atom_candidates(
     """
     # Get an AtomGroup for the host based on the input host indices
     host_ag = universe.atoms[host_idxs]
-    # If requested, filter the host atoms based on if their residues exist
-    # within stable secondary structures.
-    if dssp_filter:
-        try:
-            host_ag = stable_secondary_structure_selection(host_ag)
-        except ValueError:
-            wmsg = (
-                "DSSP filtering was requested but either insufficient "
-                "protein residues were found or the DSSP calculation failed."
-            )
-            warnings.warn(wmsg)
 
     # Filter the host AtomGroup based on ``host_selection`
     selected_host_ag = host_ag.select_atoms(host_selection)
+
+    # If requested, filter the host atoms based on if their residues exist
+    # within stable secondary structures.
+    if dssp_filter:
+        # TODO: allow user-supplied kwargs here
+        stable_ag = stable_secondary_structure_selection(selected_host_ag)
+
+        if len(stable_ag) < 20:
+            wmsg = (
+                "Secondary structure filtering: "
+                "Too few atoms found via secondary strcuture filtering will "
+                "try to only select all residues in protein chains instead."
+            )
+            warnings.warn(wmsg)
+            stable_ag = protein_chain_selection(selected_host_ag)
+
+        if len(stable_ag) < 20:
+            wmsg = (
+                "Secondary structure filtering: "
+                "Too few atoms found in protein residue chains, will just "
+                "use all atoms."
+            )
+            warnings.warn(wmsg)
+        else:
+            selected_host_ag = stable_ag
 
     # 1. Get the RMSF & filter to create a new AtomGroup
     rmsf = get_local_rmsf(selected_host_ag)
