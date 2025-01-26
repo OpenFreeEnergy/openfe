@@ -13,6 +13,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     _get_mda_selection,
     get_aromatic_rings,
     get_aromatic_atom_idxs,
+    get_heavy_atom_idxs,
     _wrap_angle,
     check_dihedral_bounds,
 )
@@ -86,6 +87,27 @@ def test_aromatic_rings(smiles, expected):
     for idx in arom_idxs:
         at = mol.GetAtomWithIdx(idx)
         assert at.GetIsAromatic()
+
+@pytest.mark.parametrize('smiles, nheavy, nlight', [
+    ['C1CCCCC1', 6, 12],
+    ['[C@@H]1([C@@H]([C@@H](OC([C@@H]1O)O)C(=O)O)O)O', 13, 10],
+    ['C1=CC=CC=C1', 6, 6],
+    ['C1=CC2C=CC1C=C2', 8, 8],
+    ['C1CC2=CC=CC=C2C1', 9, 10],
+    ['C1=COC=C1', 5, 4],
+    ['C1=CC=C2C=CC=CC2=C1', 10, 8],
+    ['C1=CC=C(C=C1)C2=CC=CC=C2', 12, 10],
+    ['C1=CC=C(C=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3Cl)N4C=CN=C4', 25, 17]
+])
+def test_heavy_atoms(smiles, nheavy, nlight):
+    mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+
+    n_atoms = len(list(mol.GetAtoms()))
+
+    heavy_atoms = get_heavy_atom_idxs(mol)
+
+    assert len(heavy_atoms) == nheavy
+    assert n_atoms == nheavy + nlight
 
 
 def test_wrap_angle_degrees():
