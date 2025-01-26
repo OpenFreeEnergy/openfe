@@ -106,6 +106,11 @@ def test_heavy_atoms(smiles, nheavy, nlight):
 
     heavy_atoms = get_heavy_atom_idxs(mol)
 
+    # check all the heavy atoms are indeed heavy
+    for idx in heavy_atoms:
+        at = mol.GetAtomWithIdx(idx)
+        assert at.GetAtomicNum() > 1
+
     assert len(heavy_atoms) == nheavy
     assert n_atoms == nheavy + nlight
 
