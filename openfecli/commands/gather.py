@@ -147,7 +147,20 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
     else:
         return 'complex'
 
-def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
+def _generate_ddg_bad_legs_error_msg(bad_legs:list[tuple[set[str], tuple[str]]])->str:
+    """Attempt to determine whether the legs belong to a RHFE or RBFE calculation
+    and generate an error message accordingly.
+
+    Parameters
+    ----------
+    bad_legs : list[set[str], tuple[str]]]
+        A list of tuples of (leg_types, ligpair) pairs from failed edges/legs.
+
+    Returns
+    -------
+    str
+        An error message containing information on all failed legs.
+    """
     msg="\nThe following legs are invalid:\n"
     for leg_types, ligpair in bad_legs:
         expected_rbfe_types = {'complex', 'solvent'}
@@ -239,14 +252,14 @@ def _get_ddgs(legs:dict, error_on_missing=True):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            # err_msg += _generate_bad_legs_error_message(leg_types, ligpair) +"\n\n"
+            # err_msg += _generate_ddg_bad_legs_error_msg(leg_types, ligpair) +"\n\n"
             bad_legs.append((leg_types, ligpair))
             continue
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     if bad_legs:
-        err_msg = _generate_bad_legs_error_message(bad_legs)
+        err_msg = _generate_ddg_bad_legs_error_msg(bad_legs)
         if error_on_missing:
             raise RuntimeError(err_msg)
         else:
