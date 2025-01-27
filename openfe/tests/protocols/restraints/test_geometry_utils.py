@@ -18,6 +18,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     is_collinear,
     _wrap_angle,
     check_dihedral_bounds,
+    _atomgroup_has_bonds,
 )
 
 
@@ -117,6 +118,26 @@ def test_heavy_atoms(smiles, nheavy, nlight):
     assert n_atoms == nheavy + nlight
 
 
+@pytest.mark.parametrize('smiles, idx', [
+    ['C1CCCCC1', 2],
+    ['[C@@H]1([C@@H]([C@@H](OC([C@@H]1O)O)C(=O)O)O)O', 3],
+    ['C1=CC=CC=C1', 2],
+    ['C1=CC2C=CC1C=C2', 2],
+    ['C1CC2=CC=CC=C2C1', 2],
+    ['C1=COC=C1', 4],
+    ['C1=CC=C2C=CC=CC2=C1', 3],
+    ['C1=CC=C(C=C1)C2=CC=CC=C2', 6],
+    ['C1=CC=C(C=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3Cl)N4C=CN=C4', 6],
+    ['OC(COc1ccc(cc1)CC(=O)N)CNC(C)C', 3],
+])
+def test_central_idx(smiles, idx):
+    """
+    Regression tests for getting central atom idx.
+    """
+    rdmol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    assert get_central_atom_idx(rdmol) == idx
+
+
 def test_central_atom_disconnected():
     mol = Chem.AddHs(Chem.MolFromSmiles('C.C'))
 
@@ -212,3 +233,23 @@ def test_check_dihedral_bounds_defined(dihed, lower, upper, expected):
         dihed, lower_cutoff=lower, upper_cutoff=upper
     )
     assert ret == expected
+
+
+def test_atomgroup_has_bonds(eg5_protein_pdb):
+    # Creating a new universe because we'll modify this one
+    u = mda.Universe(eg5_protein_pdb)
+
+    # PDB has water bonds
+    assert len(u.bonds) == 14
+    assert _atomgroup_has_bonds(u) is False
+    assert _atomgroup_has_bonds(u.select_atoms('resname HOH')) is True
+
+    # Delete the topoplogy attr and everything is false
+    u.del_TopologyAttr('bonds')
+    assert _atomgroup_has_bonds(u) is False
+    assert _atomgroup_has_bonds(u.select_atoms('resname HOH')) is False
+
+    # Guess some bonds back
+    ag = u.atoms[:100]
+    ag.guess_bonds()
+    assert _atomgroup_has_bonds(ag) is True

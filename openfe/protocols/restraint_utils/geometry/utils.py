@@ -695,7 +695,7 @@ def protein_chain_selection(
             "No bonds found in input Universe, will attept to guess them."
         )
         warnings.warn(wmsg)
-        protein_ag.guess_bonds()
+        copy_protein_ag.guess_bonds()
 
     copy_chains_ags_list = []
 
@@ -706,10 +706,10 @@ def protein_chain_selection(
             continue
 
         chain = frag.residues[trim_chain_start:-trim_chain_end].atoms
-        copy_chain_ags_list.append(chain)
+        copy_chains_ags_list.append(chain)
 
     # Create a single atomgroup from all chains
-    copy_chains_ag = sum(copy_chain_ags_list)
+    copy_chains_ag = sum(copy_chains_ags_list)
 
     # Now get a list of all the chain atoms in the original Universe
     # Resindexes are keyed at the Universe scale not AtomGroup
