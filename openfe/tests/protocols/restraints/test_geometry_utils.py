@@ -16,8 +16,10 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     get_heavy_atom_idxs,
     get_central_atom_idx,
     is_collinear,
+    check_angle_not_flat,
     _wrap_angle,
     check_dihedral_bounds,
+    check_angular_variance,
     _atomgroup_has_bonds,
 )
 
@@ -211,6 +213,26 @@ def test_wrap_angle_radians(angle, expected):
     assert _wrap_angle(angle) == pytest.approx(expected)
 
 
+@pytest.mark.parametrize('limit, force, temperature', [
+    [0.7695366605411506, 83.68, 298.15],
+    [0.8339791717799163, 83.68, 350.0],
+    [0.5441445910402979, 167.36, 298.15]
+])
+def test_angle_not_flat(limit, force, temperature):
+    limit = limit * unit.radians
+    force = force * unit.kilojoule_per_mole / unit.radians ** 2
+    temperature = temperature * unit.kelvin
+
+    # test upper
+    assert check_angle_not_flat(limit + 0.01, force, temperature)
+    assert not check_angle_not_flat(limit - 0.01, force, temperature)
+
+    # test lower
+    limit = np.pi - limit
+    assert check_angle_not_flat(limit - 0.01, force, temperature)
+    assert not check_angle_not_flat(limit + 0.01, force, temperature)
+
+
 @pytest.mark.parametrize('dihed, expected', [
     [3 * unit.radians, False],
     [0 * unit.radians, True],
@@ -233,6 +255,28 @@ def test_check_dihedral_bounds_defined(dihed, lower, upper, expected):
         dihed, lower_cutoff=lower, upper_cutoff=upper
     )
     assert ret == expected
+
+
+def test_angular_variance():
+    """
+    Manual check with for an input number of angles with
+    a known variance of 0.36216
+    """
+    angles = [0, 1, 2, 6]
+
+    assert check_angular_variance(
+        angles=angles * unit.radians,
+        upper_bound=np.pi * unit.radians,
+        lower_bound=-np.pi * unit.radians,
+        width=0.37 * unit.radians
+    )
+
+    assert not check_angular_variance(
+        angles=angles * unit.radians,
+        upper_bound=np.pi * unit.radians,
+        lower_bound=-np.pi * unit.radians,
+        width=0.35 * unit.radians
+    )
 
 
 def test_atomgroup_has_bonds(eg5_protein_pdb):

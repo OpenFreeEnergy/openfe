@@ -365,7 +365,7 @@ def check_angular_variance(
 
     Parameters
     ----------
-    angles : ArrayLike[unit.Quantity]
+    angles : ArrayLike unit.Quantity
       An array of angles in units compatible with radians.
     upper_bound: unit.Quantity
       The upper bound in the angle range in radians compatible units.
