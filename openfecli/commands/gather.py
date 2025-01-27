@@ -147,39 +147,40 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
     else:
         return 'complex'
 
-
-def _generate_bad_legs_error_message(leg_types:set[str], ligpair:tuple[str])->str:
-    expected_rbfe_types = {'complex', 'solvent'}
-    expected_rhfe_types = {'solvent', 'vacuum'}
-    maybe_rhfe = bool(leg_types & expected_rhfe_types)
-    maybe_rbfe = bool(leg_types & expected_rbfe_types)
-    if maybe_rhfe and not maybe_rbfe:
-        msg = (
-                "This appears to be an RHFE calculation, but we're "
-                f"missing {expected_rhfe_types - leg_types} runs for the "
-                f"edge with ligands {ligpair}."
+def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
+    msg="\nThe following legs are invalid:\n"
+    for leg_types, ligpair in bad_legs:
+        expected_rbfe_types = {'complex', 'solvent'}
+        expected_rhfe_types = {'solvent', 'vacuum'}
+        maybe_rhfe = bool(leg_types & expected_rhfe_types)
+        maybe_rbfe = bool(leg_types & expected_rbfe_types)
+        if maybe_rhfe and not maybe_rbfe:
+            msg += (
+                f"{ligpair}:\n"
+                "\tAssuming this is an RHFE calculation, "
+                f"this edge is missing {expected_rhfe_types - leg_types} runs.\n"
+                )
+        elif maybe_rbfe and not maybe_rhfe:
+            msg += (
+                f"{ligpair}:\n"
+                "\tAssuming this is an RBFE calculation, "
+                f"this edge is missing {expected_rbfe_types - leg_types} runs.\n"
             )
-    elif maybe_rbfe and not maybe_rhfe:
-        msg = (
-            "This appears to be an RBFE calculation, but we're "
-            f"missing {expected_rbfe_types - leg_types} runs for the "
-            f"edge with ligands {ligpair}."
-        )
-    elif maybe_rbfe and maybe_rhfe:
-        msg = (
-            "Unable to determine whether this is an RBFE "
-            f"or an RHFE calculation. Found legs {leg_types} "
-            f"for ligands {ligpair}. Those ligands are missing one "
-            f"of: {(expected_rhfe_types | expected_rbfe_types) - leg_types}."
-        )
-    else:  # -no-cov-
-        # this should never happen
-        msg = (
-            "Something went very wrong while determining the type "
-            f"of RFE calculation. For the ligand pair {ligpair}, "
-            f"we found legs labelled {leg_types}. We expected either "
-            f"{expected_rhfe_types} or {expected_rbfe_types}."
-        )
+        elif maybe_rbfe and maybe_rhfe:
+            msg += (
+                f"{ligpair}: \n"
+                "\tUnable to determine whether edge belongs to an RBFE or an RHFE calculation.\n"
+                f"\tRuns were found for this edge labelled {leg_types}.\n"
+                f"\tThis edge is missing one of: {(expected_rhfe_types | expected_rbfe_types) - leg_types}.\n"
+            )
+        else:  # -no-cov-
+            # this should never happen
+            msg += (
+                f"{ligpair}: \n"
+                "\tSomething went very wrong while determining the type of RFE calculation."
+                f"\tWe found legs labelled {leg_types}."
+                f"\tWe expected either {expected_rhfe_types} or {expected_rbfe_types}.\n\n"
+            )
 
     msg += (
         "\nYou can force partial gathering of results, without "
@@ -205,8 +206,8 @@ def _get_ddgs(legs:dict, error_on_missing=True):
     from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
 
     DDGs = []
-    err_msg = ""
-
+    # err_msg = ""
+    bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         # import pdb;pdb.set_trace()
         leg_types = set(vals)
@@ -238,12 +239,14 @@ def _get_ddgs(legs:dict, error_on_missing=True):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            err_msg += _generate_bad_legs_error_message(leg_types, ligpair) +"\n\n"
+            # err_msg += _generate_bad_legs_error_message(leg_types, ligpair) +"\n\n"
+            bad_legs.append((leg_types, ligpair))
             continue
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
-    if err_msg:
+    if bad_legs:
+        err_msg = _generate_bad_legs_error_message(bad_legs)
         if error_on_missing:
             raise RuntimeError(err_msg)
         else:
