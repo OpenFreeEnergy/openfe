@@ -189,8 +189,8 @@ def test_generate_bad_legs_error_message(include):
                     "'complex'", "'solvent'"),
     }[include]
     set_vals = {include}
-    ligpair = {'lig1', 'lig2'}
-    msg = _generate_bad_legs_error_message(set_vals, ligpair)
+    ligpair = ('lig1', 'lig2')
+    msg = _generate_bad_legs_error_message([(set_vals, ligpair)])
     for string in expected:
         assert string in msg
 
