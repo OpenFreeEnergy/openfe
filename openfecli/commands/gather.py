@@ -182,7 +182,7 @@ def _generate_bad_legs_error_message(leg_types:set[str], ligpair:tuple[str])->st
         )
 
     msg += (
-        "\n\nYou can force partial gathering of results, without "
+        "\nYou can force partial gathering of results, without "
         "problematic edges, by using the --allow-partial flag of the gather "
         "command. Note that this may cause problems with predicting "
         "absolute free energies from the relative free energies."
@@ -238,7 +238,7 @@ def _get_ddgs(legs:dict, error_on_missing=True):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            err_msg += _generate_bad_legs_error_message(leg_types, ligpair)
+            err_msg += _generate_bad_legs_error_message(leg_types, ligpair) +"\n\n"
             continue
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
