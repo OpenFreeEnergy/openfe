@@ -196,6 +196,13 @@ def is_collinear(
     """
     Check whether any sequential vectors in a sequence of atoms are collinear.
 
+    Approach: for each sequential set of 3 atoms (defined as A, B, and C),
+    calculates the nomralized inner product (i.e. cos^-1(angle)) between
+    vectors AB adn BC. If the absolute value  of this inner product is
+    close to 1 (i.e. an angle of 0 radians), then the three atoms are
+    considered as colinear. You can use ``threshold`` to define how close
+    to 1 is considered "flat".
+
     Parameters
     ----------
     positions : npt.ArrayLike
@@ -229,14 +236,12 @@ def is_collinear(
 
     result = False
     for i in range(len(atoms) - 2):
-        v1 = minimize_vectors(
-            positions[atoms[i + 1], :] - positions[atoms[i], :],
-            box=dimensions,
-        )
-        v2 = minimize_vectors(
-            positions[atoms[i + 2], :] - positions[atoms[i + 1], :],
-            box=dimensions,
-        )
+        v1 = positions[atoms[i + 1], :] - positions[atoms[i], :]
+        v2 = positions[atoms[i + 2], :] - positions[atoms[i + 1], :]
+        if dimensions is not None:
+            v1 = minimize_vectors(v1, box=dimensions)
+            v2 = minimize_vectors(v2, box=dimensions)
+
         normalized_inner_product = np.dot(v1, v2) / np.sqrt(
             np.dot(v1, v1) * np.dot(v2, v2)
         )

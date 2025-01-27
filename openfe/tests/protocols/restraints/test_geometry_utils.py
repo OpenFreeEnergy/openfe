@@ -145,6 +145,30 @@ def test_collinear_index_match_error_index():
         )
 
 
+@pytest.mark.parametrize('arr, truth', [
+    [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], True],
+    [[[0, 1, -1], [1, 0, 0], [2, 0, 2]], False],
+    [[[0, 1, -1], [1, 1, 0], [2, 1, 2]], True],
+    [[[0, 0, -1], [1, 1, 0], [2, 2, 2]], True],
+    [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], True],
+    [[[2, 0, -1], [1, 0, 0], [0, 0, 2]], True],
+    [[[0, 0, 1], [0, 0, 0], [0, 0, 2]], True],
+    [[[1, 1, 1], [0, 0, 0], [2, 2, 2]], True]
+])
+def test_is_collinear_three_atoms(arr, truth):
+    assert is_collinear(np.array(arr), [0, 1, 2]) == truth
+
+
+@pytest.mark.parametrize('arr, truth', [
+    [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], True],
+    [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], True],
+    [[[0, 0, 1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], True],
+    [[[0, 1, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], False],
+])
+def test_is_collinear_four_atoms(arr, truth):
+    assert is_collinear(np.array(arr), [0, 1, 2, 3]) == truth
+
+
 def test_wrap_angle_degrees():
     for i in range(0, 361, 1):
         angle = _wrap_angle(i * unit.degrees)
