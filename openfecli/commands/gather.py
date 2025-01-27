@@ -182,7 +182,7 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
         elif maybe_rbfe and maybe_rhfe:
             msg += (
                 f"{ligpair}: \n"
-                "\tUnable to determine whether edge belongs to an RBFE or an RHFE calculation.\n"
+                "\tUnable to determine whether this edge belongs to an RBFE or an RHFE calculation.\n"
                 f"\tRuns labelled {leg_types} were found for this edge,"
                 f"this edge is missing one of: {(expected_rhfe_types | expected_rbfe_types) - leg_types}.\n"
             )

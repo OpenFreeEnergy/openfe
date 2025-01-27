@@ -183,9 +183,9 @@ def test_gather(request, data_fixture, report):
 @pytest.mark.parametrize('include', ['complex', 'solvent', 'vacuum'])
 def test_generate_bad_legs_error_message(include):
     expected = {
-        'complex': ("appears to be an RBFE", "missing {'solvent'}"),
-        'vacuum': ("appears to be an RHFE", "missing {'solvent'}"),
-        'solvent': ("whether this is an RBFE or an RHFE",
+        'complex': ("Assuming this is an RBFE", "missing {'solvent'}"),
+        'vacuum': ("Assuming this is an RHFE", "missing {'solvent'}"),
+        'solvent': ("whether this edge belongs to an RBFE or an RHFE",
                     "'complex'", "'solvent'"),
     }[include]
     set_vals = {include}
