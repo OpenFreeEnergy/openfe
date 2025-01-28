@@ -473,6 +473,15 @@ class MultiStateOutputSettings(OutputSettings):
     """
 
 
+    @validator('positions_write_frequency', 'velocities_write_frequency')
+    def must_be_positive(cls, v):
+        if v is not None and v < 0:
+            errmsg = ("Position_write_frequency and velocities_write_frequency"
+                      f" must be positive (or None), got {v}.")
+            raise ValueError(errmsg)
+        return v
+
+
 class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths, etc...
