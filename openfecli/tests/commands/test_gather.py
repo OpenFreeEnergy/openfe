@@ -231,23 +231,3 @@ RBFE_RESULTS = pooch.create(
     base_url="doi:10.6084/m9.figshare.25148945",
     registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
 )
-
-
-@pytest.fixture
-def rbfe_results():
-    # fetches rbfe results from online
-    # untars into local directory and returns path to this
-    d = RBFE_RESULTS.fetch('results.tar.gz', processor=pooch.Untar())
-
-    return os.path.join(pooch.os_cache('openfe'), 'results.tar.gz.untar', 'results')
-
-
-@pytest.mark.download
-@pytest.mark.xfail  # these results are outdated
-def test_rbfe_results(rbfe_results):
-    runner = CliRunner()
-
-    result = runner.invoke(gather, ['--report', 'raw', rbfe_results])
-
-    assert result.exit_code == 0
-    assert result.stdout_bytes == _EXPECTED_RAW
