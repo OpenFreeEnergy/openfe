@@ -11,11 +11,9 @@ from typing import Union, Optional
 from itertools import combinations, groupby
 import numpy as np
 import numpy.typing as npt
-import pathlib
 from scipy.stats import circvar
 import warnings
 
-import openmm
 from openff.toolkit import Molecule as OFFMol
 from openff.units import unit
 import networkx as nx
@@ -25,7 +23,6 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rms import RMSF
 from MDAnalysis.analysis.dssp import DSSP
 from MDAnalysis.lib.distances import minimize_vectors, capped_distance
-from MDAnalysis.coordinates.memory import MemoryReader
 from MDAnalysis.transformations.nojump import NoJump
 
 from openfe_analysis.transformations import Aligner
@@ -35,9 +32,9 @@ DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
 
 
 def _get_mda_selection(
-    universe: mda.Universe,
-    atom_list: Optional[list[int]],
-    selection: Optional[str]
+    universe: Union[mda.Universe, mda.AtomGroup],
+    atom_list: Optional[list[int]] = None,
+    selection: Optional[str] = None,
 ) -> mda.AtomGroup:
     """
     Return an AtomGroup based on either a list of atom indices or an
@@ -45,8 +42,8 @@ def _get_mda_selection(
 
     Parameters
     ----------
-    universe : mda.Universe
-      The MDAnalysis Universe to get the AtomGroup from.
+    universe : Union[mda.Universe, mda.AtomGroup]
+      The MDAnalysis Universe or AtomGroup to get the AtomGroup from.
     atom_list : Optional[list[int]]
       A list of atom indices.
     selection : Optional[str]
@@ -77,51 +74,6 @@ def _get_mda_selection(
             )
         ag = universe.atoms[atom_list]
     return ag
-
-
-def _get_mda_coord_format(
-    coordinates: Union[str, pathlib.Path, npt.NDArray]
-) -> Optional[MemoryReader]:
-    """
-    Helper to set the coordinate format to MemoryReader
-    if the coordinates are an NDArray.
-
-    Parameters
-    ----------
-    coordinates : Union[str, pathlib.Path, npt.NDArray]
-
-    Returns
-    -------
-    Optional[MemoryReader]
-      Either the MemoryReader class or None.
-    """
-    if isinstance(coordinates, np.ndarray):
-        return MemoryReader
-    else:
-        return None
-
-
-def _get_mda_topology_format(
-    topology: Union[str, openmm.app.Topology]
-) -> Optional[str]:
-    """
-    Helper to set the topology format to OPENMMTOPOLOGY
-    if the topology is an openmm.app.Topology.
-
-    Parameters
-    ----------
-    topology : Union[str, openmm.app.Topology]
-
-
-    Returns
-    -------
-    Optional[str]
-      The string `OPENMMTOPOLOGY` or None.
-    """
-    if isinstance(topology, openmm.app.Topology):
-        return "OPENMMTOPOLOGY"
-    else:
-        return None
 
 
 def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
@@ -235,13 +187,25 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
     return longest_path[len(longest_path) // 2]
 
 
-def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
+def is_collinear(
+    positions: npt.ArrayLike,
+    atoms: list[int],
+    dimensions=None,
+    threshold=0.9
+):
     """
     Check whether any sequential vectors in a sequence of atoms are collinear.
 
+    Approach: for each sequential set of 3 atoms (defined as A, B, and C),
+    calculates the nomralized inner product (i.e. cos^-1(angle)) between
+    vectors AB adn BC. If the absolute value  of this inner product is
+    close to 1 (i.e. an angle of 0 radians), then the three atoms are
+    considered as colinear. You can use ``threshold`` to define how close
+    to 1 is considered "flat".
+
     Parameters
     ----------
-    positions : openmm.unit.Quantity
+    positions : npt.ArrayLike
       System positions.
     atoms : list[int]
       The indices of the atoms to test.
@@ -261,21 +225,50 @@ def is_collinear(positions, atoms, dimensions=None, threshold=0.9):
     -----
     Originally from Yank.
     """
+    if len(atoms) < 3:
+        raise ValueError("Too few atoms passed for co-linearity test")
+    if len(positions) < len(atoms) or len(positions) < max(atoms) + 1:
+        errmsg = "atoms indices do not match the positions array passed"
+        raise ValueError(errmsg)
+    if not all(isinstance(x, int) for x in atoms):
+        errmsg = "atoms is not a list of index integers"
+        raise ValueError(errmsg)
+
     result = False
     for i in range(len(atoms) - 2):
-        v1 = minimize_vectors(
-            positions[atoms[i + 1], :] - positions[atoms[i], :],
-            box=dimensions,
-        )
-        v2 = minimize_vectors(
-            positions[atoms[i + 2], :] - positions[atoms[i + 1], :],
-            box=dimensions,
-        )
+        v1 = positions[atoms[i + 1], :] - positions[atoms[i], :]
+        v2 = positions[atoms[i + 2], :] - positions[atoms[i + 1], :]
+        if dimensions is not None:
+            v1 = minimize_vectors(v1, box=dimensions)
+            v2 = minimize_vectors(v2, box=dimensions)
+
         normalized_inner_product = np.dot(v1, v2) / np.sqrt(
             np.dot(v1, v1) * np.dot(v2, v2)
         )
         result = result or (np.abs(normalized_inner_product) > threshold)
     return result
+
+
+def _wrap_angle(angle: unit.Quantity) -> unit.Quantity:
+    """
+    Wrap an angle to -pi to pi radians.
+
+    Parameters
+    ----------
+    angle : unit.Quantity
+      An angle in radians compatible units.
+
+    Returns
+    -------
+    unit.Quantity
+      The angle in units of radians wrapped.
+
+    Notes
+    -----
+    Print automatically converts the angle to radians
+    as it passes it through arctan2.
+    """
+    return np.arctan2(np.sin(angle), np.cos(angle))
 
 
 def check_angle_not_flat(
@@ -310,7 +303,7 @@ def check_angle_not_flat(
     This code was initially contributed by Vytautas Gapsys.
     """
     # Convert things
-    angle_rads = angle.to("radians")
+    angle_rads = _wrap_angle(angle)
     frc_const = force_constant.to("unit.kilojoule_per_mole / unit.radians**2")
     temp_kelvin = temperature.to("kelvin")
     RT = 8.31445985 * 0.001 * temp_kelvin
@@ -332,7 +325,10 @@ def check_dihedral_bounds(
 ) -> bool:
     """
     Check that a dihedral does not exceed the bounds set by
-    lower_cutoff and upper_cutoff.
+    lower_cutoff and upper_cutoff on a -pi to pi range.
+
+    All angles and cutoffs are wrapped to -pi to pi before
+    applying the check.
 
     Parameters
     ----------
@@ -349,7 +345,10 @@ def check_dihedral_bounds(
       ``True`` if the dihedral is within the upper and lower
       cutoff bounds.
     """
-    if (dihedral < lower_cutoff) or (dihedral > upper_cutoff):
+    dihed = _wrap_angle(dihedral)
+    lower = _wrap_angle(lower_cutoff)
+    upper = _wrap_angle(upper_cutoff)
+    if (dihed < lower) or (dihed > upper):
         return False
     return True
 
@@ -366,7 +365,7 @@ def check_angular_variance(
 
     Parameters
     ----------
-    angles : ArrayLike[unit.Quantity]
+    angles : ArrayLike unit.Quantity
       An array of angles in units compatible with radians.
     upper_bound: unit.Quantity
       The upper bound in the angle range in radians compatible units.
@@ -382,6 +381,8 @@ def check_angular_variance(
       ``True`` if the variance of the angles is less than the width.
 
     """
+    # scipy circ methods already recasts internally so we shouldn't
+    # need to wrap the angles
     variance = circvar(
         angles.to("radians").m,
         high=upper_bound.to("radians").m,
@@ -480,12 +481,37 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     return rmsf.results.rmsf * unit.angstrom
 
 
+def _atomgroup_has_bonds(
+    atomgroup: Union[mda.AtomGroup, mda.Universe]
+) -> bool:
+    """
+    Check if all residues in an AtomGroup or Univese has bonds.
+
+    Parameters
+    ----------
+    atomgroup : Union[mda.Atomgroup, mda.Universe]
+      Either an MDAnalysis AtomGroup or Universe to check for bonds.
+
+    Returns
+    -------
+    bool
+      True if all residues contain at least one bond, False otherwise.
+    """
+    if not hasattr(atomgroup, 'bonds'):
+        return False
+
+    if not all(len(r.atoms.bonds) > 0 for r in atomgroup.residues):
+        return False
+
+    return True
+
+
 def stable_secondary_structure_selection(
     atomgroup: mda.AtomGroup,
     trim_chain_start: int = 10,
     trim_chain_end: int = 10,
-    min_structure_size: int = 8,
-    trim_structure_ends: int = 3,
+    min_structure_size: int = 6,
+    trim_structure_ends: int = 2,
 ) -> mda.AtomGroup:
     """
     Select all atoms in a given AtomGroup which belong to residues with a
@@ -528,15 +554,12 @@ def stable_secondary_structure_selection(
 
     Returns
     -------
-    AtomGroup
+    AtomGroup : mda.AtomGroup
       An AtomGroup containing all the atoms from the input AtomGroup
       which belong to stable secondary structure residues.
 
     Raises
     ------
-    ValueError
-      If fewer than 30 protein residues are present in the input
-      ``atomgroup``.
     UserWarning
       If there are no bonds for the protein atoms in the input
       host residue. In this case, the bonds will be guessed
@@ -555,30 +578,44 @@ def stable_secondary_structure_selection(
     [1] Baumann, Hannah M., et al. "Broadening the scope of binding free energy
         calculations using a Separated Topologies approach." (2023).
     """
-    # We use "host_ag" to get the entire host
-    protein_ag = atomgroup.select_atoms('protein')
-    if len(protein_ag.residues) < 30:
-        # TODO: make this not fail but warn?
-        errmsg = ("Insufficient protein residues were found -"
-                  " cannot run DSSP filter")
-        raise ValueError(errmsg)
+    # First let's copy our Universe so we don't overwrite its current state
+    copy_u = atomgroup.universe.copy()
+
+    # Create an AtomGroup that contains all the protein residues in the
+    # input Universe - we will filter by what matches in the atomgroup later
+    copy_protein_ag = copy_u.select_atoms('protein').atoms
 
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
-    if not hasattr(protein_ag, 'bonds'):
-        wmsg = (
-            "No bounds found in input Universe, "
-            "will attempt to guess for DSSP assignment"
-        )
+    if not _atomgroup_has_bonds(copy_protein_ag, 'bonds'):
+        wmsg = "No bonds found in input Universe, will attept to guess them."
         warnings.warn(wmsg)
         protein_ag.guess_bonds()
 
     structures = []  # container for all contiguous secondary structure units
+    # Counter for each residue type found
     structure_residue_counts = {'H': 0, 'E': 0, '-': 0}
-    for frag in protein_ag.fragments:
+    # THe minimum length any chain must have
+    min_chain_length = trim_chain_start + trim_chain_end + min_structure_size
+
+    # Loop over each continually bonded section (i.e. chain) of the protein
+    for frag in copy_protein_ag.fragments:
+        # If this fragment is too small, skip processing it
+        if len(frag.residues) < min_chain_length:
+            continue
+
+        # Trim the chain ends
         chain = frag.residues[trim_chain_start:-trim_chain_end].atoms
-        # Run on the last frame
-        dssp = DSSP(chain).run(start=-1)
+
+        try:
+            # Run on the last frame
+            # TODO: maybe filter out any residue that changes secondary
+            # structure during the trajectory
+            dssp = DSSP(chain).run(start=-1)
+        except ValueError:
+            # DSSP may fail if it doesn't recognise the system's atom names
+            # or non-canonical residues are included, in this case just skip
+            continue
 
         # Tag each residue structure by its resindex
         dssp_results = [
@@ -586,9 +623,10 @@ def stable_secondary_structure_selection(
             zip(dssp.results.dssp[0], chain.residues.resindices)
         ]
 
+        # Group by contiguous secondary structure
         for _, group_iter in groupby(dssp_results, lambda x: x[0]):
             group = list(group_iter)
-            if len(group) > min_structure_size:
+            if len(group) >= min_structure_size:
                 structures.append(
                     group[trim_structure_ends:-trim_structure_ends]
                 )
@@ -612,3 +650,71 @@ def stable_secondary_structure_selection(
     # Pick up all the atoms that intersect the initial selection and
     # those allowed.
     return atomgroup.intersection(allowed_atoms)
+
+
+def protein_chain_selection(
+    atomgroup: mda.AtomGroup,
+    trim_chain_start: int = 10,
+    trim_chain_end: int = 10,
+) -> mda.AtomGroup:
+    """
+    Return a sub-selection of the input AtomGroup which belongs to protein
+    chains trimmed by ``trim_chain_start`` and ``trim_chain_end``.
+
+    Protein chains are defined as any continuously bonded part of system with
+    at least 30 residues which match the ``protein`` selection of MDAnalysis.
+
+    Parameters
+    ----------
+    atomgroup : mda.AtomgGroup
+      The AtomGroup to select atoms from.
+    trim_chain_start: int
+      The number of residues to trim from the start of each
+      protein chain. Default 10.
+    trim_chain_end : int
+      The number of residues to trim from the end of each
+      protein chain. Default 10.
+
+    Returns
+    -------
+    atomgroup : mda.AtomGroup
+      An AtomGroup containing all the atoms from the input AtomGroup
+      which belong to protein chains.
+    """
+    # First let's copy our Universe so we don't overwrite its current state
+    copy_u = atomgroup.universe.copy()
+
+    # Create an AtomGroup that contains all the protein residues in the
+    # input Universe - we will filter by what matches in the atomgroup later
+    copy_protein_ag = copy_u.select_atoms('protein').atoms
+
+    # We need to split by fragments to account for multiple chains
+    # To do this, we need bonds!
+    if not _atomgroup_has_bonds(copy_protein_ag, 'bonds'):
+        wmsg = (
+            "No bonds found in input Universe, will attept to guess them."
+        )
+        warnings.warn(wmsg)
+        copy_protein_ag.guess_bonds()
+
+    copy_chains_ags_list = []
+
+    # Loop over each continually bonded section (i.e. chain) of the protein
+    for frag in copy_protein_ag.fragments:
+        # If this chain is less than 30 residues, it's probably a peptide
+        if len(frag.residues) < 30:
+            continue
+
+        chain = frag.residues[trim_chain_start:-trim_chain_end].atoms
+        copy_chains_ags_list.append(chain)
+
+    # Create a single atomgroup from all chains
+    copy_chains_ag = sum(copy_chains_ags_list)
+
+    # Now get a list of all the chain atoms in the original Universe
+    # Resindexes are keyed at the Universe scale not AtomGroup
+    chain_atoms = atomgroup.universe.atoms[copy_chains_ag.atoms.ix]
+
+    # Return all atoms at the intersection of the input atomgroup and
+    # the chains atomgroup
+    return atomgroup.intersection(chain_atoms)
