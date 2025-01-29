@@ -57,7 +57,7 @@ run three repeats in serial by default, but this can be changed by either:
 files for each repeat to ensure they don't overwrite each other. We recommend using folders named ``results_x`` where x is 0-2
 to store the repeated calculations as our :ref:`openfe gather <cli_gather>` command also supports this file structure.
 
-Here is an example of a simple script that will create and submit a separate job script (\*.job named file)
+Here is an example of a simple script that will create and submit a separate job script (``\*.job`` named file)
 for every alchemical transformation (for the simplest SLURM use case) in a network running each repeat in parallel and writing the
 results to a unique folder:
 
