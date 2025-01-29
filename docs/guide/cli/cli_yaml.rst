@@ -23,7 +23,7 @@ For example, the settings file which re-specifies the default behaviour would lo
 
 The name of the algorithm is given behind the ``method:`` key and the arguments to the
 algorithm are then optionally given behind the ``settings:`` key.
-All sections in file ``network:``, ``mapper:``  and ``partial_charge:`` are optional.
+All sections of the file ``network:``, ``mapper:``  and ``partial_charge:`` are optional.
 
 The settings YAML file is then provided to the ``-s`` option of ``openfe plan-rbfe-network``: ::
 
@@ -95,7 +95,7 @@ There are a range of partial charge generation schemes available, including
 The following settings can also be set
 
     - ``off_toolkit_backend`` The backend to use for partial charge generation. Choose from  ``ambertools`` (default), ``openeye`` or ``rdkit``.
-    - ``number_of_conformers`` The number of conformers to use for partial charge generation If unset (default), the input conformer will be used.
+    - ``number_of_conformers`` The number of conformers to use for partial charge generation. If unset (default), the input conformer will be used.
     - ``nagl_model``: The NAGL model to use. If unset (default), the latest available production charge model will be used.
 
 For example, to generate the partial charges using the ``am1bccelf10`` method from ``openeye`` the following should be added to the YAML settings file ::
