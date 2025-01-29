@@ -1069,7 +1069,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             u.atoms.positions * omm_units.angstrom,
             k_distance,
             k_theta,
-            "lambda_restraints_A",
+            "lambda_restraints_B",
         )
         system.addForce(force_B)
 
@@ -1281,7 +1281,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         force.addBond(
             ligand_idxs_A[0][0],
             ligand_idxs_B[0][0],
-            distance * openmm.unit.nanometers,
+            distance * openmm.unit.angstrom,
             k_distance,
         )
         force.setName("alignment_restraint")
