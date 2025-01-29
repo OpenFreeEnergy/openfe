@@ -148,8 +148,7 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
         return 'complex'
 
 def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
-    """Attempt to determine whether the legs belong to a RHFE or RBFE calculation
-    and generate an error message accordingly.
+    """Format output describing failed RBFE or RHFE legs.
 
     Parameters
     ----------
