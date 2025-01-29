@@ -1270,17 +1270,19 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         coords = u.atoms.positions
         ligand_idxs_A = find_guest_atom_candidates(u, ligand_1, ligand_1_inxs)
         ligand_idxs_B = find_guest_atom_candidates(u, ligand_2, ligand_2_inxs)
-        # Taking the middle reference atom
+        # Taking the first reference atom
+        ref_A = int(ligand_idxs_A[0][0])
+        ref_B = int(ligand_idxs_B[0][0])
         distance = np.linalg.norm(
-            coords[ligand_idxs_A[0][0]] - coords[ligand_idxs_B[0][0]])
+            coords[ref_A] - coords[ref_B])
         print(distance)
 
         k_distance = to_openmm(settings['restraint_settings'].k_distance)
 
         force = openmm.HarmonicBondForce()
         force.addBond(
-            ligand_idxs_A[0][0],
-            ligand_idxs_B[0][0],
+            ref_A,
+            ref_B,
             distance * openmm.unit.angstrom,
             k_distance,
         )
