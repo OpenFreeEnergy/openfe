@@ -47,8 +47,8 @@ The ``quickrun`` command can be integrated into as:
 Parallel execution of repeats with Quickrun
 ===========================================
 
-Serial execution of multiple repeats of a transformation can be inefficient when working with a HPC, in this case higher
-throughput can be achieved by running one repeat per HPC job allowing for parallel execution. Most protocols are setup to
+Serial execution of multiple repeats of a transformation can be inefficient when simulation times are long.
+Higher throughput can be achieved with parallel execution by running one repeat per HPC job. Most protocols are set up to
 run ``three repeats in seral`` by default, however, this can be changed either via the protocol setting ``protocol_repeats``, see the
 :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details or overridden via the
 ``--n-protocol-repeats`` flag of the ``openfe quickrun`` command. Each transformation can then be executed multiple times via the
