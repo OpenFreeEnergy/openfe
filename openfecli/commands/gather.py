@@ -161,44 +161,14 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
     str
         An error message containing information on all failed legs.
     """
-    msg="\nThe following legs are invalid:\n"
+    msg="Some edge(s) are missing runs!\nBelow are the problematic edges and run types found:\n\n"
     for leg_types, ligpair in bad_legs:
-        expected_rbfe_types = {'complex', 'solvent'}
-        expected_rhfe_types = {'solvent', 'vacuum'}
-        maybe_rhfe = bool(leg_types & expected_rhfe_types)
-        maybe_rbfe = bool(leg_types & expected_rbfe_types)
-        if maybe_rhfe and not maybe_rbfe:
-            msg += (
-                f"{ligpair}:\n"
-                "\tAssuming this is an RHFE calculation, "
-                f"this edge is missing {expected_rhfe_types - leg_types} runs.\n"
-                )
-        elif maybe_rbfe and not maybe_rhfe:
-            msg += (
-                f"{ligpair}:\n"
-                "\tAssuming this is an RBFE calculation, "
-                f"this edge is missing {expected_rbfe_types - leg_types} runs.\n"
-            )
-        elif maybe_rbfe and maybe_rhfe:
-            msg += (
-                f"{ligpair}: \n"
-                "\tUnable to determine whether this edge belongs to an RBFE or an RHFE calculation.\n"
-                f"\tRuns labelled {leg_types} were found for this edge,"
-                f"this edge is missing one of: {(expected_rhfe_types | expected_rbfe_types) - leg_types}.\n"
-            )
-        else:  # -no-cov-
-            # this should never happen
-            msg += (
-                f"{ligpair}: \n"
-                "\tSomething went very wrong while determining the type of RFE calculation."
-                f"\tWe found legs labelled {leg_types}."
-                f"\tWe expected either {expected_rhfe_types} or {expected_rbfe_types}.\n\n"
-            )
+        msg += f"{ligpair}: {','.join(leg_types)}\n"
 
     msg += (
         "\nYou can force partial gathering of results, without "
         "problematic edges, by using the --allow-partial flag of the gather "
-        "command. Note that this may cause problems with predicting "
+        "command.\nNOTE: This may cause problems with predicting "
         "absolute free energies from the relative free energies."
     )
     return msg
