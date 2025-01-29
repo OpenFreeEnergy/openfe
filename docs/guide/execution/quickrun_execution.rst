@@ -49,9 +49,10 @@ Parallel execution of repeats with Quickrun
 
 Serial execution of multiple repeats of a transformation can be inefficient when simulation times are long.
 Higher throughput can be achieved with parallel execution by running one repeat per HPC job. Most protocols are set up to
-run ``three repeats in seral`` by default, however, this can be changed either via the protocol setting ``protocol_repeats``, see the
-:ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details or overridden via the
-``--n-protocol-repeats`` flag of the ``openfe quickrun`` command. Each transformation can then be executed multiple times via the
+run three repeats in serial by default, but this can be changed by either:
+ 
+ 1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
+ 2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.  Each transformation can then be executed multiple times via the
 ``openfe quickrun`` command to produce a set of repeats, however, you need to ensure to use unique results
 files for each repeat to ensure they don't overwrite each other. We recommend using folders named ``results_x`` where x is 0-2
 to store the repeated calculations as our :ref:`openfe gather <cli_gather>` command also supports this file structure.
