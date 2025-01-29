@@ -226,32 +226,11 @@ Supported network planning algorithms include (but are not limited to):
     - `generate_minimal_redundant_network`
     - `generate_radial_network`
 
-
-Partial Charges
-===============
-
-Methods
--------
-
 Supported partial charge method choices are:
     - ``am1bcc``
-    - ``am1bccelf10`` (only possible if `off_toolkit_backend` in settings is set to `openeye`)
-    - ``nagl``
-    - ``espaloma`` (must have `espaloma_charge` installed)
-
-Settings
---------
-
-The following settings can also be set:
-
-    - ``off_toolkit_backend``: The backend to use for partial charge generation. Choose from  ``ambertools`` (default), ``openeye`` or ``rdkit``.
-    - ``number_of_conformers``: The number of conformers to use for partial charge generation.
-      If unset (default), the input conformer will be used.
-    - ``nagl_model``: The NAGL model to use.
-      If unset (default), the latest available production charge model will be used.
-
-For more information on the different options, please refer to https://docs.openfree.energy/en/stable/reference/api/openmm_protocol_settings.html#openfe.protocols.openmm_utils.omm_settings.OpenFFPartialChargeSettings.
-
+    - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` in settings is set to ``openeye``)
+    - ``nagl`` (must have ``openff-nagl`` installed)
+    - ``espaloma`` (must have ``espaloma_charge`` installed)
 
 The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
 
@@ -267,6 +246,11 @@ For example:
     method: generate_minimal_redundant_network
     settings:
       mst_num: 3
+
+  partial_charge:
+    method: am1bcc
+    settings:
+      off_toolkit_backend: ambertools      
 """
 
 YAML_OPTIONS = Option(

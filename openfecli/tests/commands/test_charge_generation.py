@@ -28,6 +28,25 @@ def methane_with_charges(methane) -> Molecule:
     methane._partial_charges = [-1.0, 0.25, 0.25, 0.25, 0.25] * unit.elementary_charge
     return methane
 
+
+def test_write_charges_to_input(methane, tmpdir):
+    runner = CliRunner()
+    mol_path = tmpdir / "methane.sdf"
+    methane.to_file(str(mol_path), "sdf")
+
+    with runner.isolated_filesystem():
+        # check an error is raised if we try to overwrite the input
+        with pytest.raises(FileExistsError, match="The output file "):
+            _ = runner.invoke(
+                charge_molecules,
+                [
+                    "-M",
+                    mol_path,
+                    "-o",
+                    mol_path
+                ], catch_exceptions=False
+            )
+
 def test_charge_molecules_default(methane, tmpdir):
 
     runner = CliRunner()
@@ -49,9 +68,7 @@ def test_charge_molecules_default(methane, tmpdir):
             )
 
         assert result.exit_code == 0
-        assert "Partial Charge Generation: am1bcc"
-        assert "assigning ligand partial charges -- this may be slow"
-
+        assert "Partial Charge Generation: am1bcc" in result.output
         # make sure the charges have been saved
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
         off_methane = methane.to_openff()
@@ -86,8 +103,9 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, methane_with_charges, exp
             )
 
         assert result.exit_code == 0
-        assert "Partial Charge Generation: am1bcc"
-        assert "assigning ligand partial charges -- this may be slow"
+        assert "Partial Charge Generation: am1bcc" in result.output
+        if overwrite:
+            assert "Overwriting partial charges" in result.output
 
         # make sure the charges have not changed from the inputs
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
@@ -95,8 +113,11 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, methane_with_charges, exp
         assert np.allclose(off_methane.partial_charges.m, expected_charges)
 
 
-
-def test_charge_settings(methane, tmpdir, yaml_nagl_settings):
+@pytest.mark.parametrize("ncores", [
+    pytest.param(1, id="1"),
+    pytest.param(2, id="2")
+])
+def test_charge_settings(methane, tmpdir, yaml_nagl_settings, ncores):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
@@ -118,14 +139,14 @@ def test_charge_settings(methane, tmpdir, yaml_nagl_settings):
                     "-o",
                     output_file,
                     "-s",
-                    settings_path
+                    settings_path,
+                    "-n",
+                    ncores
                 ]
             )
 
         assert result.exit_code == 0
-        assert "Partial Charge Generation: nagl"
-        assert "assigning ligand partial charges -- this may be slow"
-
+        assert "Partial Charge Generation: nagl" in result.output
         # make sure the charges have been saved
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
         off_methane = methane.to_openff()

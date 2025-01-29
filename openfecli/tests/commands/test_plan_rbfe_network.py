@@ -5,6 +5,7 @@ from importlib import resources
 import shutil
 from click.testing import CliRunner
 
+from openfe.protocols.openmm_utils.charge_generation import HAS_OPENEYE
 from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network,
     plan_rbfe_network_main,
@@ -201,6 +202,8 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
         result = runner.invoke(plan_rbfe_network, args)
 
         assert result.exit_code == 0
+        if overwrite:
+            assert "Overwriting partial charges" in result.output
 
         network = AlchemicalNetwork.from_dict(
             json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
@@ -225,6 +228,7 @@ def eg5_files():
         yield pdb_path, lig_path, cof_path
 
 
+@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
 def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
     # use nagl charges for CI speed!
     settings_path = tmpdir / "settings.yaml"
@@ -334,7 +338,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-
+@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
 def test_custom_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"
@@ -378,7 +382,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-
+@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
 def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"

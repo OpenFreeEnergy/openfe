@@ -1,3 +1,5 @@
+import pathlib
+
 import click
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES, OVERWRITE
@@ -15,7 +17,8 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCO
     help=YAML_OPTIONS.kwargs["help"],
 )
 @OUTPUT_FILE_AND_EXT.parameter(
-    help="The name of the SDF file the charged ligands should be written to."
+    help="The name of the SDF file the charged ligands should be written to.",
+    type=click.Path(exists=False, path_type=pathlib.Path)
 )
 @NCORES.parameter(
     help=NCORES.kwargs["help"],
@@ -39,6 +42,10 @@ def charge_molecules(
     from openfecli.utils import write
     from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
+    if output.exists():
+        raise FileExistsError(f"The output file {output} already exists, choose a new file to write the charged"
+                              "ligands to")
+
     write("SMALL MOLECULE PARTIAL CHARGE GENERATOR")
     write("_________________________________________")
     write("")
@@ -59,6 +66,8 @@ def charge_molecules(
 
     write("Using Options:")
     write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
+    if overwrite_charges:
+        write("\tOverwriting partial charges")
     write("")
 
     charged_molecules = bulk_assign_partial_charges(
@@ -75,13 +84,10 @@ def charge_molecules(
     write("")
 
     # OUTPUT
-    file, _ = OUTPUT_FILE_AND_EXT.get(output)
     write("Output:")
-    write("\tSaving to: " + file.name)
+    write(f"\tSaving to: {output}")
 
-    # default is write bytes
-    file.mode = "w"
-    with file.open() as output:
+    with output.open(mode="w") as output:
         for mol in charged_molecules:
             output.write(mol.to_sdf())
 

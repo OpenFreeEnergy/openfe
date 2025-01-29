@@ -165,6 +165,8 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     write("\tNetworker: " + str(ligand_network_planner))
 
     write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
+    if overwrite_charges:
+        write("\tOverwriting partial charges")
     write("")
 
     # DO

@@ -219,6 +219,8 @@ def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_
         result = runner.invoke(plan_rhfe_network, args)
 
         assert result.exit_code == 0
+        if overwrite:
+            assert "Overwriting partial charges" in result.output
 
         network = AlchemicalNetwork.from_dict(
             json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
