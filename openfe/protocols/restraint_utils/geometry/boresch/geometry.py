@@ -135,7 +135,7 @@ def find_boresch_restraint(
     dssp_filter: bool = False,
     rmsf_cutoff: unit.Quantity = 0.1 * unit.nanometer,
     host_min_distance: unit.Quantity = 1 * unit.nanometer,
-    host_max_distance: unit.Quantity = 3 * unit.nanometer,
+    host_max_distance: unit.Quantity = 2 * unit.nanometer,
     angle_force_constant: unit.Quantity = (
         83.68 * unit.kilojoule_per_mole / unit.radians**2
     ),

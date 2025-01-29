@@ -77,6 +77,8 @@ from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
     AlchemicalRegion,
 )
+import MDAnalysis as mda
+from openfe.protocols.restraint_utils.geometry.boresch import find_boresch_restraint
 
 logger = logging.getLogger(__name__)
 
@@ -566,15 +568,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     @staticmethod
     def _add_restraints(
             system: openmm.System,
-            positions: simtk.unit.Quantity,
-            topology: openmm.app.Topology,
-            ligand_1: OFFMolecule,
-            ligand_2: OFFMolecule,
+            u: mda.Universe,
+            ligand_1: RDKitMolecule,
+            ligand_2: RDKitMolecule,
+            ligand_1_inxs: list[int],
+            ligand_2_inxs: list[int],
+            protein_inxs: Optional[list[int]],
             settings: dict[str, SettingsBaseModel],
-            ligand_1_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
-            ligand_2_ref_idxs: tuple[int, int, int],  # indices from the ligand topology
-            ligand_1_idxs: tuple[int, int, int],  # indices from the full topology
-            ligand_2_idxs: tuple[int, int, int],  # indices from the full topology
     ) -> openmm.System:
         """
         Get new positions for the stateB after equilibration.
@@ -853,13 +853,20 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ligand_B_inxs = tuple([atom_indices_AB_B[inx] for inx in ligand_B_ref_inxs])
         print(ligand_A_inxs)
         print(ligand_B_inxs)
-
+        u = mda.Universe(omm_topology_AB, modeller_AB)
+        if prot_comp:
+            protein_idxs = comp_atomids_AB[prot_comp]
+        else:
+            protein_idxs = None
         system = self._add_restraints(
-            alchemical_system, positions_AB, omm_topology_AB,
-            off_A, off_B,
+            alchemical_system, u,
+            alchem_comps["stateA"][0].to_rdkit(),
+            alchem_comps["stateB"][0].to_rdkit(),
+            comp_atomids_AB[alchem_comps["stateA"][0]],
+            comp_atomids_AB[alchem_comps["stateB"][0]],
+            protein_idxs,
             settings,
-            ligand_A_ref_inxs, ligand_B_ref_inxs,
-            ligand_A_inxs, ligand_B_inxs)
+        )
         # # Check that the restraints are correctly applied by running a short equilibration
         equ_positions_restraints = self._pre_equilibrate(
             system, omm_topology_AB, positions_AB, settings, dry

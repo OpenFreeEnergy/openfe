@@ -76,6 +76,9 @@ from .femto_restraints import (
 from .femto_utils import assign_force_groups
 from openff.units.openmm import to_openmm
 from rdkit import Chem
+import MDAnalysis as mda
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    find_boresch_restraint, find_guest_atom_candidates)
 
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -989,15 +992,13 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     @staticmethod
     def _add_restraints(
             system: openmm.System,
-            positions: simtk.unit.Quantity,
-            topology: openmm.app.Topology,
-            ligand_1: OFFMolecule,
-            ligand_2: OFFMolecule,
+            u,
+            ligand_1,
+            ligand_2,
+            ligand_1_inxs: tuple[int],
+            ligand_2_inxs: tuple[int],
+            protein_inxs: tuple[int],
             settings: dict[str, SettingsBaseModel],
-            ligand_1_ref_idxs: tuple[int, int, int],
-            ligand_2_ref_idxs: tuple[int, int, int],
-            ligand_1_idxs: tuple[int, int, int],
-            ligand_2_idxs: tuple[int, int, int],
     ) -> openmm.System:
         """
         Adds Boresch restraints to the system.
@@ -1031,53 +1032,44 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
 
-        # Get mdtraj object for system
-        traj = _get_mdtraj_from_openmm(topology, positions)
-        # Get mdtraj object for ligands
-        ligand_1 = ligand_1.to_topology()
-        ligand_2 = ligand_2.to_topology()
-        ligand_1_mdtraj = md.Trajectory(
-            np.array(ligand_1.get_positions() / omm_units.nanometers),
-            md.Topology.from_openmm(ligand_1.to_openmm()))
-        ligand_2_mdtraj = md.Trajectory(
-            np.array(ligand_2.get_positions() / omm_units.nanometers),
-            md.Topology.from_openmm(ligand_2.to_openmm()))
+        boresch_A = find_boresch_restraint(
+            u,
+            ligand_1,
+            ligand_1_inxs,
+            protein_inxs,
+            host_selection='name C or name CA or name CB or name N or name O',
+            dssp_filter=True)
 
-        # Select the reference indices in the receptor
-        receptor_ref_idxs_1 = select_receptor_idxs(
-            traj, ligand_1_mdtraj, ligand_1_ref_idxs
-        )
-        print(receptor_ref_idxs_1)
-        receptor_ref_idxs_2 = receptor_ref_idxs_1
-
-        if not check_receptor_idxs(
-                traj, receptor_ref_idxs_1, ligand_2_mdtraj, ligand_2_ref_idxs
-        ):
-            receptor_ref_idxs_2 = select_receptor_idxs(
-                traj, ligand_2_mdtraj, ligand_2_ref_idxs)
-            print(receptor_ref_idxs_2)
-
+        boresch_B = find_boresch_restraint(
+            u,
+            ligand_2,
+            ligand_2_inxs,
+            protein_inxs,
+            host_selection='name C or name CA or name CB or name N or name O',
+            dssp_filter=True)
+        print(boresch_A)
+        print(boresch_B)
         # Convert restraint units to openmm
         k_distance = to_openmm(settings["restraint_settings"].k_distance)
         k_theta = to_openmm(settings["restraint_settings"].k_theta)
 
         force_A = create_boresch_restraint(
-            receptor_ref_idxs_1[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
-            ligand_1_idxs,
-            positions,
+            boresch_A.host_atoms[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
+            boresch_A.guest_atoms,
+            u.atoms.positions * omm_units.angstrom,
             k_distance,
             k_theta,
             "lambda_restraints_A",
         )
         system.addForce(force_A)
         force_B = create_boresch_restraint(
-            receptor_ref_idxs_2[::-1],
+            boresch_B.host_atoms[::-1],
             # expects [r3, r2, r1], not [r1, r2, r3]
-            ligand_2_idxs,
-            positions,
+            boresch_B.guest_atoms,
+            u.atoms.positions * omm_units.angstrom,
             k_distance,
             k_theta,
-            "lambda_restraints_B",
+            "lambda_restraints_A",
         )
         system.addForce(force_B)
 
@@ -1235,15 +1227,13 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
     @staticmethod
     def _add_restraints(
         system: openmm.System,
-        positions,
-        topology,
+        u,
         ligand_1,
         ligand_2,
+        ligand_1_inxs: tuple[int],
+        ligand_2_inxs: tuple[int],
+        protein_inxs,
         settings: dict[str, SettingsBaseModel],
-        ligand_1_ref_idxs: tuple[int, int, int],
-        ligand_2_ref_idxs: tuple[int, int, int],
-        ligand_1_idxs: tuple[int, int, int],
-        ligand_2_idxs: tuple[int, int, int],
     ) -> openmm.System:
         """
         Apply the distance restraint between the ligands.
@@ -1277,18 +1267,20 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
 
-        coords = positions
+        coords = u.atoms.positions
+        ligand_idxs_A = find_guest_atom_candidates(u, ligand_1, ligand_1_inxs)
+        ligand_idxs_B = find_guest_atom_candidates(u, ligand_2, ligand_2_inxs)
         # Taking the middle reference atom
         distance = np.linalg.norm(
-            coords[ligand_1_idxs[1]] - coords[ligand_2_idxs[1]])
+            coords[ligand_idxs_A[0][0]] - coords[ligand_idxs_B[0][0]])
         print(distance)
 
         k_distance = to_openmm(settings['restraint_settings'].k_distance)
 
         force = openmm.HarmonicBondForce()
         force.addBond(
-            ligand_1_idxs[1],
-            ligand_2_idxs[1],
+            ligand_idxs_A[0][0],
+            ligand_idxs_B[0][0],
             distance * openmm.unit.nanometers,
             k_distance,
         )
