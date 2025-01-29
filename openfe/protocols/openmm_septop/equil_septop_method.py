@@ -79,6 +79,7 @@ from rdkit import Chem
 import MDAnalysis as mda
 from openfe.protocols.restraint_utils.geometry.boresch import (
     find_boresch_restraint, find_guest_atom_candidates)
+from openfe.protocols.restraint_utils.geometry.utils import get_central_atom_idx
 
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -1268,11 +1269,9 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         """
 
         coords = u.atoms.positions
-        ligand_idxs_A = find_guest_atom_candidates(u, ligand_1, ligand_1_inxs)
-        ligand_idxs_B = find_guest_atom_candidates(u, ligand_2, ligand_2_inxs)
-        # Taking the first reference atom
-        ref_A = int(ligand_idxs_A[0][0])
-        ref_B = int(ligand_idxs_B[0][0])
+        ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
+        ref_B = ligand_2_inxs[get_central_atom_idx(ligand_2)]
+        print(ref_A, ref_B)
         distance = np.linalg.norm(
             coords[ref_A] - coords[ref_B])
         print(distance)

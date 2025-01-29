@@ -659,7 +659,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         pdb = md.load_pdb('topology.pdb')
-        print(pdb.n_atoms)
         assert pdb.n_atoms == 4481
         central_atoms = np.array([[2, 4475]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
