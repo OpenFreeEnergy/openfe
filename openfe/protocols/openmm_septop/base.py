@@ -853,7 +853,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ligand_B_inxs = tuple([atom_indices_AB_B[inx] for inx in ligand_B_ref_inxs])
         print(ligand_A_inxs)
         print(ligand_B_inxs)
+        modeller_AB.positions = positions_AB
         u = mda.Universe(omm_topology_AB, modeller_AB)
+        print(u)
         if prot_comp:
             protein_idxs = comp_atomids_AB[prot_comp]
         else:
