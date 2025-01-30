@@ -76,6 +76,7 @@ def test_plan_rhfe_network_main():
         ligand_network_planner=ligand_network_planning.generate_minimal_spanning_network,
         small_molecules=smallM_components,
         solvent=solvent_component,
+        n_protocol_repeats=3,
         partial_charge_settings=OpenFFPartialChargeSettings(
             partial_charge_method="nagl",
             nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"

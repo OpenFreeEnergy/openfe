@@ -8,12 +8,12 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES, OVERWRITE
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
 )
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, partial_charge_settings, processors, overwrite_charges
+    solvent, n_protocol_repeats, partial_charge_settings, processors, overwrite_charges
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -29,6 +29,8 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
+    n_protocol_repeats: int
+        number of completely independent repeats of the entire sampling process
     partial_charge_settings : OpenFFPartialChargeSettings
         how to assign partial charges to the input ligands
         (if they don't already have partial charges).
@@ -46,7 +48,12 @@ def plan_rhfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner
     )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
     from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     write("assigning ligand partial charges -- this may be slow")
 
@@ -64,6 +71,7 @@ def plan_rhfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol
     )
     alchemical_network = network_planner(
         ligands=charged_small_molecules, solvent=solvent
@@ -90,6 +98,8 @@ def plan_rhfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
+
 @NCORES.parameter(
     help=NCORES.kwargs["help"],
     default=1,
@@ -100,7 +110,7 @@ def plan_rhfe_network_main(
     is_flag=True
 )
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int, overwrite_charges: bool):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int, overwrite_charges: bool, n_protocol_repeats: int):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -177,6 +187,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
+        n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
         processors=n_cores,
         overwrite_charges=overwrite_charges

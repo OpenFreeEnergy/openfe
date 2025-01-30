@@ -303,7 +303,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
     """
     def __init__(
         self,
-        name: str = "easy_rbfe",
+        name: str = "easy_rbfe",  # TODO: change this default to "" in 2.0
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
         mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
