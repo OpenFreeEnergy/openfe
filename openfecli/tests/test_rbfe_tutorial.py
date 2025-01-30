@@ -17,6 +17,7 @@ from openfecli.commands.plan_rbfe_network import plan_rbfe_network
 from openfecli.commands.quickrun import quickrun
 from openfecli.commands.gather import gather
 
+from .utils import assert_click_success
 
 @pytest.fixture
 def tyk2_ligands():
@@ -59,7 +60,7 @@ def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
                                                    '-p', tyk2_protein])
 
-        assert result.exit_code == 0
+        assert_click_success(result)
 
         assert path.exists('alchemicalNetwork/transformations')
         for f in expected_transformations:
@@ -110,14 +111,14 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
                                                    '-p', tyk2_protein])
 
-        assert result.exit_code == 0
+        assert_click_success(result)
 
         for f in expected_transformations:
             fn = path.join('alchemicalNetwork/transformations', f)
             result2 = runner.invoke(quickrun, [fn])
-            assert result2.exit_code == 0
+            assert_click_success(result2)
 
         gather_result = runner.invoke(gather, ["--report", "ddg", '.'])
 
-        assert gather_result.exit_code == 0
+        assert_click_success(gather_result)
         assert gather_result.stdout == ref_gather
