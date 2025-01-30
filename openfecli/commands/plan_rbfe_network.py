@@ -5,7 +5,7 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, N_PROTOCOL_REPEATS
 )
 
 def plan_rbfe_network_main(
@@ -16,6 +16,7 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
+    n_protocol_repeats,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -34,7 +35,9 @@ def plan_rbfe_network_main(
     protein : ProteinComponent
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
-        any cofactors alongisde the protein, can be empty list
+        any cofactors alongside the protein, can be empty list
+    n_protocol_repeats: int
+        number of completely independent repeats of the entire sampling process
 
     Returns
     -------
@@ -46,11 +49,17 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol
     )
     alchemical_network = network_planner(
         ligands=small_molecules, solvent=solvent, protein=protein,
@@ -83,11 +92,13 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
 @print_duration
 def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
+        n_protocol_repeats: int,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for
@@ -169,6 +180,7 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
+        n_protocol_repeats=n_protocol_repeats,
     )
     write("\tDone")
     write("")
