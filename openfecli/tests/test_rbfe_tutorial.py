@@ -34,24 +34,24 @@ def tyk2_protein():
 @pytest.fixture
 def expected_transformations():
     return [
-    "easy_rbfe_lig_ejm_31_solvent_lig_ejm_48_solvent.json",
-    "easy_rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json",
-    "easy_rbfe_lig_jmc_27_complex_lig_jmc_28_complex.json",
-    "easy_rbfe_lig_jmc_23_solvent_lig_jmc_28_solvent.json",
-    "easy_rbfe_lig_ejm_42_solvent_lig_ejm_50_solvent.json",
-    "easy_rbfe_lig_ejm_31_complex_lig_ejm_46_complex.json",
-    "easy_rbfe_lig_ejm_31_solvent_lig_ejm_50_solvent.json",
-    "easy_rbfe_lig_ejm_42_solvent_lig_ejm_43_solvent.json",
-    "easy_rbfe_lig_ejm_31_complex_lig_ejm_47_complex.json",
-    "easy_rbfe_lig_jmc_27_solvent_lig_jmc_28_solvent.json",
-    "easy_rbfe_lig_jmc_23_complex_lig_jmc_28_complex.json",
-    "easy_rbfe_lig_ejm_42_complex_lig_ejm_50_complex.json",
-    "easy_rbfe_lig_ejm_31_solvent_lig_ejm_46_solvent.json",
-    "easy_rbfe_lig_ejm_31_complex_lig_ejm_50_complex.json",
-    "easy_rbfe_lig_ejm_42_complex_lig_ejm_43_complex.json",
-    "easy_rbfe_lig_ejm_31_solvent_lig_ejm_47_solvent.json",
-    "easy_rbfe_lig_ejm_31_complex_lig_ejm_48_complex.json",
-    "easy_rbfe_lig_ejm_46_complex_lig_jmc_28_complex.json",
+    "rbfe_lig_ejm_31_solvent_lig_ejm_48_solvent.json",
+    "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json",
+    "rbfe_lig_jmc_27_complex_lig_jmc_28_complex.json",
+    "rbfe_lig_jmc_23_solvent_lig_jmc_28_solvent.json",
+    "rbfe_lig_ejm_42_solvent_lig_ejm_50_solvent.json",
+    "rbfe_lig_ejm_31_complex_lig_ejm_46_complex.json",
+    "rbfe_lig_ejm_31_solvent_lig_ejm_50_solvent.json",
+    "rbfe_lig_ejm_42_solvent_lig_ejm_43_solvent.json",
+    "rbfe_lig_ejm_31_complex_lig_ejm_47_complex.json",
+    "rbfe_lig_jmc_27_solvent_lig_jmc_28_solvent.json",
+    "rbfe_lig_jmc_23_complex_lig_jmc_28_complex.json",
+    "rbfe_lig_ejm_42_complex_lig_ejm_50_complex.json",
+    "rbfe_lig_ejm_31_solvent_lig_ejm_46_solvent.json",
+    "rbfe_lig_ejm_31_complex_lig_ejm_50_complex.json",
+    "rbfe_lig_ejm_42_complex_lig_ejm_43_complex.json",
+    "rbfe_lig_ejm_31_solvent_lig_ejm_47_solvent.json",
+    "rbfe_lig_ejm_31_complex_lig_ejm_48_complex.json",
+    "rbfe_lig_ejm_46_complex_lig_jmc_28_complex.json",
     ]
 
 
@@ -61,7 +61,6 @@ def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, ['-M', tyk2_ligands,
                                                    '-p', tyk2_protein])
-
         assert_click_success(result)
         assert path.exists('alchemicalNetwork/transformations')
         for f in expected_transformations:
