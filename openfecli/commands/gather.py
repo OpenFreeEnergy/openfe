@@ -79,7 +79,7 @@ def is_results_json(fpath:os.PathLike|str)->bool:
     return 'estimate' in open(fpath, 'r').read(20)
 
 
-def load_results(fpath:os.PathLike|str)->dict:
+def load_and_check_result(fpath:os.PathLike|str)->dict:
     """Load the data from a results JSON into a dict
 
     Parameters
@@ -96,8 +96,22 @@ def load_results(fpath:os.PathLike|str)->dict:
     import json
     from gufe.tokenization import JSON_HANDLER
 
-    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
+    try:
+        result = json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
+    except FileNotFoundError:
+        click.echo(f"Error: {fpath} does not exist. Skipping.")
+        return None
 
+    if "unit_results" not in result.keys():
+        click.echo(f"{fpath} has no unit results - likely a failure.", err=True)
+
+    if all('exception' in u for u in result['unit_results'].values()):
+        click.echo(f"{fpath} is a failed simulation.", err=True)
+
+    if result['estimate'] is None or result['uncertainty'] is None:
+        click.echo(f"{fpath} is a failed simulation", err=True)
+
+    return result
 
 def get_names(result:dict) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
@@ -397,12 +411,9 @@ def gather(rootdir:os.PathLike|str,
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        result = load_results(result_fn)
+        result = load_and_check_result(result_fn)
         if result is None:
             continue
-        elif result['estimate'] is None or result['uncertainty'] is None:
-            click.echo(f"WARNING: Calculations for {result_fn} did not finish successfully!",
-                       err=True)
 
         try:
             names = get_names(result)
