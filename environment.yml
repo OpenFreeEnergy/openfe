@@ -18,7 +18,7 @@ dependencies:
   - pyyaml
   - coverage
   - cinnabar ~=0.4.0
-  - openff-toolkit>=0.13.0
+  - openff-toolkit>=0.16.2
   - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
   - pint<0.22
@@ -42,6 +42,8 @@ dependencies:
   - autodoc-pydantic<2.0
   - pydata-sphinx-theme
   - sphinx-click
+  # Control blas/openmp threads
+  - threadpoolctl
   - pip:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2

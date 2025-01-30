@@ -8,6 +8,7 @@ from typing import Union, Optional, Literal, Callable
 import sys
 import warnings
 import numpy as np
+from gufe import SmallMoleculeComponent
 from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
@@ -17,6 +18,7 @@ from openff.toolkit.utils.toolkits import (
     RDKitToolkitWrapper
 )
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from threadpoolctl import threadpool_limits
 
 try:
     import openeye
@@ -285,7 +287,7 @@ def assign_offmol_partial_charges(
     toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
     generate_n_conformers: Optional[int],
     nagl_model: Optional[str],
-) -> None:
+) -> OFFMol:
     """
     Assign partial charges to an OpenFF Molecule based on a selected method.
 
@@ -297,7 +299,7 @@ def assign_offmol_partial_charges(
       Whether or not to overwrite any existing non-zero partial charges.
       Note that zeroed charges will always be overwritten.
     method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
-      Partial charge assignement method.
+      Partial charge assignment method.
       Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
     toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
       OpenFF toolkit backend employed for charge generation.
@@ -318,17 +320,21 @@ def assign_offmol_partial_charges(
     Raises
     ------
     ValueError
-      If the ``toolkit_backend`` is not suported by the selected ``method``.
+      If the ``toolkit_backend`` is not supported by the selected ``method``.
       If ``generate_n_conformers`` is ``None``, but the input ``offmol``
       has no associated conformers.
       If the number of conformers passed or generated exceeds the number
       of conformers selected by the partial charge ``method``.
+
+    Returns
+    -------
+     The Molecule with partial charges assigned.
     """
 
     # If you have non-zero charges and not overwriting, just return
     if (offmol.partial_charges is not None and np.any(offmol.partial_charges)):
         if not overwrite:
-            return
+            return offmol
 
     # Dictionary for each available charge method
     # The idea of this pattern is to allow for maximum flexibility by
@@ -408,12 +414,105 @@ def assign_offmol_partial_charges(
         generate_n_conformers=generate_n_conformers,
     )  # type: ignore
 
-    # Call selected method to assign partial charges
-    CHARGE_METHODS[method.lower()]['charge_func'](
-        offmol=offmol_copy,
-        toolkit_registry=toolkits,
-        **CHARGE_METHODS[method.lower()]['charge_extra_kwargs'],
-    )  # type: ignore
+    # limit the number of threads used by SQM
+    # <https://github.com/openforcefield/openff-toolkit/issues/1831>
+    with threadpool_limits(limits=1):
+        # Call selected method to assign partial charges
+        CHARGE_METHODS[method.lower()]['charge_func'](
+            offmol=offmol_copy,
+            toolkit_registry=toolkits,
+            **CHARGE_METHODS[method.lower()]['charge_extra_kwargs'],
+        )  # type: ignore
 
     # Copy partial charges back
     offmol.partial_charges = offmol_copy.partial_charges
+    return offmol
+
+
+def bulk_assign_partial_charges(
+    molecules: list[SmallMoleculeComponent],
+    overwrite: bool,
+    method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'],
+    toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
+    generate_n_conformers: Optional[int],
+    nagl_model: Optional[str],
+    processors: int = 1,
+) -> list[SmallMoleculeComponent]:
+    """
+    Assign partial charges to a list of SmallMoleculeComponents using multiprocessing.
+
+    Parameters
+    ----------
+    molecules : list[gufe.SmallMoleculeComponent]
+      The list of molecules who should have partial charges assigned.
+    overwrite : bool
+      Whether or not to overwrite any existing non-zero partial charges.
+      Note that zeroed charges will always be overwritten.
+    method : Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma']
+      Partial charge assignment method.
+      Supported methods include; am1bcc, am1bccelf10, nagl, and espaloma.
+    toolkit_backend : Literal['ambertools', 'openeye', 'rdkit']
+      OpenFF toolkit backend employed for charge generation.
+      Supported options:
+        * ``ambertools``: selects both the AmberTools and RDKit Toolkit Wrapper
+        * ``openeye``: selects the OpenEye toolkit Wrapper
+        * ``rdkit``: selects the RDKit toolkit Wrapper
+      Note that the ``rdkit`` backend cannot be used for `am1bcc` or
+      ``am1bccelf10`` partial charge methods.
+    generate_n_conformers : Optional[int]
+      Number of conformers to generate for partial charge generation.
+      If ``None`` (default), the input conformer will be used.
+      Values greater than 1 can only be used alongside ``am1bccelf10``.
+    nagl_model : Optional[str]
+      The NAGL model to use for charge assignment if method is ``nagl``.
+      If ``None``, the latest am1bcc NAGL charge model is used.
+    processors: int, default 1
+        The number of processors which should be used to generate the charges.
+
+    Raises
+    ------
+    ValueError
+      If the ``toolkit_backend`` is not supported by the selected ``method``.
+      If ``generate_n_conformers`` is ``None``, but the input ``offmol``
+      has no associated conformers.
+      If the number of conformers passed or generated exceeds the number
+      of conformers selected by the partial charge ``method``.
+
+    Returns
+    -------
+        A list of SmallMoleculeComponents with the charges assigned.
+    """
+    import tqdm
+
+    charge_keywords = {
+        "overwrite": overwrite,
+        "method": method,
+        "toolkit_backend": toolkit_backend,
+        "generate_n_conformers": generate_n_conformers,
+        "nagl_model": nagl_model
+    }
+    charged_ligands = []
+
+    if processors > 1:
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        with ProcessPoolExecutor(max_workers=processors) as pool:
+
+            work_list = [
+                pool.submit(
+                    assign_offmol_partial_charges,
+                    m.to_openff(),
+                    **charge_keywords, # type: ignore
+                )
+                for m in molecules
+            ]
+
+            for work in tqdm.tqdm(as_completed(work_list), desc="Generating charges", ncols=80, total=len(molecules)):
+                charged_ligands.append(SmallMoleculeComponent.from_openff(work.result()))
+
+    else:
+        for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
+            mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords) # type: ignore
+            charged_ligands.append(SmallMoleculeComponent.from_openff(mol_with_charge))
+
+    return charged_ligands
