@@ -99,9 +99,9 @@ lig_ejm_31\tlig_ejm_48\t0.0\t0.0
 lig_ejm_31\tlig_ejm_50\t0.0\t0.0
 lig_ejm_42\tlig_ejm_43\t0.0\t0.0
 lig_ejm_42\tlig_ejm_50\t0.0\t0.0
-lig_ejm_46\tlig_jmc_23\t0.0\t0.0
-lig_jmc_23\tlig_jmc_27\t0.0\t0.0
+lig_ejm_46\tlig_jmc_28\t0.0\t0.0
 lig_jmc_23\tlig_jmc_28\t0.0\t0.0
+lig_jmc_27\tlig_jmc_28\t0.0\t0.0
 """
 
 
