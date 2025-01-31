@@ -210,9 +210,9 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
 def custom_yaml_settings():
     return """\
 network:
-  method: generate_minimal_redundant_network
+  method: generate_lomap_network
   settings:
-    mst_num: 2
+    max_path_length: 6
 
 mapper:
   method: LomapAtomMapper
@@ -221,8 +221,7 @@ mapper:
     element_change: True
 """
 
-
-def test_custom_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdir):
+def test_lomap_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"
     with open(settings_path, "w") as f:
