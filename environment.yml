@@ -18,7 +18,7 @@ dependencies:
   - pyyaml
   - coverage
   - cinnabar ~=0.4.0
-  - openff-toolkit>=0.13.0
+  - openff-toolkit>=0.16.2
   - openff-nagl-base >=0.3.3
   - openff-units==0.2.0
   - pint<0.22
@@ -29,7 +29,7 @@ dependencies:
   - openmm >=8.0.0,!=8.1.0,<8.2.0
   - openmmtools >=0.24.1
   - openmmforcefields
-  - perses
+  - perses>=0.10.3
   - pooch
   - py3dmol
   - plugcli
@@ -37,12 +37,14 @@ dependencies:
   - pygraphviz
   - zstandard
   # Issue #443
-  - pymbar<4.0
+  - pymbar>4.0
   # docs
   - autodoc-pydantic<2.0
   - pydata-sphinx-theme
   - sphinx-click
+  # Control blas/openmp threads
+  - threadpoolctl
   - pip:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/gufe@v1.2.0

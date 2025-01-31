@@ -11,7 +11,7 @@ associate with transferring a molecule from vacuum into a solvent.
    Currently, water is the only supported solvent, however, more solvents might be possible in the future.
 
 The absolute solvation free energy is calculated through a thermodynamic cycle. 
-In this cycle, the interactions of the molecule are decoupled, meaning turned off, using a partial annhilation scheme (see below) both in the solvent and in the vacuum phases.
+In this cycle, the interactions of the molecule are decoupled, meaning turned off, using a partial annihilation scheme (see below) both in the solvent and in the vacuum phases.
 The absolute solvation free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
 
 .. figure:: img/ahfe_thermocycle.png
@@ -22,8 +22,8 @@ The absolute solvation free energy is then obtained via summation of free energy
 Scientific Details
 ------------------
 
-Partial annhilation scheme
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Partial annihilation scheme
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the :class:`.AbsoluteSolvationProtocol` the coulombic interactions of the molecule are fully turned off (annihilated). 
 The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
@@ -41,7 +41,7 @@ Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
 The :class:`.ProtocolDAG` of the :class:`.AbsoluteSolvationProtocol` contains :class:`.ProtocolUnit`\ s from both the vacuum and solvent transformations.
-This means that both legs of the thermodynamic cycle are constructured and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
+This means that both legs of the thermodynamic cycle are constructed and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
 If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both vacuum and solvent transformations.
 
 Simulation steps
@@ -52,7 +52,7 @@ Each :class:`.ProtocolUnit` (whether vacuum or solvent) carries out the followin
 1. Parameterize the system using `OpenMMForceFields <https://github.com/openmm/openmmforcefields>`_ and `Open Force Field <https://github.com/openforcefield/openff-forcefields>`_.
 2. Equilibrate the fully interacting system using a short MD simulation using the same approach as the :class:`.PlainMDProtocol` (in the solvent leg this will include rounds of NVT and NPT equilibration).
 3. Create an alchemical system.
-4. Minimize the alchemical sysem.
+4. Minimize the alchemical system.
 5. Equilibrate and production simulate the alchemical system using the chosen multistate sampling method (under NPT conditions if solvent is present).
 6. Analyze results for the transformation.
 

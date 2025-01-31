@@ -21,6 +21,7 @@ dependencies:
 - nbsphinx
 - nbsphinx-link
 - myst-parser
+- threadpoolctl
 - pip:
   - sphinx-design
   - sphinx-toolbox
