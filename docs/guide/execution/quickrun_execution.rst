@@ -50,7 +50,7 @@ Parallel execution of repeats with Quickrun
 Serial execution of multiple repeats of a transformation can be inefficient when simulation times are long.
 Higher throughput can be achieved with parallel execution by running one repeat per HPC job. Most protocols are set up to
 run three repeats in serial by default, but this can be changed by either:
- 
+
  1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
  2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.
 
@@ -65,20 +65,22 @@ results to a unique folder:
 
 .. code-block:: bash
 
-   for file in network_setup/transformations/*.json; do
-     relpath="${file:30}"  # strip off "network_setup/"
-     dirpath=${relpath%.*}  # strip off final ".json"
-     jobpath="network_setup/transformations/${dirpath}.job"
-     if [ -f "${jobpath}" ]; then
-       echo "${jobpath} already exists"
-       exit 1
-     fi
-     for repeat in {0..2}; do
-       cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath} --n-protocol-repeats 1"
-       echo -e "#!/usr/bin/env bash\n${cmd}" > "${jobpath}"
-       sbatch "${jobpath}"
-     done
-   done
+  openfe plan_rbfe-network -p protein.pdb -M molecules.sdf --n-protocol-repeats=1
+
+  for file in AlchemicalNetwork/transformations/*.json; do
+    relpath="${file:30}"  # strip off "AlchemicalNetwork/"
+    dirpath=${relpath%.*}  # strip off final ".json"
+    jobpath="AlchemicalNetwork/transformations/${dirpath}.job"
+    if [ -f "${jobpath}" ]; then
+      echo "${jobpath} already exists"
+      exit 1
+    fi
+    for repeat in {0..2}; do
+      cmd="openfe quickrun ${file} -o results_${repeat}/${relpath} -d results_${repeat}/${dirpath}"
+      echo -e "#!/usr/bin/env bash\n${cmd}" > "${jobpath}"
+      sbatch "${jobpath}"
+    done
+  done
 
 This should result in the following file structure after execution:
 
