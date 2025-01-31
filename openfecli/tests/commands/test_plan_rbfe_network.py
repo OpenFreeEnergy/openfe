@@ -338,39 +338,37 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
 
 
 @pytest.fixture
-def custom_yaml_settings():
+def lomap_yaml_settings():
     return """\
 network:
-  method: generate_minimal_redundant_network
+  method: generate_lomap_network
   settings:
-    mst_num: 2
+    max_path_length: 6
 
 mapper:
   method: LomapAtomMapper
   settings:
     time: 45
     element_change: True
-    
+
 partial_charge:
   method: nagl
   settings:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
-def test_custom_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdir):
-    protein, ligand, cofactor = eg5_files
+def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, cdk8_files, tmpdir):
+    protein, ligand = cdk8_files
     settings_path = tmpdir / "settings.yaml"
     with open(settings_path, "w") as f:
-        f.write(custom_yaml_settings)
+        f.write(lomap_yaml_settings)
 
     assert settings_path.exists()
 
     args = [
         '-p', protein,
         '-M', ligand,
-        '-C', cofactor,
-        '-s', settings_path,
+        '-s', settings_path
     ]
 
     runner = CliRunner()

@@ -123,6 +123,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         generate_minimal_spanning_network,
         generate_maximal_network,
         generate_minimal_redundant_network,
+        generate_lomap_network,
     )
     from openfe.setup import (
         LomapAtomMapper,
@@ -179,6 +180,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             'mst': generate_minimal_spanning_network,
             'generate_minimal_redundant_network': generate_minimal_redundant_network,
             'generate_maximal_network': generate_maximal_network,
+            'generate_lomap_network': generate_lomap_network,
         }
 
         try:
@@ -225,6 +227,7 @@ Supported network planning algorithms include (but are not limited to):
     - `generate_minimal_spanning_tree`
     - `generate_minimal_redundant_network`
     - `generate_radial_network`
+    - `generate_lomap_network`
 
 Supported partial charge method choices are:
     - ``am1bcc``
