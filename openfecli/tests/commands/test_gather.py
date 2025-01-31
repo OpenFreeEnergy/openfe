@@ -175,7 +175,6 @@ def test_gather(request, data_fixture, report):
     result = runner.invoke(gather, [results_dir] + args + ['-o', '-'])
 
     assert_click_success(result)
-    import pdb;pdb.set_trace()
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
     assert set(expected.split(b'\n')) == actual_lines
