@@ -5,6 +5,7 @@ import os
 import pathlib
 import pytest
 import pooch
+from ..utils import assert_click_success
 
 from openfecli.commands.gather import (
     gather, format_estimate_uncertainty, _get_column,
@@ -135,24 +136,24 @@ solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
 @pytest.fixture()
-def results_dir_serial(tmpdir):
+def results_dir_serial(tmpdir)->str:
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            t.extractall('.')
+            tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+            tar.extractall('.')
 
-        return os.path.abspath(t.getnames()[0])
+        return os.path.abspath(tar.getnames()[0])
 
 @pytest.fixture()
-def results_dir_parallel(tmpdir):
+def results_dir_parallel(tmpdir)->str:
     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
     with tmpdir.as_cwd():
         with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results_parallel.tar.gz', mode='r')
-            t.extractall('.')
+            tar = tarfile.open(d / 'rbfe_results_parallel.tar.gz', mode='r')
+            tar.extractall('.')
 
-        return os.path.abspath(t.getnames()[0])
+        return os.path.abspath(tar.getnames()[0])
 
 @pytest.mark.parametrize('data_fixture', ['results_dir_serial', 'results_dir_parallel'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
@@ -173,75 +174,48 @@ def test_gather(request, data_fixture, report):
     results_dir = request.getfixturevalue(data_fixture)
     result = runner.invoke(gather, [results_dir] + args + ['-o', '-'])
 
-    assert result.exit_code == 0
+    assert_click_success(result)
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
-
     assert set(expected.split(b'\n')) == actual_lines
 
+class TestGatherFailedEdges:
+    @pytest.fixture()
+    def results_dir_serial_missing_legs(self, tmpdir)->str:
+        """Example output data, with replicates run in serial and one deleted results JSON."""
+        with tmpdir.as_cwd():
+            with resources.files('openfecli.tests.data') as d:
+                tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+                tar.extractall('.')
 
-@pytest.mark.parametrize('include', ['complex', 'solvent', 'vacuum'])
-def test_generate_bad_legs_error_message(include):
-    expected = {
-        'complex': ("appears to be an RBFE", "missing {'solvent'}"),
-        'vacuum': ("appears to be an RHFE", "missing {'solvent'}"),
-        'solvent': ("whether this is an RBFE or an RHFE",
-                    "'complex'", "'solvent'"),
-    }[include]
-    set_vals = {include}
-    ligpair = {'lig1', 'lig2'}
-    msg = _generate_bad_legs_error_message(set_vals, ligpair)
-    for string in expected:
-        assert string in msg
+                results_dir_path = os.path.abspath(tar.getnames()[0])
+                files_to_remove = ["easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
+                                   "easy_rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
+                                   ]
+                for fname in files_to_remove:
+                    (pathlib.Path(results_dir_path)/ fname).unlink()
+        return results_dir_path
+
+    def test_missing_leg_error(self, results_dir_serial_missing_legs: str):
+        runner = CliRunner()
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['-o', '-'])
+
+        assert result.exit_code == 1
+        assert isinstance(result.exception, RuntimeError)
+        assert "Some edge(s) are missing runs" in str(result.exception)
+        assert "('lig_ejm_31', 'lig_ejm_42'): solvent" in str(result.exception)
+        assert "('lig_ejm_46', 'lig_jmc_28'): complex" in str(result.exception)
+        assert "using the --allow-partial flag" in str(result.exception)
 
 
-@pytest.mark.xfail
-def test_missing_leg_error(results_dir_serial):
-    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-    (pathlib.Path("results") / file_to_remove).unlink()
+    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
+        runner = CliRunner()
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
 
-    runner = CliRunner()
-    result = runner.invoke(gather, ['results'] + ['-o', '-'])
-    assert result.exit_code == 1
-    assert isinstance(result.exception, RuntimeError)
-    assert "Unable to determine" in str(result.exception)
-    assert "'lig_ejm_31'" in str(result.exception)
-    assert "'lig_ejm_42'" in str(result.exception)
-
-
-@pytest.mark.xfail
-def test_missing_leg_allow_partial(results_dir_serial):
-    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-    (pathlib.Path("results") / file_to_remove).unlink()
-
-    runner = CliRunner()
-    result = runner.invoke(gather,
-                           ['results'] + ['--allow-partial', '-o', '-'])
-    assert result.exit_code == 0
-
+        assert_click_success(result)
 
 RBFE_RESULTS = pooch.create(
     pooch.os_cache('openfe'),
     base_url="doi:10.6084/m9.figshare.25148945",
     registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
 )
-
-
-@pytest.fixture
-def rbfe_results():
-    # fetches rbfe results from online
-    # untars into local directory and returns path to this
-    d = RBFE_RESULTS.fetch('results.tar.gz', processor=pooch.Untar())
-
-    return os.path.join(pooch.os_cache('openfe'), 'results.tar.gz.untar', 'results')
-
-
-@pytest.mark.download
-@pytest.mark.xfail
-def test_rbfe_results(rbfe_results):
-    runner = CliRunner()
-
-    result = runner.invoke(gather, ['--report', 'raw', rbfe_results])
-
-    assert result.exit_code == 0
-    assert result.stdout_bytes == _EXPECTED_RAW

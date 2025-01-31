@@ -147,44 +147,27 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
     else:
         return 'complex'
 
+def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
+    """Format output describing failed RBFE or RHFE legs.
 
-def _generate_bad_legs_error_message(set_vals:set, ligpair)->str:
-    expected_rbfe = {'complex', 'solvent'}
-    expected_rhfe = {'solvent', 'vacuum'}
-    maybe_rhfe = bool(set_vals & expected_rhfe)
-    maybe_rbfe = bool(set_vals & expected_rbfe)
-    if maybe_rhfe and not maybe_rbfe:
-        msg = (
-                "This appears to be an RHFE calculation, but we're "
-                f"missing {expected_rhfe - set_vals} runs for the "
-                f"edge with ligands {ligpair}."
-            )
-    elif maybe_rbfe and not maybe_rhfe:
-        msg = (
-            "This appears to be an RBFE calculation, but we're "
-            f"missing {expected_rbfe - set_vals} runs for the "
-            f"edge with ligands {ligpair}."
-        )
-    elif maybe_rbfe and maybe_rhfe:
-        msg = (
-            "Unable to determine whether this is an RBFE "
-            f"or an RHFE calculation. Found legs {set_vals} "
-            f"for ligands {ligpair}. Those ligands are missing one "
-            f"of: {(expected_rhfe | expected_rbfe) - set_vals}."
-        )
-    else:  # -no-cov-
-        # this should never happen
-        msg = (
-            "Something went very wrong while determining the type "
-            f"of RFE calculation. For the ligand pair {ligpair}, "
-            f"we found legs labelled {set_vals}. We expected either "
-            f"{expected_rhfe} or {expected_rbfe}."
-        )
+    Parameters
+    ----------
+    bad_legs : list[set[str], tuple[str]]]
+        A list of tuples of (leg_types, ligpair) pairs from failed edges/legs.
+
+    Returns
+    -------
+    str
+        An error message containing information on all failed legs.
+    """
+    msg="Some edge(s) are missing runs!\nBelow are the problematic edges and run types found:\n\n"
+    for leg_types, ligpair in bad_legs:
+        msg += f"{ligpair}: {','.join(leg_types)}\n"
 
     msg += (
-        "\n\nYou can force partial gathering of results, without "
+        "\nYou can force partial gathering of results, without "
         "problematic edges, by using the --allow-partial flag of the gather "
-        "command. Note that this may cause problems with predicting "
+        "command.\nNOTE: This may cause problems with predicting "
         "absolute free energies from the relative free energies."
     )
     return msg
@@ -205,15 +188,16 @@ def _get_ddgs(legs:dict, error_on_missing=True):
     from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
 
     DDGs = []
+    bad_legs = []
     for ligpair, vals in sorted(legs.items()):
-        set_vals = set(vals)
+        leg_types = set(vals)
         DDGbind = None
         DDGhyd = None
         bind_unc = None
         hyd_unc = None
 
-        do_rbfe = (len(set_vals & {'complex', 'solvent'}) == 2)
-        do_rhfe = (len(set_vals & {'vacuum', 'solvent'}) == 2)
+        do_rbfe = (len(leg_types & {'complex', 'solvent'}) == 2)
+        do_rhfe = (len(leg_types & {'vacuum', 'solvent'}) == 2)
 
         if do_rbfe:
             DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
@@ -235,13 +219,17 @@ def _get_ddgs(legs:dict, error_on_missing=True):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            msg = _generate_bad_legs_error_message(set_vals, ligpair)
-            if error_on_missing:
-                raise RuntimeError(msg)
-            else:
-                warnings.warn(msg)
+            bad_legs.append((leg_types, ligpair))
+            continue
+        else:
+            DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
-        DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
+    if bad_legs:
+        err_msg = _generate_bad_legs_error_message(bad_legs)
+        if error_on_missing:
+            raise RuntimeError(err_msg)
+        else:
+            warnings.warn(err_msg)
 
     return DDGs
 
@@ -363,7 +351,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
 @click.option(
     '--allow-partial', is_flag=True, default=False,
     help=(
-        "Do not raise errors is results are missing parts for some edges. "
+        "Do not raise errors if results are missing parts for some edges. "
         "(Skip those edges and issue warning instead.)"
     )
 )
