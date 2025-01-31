@@ -47,4 +47,4 @@ dependencies:
   - pip:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/gufe@v1.2.0
