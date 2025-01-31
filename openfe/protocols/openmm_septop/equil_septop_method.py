@@ -993,12 +993,15 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     @staticmethod
     def _add_restraints(
             system: openmm.System,
-            u,
+            u_A,
+            u_B,
             ligand_1,
             ligand_2,
             ligand_1_inxs: tuple[int],
             ligand_2_inxs: tuple[int],
+            ligand_2_inxs_B: tuple[int],
             protein_inxs: tuple[int],
+            positions_AB: omm_units.Quantity,
             settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
@@ -1034,7 +1037,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         """
 
         boresch_A = find_boresch_restraint(
-            u,
+            u_A,
             ligand_1,
             ligand_1_inxs,
             protein_inxs,
@@ -1042,14 +1045,19 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             dssp_filter=True)
 
         boresch_B = find_boresch_restraint(
-            u,
+            u_B,
             ligand_2,
-            ligand_2_inxs,
+            ligand_2_inxs_B,
             protein_inxs,
             host_selection='name C or name CA or name CB or name N or name O',
             dssp_filter=True)
         print(boresch_A)
         print(boresch_B)
+        print(boresch_B.guest_atoms)
+        # We have to update the indices for ligand B to match the AB complex
+        new_boresch_B_indices = [ligand_2_inxs_B.index(i) for i in boresch_B.guest_atoms]
+        boresch_B.guest_atoms = [ligand_2_inxs[i] for i in new_boresch_B_indices]
+        print(boresch_B.guest_atoms)
         # Convert restraint units to openmm
         k_distance = to_openmm(settings["restraint_settings"].k_distance)
         k_theta = to_openmm(settings["restraint_settings"].k_theta)
@@ -1057,7 +1065,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         force_A = create_boresch_restraint(
             boresch_A.host_atoms[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
             boresch_A.guest_atoms,
-            u.atoms.positions * omm_units.angstrom,
+            positions_AB,
             k_distance,
             k_theta,
             "lambda_restraints_A",
@@ -1067,7 +1075,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             boresch_B.host_atoms[::-1],
             # expects [r3, r2, r1], not [r1, r2, r3]
             boresch_B.guest_atoms,
-            u.atoms.positions * omm_units.angstrom,
+            positions_AB,
             k_distance,
             k_theta,
             "lambda_restraints_B",
@@ -1228,12 +1236,15 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
     @staticmethod
     def _add_restraints(
         system: openmm.System,
-        u,
+        u_A,
+        u_B,
         ligand_1,
         ligand_2,
         ligand_1_inxs: tuple[int],
         ligand_2_inxs: tuple[int],
+        ligand_2_inxs_B: tuple[int],
         protein_inxs,
+        positions_AB,
         settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
@@ -1268,12 +1279,13 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
 
-        coords = u.atoms.positions
+        coords_A = u_A.atoms.positions
+        coords_B = u_B.atoms.positions
         ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
-        ref_B = ligand_2_inxs[get_central_atom_idx(ligand_2)]
-        print(ref_A, ref_B)
+        ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
+        print(ref_A, ref_B, ligand_2_inxs[ligand_2_inxs_B.index(ref_B)])
         distance = np.linalg.norm(
-            coords[ref_A] - coords[ref_B])
+            coords_A[ref_A] - coords_B[ref_B])
         print(distance)
 
         k_distance = to_openmm(settings['restraint_settings'].k_distance)
@@ -1281,7 +1293,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         force = openmm.HarmonicBondForce()
         force.addBond(
             ref_A,
-            ref_B,
+            ligand_2_inxs[ligand_2_inxs_B.index(ref_B)],
             distance * openmm.unit.angstrom,
             k_distance,
         )

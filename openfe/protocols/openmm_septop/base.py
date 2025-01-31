@@ -271,6 +271,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
+        print(simulation.context.getPositions(asNumpy=True))
 
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
@@ -568,12 +569,15 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     @staticmethod
     def _add_restraints(
             system: openmm.System,
-            u: mda.Universe,
+            u_A: mda.Universe,
+            u_B: mda.Universe,
             ligand_1: RDKitMolecule,
             ligand_2: RDKitMolecule,
             ligand_1_inxs: list[int],
             ligand_2_inxs: list[int],
+            ligand_2_inxs_B: list[int],
             protein_inxs: Optional[list[int]],
+            positions_AB: omm_unit.Quantity,
             settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
@@ -853,20 +857,25 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ligand_B_inxs = tuple([atom_indices_AB_B[inx] for inx in ligand_B_ref_inxs])
         print(ligand_A_inxs)
         print(ligand_B_inxs)
+        # Update the positions in the modeller
+        modeller_A.positions = equ_positions_A
+        modeller_B.positions = updated_positions_B
         modeller_AB.positions = positions_AB
-        u = mda.Universe(omm_topology_AB, modeller_AB)
-        print(u)
+        u_A = mda.Universe(omm_topology_A, modeller_A)
+        u_B = mda.Universe(omm_topology_B, modeller_B)
         if prot_comp:
             protein_idxs = comp_atomids_AB[prot_comp]
         else:
             protein_idxs = None
         system = self._add_restraints(
-            alchemical_system, u,
+            alchemical_system, u_A, u_B,
             alchem_comps["stateA"][0].to_rdkit(),
             alchem_comps["stateB"][0].to_rdkit(),
-            comp_atomids_AB[alchem_comps["stateA"][0]],
-            comp_atomids_AB[alchem_comps["stateB"][0]],
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+            atom_indices_B,
             protein_idxs,
+            positions_AB,
             settings,
         )
         # # Check that the restraints are correctly applied by running a short equilibration
