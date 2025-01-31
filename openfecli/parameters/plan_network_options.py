@@ -194,6 +194,7 @@ Supported network planning algorithms include (but are not limited to):
     - `generate_minimal_spanning_tree`
     - `generate_minimal_redundant_network`
     - `generate_radial_network`
+    - `generate_lomap_network`
 
 The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
 

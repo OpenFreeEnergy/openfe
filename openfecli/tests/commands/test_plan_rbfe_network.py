@@ -207,7 +207,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
 
 
 @pytest.fixture
-def custom_yaml_settings():
+def lomap_yaml_settings():
     return """\
 network:
   method: generate_lomap_network
@@ -221,11 +221,11 @@ mapper:
     element_change: True
 """
 
-def test_lomap_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdir):
+def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"
     with open(settings_path, "w") as f:
-        f.write(custom_yaml_settings)
+        f.write(lomap_yaml_settings)
 
     assert settings_path.exists()
 
