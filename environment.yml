@@ -27,7 +27,7 @@ dependencies:
   - click
   - typing-extensions
   - openmm >=8.0.0,!=8.1.0,<8.2.0
-  - openmmtools
+  - openmmtools >=0.24.1
   - openmmforcefields
   - perses
   - pooch
@@ -46,4 +46,3 @@ dependencies:
     - sphinx-toolbox
     - openff-nagl-models>=0.1.2
     - git+https://github.com/OpenFreeEnergy/gufe@main
-    - git+https://github.com/ianmkenney/openmmtools@multistatereporter_variable_pos_frequency
