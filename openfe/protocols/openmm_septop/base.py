@@ -268,10 +268,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             verbose=self.verbose,
             shared_basepath=self.shared_basepath,
         )
-
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
-        print(simulation.context.getPositions(asNumpy=True))
 
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
@@ -790,6 +788,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         equ_positions_B = self._pre_equilibrate(
             omm_system_B, omm_topology_B, positions_B, settings, dry
         )
+
 
         simtk.openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_A, equ_positions_A, open(self.shared_basepath / 'outputA_equ.pdb', 'w'))

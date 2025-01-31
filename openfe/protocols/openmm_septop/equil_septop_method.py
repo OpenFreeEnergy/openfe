@@ -517,7 +517,7 @@ class SepTopProtocol(gufe.Protocol):
             solvent_equil_output_settings=MDOutputSettings(
                 equil_nvt_structure=None,
                 equil_npt_structure='equil_npt_structure.pdb',
-                production_trajectory_filename=None,
+                production_trajectory_filename='equil_npt.xtc',
                 log_output='equil_simulation.log',
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
