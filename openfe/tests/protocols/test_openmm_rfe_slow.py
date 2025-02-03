@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import numpy as np
-from numpy.testing import assert_equal
+from numpy.testing import assert_allclose
 from gufe.protocols import execute_DAG
 import pytest
 from openff.units import unit
@@ -111,9 +111,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
             assert key in structural_data.keys()
 
         # 6 frames being written to file
-        # Note: the values of this next test are wrong, but in an expected way
-        # See: https://github.com/OpenFreeEnergy/openfe_analysis/issues/33
-        assert_equal(structural_data['time_ps'], [0, 50, 100, 150, 200, 250])
+        assert_allclose(structural_data['time_ps'], [0.0, 0.02, 0.04, 0.06, 0.08, 0.1])
         assert structural_data['ligand_RMSD'].shape == (11, 6)
         assert structural_data['ligand_COM_drift'].shape == (11, 6)
         # No protein so should be empty
