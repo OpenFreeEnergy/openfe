@@ -53,6 +53,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = platform
     s.output_settings.checkpoint_interval = 20 * unit.femtosecond
+    s.output_settings.positions_write_frequency = 20 * unit.femtosecond
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
