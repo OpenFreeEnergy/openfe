@@ -1182,7 +1182,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 data["protein_2D_RMSD"], dtype=np.float32
             ),
             time_ps=np.asarray(
-                data["time(ps)"], dtype=np.int32
+                data["time(ps)"], dtype=np.float32
             ),
         )
 
