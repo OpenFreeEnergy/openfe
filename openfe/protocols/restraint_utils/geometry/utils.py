@@ -587,7 +587,7 @@ def stable_secondary_structure_selection(
 
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
-    if not _atomgroup_has_bonds(copy_protein_ag, 'bonds'):
+    if not _atomgroup_has_bonds(copy_protein_ag):
         wmsg = "No bonds found in input Universe, will attept to guess them."
         warnings.warn(wmsg)
         protein_ag.guess_bonds()
@@ -690,7 +690,7 @@ def protein_chain_selection(
 
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
-    if not _atomgroup_has_bonds(copy_protein_ag, 'bonds'):
+    if not _atomgroup_has_bonds(copy_protein_ag):
         wmsg = (
             "No bonds found in input Universe, will attept to guess them."
         )

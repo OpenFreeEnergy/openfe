@@ -33,12 +33,12 @@ def _sort_by_distance_from_atom(
 
     Parameters
     ----------
+    rdmol : Chem.Mol
+      RDKit Molecule the atoms belong to.
     target_idx : int
       The idx of the atom to measure from.
     atom_idxs : list[int]
       The idx values of the atoms to sort.
-    rdmol : Chem.Mol
-      RDKit Molecule the atoms belong to
 
     Returns
     -------
@@ -163,8 +163,11 @@ def _get_guest_atom_pool(
     # if we don't have enough atoms just get all the heavy atoms
     if len(atom_pool) < 3:
         ring_atoms_only = False
-        heavy_atoms = np.array(get_heavy_atom_idxs(rdmol))
-        atom_pool = set(heavy_atoms[rmsf[heavy_atoms] < rmsf_cutoff])
+        heavy_atoms = get_heavy_atom_idxs(rdmol)
+        atom_pool = set(
+            idx for enum, idx in enumerate(heavy_atoms)
+            if rmsf[enum] < rmsf_cutoff
+        )
         if len(atom_pool) < 3:
             return None, False
 

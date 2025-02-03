@@ -24,7 +24,8 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     check_angle_not_flat,
     FindHostAtoms,
     get_local_rmsf,
-    stable_secondary_structure_selection
+    stable_secondary_structure_selection,
+    protein_chain_selection
 )
 
 
