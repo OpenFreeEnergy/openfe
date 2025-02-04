@@ -58,7 +58,7 @@ from gufe import (
 from openfe.protocols.openmm_septop.equil_septop_settings import (
     SepTopSettings,
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
-    MDSimulationSettings, MDOutputSettings,
+    MDSimulationSettings, SepTopEquilOutputSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
@@ -514,11 +514,11 @@ class SepTopProtocol(gufe.Protocol):
                 equilibration_length=0.1 * unit.nanosecond,
                 production_length=0.5 * unit.nanosecond,
             ),
-            solvent_equil_output_settings=MDOutputSettings(
+            solvent_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
-                equil_npt_structure='equil_npt_structure.pdb',
-                production_trajectory_filename='equil_npt.xtc',
-                log_output='equil_simulation.log',
+                equil_npt_structure='equil_npt_structure',
+                production_trajectory_filename='equil_npt',
+                log_output='equil_simulation',
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=19,
@@ -535,11 +535,11 @@ class SepTopProtocol(gufe.Protocol):
                 equilibration_length=0.1 * unit.nanosecond,
                 production_length=0.5 * unit.nanosecond,
             ),
-            complex_equil_output_settings=MDOutputSettings(
+            complex_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
-                equil_npt_structure='equil_structure.pdb',
-                production_trajectory_filename='equil_npt.xtc',
-                log_output='equil_simulation.log',
+                equil_npt_structure='equil_structure',
+                production_trajectory_filename='equil_npt',
+                log_output='equil_simulation',
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=19,
@@ -924,7 +924,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
+            * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: ComplexRestraintsSettings
@@ -1164,7 +1164,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
+            * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: SolventRestraintsSettings
@@ -1381,7 +1381,7 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
+            * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: SolventRestraintsSettings
@@ -1505,7 +1505,7 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
+            * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: ComplexRestraintsSettings

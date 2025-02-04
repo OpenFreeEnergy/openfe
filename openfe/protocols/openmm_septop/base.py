@@ -173,6 +173,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             topology: openmm.app.Topology,
             positions: omm_unit.Quantity,
             settings: dict[str, SettingsBaseModel],
+            state: str,
             dry: bool
     ) -> omm_unit.Quantity:
         """
@@ -194,6 +195,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
           * `integrator_settings`
           * `equil_simulation_settings`
           * `equil_output_settings`
+        state: str
+          The state that is pre_equilibrates, either 'A' or 'B'.
         dry: bool
           Whether or not this is a dry run.
 
@@ -250,6 +253,32 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # Don't do anything if we're doing a dry run
         if dry:
             return positions
+        unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
+
+        if state == 'A' or state == 'B':
+            if unfrozen_outsettings.production_trajectory_filename:
+                unfrozen_outsettings.production_trajectory_filename = (
+                        unfrozen_outsettings.production_trajectory_filename + f'_state{state}.xtc')
+            if unfrozen_outsettings.preminimized_structure:
+                unfrozen_outsettings.preminimized_structure = (
+                        unfrozen_outsettings.preminimized_structure + f'_state{state}.pdb')
+            if unfrozen_outsettings.minimized_structure:
+                unfrozen_outsettings.minimized_structure = (
+                        unfrozen_outsettings.minimized_structure + f'_state{state}.pdb')
+            if unfrozen_outsettings.equil_nvt_structure:
+                unfrozen_outsettings.equil_nvt_structure = (
+                        unfrozen_outsettings.equil_nvt_structure + f'_state{state}.pdb')
+            if unfrozen_outsettings.equil_npt_structure:
+                unfrozen_outsettings.equil_npt_structure = (
+                        unfrozen_outsettings.equil_npt_structure + f'_state{state}.pdb')
+            if unfrozen_outsettings.log_output:
+                unfrozen_outsettings.log_output = (
+                        unfrozen_outsettings.log_output + f'_state{state}.log')
+            print(unfrozen_outsettings)
+        else:
+            errmsg = f"Only 'A' and 'B' are accepted as states. Got {state}"
+            raise ValueError(errmsg)
+
 
         # Use the _run_MD method from the PlainMDProtocolUnit
         # Should in-place modify the simulation
@@ -257,7 +286,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             simulation=simulation,
             positions=positions,
             simulation_settings=settings['equil_simulation_settings'],
-            output_settings=settings['equil_output_settings'],
+            output_settings=unfrozen_outsettings,
             temperature=settings['thermo_settings'].temperature,
             barostat_frequency=settings[
                 'integrator_settings'].barostat_frequency,
@@ -783,10 +812,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
         equ_positions_A = self._pre_equilibrate(
-            omm_system_A, omm_topology_A, positions_A, settings, dry
+            omm_system_A, omm_topology_A, positions_A, settings, 'A', dry
         )
         equ_positions_B = self._pre_equilibrate(
-            omm_system_B, omm_topology_B, positions_B, settings, dry
+            omm_system_B, omm_topology_B, positions_B, settings, 'B', dry
         )
 
 
@@ -878,12 +907,12 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             settings,
         )
         # # Check that the restraints are correctly applied by running a short equilibration
-        equ_positions_restraints = self._pre_equilibrate(
-            system, omm_topology_AB, positions_AB, settings, dry
-        )
+        # equ_positions_restraints = self._pre_equilibrate(
+        #     system, omm_topology_AB, positions_AB, settings, dry
+        # )
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   equ_positions_restraints,
+                                                   positions_AB,
                                                    open(topology_file,
                                                         'w'))
 

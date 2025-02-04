@@ -29,6 +29,7 @@ from openff.units import unit
 from openff.models.types import FloatQuantity
 import numpy as np
 from pydantic.v1 import validator
+from typing import Optional
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -151,6 +152,52 @@ class LambdaSettings(SettingsBaseModel):
         return v
 
 
+class SepTopEquilOutputSettings(MDOutputSettings):
+    # reporter settings
+    output_indices = 'all'
+    production_trajectory_filename: Optional[str] = 'simulation'
+    """
+    Basename for the path to the storage file for analysis. The protocol will
+    append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the 
+    respective endstates. Default 'simulation'.
+    """
+    trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
+    """
+    Frequency to write the xtc file. Default 20 * unit.picosecond.
+    """
+    preminimized_structure: Optional[str] = 'system'
+    """
+    Basename for the path to the pdb file of the full pre-minimized systems. 
+    The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
+     files of the respective endstates. Default 'system'.
+    """
+    minimized_structure: Optional[str] = 'minimized'
+    """
+    Basename for the path to the pdb file of the systems after minimization. 
+    The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
+     files of the respective endstates. Default 'minimized'.
+    """
+    equil_nvt_structure: Optional[str] = 'equil_nvt'
+    """
+    Basename for the path to the pdb file of the systems after NVT equilibration. 
+    The protocol will append a '_stateA' and a '_stateB' for the output files 
+    of the respective endstates. Default 'equil_nvt.pdb'.
+    """
+    equil_npt_structure: Optional[str] = 'equil_npt'
+    """
+    Basename for the path to the pdb file of the systems after NPT equilibration. 
+    The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
+     files of the respective endstates. Default 'equil_npt'.
+    """
+    log_output: Optional[str] = 'simulation'
+    """
+    Basename for the filename for writing the log of the MD simulation, 
+    including timesteps, energies, density, etc. 
+    The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
+     files of the respective endstates. Default 'simulation'.
+    """
+
+
 # This subclasses from SettingsBaseModel as it has vacuum_forcefield and
 # solvent_forcefield fields, not just a single forcefield_settings field
 class SepTopSettings(SettingsBaseModel):
@@ -237,7 +284,7 @@ class SepTopSettings(SettingsBaseModel):
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    complex_equil_output_settings: MDOutputSettings
+    complex_equil_output_settings: SepTopEquilOutputSettings
     """
     Simulation output settings for the complex non-alchemical equilibration.
     """
@@ -245,7 +292,7 @@ class SepTopSettings(SettingsBaseModel):
     """
     Simulation output settings for the complex transformation.
     """
-    solvent_equil_output_settings: MDOutputSettings
+    solvent_equil_output_settings: SepTopEquilOutputSettings
     """
     Simulation output settings for the solvent non-alchemical equilibration.
     """
