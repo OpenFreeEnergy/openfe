@@ -27,7 +27,7 @@ dependencies:
   - click
   - typing-extensions
   - openmm >=8.0.0,!=8.1.0,<8.2.0
-  - openmmtools <0.24.1
+  - openmmtools >=0.24.1
   - openmmforcefields
   - perses>=0.10.3
   - pooch

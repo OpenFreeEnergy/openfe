@@ -695,11 +695,33 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             time_per_iteration=simulation_settings.time_per_iteration,
         )
 
+        if output_settings.positions_write_frequency is not None:
+            pos_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.positions_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' position_write_frequency",
+                denominator_name="simulation settings' time_per_iteration"
+            )
+        else:
+            pos_interval = 0
+
+        if output_settings.velocities_write_frequency is not None:
+            vel_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.velocities_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' velocity_write_frequency",
+                denominator_name="simulation settings' time_per_iteration"
+            )
+        else:
+            vel_interval = 0
+
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
+            position_interval=pos_interval,
+            velocity_interval=vel_interval,
         )
 
         # Write out the structure's PDB whilst we're here
