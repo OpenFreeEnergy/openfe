@@ -5,6 +5,7 @@ from gufe import SmallMoleculeComponent
 from openfecli.commands.generate_partial_charges import charge_molecules
 from openff.toolkit import Molecule
 from openff.units import unit
+import logging
 import numpy as np
 
 @pytest.fixture
@@ -47,17 +48,16 @@ def test_write_charges_to_input(methane, tmpdir):
                 ], catch_exceptions=False
             )
 
-def test_charge_molecules_default(methane, tmpdir):
+def test_charge_molecules_default(methane, tmpdir, caplog):
 
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
     output_file = str(tmpdir / "charged_methane.sdf")
-
+    caplog.set_level(logging.INFO)
     with runner.isolated_filesystem():
         # make sure the charges are picked up
-        with pytest.warns(match="Partial charges have been provided, these will "):
-            result = runner.invoke(
+        result = runner.invoke(
                 charge_molecules,
                 [
                     "-M",
@@ -68,6 +68,7 @@ def test_charge_molecules_default(methane, tmpdir):
             )
 
         assert result.exit_code == 0
+        assert "Partial charges have been provided" in caplog.text
         assert "Partial Charge Generation: am1bcc" in result.output
         # make sure the charges have been saved
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
@@ -79,7 +80,7 @@ def test_charge_molecules_default(methane, tmpdir):
     pytest.param(False, [-1.0, 0.25, 0.25, 0.25, 0.25], id="Don't overwrite"),
     pytest.param(True, [-0.1084, 0.0271, 0.0271, 0.0271, 0.0271], id="Overwrite")
 ])
-def test_charge_molecules_overwrite(overwrite, tmpdir, methane_with_charges, expected_charges):
+def test_charge_molecules_overwrite(overwrite, tmpdir, caplog, methane_with_charges, expected_charges):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane_with_charges.to_file(str(mol_path), "sdf")
@@ -96,13 +97,14 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, methane_with_charges, exp
 
     with runner.isolated_filesystem():
         # make sure the charges are picked up
-        with pytest.warns(match="Partial charges have been provided, these will "):
-            result = runner.invoke(
+        caplog.set_level(logging.INFO)
+        result = runner.invoke(
                 charge_molecules,
                 args,
             )
-
         assert result.exit_code == 0
+
+        assert "Partial charges have been provided" in caplog.text
         assert "Partial Charge Generation: am1bcc" in result.output
         if overwrite:
             assert "Overwriting partial charges" in result.output
@@ -117,7 +119,7 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, methane_with_charges, exp
     pytest.param(1, id="1"),
     pytest.param(2, id="2")
 ])
-def test_charge_settings(methane, tmpdir, yaml_nagl_settings, ncores):
+def test_charge_settings(methane, tmpdir, caplog, yaml_nagl_settings, ncores):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
     methane.to_file(str(mol_path), "sdf")
@@ -129,9 +131,9 @@ def test_charge_settings(methane, tmpdir, yaml_nagl_settings, ncores):
         f.write(yaml_nagl_settings)
 
     with runner.isolated_filesystem():
+        caplog.set_level(logging.INFO)
         # make sure the charges are picked up
-        with pytest.warns(match="Partial charges have been provided, these will "):
-            result = runner.invoke(
+        result = runner.invoke(
                 charge_molecules,
                 [
                     "-M",
@@ -146,6 +148,8 @@ def test_charge_settings(methane, tmpdir, yaml_nagl_settings, ncores):
             )
 
         assert result.exit_code == 0
+
+        assert "Partial charges have been provided" in caplog.text
         assert "Partial Charge Generation: nagl" in result.output
         # make sure the charges have been saved
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
