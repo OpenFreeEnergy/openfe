@@ -777,22 +777,41 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Block out oechem backend in system_generator calls to avoid
         # any issues with smiles roundtripping between rdkit and oechem
         with without_oechem_backend():
-            system_generator = system_creation.get_system_generator(
+            system_generatorA = system_creation.get_system_generator(
                 forcefield_settings=forcefield_settings,
                 integrator_settings=integrator_settings,
                 thermo_settings=thermo_settings,
-                cache=ffcache,
+                cache=None,
+                has_solvent=solvent_comp is not None,
+            )
+
+            system_generatorB = system_creation.get_system_generator(
+                forcefield_settings=forcefield_settings,
+                integrator_settings=integrator_settings,
+                thermo_settings=thermo_settings,
+                cache=None,
                 has_solvent=solvent_comp is not None,
             )
 
             # c. force the creation of parameters
             # This is necessary because we need to have the FF templates
             # registered ahead of solvating the system.
-            for smc, mol in chain(off_small_mols['stateA'],
-                                  off_small_mols['stateB'],
-                                  off_small_mols['both']):
-                system_generator.create_system(mol.to_topology().to_openmm(),
-                                               molecules=[mol])
+            # stateA
+            system_generatorA.create_system(
+                off_small_mols['stateA'][0][1].to_topology().to_openmm(),
+                molecules=[off_small_mols['stateA'][0][1]]
+            )
+            system_generatorB.create_system(
+                off_small_mols['stateB'][0][1].to_topology().to_openmm(),
+                molecules=[off_small_mols['stateB'][0][1]]
+            )
+
+            for smc, mol in off_small_mols['both']:
+                for sys_gen in [system_generatorA, system_generatorB]:
+                    sys_gen.create_system(
+                        mol.to_topology().to_openmm(),
+                        molecules=[mol]
+                    )
 
             # c. get OpenMM Modeller + a dictionary of resids for each component
             stateA_modeller, comp_resids = system_creation.get_omm_modeller(
@@ -800,7 +819,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 solvent_comp=solvent_comp,
                 small_mols=dict(chain(off_small_mols['stateA'],
                                       off_small_mols['both'])),
-                omm_forcefield=system_generator.forcefield,
+                omm_forcefield=system_generatorA.forcefield,
                 solvent_settings=solvation_settings,
             )
 
@@ -815,7 +834,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Block out oechem backend in system_generator calls to avoid
         # any issues with smiles roundtripping between rdkit and oechem
         with without_oechem_backend():
-            stateA_system = system_generator.create_system(
+            stateA_system = system_generatorA.create_system(
                 stateA_modeller.topology,
                 molecules=[m for _, m in chain(off_small_mols['stateA'],
                                                off_small_mols['both'])],
@@ -834,7 +853,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Block out oechem backend in system_generator calls to avoid
         # any issues with smiles roundtripping between rdkit and oechem
         with without_oechem_backend():
-            stateB_system = system_generator.create_system(
+            stateB_system = system_generatorB.create_system(
                 stateB_topology,
                 molecules=[m for _, m in chain(off_small_mols['stateB'],
                                                off_small_mols['both'])],

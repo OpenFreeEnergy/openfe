@@ -738,7 +738,8 @@ def test_dry_run_user_charges(benzene_modifications, nameA, nameB, tmpdir):
     # Create new mapping
     mapper = openfe.setup.LomapAtomMapper(element_change=False)
     mapping = next(mapper.suggest_mappings(molA_smc, molB_smc))
-    print(mapping)
+    print(molA_smc.to_openff().partial_charges)
+    print(molB_smc.to_openff().partial_charges)
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(

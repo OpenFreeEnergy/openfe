@@ -1602,8 +1602,10 @@ class HybridTopologyFactory:
                 # Get the parameters in the new and old systems:
                 old_index = hybrid_to_old_map[particle_index]
                 [charge_old, sigma_old, epsilon_old] = old_system_nonbonded_force.getParticleParameters(old_index)
+                print("core old", particle_index, [charge_old, sigma_old, epsilon_old])
                 new_index = hybrid_to_new_map[particle_index]
                 [charge_new, sigma_new, epsilon_new] = new_system_nonbonded_force.getParticleParameters(new_index)
+                print("core new", new_index, [charge_new, sigma_new, epsilon_new])
 
                 # Add the particle to the custom forces, interpolating between
                 # the two parameters; add steric params and zero electrostatics
