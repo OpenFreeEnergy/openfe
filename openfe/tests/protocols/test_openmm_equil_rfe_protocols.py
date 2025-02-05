@@ -683,8 +683,11 @@ def test_dry_run_charge_backends(
                 np.testing.assert_allclose(c, ref, rtol=1e-4)
 
 
-@pytest.mark.flaky(reruns=3)  # bad minimisation can happen
-def test_dry_run_user_charges(benzene_modifications, tmpdir):
+#@pytest.mark.flaky(reruns=3)  # bad minimisation can happen
+@pytest.mark.parametrize('nameA, nameB', [
+    ['benzene', 'toluene'], ['benzene', 'benzene'],
+])
+def test_dry_run_user_charges(benzene_modifications, nameA, nameB, tmpdir):
     """
     Create a hybrid system with a set of fictitious user supplied charges
     and ensure that they are properly passed through to the constructed
@@ -719,27 +722,28 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
         np.testing.assert_allclose(prop_chgs, charge_array.m)
 
     # Create new smc with overriden charges
-    benzene_offmol = benzene_modifications['benzene'].to_openff()
-    toluene_offmol = benzene_modifications['toluene'].to_openff()
-    benzene_rand_chg = assign_fictitious_charges(benzene_offmol)
-    toluene_rand_chg = assign_fictitious_charges(toluene_offmol)
-    benzene_offmol.partial_charges = benzene_rand_chg
-    toluene_offmol.partial_charges = toluene_rand_chg
-    benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
-    toluene_smc = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
+    molA_offmol = benzene_modifications[nameA].to_openff()
+    molB_offmol = benzene_modifications[nameB].to_openff()
+    molA_rand_chg = assign_fictitious_charges(molA_offmol)
+    molB_rand_chg = assign_fictitious_charges(molB_offmol)
+    molA_offmol.partial_charges = molA_rand_chg
+    molB_offmol.partial_charges = molB_rand_chg
+    molA_smc = openfe.SmallMoleculeComponent.from_openff(molA_offmol)
+    molB_smc = openfe.SmallMoleculeComponent.from_openff(molB_offmol)
 
     # Check that the new smcs have the new overriden charges
-    check_propchgs(benzene_smc, benzene_rand_chg)
-    check_propchgs(toluene_smc, toluene_rand_chg)
+    check_propchgs(molA_smc, molA_rand_chg)
+    check_propchgs(molB_smc, molB_rand_chg)
 
     # Create new mapping
     mapper = openfe.setup.LomapAtomMapper(element_change=False)
-    mapping = next(mapper.suggest_mappings(benzene_smc, toluene_smc))
+    mapping = next(mapper.suggest_mappings(molA_smc, molB_smc))
+    print(mapping)
 
     # create DAG from protocol and take first (and only) work unit from within
     dag = protocol.create(
-        stateA=openfe.ChemicalSystem({'l': benzene_smc, }),
-        stateB=openfe.ChemicalSystem({'l': toluene_smc, }),
+        stateA=openfe.ChemicalSystem({'l': molA_smc, }),
+        stateB=openfe.ChemicalSystem({'l': molB_smc, }),
         mapping=mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
@@ -792,21 +796,22 @@ def test_dry_run_user_charges(benzene_modifications, tmpdir):
             # offset (c_offsets) is equal to -(molA particle charge)
             if i in htf._atom_classes['unique_old_atoms']:
                 idx = htf._hybrid_to_old_map[i]
-                np.testing.assert_allclose(c, benzene_rand_chg[idx])
-                np.testing.assert_allclose(c_offsets[i], -benzene_rand_chg[idx])
+                np.testing.assert_allclose(c, molA_rand_chg[idx])
+                np.testing.assert_allclose(c_offsets[i], -molA_rand_chg[idx])
             # particle charge (c) is equal to 0
             # offset (c_offsets) is equal to molB particle charge
             elif i in htf._atom_classes['unique_new_atoms']:
                 idx = htf._hybrid_to_new_map[i]
                 np.testing.assert_allclose(c, 0 * unit.elementary_charge)
-                np.testing.assert_allclose(c_offsets[i], toluene_rand_chg[idx])
+                np.testing.assert_allclose(c_offsets[i], molB_rand_chg[idx])
             # particle charge (c) is equal to molA particle charge
             # offset (c_offsets) is equal to difference between molB and molA
             elif i in htf._atom_classes['core_atoms']:
                 old_i = htf._hybrid_to_old_map[i]
                 new_i = htf._hybrid_to_new_map[i]
-                c_exp = toluene_rand_chg[new_i] - benzene_rand_chg[old_i]
-                np.testing.assert_allclose(c, benzene_rand_chg[old_i])
+                c_exp = molB_rand_chg[new_i] - molA_rand_chg[old_i]
+                print(c, c_exp)
+                np.testing.assert_allclose(c, molA_rand_chg[old_i])
                 np.testing.assert_allclose(c_offsets[i], c_exp)
 
 
