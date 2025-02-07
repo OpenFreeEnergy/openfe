@@ -16,7 +16,7 @@ Relative Free Energies
 Python API Showcase
 ~~~~~~~~~~~~~~~~~~~
 
-Our :any:`shocase notebook <showcase_notebook>` walks users through
+Our :any:`showcase notebook <showcase_notebook>` walks users through
 how to use the main Python API components of OpenFE to create a
 relative binding free energy calculation.
 
@@ -64,7 +64,10 @@ and plot networks of relative free energy results.
 Generating Partial Charges
 --------------------------
 
-The :any:`<charge_molecules_cli_tutorial>`
+The :any:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>` demonstrates
+ how the command line interface can be used to assign and store partial charges for small molecules which
+can be used throughout the OpenFE eco-system.
+
 
 .. toctree::
     :maxdepth: 1
