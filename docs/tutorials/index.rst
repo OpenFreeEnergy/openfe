@@ -61,6 +61,10 @@ use the `Cinnabar Python package <https://github.com/OpenFreeEnergy/cinnabar>`_
 to analyze (e.g. generating MLE estimates of absolute free energies)
 and plot networks of relative free energy results.
 
+Generating Partial Charges
+--------------------------
+
+The :any:`<charge_molecules_cli_tutorial>`
 
 .. toctree::
     :maxdepth: 1
@@ -72,3 +76,4 @@ and plot networks of relative free energy results.
     md_tutorial
     ahfe_tutorial
     plotting_with_cinnabar
+    charge_molecules_cli_tutorial
