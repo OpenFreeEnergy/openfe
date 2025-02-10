@@ -5,8 +5,14 @@ The page has information for installing ``openfe``, installing software
 packages that integrate with ``openfe``, and testing that your ``openfe``
 installation is working.
 
-``openfe`` currently only works on POSIX system (macOS and UNIX/Linux). It
-is tested against Python 3.9, 3.10, and 3.11.
+``openfe`` currently only works on POSIX systems (macOS and UNIX/Linux).
+
+
+We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
+
+- Python 3.10, 3.11, 3.12 - **we do not yet support Python 3.13**
+- OpenMM 8.0 - **we do not yet support OpenMM v8.2.0**
+
 
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI). 
