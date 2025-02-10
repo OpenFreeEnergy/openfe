@@ -109,7 +109,7 @@ def load_and_check_result(fpath:os.PathLike|str)->dict:
         click.echo(f"{fpath}: Exception found in 'unit_results', assuming to be a failed simulation.", err=True)
 
     if result['estimate'] is None:
-        click.echo(f"No{fpath}: No 'estimate' found, assuming to be a failed simulation", err=True)
+        click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation", err=True)
 
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation", err=True)
