@@ -885,12 +885,20 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ligand_B_inxs = tuple([atom_indices_AB_B[inx] for inx in ligand_B_ref_inxs])
         print(ligand_A_inxs)
         print(ligand_B_inxs)
-        # Update the positions in the modeller
-        modeller_A.positions = equ_positions_A
-        modeller_B.positions = updated_positions_B
-        modeller_AB.positions = positions_AB
-        u_A = mda.Universe(omm_topology_A, modeller_A)
-        u_B = mda.Universe(omm_topology_B, modeller_B)
+        # Get the MDA Universe for the restraints selection
+        out_pdb = self.shared_basepath / settings['equil_output_settings'].equil_npt_structure
+        out_traj = self.shared_basepath / settings[
+            'equil_output_settings'].production_trajectory_filename
+        if pathlib.Path(f'{out_traj}_stateA.xtc').exists() and pathlib.Path(f'{out_traj}_stateB.xtc').exists():
+            print('Traj found')
+            u_A = mda.Universe(f'{out_pdb}_stateA.pdb', f'{out_traj}_stateA.xtc')
+            u_B = mda.Universe(f'{out_pdb}_stateB.pdb', f'{out_traj}_stateB.xtc')
+        else:
+            print('No traj')
+            u_A = mda.Universe(omm_topology_A, modeller_A)
+            u_B = mda.Universe(omm_topology_B, modeller_B)
+        print(u_A)
+        print(u_B)
         if prot_comp:
             protein_idxs = comp_atomids_AB[prot_comp]
         else:

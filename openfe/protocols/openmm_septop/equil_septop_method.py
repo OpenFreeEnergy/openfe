@@ -516,7 +516,7 @@ class SepTopProtocol(gufe.Protocol):
             ),
             solvent_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
-                equil_npt_structure='equil_npt_structure',
+                equil_npt_structure='equil_npt',
                 production_trajectory_filename='equil_npt',
                 log_output='equil_simulation',
             ),
@@ -537,7 +537,7 @@ class SepTopProtocol(gufe.Protocol):
             ),
             complex_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
-                equil_npt_structure='equil_structure',
+                equil_npt_structure='equil_npt',
                 production_trajectory_filename='equil_npt',
                 log_output='equil_simulation',
             ),
@@ -986,7 +986,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
                                    atom_indices=mdtraj_complex_A.topology.select(
                                        'backbone'))
         # Extract updated system positions.
-        updated_positions_B = mdtraj_complex_B.openmm_positions(0)
+        updated_positions_B = mdtraj_complex_B.openmm_positions(-1)
 
         return updated_positions_B
 
@@ -1219,6 +1219,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_2_radius = np.linalg.norm(
             equ_pos_ligandB - equ_pos_ligandB.mean(axis=0), axis=1).max()
         ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5 * omm_units.nanometer
+        print(ligand_distance)
+        print(unit_cell)
         if ligand_distance > min(unit_cell) / 2:
             ligand_distance = min(unit_cell) / 2
 
@@ -1226,10 +1228,10 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_offset[0] += ligand_distance
 
         # Offset the ligandB.
-        mdtraj_system_B.xyz[0][atom_indices_B, :] += ligand_offset / omm_units.nanometers
+        mdtraj_system_B.xyz[-1][atom_indices_B, :] += ligand_offset / omm_units.nanometers
 
         # Extract updated system positions.
-        updated_positions_B = mdtraj_system_B.openmm_positions(0)
+        updated_positions_B = mdtraj_system_B.openmm_positions(-1)
 
         return updated_positions_B
 
@@ -1279,13 +1281,15 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
 
-        coords_A = u_A.atoms.positions
-        coords_B = u_B.atoms.positions
+        # coords_A = u_A.atoms.positions
+        # coords_B = u_B.atoms.positions
         ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
         ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
         print(ref_A, ref_B, ligand_2_inxs[ligand_2_inxs_B.index(ref_B)])
+        # distance = np.linalg.norm(
+        #     coords_A[ref_A] - coords_B[ref_B])
         distance = np.linalg.norm(
-            coords_A[ref_A] - coords_B[ref_B])
+            positions_AB[ref_A] - positions_AB[ligand_2_inxs[ligand_2_inxs_B.index(ref_B)]])
         print(distance)
 
         k_distance = to_openmm(settings['restraint_settings'].k_distance)
@@ -1294,7 +1298,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         force.addBond(
             ref_A,
             ligand_2_inxs[ligand_2_inxs_B.index(ref_B)],
-            distance * openmm.unit.angstrom,
+            distance * openmm.unit.nanometers,
             k_distance,
         )
         force.setName("alignment_restraint")
