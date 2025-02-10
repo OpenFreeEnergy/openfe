@@ -125,19 +125,6 @@ Now we need to activate our new environment ::
 
   mamba activate openfe_env
 
-
-.. warning::
-
-   Installing on Macs with Apple Silicon requires a creating an x86_64
-   environment, as one of our requirements is not yet available for Apple
-   Silicon. Run the following modified commands
-
-   .. parsed-literal:: 
-
-      CONDA_SUBDIR=osx-64 mamba create -n openfe_env openfe=\ |version|
-      mamba activate openfe_env
-      mamba env config vars set CONDA_SUBDIR=osx-64
-
 To quickly check this is working, run the tests ::
 
   openfe test
