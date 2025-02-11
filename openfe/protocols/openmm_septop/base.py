@@ -43,7 +43,7 @@ import pathlib
 from typing import Any
 import openmmtools
 import mdtraj as mdt
-
+from rdkit import Chem
 from gufe import (
     ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
