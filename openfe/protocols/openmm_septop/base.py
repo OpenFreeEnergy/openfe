@@ -769,6 +769,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
             alchem_comps, smc_comps)
+
         # 3. Get settings
         settings = self._handle_settings()
 

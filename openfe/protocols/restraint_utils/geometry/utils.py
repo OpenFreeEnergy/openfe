@@ -588,9 +588,9 @@ def stable_secondary_structure_selection(
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
     if not _atomgroup_has_bonds(copy_protein_ag):
-        wmsg = "No bonds found in input Universe, will attept to guess them."
+        wmsg = "No bonds found in input Universe, will attempt to guess them."
         warnings.warn(wmsg)
-        protein_ag.guess_bonds()
+        copy_protein_ag.guess_bonds()
 
     structures = []  # container for all contiguous secondary structure units
     # Counter for each residue type found
