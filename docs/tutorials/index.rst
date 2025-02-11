@@ -9,6 +9,12 @@ OpenFE has several tutorial notebooks which are maintained on our
 Here is a list of key tutorials which cover the different aspects of the
 OpenFE tooling:
 
+Generating Partial Charges
+--------------------------
+
+The :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>` demonstrates
+how the command line interface can be used to assign and store partial charges for small molecules which
+can be used throughout the OpenFE eco-system.
 
 Relative Free Energies
 ----------------------
@@ -61,22 +67,16 @@ use the `Cinnabar Python package <https://github.com/OpenFreeEnergy/cinnabar>`_
 to analyze (e.g. generating MLE estimates of absolute free energies)
 and plot networks of relative free energy results.
 
-Generating Partial Charges
---------------------------
-
-The :any:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>` demonstrates
- how the command line interface can be used to assign and store partial charges for small molecules which
-can be used throughout the OpenFE eco-system.
 
 
 .. toctree::
     :maxdepth: 1
     :hidden:
-    
+
+    charge_molecules_cli_tutorial
     rbfe_cli_tutorial
     rbfe_python_tutorial
     showcase_notebook
     md_tutorial
     ahfe_tutorial
     plotting_with_cinnabar
-    charge_molecules_cli_tutorial

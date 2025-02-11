@@ -70,7 +70,9 @@ The commands used to generate an :class:`.AlchemicalNetwork` using the CLI are:
 
    To ensure a consistent set of partial charges are used for each molecule across different transformations, the CLI
    network planners will now automatically generate charges ahead of planning the network. The partial charge generation
-   scheme can be configured using the :ref:`YAML settings <userguide_cli_yaml_interface>`.
+   scheme can be configured using the :ref:`YAML settings <userguide_cli_yaml_interface>`. We also provide tooling to
+   generating the partial charges as a separate CLI step which can be run before network planning, see the :ref:`tutorial <charge_molecules_cli_tutorial>`
+   for more details.
 
 
 For example, you can create a relative binding free energy (RBFE) network using
