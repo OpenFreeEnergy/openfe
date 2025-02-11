@@ -19,7 +19,7 @@ def test_rhfe_alchemical_network_planner_init():
 def test_rbfe_alchemical_network_planner_init():
     alchem_planner = RBFEAlchemicalNetworkPlanner()
     
-    assert alchem_planner.name == "easy_rbfe"
+    assert alchem_planner.name == "rbfe"
 
 
 def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_protein_component):

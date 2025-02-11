@@ -147,13 +147,13 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_setting
     # we can get these in either order: 22 first or 55 first
     expected_output_1 = [
         "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
-        "- easy_rbfe_ligand_23_complex_ligand_55_complex.json",
-        "- easy_rbfe_ligand_23_solvent_ligand_55_solvent.json",
+        "- rbfe_ligand_23_complex_ligand_55_complex.json",
+        "- rbfe_ligand_23_solvent_ligand_55_solvent.json",
     ]
     expected_output_2 = [
         "Small Molecules: SmallMoleculeComponent(name=ligand_55) SmallMoleculeComponent(name=ligand_23)",
-        "- easy_rbfe_ligand_55_complex_ligand_23_complex.json",
-        "- easy_rbfe_ligand_55_solvent_ligand_23_solvent.json",
+        "- rbfe_ligand_55_complex_ligand_23_complex.json",
+        "- rbfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
     patch_base = (
