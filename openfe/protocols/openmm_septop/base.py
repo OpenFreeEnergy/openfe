@@ -274,7 +274,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             if unfrozen_outsettings.log_output:
                 unfrozen_outsettings.log_output = (
                         unfrozen_outsettings.log_output + f'_state{state}.log')
-            print(unfrozen_outsettings)
         else:
             errmsg = f"Only 'A' and 'B' are accepted as states. Got {state}"
             raise ValueError(errmsg)
@@ -770,7 +769,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
         smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
             alchem_comps, smc_comps)
-
         # 3. Get settings
         settings = self._handle_settings()
 
@@ -897,16 +895,18 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             print('No traj')
             u_A = mda.Universe(omm_topology_A, modeller_A)
             u_B = mda.Universe(omm_topology_B, modeller_B)
-        print(u_A)
-        print(u_B)
+        rdmol_A = alchem_comps["stateA"][0].to_rdkit()
+        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
+        Chem.SanitizeMol(rdmol_A)
+        Chem.SanitizeMol(rdmol_A)
         if prot_comp:
             protein_idxs = comp_atomids_AB[prot_comp]
         else:
             protein_idxs = None
         system = self._add_restraints(
             alchemical_system, u_A, u_B,
-            alchem_comps["stateA"][0].to_rdkit(),
-            alchem_comps["stateB"][0].to_rdkit(),
+            rdmol_A,
+            rdmol_B,
             atom_indices_AB_A,
             atom_indices_AB_B,
             atom_indices_B,
