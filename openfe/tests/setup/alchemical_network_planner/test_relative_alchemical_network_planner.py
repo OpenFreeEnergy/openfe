@@ -13,7 +13,7 @@ import openfe
 def test_rhfe_alchemical_network_planner_init():
     alchem_planner = RHFEAlchemicalNetworkPlanner()
     
-    assert alchem_planner.name == "easy_rhfe"
+    assert alchem_planner.name == "rhfe"
 
 
 def test_rbfe_alchemical_network_planner_init():
