@@ -16,9 +16,16 @@ import yaml
 import warnings
 
 
-PlanNetworkOptions = namedtuple('PlanNetworkOptions',
-                                ['mapper', 'scorer',
-                                 'ligand_network_planner', 'solvent'])
+PlanNetworkOptions = namedtuple(
+    'PlanNetworkOptions',
+    [
+        'mapper',
+        'scorer',
+        'ligand_network_planner',
+        'solvent',
+        'partial_charge',
+    ]
+)
 
 
 class MapperSelection(BaseModel):
@@ -41,6 +48,15 @@ class NetworkSelection(BaseModel):
     settings: dict[str, Any] = {}
 
 
+class PartialChargeSelection(BaseModel):
+    class Config:
+        extra = 'allow'
+        anystr_lower = True
+
+    method: Optional[str] = 'am1bcc'
+    settings: dict[str, Any] = {}
+
+
 class CliYaml(BaseModel):
     # model_config = ConfigDict(extra='allow')
     class Config:
@@ -48,6 +64,7 @@ class CliYaml(BaseModel):
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
+    partial_charge: Optional[PartialChargeSelection] = None
 
 
 def parse_yaml_planner_options(contents: str) -> CliYaml:
@@ -61,7 +78,7 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     Returns
     -------
     options : CliOptions
-      will have keys for mapper and network topology choices
+      will have keys for mapper, network topology, and partial charge choices
 
     Raises
     ------
@@ -70,7 +87,7 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     """
     raw = yaml.safe_load(contents)
 
-    expected_fields = {'mapper', 'network'}
+    expected_fields = {'mapper', 'network', 'partial_charge'}
     present_fields = set(raw.keys())
     usable_fields = present_fields.intersection(expected_fields)
     ignored_fields = present_fields.difference(expected_fields)
@@ -106,6 +123,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         generate_minimal_spanning_network,
         generate_maximal_network,
         generate_minimal_redundant_network,
+        generate_lomap_network,
     )
     from openfe.setup import (
         LomapAtomMapper,
@@ -113,6 +131,9 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     )
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
+    )
+    from openfe.protocols.openmm_utils.omm_settings import (
+        OpenFFPartialChargeSettings
     )
     from functools import partial
 
@@ -159,6 +180,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             'mst': generate_minimal_spanning_network,
             'generate_minimal_redundant_network': generate_minimal_redundant_network,
             'generate_maximal_network': generate_maximal_network,
+            'generate_lomap_network': generate_lomap_network,
         }
 
         try:
@@ -170,6 +192,17 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     else:
         ligand_network_planner = generate_minimal_spanning_network
 
+    # We default to am1bcc on ambertools
+    partial_charge_settings = OpenFFPartialChargeSettings()
+    if opt and opt.partial_charge:
+        partial_charge_settings.partial_charge_method = opt.partial_charge.method
+        for setting in opt.partial_charge.settings:
+            setattr(
+                partial_charge_settings,
+                setting,
+                opt.partial_charge.settings[setting]
+            )
+
     # todo: choice of solvent goes here
     solvent = SolventComponent()
 
@@ -178,11 +211,13 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         mapping_scorer,
         ligand_network_planner,
         solvent,
+        partial_charge_settings,
     )
 
 
 _yaml_help = """\
-Path to a YAML file specifying the atom mapper (`mapper:`) and/or network planning algorithm (`network:`) to use.
+Path to a YAML file specifying the atom mapper (`mapper:`), network planning algorithm (`network:`),
+and/or partial charge method (`partial_charge:`) to use.
 
 Supported atom mapper choices are:
     - `LomapAtomMapper`
@@ -192,6 +227,13 @@ Supported network planning algorithms include (but are not limited to):
     - `generate_minimal_spanning_tree`
     - `generate_minimal_redundant_network`
     - `generate_radial_network`
+    - `generate_lomap_network`
+
+Supported partial charge method choices are:
+    - ``am1bcc``
+    - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` in settings is set to ``openeye``)
+    - ``nagl`` (must have ``openff-nagl`` installed)
+    - ``espaloma`` (must have ``espaloma_charge`` installed)
 
 The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
 
@@ -207,6 +249,11 @@ For example:
     method: generate_minimal_redundant_network
     settings:
       mst_num: 3
+
+  partial_charge:
+    method: am1bcc
+    settings:
+      off_toolkit_backend: ambertools      
 """
 
 YAML_OPTIONS = Option(
