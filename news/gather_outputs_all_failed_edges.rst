@@ -4,7 +4,7 @@
 
 **Changed:**
 
-* ``openfe gather`` now includes *all* failed edges (instead of just the first failed edge) when raising a "failed edges" error.
+* ``openfe gather`` now includes *all* edges with missing runs (instead of just the first failing edge) when raising a "missing runs" error.
 
 **Deprecated:**
 
