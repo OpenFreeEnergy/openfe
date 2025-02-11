@@ -14,7 +14,7 @@ Generating Partial Charges
 
 The :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>` demonstrates
 how the command line interface can be used to assign and store partial charges for small molecules which
-can be used throughout the OpenFE eco-system.
+can be used throughout the OpenFE ecosystem.
 
 Relative Free Energies
 ----------------------
