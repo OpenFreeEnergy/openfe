@@ -86,23 +86,23 @@ This should result in the following file structure after execution:
 
     results_parallel/
     ├── results_0
-    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex
+    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
     │   │   └── shared_RelativeHybridTopologyProtocolUnit-79c279f04ec84218b7935bc0447539a9_attempt_0
     │   │       ├── checkpoint.nc
     │   │       ├── simulation.nc
-    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
     ├── results_1
-    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex
+    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
     │   │   └── shared_RelativeHybridTopologyProtocolUnit-a3cef34132aa4e9cbb824fcbcd043b0e_attempt_0
     │   │       ├── checkpoint.nc
     │   │       ├── simulation.nc
-    │   ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+    │   ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
     └── results_2
-        ├── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex
+        ├── rbfe_lig_ejm_31_complex_lig_ejm_42_complex
         │   └── shared_RelativeHybridTopologyProtocolUnit-abb2b104151c45fc8b0993fa0a7ee0af_attempt_0
         │       ├── checkpoint.nc
         │       ├── simulation.nc
-        └── easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
+        └── rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json
 
 The results of which can be gathered from the CLI using the ``openfe gather`` command, in this case you should direct
 it to the root directory which includes the repeat results and it will automatically collate the information
