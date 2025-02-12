@@ -48,6 +48,22 @@ def lomap_old_mapper():
         element_change=True, seed='', shift=True
     )
 
+def test_lomap_network(toluene_vs_others, lomap_old_mapper):
+    toluene, others = toluene_vs_others
+    def scorer(mapping):
+        return len(mapping.componentA_to_componentB)
+
+    network = openfe.setup.ligand_network_planning.generate_lomap_network(
+        ligands=others,
+        mappers=lomap_old_mapper,
+        scorer=scorer
+    )
+    # assert len(network.edges) == len(others)
+
+    for edge in network.edges:
+        assert 'score' in edge.annotations
+        assert edge.annotations['score'] == len(edge.componentA_to_componentB)
+
 
 @pytest.mark.parametrize('as_list', [False, True])
 def test_radial_network(
