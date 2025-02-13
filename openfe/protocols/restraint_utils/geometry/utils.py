@@ -23,7 +23,8 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rms import RMSF
 from MDAnalysis.analysis.dssp import DSSP
 from MDAnalysis.lib.distances import minimize_vectors, capped_distance
-from MDAnalysis.transformations.nojump import NoJump
+# from MDAnalysis.transformations.nojump import NoJump
+from openfe_analysis.transformations import NoJump
 
 from openfe_analysis.transformations import Aligner
 
@@ -471,9 +472,8 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     copy_u = atomgroup.universe.copy()
     ag = copy_u.atoms[atomgroup.atoms.ix]
 
-    nojump = NoJump()
+    nojump = NoJump(ag)
     align = Aligner(ag)
-
     copy_u.trajectory.add_transformations(nojump, align)
 
     rmsf = RMSF(ag)
