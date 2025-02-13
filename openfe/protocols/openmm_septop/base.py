@@ -899,7 +899,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         rdmol_A = alchem_comps["stateA"][0].to_rdkit()
         rdmol_B = alchem_comps["stateB"][0].to_rdkit()
         Chem.SanitizeMol(rdmol_A)
-        Chem.SanitizeMol(rdmol_A)
+        Chem.SanitizeMol(rdmol_B)
         if prot_comp:
             protein_idxs = comp_atomids_AB[prot_comp]
         else:
