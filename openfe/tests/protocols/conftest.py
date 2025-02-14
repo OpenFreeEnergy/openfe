@@ -10,7 +10,7 @@ from openff.units import unit
 import pooch
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def charged_benzene(benzene_modifications):
     benzene_offmol = benzene_modifications['benzene'].to_openff()
     benzene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
@@ -45,7 +45,7 @@ def benzene_complex_system(charged_benzene, T4_protein_component):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def charged_toluene(benzene_modifications):
     offmol = benzene_modifications['toluene'].to_openff()
     offmol.assign_partial_charges(partial_charge_method='gasteiger')
