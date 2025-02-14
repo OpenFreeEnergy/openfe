@@ -13,7 +13,7 @@ dependencies:
 - packaging
 - plugcli
 - python=3.10
-- sphinx<7
+- sphinx<7.3
 - sphinx-click
 - gitpython
 - tqdm
@@ -25,7 +25,7 @@ dependencies:
 - pip:
   - sphinx-design
   - sphinx-toolbox
-  - sphinx<7
+  - sphinx<7.3
   - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.1.0
 
