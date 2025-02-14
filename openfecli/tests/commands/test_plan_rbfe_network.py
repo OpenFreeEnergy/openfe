@@ -16,7 +16,7 @@ from gufe import AlchemicalNetwork, SmallMoleculeComponent
 from gufe.tokenization import JSON_HANDLER
 import json
 import numpy as np
-
+from openff.utilities import skip_if_missing
 
 @pytest.fixture(scope='session')
 def mol_dir_args(tmpdir_factory):
@@ -67,6 +67,8 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network_main():
     from gufe import (
         ProteinComponent,
@@ -124,7 +126,8 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
@@ -197,6 +200,8 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
     pytest.param(True, id="Overwrite"),
     pytest.param(False, id="No overwrite")
 ])
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args, tmpdir, yaml_nagl_settings, overwrite):
     # make sure the dummy charges are overwritten when requested
 
@@ -248,6 +253,8 @@ def eg5_files():
 
 
 @pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
     # use nagl charges for CI speed!
     settings_path = tmpdir / "settings.yaml"
@@ -357,6 +364,8 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, cdk8_files, tmpdir):
     protein, ligand = cdk8_files
     settings_path = tmpdir / "settings.yaml"
@@ -400,6 +409,8 @@ partial_charge:
 """
 
 @pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"
