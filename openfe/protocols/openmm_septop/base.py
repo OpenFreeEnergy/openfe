@@ -255,7 +255,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             return positions
         unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
 
-        if state == 'A' or state == 'B':
+        if state == 'A' or state == 'B' or state == 'AB':
             if unfrozen_outsettings.production_trajectory_filename:
                 unfrozen_outsettings.production_trajectory_filename = (
                         unfrozen_outsettings.production_trajectory_filename + f'_state{state}.xtc')
@@ -275,7 +275,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                 unfrozen_outsettings.log_output = (
                         unfrozen_outsettings.log_output + f'_state{state}.log')
         else:
-            errmsg = f"Only 'A' and 'B' are accepted as states. Got {state}"
+            errmsg = f"Only 'A', 'B', and 'AB' are accepted as states. Got {state}"
             raise ValueError(errmsg)
 
 
@@ -917,7 +917,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
         # Check that the restraints are correctly applied by running a short equilibration
         equ_positions_restraints = self._pre_equilibrate(
-            system, omm_topology_AB, positions_AB, settings, dry
+            system, omm_topology_AB, positions_AB, settings, 'AB', dry
         )
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
