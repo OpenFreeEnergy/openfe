@@ -887,7 +887,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # Get the MDA Universe for the restraints selection
         out_pdb = self.shared_basepath / settings['equil_output_settings'].equil_npt_structure
         out_traj = self.shared_basepath / settings[
-            'equil_output_settings'].production_trajectory_filenam
+            'equil_output_settings'].production_trajectory_filename
         if (pathlib.Path(f'{out_traj}_stateA.xtc').exists()
                 and pathlib.Path(f'{out_traj}_stateB.xtc').exists()
                 and settings['equil_output_settings'].trajectory_write_interval <= settings['equil_simulation_settings'].production_length):
