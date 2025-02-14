@@ -1,3 +1,5 @@
+.. _userguide_cli_yaml_interface:
+
 Customising CLI planning with YAML settings
 ===========================================
 

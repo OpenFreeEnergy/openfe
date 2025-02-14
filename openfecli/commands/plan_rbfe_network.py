@@ -158,6 +158,13 @@ def plan_rbfe_network(
     The generated Network will be stored in a folder containing for each
     transformation a JSON file, that can be run with quickrun.
 
+    .. note::
+
+       To ensure a consistent set of partial charges are used for each molecule across different transformations, this
+       tool will automatically generate charges ahead of planning the network. ``am1bcc`` charges will be generated via
+       ``ambertools``, this can also be customized using the settings yaml file.
+
+
     By default, this tool makes the following choices:
 
     * Atom mappings performed by LOMAP, with settings max3d=1.0 and

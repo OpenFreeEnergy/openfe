@@ -189,8 +189,8 @@ class TestGatherFailedEdges:
                 tar.extractall('.')
 
                 results_dir_path = os.path.abspath(tar.getnames()[0])
-                files_to_remove = ["easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
-                                   "easy_rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
+                files_to_remove = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
+                                   "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
                                    ]
                 for fname in files_to_remove:
                     (pathlib.Path(results_dir_path)/ fname).unlink()
