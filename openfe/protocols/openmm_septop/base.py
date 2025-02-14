@@ -915,13 +915,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             positions_AB,
             settings,
         )
-        # # Check that the restraints are correctly applied by running a short equilibration
-        # equ_positions_restraints = self._pre_equilibrate(
-        #     system, omm_topology_AB, positions_AB, settings, dry
-        # )
+        # Check that the restraints are correctly applied by running a short equilibration
+        equ_positions_restraints = self._pre_equilibrate(
+            system, omm_topology_AB, positions_AB, settings, dry
+        )
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   positions_AB,
+                                                   equ_positions_restraints,
                                                    open(topology_file,
                                                         'w'))
 
