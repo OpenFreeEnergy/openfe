@@ -998,7 +998,7 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
 def test_vacuum_PME_error(benzene_vacuum_system, toluene_vacuum_system,
                           benzene_to_toluene_mapping):
     # state B doesn't have a solvent component (i.e. its vacuum)
-    stateB = openfe.ChemicalSystem({'ligand': benzene_modifications['toluene']})
+    stateB = openfe.ChemicalSystem({'ligand': toluene_vacuum_system})
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),

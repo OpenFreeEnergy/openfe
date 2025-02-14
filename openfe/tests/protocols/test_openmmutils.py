@@ -227,7 +227,8 @@ def get_settings():
 
 class TestFEAnalysis:
 
-    # Note: class scope _will_ cause this to segfault - the reporter has to close
+    # Note: scope on this can sometimes cause segfault, may need to revert to
+    # function scope if it happens.
     @pytest.fixture(scope='class')
     def reporter(self):
         with resources.files('openfe.tests.data.openmm_rfe') as d:
