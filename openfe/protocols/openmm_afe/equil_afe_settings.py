@@ -30,6 +30,10 @@ from openfe.protocols.openmm_utils.omm_settings import (
     MultiStateOutputSettings,
     MDSimulationSettings,
     MDOutputSettings,
+    BaseRestraintSettings,
+    HarmonicRestraintSettings,
+    FlatBottomRestraintSettings,
+    BoreschRestraintSettings,
 )
 import numpy as np
 
@@ -217,3 +221,106 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
     """
+
+
+class AbsoluteBindingSettings(SettingsBaseModel):
+    """
+    Configuration object for ``AbsoluteBindingPProtocol``
+
+    See Also
+    --------
+    openfe.protocols.openmm_afe.AbsoluteBindingProtocol
+    """
+    protocol_repeats: int
+    """
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
+    """
+
+    @validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
+    """Parameters to set up the force field with OpenMM Force Fields"""
+    thermo_settings: ThermoSettings
+    """Settings for thermodynamic parameters"""
+
+    solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the system."""
+
+    # Alchemical settings
+    alchemical_settings: AlchemicalSettings
+    """
+    Alchemical protocol settings.
+    """
+    lambda_settings: LambdaSettings
+    """
+    Settings for controlling the lambda schedule for the different components
+    (vdw, elec, restraints).
+    """
+
+    # MD Engine things
+    engine_settings: OpenMMEngineSettings
+    """
+    Settings specific to the OpenMM engine, such as the compute platform.
+    """
+
+    # Sampling State defining things
+    integrator_settings: IntegratorSettings
+    """
+    Settings for controlling the integrator, such as the timestep and
+    barostat settings.
+    """
+
+    # Simulation run settings
+    complex_equil_simulation_settings: MDSimulationSettings
+    """
+    Pre-alchemical complex simulation control settings.
+    """
+    complex_simulation_settings: MultiStateSimulationSettings
+    """
+    Simulation control settings, including simulation lengths
+    for the complex transformation.
+    """
+    solvent_equil_simulation_settings: MDSimulationSettings
+    """
+    Pre-alchemical solvent simulation control settings.
+    """
+    solvent_simulation_settings: MultiStateSimulationSettings
+    """
+    Simulation control settings, including simulation lengths
+    for the solvent transformation.
+    """
+    complex_equil_output_settings: MDOutputSettings
+    """
+    Simulation output settings for the complex non-alchemical equilibration.
+    """
+    complex_output_settings: MultiStateOutputSettings
+    """
+    Simulation output settings for the complex transformation.
+    """
+    solvent_equil_output_settings: MDOutputSettings
+    """
+    Simulation output settings for the solvent non-alchemical equilibration.
+    """
+    solvent_output_settings: MultiStateOutputSettings
+    """
+    Simulation output settings for the solvent transformation.
+    """
+    partial_charge_settings: OpenFFPartialChargeSettings
+    """
+    Settings for controlling how to assign partial charges,
+    including the partial charge assignment method, and the
+    number of conformers used to generate the partial charges.
+    """
+    restraint_settings: BaseRestraintSettings
+    """
+    Settings controlling how restraints are added to the system in the
+    complex simulation.
+    """
+
