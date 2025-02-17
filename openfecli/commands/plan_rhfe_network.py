@@ -185,6 +185,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per protocol unit)\n")
 
     # DO
     write("Planning RHFE-Campaign:")

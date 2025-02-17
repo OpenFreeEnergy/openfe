@@ -229,10 +229,10 @@ def plan_rbfe_network(
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per protocol unit)\n")
 
     # DO
     write("Planning RBFE-Campaign:")
-    write(f"--n_protocol_repeats={n_protocol_repeats} simulation repeats per protocol unit.")
     alchemical_network, ligand_network = plan_rbfe_network_main(
         mapper=[mapper_obj],
         mapping_scorer=mapping_scorer,
