@@ -16,6 +16,7 @@ def charged_benzene(benzene_modifications):
     benzene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
     return openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
 
+
 @pytest.fixture
 def benzene_vacuum_system(charged_benzene):
     return openfe.ChemicalSystem(

@@ -426,8 +426,11 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
-    dag = protocol.create(stateA=benzene_system, stateB=toluene_system,
-                          mapping=benzene_to_toluene_mapping)
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
@@ -439,12 +442,34 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
 
 @pytest.fixture(scope='session')
 def tip4p_hybrid_factory(
-    benzene_system, toluene_system,
-    benzene_to_toluene_mapping, tmp_path_factory,
+    benzene_modifications, tmp_path_factory,
 ):
     """
     Hybrid system with virtual sites in the environment (waters)
     """
+    # Session scoped, so we do things by hand here
+    # Generate the end state systems
+    benzene_offmol = benzene_modifications['benzene'].to_openff()
+    benzene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    benzene = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    toluene_offmol = benzene_modifications['toluene'].to_openff()
+    toluene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    toluene = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
+
+    solvent = openfe.SolventComponent(
+        positive_ion='Na',
+        negative_ion='Cl',
+        ion_concentration=0.15 * unit.molar
+    )
+
+    stateA = openfe.ChemicalSystem({'ligand': benzene, 'solvent': solvent})
+    stateB = openfe.ChemicalSystem({'ligand': toluene, 'solvent': solvent})
+
+    # Now the mapping
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    mapping = next(mapper.suggest_mappings(charged_benzene, charged_toluene))
+
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
@@ -460,9 +485,9 @@ def tip4p_hybrid_factory(
             settings=settings,
     )
     dag = protocol.create(
-        stateA=benzene_system,
-        stateB=toluene_system,
-        mapping=benzene_to_toluene_mapping,
+        stateA=stateA,
+        stateB=stateB,
+        mapping=mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
