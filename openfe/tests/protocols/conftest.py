@@ -10,7 +10,7 @@ from openff.units import unit
 import pooch
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def charged_benzene(benzene_modifications):
     benzene_offmol = benzene_modifications['benzene'].to_openff()
     benzene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
@@ -23,7 +23,7 @@ def benzene_vacuum_system(charged_benzene):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def benzene_system(charged_benzene):
     return openfe.ChemicalSystem(
         {'ligand': charged_benzene,
@@ -45,7 +45,7 @@ def benzene_complex_system(charged_benzene, T4_protein_component):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def charged_toluene(benzene_modifications):
     offmol = benzene_modifications['toluene'].to_openff()
     offmol.assign_partial_charges(partial_charge_method='gasteiger')
@@ -59,7 +59,7 @@ def toluene_vacuum_system(charged_toluene):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def toluene_system(charged_toluene):
     return openfe.ChemicalSystem(
         {'ligand': charged_toluene,
@@ -81,10 +81,9 @@ def toluene_complex_system(charged_toluene, T4_protein_component):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def benzene_to_toluene_mapping(charged_benzene, charged_toluene):
     mapper = openfe.setup.LomapAtomMapper(element_change=False)
-
     return next(mapper.suggest_mappings(charged_benzene, charged_toluene))
 
 
