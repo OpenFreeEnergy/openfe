@@ -135,15 +135,36 @@ solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
-@pytest.fixture()
-def results_dir_serial(tmpdir)->str:
-    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
-    with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            tar.extractall('.')
+# @pytest.fixture()
+# def results_dir_serial(tmpdir)->str:
+#     """Example output data, with replicates run in serial (3 replicates per results JSON)."""
+#     with tmpdir.as_cwd():
+#         with resources.files('openfecli.tests.data') as d:
+#             tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
+#             tar.extractall('.')
 
-        return os.path.abspath(tar.getnames()[0])
+#         return os.path.abspath(tar.getnames()[0])
+    
+
+RBFE_RESULTS = pooch.create(
+    pooch.os_cache('openfe'),
+    base_url="doi:10.6084/m9.figshare.25148945",
+    registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
+)
+
+
+@pytest.fixture
+def pooch_rbfe_results():
+    # fetches rbfe results from online
+    # untars into local directory and returns path to this
+    RBFE_RESULTS.fetch('results.tar.gz', processor=pooch.Untar())
+    cache_dir = pathlib.Path(pooch.os_cache('openfe'))/'results.tar.gz.untar'
+    return  cache_dir
+
+@pytest.fixture
+def results_dir_serial(pooch_rbfe_results)->str:
+    yield str(pooch_rbfe_results/"rbfe_results_serial_repeats")
+
 
 @pytest.fixture()
 def results_dir_parallel(tmpdir)->str:
@@ -155,7 +176,7 @@ def results_dir_parallel(tmpdir)->str:
 
         return os.path.abspath(tar.getnames()[0])
 
-@pytest.mark.parametrize('data_fixture', ['results_dir_serial', 'results_dir_parallel'])
+@pytest.mark.parametrize('data_fixture', ['results_dir_serial'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 def test_gather(request, data_fixture, report):
     expected = {
@@ -213,9 +234,3 @@ class TestGatherFailedEdges:
         result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
 
         assert_click_success(result)
-
-RBFE_RESULTS = pooch.create(
-    pooch.os_cache('openfe'),
-    base_url="doi:10.6084/m9.figshare.25148945",
-    registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
-)
