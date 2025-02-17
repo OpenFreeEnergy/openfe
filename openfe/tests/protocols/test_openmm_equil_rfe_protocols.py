@@ -468,7 +468,7 @@ def tip4p_hybrid_factory(
 
     # Now the mapping
     mapper = openfe.setup.LomapAtomMapper(element_change=False)
-    mapping = next(mapper.suggest_mappings(charged_benzene, charged_toluene))
+    mapping = next(mapper.suggest_mappings(benzene, toluene))
 
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
