@@ -252,6 +252,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
 
 @pytest.mark.slow
+## TODO: this is breaking because the components are not the same gufe tokenizables as in the mapping
 def test_dry_many_molecules_solvent(
     benzene_many_solv_system, toluene_many_solv_system,
     benzene_to_toluene_mapping, tmpdir
