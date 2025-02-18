@@ -229,7 +229,7 @@ def plan_rbfe_network(
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
-    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per protocol unit)\n")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per protocol transformation)\n")
 
     # DO
     write("Planning RBFE-Campaign:")
