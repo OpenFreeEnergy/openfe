@@ -471,6 +471,9 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     copy_u = atomgroup.universe.copy()
     ag = copy_u.atoms[atomgroup.atoms.ix]
 
+    # Reset the trajectory index, otherwise we'll get in trouble with nojump
+    copy_u.trajectory[0]
+
     nojump = NoJump()
     align = Aligner(ag)
 
