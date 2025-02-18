@@ -50,7 +50,7 @@ class RelativeAlchemicalNetworkPlanner(
 
     def __init__(
         self,
-        name: str = "easy_rfe_calculation",
+        name: str = "rfe_calculation",
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
         mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
