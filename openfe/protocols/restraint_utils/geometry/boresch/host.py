@@ -108,7 +108,15 @@ def find_host_atom_candidates(
         max_search_distance=max_distance,
     )
     atom_finder.run()
-    return atom_finder.results.host_idxs
+
+    # Now we sort them!
+    atom_sorter = CentroidDistanceSort(
+        sortable_atoms=universe.atoms[atom_finder.results.host_idxs],
+        reference_atoms=universe.atoms[l1_idx],
+    )
+    atom_sorter.run()
+
+    return atom_sorter.results.sorted_atomgroup.ix
 
 
 class EvaluateHostAtoms1(AnalysisBase):
