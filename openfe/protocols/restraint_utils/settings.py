@@ -6,6 +6,7 @@ Settings for adding restraints.
 TODO
 ----
 * Rename from host/guest to molA/molB?
+* Add all the restraint settings entries.
 """
 from typing import Optional
 from openff.models.types import FloatQuantity
