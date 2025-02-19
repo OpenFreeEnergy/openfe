@@ -22,7 +22,7 @@ dependencies:
 - nbsphinx-link
 - myst-parser
 - threadpoolctl
-- sphinx
+- sphinx <7.3
 - sphinx-design
 - sphinx-toolbox
 - pip:
