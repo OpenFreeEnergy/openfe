@@ -1,3 +1,4 @@
+from typing import Callable
 from click.testing import CliRunner
 from importlib import resources
 import tarfile
@@ -134,42 +135,31 @@ solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
-RBFE_RESULTS = pooch.create(
-    path = pooch.os_cache('openfe'),
-    base_url="doi:10.5281/zenodo.14884797",
-    registry={
-        "rbfe_results_serial_repeats.tar.gz": "md5:d7c5e04786d03e1280a74639c2981546",
-        "rbfe_results_parallel_repeats.tar.gz": "md5:cc54afe32b56232339a9315f4c3d6d91"},
-)
+@pytest.fixture
+def zenodo_rbfe_data()->pooch.core.Pooch:
+    pup = pooch.create(
+        path = pooch.os_cache('openfe'),
+        base_url="doi:10.5281/zenodo.14884797",
+        registry={
+            "rbfe_results_serial_repeats.tar.gz": "md5:d7c5e04786d03e1280a74639c2981546",
+            "rbfe_results_parallel_repeats.tar.gz": "md5:cc54afe32b56232339a9315f4c3d6d91"},
+    )
+    yield pup
 
 @pytest.fixture
-def rbfe_serial_results():
-    """fetches rbfe results from zenodo, untars into local directory and returns path to said directory"""
-    RBFE_RESULTS.fetch('rbfe_results_serial_repeats.tar.gz', processor=pooch.Untar())
-    cache_dir = pathlib.Path(pooch.os_cache('openfe'))/'rbfe_results_serial_repeats.tar.gz.untar/rbfe_results_serial_repeats/'
-    return  str(cache_dir)
+def rbfe_result_dir(zenodo_rbfe_data)->Callable:
+    def _rbfe_result_dir(dataset)->str:
+        zenodo_rbfe_data.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
+        cache_dir = pathlib.Path(pooch.os_cache('openfe'))/f'{dataset}.tar.gz.untar/{dataset}/'
+        return  str(cache_dir)
+
+    return _rbfe_result_dir
 
 
-@pytest.fixture
-def rbfe_parallel_results()->str:
-    """fetches rbfe results from zenodo, untars into local directory and returns path to said directory"""
-    RBFE_RESULTS.fetch('rbfe_results_parallel_repeats.tar.gz', processor=pooch.Untar())
-    cache_dir = pathlib.Path(pooch.os_cache('openfe'))/'rbfe_results_parallel_repeats.tar.gz.untar/rbfe_results_parallel_repeats/'
-    return  str(cache_dir)
-
-@pytest.fixture()
-def results_dir_parallel(tmpdir)->str:
-    """Example output data, with replicates run in serial (3 replicates per results JSON)."""
-    with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            tar = tarfile.open(d / 'rbfe_results_parallel.tar.gz', mode='r')
-            tar.extractall('.')
-
-        return os.path.abspath(tar.getnames()[0])
-
-@pytest.mark.parametrize('data_fixture', ['rbfe_serial_results'])
+@pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
-def test_gather(request, data_fixture, report):
+def test_gather(rbfe_result_dir, dataset, report):
+
     expected = {
         "": _EXPECTED_DG,
         "dg": _EXPECTED_DG,
@@ -183,7 +173,7 @@ def test_gather(request, data_fixture, report):
     else:
         args = []
 
-    results_dir = request.getfixturevalue(data_fixture)
+    results_dir = rbfe_result_dir(dataset)
     result = runner.invoke(gather, [results_dir] + args + ['-o', '-'])
 
     assert_click_success(result)
