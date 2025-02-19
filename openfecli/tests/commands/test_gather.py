@@ -7,6 +7,7 @@ import pathlib
 import pytest
 import pooch
 from ..utils import assert_click_success
+from ..conftest import HAS_INTERNET
 
 from openfecli.commands.gather import (
     gather, format_estimate_uncertainty, _get_column,
@@ -147,15 +148,15 @@ def zenodo_rbfe_data()->pooch.core.Pooch:
     yield pup
 
 @pytest.fixture
-def rbfe_result_dir(zenodo_rbfe_data)->Callable:
+def rbfe_result_dir(zenodo_rbfe_data)->pathlib.Path:
     def _rbfe_result_dir(dataset)->str:
         zenodo_rbfe_data.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
         cache_dir = pathlib.Path(pooch.os_cache('openfe'))/f'{dataset}.tar.gz.untar/{dataset}/'
-        return  str(cache_dir)
+        return  cache_dir
 
     return _rbfe_result_dir
 
-
+@pytest.mark.skipif(not HAS_INTERNET, reason="Internet seems to be unavailable")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 def test_gather(rbfe_result_dir, dataset, report):
@@ -174,27 +175,28 @@ def test_gather(rbfe_result_dir, dataset, report):
         args = []
 
     results_dir = rbfe_result_dir(dataset)
-    result = runner.invoke(gather, [results_dir] + args + ['-o', '-'])
+    result = runner.invoke(gather, [str(results_dir)] + args + ['-o', '-'])
 
     assert_click_success(result)
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
     assert set(expected.split(b'\n')) == actual_lines
 
+
+@pytest.mark.skipif(not HAS_INTERNET, reason="Internet seems to be unavailable")
 class TestGatherFailedEdges:
     @pytest.fixture()
     def results_dir_serial_missing_legs(self, rbfe_result_dir, tmpdir)->str:
-        """Example output data, with replicates run in serial and one deleted results JSON."""
-        # TODO: update this to return a list of paths when gather supports this. will avoid this symlink mess
+        """Example output data, with replicates run in serial and two missing results JSONs."""
+        # TODO: update to return a list of paths without doing this symlink mess, when gather supports it.
         rbfe_result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
-        tmp_results_dir =  f"{tmpdir}/results"
-
-        os.symlink(rbfe_result_dir, tmp_results_dir, target_is_directory=True)
-        files_to_remove = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
-                            "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
+        tmp_results_dir =  tmpdir
+        files_to_skip = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
+                         "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
                             ]
-        for fname in files_to_remove:
-            (pathlib.Path(tmp_results_dir)/ fname).unlink()
+        for item in os.listdir(rbfe_result_dir):
+            if item not in files_to_skip:
+                os.symlink(rbfe_result_dir/item, tmp_results_dir/item)
 
         return str(tmp_results_dir)
 
