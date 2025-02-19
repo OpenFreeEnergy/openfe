@@ -22,10 +22,10 @@ dependencies:
 - nbsphinx-link
 - myst-parser
 - threadpoolctl
+- sphinx
+- sphinx-design
+- sphinx-toolbox
 - pip:
-  - sphinx-design
-  - sphinx-toolbox
-  - sphinx<7.3
   - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.1.0
 
