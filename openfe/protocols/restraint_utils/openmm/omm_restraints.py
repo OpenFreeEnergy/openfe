@@ -36,6 +36,12 @@ from openfe.protocols.restraint_utils.geometry import (
     DistanceRestraintGeometry,
     BoreschRestraintGeometry
 )
+
+from openfe.protocols.restraint_utils.settings import (
+    DistanceRestraintSettings,
+    BoreschRestraintSettings,
+)
+
 from .omm_forces import (
     get_custom_compound_bond_force,
     add_force_in_separate_group,
@@ -56,13 +62,16 @@ class RestraintParameterState(GlobalParameterState):
       ``lambda_restraints_{parameters_name_suffix}` instead of just
       ``lambda_restraints``.
     lambda_restraints : Optional[float]
-      The strength of the restraint. If defined, must be between 0 and 1.
+      The scaling parameter for the restraint. If defined,
+      must be between 0 and 1. In most cases, a value of 1 indicates that the
+      restraint is fully turned on, whilst a value of 0 indicates that it is
+      innactive.
 
     Acknowledgement
     ---------------
     Partially reproduced from Yank.
     """
-
+    # We set the standard system to a fully interacting restraint
     lambda_restraints = GlobalParameterState.GlobalParameter(
         "lambda_restraints", standard_value=1.0
     )
@@ -288,7 +297,7 @@ class HarmonicBondRestraint(
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -335,7 +344,7 @@ class FlatBottomBondRestraint(
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -384,7 +393,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -429,7 +438,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     Notes
     -----
     * Settings must contain a ``spring_constant`` for the
-      Force in units compatible with kilojoule/mole.
+      Force in units compatible with kilojoule/mole/nm**2.
     """
     def _get_force(
         self,
@@ -510,7 +519,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
     (p2, p3, p4) and (p3, p4, p5). They must be provided by the
     Geometry class in units compatible with radians.
 
-    ``phi_A0``, ``phi_B0``, and ``phi_C0`` are the equilibrium constants
+    ``phi_A0``, ``phi_B0``, and ``phi_C0`` are the equilibrium force constants
     for the dihedrals formed by (p1, p2, p3, p4), (p2, p3, p4, p5), and
     (p3, p4, p5, p6). They must be provided in the settings in units
     compatible with kilojoule / mole / radians ** 2.

@@ -70,15 +70,17 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     """
     raw = yaml.safe_load(contents)
 
-    if False:
-        # todo: warnings about extra fields we don't expect?
-        expected = {'mapper', 'network'}
-        for field in raw:
-            if field in expected:
-                continue
-            warnings.warn(f"Ignoring unexpected section: '{field}'")
+    expected_fields = {'mapper', 'network'}
+    present_fields = set(raw.keys())
+    usable_fields = present_fields.intersection(expected_fields)
+    ignored_fields = present_fields.difference(expected_fields)
 
-    return CliYaml(**raw)
+    for field in ignored_fields:
+        warnings.warn(f"Ignoring unexpected section: '{field}'")
+
+    filtered = {k:raw[k] for k in usable_fields}
+
+    return CliYaml(**filtered)
 
 
 def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOptions:
@@ -180,21 +182,20 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
 
 _yaml_help = """\
-Path to planning settings yaml file
+Path to a YAML file specifying the atom mapper (`mapper:`) and/or network planning algorithm (`network:`) to use.
 
-Currently it can contain sections for customising the
-atom mapper and network planning algorithm,
-these are addressed using a `mapper:` or `network:` key in the yaml file.
-The algorithm to be used for these sections is then specified by the `method:` key. 
-For choosing mappers, either the LomapAtomMapper or KartografAtomMapper are allowed choices,
-while for the network planning algorithm either the generate_minimal_spanning_tree or
-generate_minimal_redundant_network options are allowed.
-Finally, a `settings:` key can be given to customise the algorithm,
-with allowable options corresponding to the keyword arguments of the Python API for these algorithms.
+Supported atom mapper choices are:
+    - `LomapAtomMapper`
+    - `KartografAtomMapper`
 
-For example, this is a valid settings yaml file to specify that
-the Lomap atom mapper should be used forbidding element changes,
-while the generate_minimal_redundant_network function used to plan the network
+Supported network planning algorithms include (but are not limited to):
+    - `generate_minimal_spanning_tree`
+    - `generate_minimal_redundant_network`
+    - `generate_radial_network`
+
+The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
+
+For example:
 ::
 
   mapper:
@@ -207,7 +208,6 @@ while the generate_minimal_redundant_network function used to plan the network
     settings:
       mst_num: 3
 """
-
 
 YAML_OPTIONS = Option(
     '-s', "--settings", "yaml_settings",

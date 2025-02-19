@@ -7,19 +7,14 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-import pathlib
-from typing import Union, Optional
-from openmm import app
-from openff.units import unit
+from typing import Optional
 import MDAnalysis as mda
-from MDAnalysis.lib.distances import calc_bonds
 from rdkit import Chem
 
 from .base import HostGuestRestraintGeometry
 from .utils import (
     get_central_atom_idx,
     _get_mda_selection,
-    _get_mda_topology_format,
 )
 
 
@@ -28,34 +23,9 @@ class DistanceRestraintGeometry(HostGuestRestraintGeometry):
     A geometry class for a distance restraint between two groups of atoms.
     """
 
-    def get_distance(self, universe: mda.Universe) -> unit.Quantity:
-        """
-        Get the center of mass distance between the host and guest atoms.
-
-        Parameters
-        ----------
-        universe : mda.Universe
-          A Universe representing the system of interest.
-
-        Returns
-        -------
-        bond : unit.Quantity
-          The center of mass distance between the two groups of atoms.
-        """
-        ag1 = universe.atoms[self.host_atoms]
-        ag2 = universe.atoms[self.guest_atoms]
-        bond = calc_bonds(
-            ag1.center_of_mass(),
-            ag2.center_of_mass(),
-            box=universe.atoms.dimensions
-        )
-        # convert to float so we avoid having a np.float64
-        return float(bond) * unit.angstrom
-
 
 def get_distance_restraint(
-    topology: Union[str, pathlib.Path, app.Topology],
-    trajectory: Union[str, pathlib.Path],
+    universe: mda.Universe,
     host_atoms: Optional[list[int]] = None,
     guest_atoms: Optional[list[int]] = None,
     host_selection: Optional[str] = None,
@@ -69,10 +39,8 @@ def get_distance_restraint(
 
     Parameters
     ----------
-    topology : Union[str, pathlib.Path, app.Topology]
-      A path or object defining the system topology.
-    trajectory : Union[str, pathlib.Path]
-      Coordinates for the system.
+    universe : mda.Universe
+      An MDAnalysis Universe defining the system and its coordinates.
     host_atoms : Optional[list[int]]
       A list of host atoms indices. Either ``host_atoms`` or
       ``host_selection`` must be defined.
@@ -91,15 +59,9 @@ def get_distance_restraint(
     DistanceRestraintGeometry
       An object that defines a distance restraint geometry.
     """
-    u = mda.Universe(
-        topology,
-        trajectory,
-        topology_format=_get_mda_topology_format(topology)
-    )
-
-    guest_ag = _get_mda_selection(u, guest_atoms, guest_selection)
+    guest_ag = _get_mda_selection(universe, guest_atoms, guest_selection)
     guest_atoms = [a.ix for a in guest_ag]
-    host_ag = _get_mda_selection(u, host_atoms, host_selection)
+    host_ag = _get_mda_selection(universe, host_atoms, host_selection)
     host_atoms = [a.ix for a in host_ag]
 
     return DistanceRestraintGeometry(
@@ -122,12 +84,12 @@ def get_molecule_centers_restraint(
     molA_rdmol : Chem.Mol
       An RDKit Molecule for the first molecule.
     molB_rdmol : Chem.Mol
-      An RDKit Molecule for the first molecule.
+      An RDKit Molecule for the second molecule.
     molA_idxs : list[int]
       The indices of the first molecule in the system. Note we assume these
       to be sorted in the same order as the input rdmol.
     molB_idxs : list[int]
-      The indices of the first molecule in the system. Note we assume these
+      The indices of the second molecule in the system. Note we assume these
       to be sorted in the same order as the input rdmol.
 
     Returns

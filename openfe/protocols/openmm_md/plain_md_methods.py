@@ -341,9 +341,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
 
-        traj.save_pdb(
-            shared_basepath / output_settings.minimized_structure
-        )
+        if output_settings.minimized_structure:
+            traj.save_pdb(
+                shared_basepath / output_settings.minimized_structure
+            )
         # equilibrate
         # NVT equilibration
         if equil_steps_nvt:
@@ -431,26 +432,33 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mc_steps=1,
         )
 
-        simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / output_settings.production_trajectory_filename),
-            reportInterval=write_interval,
-            atomSubset=selection_indices))
-        simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / output_settings.checkpoint_storage_filename),
-            reportInterval=checkpoint_interval))
-        simulation.reporters.append(openmm.app.StateDataReporter(
-            str(shared_basepath / output_settings.log_output),
-            checkpoint_interval,
-            step=True,
-            time=True,
-            potentialEnergy=True,
-            kineticEnergy=True,
-            totalEnergy=True,
-            temperature=True,
-            volume=True,
-            density=True,
-            speed=True,
-        ))
+        if output_settings.production_trajectory_filename:
+            simulation.reporters.append(XTCReporter(
+                file=str(
+                    shared_basepath /
+                    output_settings.production_trajectory_filename),
+                reportInterval=write_interval,
+                atomSubset=selection_indices))
+        if output_settings.checkpoint_storage_filename:
+            simulation.reporters.append(openmm.app.CheckpointReporter(
+                file=str(
+                    shared_basepath /
+                    output_settings.checkpoint_storage_filename),
+                reportInterval=checkpoint_interval))
+        if output_settings.log_output:
+            simulation.reporters.append(openmm.app.StateDataReporter(
+                str(shared_basepath / output_settings.log_output),
+                checkpoint_interval,
+                step=True,
+                time=True,
+                potentialEnergy=True,
+                kineticEnergy=True,
+                totalEnergy=True,
+                temperature=True,
+                volume=True,
+                density=True,
+                speed=True,
+            ))
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
@@ -616,10 +624,13 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             )
 
         # f. Save pdb of entire system
-        with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
-            openmm.app.PDBFile.writeFile(
-                stateA_topology, stateA_positions, file=f, keepIds=True
-            )
+        if output_settings.preminimized_structure:
+            with open(
+                    shared_basepath /
+                    output_settings.preminimized_structure, "w") as f:
+                openmm.app.PDBFile.writeFile(
+                    stateA_topology, stateA_positions, file=f, keepIds=True
+                )
 
         # 10. Get platform
         restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
