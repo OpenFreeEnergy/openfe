@@ -9,7 +9,6 @@ from ..utils import assert_click_success
 
 from openfecli.commands.gather import (
     gather, format_estimate_uncertainty, _get_column,
-    _generate_bad_legs_error_message,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
