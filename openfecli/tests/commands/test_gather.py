@@ -183,20 +183,20 @@ def test_gather(rbfe_result_dir, dataset, report):
 
 class TestGatherFailedEdges:
     @pytest.fixture()
-    def results_dir_serial_missing_legs(self, tmpdir)->str:
+    def results_dir_serial_missing_legs(self, rbfe_result_dir, tmpdir)->str:
         """Example output data, with replicates run in serial and one deleted results JSON."""
-        with tmpdir.as_cwd():
-            with resources.files('openfecli.tests.data') as d:
-                tar = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-                tar.extractall('.')
+        # TODO: update this to return a list of paths when gather supports this. will avoid this symlink mess
+        rbfe_result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
+        tmp_results_dir =  f"{tmpdir}/results"
 
-                results_dir_path = os.path.abspath(tar.getnames()[0])
-                files_to_remove = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
-                                   "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
-                                   ]
-                for fname in files_to_remove:
-                    (pathlib.Path(results_dir_path)/ fname).unlink()
-        return results_dir_path
+        os.symlink(rbfe_result_dir, tmp_results_dir, target_is_directory=True)
+        files_to_remove = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
+                            "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
+                            ]
+        for fname in files_to_remove:
+            (pathlib.Path(tmp_results_dir)/ fname).unlink()
+
+        return str(tmp_results_dir)
 
     def test_missing_leg_error(self, results_dir_serial_missing_legs: str):
         runner = CliRunner()
