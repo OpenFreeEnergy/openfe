@@ -427,19 +427,22 @@ class CentroidDistanceSort(AnalysisBase):
         reference_atoms,
         **kwargs,
     ):
-        super().__init__(host_atoms.universe.trajectory, **kwargs)
+        super().__init__(sortable_atoms.universe.trajectory, **kwargs)
 
         def get_atomgroup(ag):
+            """
+            We need this in case someone passes an Atom not an AG
+            """
             if ag._is_group:
                 return ag
             return mda.AtomGroup([ag])
 
-        self.sortable_ag = sortable_atoms
-        self.reference_ag = reference_atoms
+        self.sortable_ag = get_atomgroup(sortable_atoms)
+        self.reference_ag = get_atomgroup(reference_atoms)
 
     def _prepare(self):
         self.results.distances = np.zeros(
-            (len(self.sortable_ag), self.n_frames)
+            (self.n_frames, len(self.sortable_ag))
         )
 
     def _single_frame(self):

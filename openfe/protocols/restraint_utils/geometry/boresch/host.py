@@ -23,6 +23,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     check_dihedral_bounds,
     check_angle_not_flat,
     FindHostAtoms,
+    CentroidDistanceSort,
     get_local_rmsf,
     stable_secondary_structure_selection,
     protein_chain_selection,
