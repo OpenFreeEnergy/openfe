@@ -6,6 +6,7 @@ from openfecli.commands.generate_partial_charges import charge_molecules
 from openff.toolkit import Molecule
 from openff.units import unit
 import numpy as np
+from openff.utilities.testing import skip_if_missing
 
 @pytest.fixture
 def yaml_nagl_settings():
@@ -117,6 +118,8 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, methane_with_charges, exp
     pytest.param(1, id="1"),
     pytest.param(2, id="2")
 ])
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_charge_settings(methane, tmpdir, yaml_nagl_settings, ncores):
     runner = CliRunner()
     mol_path = tmpdir / "methane.sdf"
