@@ -135,9 +135,9 @@ solvent	lig_ejm_46	lig_jmc_28	23.5	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
-
+POOCH_CACHE = pooch.os_cache('openfe')
 ZENODO_RBFE_DATA = pooch.create(
-        path = pooch.os_cache('openfe'),
+        path = POOCH_CACHE,
         base_url="doi:10.5281/zenodo.14884797",
         registry={
             "rbfe_results_serial_repeats.tar.gz": "md5:d7c5e04786d03e1280a74639c2981546",
@@ -153,7 +153,7 @@ def rbfe_result_dir()->pathlib.Path:
 
     return _rbfe_result_dir
 
-@pytest.mark.skipif(not HAS_INTERNET, reason="Internet seems to be unavailable")
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 def test_gather(rbfe_result_dir, dataset, report):
@@ -179,8 +179,7 @@ def test_gather(rbfe_result_dir, dataset, report):
     actual_lines = set(result.stdout_bytes.split(b'\n'))
     assert set(expected.split(b'\n')) == actual_lines
 
-
-@pytest.mark.skipif(not HAS_INTERNET, reason="Internet seems to be unavailable")
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 class TestGatherFailedEdges:
     @pytest.fixture()
     def results_dir_serial_missing_legs(self, rbfe_result_dir, tmpdir)->str:
