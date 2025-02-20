@@ -48,20 +48,15 @@ class _Fetcher:
     def __call__(self, directory: pathlib.Path):
         raise NotImplementedError()
 
-    def _docs(self):
-        """User-facing output"""
+    @property
+    def plugin(self):
+        """Plugin used by this fetcher"""
         docs = self.long_help or ""
         docs += "\n\nThis will fetch the following files:\n\n"
         # if you're getting a problem with unpacking here, you probably
         # forgot to make resources a list of tuple of (base, filename)
         for _, filename in self.resources:
             docs += f"* {filename}\n"
-
-    @property
-    def plugin(self):
-        """Plugin used by this fetcher"""
-
-        self._docs
 
         if self.REQUIRES_INTERNET is True:
             short_help = self.short_help + " [requires internet]"
@@ -75,7 +70,7 @@ class _Fetcher:
         @click.command(
             self.short_name,
             short_help=short_help,
-            help=self._docs,
+            help=docs,
         )
         @click.option(
             '-d', '--directory', default='.',
