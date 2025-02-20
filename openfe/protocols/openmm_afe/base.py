@@ -237,7 +237,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         if self.verbose:
-            logger.info("running non-alchemical equilibration MD")
+            self.logger.info("running non-alchemical equilibration MD")
 
         # Don't do anything if we're doing a dry run
         if dry:
@@ -531,7 +531,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         with without_oechem_backend():
             system = system_generator.create_system(
                 modeller.topology,
-                molecules=smc_components,
+                molecules=list(smc_components.values()),
             )
         return topology, system, positions, comp_resids
 
@@ -572,7 +572,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return lambdas
 
-    def _add_restraints(self, system, topology, settings):
+    def _add_restraints(
+        self,
+        system: openmm.System,
+        topology: GlobalParameterState,
+        alchem_comps: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        settings: dict[str, SettingsBaseModel], 
+    ) -> tuple[GlobalParameterState, unit.Quantity, openmm.System]:
         """
         Placeholder method to add restraints if necessary
         """
@@ -598,7 +605,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           A dictionary of residues for each component in the System.
         alchem_comps : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
-
 
         Returns
         -------
@@ -910,7 +916,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
         settings: dict[str, SettingsBaseModel],
-        standard_state_corr: Optional[unit.Quantity]
+        standard_state_corr: Optional[unit.Quantity],
         dry: bool
     ):
         """
@@ -1037,8 +1043,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         settings = self._handle_settings()
 
         # 3. Get OpenMM topology, positions, and system
-        omm_topology, omm_system, position, comp_resids = self._get_omm_objects(
-            settings, prot_comps, solv_comps, smc_comps,
+        omm_topology, omm_system, positions, comp_resids = self._get_omm_objects(
+            settings, prot_comp, solv_comp, smc_comps,
         )
 
         # 4. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
@@ -1051,7 +1057,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 6. Add restraints
         restraint_parameter_state, standard_state_corr, omm_system = self._add_restraints(
-            omm_system, omm_topology, settings
+            omm_system, omm_topology, positions, alchem_comps, comp_resids, settings
         )
 
         # 7. Get alchemical system

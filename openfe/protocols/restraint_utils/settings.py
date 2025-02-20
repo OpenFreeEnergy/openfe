@@ -10,6 +10,7 @@ TODO
 """
 from typing import Optional
 from openff.models.types import FloatQuantity
+from openff.units import unit
 from pydantic.v1 import validator
 from gufe.settings import (
     SettingsBaseModel,
@@ -109,30 +110,30 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     """
     The bond spring constant between H0 and G0.
     """
-    K_thetaA: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / radians ** 2
+    K_thetaA: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
     """
     The spring constant for the angle formed by H1-H0-G0.
     """
-    K_thetaB: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / radians ** 2
+    K_thetaB: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
     """
     The spring constant for the angle formed by H0-G0-G1.
     """
-    phi_A0: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+    K_phiA: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
     """
     The equilibrium force constant for the dihedral formed by
     H2-H1-H0-G0.
     """
-    phi_B0: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+    K_phiB: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
     """
     The equilibrium force constant for the dihedral formed by
     H1-H0-G0-G1.
     """
-    phi_C0: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+    K_phiC: FloatQuantity['kilojoule_per_mole / radians ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
     """
     The equilibrium force constant for the dihedral formed by
     H0-G0-G1-G2.
     """
-    host_selection: Optional[str] = "protein and name CA"
+    host_selection: Optional[str] = "backbone"
     """
     Boresch-like restraint search parameter.
     An MDAnalysis selection string to sub-select the host atoms which will be involved in the restraint.
@@ -142,7 +143,7 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     Whether or not to try to do a DSSP filter on the host atoms.
     """
-    rmsf_custoff: Optional[FloatQuantity['nanometer']] = 1 * unit.nanometer
+    rmsf_cutoff: Optional[FloatQuantity['nanometer']] = 1 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The cutoff value for filtering atoms by their root mean square fluctuation. Atoms with values above this cutoff will be disregarded.

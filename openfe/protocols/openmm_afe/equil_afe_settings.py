@@ -30,11 +30,14 @@ from openfe.protocols.openmm_utils.omm_settings import (
     MultiStateOutputSettings,
     MDSimulationSettings,
     MDOutputSettings,
+)
+from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
-    HarmonicRestraintSettings,
+    DistanceRestraintSettings,
     FlatBottomRestraintSettings,
     BoreschRestraintSettings,
 )
+
 import numpy as np
 
 from pydantic.v1 import validator
@@ -258,10 +261,15 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Alchemical protocol settings.
     """
-    lambda_settings: LambdaSettings
+    complex_lambda_settings: LambdaSettings
     """
-    Settings for controlling the lambda schedule for the different components
-    (vdw, elec, restraints).
+    Settings for controlling the complex transformation leg
+    lambda schedule for the different components (vdw, elec, restraints).
+    """
+    solvent_lambda_settings: LambdaSettings
+    """
+    Settings for controlling the solvent transformation leg
+    lambda schedule for the different components (vdw, elec, restraints).
     """
 
     # MD Engine things

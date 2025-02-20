@@ -38,11 +38,13 @@ import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
+from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openmmtools import multistate
-from openmmtools.state import ThermodynamicState, GlobalParameterState
+from openmmtools.states import ThermodynamicState, GlobalParameterState
 from typing import Optional, Union
 from typing import Any, Iterable
 import uuid
+import MDAnalysis as mda
 
 from gufe import (
     settings,
@@ -50,14 +52,14 @@ from gufe import (
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteSolvationSettings,
+    AbsoluteBindingSettings,
     OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
     MDSimulationSettings, MDOutputSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
     SettingsBaseModel,
-    HarmonicRestraintSettings,
+    DistanceRestraintSettings,
     FlatBottomRestraintSettings,
     BoreschRestraintSettings,
 )
@@ -798,7 +800,10 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         self,
         system: openmm.System,
         topology: openmm.app.Topology,
-        settings: dict[str, SettingsBaseModel]
+        positions: ...,
+        alchem_comps: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        settings: dict[str, SettingsBaseModel],
     ) -> [GlobalParameterState, unit.Quantity, openmm.System]:
         """
         Find and add restraints to the OpenMM System.
@@ -823,24 +828,100 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         system : openmm.System
           A copy of the System with the restraint added.
         """
-        from openfe.protocols.openmm_utils import (
-            omm_restraints, geometry, search
+        from MDAnalysis.coordinates.memory import MemoryReader
+        from openfe.protocols.restraint_utils import geometry
+        from openfe.protocols.restraint_utils.openmm import omm_restraints
+
+        def _get_idxs_from_residxs(topology, residxs):
+            atom_ids = []
+
+            for r in topology.residues():
+                if r.index in residxs:
+                    atom_ids.extend([at.index for at in r.atoms()])
+
+            return atom_ids
+
+        if self.verbose:
+            self.logger.info("Generating restraints")
+
+        # Get the guest idxs and rdmol
+        # concatenate a list of residue indexes for all alchemical components
+        guest_rdmol = alchem_comps['stateA'][0].to_rdkit()
+        residxs = np.concatenate(
+            [comp_resids[key] for key in alchem_comps['stateA']]
         )
 
-        if isinstance(settings['restraints_settings'], BoreschRestraintSettings):
-            geom = search.get_boresch_restraint(
-                topology,
-                self.shared_basepath / settings['equil_output_settings'].production_trajectory_filename
+        # get the alchemicical atom ids
+        guest_atom_ids = _get_idxs_from_residxs(topology, residxs)
+
+        # Now get the host idxs
+        solv_comps = [c for c in comp_resids if isinstance(c, SolventComponent)]
+        exclude_comps = [alchem_comps['stateA']] + solv_comps
+        residxs = np.concatenate(
+            [v for i, v in comp_resids.items() if i not in exclude_comps]
+        )
+
+        host_atom_ids = _get_idxs_from_residxs(topology, residxs)
+
+        # Finally create an MDAnalysis Universe
+        # If the trajectory file doesn't exist, then we default to using positions
+        traj = self.shared_basepath / settings['equil_output_settings'].production_trajectory_filename
+        if traj.is_file():
+            trajectory_format=None
+        else:
+            # Convert positions from Quantity to array
+            # Divide by 10 to go from nm to angstroms
+            traj = np.array(positions._value) * 10
+            trajectory_format=MemoryReader
+
+        univ = mda.Universe(
+            topology,
+            traj,
+            topology_format="OPENMMTOPOLOGY",
+            trajectory_format=trajectory_format,
+        )
+
+        # if univ.dimensions is None:
+        #     if trajectory_format == MemoryReader:
+        #         from MDAnalysis.converters.OpenMM import _sanitize_box_angles
+        #         triclinic_dimensions = topology.getPeriodicBoxVectors()._value
+        #         univ.trajectory.ts.triclinic_dimensions = triclinic_dimensions
+        #         univ.dimensions[3:] = _sanitize_box_angles(univ.dimensions[3:])
+        #         univ.dimensions[:3] /= 10  # Convert from nm to A
+
+        if isinstance(settings['restraint_settings'], BoreschRestraintSettings):
+            # Get the average of the two force constant for use below
+            frc_const_average = (
+                settings['restraint_settings'].K_thetaA +
+                settings['restraint_settings'].K_thetaB
+            ) / 2
+
+            rest_geom = geometry.boresch.find_boresch_restraint(
+                universe=univ,
+                guest_rdmol=guest_rdmol,
+                guest_idxs=guest_atom_ids,
+                host_idxs=host_atom_ids,
+                host_selection=settings['restraint_settings'].host_selection,
+                dssp_filter=settings['restraint_settings'].dssp_filter,
+                rmsf_cutoff=settings['restraint_settings'].rmsf_cutoff,
+                host_min_distance=settings['restraint_settings'].host_min_distance,
+                host_max_distance=settings['restraint_settings'].host_max_distance,
+                angle_force_constant=frc_const_average,
+                temperature=settings['thermo_settings'].temperature,
             )
 
             restraint = omm_restraints.BoreschRestraint(
-                settings['restraints_settings'],
-                geom,
-                controlling_parameter_name='lambda_restraints'
+                settings['restraint_settings'],
             )
+
         else:
             # TODO turn this into a direction for different restraint types supported?
-            raise NotImplementedError()
+            raise NotImplementedError(
+                "Other restraint types are not yet available"
+            )
+
+        if self.verbose:
+            self.logger.info(f"restraint geometry is: {rest_geom}")
 
         # We need a temporary thermodynamic state to add the restraint
         # & get the correction
@@ -851,12 +932,19 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         )
 
         # Add the force to the thermodynamic state
-        restraint.add_force(thermodynamic_state)
+        restraint.add_force(
+            thermodynamic_state,
+            rest_geom,
+            controlling_parameter_name='lambda_restraints'
+        )
         # Get the standard state correction as a unit.Quantity
-        correction = restraint.get_standard_state_correction(thermodynamic_state)
+        correction = restraint.get_standard_state_correction(
+            thermodynamic_state,
+            rest_geom,
+        )
 
         # Get the GlobalParameterState for the restraint
-        retraint_parameter_state = omm_restraints.RestraintParameterState(
+        restraint_parameter_state = omm_restraints.RestraintParameterState(
             lambda_restraints=1.0
         )
         return restraint_parameter_state, correction, thermodynamic_state.system
