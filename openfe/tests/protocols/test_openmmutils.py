@@ -932,7 +932,7 @@ class TestOFFPartialCharge:
 @pytest.mark.slow
 @pytest.mark.download
 # Sometimes we get a DOI lookup error from duecredit
-@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
+#@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,

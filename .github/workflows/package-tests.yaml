@@ -17,9 +17,13 @@ on:
     # At 07:00 UTC on Monday and Thursday.
     - cron: "0 7 * * *"
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
 defaults:
   run:
-    shell: bash -l {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
   package-tests:
