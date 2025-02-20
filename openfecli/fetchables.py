@@ -32,9 +32,9 @@ RBFE_TUTORIAL = URLFetcher(
     requires_ofe=(0, 7, 0),
 ).plugin
 
-RBFE_TUTORIAL_RESULTS = URLFetcher(
+RBFE_TUTORIAL_RESULTS = PkgResourceFetcher(
     resources=[
-        ("https://zenodo.org/records/14884797/files/", "rbfe_results_serial_repeats.tar.gz")
+        ("openfecli.tests.data", "rbfe_results.tar.gz"),
     ],
     short_name="rbfe-tutorial-results",
     short_help="Results package to follow-up the rbfe-tutorial",
