@@ -19,7 +19,7 @@ on:
 
 defaults:
   run:
-    shell: bash -l {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
   package-tests:
