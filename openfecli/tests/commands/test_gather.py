@@ -136,21 +136,18 @@ solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
 
-@pytest.fixture
-def zenodo_rbfe_data()->pooch.core.Pooch:
-    pup = pooch.create(
+ZENODO_RBFE_DATA = pooch.create(
         path = pooch.os_cache('openfe'),
         base_url="doi:10.5281/zenodo.14884797",
         registry={
             "rbfe_results_serial_repeats.tar.gz": "md5:d7c5e04786d03e1280a74639c2981546",
             "rbfe_results_parallel_repeats.tar.gz": "md5:cc54afe32b56232339a9315f4c3d6d91"},
     )
-    yield pup
 
 @pytest.fixture
-def rbfe_result_dir(zenodo_rbfe_data)->pathlib.Path:
+def rbfe_result_dir()->pathlib.Path:
     def _rbfe_result_dir(dataset)->str:
-        zenodo_rbfe_data.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
+        ZENODO_RBFE_DATA.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
         cache_dir = pathlib.Path(pooch.os_cache('openfe'))/f'{dataset}.tar.gz.untar/{dataset}/'
         return  cache_dir
 
