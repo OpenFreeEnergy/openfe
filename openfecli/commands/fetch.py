@@ -11,6 +11,7 @@ from openfecli import OFECommandPlugin
 # MOVE SINGLEMODULEPLUGINLOADER UPSTREAM TO PLUGCLI
 import importlib
 from plugcli.plugin_management import CLIPluginLoader
+
 class SingleModulePluginLoader(CLIPluginLoader):
     """Load plugins from a specific module
     """
@@ -45,10 +46,7 @@ class FetchCLI(CLI):
         loader = self.get_loaders()[0]
         return list(loader())
 
-@click.command(
-    cls=FetchCLI,
-    short_help="Fetch tutorial or other resource."
-)
+@click.command(cls=FetchCLI, short_help="Fetch tutorial or other resource.")
 def fetch():
     """
     Fetch the given resource. Some resources require internet; others are
