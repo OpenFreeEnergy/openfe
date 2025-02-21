@@ -650,6 +650,16 @@ The output of the script will also be printed to standard out as it is executed.
 While no sensitive information is extracted, it is good practice to review the output before sending it or posting it to ensure that nothing needs to be redacted.
 For example, if your python path was ``/data/SECRET_COMPOUND_NAME/python`` then that would show up in ``debug.log``.
 
+Testing on an Air Gapped Network (most HPCs)
+--------------------------------------------
+
+If you run OpenFE's test suite on an HPC that restricts public internet access, OpenFE's tests that require data that are stored on `Zenodo <https://zenodo.org/>`_ will be skipped.
+
+As a workaround, can manually download the data from zenodo, then upload it to the HPC for OpenFE to use:
+
+.. parsed-literal::
+  $
+  $ python -c "import pooch; print(pooch.os_cache('openfe'))" 
 
 Common Errors
 -------------
