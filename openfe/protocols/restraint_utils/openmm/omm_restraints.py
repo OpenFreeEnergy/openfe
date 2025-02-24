@@ -519,7 +519,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
     (p2, p3, p4) and (p3, p4, p5). They must be provided by the
     Geometry class in units compatible with radians.
 
-    ``phi_A0``, ``phi_B0``, and ``phi_C0`` are the equilibrium force constants
+    ``K_phiA``, ``K_phiB``, and ``K_phiC`` are the equilibrium force constants
     for the dihedrals formed by (p1, p2, p3, p4), (p2, p3, p4, p5), and
     (p3, p4, p5, p6). They must be provided in the settings in units
     compatible with kilojoule / mole / radians ** 2.
