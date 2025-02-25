@@ -23,11 +23,11 @@ def fetchable_test(fetchable):
             assert (pathlib.Path("output-dir") / path).exists()
 
 
-def test_rhfe_tutorial():
+def test_rbfe_tutorial():
     fetchable_test(RBFE_TUTORIAL)
 
-def test_rhfe_tutorial_results():
+def test_rbfe_tutorial_results():
     fetchable_test(RBFE_TUTORIAL_RESULTS)
 
-def test_rhfe_showcase():
+def test_rbfe_showcase():
     fetchable_test(RBFE_SHOWCASE)

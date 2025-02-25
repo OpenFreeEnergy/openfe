@@ -16,7 +16,7 @@ Relative Free Energies
 Python API Showcase
 ~~~~~~~~~~~~~~~~~~~
 
-Our :any:`shocase notebook <showcase_notebook>` walks users through
+Our :any:`showcase notebook <showcase_notebook>` walks users through
 how to use the main Python API components of OpenFE to create a
 relative binding free energy calculation.
 
@@ -41,6 +41,12 @@ The :any:`Absolute Solvation Free Energy Protocol <ahfe_tutorial>` tutorial
 walks users through how to calculate the hydration free energy of a benzene
 ligand.
 
+Generating Partial Charges
+--------------------------
+
+The :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>` demonstrates
+how the command line interface can be used to assign and store partial charges for small molecules which
+can be used throughout the OpenFE ecosystem.
 
 Molecular Dynamics (MD)
 -----------------------
@@ -62,13 +68,15 @@ to analyze (e.g. generating MLE estimates of absolute free energies)
 and plot networks of relative free energy results.
 
 
+
 .. toctree::
     :maxdepth: 1
     :hidden:
-    
+
+    showcase_notebook
     rbfe_cli_tutorial
     rbfe_python_tutorial
-    showcase_notebook
-    md_tutorial
     ahfe_tutorial
+    charge_molecules_cli_tutorial
+    md_tutorial
     plotting_with_cinnabar

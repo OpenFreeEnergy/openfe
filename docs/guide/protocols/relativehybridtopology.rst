@@ -93,6 +93,9 @@ In addition to the MBAR estimates of the two legs of the thermodynamic cycle and
 the protocol also returns some metrics to help assess convergence of the results,
 these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
+.. note:: The MBAR uncertainty of each individual transformation is estimated using bootstrapping for 1000 iterations,
+          this leads to larger errors compared to the previous error estimate method.
+
 .. todo: issue 792, consolidate this page into its own analysis page and link both RBFE and AFE pages to it
 .. _multistate_analysis:
 

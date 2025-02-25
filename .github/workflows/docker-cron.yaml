@@ -6,13 +6,13 @@ on:
       - main
   schedule:
     # nightly tests
-    - cron: "0 7 * * *"
+    - cron: "0 14 * * 0"
 
   workflow_dispatch:
 
 defaults:
   run:
-    shell: bash -l {0}
+    shell: bash -leo pipefail {0}
 
 env:
   REGISTRY: ghcr.io
@@ -47,11 +47,6 @@ jobs:
 
       - name: Print FQIRP
         run: echo ${{ steps.fqirp.outputs.FQIRP  }}
-
-      - name: Build package
-        run: |
-          python3 -m pip install --upgrade build
-          python3 -m build
 
       - name: Log in to the Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -88,6 +83,6 @@ jobs:
         run: |
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --help
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(gufe.__version__)"
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(f'{gufe.__version__=}')"
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe -v

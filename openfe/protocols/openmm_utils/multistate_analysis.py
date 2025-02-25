@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from openmmtools import multistate
 from openff.units import unit, ensure_quantity
+from pymbar import MBAR
 from pymbar.utils import ParameterError
 from openfe.analysis import plotting
 from typing import Optional, Union
@@ -68,7 +69,7 @@ class MultistateEquilFEAnalysis:
     result_units : unit.Quantity
       Units to report results in.
     forward_reverse_samples : int
-      The number of samples to use in the foward and reverse analysis
+      The number of samples to use in the forward and reverse analysis
       of the free energies. Default 10.
     """
     def __init__(self, reporter: multistate.MultiStateReporter,
@@ -198,37 +199,32 @@ class MultistateEquilFEAnalysis:
         Parameters
         ----------
         analyzer : multistate.MultiStateSamplerAnalyzer
-          MultiStateSamplerAnalyzer to extract free eneriges from.
+          MultiStateSamplerAnalyzer to extract free energies from.
         u_ln : npt.NDArray
           A n_states x (n_sampled_states * n_iterations)
           array of energies (in kT).
         N_l : npt.NDArray
           An array containing the total number of samples drawn from each
           state.
-        unit_type : unit.Quantity
-          What units to return the free energies in.
 
         Returns
         -------
         DG : unit.Quantity
           The free energy difference between the end states.
         dDG : unit.Quantity
-          The MBAR error for the free energy difference estimate.
+          The MBAR bootstrap (1000 iterations) error estimate for the free energy difference.
 
         TODO
         ----
         * Allow folks to pass in extra options for bootstrapping etc..
         * Add standard test against analyzer.get_free_energy()
         """
-        mbar = analyzer._create_mbar(u_ln, N_l)
 
-        try:
-            # pymbar 3
-            DF_ij, dDF_ij = mbar.getFreeEnergyDifferences()
-        except AttributeError:
-            r = mbar.compute_free_energy_differences()
-            DF_ij = r['Delta_f']
-            dDF_ij = r['dDelta_f']
+        # pymbar 4
+        mbar = MBAR(u_ln, N_l, solver_protocol="robust", n_bootstraps=1000, bootstrap_solver_protocol="robust")
+        r = mbar.compute_free_energy_differences(compute_uncertainty=True, uncertainty_method="bootstrap")
+        DF_ij = r['Delta_f']
+        dDF_ij = r['dDelta_f']
 
         DG = DF_ij[0, -1] * analyzer.kT
         dDG = dDF_ij[0, -1] * analyzer.kT
@@ -352,15 +348,8 @@ class MultistateEquilFEAnalysis:
             * ``matrix``: Estimated overlap matrix of observing a sample from
               state i in state j
         """
-        try:
-            # pymbar 3
-            overlap_matrix = self.analyzer.mbar.computeOverlap()
-            # convert matrix to np array
-            overlap_matrix['matrix'] = np.array(overlap_matrix['matrix'])
-        except AttributeError:
-            overlap_matrix = self.analyzer.mbar.compute_overlap()
+        return self.analyzer.mbar.compute_overlap()
 
-        return overlap_matrix
 
     def get_exchanges(self) -> dict[str, npt.NDArray]:
         """
@@ -373,7 +362,7 @@ class MultistateEquilFEAnalysis:
           A dictionary containing the following:
             * ``eigenvalues``: The sorted (descending) eigenvalues of the
               lambda state transition matrix
-            * ``matrix``: The transition matrix estimate of a replica switchin
+            * ``matrix``: The transition matrix estimate of a replica switching
               from state i to state j.
         """
         # Get replica mixing statistics

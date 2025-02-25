@@ -35,6 +35,7 @@ To get a list of the subcommands and their descriptions, call ``openfe`` (or
     
     Miscellaneous Commands:
       fetch  Fetch tutorial or other resource.
+      charge-molecules  Generate partial charges for a set of molecules.
       test   Run the OpenFE test suite
 
 The ``--log`` option takes a logging configuration file and sets that

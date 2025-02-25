@@ -53,7 +53,7 @@ Save this configuration file as ``debug_logging.conf`` and then run ``openfe qui
 
 .. code-block:: bash
 
-   $ openfe --log debug_logging.conf quickrun -d results/ -o results/result_lig_ejm_31_solvent_lig_ejm_42_solvent.json transformations/easy_rbfe_lig_ejm_31_solvent_lig_ejm_42_solvent.json
+   $ openfe --log debug_logging.conf quickrun -d results/ -o results/result_lig_ejm_31_solvent_lig_ejm_42_solvent.json transformations/rbfe_lig_ejm_31_solvent_lig_ejm_42_solvent.json
 
 Note that the ``--log debug_logging.conf`` argument goes between ``openfe`` and ``quickrun`` on the command line.
 
