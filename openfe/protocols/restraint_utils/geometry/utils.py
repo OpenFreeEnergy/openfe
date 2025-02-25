@@ -538,7 +538,7 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     rmsf
       ArrayQuantity of RMSF values.
     """
-    # The no trajectory case:
+    # The no trajectory case
     if len(atomgroup.universe.trajectory) < 2:
         return np.zeros(atomgroup.n_atoms) * unit.angstrom
 
