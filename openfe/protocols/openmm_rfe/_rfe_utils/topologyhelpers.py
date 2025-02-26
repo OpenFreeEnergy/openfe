@@ -677,7 +677,7 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
         state.
     tolerance : float
         Warning threshold for deviations along any dimension (x,y,z) in mapped
-        atoms between the "old" and "new" positions. Default 1.0.
+        atoms between the "old" and "new" positions, in Angstroms. Default 1.0.
     """
     # Get the positions in Angstrom as raw numpy arrays
     old_pos_array = old_positions.value_in_unit(omm_unit.angstrom)
