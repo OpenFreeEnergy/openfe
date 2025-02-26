@@ -41,6 +41,7 @@ from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openmmtools import multistate
 from openmmtools.states import ThermodynamicState, GlobalParameterState
+from rdkit import Chem
 from typing import Optional, Union
 from typing import Any, Iterable
 import uuid
@@ -63,7 +64,16 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     FlatBottomRestraintSettings,
     BoreschRestraintSettings,
 )
-from ..openmm_utils import system_validation, settings_validation
+from openfe.protocols.openmm_utils import (
+    system_validation,
+    settings_validation,
+)
+from openfe.protocols.restraint_utils.openmm.omm_restraints import (
+    BoreschRestraint,
+)
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    BoreschRestraintGeometry,
+)
 from .base import BaseAbsoluteUnit
 from openfe.utils import log_system_probe
 from openfe.due import due, Doi
@@ -796,11 +806,137 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
 
         return settings
 
+    @staticmethod
+    def _get_mda_universe(
+        topology: openmm.app.Topology,
+        positions: openmm.unit.Quantity,
+        trajfile_path: Optional[pathlib.Path],
+    ) -> mda.Universe:
+        """
+        Helper method to get a Universe from an openmm Topology,
+        and either an input trajectory or a set of positions.
+
+        Parameters
+        ----------
+        topology : openmm.app.Topology
+          An OpenMM Topology that defines the System.
+        positions: openmm.unit.Quantity
+          The System's current positions.
+          Used if a trajectory file is None or is not a file.
+        trajfile_path: pathlib.Path
+          A Path to a trajectory file to read positions from.
+
+        Returns
+        -------
+        mda.Universe
+          An MDAnalysis Universe of the System.
+        """
+        from MDAnalysis.coordinates.memory import MemoryReader
+        # If the trajectory file doesn't exist, then we use positions
+        if traj is not None and traj.is_file():
+            trajectory_format=None
+        else:
+            # Convert positions from Quantity to array
+            # Divide by 10 to go from nm to angstroms
+            traj = np.array(positions._value) * 10
+            trajectory_format=MemoryReader
+
+        return mda.Universe(
+            topology,
+            traj,
+            topology_format="OPENMMTOPOLOGY",
+            trajectory_format=trajectory_format,
+        )
+
+    @staticmethod
+    def _get_idxs_from_residxs(
+        topology: openmm.app.Topology,
+        residxs: list[int],
+    ) -> list[int]:
+        """
+        Helper method to get the a list of atom indices which belong to a list
+        of residues.
+
+        Parameters
+        ----------
+        topology : openmm.app.Topology
+          An OpenMM Topology that defines the System.
+        residxs : list[int]
+          A list of residue numbers who's atoms we should get atom indices.
+
+        Returns
+        -------
+        atom_ids : list[int]
+          A list of atom indices.
+
+        TODO
+        ----
+        * Check how this works when we deal with virtual sites.
+        """
+        atom_ids = []
+
+        for r in topology.residues():
+            if r.index in residxs:
+                atom_ids.extend([at.index for at in r.atoms()])
+
+        return atom_ids
+
+    @staticmethod
+    def _get_boresch_restraint(
+        universe: mda.Universe,
+        guest_rdmol: Chem.Mol,
+        guest_atom_ids: list[int],
+        host_atom_ids: list[int],
+        settings: BoreschRestraintSettings,
+    ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
+        """
+        Get a Boresch-like restraint Geometry and OpenMM restraint force
+        supplier.
+
+        Parameters
+        ----------
+        universe : mda.Universe
+          An MDAnalysis Universe defining the system to get the restraint for.
+        guest_rdmol : Chem.Mol
+          An RDKit Molecule defining the guest molecule in the system.
+        guest_atom_ids: list[int]
+          A list of atom indices defining the guest molecule in the universe.
+        host_atom_ids: list[int]
+          A list of atom indices defining the host molecules in the universe.
+        settings : BoreschRestraintSettings
+          Settings on how the Boresch-like restraint should be defined.
+
+        Returns
+        -------
+        geom : BoreschRestraintGeometry
+          A class defining the Boresch-like restraint.
+        restraint : BoreschRestraint
+          A factory class for generating Boresch restraints in OpenMM.
+        """
+        frc_const = (settings.K_thetaA + settings.K_thetaB) / 2
+
+        geom = geometry.boresch.find_boresch_restraint(
+            universe=universe,
+            guest_rdmol=guest_rdmol,
+            guest_idxs=guest_atom_ids,
+            host_idxs=host_atom_ids,
+            host_selection=settings.host_selection,
+            dssp_filter=settings.dssp_filter,
+            rmsf_cutoff=settings.rmsf_cutoff,
+            host_min_distance=settings.host_min_distance,
+            host_max_distance=settings.host_max_distance,
+            angle_force_constant=frc_const,
+            temperature=settings.temperature,
+        )
+
+        restraint = omm_restraints.BoreschRestraint(settings)
+        return geom, restraint
+
     def _add_restraints(
         self,
         system: openmm.System,
         topology: openmm.app.Topology,
-        positions: ...,
+        positions: openmm.unit.Quantity,
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
@@ -808,12 +944,26 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         """
         Find and add restraints to the OpenMM System.
 
+        Notes
+        -----
+        Currently, only Boresch-like restraints are supported.
+
         Parameters
         ----------
         system : openmm.System
           The System to add the restraint to.
         topology : openmm.app.Topology
           An OpenMM Topology that defines the System.
+        positions: openmm.unit.Quantity
+          The System's current positions.
+          Used if a trajectory file isn't found.
+        alchem_comps: dict[str, list[Component]]
+          A dictionary with a list of alchemical components
+          in both state A and B.
+        comp_resids: dict[Component, npt.NDArray]
+          A dictionary keyed by each Component in the System
+          which contains arrays with the residue indices that is contained
+          by that Component.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings that defines how to find and set
           the restraint.
@@ -828,18 +978,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         system : openmm.System
           A copy of the System with the restraint added.
         """
-        from MDAnalysis.coordinates.memory import MemoryReader
         from openfe.protocols.restraint_utils import geometry
         from openfe.protocols.restraint_utils.openmm import omm_restraints
-
-        def _get_idxs_from_residxs(topology, residxs):
-            atom_ids = []
-
-            for r in topology.residues():
-                if r.index in residxs:
-                    atom_ids.extend([at.index for at in r.atoms()])
-
-            return atom_ids
 
         if self.verbose:
             self.logger.info("Generating restraints")
@@ -852,68 +992,37 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         )
 
         # get the alchemicical atom ids
-        guest_atom_ids = _get_idxs_from_residxs(topology, residxs)
+        guest_atom_ids = self._get_idxs_from_residxs(topology, residxs)
 
         # Now get the host idxs
+        # We assume this is everything but the alchemical component
+        # and the solvent.
         solv_comps = [c for c in comp_resids if isinstance(c, SolventComponent)]
         exclude_comps = [alchem_comps['stateA']] + solv_comps
         residxs = np.concatenate(
             [v for i, v in comp_resids.items() if i not in exclude_comps]
         )
 
-        host_atom_ids = _get_idxs_from_residxs(topology, residxs)
+        host_atom_ids = self._get_idxs_from_residxs(topology, residxs)
 
         # Finally create an MDAnalysis Universe
-        # If the trajectory file doesn't exist, then we default to using positions
-        traj = self.shared_basepath / settings['equil_output_settings'].production_trajectory_filename
-        if traj.is_file():
-            trajectory_format=None
-        else:
-            # Convert positions from Quantity to array
-            # Divide by 10 to go from nm to angstroms
-            traj = np.array(positions._value) * 10
-            trajectory_format=MemoryReader
-
-        univ = mda.Universe(
+        # We try to pass the equilibration production file path through
+        # In some cases (debugging / dry runs) this won't be available
+        # so we'll default to using input positions.
+        univ = self._get_mda_universe(
             topology,
-            traj,
-            topology_format="OPENMMTOPOLOGY",
-            trajectory_format=trajectory_format,
+            positions,
+            self.shared_basepath / settings['equil_output_settings'].production_trajectory_filename
         )
 
-        # if univ.dimensions is None:
-        #     if trajectory_format == MemoryReader:
-        #         from MDAnalysis.converters.OpenMM import _sanitize_box_angles
-        #         triclinic_dimensions = topology.getPeriodicBoxVectors()._value
-        #         univ.trajectory.ts.triclinic_dimensions = triclinic_dimensions
-        #         univ.dimensions[3:] = _sanitize_box_angles(univ.dimensions[3:])
-        #         univ.dimensions[:3] /= 10  # Convert from nm to A
-
         if isinstance(settings['restraint_settings'], BoreschRestraintSettings):
-            # Get the average of the two force constant for use below
-            frc_const_average = (
-                settings['restraint_settings'].K_thetaA +
-                settings['restraint_settings'].K_thetaB
-            ) / 2
-
-            rest_geom = geometry.boresch.find_boresch_restraint(
-                universe=univ,
-                guest_rdmol=guest_rdmol,
-                guest_idxs=guest_atom_ids,
-                host_idxs=host_atom_ids,
-                host_selection=settings['restraint_settings'].host_selection,
-                dssp_filter=settings['restraint_settings'].dssp_filter,
-                rmsf_cutoff=settings['restraint_settings'].rmsf_cutoff,
-                host_min_distance=settings['restraint_settings'].host_min_distance,
-                host_max_distance=settings['restraint_settings'].host_max_distance,
-                angle_force_constant=frc_const_average,
-                temperature=settings['thermo_settings'].temperature,
-            )
-
-            restraint = omm_restraints.BoreschRestraint(
+            rest_geom, restraint = self._get_boresch_restraint(
+                univ,
+                guest_rdmol,
+                guest_atom_ids,
+                host_atom_ids,
                 settings['restraint_settings'],
             )
-
         else:
             # TODO turn this into a direction for different restraint types supported?
             raise NotImplementedError(

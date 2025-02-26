@@ -576,6 +576,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         system: openmm.System,
         topology: GlobalParameterState,
+        positions: openmm.unit.Quantity,
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel], 
@@ -1057,7 +1058,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 6. Add restraints
         restraint_parameter_state, standard_state_corr, omm_system = self._add_restraints(
-            omm_system, omm_topology, positions, alchem_comps, comp_resids, settings
+            omm_system,
+            omm_topology,
+            positions, 
+            alchem_comps,
+            comp_resids,
+            settings,
         )
 
         # 7. Get alchemical system
