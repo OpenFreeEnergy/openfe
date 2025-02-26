@@ -338,8 +338,8 @@ class IntegratorSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    timestep: FloatQuantity['femtosecond'] = 4 * unit.femtosecond
-    """Size of the simulation timestep. Default 4 * unit.femtosecond."""
+    timestep: FloatQuantity['femtosecond'] = 4.0 * unit.femtosecond
+    """Size of the simulation timestep. Default 4.0 * unit.femtosecond."""
     langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
     reassign_velocities = False
@@ -354,7 +354,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency: FloatQuantity['timestep'] = 25 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: FloatQuantity['timestep'] = 25.0 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
@@ -411,7 +411,7 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 250 * unit.picosecond
+    checkpoint_interval: FloatQuantity['picosecond'] = 250.0 * unit.picosecond
     """
     Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
@@ -451,7 +451,7 @@ class MultiStateOutputSettings(OutputSettings):
     to visualise and further manipulate the system.
     Default 'hybrid_system.pdb'.
     """
-    positions_write_frequency: Optional[FloatQuantity['picosecond']] = 100 * unit.picosecond
+    positions_write_frequency: Optional[FloatQuantity['picosecond']] = 100.0 * unit.picosecond
     """
     Frequency at which positions are written to the simulation trajectory
     storage file (defined by ``output_filename``).
@@ -548,12 +548,12 @@ class MultiStateSimulationSettings(SimulationSettings):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    time_per_iteration: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    time_per_iteration: FloatQuantity['picosecond'] = 1.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
-    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250 * unit.picosecond
+    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
@@ -584,7 +584,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     shown to be effective in both hydration and binding free energy benchmarks.
     Default ``None``, i.e. no early termination will occur.
     """
-    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500 * unit.picosecond
+    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
@@ -668,7 +668,7 @@ class MDOutputSettings(OutputSettings):
     # reporter settings
     production_trajectory_filename: Optional[str] = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
-    trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
+    trajectory_write_interval: FloatQuantity['picosecond'] = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
