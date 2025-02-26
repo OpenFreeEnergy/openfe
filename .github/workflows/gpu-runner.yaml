@@ -1,4 +1,4 @@
-name: Test Self-Hosted Runner
+name: GPU Runner (manual dispatch)
 on:
   workflow_dispatch:
 
