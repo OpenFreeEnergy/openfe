@@ -4,6 +4,7 @@ Tests the easy start guide
 - runs plan_rbfe_network with tyk2 inputs and checks the network created
 - mocks the calculations and performs gathers on the mocked outputs
 """
+import os
 
 import pytest
 from importlib import resources
@@ -31,24 +32,24 @@ def tyk2_protein():
 
 @pytest.fixture
 def expected_transformations():
-    return ['easy_rbfe_lig_ejm_31_complex_lig_ejm_46_complex.json',
-            'easy_rbfe_lig_ejm_31_complex_lig_ejm_47_complex.json',
-            'easy_rbfe_lig_ejm_31_complex_lig_ejm_48_complex.json',
-            'easy_rbfe_lig_ejm_31_complex_lig_ejm_50_complex.json',
-            'easy_rbfe_lig_ejm_31_solvent_lig_ejm_46_solvent.json',
-            'easy_rbfe_lig_ejm_31_solvent_lig_ejm_47_solvent.json',
-            'easy_rbfe_lig_ejm_31_solvent_lig_ejm_48_solvent.json',
-            'easy_rbfe_lig_ejm_31_solvent_lig_ejm_50_solvent.json',
-            'easy_rbfe_lig_ejm_42_complex_lig_ejm_43_complex.json',
-            'easy_rbfe_lig_ejm_42_complex_lig_ejm_50_complex.json',
-            'easy_rbfe_lig_ejm_42_solvent_lig_ejm_43_solvent.json',
-            'easy_rbfe_lig_ejm_42_solvent_lig_ejm_50_solvent.json',
-            'easy_rbfe_lig_ejm_46_complex_lig_jmc_27_complex.json',
-            'easy_rbfe_lig_ejm_46_solvent_lig_jmc_27_solvent.json',
-            'easy_rbfe_lig_jmc_23_complex_lig_jmc_27_complex.json',
-            'easy_rbfe_lig_jmc_23_solvent_lig_jmc_27_solvent.json',
-            'easy_rbfe_lig_jmc_27_complex_lig_jmc_28_complex.json',
-            'easy_rbfe_lig_jmc_27_solvent_lig_jmc_28_solvent.json']
+    return ['rbfe_lig_ejm_31_complex_lig_ejm_46_complex.json',
+            'rbfe_lig_ejm_31_complex_lig_ejm_47_complex.json',
+            'rbfe_lig_ejm_31_complex_lig_ejm_48_complex.json',
+            'rbfe_lig_ejm_31_complex_lig_ejm_50_complex.json',
+            'rbfe_lig_ejm_31_solvent_lig_ejm_46_solvent.json',
+            'rbfe_lig_ejm_31_solvent_lig_ejm_47_solvent.json',
+            'rbfe_lig_ejm_31_solvent_lig_ejm_48_solvent.json',
+            'rbfe_lig_ejm_31_solvent_lig_ejm_50_solvent.json',
+            'rbfe_lig_ejm_42_complex_lig_ejm_43_complex.json',
+            'rbfe_lig_ejm_42_complex_lig_ejm_50_complex.json',
+            'rbfe_lig_ejm_42_solvent_lig_ejm_43_solvent.json',
+            'rbfe_lig_ejm_42_solvent_lig_ejm_50_solvent.json',
+            'rbfe_lig_ejm_46_solvent_lig_jmc_23_solvent.json',
+            'rbfe_lig_ejm_46_complex_lig_jmc_23_complex.json',
+            'rbfe_lig_jmc_23_complex_lig_jmc_27_complex.json',
+            'rbfe_lig_jmc_23_solvent_lig_jmc_27_solvent.json',
+            'rbfe_lig_jmc_23_solvent_lig_jmc_28_solvent.json',
+            'rbfe_lig_jmc_23_complex_lig_jmc_28_complex.json']
 
 
 def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
@@ -64,6 +65,8 @@ def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
         for f in expected_transformations:
             assert path.exists(
                 path.join('alchemicalNetwork/transformations', f))
+        # make sure these are the only transforms
+        assert len(os.listdir("alchemicalNetwork/transformations")) == len(expected_transformations)
 
 
 @pytest.fixture
@@ -94,9 +97,9 @@ lig_ejm_31\tlig_ejm_48\t0.0\t0.0
 lig_ejm_31\tlig_ejm_50\t0.0\t0.0
 lig_ejm_42\tlig_ejm_43\t0.0\t0.0
 lig_ejm_42\tlig_ejm_50\t0.0\t0.0
-lig_ejm_46\tlig_jmc_27\t0.0\t0.0
+lig_ejm_46\tlig_jmc_23\t0.0\t0.0
 lig_jmc_23\tlig_jmc_27\t0.0\t0.0
-lig_jmc_27\tlig_jmc_28\t0.0\t0.0
+lig_jmc_23\tlig_jmc_28\t0.0\t0.0
 """
 
 

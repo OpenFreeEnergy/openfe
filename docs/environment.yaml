@@ -3,30 +3,30 @@ channels:
 - https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
 dependencies:
-- autodoc-pydantic<2.0
-- lomap2>=3.0.0
-- kartograf>=1.0.0
-- openff-models>=0.0.5
+- autodoc-pydantic <2.0
+- gitpython
+- kartograf >=1.0.0
+- libsass
+- lomap2 >=3.0.0
+- myst-parser
+- nbsphinx
+- nbsphinx-link
+- openff-models >=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
 - openmm
 - packaging
 - plugcli
 - python=3.10
-- sphinx<7
+- sphinx <7.3
 - sphinx-click
-- gitpython
+- sphinx-design
+- sphinx-toolbox
+- threadpoolctl
 - tqdm
-- libsass
-- nbsphinx
-- nbsphinx-link
-- myst-parser
 - pip:
-  - sphinx-design
-  - sphinx-toolbox
-  - sphinx<7
   - git+https://github.com/OpenFreeEnergy/gufe@main
-  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@main
+  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.1.0
 
 # These are added automatically by RTD, so we include them here 
 # for a consistent environment.

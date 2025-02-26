@@ -15,7 +15,7 @@ from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.units import unit
-from openff.units.openmm import ensure_quantity
+from openff.units.openmm import ensure_quantity, from_openmm
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 import openfe
 from openfe.protocols.openmm_utils import (
@@ -30,6 +30,47 @@ from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     OpenMMSolvationSettings,
 )
 from unittest import mock
+
+
+@pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
+    [1.2 * unit.nanometer, 20, 20 * np.identity(3) * unit.angstrom,
+     [2, 2, 2] * unit.angstrom],
+    [1.2 * unit.nanometer, None, None, [2, 2, 2] * unit.angstrom],
+    [1.2 * unit.nanometer, None, 20 * np.identity(3) * unit.angstrom, None],
+    [1.2 * unit.nanometer, 20, None, None],
+])
+def test_validate_ommsolvation_settings_unique_settings(
+    padding, number_solv, box_vectors, box_size
+):
+    settings = OpenMMSolvationSettings(
+        solvent_padding=padding,
+        number_of_solvent_molecules=number_solv,
+        box_vectors=box_vectors,
+        box_size=box_size,
+    )
+
+    errmsg = "Only one of solvent_padding, number_of_solvent_molecules,"
+    with pytest.raises(ValueError, match=errmsg):
+        settings_validation.validate_openmm_solvation_settings(settings)
+
+
+@pytest.mark.parametrize('box_vectors, box_size', [
+    [20 * np.identity(3) * unit.angstrom, None],
+    [None, [2, 2, 2] * unit.angstrom],
+])
+def test_validate_ommsolvation_settings_shape_conflicts(
+    box_vectors, box_size,
+):
+    settings = OpenMMSolvationSettings(
+        solvent_padding=None,
+        box_vectors=box_vectors,
+        box_size=box_size,
+        box_shape='cube',
+    )
+
+    errmsg = "box_shape cannot be defined alongside either box_size"
+    with pytest.raises(ValueError, match=errmsg):
+        settings_validation.validate_openmm_solvation_settings(settings)
 
 
 def test_validate_timestep():
@@ -202,19 +243,20 @@ class TestFEAnalysis:
             yield r
         finally:
             r.close()
-    
+
     @pytest.fixture()
     def analyzer(self, reporter):
         return multistate_analysis.MultistateEquilFEAnalysis(
             reporter, sampling_method='repex',
             result_units=unit.kilocalorie_per_mole,
         )
-    
+
     def test_free_energies(self, analyzer):
         ret_dict = analyzer.unit_results_dict
         assert len(ret_dict.items()) == 7
         assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
-        assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
+        # more variation when using bootstrap errors so we need a loser tolerance
+        assert pytest.approx(ret_dict['unit_estimate_error'].m, rel=1e4) == 0.0251
         # forward and reverse (since we do this ourselves)
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['fractions'],
@@ -228,11 +270,12 @@ class TestFEAnalysis:
                       -48.025258, -48.006349, -47.986304, -47.972138, -47.960623]),
             rtol=1e-04,
         )
+        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
-            np.array([0.07471 , 0.052914, 0.041508, 0.036613, 0.032827, 0.030489,
-                      0.028154, 0.026529, 0.025284, 0.023968]),
-            rtol=1e-04,
+            np.array([0.077645, 0.054695, 0.044680, 0.03947, 0.034822,
+                      0.033443, 0.030793, 0.028777, 0.026683, 0.026199]),
+            rtol=5e-01,
         )
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
@@ -240,11 +283,12 @@ class TestFEAnalysis:
                       -47.915963, -47.93319, -47.939125, -47.949016, -47.960623]),
             rtol=1e-04,
         )
+        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
-            np.array([0.081209, 0.055975, 0.044693, 0.038691, 0.034603, 0.031894,
-                      0.029417, 0.027082, 0.025316, 0.023968]),
-            rtol=1e-04,
+            np.array([0.088335, 0.059483, 0.046254, 0.041504, 0.03877,
+                      0.035495, 0.031981, 0.029707, 0.027095, 0.026296]),
+            rtol=5e-01,
         )
 
     def test_plots(self, analyzer, tmpdir):
@@ -256,7 +300,7 @@ class TestFEAnalysis:
             assert Path('replica_state_timeseries.png').is_file()
 
     def test_plot_convergence_bad_units(self, analyzer):
-        
+
         with pytest.raises(ValueError, match='Unknown plotting units'):
             openfe.analysis.plotting.plot_convergence(
                 analyzer.forward_and_reverse_free_energies,
@@ -356,18 +400,31 @@ class TestSystemCreation:
         assert_equal(comp_resids[openfe.SolventComponent()],
                      np.linspace(165, len(resids)-1, len(resids)-165))
 
-    def test_get_omm_modeller_ligand_no_neutralize(self, get_settings):
+    @pytest.fixture(scope='module')
+    def ligand_mol_and_generator(self, get_settings):
+        # Create offmol
+        offmol = OFFMol.from_smiles('[O-]C=O')
+        offmol.generate_conformers()
+        offmol.assign_partial_charges(partial_charge_method='am1bcc')
+        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
+
         ffsets, intsets, thermosets = get_settings
         generator = system_creation.get_system_generator(
             ffsets, thermosets, intsets, None, True
         )
 
-        offmol = OFFMol.from_smiles('[O-]C=O')
-        offmol.generate_conformers()
-        smc = openfe.SmallMoleculeComponent.from_openff(offmol)
-
+        # Register offmol in generator
         generator.create_system(offmol.to_topology().to_openmm(),
                                 molecules=[offmol])
+
+        return (offmol, smc, generator)
+
+    def test_get_omm_modeller_ligand_no_neutralize(
+        self, ligand_mol_and_generator
+    ):
+
+        offmol, smc, generator = ligand_mol_and_generator
+
         model, comp_resids = system_creation.get_omm_modeller(
             None,
             openfe.SolventComponent(neutralize=False),
@@ -395,6 +452,90 @@ class TestSystemCreation:
 
         assert pytest.approx(charge.m) == -1.0
 
+    @pytest.mark.parametrize('n_expected, neutralize, shape',
+        [[400, False, 'cube'], [399, True, 'dodecahedron'],
+         [400, False, 'octahedron']]
+    )
+    def test_omm_modeller_ligand_n_solv(
+        self, ligand_mol_and_generator, n_expected, neutralize, shape
+    ):
+        offmol, smc, generator = ligand_mol_and_generator
+
+        solv_settings = OpenMMSolvationSettings(
+            solvent_padding=None,
+            number_of_solvent_molecules=400,
+            box_vectors=None,
+            box_size=None,
+            box_shape=shape
+        )
+
+        model, comp_resids = system_creation.get_omm_modeller(
+            None,
+            openfe.SolventComponent(
+                neutralize=neutralize,
+                ion_concentration = 0 * unit.molar
+            ),
+            {smc: offmol},
+            generator.forcefield,
+            solv_settings,
+        )
+
+        waters = [r for r in model.topology.residues() if r.name == 'HOH']
+        assert len(waters) == n_expected
+
+    def test_omm_modeller_box_size(self, ligand_mol_and_generator):
+        offmol, smc, generator = ligand_mol_and_generator
+
+        solv_settings = OpenMMSolvationSettings(
+            solvent_padding=None,
+            number_of_solvent_molecules=None,
+            box_vectors=None,
+            box_size=[2, 2, 2]*unit.nanometer,
+            box_shape=None
+        )
+
+        model, comp_resids = system_creation.get_omm_modeller(
+            None,
+            openfe.SolventComponent(),
+            {smc: offmol},
+            generator.forcefield,
+            solv_settings
+        )
+
+        vectors = model.topology.getPeriodicBoxVectors()
+
+        assert_allclose(
+            from_openmm(vectors),
+            [[2, 0, 0], [0, 2, 0], [0, 0, 2]] * unit.nanometer
+        )
+
+    def test_omm_modeller_box_vectors(self, ligand_mol_and_generator):
+        offmol, smc, generator = ligand_mol_and_generator
+
+        solv_settings = OpenMMSolvationSettings(
+            solvent_padding=None,
+            number_of_solvent_molecules=None,
+            box_vectors=[
+                [2, 0, 0], [0, 2, 0], [0, 0, 5]
+            ] * unit.nanometer,
+            box_size=None,
+            box_shape=None,
+        )
+
+        model, comp_resids = system_creation.get_omm_modeller(
+            None,
+            openfe.SolventComponent(),
+            {smc: offmol},
+            generator.forcefield,
+            solv_settings
+        )
+
+        vectors = model.topology.getPeriodicBoxVectors()
+
+        assert_allclose(
+            from_openmm(vectors),
+            [[2, 0, 0], [0, 2, 0], [0, 0, 5]] * unit.nanometer
+        )
 
 def test_convert_steps_per_iteration():
     sim = omm_settings.MultiStateSimulationSettings(
@@ -515,7 +656,7 @@ class TestOFFPartialCharge:
         ] * unit.elementary_charge
 
         uncharged_mol.partial_charges = copy.deepcopy(chg)
-    
+
         charge_generation.assign_offmol_partial_charges(
             uncharged_mol,
             overwrite=overwrite,
@@ -524,7 +665,7 @@ class TestOFFPartialCharge:
             generate_n_conformers=None,
             nagl_model=None,
         )
-    
+
         assert np.allclose(uncharged_mol.partial_charges, chg) != overwrite
 
     def test_unknown_method(self, uncharged_mol):
@@ -588,7 +729,7 @@ class TestOFFPartialCharge:
             )
 
     def test_too_many_requested_conformers(self, uncharged_mol):
-        
+
         with pytest.raises(ValueError, match="5 conformers were requested"):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
@@ -651,7 +792,7 @@ class TestOFFPartialCharge:
 
     @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
     def test_no_production_nagl(self, uncharged_mol):
-        
+
         with pytest.raises(ValueError, match='No production am1bcc NAGL'):
             charge_generation.assign_offmol_partial_charges(
                 uncharged_mol,
@@ -789,6 +930,8 @@ class TestOFFPartialCharge:
 
 @pytest.mark.slow
 @pytest.mark.download
+# Sometimes we get a DOI lookup error from duecredit
+#@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,

@@ -43,10 +43,9 @@ from openfe.protocols.openmm_md.plain_md_settings import (
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
-from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
     system_validation, settings_validation, system_creation,
-    charge_generation,
+    charge_generation, omm_compute
 )
 
 logger = logging.getLogger(__name__)
@@ -170,6 +169,11 @@ class PlainMDProtocol(gufe.Protocol):
 
         # Validate protein component
         system_validation.validate_protein(stateA)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
 
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
@@ -337,9 +341,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
 
-        traj.save_pdb(
-            shared_basepath / output_settings.minimized_structure
-        )
+        if output_settings.minimized_structure:
+            traj.save_pdb(
+                shared_basepath / output_settings.minimized_structure
+            )
         # equilibrate
         # NVT equilibration
         if equil_steps_nvt:
@@ -427,26 +432,33 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mc_steps=1,
         )
 
-        simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / output_settings.production_trajectory_filename),
-            reportInterval=write_interval,
-            atomSubset=selection_indices))
-        simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / output_settings.checkpoint_storage_filename),
-            reportInterval=checkpoint_interval))
-        simulation.reporters.append(openmm.app.StateDataReporter(
-            str(shared_basepath / output_settings.log_output),
-            checkpoint_interval,
-            step=True,
-            time=True,
-            potentialEnergy=True,
-            kineticEnergy=True,
-            totalEnergy=True,
-            temperature=True,
-            volume=True,
-            density=True,
-            speed=True,
-        ))
+        if output_settings.production_trajectory_filename:
+            simulation.reporters.append(XTCReporter(
+                file=str(
+                    shared_basepath /
+                    output_settings.production_trajectory_filename),
+                reportInterval=write_interval,
+                atomSubset=selection_indices))
+        if output_settings.checkpoint_storage_filename:
+            simulation.reporters.append(openmm.app.CheckpointReporter(
+                file=str(
+                    shared_basepath /
+                    output_settings.checkpoint_storage_filename),
+                reportInterval=checkpoint_interval))
+        if output_settings.log_output:
+            simulation.reporters.append(openmm.app.StateDataReporter(
+                str(shared_basepath / output_settings.log_output),
+                checkpoint_interval,
+                step=True,
+                time=True,
+                potentialEnergy=True,
+                kineticEnergy=True,
+                totalEnergy=True,
+                temperature=True,
+                volume=True,
+                density=True,
+                speed=True,
+            ))
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
@@ -612,14 +624,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             )
 
         # f. Save pdb of entire system
-        with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
-            openmm.app.PDBFile.writeFile(
-                stateA_topology, stateA_positions, file=f, keepIds=True
-            )
+        if output_settings.preminimized_structure:
+            with open(
+                    shared_basepath /
+                    output_settings.preminimized_structure, "w") as f:
+                openmm.app.PDBFile.writeFile(
+                    stateA_topology, stateA_positions, file=f, keepIds=True
+                )
 
         # 10. Get platform
-        platform = compute.get_openmm_platform(
-            protocol_settings.engine_settings.compute_platform
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=protocol_settings.engine_settings.compute_platform,
+            gpu_device_index=protocol_settings.engine_settings.gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         # 11. Set the integrator

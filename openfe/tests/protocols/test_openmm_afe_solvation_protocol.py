@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import itertools
 import json
+from math import sqrt
 import sys
 import pytest
 from unittest import mock
@@ -463,6 +464,57 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
         assert sol_sampler.is_periodic
 
 
+def test_dry_run_solv_benzene_noncubic(
+    benzene_modifications, tmpdir
+):
+    s = AbsoluteSolvationProtocol.default_settings()
+    s.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
+    s.solvation_settings.box_shape = 'dodecahedron'
+
+    protocol = AbsoluteSolvationProtocol(settings=s)
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    sol_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
+
+    with tmpdir.as_cwd():
+        sampler = sol_unit[0].run(dry=True)['debug']['sampler']
+        system = sampler._thermodynamic_states[0].system
+
+        vectors = system.getDefaultPeriodicBoxVectors()
+        width = float(from_openmm(vectors)[0][0].to('nanometer').m)
+
+        # dodecahedron has the following shape:
+        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
+
+        expected_vectors = [
+            [width, 0, 0],
+            [0, width, 0],
+            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+        ] * offunit.nanometer
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors)
+        )
+
+
 def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     """
     Create a test system with fictitious user supplied charges and
@@ -853,3 +905,57 @@ class TestProtocolResult:
 
         with pytest.raises(ValueError, match=errmsg):
             protocolresult.get_replica_states()
+
+
+@pytest.mark.parametrize('positions_write_frequency,velocities_write_frequency',
+                         [[100 * offunit.picosecond, None],
+                         [None, None],
+                         [None, 100 * offunit.picosecond]])
+def test_dry_run_vacuum_write_frequency(benzene_modifications,
+                                        positions_write_frequency,
+                                        velocities_write_frequency,
+                                        tmpdir):
+    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.solvent_output_settings.output_indices = "resname UNK"
+    s.solvent_output_settings.positions_write_frequency = positions_write_frequency
+    s.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
+    s.vacuum_output_settings.positions_write_frequency = positions_write_frequency
+    s.vacuum_output_settings.velocities_write_frequency = velocities_write_frequency
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+            settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 2
+
+    with tmpdir.as_cwd():
+        for u in prot_units:
+            sampler = u.run(dry=True)['debug']['sampler']
+            reporter = sampler._reporter
+            if positions_write_frequency:
+                assert reporter.position_interval == positions_write_frequency.m
+            else:
+                assert reporter.position_interval == 0
+            if velocities_write_frequency:
+                assert reporter.velocity_interval == velocities_write_frequency.m
+            else:
+                assert reporter.velocity_interval == 0

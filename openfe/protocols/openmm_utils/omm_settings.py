@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from openff.models.types import FloatQuantity
+from openff.models.types import FloatQuantity, ArrayQuantity
+from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
     Settings,
@@ -21,46 +22,188 @@ from gufe.settings import (
 )
 
 
-try:
-    from pydantic.v1 import validator
-except ImportError:
-    from pydantic import validator  # type: ignore[assignment]
+from pydantic.v1 import validator
 
 
 class BaseSolvationSettings(SettingsBaseModel):
     """
-    Base class for SolvationSettings objects
+    Base class for SolvationSettings objects.
     """
     class Config:
         arbitrary_types_allowed = True
 
 
 class OpenMMSolvationSettings(BaseSolvationSettings):
-    """Settings for controlling how a system is solvated using OpenMM tooling
+    """Settings for controlling how a system is solvated using OpenMM tooling.
 
-    Note
-    ----
-    No solvation will happen if a SolventComponent is not passed.
+    Defining the number of waters
+    -----------------------------
 
+    The number of waters is controlled by either:
+      a) defining a solvent padding (``solvent_padding``) in combination
+         with a box shape
+      b) defining the number of solvent molecules
+         (``number_of_solvent_molecules``)
+         alongside the box shape (``box_shape``)
+      c) defining the box directly either through the box vectors
+         (``box_vectors``) or rectangular box lengths (``box_size``)
+
+    When using ``solvent_padding``, ``box_vectors``, or ``box_size``,
+    the exact number of waters added is determined automatically by OpenMM
+    through :meth:`openmm.app.Modeller.addSolvent` internal heuristics.
+    Briefly, the necessary volume required by a single water is estimated
+    and then the defined target cell is packed with waters avoiding clashes
+    with existing solutes and box edges.
+
+
+    Defining the periodic cell size
+    -------------------------------
+
+    The periodic cell size is defined by one, and only one, of the following:
+      * ``solvent_padding`` in combination with ``box_shape``,
+      * ``number_of_solvent_molecules`` in combination with ``box_shape``,
+      * ``box_vectors``,
+      * ``box_size``
+
+    When using ``number_of_solvent_molecules``, the size of the cell is
+    defined by :meth:`openmm.app.Modeller.addSolvent` internal heuristics,
+    automatically selecting a padding value that is large enough to contain
+    the number of waters based on a geometric estimate of the volume required
+    by each water molecule.
+
+
+    Defining the periodic cell shape
+    ---------------------------------
+
+    The periodic cell shape is defined by one, and only one, of the following:
+      * ``box_shape``,
+      * ``box_vectors``,
+      * ``box_size``
+
+    Default settings will create a cubic box, although more space efficient
+    shapes (e.g. ``dodecahedrons``) are recommended to improve simulation
+    performance.
+
+
+    Notes
+    -----
+    * The number of water molecules added will be affected by the number of
+      ions defined in SolventComponent. For example, the value of
+      ``number_of_solvent_molecules`` is the sum of the number of counterions
+      added and the number of water molecules added.
+    * Solvent addition does not account for any pre-existing waters explicitly
+      defined in the :class:`openfe.ChemicalSystem`. Any waters will be added
+      in addition to those pre-existing waters.
+    * No solvation will happen if a SolventComponent is not passed.
+
+
+    See Also
+    --------
+    :mod:`openmm.app.Modeller`
+    Base class for SolvationSettings objects
     """
     solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
     """
-    Force field water model to use.
+    Force field water model to use when solvating and defining the model
+    properties (e.g. adding virtual site particles).
+
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
+    solvent_padding: Optional[FloatQuantity['nanometer']] = 1.2 * unit.nanometer
+    """
+    Minimum distance from any solute bounding sphere to the edge of the box.
 
-    solvent_padding: FloatQuantity['nanometer'] = 1.2 * unit.nanometer
-    """Minimum distance from any solute atoms to the solvent box edge."""
+    Note
+    ----
+    * Cannot be defined alongside ``number_of_solvent_molecules``,
+      ``box_size``, or ``box_vectors``.
+    """
+    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'cube'
+    """
+    The shape of the periodic box to create.
+
+    Notes
+    -----
+    * Must be one of `cube`, `dodecahedron`, or `octahedron`.
+    * Cannot be defined alongside ``box_vectors`` or ``box_size``.
+    """
+    number_of_solvent_molecules: Optional[int] = None
+    """
+    The number of solvent molecules (water + ions) to add.
+
+    Note
+    ----
+    * Cannot be defined alongside ``solvent_padding``, ``box_size``,
+      or ``box_vectors``.
+    """
+    box_vectors: Optional[ArrayQuantity['nanometer']] = None
+    """
+    `OpenMM reduced form box vectors <http://docs.openmm.org/latest/userguide/theory/05_other_features.html#periodic-boundary-conditions>`.
+
+    Notes
+    -----
+    * Cannot be defined alongside ``solvent_padding``,
+      ``number_of_solvent_molecules``, or ``box_size``.
+
+    See Also
+    --------
+    :mod:`openff.interchange.components.interchange`
+    :mod:`openff.interchange.components._packmol`
+    """
+    box_size: Optional[ArrayQuantity['nanometer']] = None
+    """
+    X, Y, and Z lengths of the unit cell for a rectangular box.
+
+    Notes
+    -----
+    * Cannot be defined alongside ``solvent_padding``,
+      ``number_of_solvent_molecules``, or ``box_vectors``.
+    """
+
+    @validator('box_vectors')
+    def supported_vectors(cls, v):
+        if v is not None:
+            if not _box_vectors_are_in_reduced_form(v):
+                errmsg = f"box_vectors: {v} are not in OpenMM reduced form"
+                raise ValueError(errmsg)
+        return v
 
     @validator('solvent_padding')
     def is_positive_distance(cls, v):
         # these are time units, not simulation steps
+        if v is None:
+            return v
+
         if not v.is_compatible_with(unit.nanometer):
             raise ValueError("solvent_padding must be in distance units "
                              "(i.e. nanometers)")
         if v < 0:
             errmsg = "solvent_padding must be a positive value"
             raise ValueError(errmsg)
+
+        return v
+
+    @validator('number_of_solvent_molecules')
+    def positive_solvent_number(cls, v):
+        if v is None:
+            return v
+
+        if v <= 0:
+            errmsg = f"number_of_solvent molecules: {v} must be positive"
+            raise ValueError(errmsg)
+
+        return v
+
+    @validator('box_size')
+    def box_size_properties(cls, v):
+        if v is None:
+            return v
+
+        if v.shape != (3, ):
+            errmsg = (f"box_size must be a 1-D array of length 3 "
+                      f"got {v} with shape {v.shape}")
+            raise ValueError(errmsg)
+
         return v
 
 
@@ -168,6 +311,18 @@ class OpenMMEngineSettings(SettingsBaseModel):
     OpenMM compute platform to perform MD integration with. If ``None``, will
     choose fastest available platform. Default ``None``.
     """
+    gpu_device_index: Optional[list[int]] = None
+    """
+    List of integer indices for the GPU device to select when
+    ``compute_platform`` is either set to ``CUDA`` or ``OpenCL``.
+
+    If ``None``, the default OpenMM GPU selection behaviour is used.
+
+    See the `OpenMM platform properties documentation <http://docs.openmm.org/latest/userguide/library/04_platform_specifics.html>`_
+    for more details.
+
+    Default ``None``.
+    """
 
 
 class IntegratorSettings(SettingsBaseModel):
@@ -183,8 +338,8 @@ class IntegratorSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    timestep: FloatQuantity['femtosecond'] = 4 * unit.femtosecond
-    """Size of the simulation timestep. Default 4 * unit.femtosecond."""
+    timestep: FloatQuantity['femtosecond'] = 4.0 * unit.femtosecond
+    """Size of the simulation timestep. Default 4.0 * unit.femtosecond."""
     langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
     reassign_velocities = False
@@ -199,7 +354,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency: FloatQuantity['timestep'] = 25 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: FloatQuantity['timestep'] = 25.0 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
@@ -256,7 +411,7 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 250 * unit.picosecond
+    checkpoint_interval: FloatQuantity['picosecond'] = 250.0 * unit.picosecond
     """
     Frequency to write the checkpoint file. Default 1 * unit.picosecond.
     """
@@ -296,6 +451,35 @@ class MultiStateOutputSettings(OutputSettings):
     to visualise and further manipulate the system.
     Default 'hybrid_system.pdb'.
     """
+    positions_write_frequency: Optional[FloatQuantity['picosecond']] = 100.0 * unit.picosecond
+    """
+    Frequency at which positions are written to the simulation trajectory
+    storage file (defined by ``output_filename``).
+
+    If ``None``, no positions will be written to the trajectory.
+
+    Unless set to ``None``, must be divisible by
+    ``MultiStateSimulationSettings.time_per_iteration``.
+    """
+    velocities_write_frequency: Optional[FloatQuantity['picosecond']] = None
+    """
+    Frequency at which velocities are written to the simulation
+    trajectory storage file (defined by ``output_filename``).
+
+    If ``None`` (default), no velocities will be written to the trajectory.
+
+    Unless set to ``None``, must be divisible by
+    ``MultiStateSimulationSettings.time_per_iteration``.
+    """
+
+
+    @validator('positions_write_frequency', 'velocities_write_frequency')
+    def must_be_positive(cls, v):
+        if v is not None and v < 0:
+            errmsg = ("Position_write_frequency and velocities_write_frequency"
+                      f" must be positive (or None), got {v}.")
+            raise ValueError(errmsg)
+        return v
 
 
 class SimulationSettings(SettingsBaseModel):
@@ -364,12 +548,12 @@ class MultiStateSimulationSettings(SimulationSettings):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    time_per_iteration: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    time_per_iteration: FloatQuantity['picosecond'] = 1.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
-    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250 * unit.picosecond
+    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
@@ -400,7 +584,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     shown to be effective in both hydration and binding free energy benchmarks.
     Default ``None``, i.e. no early termination will occur.
     """
-    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500 * unit.picosecond
+    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
@@ -482,16 +666,16 @@ class MDOutputSettings(OutputSettings):
         arbitrary_types_allowed = True
 
     # reporter settings
-    production_trajectory_filename = 'simulation.xtc'
+    production_trajectory_filename: Optional[str] = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
-    trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
+    trajectory_write_interval: FloatQuantity['picosecond'] = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
-    preminimized_structure = 'system.pdb'
+    preminimized_structure: Optional[str] = 'system.pdb'
     """Path to the pdb file of the full pre-minimized system. 
     Default 'system.pdb'."""
-    minimized_structure = 'minimized.pdb'
+    minimized_structure: Optional[str] = 'minimized.pdb'
     """Path to the pdb file of the system after minimization. 
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
     equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
@@ -500,7 +684,7 @@ class MDOutputSettings(OutputSettings):
     equil_npt_structure: Optional[str] = 'equil_npt.pdb'
     """Path to the pdb file of the system after NPT equilibration. 
     Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
-    log_output = 'simulation.log'
+    log_output: Optional[str] = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.

@@ -84,7 +84,7 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
         mapping of atoms from mol1 to mol2
     """
     # Get colourmap of size mapping
-    cmap = plt.cm.get_cmap("hsv", len(mapping))
+    cmap = plt.get_cmap("hsv", len(mapping))
     for i, pair in enumerate(mapping.items()):
         p1 = mol1.GetConformer().GetAtomPosition(pair[0])
         p2 = mol2.GetConformer().GetAtomPosition(pair[1])

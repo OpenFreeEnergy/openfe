@@ -59,13 +59,13 @@ extensions = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "scikit.learn": ("https://scikit-learn.org/stable", None),
     "openmm": ("http://docs.openmm.org/latest/api-python/", None),
     "rdkit": ("https://www.rdkit.org/docs", None),
     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
-    "openff.units": ("https://docs.openforcefield.org/units/en/stable", None),
+    "openff.units": ("https://docs.openforcefield.org/projects/units/en/stable", None),
     "gufe": ("https://gufe.readthedocs.io/en/latest/", None),
 }
 

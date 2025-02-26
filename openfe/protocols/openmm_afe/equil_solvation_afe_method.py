@@ -683,6 +683,11 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                       "passed")
             raise ValueError(errmsg)
 
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings
+        )
+    
         # Check vacuum equilibration MD settings is 0 ns
         nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
         if nvt_time is not None:

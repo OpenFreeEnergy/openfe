@@ -273,10 +273,21 @@ def test_minimal_spanning_network_mappers(
 def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
-    mappers = [BadMapper(), lomap_old_mapper]
+    mappers = [lomap_old_mapper]
 
     def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
+        """Scores are designed to give the same mst everytime"""
+        scores = {
+            # MST edges
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 3,
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-naftanol'): 3,
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 3,
+            ('2,6-dimethylnaphthalene', 'toluene'): 3,
+        }
+        return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
 
     network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
         ligands=others + [toluene],
@@ -345,10 +356,29 @@ def test_minimal_spanning_network_unreachable(toluene_vs_others,
 def minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
-    mappers = [BadMapper(), lomap_old_mapper]
+    mappers = [lomap_old_mapper]
 
     def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
+        """Scores are designed to give the same mst everytime"""
+        scores = {
+            # MST edges
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 3,
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-naftanol'): 3,
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 3,
+            ('2,6-dimethylnaphthalene', 'toluene'): 3,
+            # MST redundant edges
+            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 2,
+            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'): 2,
+            ('1-butyl-4-methylbenzene', 'toluene'): 2,
+            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'): 2,
+            ('2-methylnaphthalene', '2-naftanol'): 2,
+            ('2-methylnaphthalene', 'methylcyclohexane'): 2,
+            ('2-methylnaphthalene', 'toluene'): 2,
+        }
+        return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
 
     network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
         ligands=others + [toluene],

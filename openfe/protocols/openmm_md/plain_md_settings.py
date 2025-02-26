@@ -19,10 +19,7 @@ from gufe.settings import (
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings
 )
-try:
-    from pydantic.v1 import validator
-except ImportError:
-    from pydantic import validator  # type: ignore[assignment]
+from pydantic.v1 import validator
 
 
 class PlainMDProtocolSettings(Settings):

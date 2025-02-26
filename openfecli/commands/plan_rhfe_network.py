@@ -8,14 +8,12 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS,
+    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
 )
-from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
 
 def plan_rhfe_network_main(
     mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent,
+    solvent, n_protocol_repeats, partial_charge_settings, processors, overwrite_charges
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -31,6 +29,15 @@ def plan_rhfe_network_main(
         molecules of the system
     solvent : SolventComponent
         Solvent component used for solvation
+    n_protocol_repeats: int
+        number of completely independent repeats of the entire sampling process
+    partial_charge_settings : OpenFFPartialChargeSettings
+        how to assign partial charges to the input ligands
+        (if they don't already have partial charges).
+    processors: int
+        The number of processors that should be used when generating the charges
+    overwrite_charges: bool
+        If any partial charges already present on the small molecules should be overwritten
 
     Returns
     -------
@@ -41,14 +48,33 @@ def plan_rhfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RHFEAlchemicalNetworkPlanner
     )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
+
+    write("assigning ligand partial charges -- this may be slow")
+
+    charged_small_molecules = bulk_assign_partial_charges(
+        molecules=small_molecules,
+        overwrite=overwrite_charges,
+        method=partial_charge_settings.partial_charge_method,
+        toolkit_backend=partial_charge_settings.off_toolkit_backend,
+        generate_n_conformers=partial_charge_settings.number_of_conformers,
+        nagl_model=partial_charge_settings.nagl_model,
+        processors=processors
+    )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent
+        ligands=charged_small_molecules, solvent=solvent
     )
 
     return alchemical_network, network_planner._ligand_network
@@ -72,8 +98,19 @@ def plan_rhfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
+
+@NCORES.parameter(
+    help=NCORES.kwargs["help"],
+    default=1,
+)
+@OVERWRITE.parameter(
+    help=OVERWRITE.kwargs["help"],
+    default=OVERWRITE.kwargs["default"],
+    is_flag=True
+)
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str):
+def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int, overwrite_charges: bool, n_protocol_repeats: int):
     """
     Plan a relative hydration free energy network, saved as JSON files for
     the quickrun command.
@@ -84,6 +121,13 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     to the transformations.  The output of the command can be used, in order
     to run the planned transformations with the quickrun tool.  For more
     sophisticated setups, please consider using the python layer of openfe.
+
+    .. note::
+
+       To ensure a consistent set of partial charges are used for each molecule across different transformations, this
+       tool will automatically generate charges ahead of planning the network. ``am1bcc`` charges will be generated via
+       ``ambertools``, this can also be customized using the settings yaml file.
+
 
     The tool will parse the input and run the rbfe network planner, which
     executes following steps:
@@ -100,6 +144,9 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     transformation a JSON file, that can be run with quickrun (or other
     future tools).
     """
+
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
+
     write("RHFE-NETWORK PLANNER")
     write("______________________")
     write("")
@@ -120,6 +167,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
     mapping_scorer = yaml_options.scorer
     ligand_network_planner = yaml_options.ligand_network_planner
     solvent = yaml_options.solvent
+    partial_charge = yaml_options.partial_charge
 
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -132,7 +180,12 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
 
     # TODO: write nice parameter
     write("\tNetworker: " + str(ligand_network_planner))
+
+    write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
+    if overwrite_charges:
+        write("\tOverwriting partial charges")
     write("")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")
 
     # DO
     write("Planning RHFE-Campaign:")
@@ -142,6 +195,10 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str)
         ligand_network_planner=ligand_network_planner,
         small_molecules=small_molecules,
         solvent=solvent,
+        n_protocol_repeats=n_protocol_repeats,
+        partial_charge_settings=partial_charge,
+        processors=n_cores,
+        overwrite_charges=overwrite_charges
     )
     write("\tDone")
     write("")

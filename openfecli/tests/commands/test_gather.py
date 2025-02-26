@@ -1,3 +1,4 @@
+from typing import Callable
 from click.testing import CliRunner
 from importlib import resources
 import tarfile
@@ -5,10 +6,11 @@ import os
 import pathlib
 import pytest
 import pooch
+from ..utils import assert_click_success
+from ..conftest import HAS_INTERNET
 
 from openfecli.commands.gather import (
     gather, format_estimate_uncertainty, _get_column,
-    _generate_bad_legs_error_message,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -25,16 +27,6 @@ def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
 ])
 def test_get_column(val, col):
     assert _get_column(val) == col
-
-
-@pytest.fixture
-def results_dir(tmpdir):
-    with tmpdir.as_cwd():
-        with resources.files('openfecli.tests.data') as d:
-            t = tarfile.open(d / 'rbfe_results.tar.gz', mode='r')
-            t.extractall('.')
-
-        yield
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
@@ -88,29 +80,84 @@ solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
 
 _EXPECTED_RAW = b"""\
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
-complex\tlig_ejm_31\tlig_ejm_42\t-14.9\t0.8
-solvent\tlig_ejm_31\tlig_ejm_42\t-15.7\t0.8
-complex\tlig_ejm_31\tlig_ejm_46\t-40.7\t0.8
-solvent\tlig_ejm_31\tlig_ejm_46\t-39.8\t0.8
-complex\tlig_ejm_31\tlig_ejm_47\t-27.8\t0.8
-solvent\tlig_ejm_31\tlig_ejm_47\t-27.8\t0.8
-complex\tlig_ejm_31\tlig_ejm_48\t-16.2\t0.8
-solvent\tlig_ejm_31\tlig_ejm_48\t-16.8\t0.8
-complex\tlig_ejm_31\tlig_ejm_50\t-57.3\t0.8
-solvent\tlig_ejm_31\tlig_ejm_50\t-58.3\t0.8
-complex\tlig_ejm_42\tlig_ejm_43\t-19.0\t0.8
-solvent\tlig_ejm_42\tlig_ejm_43\t-20.3\t0.8
-complex\tlig_ejm_46\tlig_jmc_23\t17.3\t0.8
-solvent\tlig_ejm_46\tlig_jmc_23\t17.2\t0.8
-complex\tlig_ejm_46\tlig_jmc_27\t15.9\t0.8
-solvent\tlig_ejm_46\tlig_jmc_27\t16.0\t0.8
-complex\tlig_ejm_46\tlig_jmc_28\t23.1\t0.8
-solvent\tlig_ejm_46\tlig_jmc_28\t23.5\t0.8
+complex	lig_ejm_31	lig_ejm_42	-14.9	0.8
+complex	lig_ejm_31	lig_ejm_42	-14.8	0.8
+complex	lig_ejm_31	lig_ejm_42	-15.1	0.8
+solvent	lig_ejm_31	lig_ejm_42	-15.7	0.8
+solvent	lig_ejm_31	lig_ejm_42	-15.7	0.8
+solvent	lig_ejm_31	lig_ejm_42	-15.7	0.8
+complex	lig_ejm_31	lig_ejm_46	-40.7	0.8
+complex	lig_ejm_31	lig_ejm_46	-40.7	0.8
+complex	lig_ejm_31	lig_ejm_46	-40.8	0.8
+solvent	lig_ejm_31	lig_ejm_46	-39.8	0.8
+solvent	lig_ejm_31	lig_ejm_46	-39.9	0.8
+solvent	lig_ejm_31	lig_ejm_46	-39.8	0.8
+complex	lig_ejm_31	lig_ejm_47	-27.8	0.8
+complex	lig_ejm_31	lig_ejm_47	-28.0	0.8
+complex	lig_ejm_31	lig_ejm_47	-27.7	0.8
+solvent	lig_ejm_31	lig_ejm_47	-27.8	0.8
+solvent	lig_ejm_31	lig_ejm_47	-27.8	0.8
+solvent	lig_ejm_31	lig_ejm_47	-27.9	0.8
+complex	lig_ejm_31	lig_ejm_48	-16.2	0.8
+complex	lig_ejm_31	lig_ejm_48	-16.2	0.8
+complex	lig_ejm_31	lig_ejm_48	-16.0	0.8
+solvent	lig_ejm_31	lig_ejm_48	-16.8	0.8
+solvent	lig_ejm_31	lig_ejm_48	-16.7	0.8
+solvent	lig_ejm_31	lig_ejm_48	-16.8	0.8
+complex	lig_ejm_31	lig_ejm_50	-57.3	0.8
+complex	lig_ejm_31	lig_ejm_50	-57.3	0.8
+complex	lig_ejm_31	lig_ejm_50	-57.4	0.8
+solvent	lig_ejm_31	lig_ejm_50	-58.3	0.8
+solvent	lig_ejm_31	lig_ejm_50	-58.4	0.8
+solvent	lig_ejm_31	lig_ejm_50	-58.3	0.8
+complex	lig_ejm_42	lig_ejm_43	-19.0	0.8
+complex	lig_ejm_42	lig_ejm_43	-18.7	0.8
+complex	lig_ejm_42	lig_ejm_43	-19.0	0.8
+solvent	lig_ejm_42	lig_ejm_43	-20.3	0.8
+solvent	lig_ejm_42	lig_ejm_43	-20.3	0.8
+solvent	lig_ejm_42	lig_ejm_43	-20.3	0.8
+complex	lig_ejm_46	lig_jmc_23	17.3	0.8
+complex	lig_ejm_46	lig_jmc_23	17.4	0.8
+complex	lig_ejm_46	lig_jmc_23	17.5	0.8
+solvent	lig_ejm_46	lig_jmc_23	17.2	0.8
+solvent	lig_ejm_46	lig_jmc_23	17.1	0.8
+solvent	lig_ejm_46	lig_jmc_23	17.1	0.8
+complex	lig_ejm_46	lig_jmc_27	15.9	0.8
+complex	lig_ejm_46	lig_jmc_27	15.8	0.8
+complex	lig_ejm_46	lig_jmc_27	15.7	0.8
+solvent	lig_ejm_46	lig_jmc_27	16.0	0.8
+solvent	lig_ejm_46	lig_jmc_27	15.9	0.8
+solvent	lig_ejm_46	lig_jmc_27	15.9	0.8
+complex	lig_ejm_46	lig_jmc_28	23.1	0.8
+complex	lig_ejm_46	lig_jmc_28	23.2	0.8
+complex	lig_ejm_46	lig_jmc_28	23.1	0.8
+solvent	lig_ejm_46	lig_jmc_28	23.5	0.8
+solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
+solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
+POOCH_CACHE = pooch.os_cache('openfe')
+ZENODO_RBFE_DATA = pooch.create(
+        path = POOCH_CACHE,
+        base_url="doi:10.5281/zenodo.14884797",
+        registry={
+            "rbfe_results_serial_repeats.tar.gz": "md5:d7c5e04786d03e1280a74639c2981546",
+            "rbfe_results_parallel_repeats.tar.gz": "md5:cc54afe32b56232339a9315f4c3d6d91"},
+    )
 
+@pytest.fixture
+def rbfe_result_dir()->pathlib.Path:
+    def _rbfe_result_dir(dataset)->str:
+        ZENODO_RBFE_DATA.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
+        cache_dir = pathlib.Path(pooch.os_cache('openfe'))/f'{dataset}.tar.gz.untar/{dataset}/'
+        return  cache_dir
 
+    return _rbfe_result_dir
+
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
+@pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
-def test_gather(results_dir, report):
+def test_gather(rbfe_result_dir, dataset, report):
+
     expected = {
         "": _EXPECTED_DG,
         "dg": _EXPECTED_DG,
@@ -124,77 +171,45 @@ def test_gather(results_dir, report):
     else:
         args = []
 
-    result = runner.invoke(gather, ['results'] + args + ['-o', '-'])
+    results_dir = rbfe_result_dir(dataset)
+    result = runner.invoke(gather, [str(results_dir)] + args + ['-o', '-'])
 
-    assert result.exit_code == 0
+    assert_click_success(result)
 
     actual_lines = set(result.stdout_bytes.split(b'\n'))
-
     assert set(expected.split(b'\n')) == actual_lines
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
+class TestGatherFailedEdges:
+    @pytest.fixture()
+    def results_dir_serial_missing_legs(self, rbfe_result_dir, tmpdir)->str:
+        """Example output data, with replicates run in serial and two missing results JSONs."""
+        # TODO: update to return a list of paths without doing this symlink mess, when gather supports it.
+        rbfe_result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
+        tmp_results_dir =  tmpdir
+        files_to_skip = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
+                         "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
+                            ]
+        for item in os.listdir(rbfe_result_dir):
+            if item not in files_to_skip:
+                os.symlink(rbfe_result_dir/item, tmp_results_dir/item)
 
-@pytest.mark.parametrize('include', ['complex', 'solvent', 'vacuum'])
-def test_generate_bad_legs_error_message(include):
-    expected = {
-        'complex': ("appears to be an RBFE", "missing {'solvent'}"),
-        'vacuum': ("appears to be an RHFE", "missing {'solvent'}"),
-        'solvent': ("whether this is an RBFE or an RHFE",
-                    "'complex'", "'solvent'"),
-    }[include]
-    set_vals = {include}
-    ligpair = {'lig1', 'lig2'}
-    msg = _generate_bad_legs_error_message(set_vals, ligpair)
-    for string in expected:
-        assert string in msg
+        return str(tmp_results_dir)
 
+    def test_missing_leg_error(self, results_dir_serial_missing_legs: str):
+        runner = CliRunner()
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['-o', '-'])
 
-@pytest.mark.xfail
-def test_missing_leg_error(results_dir):
-    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-    (pathlib.Path("results") / file_to_remove).unlink()
-
-    runner = CliRunner()
-    result = runner.invoke(gather, ['results'] + ['-o', '-'])
-    assert result.exit_code == 1
-    assert isinstance(result.exception, RuntimeError)
-    assert "Unable to determine" in str(result.exception)
-    assert "'lig_ejm_31'" in str(result.exception)
-    assert "'lig_ejm_42'" in str(result.exception)
-
-
-@pytest.mark.xfail
-def test_missing_leg_allow_partial(results_dir):
-    file_to_remove = "easy_rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json"
-    (pathlib.Path("results") / file_to_remove).unlink()
-
-    runner = CliRunner()
-    result = runner.invoke(gather,
-                           ['results'] + ['--allow-partial', '-o', '-'])
-    assert result.exit_code == 0
+        assert result.exit_code == 1
+        assert isinstance(result.exception, RuntimeError)
+        assert "Some edge(s) are missing runs" in str(result.exception)
+        assert "('lig_ejm_31', 'lig_ejm_42'): solvent" in str(result.exception)
+        assert "('lig_ejm_46', 'lig_jmc_28'): complex" in str(result.exception)
+        assert "using the --allow-partial flag" in str(result.exception)
 
 
-RBFE_RESULTS = pooch.create(
-    pooch.os_cache('openfe'),
-    base_url="doi:10.6084/m9.figshare.25148945",
-    registry={"results.tar.gz": "bf27e728935b31360f95188f41807558156861f6d89b8a47854502a499481da3"},
-)
+    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
+        runner = CliRunner()
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
 
-
-@pytest.fixture
-def rbfe_results():
-    # fetches rbfe results from online
-    # untars into local directory and returns path to this
-    d = RBFE_RESULTS.fetch('results.tar.gz', processor=pooch.Untar())
-
-    return os.path.join(pooch.os_cache('openfe'), 'results.tar.gz.untar', 'results')
-
-
-@pytest.mark.download
-@pytest.mark.xfail
-def test_rbfe_results(rbfe_results):
-    runner = CliRunner()
-
-    result = runner.invoke(gather, ['--report', 'raw', rbfe_results])
-
-    assert result.exit_code == 0
-    assert result.stdout_bytes == _EXPECTED_RAW
+        assert_click_success(result)

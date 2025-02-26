@@ -58,12 +58,13 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
+    OpenMMSystemGeneratorFFSettings,
 )
-from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
 from ..openmm_utils import (
     settings_validation, system_creation,
-    multistate_analysis, charge_generation
+    multistate_analysis, charge_generation,
+    omm_compute,
 )
 from openfe.utils import without_oechem_backend
 
@@ -175,6 +176,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings objects. Expects the
           following entries:
+          * `forcefield_settings`
           * `engine_settings`
           * `thermo_settings`
           * `integrator_settings`
@@ -189,8 +191,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Equilibrated system positions
         """
         # Prep the simulation object
-        platform = compute.get_openmm_platform(
-            settings['engine_settings'].compute_platform
+        # Restrict CPU count if running vacuum simulation
+        restrict_cpu = settings['forcefield_settings'].nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=settings['engine_settings'].compute_platform,
+            gpu_device_index=settings['engine_settings'].gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         integrator = openmm.LangevinMiddleIntegrator(
@@ -689,11 +695,33 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             time_per_iteration=simulation_settings.time_per_iteration,
         )
 
+        if output_settings.positions_write_frequency is not None:
+            pos_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.positions_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' position_write_frequency",
+                denominator_name="simulation settings' time_per_iteration"
+            )
+        else:
+            pos_interval = 0
+
+        if output_settings.velocities_write_frequency is not None:
+            vel_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.velocities_write_frequency,
+                denominator=simulation_settings.time_per_iteration,
+                numerator_name="output settings' velocity_write_frequency",
+                denominator_name="simulation settings' time_per_iteration"
+            )
+        else:
+            vel_interval = 0
+
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
+            position_interval=pos_interval,
+            velocity_interval=vel_interval,
         )
 
         # Write out the structure's PDB whilst we're here
@@ -710,6 +738,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     def _get_ctx_caches(
         self,
+        forcefield_settings: OpenMMSystemGeneratorFFSettings,
         engine_settings: OpenMMEngineSettings
     ) -> tuple[openmmtools.cache.ContextCache, openmmtools.cache.ContextCache]:
         """
@@ -717,7 +746,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        engine_settings : OpenMMEngineSettings,
+        forcefield_settings: OpenMMSystemGeneratorFFSettings
+        engine_settings : OpenMMEngineSettings
 
         Returns
         -------
@@ -726,8 +756,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler_context_cache : openmmtools.cache.ContextCache
           The sampler state context cache.
         """
-        platform = compute.get_openmm_platform(
-            engine_settings.compute_platform,
+        # Get the compute platform
+        # Set the number of CPUs to 1 if running a vacuum simulation
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=engine_settings.compute_platform,
+            gpu_device_index=engine_settings.gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         energy_context_cache = openmmtools.cache.ContextCache(
@@ -1026,6 +1061,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         try:
             # 12. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
+                settings['forcefield_settings'],
                 settings['engine_settings']
             )
 
