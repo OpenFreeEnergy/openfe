@@ -25,6 +25,12 @@ from openfe.protocols.openmm_utils.omm_settings import (
     MDSimulationSettings,
     MDOutputSettings,
 )
+from openfe.protocols.restraint_utils.settings import (
+    BaseRestraintSettings,
+    DistanceRestraintSettings,
+    FlatBottomRestraintSettings,
+    BoreschRestraintSettings,
+)
 from openff.units import unit
 from openff.models.types import FloatQuantity
 import numpy as np
@@ -39,29 +45,29 @@ class AlchemicalSettings(SettingsBaseModel):
     """
 
 
-class RestraintsSettings(SettingsBaseModel):
-    """
-    Settings for the restraints.
-    """
-    k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
+# class RestraintsSettings(SettingsBaseModel):
+#     """
+#     Settings for the restraints.
+#     """
+#     k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
+#
+#
+# class SolventRestraintsSettings(BaseRestraintSettings):
+#     """
+#     Settings for the harmonic restraint in the solvent
+#     """
 
 
-class SolventRestraintsSettings(RestraintsSettings):
-    """
-    Settings for the harmonic restraint in the solvent
-    """
-
-
-class ComplexRestraintsSettings(RestraintsSettings):
-    """
-    Settings for the Boresch restraints in the complex
-    """
-    class Config:
-        arbitrary_types_allowed = True
-
-    # k_theta: FloatQuantity['kJ/(mol*rad**2)'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
-    k_theta: FloatQuantity[
-        'kJ/(mol*rad**2)'] = 836.8 * unit.kilojoule_per_mole / unit.radians ** 2
+# class ComplexRestraintsSettings(BaseRestraintSettings):
+#     """
+#     Settings for the Boresch restraints in the complex
+#     """
+    # class Config:
+    #     arbitrary_types_allowed = True
+    #
+    # # k_theta: FloatQuantity['kJ/(mol*rad**2)'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
+    # k_theta: FloatQuantity[
+    #     'kJ/(mol*rad**2)'] = 836.8 * unit.kilojoule_per_mole / unit.radians ** 2
 
 
 class LambdaSettings(SettingsBaseModel):
@@ -306,11 +312,11 @@ class SepTopSettings(SettingsBaseModel):
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
     """
-    solvent_restraints_settings: SolventRestraintsSettings
+    solvent_restraint_settings: BaseRestraintSettings
     """
     Settings for the harmonic restraint in the solvent
     """
-    complex_restraints_settings: ComplexRestraintsSettings
+    complex_restraint_settings: BaseRestraintSettings
     """
     Settings for the Boresch restraints in the complex
     """

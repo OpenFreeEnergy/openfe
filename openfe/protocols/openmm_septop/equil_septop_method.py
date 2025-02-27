@@ -62,7 +62,8 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
-    SettingsBaseModel, SolventRestraintsSettings, ComplexRestraintsSettings
+    SettingsBaseModel,
+    # SolventRestraintsSettings, ComplexRestraintsSettings
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
@@ -79,8 +80,13 @@ from rdkit import Chem
 import MDAnalysis as mda
 from openfe.protocols.restraint_utils.geometry.boresch import (
     find_boresch_restraint, find_guest_atom_candidates)
+import openfe.protocols.restraint_utils
 from openfe.protocols.restraint_utils.geometry.utils import get_central_atom_idx
-
+from ..restraint_utils.settings import (
+    DistanceRestraintSettings,
+    BoreschRestraintSettings,
+)
+from openmmtools.states import ThermodynamicState, GlobalParameterState
 
 due.cite(Doi("10.5281/zenodo.596622"),
          description="OpenMMTools",
@@ -550,12 +556,10 @@ class SepTopProtocol(gufe.Protocol):
                 output_filename='complex.nc',
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
-            solvent_restraints_settings=SolventRestraintsSettings(
-                k_distance=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
+            solvent_restraint_settings=DistanceRestraintSettings(
+                spring_constant=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
             ),
-            complex_restraints_settings=ComplexRestraintsSettings(
-                k_distance=8368.0 * unit.kilojoule_per_mole / unit.nanometer**2
-            ),
+            complex_restraint_settings=BoreschRestraintSettings(),
         )
 
     @staticmethod
@@ -946,7 +950,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
                 prot_settings.complex_equil_output_settings,
             'simulation_settings': prot_settings.complex_simulation_settings,
             'output_settings': prot_settings.complex_output_settings,
-            'restraint_settings': prot_settings.complex_restraints_settings}
+            'restraint_settings': prot_settings.complex_restraint_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -990,8 +994,9 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         return updated_positions_B
 
-    @staticmethod
+    # @staticmethod
     def _add_restraints(
+            self,
             system: openmm.System,
             u_A,
             u_B,
@@ -1035,56 +1040,157 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         system: openmm.System
           The OpenMM system with the added restraints forces
         """
+        from MDAnalysis.coordinates.memory import MemoryReader
+        from openfe.protocols.restraint_utils import geometry
+        from openfe.protocols.restraint_utils.openmm import omm_restraints
 
-        boresch_A = find_boresch_restraint(
-            u_A,
-            ligand_1,
-            ligand_1_inxs,
-            protein_inxs,
-            host_selection='name C or name CA or name CB or name N or name O',
-            dssp_filter=True)
+        if isinstance(settings['restraint_settings'],
+                      BoreschRestraintSettings):
+            # Get the average of the two force constant for use below
+            frc_const_average = (
+                                        settings[
+                                            'restraint_settings'].K_thetaA +
+                                        settings['restraint_settings'].K_thetaB
+                                ) / 2
 
-        boresch_B = find_boresch_restraint(
-            u_B,
-            ligand_2,
-            ligand_2_inxs_B,
-            protein_inxs,
-            host_selection='name C or name CA or name CB or name N or name O',
-            dssp_filter=True)
-        print(boresch_A)
-        print(boresch_B)
-        print(boresch_B.guest_atoms)
+            # boresch_A = find_boresch_restraint(
+            #     u_A,
+            #     ligand_1,
+            #     ligand_1_inxs,
+            #     protein_inxs,
+            #     host_selection='name C or name CA or name CB or name N or name O',
+            #     dssp_filter=True)
+            rest_geom_A = geometry.boresch.find_boresch_restraint(
+                universe=u_A,
+                guest_rdmol=ligand_1,
+                guest_idxs=ligand_1_inxs,
+                host_idxs=protein_inxs,
+                host_selection=settings['restraint_settings'].host_selection,
+                dssp_filter=settings['restraint_settings'].dssp_filter,
+                rmsf_cutoff=settings['restraint_settings'].rmsf_cutoff,
+                host_min_distance=settings[
+                    'restraint_settings'].host_min_distance,
+                host_max_distance=settings[
+                    'restraint_settings'].host_max_distance,
+                angle_force_constant=frc_const_average,
+                temperature=settings['thermo_settings'].temperature,
+            )
+
+            restraint_A = omm_restraints.BoreschRestraint(
+                settings['restraint_settings'],
+            )
+
+            rest_geom_B = geometry.boresch.find_boresch_restraint(
+                universe=u_B,
+                guest_rdmol=ligand_2,
+                guest_idxs=ligand_2_inxs_B,
+                host_idxs=protein_inxs,
+                host_selection=settings['restraint_settings'].host_selection,
+                dssp_filter=settings['restraint_settings'].dssp_filter,
+                rmsf_cutoff=settings['restraint_settings'].rmsf_cutoff,
+                host_min_distance=settings[
+                    'restraint_settings'].host_min_distance,
+                host_max_distance=settings[
+                    'restraint_settings'].host_max_distance,
+                angle_force_constant=frc_const_average,
+                temperature=settings['thermo_settings'].temperature,
+            )
+
+            restraint_B = omm_restraints.BoreschRestraint(
+                settings['restraint_settings'],
+            )
+
+        else:
+            # TODO turn this into a direction for different restraint types supported?
+            raise NotImplementedError(
+                "Other restraint types are not yet available"
+            )
+        #
+        #
+        # boresch_B = find_boresch_restraint(
+        #     u_B,
+        #     ligand_2,
+        #     ligand_2_inxs_B,
+        #     protein_inxs,
+        #     host_selection='name C or name CA or name CB or name N or name O',
+        #     dssp_filter=True)
+
+        if self.verbose:
+            self.logger.info(f"restraint geometry is: A: {rest_geom_A}"
+                             f"B: {rest_geom_B}")
+        print(rest_geom_A)
+        print(rest_geom_B)
+        print(rest_geom_B.guest_atoms)
         # We have to update the indices for ligand B to match the AB complex
-        new_boresch_B_indices = [ligand_2_inxs_B.index(i) for i in boresch_B.guest_atoms]
-        boresch_B.guest_atoms = [ligand_2_inxs[i] for i in new_boresch_B_indices]
-        print(boresch_B.guest_atoms)
-        # Convert restraint units to openmm
-        k_distance = to_openmm(settings["restraint_settings"].k_distance)
-        k_theta = to_openmm(settings["restraint_settings"].k_theta)
+        new_boresch_B_indices = [ligand_2_inxs_B.index(i) for i in rest_geom_B.guest_atoms]
+        rest_geom_B.guest_atoms = [ligand_2_inxs[i] for i in new_boresch_B_indices]
+        print(rest_geom_B.guest_atoms)
 
-        force_A = create_boresch_restraint(
-            boresch_A.host_atoms[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
-            boresch_A.guest_atoms,
-            positions_AB,
-            k_distance,
-            k_theta,
-            "lambda_restraints_A",
+        # We need a temporary thermodynamic state to add the restraint
+        # & get the correction
+        thermodynamic_state = ThermodynamicState(
+            system,
+            temperature=to_openmm(settings['thermo_settings'].temperature),
+            pressure=to_openmm(settings['thermo_settings'].pressure),
         )
-        system.addForce(force_A)
-        force_B = create_boresch_restraint(
-            boresch_B.host_atoms[::-1],
-            # expects [r3, r2, r1], not [r1, r2, r3]
-            boresch_B.guest_atoms,
-            positions_AB,
-            k_distance,
-            k_theta,
-            "lambda_restraints_B",
+
+        # Add the force to the thermodynamic state
+        restraint_A.add_force(
+            thermodynamic_state,
+            rest_geom_A,
+            controlling_parameter_name='lambda_restraints_A'
         )
-        system.addForce(force_B)
+        restraint_B.add_force(
+            thermodynamic_state,
+            rest_geom_B,
+            controlling_parameter_name='lambda_restraints_B'
+        )
+        # Get the standard state correction as a unit.Quantity
+        correction_A = restraint_A.get_standard_state_correction(
+            thermodynamic_state,
+            rest_geom_A,
+        )
+        correction_B = restraint_B.get_standard_state_correction(
+            thermodynamic_state,
+            rest_geom_B,
+        )
 
-        assign_force_groups(system)
+        # Get the GlobalParameterState for the restraint
+        restraint_parameter_state = omm_restraints.RestraintParameterState(
+            lambda_restraints=1.0
+        )
+        return restraint_parameter_state, correction_A, correction_B, thermodynamic_state.system
 
-        return system
+        # # Convert restraint units to openmm
+        # k_distance = to_openmm(settings["restraint_settings"].k_distance)
+        # k_theta = to_openmm(settings["restraint_settings"].k_theta)
+        #
+        # restraint_A = omm_restraints.BoreschRestraint(
+        #     settings['restraint_settings'],
+        # )
+        # force_A = create_boresch_restraint(
+        #     boresch_A.host_atoms[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
+        #     boresch_A.guest_atoms,
+        #     positions_AB,
+        #     k_distance,
+        #     k_theta,
+        #     "lambda_restraints_A",
+        # )
+        # system.addForce(force_A)
+        # force_B = create_boresch_restraint(
+        #     boresch_B.host_atoms[::-1],
+        #     # expects [r3, r2, r1], not [r1, r2, r3]
+        #     boresch_B.guest_atoms,
+        #     positions_AB,
+        #     k_distance,
+        #     k_theta,
+        #     "lambda_restraints_B",
+        # )
+        # system.addForce(force_B)
+        #
+        # assign_force_groups(system)
+        #
+        # return system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
@@ -1167,7 +1273,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: SolventRestraintsSettings
+            * restraint_settings: BaseRestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -1186,7 +1292,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
                 prot_settings.solvent_equil_output_settings,
             'simulation_settings': prot_settings.solvent_simulation_settings,
             'output_settings': prot_settings.solvent_output_settings,
-            'restraint_settings': prot_settings.solvent_restraints_settings}
+            'restraint_settings': prot_settings.solvent_restraint_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -1235,8 +1341,9 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         return updated_positions_B
 
-    @staticmethod
+    # @staticmethod
     def _add_restraints(
+        self,
         system: openmm.System,
         u_A,
         u_B,
@@ -1292,7 +1399,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             positions_AB[ref_A] - positions_AB[ligand_2_inxs[ligand_2_inxs_B.index(ref_B)]])
         print(distance)
 
-        k_distance = to_openmm(settings['restraint_settings'].k_distance)
+        k_distance = to_openmm(settings['restraint_settings'].spring_constant)
 
         force = openmm.HarmonicBondForce()
         force.addBond(
@@ -1306,7 +1413,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         system.addForce(force)
 
-        return system
+        # return system
+        return None, None, None, system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
@@ -1388,7 +1496,7 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
             * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: SolventRestraintsSettings
+            * restraint_settings: BaseRestraintsSettings
         """
         prot_settings = self._inputs['protocol'].settings
 
@@ -1407,7 +1515,7 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
                 prot_settings.solvent_equil_output_settings,
             'simulation_settings': prot_settings.solvent_simulation_settings,
             'output_settings': prot_settings.solvent_output_settings,
-            'restraint_settings': prot_settings.solvent_restraints_settings}
+            'restraint_settings': prot_settings.solvent_restraint_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
@@ -1531,7 +1639,7 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
                 prot_settings.complex_equil_output_settings,
             'simulation_settings': prot_settings.complex_simulation_settings,
             'output_settings': prot_settings.complex_output_settings,
-            'restraint_settings': prot_settings.complex_restraints_settings}
+            'restraint_settings': prot_settings.complex_restraint_settings}
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,

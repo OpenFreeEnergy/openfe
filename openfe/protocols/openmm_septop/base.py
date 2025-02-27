@@ -592,8 +592,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         off_topology.set_positions(positions)
         return off_molecule
 
-    @staticmethod
+    # @staticmethod
     def _add_restraints(
+            self,
             system: openmm.System,
             u_A: mda.Universe,
             u_B: mda.Universe,
@@ -906,7 +907,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             protein_idxs = comp_atomids_AB[prot_comp]
         else:
             protein_idxs = None
-        system = self._add_restraints(
+        restraint_param_state, corr_A, corr_B, system = self._add_restraints(
             alchemical_system, u_A, u_B,
             rdmol_A,
             rdmol_B,
