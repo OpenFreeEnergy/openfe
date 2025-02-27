@@ -68,6 +68,8 @@ from openfe.protocols.openmm_utils import (
     system_validation,
     settings_validation,
 )
+from openfe.protocols.restraint_utils import geometry
+from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
 )
@@ -810,7 +812,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     def _get_mda_universe(
         topology: openmm.app.Topology,
         positions: openmm.unit.Quantity,
-        trajfile_path: Optional[pathlib.Path],
+        trajectory: Optional[pathlib.Path],
     ) -> mda.Universe:
         """
         Helper method to get a Universe from an openmm Topology,
@@ -823,7 +825,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         positions: openmm.unit.Quantity
           The System's current positions.
           Used if a trajectory file is None or is not a file.
-        trajfile_path: pathlib.Path
+        trajectory: pathlib.Path
           A Path to a trajectory file to read positions from.
 
         Returns
@@ -833,17 +835,17 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         """
         from MDAnalysis.coordinates.memory import MemoryReader
         # If the trajectory file doesn't exist, then we use positions
-        if traj is not None and traj.is_file():
+        if trajectory is not None and trajectory.is_file():
             trajectory_format=None
         else:
             # Convert positions from Quantity to array
             # Divide by 10 to go from nm to angstroms
-            traj = np.array(positions._value) * 10
+            trajectory = np.array(positions._value) * 10
             trajectory_format=MemoryReader
 
         return mda.Universe(
             topology,
-            traj,
+            trajectory,
             topology_format="OPENMMTOPOLOGY",
             trajectory_format=trajectory_format,
         )
@@ -887,6 +889,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         guest_rdmol: Chem.Mol,
         guest_atom_ids: list[int],
         host_atom_ids: list[int],
+        temperature: unit.Quantity,
         settings: BoreschRestraintSettings,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
@@ -901,8 +904,10 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
           An RDKit Molecule defining the guest molecule in the system.
         guest_atom_ids: list[int]
           A list of atom indices defining the guest molecule in the universe.
-        host_atom_ids: list[int]
+        host_atom_ids : list[int]
           A list of atom indices defining the host molecules in the universe.
+        temperature : unit.Quantity
+          The temperature of the simulation where the restraint will be added.
         settings : BoreschRestraintSettings
           Settings on how the Boresch-like restraint should be defined.
 
@@ -926,7 +931,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             host_min_distance=settings.host_min_distance,
             host_max_distance=settings.host_max_distance,
             angle_force_constant=frc_const,
-            temperature=settings.temperature,
+            temperature=temperature,
         )
 
         restraint = omm_restraints.BoreschRestraint(settings)
@@ -978,9 +983,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         system : openmm.System
           A copy of the System with the restraint added.
         """
-        from openfe.protocols.restraint_utils import geometry
-        from openfe.protocols.restraint_utils.openmm import omm_restraints
-
         if self.verbose:
             self.logger.info("Generating restraints")
 
@@ -1021,6 +1023,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
                 guest_rdmol,
                 guest_atom_ids,
                 host_atom_ids,
+                settings['thermo_settings'].temperature,
                 settings['restraint_settings'],
             )
         else:
