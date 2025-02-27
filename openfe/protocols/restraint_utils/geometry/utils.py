@@ -22,7 +22,11 @@ import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rms import RMSF
 from MDAnalysis.analysis.dssp import DSSP
-from MDAnalysis.lib.distances import minimize_vectors, capped_distance
+from MDAnalysis.lib.distances import (
+    minimize_vectors,
+    capped_distance,
+    distance_array,
+)
 from MDAnalysis.transformations.nojump import NoJump
 # from openfe_analysis.transformations import NoJump
 
@@ -392,6 +396,68 @@ def check_angular_variance(
     return not (variance * unit.radians > width)
 
 
+class CentroidDistanceSort(AnalysisBase):
+    """
+    Sort (from shortest to longest) an input AtomGroup
+    based on their distance from the center of geometry
+    of another AtomGroup.
+
+    Parameters
+    ----------
+    sortable_atoms : MDAnalysis.AtomGroup
+      AtomGroup to sort based on distance to center of geometry of
+      ``reference_atoms``.
+    reference_atoms : MDAnalysis.AtomGroup
+      AtomGroup who's center of geometry will be used to distance sort
+      ``sortable_atoms`` with.
+
+    Attributes
+    ----------
+    results.distances : np.array
+      A numpy array of the distances from the centroid of
+      ``reference_atoms`` for each frame.
+    results.sorted_atomgroup : MDAnalysis.AtomGroup
+      A copy of ``sortable_atoms`` where the atoms are sorted by
+      their distance from the centroid of ``reference_atoms``.
+    """
+    _analysis_algorithm_is_parallelizable = False
+
+    def __init__(
+        self,
+        sortable_atoms,
+        reference_atoms,
+        **kwargs,
+    ):
+        super().__init__(sortable_atoms.universe.trajectory, **kwargs)
+
+        def get_atomgroup(ag):
+            """
+            We need this in case someone passes an Atom not an AG
+            """
+            if ag._is_group:
+                return ag
+            return mda.AtomGroup([ag])
+
+        self.sortable_ag = get_atomgroup(sortable_atoms)
+        self.reference_ag = get_atomgroup(reference_atoms)
+
+    def _prepare(self):
+        self.results.distances = np.zeros(
+            (self.n_frames, len(self.sortable_ag))
+        )
+
+    def _single_frame(self):
+        self.results.distances[self._frame_index] = distance_array(
+            self.reference_ag.center_of_geometry(),
+            self.sortable_ag.atoms.positions,
+            box=self.reference_ag.dimensions,
+        )
+
+    def _conclude(self):
+        idxs = np.argsort(np.mean(self.results.distances, axis=0))
+        self.results.sorted_atomgroup = self.sortable_ag.atoms[idxs]
+
+
 class FindHostAtoms(AnalysisBase):
     """
     Class filter host atoms based on their distance
@@ -407,6 +473,11 @@ class FindHostAtoms(AnalysisBase):
       Minimum distance to filter atoms within.
     max_search_distance: unit.Quantity
       Maximum distance to filter atoms within.
+
+    Attributes
+    ----------
+    results.host_idxs : np.ndarray
+      A NumPy array of host indices in the Universe.
     """
     _analysis_algorithm_is_parallelizable = False
 
@@ -468,12 +539,18 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
     rmsf
       ArrayQuantity of RMSF values.
     """
+    # The no trajectory case
+    if len(atomgroup.universe.trajectory) < 2:
+        return np.zeros(atomgroup.n_atoms) * unit.angstrom
+
     # First let's copy our Universe
     copy_u = atomgroup.universe.copy()
-    copy_u.trajectory[0]
     ag = copy_u.atoms[atomgroup.atoms.ix]
 
-    nojump = NoJump(ag)
+    # Reset the trajectory index, otherwise we'll get in trouble with nojump
+    copy_u.trajectory[0]
+
+    nojump = NoJump()
     align = Aligner(ag)
     copy_u.trajectory.add_transformations(nojump, align)
 
