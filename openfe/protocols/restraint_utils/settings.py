@@ -10,6 +10,7 @@ TODO
 """
 from typing import Optional
 from openff.models.types import FloatQuantity
+from openff.units import unit
 from pydantic.v1 import validator
 from gufe.settings import (
     SettingsBaseModel,
