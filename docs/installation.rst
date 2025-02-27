@@ -155,13 +155,11 @@ For example, the Linux installer can be downloaded with ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-Linux-x86_64.sh
 
-And the MacOS (x86_64) installer ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-x86_64.sh
-
 And the MacOS (arm64) installer ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-arm64.sh
+
+MacOS x86_64 is no longer supported.
 
 The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
 

@@ -22,6 +22,7 @@ dependencies:
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
   - openff-units==0.2.0
+  - openff-interchange !=0.4.2
   - pint<0.22
   - openff-models>=0.0.5
   - openfe-analysis>=0.3.1
