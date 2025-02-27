@@ -261,7 +261,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             shared_basepath=self.shared_basepath,
         )
 
-        state = simulation.context.getState(getPositions=True)
+        state = simulation.context.getState(getPositions=True, enforcePeriodicBox=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
 
         # cautiously delete out contexts & integrator
@@ -977,9 +977,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # minimize
             if self.verbose:
                 self.logger.info("minimizing systems")
+
             sampler.minimize(
                 max_iterations=settings['simulation_settings'].minimization_steps
             )
+
             # equilibrate
             if self.verbose:
                 self.logger.info("equilibrating systems")

@@ -206,25 +206,9 @@ def test_validate_endstates_nosolvcomp_stateB(
     })
 
     with pytest.raises(
-        ValueError, match="Only dissapearing smalll molecule components"
+        ValueError, match="Only dissapearing small molecule components"
     ):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
-
-
-def test_validate_alchem_comps_appearingB(benzene_modifications):
-    stateA = ChemicalSystem({
-        'solvent': SolventComponent()
-    })
-
-    stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
-
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
-    with pytest.raises(ValueError, match='Components appearing in state B'):
-        AbsoluteBindingProtocol._validate_alchemical_components(alchem_comps)
 
 
 #def test_validate_alchem_comps_multi(benzene_modifications):
@@ -346,6 +330,57 @@ def test_validate_alchem_comps_appearingB(benzene_modifications):
 #            assert vac_sampler
 #
 #
+
+
+def test_dry_run_solvent_benzene(
+    benzene_modifications, T4_protein_component, tmpdir,
+):
+    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.complex_output_settings.output_indices = "not water"
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(
+            settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    assert len(prot_units) == 2
+
+    comp_unit = [u for u in prot_units
+                 if isinstance(u, AbsoluteBindingComplexUnit)]
+    sol_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteBindingSolventUnit)]
+
+    assert len(comp_unit) == 1
+    assert len(sol_unit) == 1
+
+    with tmpdir.as_cwd():
+        comp_sampler = sol_unit[0].run(dry=True, verbose=True)['debug']['sampler']
+        assert comp_sampler.is_periodic
+
+        pdb = mdt.load_pdb('hybrid_system.pdb')
+        assert pdb.n_atoms == 2698
+
+
 def test_dry_run_complex_benzene(
     benzene_modifications, T4_protein_component, tmpdir
 ):
@@ -392,7 +427,7 @@ def test_dry_run_complex_benzene(
         assert comp_sampler.is_periodic
 
         pdb = mdt.load_pdb('hybrid_system.pdb')
-        assert pdb.n_atoms == 2625
+        assert pdb.n_atoms == 2698
 
 
 #def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):

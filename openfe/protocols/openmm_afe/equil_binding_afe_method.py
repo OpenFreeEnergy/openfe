@@ -508,6 +508,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=5.0 * unit.nanosecond,
             ),
             complex_equil_output_settings=MDOutputSettings(
+                output_indices='all',
                 equil_nvt_structure='equil_nvt_structure.pdb',
                 equil_npt_structure='equil_npt_structure.pdb',
                 production_trajectory_filename='production_equil.xtc',
@@ -669,6 +670,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvation_settings
         )
+
+        # Make sure that we have the full system for restraint trajectory analysis
+        if self.settings.complex_equil_output_settings.output_indices != 'all':
+            errmsg = ("Complex simulations need to output the full system "
+                      "during equilibration simulations.")
+            raise ValueError(errmsg)
     
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name

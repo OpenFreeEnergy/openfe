@@ -643,6 +643,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
             geometry.guest_atoms[2],
         ]
         force.addBond(atoms, param_values)
+        force.setName('Boresch-like')
         return force
 
     def get_standard_state_correction(
