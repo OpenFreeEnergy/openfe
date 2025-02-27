@@ -19,7 +19,7 @@ specs:
   - pip
   - pytest
   - pytest-xdist
-  - python 3.10.*
+  - python 3.11.11
 
 # Not building an .exe for windows or a .pkg for macOS
 installer_type: sh
