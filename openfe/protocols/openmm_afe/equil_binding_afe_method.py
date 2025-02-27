@@ -569,7 +569,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         if not isinstance(diff[0][0], SmallMoleculeComponent):
-            errmsg = ("Only dissapearing smalll molecule components "
+            errmsg = ("Only dissapearing small molecule components "
                       "are supported by this protocol. "
                       f"Found a {type(diff[0][0])}")
             raise ValueError(errmsg)

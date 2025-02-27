@@ -165,7 +165,9 @@ def test_validate_solvent_endstates_protcomp(
         'solvent': SolventComponent(),
     })
 
-    with pytest.raises(ValueError, match="Protein components are not allowed"):
+
+    errmsg = "Only dissapearing small molecule components"
+    with pytest.raises(ValueError, match=errmsg):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
