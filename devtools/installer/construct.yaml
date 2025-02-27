@@ -19,6 +19,8 @@ specs:
   - pip
   - pytest
   - pytest-xdist
+  # python needs to match https://github.com/googlecolab/backend-info/blob/main/os-info.txt
+  # until colab pushes a fix
   - python 3.11.11
 
 # Not building an .exe for windows or a .pkg for macOS
