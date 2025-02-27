@@ -19,6 +19,7 @@ from __future__ import annotations
 import abc
 import os
 import logging
+import copy
 
 import gufe
 from gufe.components import Component
@@ -671,23 +672,36 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         cmp_states : list[ThermodynamicState]
           A list of ThermodynamicState for each replica in the system.
         """
+        # Fetch an alchemical state
         alchemical_state = AlchemicalState.from_system(alchemical_system)
+
         # Set up the system constants
         temperature = settings['thermo_settings'].temperature
         pressure = settings['thermo_settings'].pressure
         constants = dict()
         constants['temperature'] = ensure_quantity(temperature, 'openmm')
+
         if solvent_comp is not None:
             constants['pressure'] = ensure_quantity(pressure, 'openmm')
 
+        # Get the thermodynamic parameter protocol
+        param_protocol = copy.deepcopy(lambdas)
+
+        # Get the composable states
         if restraint_state is not None:
             composable_states = [alchemical_state, restraint_state]
         else:
             composable_states = [alchemical_state,]
 
+            # In this case we also don't have a restraint being controlled
+            # so we drop it from the protocol
+            param_protocol.pop('lambda_restraints', None)
+
         cmp_states = create_thermodynamic_state_protocol(
-            alchemical_system, protocol=lambdas,
-            constants=constants, composable_states=composable_states,
+            alchemical_system,
+            protocol=param_protocol,
+            constants=constants,
+            composable_states=composable_states,
         )
 
         sampler_state = SamplerState(positions=positions)
