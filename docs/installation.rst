@@ -1,10 +1,6 @@
 Installation
 ============
 
-The page has information for installing ``openfe``, installing software
-packages that integrate with ``openfe``, and testing that your ``openfe``
-installation is working.
-
 ``openfe`` currently only works on POSIX systems (macOS and UNIX/Linux).
 
 We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
@@ -13,22 +9,8 @@ We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as fa
 - OpenMM 8.0, 8.1.1, 8.1.2 - **we do not yet support OpenMM v8.2.0**
 
 When you install ``openfe`` through any of the methods described below, you
-will install both the core library and the command line interface (CLI). 
+will install both the core library and the command line interface (CLI).
 
-If you already have a Mamba installation, you can install ``openfe`` with:
-
-.. parsed-literal::
-
-  mamba create -c conda-forge -n openfe_env openfe=\ |version|
-  mamba activate openfe_env
-
-Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
-
-.. note::
-   If you plan on using GAFF to parametrize your system, you **must** install ``openmmforcefields`` version ``0.12.0``.
-   This will create an environment with python 3.10 and the correct version of Ambertools.
-
-   ``mamba create -c conda-forge -n openfe_env openfe=1 openmmforcefields=0.12.0``
 
 Installation with ``miniforge`` (recommended)
 ----------------------------------------------
@@ -131,11 +113,11 @@ The very first time you run this, the
 initial check that you can import ``openfe`` will take a while, because some
 code is compiled the first time it is encountered. That compilation only
 happens once per installation.
-  
+
 A more expansive test suite can be run using ::
 
   openfe test --long
-  
+
 This test suite contains several hundred individual tests. This may take up to
 an hour, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
@@ -144,87 +126,46 @@ hardware intended to run openfe jobs, as it will test GPU specific features.
 
 With that, you should be ready to use ``openfe``!
 
-``conda-lock`` file
--------------------
+Installation with ``mamba``
+---------------------------
 
-.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
+If you already have a `Mamba <https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html>`_
+(or `Micromamba <https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html>`_ ) installation, you can install ``openfe`` with:
 
-A `conda-lock`_ file is a cross platform way of specifying a conda environment that specifies packages in a reproducible way.
-Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
-We recomend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
+.. parsed-literal::
 
+  mamba create -c conda-forge -n openfe_env openfe=\ |version|
+  mamba activate openfe_env
 
-.. note::
+Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
-   You will likely need to install ``conda-lock``.
-   We strongly recomend installing ``conda-lock`` in a new virtual environment.
-   This will reduce the chance of dependency conflicts ::
-
-       $ # Install conda lock into a virtual environment
-       $ conda create -n conda-lock -c conda-lock
-       $ # Activate the environment to use the conda-lock command
-       $ conda activate conda-lock
-
-See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
-
-The latest version of the `conda-lock` file we provide can be downloaded with ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml 
-
-If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
-
-Create a conda environment from the lock file and activate it::
-
-  $ conda-lock install -n openfe openfe-conda-lock.yml
-  $ conda activate openfe
-
-.. note::
-
-   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
-
-       $ micromamba create -n openfe --file openfe-conda-lock.yml
-       $ micromamba activate openfe
-
-To make sure everything is working, run the tests ::
-
-  $ pytest --pyargs openfe openfecli
-
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
-  
-With that, you should be ready to use ``openfe``!
 
 Single file installer
 ---------------------
 
 .. warning::
 
-   The single file installer may modify your ``.bashrc`` in a way that requires manual intervention to access your previous ``conda`` installation 
+   The single file installer may modify your ``.bashrc`` in a way that requires manual intervention to access your previous ``conda`` installation
 
 .. _releases on GitHub: https://github.com/OpenFreeEnergy/openfe/releases
 
-Single file installers are available for x86_64 Linux and MacOS. 
+Single file installers are available for x86_64 Linux and MacOS.
 They are attached to our `releases on GitHub`_ and can be downloaded with a browser or ``curl`` (or similar tool).
 For example, the Linux installer can be downloaded with ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-Linux-x86_64.sh
 
-And the MacOS (x86_64) installer ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-x86_64.sh
-
 And the MacOS (arm64) installer ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-arm64.sh
+
+MacOS x86_64 is no longer supported.
 
 The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
 
 Both ``conda`` and ``mamba`` are also available in the environment created by the single file installer and can be used to install additional packages.
 The installer can be installed in batch mode or interactively  ::
-  
+
   $ chmod +x ./OpenFEforge-Linux-x86_64.sh # Make installer executable
   $ ./OpenFEforge-Linux-x86_64.sh # Run the installer
 
@@ -233,27 +174,27 @@ Example installer output is shown below (click to expand "Installer Output")
 .. collapse:: Installer Output
 
   .. code-block::
-  
+
       Welcome to OpenFEforge 0.7.4
-    
+
       In order to continue the installation process, please review the license
       agreement.
       Please, press ENTER to continue
       >>>
       MIT License
-    
+
       Copyright (c) 2022 OpenFreeEnergy
-      
+
       Permission is hereby granted, free of charge, to any person obtaining a copy
       of this software and associated documentation files (the "Software"), to deal
       in the Software without restriction, including without limitation the rights
       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
       copies of the Software, and to permit persons to whom the Software is
       furnished to do so, subject to the following conditions:
-      
+
       The above copyright notice and this permission notice shall be included in all
       copies or substantial portions of the Software.
-      
+
       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
       IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
       FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -261,41 +202,41 @@ Example installer output is shown below (click to expand "Installer Output")
       LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
-      
-      
+
+
       Do you accept the license terms? [yes|no]
       [no] >>> yes
-  
-  .. note:: 
+
+  .. note::
      The install location will be different when you run the installer.
-  
+
   .. code-block::
-    
+
       OpenFEforge will now be installed into this location:
       /home/mmh/openfeforge
-    
+
       - Press ENTER to confirm the location
       - Press CTRL-C to abort the installation
       - Or specify a different location below
-    
+
       [/home/mmh/openfeforge] >>>
       PREFIX=/home/mmh/openfeforge
       Unpacking payload ...
-      
+
       Installing base environment...
-      
-      
+
+
       Downloading and Extracting Packages
-      
-      
+
+
       Downloading and Extracting Packages
-      
+
       Preparing transaction: done
       Executing transaction: \ By downloading and using the CUDA Toolkit conda packages, you accept the terms and conditions of the CUDA End User License Agreement (EULA): https://docs.nvidia.com/cuda/eula/index.html
-      
+
       | Enabling notebook extension jupyter-js-widgets/extension...
             - Validating: OK
-      
+
       done
       installation finished.
       Do you wish the installer to initialize OpenFEforge
@@ -313,10 +254,10 @@ Example installer output is shown below (click to expand "Installer Output")
       no change     /home/mmh/openfeforge/lib/python3.9/site-packages/xontrib/conda.xsh
       no change     /home/mmh/openfeforge/etc/profile.d/conda.csh
       modified      /home/mmh/.bashrc
-      
+
       ==> For changes to take effect, close and re-open your current shell. <==
-      
-      
+
+
                         __    __    __    __
                        /  \  /  \  /  \  /  \
                       /    \/    \/    \/    \
@@ -331,14 +272,14 @@ Example installer output is shown below (click to expand "Installer Output")
               ██║╚██╔╝██║██╔══██║██║╚██╔╝██║██╔══██╗██╔══██║
               ██║ ╚═╝ ██║██║  ██║██║ ╚═╝ ██║██████╔╝██║  ██║
               ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝
-      
+
               mamba (1.4.2) supported by @QuantStack
-      
+
               GitHub:  https://github.com/mamba-org/mamba
               Twitter: https://twitter.com/QuantStack
-      
+
       █████████████████████████████████████████████████████████████
-      
+
       no change     /home/mmh/openfeforge/condabin/conda
       no change     /home/mmh/openfeforge/bin/conda
       no change     /home/mmh/openfeforge/bin/conda-env
@@ -353,17 +294,17 @@ Example installer output is shown below (click to expand "Installer Output")
       no change     /home/mmh/.bashrc
       No action taken.
       Added mamba to /home/mmh/.bashrc
-      
+
       ==> For changes to take effect, close and re-open your current shell. <==
-      
+
       If you'd prefer that conda's base environment not be activated on startup,
          set the auto_activate_base parameter to false:
-      
+
       conda config --set auto_activate_base false
-      
+
       Thank you for installing OpenFEforge!
 
-After the installer completes, close and reopen your shell. 
+After the installer completes, close and reopen your shell.
 To check if your path is setup correctly, run ``which python`` your output should look something like this ::
 
    (base) $ which python
@@ -376,22 +317,22 @@ Now the CLI tool should work as well ::
 
    (base) $ openfe --help
    Usage: openfe [OPTIONS] COMMAND [ARGS]...
-   
+
      This is the command line tool to provide easy access to functionality from
      the OpenFE Python library.
-   
+
    Options:
      --version   Show the version and exit.
      --log PATH  logging configuration file
      -h, --help  Show this message and exit.
-   
+
    Setup Commands:
      atommapping        Check the atom mapping of a given pair of ligands
      plan-rhfe-network  Plan a relative hydration free energy network, saved in a
                         dir with multiple JSON files
      plan-rbfe-network  Plan a relative binding free energy network, saved in a
                         dir with multiple JSON files.
-   
+
    Simulation Commands:
      gather    Gather DAG result jsons for network of RFE results into single TSV
                file
@@ -404,12 +345,13 @@ To make sure everything is working, run the tests ::
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
-  
+
 With that, you should be ready to use ``openfe``!
 
+.. _installation:containers:
 
-Containers
-----------
+Containerized  Distributions
+----------------------------
 
 We provide an official docker and Apptainer (formerly Singularity) image.
 The docker image is tagged with the version of ``openfe`` on the image and can be pulled with ::
@@ -423,7 +365,7 @@ The Apptainer image is pre-built and can be pulled with ::
 .. warning::
 
    For production use, we recommend using version tags to prevent disruptions in workflows e.g.
-   
+
    .. parsed-literal::
 
      $ docker pull ghcr.io/openfreeenergy/openfe:\ |version|
@@ -433,7 +375,7 @@ We recommend testing the container to ensure that it can access a GPU (if desire
 This can be done with the following command ::
 
   $ singularity run --nv openfe_latest-apptainer.sif python -m openmm.testInstallation
-  
+
   OpenMM Version: 8.0
   Git Revision: a7800059645f4471f4b91c21e742fe5aa4513cda
 
@@ -452,7 +394,7 @@ This can be done with the following command ::
   All differences are within tolerance.
 
 The ``--nv`` flag is required for the Apptainer image to access the GPU on the host.
-Your output may produce different values for the forces, but should list the CUDA platform if everything is working properly. 
+Your output may produce different values for the forces, but should list the CUDA platform if everything is working properly.
 
 You can access the ``openfe`` CLI from the Singularity image with ::
 
@@ -465,51 +407,8 @@ To make sure everything is working, run the tests ::
 The test suite contains several hundred individual tests. This will take a
 few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
-  
+
 With that, you should be ready to use ``openfe``!
-
-Developer install
------------------
-
-If you're going to be developing for ``openfe``, you will want an
-installation where your changes to the code are immediately reflected in the
-functionality. This is called a "developer" or "editable" installation.
-
-Getting a developer installation for ``openfe`` first installing the
-requirements, and then creating the editable installation. We recommend
-doing that with ``mamba`` using the following procedure:
-
-First, clone the ``openfe`` repository, and switch into its root directory::
-
-  $ git clone https://github.com/OpenFreeEnergy/openfe.git
-  $ cd openfe
-
-Next create a ``conda`` environment containing the requirements from the
-specification in that directory::
-
-  $ mamba create -f environment.yml
-
-Then activate the ``openfe`` environment with::
-
-  $ mamba activate openfe_env
-
-Finally, create the editable installation::
-
-  $ python -m pip install --no-deps -e .
-
-Note the ``.`` at the end of that command, which indicates the current
-directory.
-
-Optional dependencies
----------------------
-
-Certain functionalities are only available if you also install other,
-optional packages.
-
-* **perses tools**: To use perses, you need to install perses and OpenEye,
-  and you need a valid OpenEye license. To install both packages, use::
-
-    $ mamba install -c openeye perses openeye-toolkits
 
 HPC Environments
 ----------------
@@ -567,7 +466,7 @@ For example, on a login node where there likely is not a GPU or a CUDA environme
 Now if we run the same command on a HPC node that has a GPU ::
 
   $ mamba info
-    
+
                 mamba version : 1.5.1
          active environment : base
         active env location : /lila/home/henrym3/mamba/envs/QA-openfe-0.14.0
@@ -637,14 +536,99 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 
   $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version|
 
+Reproducible builds with a ``conda-lock`` file
+----------------------------------------------
+
+.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
+
+A `conda-lock`_ file is a cross-platform way of specifying a conda environment to build packages in a reproducible way.
+Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
+We recommend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
+
+
+.. note::
+
+   You will likely need to install ``conda-lock``.
+   We strongly recommend installing ``conda-lock`` in a new virtual environment.
+   This will reduce the chance of dependency conflicts ::
+
+       $ # Install conda lock into a virtual environment
+       $ conda create -n conda-lock -c conda-lock
+       $ # Activate the environment to use the conda-lock command
+       $ conda activate conda-lock
+
+See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
+
+The latest version of the `conda-lock` file we provide can be downloaded with ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml
+
+If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
+
+Create a conda environment from the lock file and activate it::
+
+  $ conda-lock install -n openfe openfe-conda-lock.yml
+  $ conda activate openfe
+
+.. note::
+
+   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
+
+       $ micromamba create -n openfe --file openfe-conda-lock.yml
+       $ micromamba activate openfe
+
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe openfecli
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+
+With that, you should be ready to use ``openfe``!
+
+Developer install
+-----------------
+
+If you're going to be developing for ``openfe``, you will want an
+installation where your changes to the code are immediately reflected in the
+functionality. This is called a "developer" or "editable" installation.
+
+Getting a developer installation for ``openfe`` first installing the
+requirements, and then creating the editable installation. We recommend
+doing that with ``mamba`` using the following procedure:
+
+First, clone the ``openfe`` repository, and switch into its root directory::
+
+  $ git clone https://github.com/OpenFreeEnergy/openfe.git
+  $ cd openfe
+
+Next create a ``conda`` environment containing the requirements from the
+specification in that directory::
+
+  $ mamba create -f environment.yml
+
+Then activate the ``openfe`` environment with::
+
+  $ mamba activate openfe_env
+
+Finally, create the editable installation::
+
+  $ python -m pip install --no-deps -e .
+
+Note the ``.`` at the end of that command, which indicates the current
+directory.
+
 Troubleshooting Your Installation
 ---------------------------------
 
-We have create a script that can be ran locally to assist in troubleshooting errors.
+We have created a script that can be run locally to assist in troubleshooting errors.
 The script does not upload any information and the output may be inspected before the output is sent to us.
-We recomend running the script in the same environment where the error was observed.
+We recommend running the script in the same environment where the error was observed.
 For example, if you had an error when creating a system on your local workstation, run the script locally with the same conda environment active as when the error occurred.
-If the error occurred when running the job on an HPC resource, then run the script (ideally) on the same node where the problem occurred. 
+If the error occurred when running the job on an HPC resource, then run the script (ideally) on the same node where the problem occurred.
 This helps to debug issues such as a CUDA and NVIDIA driver mismatch (which would be impossible to diagnose if the script was ran on a login node without a GPU).
 
 The script is available here: https://github.com/OpenFreeEnergy/openfe/blob/main/devtools/debug_openmm.sh
@@ -652,35 +636,47 @@ For your convenience, this command will download the script and save the output 
 
 .. parsed-literal::
 
-
   $ bash -c "$(curl -Ls https://raw.githubusercontent.com/OpenFreeEnergy/openfe/main/devtools/debug_openmm.sh)" | tee -a debug.log
 
 The output of the script will also be printed to standard out as it is executed.
 While no sensitive information is extracted, it is good practice to review the output before sending it or posting it to ensure that nothing needs to be redacted.
 For example, if your python path was ``/data/SECRET_COMPOUND_NAME/python`` then that would show up in ``debug.log``.
 
- 
+
 Common Errors
 -------------
 
-openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VERSION (222)
-  This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
-  Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
-  See :ref:`installation:mamba_hpc` for more details.
+.. parsed-literal::
 
+  openmm.OpenMMException: Error loading CUDA module: CUDA_ERROR_UNSUPPORTED_PTX_VERSION (222)
+
+This error likely means that the CUDA version that ``openmm`` was built with is incompatible with the CUDA driver.
+Try re-making the environment while specifying the correct CUDA toolkit version for your hardware and driver.
+See :ref:`installation:mamba_hpc` for more details.
+
+Optional dependencies
+---------------------
+
+Certain functionalities are only available if you also install other,
+optional packages.
+
+* **perses tools**: To use perses, you need to install perses and OpenEye,
+  and you need a valid OpenEye license. To install both packages, use::
+
+    $ mamba install -c openeye perses openeye-toolkits
 
 Supported Hardware
 ------------------
 
 We currently support the following CPU architectures:
 
-* ``linux-64`` 
+* ``linux-64``
 * ``osx-64``
 * ``osx-arm64``
 
 For simulation preparation, any supported platform is suitable.
 We test our software regularly by performing vacuum transformations on ``linux-64`` using the OpenMM CUDA platform.
-While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA platform is more performant) so we do not recomend using that platform without performing your own verification of correctness.
-For production use, we recomend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
-When using an OpenMM based protocol on NVIDIA GPUs, we recomend driver version ``525.60.13`` or greater.
+While OpenMM supports OpenCL, we do not regularly test that platform (the CUDA platform is more performant) so we do not recommend using that platform without performing your own verification of correctness.
+For production use, we recommend the ``linux-64`` platform with NVIDIA GPUs for optimal performance.
+When using an OpenMM based protocol on NVIDIA GPUs, we recommend driver version ``525.60.13`` or greater.
 The minimum driver version required when installing from conda-forge is ``450.36.06``, but newer versions of OpenMM may not support that driver version as CUDA 11 will be removed the build matrix.

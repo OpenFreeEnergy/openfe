@@ -13,6 +13,7 @@ from gufe import SmallMoleculeComponent, AlchemicalNetwork, SolventComponent
 from gufe.tokenization import JSON_HANDLER
 import json
 import numpy as np
+from openff.utilities.testing import skip_if_missing
 
 @pytest.fixture(scope='session')
 def mol_dir_args(tmpdir_factory):
@@ -52,7 +53,8 @@ def validate_charges(smc):
     assert off_mol.partial_charges is not None
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
-
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rhfe_network_main():
     from openfe.setup import (
         LomapAtomMapper,
@@ -102,6 +104,8 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
@@ -167,14 +171,15 @@ mapper:
   settings:
     time: 45
     element_change: True
-    
+
 partial_charge:
   method: nagl
   settings:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tmpdir):
     settings_path = tmpdir / "settings.yaml"
     with open(settings_path, "w") as f:
@@ -196,6 +201,8 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
     pytest.param(True, id="Overwrite"),
     pytest.param(False, id="No overwrite")
 ])
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_nagl_settings, overwrite):
     # make sure the dummy charges are overwritten when requested
 
