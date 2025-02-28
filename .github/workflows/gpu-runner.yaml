@@ -53,9 +53,8 @@ jobs:
         run: "nvidia-smi"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: '1.5.6-0'
           environment-file: environment.yml
           environment-name: openfe_env
           condarc: |
@@ -68,9 +67,6 @@ jobs:
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
-
-      - name: "Install GUFE from main@HEAD"
-        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
@@ -100,7 +96,7 @@ jobs:
           DUECREDIT_ENABLE: 'yes'
           OFE_INTEGRATION_TESTS: TRUE
         run: |
-          pytest -n 4 -v --durations=10
+          pytest -n logical -vv --durations=10
 
   stop-aws-runner:
     runs-on: ubuntu-latest
