@@ -49,9 +49,6 @@ jobs:
       - name: Print Docker details
         run: "docker version || true"
 
-      - name: Check for nvidia-smi
-        run: "nvidia-smi"
-
       - name: "Setup Micromamba"
         uses: mamba-org/setup-micromamba@v2
         with:
