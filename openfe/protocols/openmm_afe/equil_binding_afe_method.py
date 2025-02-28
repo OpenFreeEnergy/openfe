@@ -107,7 +107,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
         if any(len(pur_list) > 2 for pur_list
-               in itertools.chain(self.data['solvent'].values(), self.data['vacuum'].values())):
+               in itertools.chain(self.data['solvent'].values(), self.data['complex'].values())):
             raise NotImplementedError("Can't stitch together results yet")
 
     def get_individual_estimates(self) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
@@ -123,9 +123,10 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
           estimates and, for 'solvent' and 'complex', the associated MBAR
           uncertainties for each repeat of that simulation type.
 
-        TODO
-        ----
-        * Work out poperly what to do with the standard state correction.
+        Notes
+        -----
+        * Standard state correction has no error and so will return a value
+          of 0.
         """
         complex_dGs = []
         correction_dGs = []
@@ -137,7 +138,8 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
                 pus[0].outputs['unit_estimate_error']
             ))
             correction_dGs.append((
-                pus[0].outputs['standard_state_correction']
+                pus[0].outputs['standard_state_correction'],
+                0 * unit.kilocalorie_per_mole  # correction has no error
             ))
 
         for pus in self.data['solvent'].values():
@@ -465,17 +467,17 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             complex_lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.1,
-                    0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0],
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0],
                 lambda_vdw=[
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1,
-                    0.2, 0.3, 0.4, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
                 lambda_restraints=[
                     0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0],
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
@@ -515,7 +517,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 log_output='equil_simulation.log',
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
-                n_replicas=28,
+                n_replicas=30,
                 equilibration_length=1 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
             ),
@@ -582,8 +584,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
     @staticmethod
     def _validate_lambda_schedule(
-            lambda_settings: LambdaSettings,
-            simulation_settings: MultiStateSimulationSettings,
+        lambda_settings: LambdaSettings,
+        simulation_settings: MultiStateSimulationSettings,
     ) -> None:
         """
         Checks that the lambda schedule is set up correctly.

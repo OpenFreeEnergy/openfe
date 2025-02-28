@@ -1010,7 +1010,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             return_dict = analyzer.unit_results_dict
 
             if standard_state_corr is not None:
-                return_dict['standard_state_correction'] = standard_state_corr
+                return_dict['standard_state_correction'] = standard_state_corr.to('kilocalorie_per_mole')
 
             return return_dict
 
