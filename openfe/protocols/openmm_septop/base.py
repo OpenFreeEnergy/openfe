@@ -71,7 +71,6 @@ from ..openmm_utils import (
 )
 from openfe.utils import without_oechem_backend
 
-from .femto_restraints import select_ligand_idxs
 from .utils import serialize, deserialize, SepTopParameterState
 from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
@@ -296,7 +295,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             verbose=self.verbose,
             shared_basepath=self.shared_basepath,
         )
-        state = simulation.context.getState(getPositions=True)
+        state = simulation.context.getState(getPositions=True,
+                                            enforcePeriodicBox=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
 
         # cautiously delete out contexts & integrator
@@ -879,12 +879,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                     :] / omm_units.nanometers * unit.nanometer
         self._set_positions(off_B, lig_B_pos)
 
-        ligand_A_ref_inxs, ligand_B_ref_inxs = select_ligand_idxs(off_A, off_B)
-
-        ligand_A_inxs = tuple([atom_indices_AB_A[inx] for inx in ligand_A_ref_inxs])
-        ligand_B_inxs = tuple([atom_indices_AB_B[inx] for inx in ligand_B_ref_inxs])
-        print(ligand_A_inxs)
-        print(ligand_B_inxs)
         # Get the MDA Universe for the restraints selection
         out_pdb = self.shared_basepath / settings['equil_output_settings'].equil_npt_structure
         out_traj = self.shared_basepath / settings[

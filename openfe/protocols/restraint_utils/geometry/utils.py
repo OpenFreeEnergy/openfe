@@ -28,7 +28,6 @@ from MDAnalysis.lib.distances import (
     distance_array,
 )
 from MDAnalysis.transformations.nojump import NoJump
-# from openfe_analysis.transformations import NoJump
 
 from openfe_analysis.transformations import Aligner
 

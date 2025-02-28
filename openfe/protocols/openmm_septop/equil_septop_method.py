@@ -69,12 +69,6 @@ from ..openmm_utils import system_validation, settings_validation
 from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
 from openfe.utils import log_system_probe
 from openfe.due import due, Doi
-from .femto_restraints import (
-    select_receptor_idxs,
-    check_receptor_idxs,
-    create_boresch_restraint,
-)
-from .femto_utils import assign_force_groups
 from openff.units.openmm import to_openmm
 from rdkit import Chem
 import MDAnalysis as mda
@@ -1053,13 +1047,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
                                         settings['restraint_settings'].K_thetaB
                                 ) / 2
 
-            # boresch_A = find_boresch_restraint(
-            #     u_A,
-            #     ligand_1,
-            #     ligand_1_inxs,
-            #     protein_inxs,
-            #     host_selection='name C or name CA or name CB or name N or name O',
-            #     dssp_filter=True)
             rest_geom_A = geometry.boresch.find_boresch_restraint(
                 universe=u_A,
                 guest_rdmol=ligand_1,
@@ -1105,15 +1092,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             raise NotImplementedError(
                 "Other restraint types are not yet available"
             )
-        #
-        #
-        # boresch_B = find_boresch_restraint(
-        #     u_B,
-        #     ligand_2,
-        #     ligand_2_inxs_B,
-        #     protein_inxs,
-        #     host_selection='name C or name CA or name CB or name N or name O',
-        #     dssp_filter=True)
+
 
         if self.verbose:
             self.logger.info(f"restraint geometry is: A: {rest_geom_A}"
@@ -1161,36 +1140,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         )
         return restraint_parameter_state, correction_A, correction_B, thermodynamic_state.system
 
-        # # Convert restraint units to openmm
-        # k_distance = to_openmm(settings["restraint_settings"].k_distance)
-        # k_theta = to_openmm(settings["restraint_settings"].k_theta)
-        #
-        # restraint_A = omm_restraints.BoreschRestraint(
-        #     settings['restraint_settings'],
-        # )
-        # force_A = create_boresch_restraint(
-        #     boresch_A.host_atoms[::-1],  # expects [r3, r2, r1], not [r1, r2, r3]
-        #     boresch_A.guest_atoms,
-        #     positions_AB,
-        #     k_distance,
-        #     k_theta,
-        #     "lambda_restraints_A",
-        # )
-        # system.addForce(force_A)
-        # force_B = create_boresch_restraint(
-        #     boresch_B.host_atoms[::-1],
-        #     # expects [r3, r2, r1], not [r1, r2, r3]
-        #     boresch_B.guest_atoms,
-        #     positions_AB,
-        #     k_distance,
-        #     k_theta,
-        #     "lambda_restraints_B",
-        # )
-        # system.addForce(force_B)
-        #
-        # assign_force_groups(system)
-        #
-        # return system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
