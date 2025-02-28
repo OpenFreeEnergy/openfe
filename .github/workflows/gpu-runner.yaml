@@ -18,7 +18,7 @@ jobs:
           aws-region: us-east-2
       - name: Create cloud runner
         id: aws-start
-        uses: omsf-eco-infra/gha-runner@v0.2.0
+        uses: omsf-eco-infra/gha-runner@v0.4.0
         with:
           provider: "aws"
           action: "start"

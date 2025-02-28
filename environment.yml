@@ -28,7 +28,7 @@ dependencies:
   - openfe-analysis>=0.3.1
   - click
   - typing-extensions
-  - openmm >=8.0.0,!=8.1.0,<8.2.0
+  - openmm ~=8.2.0
   - openmmtools >=0.24.1
   - openmmforcefields
   - perses>=0.10.3
@@ -49,3 +49,4 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@v1.2.0
+    - git+https://github.com/mdtraj/mdtraj.git@main
