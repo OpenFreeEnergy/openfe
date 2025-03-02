@@ -179,7 +179,7 @@ def find_guest_atom_candidates(
     rdmol: Chem.Mol,
     guest_idxs: list[int],
     rmsf_cutoff: unit.Quantity = 1 * unit.nanometer,
-) -> list[tuple[int]]:
+) -> list[tuple[int, int, int]]:
     """
     Get a list of potential ligand atom choices for a Boresch restraint
     being applied to a given small molecule.
