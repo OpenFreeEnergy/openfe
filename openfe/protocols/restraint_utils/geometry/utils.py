@@ -80,7 +80,7 @@ def _get_mda_selection(
     return ag
 
 
-def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
+def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
     Get a list of tuples with the indices for each ring in an rdkit Molecule.
 
@@ -91,7 +91,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
 
     Returns
     -------
-    list[tuple[int]]
+    list[set[[int]]
       List of tuples for each ring.
     """
 
@@ -192,7 +192,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
 
 
 def is_collinear(
-    positions: npt.ArrayLike,
+    positions: npt.Array,
     atoms: list[int],
     dimensions=None,
     threshold=0.9
@@ -209,7 +209,7 @@ def is_collinear(
 
     Parameters
     ----------
-    positions : npt.ArrayLike
+    positions : npt.Array
       System positions.
     atoms : list[int]
       The indices of the atoms to test.
