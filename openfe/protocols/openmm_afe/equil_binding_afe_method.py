@@ -958,7 +958,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-    ) -> [GlobalParameterState, unit.Quantity, System]:
+    ) -> tuple[GlobalParameterState, unit.Quantity, System]:
         """
         Find and add restraints to the OpenMM System.
 
