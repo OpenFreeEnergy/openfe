@@ -7,6 +7,7 @@
 # To get a newer version, you will need to update the SHA.
 # You can also reference a tag or branch, but the action may change without warning.
 
+# Workflow to automate docker image building during the openfe release process.
 name: Create and publish a Docker image
 
 on:
@@ -14,7 +15,7 @@ on:
 
 defaults:
   run:
-    shell: bash -l {0}
+    shell: bash -leo pipefail {0}
 
 env:
   REGISTRY: ghcr.io
@@ -94,9 +95,9 @@ jobs:
         run: |
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --help
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} openfe --version
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(gufe.__version__)"
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import gufe; print(f'{gufe.__version__=}')"
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs gufe -v
-          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe -v
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} pytest --pyargs openfe openfecli -v
 
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
@@ -123,7 +124,7 @@ jobs:
           cd test_apptainer
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
-          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfe -v -n auto
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfe openfecli -v -n auto
           echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}-apptainer
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-apptainer

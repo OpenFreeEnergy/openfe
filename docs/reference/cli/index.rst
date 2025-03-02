@@ -10,3 +10,4 @@ CLI Reference
     plan_rbfe_network
     quickrun
     gather
+    charge_molecules
