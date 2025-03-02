@@ -73,6 +73,14 @@ def find_host_atom_candidates(
     # Filter the host AtomGroup based on ``host_selection`
     selected_host_ag = host_ag.select_atoms(host_selection)
 
+    # If the host_selection does not work, raise an error
+    if len(selected_host_ag) < 3:
+        errmsg = (
+            "Boresch-like restraint generation: "
+            f"too few atoms selected by ``host_selection``: {host_selection}"
+        )
+        raise ValueError(errmsg)
+
     # If requested, filter the host atoms based on if their residues exist
     # within stable secondary structures.
     if dssp_filter:

@@ -80,7 +80,7 @@ def _get_mda_selection(
     return ag
 
 
-def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
+def get_aromatic_rings(rdmol: Chem.Mol) -> list[set[int]]:
     """
     Get a list of tuples with the indices for each ring in an rdkit Molecule.
 
@@ -91,7 +91,7 @@ def get_aromatic_rings(rdmol: Chem.Mol) -> list[tuple[int, ...]]:
 
     Returns
     -------
-    list[tuple[int]]
+    list[set[[int]]
       List of tuples for each ring.
     """
 
@@ -192,8 +192,8 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
 
 
 def is_collinear(
-    positions: npt.ArrayLike,
-    atoms: list[int],
+    positions: npt.NDArray,
+    atoms: Union[list[int], tuple[int, ...]],
     dimensions=None,
     threshold=0.9
 ):
@@ -209,7 +209,7 @@ def is_collinear(
 
     Parameters
     ----------
-    positions : npt.ArrayLike
+    positions : npt.NDArray
       System positions.
     atoms : list[int]
       The indices of the atoms to test.
@@ -668,7 +668,7 @@ def stable_secondary_structure_selection(
     if not _atomgroup_has_bonds(copy_protein_ag):
         wmsg = "No bonds found in input Universe, will attept to guess them."
         warnings.warn(wmsg)
-        protein_ag.guess_bonds()
+        copy_protein_ag.guess_bonds()
 
     structures = []  # container for all contiguous secondary structure units
     # Counter for each residue type found

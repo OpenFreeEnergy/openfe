@@ -133,12 +133,12 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     The equilibrium force constant for the dihedral formed by
     H0-G0-G1-G2.
     """
-    host_selection: Optional[str] = "backbone"
+    host_selection: str = "backbone"
     """
     Boresch-like restraint search parameter.
     An MDAnalysis selection string to sub-select the host atoms which will be involved in the restraint.
     """
-    dssp_filter: Optional[bool] = True
+    dssp_filter: bool = True
     """
     Boresch-like restraint search parameter.
     Whether or not to try to do a DSSP filter on the host atoms.
