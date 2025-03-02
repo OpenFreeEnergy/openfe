@@ -67,7 +67,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
 
 def _get_restraint_distances(
     atomgroup: mda.AtomGroup
-) -> tuple[unit.Quantity]:
+) -> tuple[unit.Quantity, unit.Quantity, unit.Quantity, unit.Quantity, unit.Quantity, unit.Quantity]:
     """
     Get the bond, angle, and dihedral distances for an input atomgroup
     defining the six atoms for a Boresch-like restraint.
