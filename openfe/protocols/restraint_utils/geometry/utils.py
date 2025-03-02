@@ -193,7 +193,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
 
 def is_collinear(
     positions: npt.NDArray,
-    atoms: Union[list[int], tuple[int]],
+    atoms: Union[list[int, ...], tuple[int, ...]],
     dimensions=None,
     threshold=0.9
 ):
