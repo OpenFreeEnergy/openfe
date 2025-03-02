@@ -33,6 +33,7 @@ from gufe.settings.models import SettingsBaseModel
 
 from openfe.protocols.restraint_utils.geometry import (
     BaseRestraintGeometry,
+    HostGuestRestraintGeometry,
     DistanceRestraintGeometry,
     BoreschRestraintGeometry
 )
@@ -187,7 +188,7 @@ class SingleBondMixin:
     A mixin to extend geometry checks for Forces that can only hold
     a single atom.
     """
-    def _verify_geometry(self, geometry: BaseRestraintGeometry):
+    def _verify_geometry(self, geometry: HostGuestRestraintGeometry):
         if len(geometry.host_atoms) != 1 or len(geometry.guest_atoms) != 1:
             errmsg = (
                 "host_atoms and guest_atoms must only include a single index "
@@ -218,7 +219,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     def add_force(
         self,
         thermodynamic_state: ThermodynamicState,
-        geometry: DistanceRestraintGeometry,
+        geometry: BaseRestraintGeometry,
         controlling_parameter_name: str = "lambda_restraints",
     ) -> None:
         """
