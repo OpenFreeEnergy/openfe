@@ -192,7 +192,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
 
 
 def is_collinear(
-    positions: npt.Array,
+    positions: npt.NDArray,
     atoms: list[int],
     dimensions=None,
     threshold=0.9
@@ -209,7 +209,7 @@ def is_collinear(
 
     Parameters
     ----------
-    positions : npt.Array
+    positions : npt.NDArray
       System positions.
     atoms : list[int]
       The indices of the atoms to test.
