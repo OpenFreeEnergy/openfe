@@ -125,7 +125,7 @@ class BaseHostGuestRestraints(abc.ABC):
     def add_force(
         self,
         thermodynamic_state: ThermodynamicState,
-        geometry: BaseRestraintGeometry,
+        geometry,
         controlling_parameter_name: str,
     ):
         """
@@ -196,7 +196,7 @@ class SingleBondMixin:
                 f"{len(geometry.guest_atoms)} respectively."
             )
             raise ValueError(errmsg)
-        super(SingleBondMixin, self)._verify_geometry(geometry)
+        super(SingleBondMixin, self)._verify_geometry(geometry)  # type: ignore
 
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
@@ -219,7 +219,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     def add_force(
         self,
         thermodynamic_state: ThermodynamicState,
-        geometry: BaseRestraintGeometry,
+        geometry: DistanceRestraintGeometry,
         controlling_parameter_name: str = "lambda_restraints",
     ) -> None:
         """
