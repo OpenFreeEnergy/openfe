@@ -35,6 +35,7 @@ from openfe.protocols.restraint_utils.geometry import (
     BaseRestraintGeometry,
     HostGuestRestraintGeometry,
     DistanceRestraintGeometry,
+    FlatBottomDistanceGeometry,
     BoreschRestraintGeometry
 )
 
@@ -351,7 +352,7 @@ class FlatBottomBondRestraint(
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry: FlatBottomDistanceGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -400,7 +401,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry: FlatBottomDistanceGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
