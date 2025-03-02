@@ -41,6 +41,8 @@ from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openmmtools import multistate
 from openmmtools.states import ThermodynamicState, GlobalParameterState
+from openmm.app import Topology as omm_topology
+from openmm import unit as omm_unit
 from rdkit import Chem
 from typing import Optional, Union
 from typing import Any, Iterable
@@ -567,7 +569,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)
         if len(diff[0]) > 1:
-            errmsg = ("More than unique components found in stateA, "
+            errmsg = ("More than one unique components found in stateA, "
                       "only one alchemical species is supported")
             raise ValueError(errmsg)
 
@@ -819,8 +821,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
 
     @staticmethod
     def _get_mda_universe(
-        topology: openmm.app.Topology,
-        positions: openmm.unit.Quantity,
+        topology: omm_topology,
+        positions: omm_unit.Quantity,
         trajectory: Optional[pathlib.Path],
     ) -> mda.Universe:
         """
@@ -861,7 +863,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
 
     @staticmethod
     def _get_idxs_from_residxs(
-        topology: openmm.app.Topology,
+        topology: omm_topology,
         residxs: list[int],
     ) -> list[int]:
         """
@@ -949,8 +951,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     def _add_restraints(
         self,
         system: openmm.System,
-        topology: openmm.app.Topology,
-        positions: openmm.unit.Quantity,
+        topology: omm_topology,
+        positions: omm_unit.Quantity,
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],

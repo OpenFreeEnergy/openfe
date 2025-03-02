@@ -39,6 +39,11 @@ def test_create_default_settings():
     assert settings
 
 
+def test_negative_repeats_settings(default_settings):
+    with pytest.raises(ValueError, match="protocol_repeats must be a positive"):
+        default_settings.protocol_repeats = -1
+
+
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, -1], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
     {'elec': [0.0, 1.5], 'vdw': [0.0, 1.5], 'restraints': [-0.1, 1.0]}
@@ -150,23 +155,20 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
-def test_validate_solvent_endstates_protcomp(
-    benzene_modifications, T4_protein_component
+def test_validate_no_protcomp(
+    benzene_modifications,
 ):
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
         'solvent': SolventComponent()
     })
 
     stateB = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
-        'phenol': benzene_modifications['phenol'],
         'solvent': SolventComponent(),
     })
 
-
-    errmsg = "Only dissapearing small molecule components"
+    errmsg = "No ProteinComponent found"
     with pytest.raises(ValueError, match=errmsg):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
@@ -191,6 +193,47 @@ def test_validate_endstates_nosolvcomp_stateA(
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
+def test_validate_endstates_multiple_uniqueA(
+    benzene_modifications, T4_protein_component
+):
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'toluene': benzene_modifications['toluene'],
+        'protein': T4_protein_component,
+        'solvlent': SolventComponent(),
+    })
+
+    stateB = ChemicalSystem({
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    with pytest.raises(
+        ValueError, match='More than one unique'
+    ):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
+def test_validate_solvent_endstates_protcomp_missing(
+    benzene_modifications, T4_protein_component
+):
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'phenol': benzene_modifications['phenol'],
+        'solvent': SolventComponent(),
+    })
+
+    errmsg = "Only dissapearing small molecule components"
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
 def test_validate_endstates_nosolvcomp_stateB(
     benzene_modifications, T4_protein_component
 ):
@@ -211,25 +254,27 @@ def test_validate_endstates_nosolvcomp_stateB(
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-#def test_validate_alchem_comps_multi(benzene_modifications):
-#    stateA = ChemicalSystem({
-#        'benzene': benzene_modifications['benzene'],
-#        'toluene': benzene_modifications['toluene'],
-#        'solvent': SolventComponent()
-#    })
-#
-#    stateB = ChemicalSystem({
-#        'solvent': SolventComponent()
-#    })
-#
-#    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-#
-#    assert len(alchem_comps['stateA']) == 2
-#
-#    with pytest.raises(ValueError, match='More than one alchemical'):
-#        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
-#
-#
+def test_validate_endstates_unique_stateB(
+    benzene_modifications, T4_protein_component
+):
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    stateB = ChemicalSystem({
+        'toluene': benzene_modifications['toluene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    with pytest.raises(
+        ValueError, match="Unique components are found in stateB"
+    ):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
 #def test_vac_bad_nonbonded(benzene_modifications):
 #    settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
 #    settings.vacuum_forcefield_settings.nonbonded_method = 'pme'
