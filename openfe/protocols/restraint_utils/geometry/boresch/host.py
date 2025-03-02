@@ -74,7 +74,7 @@ def find_host_atom_candidates(
     selected_host_ag = host_ag.select_atoms(host_selection)
 
     # If the host_selection does not work, raise an error
-    if len(select_host_ag) < 3:
+    if len(selected_host_ag) < 3:
         errmsg = (
             "Boresch-like restraint generation: "
             f"too few atoms selected by ``host_selection``: {host_selection}"
