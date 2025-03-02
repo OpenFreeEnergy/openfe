@@ -43,6 +43,7 @@ from openmmtools import multistate
 from openmmtools.states import ThermodynamicState, GlobalParameterState
 from openmm.app import Topology as omm_topology
 from openmm import unit as omm_unit
+from openmm import System
 from rdkit import Chem
 from typing import Optional, Union
 from typing import Any, Iterable
@@ -847,19 +848,20 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         from MDAnalysis.coordinates.memory import MemoryReader
         # If the trajectory file doesn't exist, then we use positions
         if trajectory is not None and trajectory.is_file():
-            trajectory_format=None
+            return mda.Universe(
+                topology,
+                trajectory,
+                topology_format="OPENMMTOPOLOGY",
+            )
         else:
-            # Convert positions from Quantity to array
-            # Divide by 10 to go from nm to angstroms
-            trajectory = np.array(positions._value) * 10
-            trajectory_format=MemoryReader
-
-        return mda.Universe(
-            topology,
-            trajectory,
-            topology_format="OPENMMTOPOLOGY",
-            trajectory_format=trajectory_format,
-        )
+            # Positions is an openmm Quantity in nm we need
+            # to convert to angstroms
+            return mda.Universe(
+                topology,
+                np.array(positions._value) * 10,
+                topology_format="OPENMMTOPOLOGY",
+                trajectory_format=MemoryReader
+            )
 
     @staticmethod
     def _get_idxs_from_residxs(
@@ -950,13 +952,13 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
 
     def _add_restraints(
         self,
-        system: openmm.System,
+        system: System,
         topology: omm_topology,
         positions: omm_unit.Quantity,
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-    ) -> [GlobalParameterState, unit.Quantity, openmm.System]:
+    ) -> [GlobalParameterState, unit.Quantity, System]:
         """
         Find and add restraints to the OpenMM System.
 

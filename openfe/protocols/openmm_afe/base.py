@@ -569,7 +569,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             ('lambda_sterics', lambda_vdw),
             ('lambda_restraints', lambda_rest),
         ]:
-            lambdas[name] = [1-x for x in schedule]
+            lambdas[name] = np.array([1-x for x in schedule])
 
         return lambdas
 
