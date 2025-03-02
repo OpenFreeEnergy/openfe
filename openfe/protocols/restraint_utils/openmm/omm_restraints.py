@@ -270,7 +270,9 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
           with kilojoule per mole.
         """
         self._verify_geometry(geometry)
-        force = self._get_force(geometry)
+        # Note: this is a throw-away force, so we hard code the
+        # controlling parameter name
+        force = self._get_force(geometry, 'lambda_restraints')
         corr = force.compute_standard_state_correction(
             thermodynamic_state, volume="system"
         )
