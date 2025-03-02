@@ -7,7 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Union, Optional
+from typing import Union, Optional, Iterable
 from itertools import combinations, groupby
 import numpy as np
 import numpy.typing as npt
@@ -193,7 +193,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
 
 def is_collinear(
     positions: npt.NDArray,
-    atoms: list[int],
+    atoms: Iterable[int],
     dimensions=None,
     threshold=0.9
 ):
