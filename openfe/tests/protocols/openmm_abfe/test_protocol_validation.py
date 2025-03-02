@@ -255,3 +255,35 @@ def test_validate_endstates_unique_stateB(
         ValueError, match="Unique components are found in stateB"
     ):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
+def test_indices_not_all(
+    benzene_modifications, T4_protein_component,
+):
+    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.complex_equil_output_settings.output_indices = "not water"
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(
+            settings=s,
+    )
+
+    stateA = ChemicalSystem({
+        'benzene': benzene_modifications['benzene'],
+        'protein': T4_protein_component,
+        'solvent': SolventComponent()
+    })
+
+    stateB = ChemicalSystem({
+        'protein': T4_protein_component,
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    with pytest.raises(ValueError, match='need to output the full system'):
+        dag = protocol.create(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=None,
+        )
