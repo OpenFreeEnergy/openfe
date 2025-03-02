@@ -173,7 +173,7 @@ class BaseHostGuestRestraints(abc.ABC):
     @abc.abstractmethod
     def _get_force(
         self,
-        geometry: BaseRestraintGeometry,
+        geometry,
         controlling_parameter_name: str,
     ):
         """
