@@ -148,7 +148,7 @@ class BaseHostGuestRestraints(abc.ABC):
     def get_standard_state_correction(
         self,
         thermodynamic_state: ThermodynamicState,
-        geometry: BaseRestraintGeometry
+        geometry,
     ) -> unit.Quantity:
         """
         Get the standard state correction for the Force when
