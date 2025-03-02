@@ -189,7 +189,7 @@ class SingleBondMixin:
     A mixin to extend geometry checks for Forces that can only hold
     a single atom.
     """
-    def _verify_geometry(self, geometry: HostGuestRestraintGeometry):  # type: ignore
+    def _verify_geometry(self, geometry: HostGuestRestraintGeometry):
         if len(geometry.host_atoms) != 1 or len(geometry.guest_atoms) != 1:
             errmsg = (
                 "host_atoms and guest_atoms must only include a single index "
@@ -288,6 +288,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         raise NotImplementedError("only implemented in child classes")
 
 
+#  Note: we type ignore this class due to mypy issues with the mixin method
 class HarmonicBondRestraint(  # type: ignore[misc]
     BaseRadiallySymmetricRestraintForce, SingleBondMixin
 ):
@@ -335,6 +336,7 @@ class HarmonicBondRestraint(  # type: ignore[misc]
         )
 
 
+#  Note: we type ignore this class due to mypy issues with the mixin method
 class FlatBottomBondRestraint(  # type: ignore[misc]
     BaseRadiallySymmetricRestraintForce, SingleBondMixin
 ):
@@ -446,7 +448,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
