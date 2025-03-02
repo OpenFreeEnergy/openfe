@@ -209,7 +209,7 @@ def find_boresch_restraint(
 
         # Set the equilibrium values as those of the final frame
         universe.trajectory[-1]
-        atomgroup = universe.atoms[host_anchor + guest_anchor]
+        atomgroup = universe.atoms[host_atoms + guest_atoms]
         bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
             atomgroup
         )
