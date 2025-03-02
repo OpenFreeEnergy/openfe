@@ -288,7 +288,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         raise NotImplementedError("only implemented in child classes")
 
 
-class HarmonicBondRestraint(
+class HarmonicBondRestraint(  # type: ignore[misc]
     BaseRadiallySymmetricRestraintForce, SingleBondMixin
 ):
     """
@@ -335,7 +335,7 @@ class HarmonicBondRestraint(
         )
 
 
-class FlatBottomBondRestraint(
+class FlatBottomBondRestraint(  # type: ignore[misc]
     BaseRadiallySymmetricRestraintForce, SingleBondMixin
 ):
     """
@@ -352,7 +352,7 @@ class FlatBottomBondRestraint(
     """
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,
+        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -401,7 +401,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,
+        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
