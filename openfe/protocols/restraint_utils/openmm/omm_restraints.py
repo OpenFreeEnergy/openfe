@@ -189,7 +189,7 @@ class SingleBondMixin:
     A mixin to extend geometry checks for Forces that can only hold
     a single atom.
     """
-    def _verify_geometry(self, geometry: HostGuestRestraintGeometry):
+    def _verify_geometry(self, geometry: HostGuestRestraintGeometry):  # type: ignore
         if len(geometry.host_atoms) != 1 or len(geometry.guest_atoms) != 1:
             errmsg = (
                 "host_atoms and guest_atoms must only include a single index "
