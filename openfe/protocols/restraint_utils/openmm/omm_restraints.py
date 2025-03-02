@@ -77,7 +77,7 @@ class RestraintParameterState(GlobalParameterState):
     )
 
     @lambda_restraints.validator
-    def lambda_restraints(self, instance, new_value):
+    def lambda_restraints(self, instance, new_value):  # type: ignore
         if new_value is not None and not (0.0 <= new_value <= 1.0):
             errmsg = (
                 "lambda_restraints must be between 0.0 and 1.0 "
