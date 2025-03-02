@@ -199,11 +199,11 @@ def find_boresch_restraint(
         # In this case assume the picked atoms were intentional /
         # representative of the input and go with it
         guest_ag = universe.select_atoms[guest_idxs]
-        guest_anchor = [
+        guest_atoms = [
             at.ix for at in guest_ag.atoms[guest_restraint_atoms_idxs]
         ]
         host_ag = universe.select_atoms[host_idxs]
-        host_anchor = [
+        host_atoms = [
             at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]
         ]
 
@@ -217,8 +217,8 @@ def find_boresch_restraint(
         # TODO: add checks to warn if this is a badly picked
         # set of atoms.
         return BoreschRestraintGeometry(
-            host_atoms=host_anchor,
-            guest_atoms=guest_anchor,
+            host_atoms=host_atoms,
+            guest_atoms=guest_atoms,
             r_aA0=bond,
             theta_A0=ang1,
             theta_B0=ang2,
