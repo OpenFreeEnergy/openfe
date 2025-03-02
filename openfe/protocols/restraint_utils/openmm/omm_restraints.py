@@ -196,7 +196,7 @@ class SingleBondMixin:
                 f"{len(geometry.guest_atoms)} respectively."
             )
             raise ValueError(errmsg)
-        super()._verify_geometry(geometry)
+        super(SingleBondMixin, self)._verify_geometry(geometry)
 
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
