@@ -287,8 +287,8 @@ def find_boresch_restraint(
     )
 
     return BoreschRestraintGeometry(
-        host_atoms=host_anchor,
-        guest_atoms=guest_anchor,
+        host_atoms=list(host_anchor),
+        guest_atoms=list(guest_anchor),
         r_aA0=bond,
         theta_A0=ang1,
         theta_B0=ang2,
