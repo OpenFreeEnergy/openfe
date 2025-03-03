@@ -69,7 +69,7 @@ def test_charge_molecules_default(methane, tmpdir, caplog):
             )
 
         assert result.exit_code == 0
-        assert "Partial charges are present for" in caplog.text
+        assert "Partial charges have been provided" in caplog.text
         assert "Partial Charge Generation: am1bcc" in result.output
         # make sure the charges have been saved
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
@@ -105,7 +105,7 @@ def test_charge_molecules_overwrite(overwrite, tmpdir, caplog, methane_with_char
             )
         assert result.exit_code == 0
 
-        assert "Partial charges are present for" in caplog.text
+        assert "Partial charges have been provided" in caplog.text
         assert "Partial Charge Generation: am1bcc" in result.output
         if overwrite:
             assert "Overwriting partial charges" in result.output
@@ -152,7 +152,7 @@ def test_charge_settings(methane, tmpdir, caplog, yaml_nagl_settings, ncores):
 
         assert result.exit_code == 0
 
-        assert "Partial charges are present for" in caplog.text
+        assert "Partial charges have been provided" in caplog.text
         assert "Partial Charge Generation: nagl" in result.output
         # make sure the charges have been saved
         methane = SmallMoleculeComponent.from_sdf_file(filename=output_file)
