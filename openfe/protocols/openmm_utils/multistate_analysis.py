@@ -293,7 +293,7 @@ class MultistateEquilFEAnalysis:
             chunks = [max(int(N_l[0] / num_samples * i), 1)
                       for i in range(1, num_samples + 1)]
 
-            # Issue: ????
+            # Issue: 1173
             # If you have too few samples, pymbar will generate an endless loop
             if chunks[0] < 50:
                 return None
