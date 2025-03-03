@@ -192,6 +192,28 @@ def benzene_modifications():
     return files
 
 
+@pytest.fixture(scope='session')
+def charged_benzene_modifications():
+    files = {}
+    with importlib.resources.files('openfe.tests.data.openmm_rfe') as d:
+        fn = str(d / 'charged_benzenes.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope='session')
+def bace_ligands():
+    files = {}
+    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
+        fn = str(d / 'bace1.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
 @pytest.fixture
 def serialization_template():
     def inner(filename):
@@ -222,8 +244,16 @@ def T4_protein_component():
 
     return comp
 
+@pytest.fixture(scope='session')
+def bace_protein_component():
+    with resources.files('openfe.tests.data.openmm_septop') as d:
+        fn = str(d / 'bace.pdb')
+        comp = gufe.ProteinComponent.from_pdb_file(fn, name="BACE")
 
-@pytest.fixture()
+    return comp
+
+
+@pytest.fixture(scope='session')
 def eg5_protein_pdb():
     with resources.files('openfe.tests.data.eg5') as d:
         yield str(d / 'eg5_protein.pdb')
