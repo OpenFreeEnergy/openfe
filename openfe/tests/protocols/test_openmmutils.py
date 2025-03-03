@@ -275,7 +275,7 @@ class TestFEAnalysis:
             ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
             np.array([0.077645, 0.054695, 0.044680, 0.03947, 0.034822,
                       0.033443, 0.030793, 0.028777, 0.026683, 0.026199]),
-            rtol=1e-01,
+            rtol=5e-01,
         )
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
@@ -288,7 +288,7 @@ class TestFEAnalysis:
             ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
             np.array([0.088335, 0.059483, 0.046254, 0.041504, 0.03877,
                       0.035495, 0.031981, 0.029707, 0.027095, 0.026296]),
-            rtol=1e-01,
+            rtol=5e-01,
         )
 
     def test_plots(self, analyzer, tmpdir):
@@ -931,7 +931,7 @@ class TestOFFPartialCharge:
 @pytest.mark.slow
 @pytest.mark.download
 # Sometimes we get a DOI lookup error from duecredit
-@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
+#@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,

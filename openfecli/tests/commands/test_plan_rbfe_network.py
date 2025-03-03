@@ -16,7 +16,7 @@ from gufe import AlchemicalNetwork, SmallMoleculeComponent
 from gufe.tokenization import JSON_HANDLER
 import json
 import numpy as np
-
+from openff.utilities import skip_if_missing
 
 @pytest.fixture(scope='session')
 def mol_dir_args(tmpdir_factory):
@@ -67,6 +67,8 @@ def validate_charges(smc):
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
 
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network_main():
     from gufe import (
         ProteinComponent,
@@ -124,7 +126,8 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_settings):
     """
     smoke test
@@ -147,13 +150,13 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_setting
     # we can get these in either order: 22 first or 55 first
     expected_output_1 = [
         "Small Molecules: SmallMoleculeComponent(name=ligand_23) SmallMoleculeComponent(name=ligand_55)",
-        "- easy_rbfe_ligand_23_complex_ligand_55_complex.json",
-        "- easy_rbfe_ligand_23_solvent_ligand_55_solvent.json",
+        "- rbfe_ligand_23_complex_ligand_55_complex.json",
+        "- rbfe_ligand_23_solvent_ligand_55_solvent.json",
     ]
     expected_output_2 = [
         "Small Molecules: SmallMoleculeComponent(name=ligand_55) SmallMoleculeComponent(name=ligand_23)",
-        "- easy_rbfe_ligand_55_complex_ligand_23_complex.json",
-        "- easy_rbfe_ligand_55_solvent_ligand_23_solvent.json",
+        "- rbfe_ligand_55_complex_ligand_23_complex.json",
+        "- rbfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
     patch_base = (
@@ -197,6 +200,8 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
     pytest.param(True, id="Overwrite"),
     pytest.param(False, id="No overwrite")
 ])
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args, tmpdir, yaml_nagl_settings, overwrite):
     # make sure the dummy charges are overwritten when requested
 
@@ -248,6 +253,8 @@ def eg5_files():
 
 
 @pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
     # use nagl charges for CI speed!
     settings_path = tmpdir / "settings.yaml"
@@ -292,11 +299,9 @@ def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
 
 @pytest.fixture
 def cdk8_files():
-    with resources.files("openfe.tests.data") as p:
-        if not (cdk8_dir := p.joinpath("cdk8")).exists():
-            shutil.unpack_archive(cdk8_dir.with_suffix(".zip"), p)
-        pdb_path = str(cdk8_dir.joinpath("cdk8_protein.pdb"))
-        lig_path = str(cdk8_dir.joinpath("cdk8_ligands.sdf"))
+    with resources.files("openfe.tests.data.cdk8") as p:
+        pdb_path = str(p.joinpath("cdk8_protein.pdb"))
+        lig_path = str(p.joinpath("cdk8_ligands.sdf"))
 
         yield pdb_path, lig_path
 
@@ -338,39 +343,39 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
 
 
 @pytest.fixture
-def custom_yaml_settings():
+def lomap_yaml_settings():
     return """\
 network:
-  method: generate_minimal_redundant_network
+  method: generate_lomap_network
   settings:
-    mst_num: 2
+    max_path_length: 6
 
 mapper:
   method: LomapAtomMapper
   settings:
     time: 45
     element_change: True
-    
+
 partial_charge:
   method: nagl
   settings:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
-@pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
-def test_custom_yaml_plan_rbfe_smoke_test(custom_yaml_settings, eg5_files, tmpdir):
-    protein, ligand, cofactor = eg5_files
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
+def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, cdk8_files, tmpdir):
+    protein, ligand = cdk8_files
     settings_path = tmpdir / "settings.yaml"
     with open(settings_path, "w") as f:
-        f.write(custom_yaml_settings)
+        f.write(lomap_yaml_settings)
 
     assert settings_path.exists()
 
     args = [
         '-p', protein,
         '-M', ligand,
-        '-C', cofactor,
-        '-s', settings_path,
+        '-s', settings_path
     ]
 
     runner = CliRunner()
@@ -402,6 +407,8 @@ partial_charge:
 """
 
 @pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
+@skip_if_missing("openff.nagl")
+@skip_if_missing("openff.nagl_models")
 def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmpdir):
     protein, ligand, cofactor = eg5_files
     settings_path = tmpdir / "settings.yaml"

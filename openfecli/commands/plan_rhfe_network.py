@@ -122,6 +122,13 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     to run the planned transformations with the quickrun tool.  For more
     sophisticated setups, please consider using the python layer of openfe.
 
+    .. note::
+
+       To ensure a consistent set of partial charges are used for each molecule across different transformations, this
+       tool will automatically generate charges ahead of planning the network. ``am1bcc`` charges will be generated via
+       ``ambertools``, this can also be customized using the settings yaml file.
+
+
     The tool will parse the input and run the rbfe network planner, which
     executes following steps:
 
@@ -178,6 +185,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")
 
     # DO
     write("Planning RHFE-Campaign:")

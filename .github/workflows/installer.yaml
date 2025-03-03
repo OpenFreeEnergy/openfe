@@ -41,7 +41,7 @@ jobs:
         micromamba-binary-path: ~/.local/bin/micromamba
         environment-name: installer
         create-args: >-
-          python=3.10
+          python=3.11
           jinja2
           constructor
         init-shell: bash
@@ -67,7 +67,7 @@ jobs:
         # Inspired by https://github.com/conda-forge/miniforge/blob/main/.github/workflows/ci.yml
         cp ${{ steps.file-name.outputs.FILE_NAME }} $(echo ${{ steps.file-name.outputs.FILE_NAME }} | sed -e 's/-[^-]*//')
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.file-name.outputs.FILE_NAME }}
         path: OpenFEforge*
