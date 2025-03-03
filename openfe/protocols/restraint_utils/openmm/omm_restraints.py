@@ -33,7 +33,9 @@ from gufe.settings.models import SettingsBaseModel
 
 from openfe.protocols.restraint_utils.geometry import (
     BaseRestraintGeometry,
+    HostGuestRestraintGeometry,
     DistanceRestraintGeometry,
+    FlatBottomDistanceGeometry,
     BoreschRestraintGeometry
 )
 
@@ -76,8 +78,8 @@ class RestraintParameterState(GlobalParameterState):
         "lambda_restraints", standard_value=1.0
     )
 
-    @lambda_restraints.validator
-    def lambda_restraints(self, instance, new_value):
+    @lambda_restraints.validator  # type: ignore
+    def lambda_restraints(self, instance, new_value):  # type: ignore
         if new_value is not None and not (0.0 <= new_value <= 1.0):
             errmsg = (
                 "lambda_restraints must be between 0.0 and 1.0 "
@@ -124,7 +126,7 @@ class BaseHostGuestRestraints(abc.ABC):
     def add_force(
         self,
         thermodynamic_state: ThermodynamicState,
-        geometry: BaseRestraintGeometry,
+        geometry,
         controlling_parameter_name: str,
     ):
         """
@@ -147,7 +149,7 @@ class BaseHostGuestRestraints(abc.ABC):
     def get_standard_state_correction(
         self,
         thermodynamic_state: ThermodynamicState,
-        geometry: BaseRestraintGeometry
+        geometry,
     ) -> unit.Quantity:
         """
         Get the standard state correction for the Force when
@@ -172,7 +174,7 @@ class BaseHostGuestRestraints(abc.ABC):
     @abc.abstractmethod
     def _get_force(
         self,
-        geometry: BaseRestraintGeometry,
+        geometry,
         controlling_parameter_name: str,
     ):
         """
@@ -187,7 +189,7 @@ class SingleBondMixin:
     A mixin to extend geometry checks for Forces that can only hold
     a single atom.
     """
-    def _verify_geometry(self, geometry: BaseRestraintGeometry):
+    def _verify_geometry(self, geometry: HostGuestRestraintGeometry):
         if len(geometry.host_atoms) != 1 or len(geometry.guest_atoms) != 1:
             errmsg = (
                 "host_atoms and guest_atoms must only include a single index "
@@ -195,7 +197,7 @@ class SingleBondMixin:
                 f"{len(geometry.guest_atoms)} respectively."
             )
             raise ValueError(errmsg)
-        super()._verify_geometry(geometry)
+        super(SingleBondMixin, self)._verify_geometry(geometry)  # type: ignore
 
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
@@ -269,7 +271,9 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
           with kilojoule per mole.
         """
         self._verify_geometry(geometry)
-        force = self._get_force(geometry)
+        # Note: this is a throw-away force, so we hard code the
+        # controlling parameter name
+        force = self._get_force(geometry, 'lambda_restraints')
         corr = force.compute_standard_state_correction(
             thermodynamic_state, volume="system"
         )
@@ -284,7 +288,8 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         raise NotImplementedError("only implemented in child classes")
 
 
-class HarmonicBondRestraint(
+#  Note: we type ignore this class due to mypy issues with the mixin method
+class HarmonicBondRestraint(  # type: ignore[misc]
     BaseRadiallySymmetricRestraintForce, SingleBondMixin
 ):
     """
@@ -331,7 +336,8 @@ class HarmonicBondRestraint(
         )
 
 
-class FlatBottomBondRestraint(
+#  Note: we type ignore this class due to mypy issues with the mixin method
+class FlatBottomBondRestraint(  # type: ignore[misc]
     BaseRadiallySymmetricRestraintForce, SingleBondMixin
 ):
     """
@@ -348,7 +354,7 @@ class FlatBottomBondRestraint(
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -397,7 +403,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -442,7 +448,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
