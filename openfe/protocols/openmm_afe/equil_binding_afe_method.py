@@ -434,6 +434,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_afe.AbsoluteBindingComplexUnit`
     """
     result_cls = AbsoluteBindingProtocolResult
+    _settings_cls = AbsoluteBindingSettings 
     _settings: AbsoluteBindingSettings
 
     @classmethod
