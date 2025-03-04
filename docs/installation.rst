@@ -139,6 +139,58 @@ If you already have a `Mamba <https://mamba.readthedocs.io/en/latest/installatio
 
 Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
+Reproducible builds with a ``conda-lock`` file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
+
+A `conda-lock`_ file is a cross-platform way of specifying a conda environment to build packages in a reproducible way.
+Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
+We recommend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
+
+
+.. note::
+
+   You will likely need to install ``conda-lock``.
+   We strongly recommend installing ``conda-lock`` in a new virtual environment.
+   This will reduce the chance of dependency conflicts ::
+
+       $ # Install conda lock into a virtual environment
+       $ conda create -n conda-lock -c conda-lock
+       $ # Activate the environment to use the conda-lock command
+       $ conda activate conda-lock
+
+See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
+
+The latest version of the `conda-lock` file we provide can be downloaded with ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml
+
+If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
+
+Create a conda environment from the lock file and activate it::
+
+  $ conda-lock install -n openfe openfe-conda-lock.yml
+  $ conda activate openfe
+
+.. note::
+
+   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
+
+       $ micromamba create -n openfe --file openfe-conda-lock.yml
+       $ micromamba activate openfe
+
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe openfecli
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+
+With that, you should be ready to use ``openfe``!
 
 Single file installer
 ---------------------
@@ -422,7 +474,7 @@ See our guide on :ref:`containers <installation:containers>` for how to get star
 .. _installation:mamba_hpc:
 
 ``mamba`` in HPC Environments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _virtual packages: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-virtual.html#managing-virtual-packages
 
@@ -536,59 +588,6 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 
   $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version|
 
-Reproducible builds with a ``conda-lock`` file
-----------------------------------------------
-
-.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
-
-A `conda-lock`_ file is a cross-platform way of specifying a conda environment to build packages in a reproducible way.
-Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
-We recommend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
-
-
-.. note::
-
-   You will likely need to install ``conda-lock``.
-   We strongly recommend installing ``conda-lock`` in a new virtual environment.
-   This will reduce the chance of dependency conflicts ::
-
-       $ # Install conda lock into a virtual environment
-       $ conda create -n conda-lock -c conda-lock
-       $ # Activate the environment to use the conda-lock command
-       $ conda activate conda-lock
-
-See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
-
-The latest version of the `conda-lock` file we provide can be downloaded with ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml
-
-If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
-
-Create a conda environment from the lock file and activate it::
-
-  $ conda-lock install -n openfe openfe-conda-lock.yml
-  $ conda activate openfe
-
-.. note::
-
-   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
-
-       $ micromamba create -n openfe --file openfe-conda-lock.yml
-       $ micromamba activate openfe
-
-To make sure everything is working, run the tests ::
-
-  $ pytest --pyargs openfe openfecli
-
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
-
-With that, you should be ready to use ``openfe``!
-
 Developer install
 -----------------
 
@@ -671,7 +670,6 @@ Supported Hardware
 We currently support the following CPU architectures:
 
 * ``linux-64``
-* ``osx-64``
 * ``osx-arm64``
 
 For simulation preparation, any supported platform is suitable.
