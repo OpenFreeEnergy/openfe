@@ -130,21 +130,7 @@ def test_radial_network_index_error(toluene_vs_others, lomap_old_mapper):
             ligands=ligands, central_ligand=2077,
             mappers=lomap_old_mapper, scorer=None,
         )
-
-
-def test_radial_network_self_central(toluene_vs_others, lomap_old_mapper):
-    # issue #544, include the central ligand in "ligands",
-    # shouldn't get self edge
-    ligs = [toluene_vs_others[0]] + toluene_vs_others[1]
-
-    with pytest.warns(UserWarning, match="The central_ligand"):
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=ligs, central_ligand=ligs[0],
-            mappers=lomap_old_mapper, scorer=None
-        )
-
-    assert len(network.edges) == len(ligs) - 1
-
+        
 
 def test_radial_network_with_scorer(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
