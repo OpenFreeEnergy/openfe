@@ -1,12 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 from __future__ import annotations
-import os
-from collections import defaultdict
 import json
 import pathlib
 from openfecli.utils import write
-import typing
 from openfe import AlchemicalNetwork, LigandNetwork
 
 
@@ -40,7 +37,7 @@ def plan_alchemical_network_output(
     for transformation in alchemical_network.edges:
         transformation_name = transformation.name or transformation.key
         filename = f"{transformation_name}.json"
-        transformation.dump(transformations_dir / filename)
+        transformation.to_json(transformations_dir / filename)
         write("\t\t\t\t- " + filename)
 
 

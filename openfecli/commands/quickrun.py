@@ -42,10 +42,10 @@ def quickrun(transformation, work_dir, output):
 
     Simulation JSON files can be created with the
     :ref:`cli_plan-rbfe-network`
-    or from Python a :class:`.Transformation` can be saved using its dump
+    or from Python a :class:`.Transformation` can be saved using its to_json
     method::
 
-        transformation.dump("filename.json")
+        transformation.to_json("filename.json")
 
     That will save a JSON file suitable to be input for this command.
 
