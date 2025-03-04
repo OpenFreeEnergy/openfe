@@ -118,6 +118,7 @@ class PlainMDProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_md.PlainMDProtocolResult`
     """
     result_cls = PlainMDProtocolResult
+    _settings_cls = PlainMDProtocolSettings
     _settings: PlainMDProtocolSettings
 
     @classmethod
