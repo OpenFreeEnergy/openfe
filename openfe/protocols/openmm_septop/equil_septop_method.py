@@ -1408,7 +1408,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         restraint.add_force(
             thermodynamic_state,
             rest_geom,
-            controlling_parameter_name='lambda_restraints'
+            # controlling_parameter_name='lambda_restraints'
         )
 
         # Get the standard state correction. This assumes that the contribution
