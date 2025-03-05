@@ -43,6 +43,7 @@ import itertools
 import numpy as np
 import numpy.typing as npt
 from openff.units import unit
+from openff.units.openmm import from_openmm
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 import mdtraj as md
@@ -80,6 +81,8 @@ from ..restraint_utils.settings import (
     DistanceRestraintSettings,
     BoreschRestraintSettings,
 )
+from openfe.protocols.restraint_utils import geometry
+from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openmmtools.states import ThermodynamicState, GlobalParameterState
 
 due.cite(Doi("10.5281/zenodo.596622"),
@@ -182,12 +185,25 @@ class SepTopProtocolResult(gufe.ProtocolResult):
           uncertainties for each repeat of that simulation type.
         """
         complex_dGs = []
+        complex_correction_dGs_A = []
+        complex_correction_dGs_B = []
         solv_dGs = []
+        solv_correction_dGs = []
 
         for pus in self.data['complex'].values():
             complex_dGs.append((
                 pus[0].outputs['unit_estimate'],
                 pus[0].outputs['unit_estimate_error']
+            ))
+
+        for pus in self.data['complex_setup'].values():
+            complex_correction_dGs_A.append((
+                pus[0].outputs['standard_state_correction_A'],
+                0 * unit.kilocalorie_per_mole  # correction has no error
+            ))
+            complex_correction_dGs_B.append((
+                pus[0].outputs['standard_state_correction_B'],
+                0 * unit.kilocalorie_per_mole  # correction has no error
             ))
 
         for pus in self.data['solvent'].values():
@@ -196,7 +212,19 @@ class SepTopProtocolResult(gufe.ProtocolResult):
                 pus[0].outputs['unit_estimate_error']
             ))
 
-        return {'solvent': solv_dGs, 'complex': complex_dGs}
+        for pus in self.data['solvent_setup'].values():
+            solv_dGs.append((
+                pus[0].outputs['standard_state_correction_A'],
+                0 * unit.kilocalorie_per_mole  # correction has no error
+            ))
+
+        return {
+            'solvent': solv_dGs,
+            'complex': complex_dGs,
+            'standard_state_complex_A': complex_correction_dGs_A,
+            'standard_state_complex_B': complex_correction_dGs_B,
+            'standard_state_solvent': solv_correction_dGs,
+        }
 
     def get_estimate(self):
         """Get the difference in binding free energy estimate for this calculation.
@@ -219,7 +247,14 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         individual_estimates = self.get_individual_estimates()
         solv_ddG = _get_average(individual_estimates['solvent'])
         complex_ddG = _get_average(individual_estimates['complex'])
-        return solv_ddG - complex_ddG
+        complex_corr_A = _get_average(
+            individual_estimates['standard_state_complex_A'])
+        complex_corr_B = _get_average(
+            individual_estimates['standard_state_complex_B'])
+        solv_corr = _get_average(
+            individual_estimates['standard_state_solvent'])
+
+        return (complex_ddG + complex_corr_A + complex_corr_B) - (solv_ddG + solv_corr)
 
     def get_uncertainty(self):
         """Get the relative free energy error for this calculation.
@@ -475,7 +510,7 @@ class SepTopProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_septop.SepTopSolventUnit`
     """
     result_cls = SepTopProtocolResult
-    _settings: SepTopSettings
+    _settings_cls = SepTopSettings
 
     @classmethod
     def _default_settings(cls):
@@ -1000,7 +1035,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             ligand_2_inxs: tuple[int],
             ligand_2_inxs_B: tuple[int],
             protein_inxs: tuple[int],
-            positions_AB: omm_units.Quantity,
             settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
@@ -1035,8 +1069,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
         from MDAnalysis.coordinates.memory import MemoryReader
-        from openfe.protocols.restraint_utils import geometry
-        from openfe.protocols.restraint_utils.openmm import omm_restraints
 
         if isinstance(settings['restraint_settings'],
                       BoreschRestraintSettings):
@@ -1133,6 +1165,9 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             thermodynamic_state,
             rest_geom_B,
         )
+        # Multiply the correction for ligand B by -1 as for this ligands,
+        # Boresch restraint has to be turned on in the analytical corr.
+        correction_B = correction_B * -1
 
         # Get the GlobalParameterState for the restraint
         restraint_parameter_state = omm_restraints.RestraintParameterState(
@@ -1302,7 +1337,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_2_inxs: tuple[int],
         ligand_2_inxs_B: tuple[int],
         protein_inxs,
-        positions_AB,
         settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
@@ -1337,33 +1371,81 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
 
-        # coords_A = u_A.atoms.positions
-        # coords_B = u_B.atoms.positions
-        ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
-        ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
-        print(ref_A, ref_B, ligand_2_inxs[ligand_2_inxs_B.index(ref_B)])
-        # distance = np.linalg.norm(
-        #     coords_A[ref_A] - coords_B[ref_B])
-        distance = np.linalg.norm(
-            positions_AB[ref_A] - positions_AB[ligand_2_inxs[ligand_2_inxs_B.index(ref_B)]])
-        print(distance)
 
-        k_distance = to_openmm(settings['restraint_settings'].spring_constant)
+        if isinstance(settings['restraint_settings'],
+                      DistanceRestraintSettings):
 
-        force = openmm.HarmonicBondForce()
-        force.addBond(
-            ref_A,
-            ligand_2_inxs[ligand_2_inxs_B.index(ref_B)],
-            distance * openmm.unit.nanometers,
-            k_distance,
+            rest_geom = geometry.harmonic.get_molecule_centers_restraint(
+                molA_rdmol=ligand_1,
+                molB_rdmol=ligand_2,
+                molA_idxs=ligand_1_inxs,
+                molB_idxs=ligand_2_inxs,
+            )
+
+            restraint = omm_restraints.HarmonicBondRestraint(
+                settings['restraint_settings'],
+            )
+
+        else:
+            # TODO turn this into a direction for different restraint types supported?
+            raise NotImplementedError(
+                "Other restraint types are not yet available"
+            )
+
+        if self.verbose:
+            self.logger.info(f"restraint geometry is: {rest_geom}")
+        print(rest_geom)
+
+        # We need a temporary thermodynamic state to add the restraint
+        # & get the correction
+        thermodynamic_state = ThermodynamicState(
+            system,
+            temperature=to_openmm(settings['thermo_settings'].temperature),
+            pressure=to_openmm(settings['thermo_settings'].pressure),
         )
-        force.setName("alignment_restraint")
-        force.setForceGroup(6)
 
-        system.addForce(force)
+        # Add the force to the thermodynamic state
+        restraint.add_force(
+            thermodynamic_state,
+            rest_geom,
+            controlling_parameter_name='lambda_restraints'
+        )
+
+        # Get the standard state correction. This assumes that the contribution
+        # of the harmonic bond correction itself cancels out.
+        correction = from_openmm(
+            openmm.unit.MOLAR_GAS_CONSTANT_R * to_openmm(settings['thermo_settings'].temperature)
+        )
+
+        # Get the GlobalParameterState for the restraint
+        restraint_parameter_state = omm_restraints.RestraintParameterState(
+            lambda_restraints=1.0
+        )
+        return restraint_parameter_state, correction, 0 * unit.kilocalorie_per_mole, thermodynamic_state.system
+
+        # ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
+        # ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
+        # print(ref_A, ref_B, ligand_2_inxs[ligand_2_inxs_B.index(ref_B)])
+        # distance = np.linalg.norm(
+        #     positions_AB[ref_A] - positions_AB[ligand_2_inxs[ligand_2_inxs_B.index(ref_B)]])
+        # print(distance)
+        #
+        # k_distance = to_openmm(settings['restraint_settings'].spring_constant)
+        #
+        # force = openmm.HarmonicBondForce()
+        # force.addBond(
+        #     ref_A,
+        #     ligand_2_inxs[ligand_2_inxs_B.index(ref_B)],
+        #     distance * openmm.unit.nanometers,
+        #     k_distance,
+        # )
+        # force.setName("alignment_restraint")
+        # force.setForceGroup(6)
+        #
+        # system.addForce(force)
 
         # return system
-        return None, None, None, system
+        # return None, None, None, system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,

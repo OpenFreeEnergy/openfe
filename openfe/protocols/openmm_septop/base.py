@@ -604,7 +604,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             ligand_2_inxs: list[int],
             ligand_2_inxs_B: list[int],
             protein_inxs: Optional[list[int]],
-            positions_AB: omm_unit.Quantity,
             settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
@@ -893,8 +892,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             print('No traj')
             u_A = mda.Universe(omm_topology_A, modeller_A)
             u_B = mda.Universe(omm_topology_B, modeller_B)
-        rdmol_A = alchem_comps["stateA"][0].to_rdkit()
-        rdmol_B = alchem_comps["stateB"][0].to_rdkit()
+
+        rdmol_A = off_A.to_rdkit()
+        rdmol_B = off_B.to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
         if prot_comp:
@@ -912,6 +912,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             positions_AB,
             settings,
         )
+        print('Restraints', restraint_param_state, corr_A, corr_B)
         # Check that the restraints are correctly applied by running a short equilibration
         equ_positions_restraints = self._pre_equilibrate(
             system, omm_topology_AB, positions_AB, settings, 'AB', dry
@@ -932,6 +933,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return {
             "system": system_outfile,
             "topology": topology_file,
+            "standard_state_correction_A": corr_A.to('kilocalorie_per_mole'),
+            "standard_state_correction_B": corr_B.to('kilocalorie_per_mole'),
         }
 
 
