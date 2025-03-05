@@ -2,6 +2,8 @@
 Dev script to generate some result jsons that are used for testing
 
 Generates
+- ABFEProtocol_json_results.gz
+  - used in abfe_results_json fixture
 - AHFEProtocol_json_results.gz
   - used in afe_solvation_json fixture
 - RHFEProtocol_json_results.gz
@@ -13,6 +15,7 @@ import gzip
 import json
 import logging
 import pathlib
+from rdkit import Chem
 import tempfile
 from openff.toolkit import (
     Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
@@ -27,7 +30,10 @@ import gufe
 from gufe.tokenization import JSON_HANDLER
 import openfe
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol
-from openfe.protocols.openmm_afe import AbsoluteSolvationProtocol
+from openfe.protocols.openmm_afe import (
+    AbsoluteSolvationProtocol,
+    AbsoluteBindingProtocol,
+)
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 
 
@@ -49,7 +55,24 @@ def get_molecule(smi, name):
     return openfe.SmallMoleculeComponent.from_openff(m, name=name)
 
 
-def execute_and_serialize(dag, protocol, simname):
+def get_tyk2_inputs():
+    with gzip.open('inputs/tyk2_protein.pdb.gz', 'r') as f:
+        protcomp = openfe.ProteinComponent.from_pdb_file(f, name='tyk2_prot')
+
+    with gzip.open('inputs/tyk2_ligand.sdf.gz', 'r') as f:
+        smc = openfe.SmallMoleculeComponent(
+            list(Chem.ForwardSDMolSupplier(f, removeHs=False))[0]
+        )
+
+    return smc, protcomp
+
+
+def execute_and_serialize(
+    dag,
+    protocol,
+    simname,
+    new_serialization: bool = False
+):
     logger.info(f"running {simname}")
     with tempfile.TemporaryDirectory() as tmpdir:
         workdir = pathlib.Path(tmpdir)
@@ -57,23 +80,28 @@ def execute_and_serialize(dag, protocol, simname):
             dag,
             shared_basedir=workdir,
             scratch_basedir=workdir,
-            keep_shared=False,
-            n_retries=3
+            keep_shared=True,
+            raise_error=False,
+            n_retries=2,
         )
     protres = protocol.gather([dagres])
 
-    outdict = {
-        "estimate": protres.get_estimate(),
-        "uncertainty": protres.get_uncertainty(),
-        "protocol_result": protres.to_dict(),
-        "unit_results": {
-            unit.key: unit.to_keyed_dict()
-            for unit in dagres.protocol_unit_results
-        }
-    }
+    if new_serialization:
+        protres.to_json(f"{simname}_json_results.json")
 
-    with gzip.open(f"{simname}_json_results.gz", 'wt') as zipfile:
-        json.dump(outdict, zipfile, cls=JSON_HANDLER.encoder)
+    else:
+        outdict = {
+            "estimate": protres.get_estimate(),
+            "uncertainty": protres.get_uncertainty(),
+            "protocol_result": protres.to_dict(),
+            "unit_results": {
+                unit.key: unit.to_keyed_dict()
+                for unit in dagres.protocol_unit_results
+            }
+        }
+
+        with gzip.open(f"{simname}_json_results.gz", 'wt') as zipfile:
+            json.dump(outdict, zipfile, cls=JSON_HANDLER.encoder)
 
 
 def generate_md_settings():
@@ -92,6 +120,52 @@ def generate_md_json(smc):
     dag = protocol.create(stateA=system, stateB=system, mapping=None)
 
     execute_and_serialize(dag, protocol, "MDProtocol")
+
+
+def generate_abfe_settings():
+    settings = AbsoluteBindingProtocol.default_settings()
+    settings.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    settings.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
+    settings.solvent_simulation_settings.equilibration_length = 100 * unit.picosecond
+    settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
+    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
+    settings.solvent_simulation_settings.time_per_iteration = 2.5 * unit.ps
+    settings.complex_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    settings.complex_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    settings.complex_equil_simulation_settings.production_length = 100 * unit.picosecond
+    settings.complex_simulation_settings.equilibration_length = 100 * unit.picosecond
+    settings.complex_simulation_settings.production_length = 500 * unit.picosecond
+    settings.complex_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
+    settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
+    settings.solvation_settings.box_shape = 'dodecahedron'
+    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.forcefield_settings.nonbonded_cutoff = 0.8 * unit.nanometer
+    settings.protocol_repeats = 3
+    settings.engine_settings.compute_platform = 'CUDA'
+
+    return settings
+
+
+def generate_abfe_json():
+    tyk2_ligand, tyk2_protein = get_tyk2_inputs()
+    protocol = AbsoluteBindingProtocol(settings=generate_abfe_settings())
+    sysA = openfe.ChemicalSystem(
+        {
+            "ligand": tyk2_ligand,
+            "protein": tyk2_protein,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    sysB = openfe.ChemicalSystem(
+        {
+            "protein": tyk2_protein,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+
+    dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
+    execute_and_serialize(dag, protocol, "ABFEProtocol")
 
 
 def generate_ahfe_settings():
@@ -133,7 +207,7 @@ def generate_ahfe_json(smc):
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
 
-    execute_and_serialize(dag, protocol, "AHFEProtocol")
+    execute_and_serialize(dag, protocol, "AHFEProtocol", new_serialization=True)
 
 
 def generate_rfe_settings():
@@ -166,5 +240,6 @@ if __name__ == "__main__":
     molA = get_molecule(LIGA, "ligandA")
     molB = get_molecule(LIGB, "ligandB")
     generate_md_json(molA)
+    generate_abfe_json()
     generate_ahfe_json(molA)
     generate_rfe_json(molA, molB)
