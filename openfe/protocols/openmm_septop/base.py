@@ -909,7 +909,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             atom_indices_AB_B,
             atom_indices_B,
             protein_idxs,
-            positions_AB,
             settings,
         )
         print('Restraints', restraint_param_state, corr_A, corr_B)
