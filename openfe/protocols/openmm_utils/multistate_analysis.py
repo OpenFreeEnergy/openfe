@@ -235,7 +235,7 @@ class MultistateEquilFEAnalysis:
             n_bootstraps=bootstraps,
             bootstrap_solver_protocol="robust"
         )
-        if n_bootstraps > 0:
+        if bootstraps > 0:
             uncertainty_method='bootstrap'
         else:
             uncertainty_method=None
