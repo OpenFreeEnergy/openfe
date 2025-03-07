@@ -235,7 +235,16 @@ class MultistateEquilFEAnalysis:
             n_bootstraps=bootstraps,
             bootstrap_solver_protocol="robust"
         )
-        r = mbar.compute_free_energy_differences(compute_uncertainty=True, uncertainty_method="bootstrap")
+        if n_bootstraps > 0:
+            uncertainty_method='bootstrap'
+        else:
+            uncertainty_method=None
+
+        r = mbar.compute_free_energy_differences(
+            compute_uncertainty=True,
+            uncertainty_method=uncertainty_method,
+        )
+
         DF_ij = r['Delta_f']
         dDF_ij = r['dDelta_f']
 
