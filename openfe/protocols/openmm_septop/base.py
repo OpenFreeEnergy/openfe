@@ -32,9 +32,12 @@ from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
-from openmmtools.states import (SamplerState,
-                                ThermodynamicState,
-                                create_thermodynamic_state_protocol, )
+from openmmtools.states import (
+    SamplerState,
+    ThermodynamicState,
+    create_thermodynamic_state_protocol,
+    GlobalParameterState,
+)
 from typing import Optional
 from openmm import app
 from openmm import unit as omm_unit
@@ -70,11 +73,13 @@ from ..openmm_utils import (
     multistate_analysis, charge_generation
 )
 from openfe.utils import without_oechem_backend
+from openfe.protocols.restraint_utils.openmm import omm_restraints
 
 from .utils import serialize, deserialize, SepTopParameterState
 from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
     AlchemicalRegion,
+    AlchemicalState,
 )
 import MDAnalysis as mda
 from openfe.protocols.restraint_utils.geometry.boresch import find_boresch_restraint
@@ -901,7 +906,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             protein_idxs = comp_atomids_AB[prot_comp]
         else:
             protein_idxs = None
-        restraint_param_state, corr_A, corr_B, system = self._add_restraints(
+        corr_A, corr_B, system = self._add_restraints(
             alchemical_system, u_A, u_B,
             rdmol_A,
             rdmol_B,
@@ -911,7 +916,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             protein_idxs,
             settings,
         )
-        print('Restraints', restraint_param_state, corr_A, corr_B)
+        print('Restraints', corr_A, corr_B)
         # Check that the restraints are correctly applied by running a short equilibration
         equ_positions_restraints = self._pre_equilibrate(
             system, omm_topology_AB, positions_AB, settings, 'AB', dry
@@ -1070,7 +1075,21 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         cmp_states : list[ThermodynamicState]
           A list of ThermodynamicState for each replica in the system.
         """
-        alchemical_state = SepTopParameterState.from_system(alchemical_system)
+        # alchemical_state = SepTopParameterState.from_system(alchemical_system)
+        alchemical_state = SepTopParameterState.from_system(
+            alchemical_system)
+        # alchemical_state_B = AlchemicalState.from_system(
+        #     alchemical_system, parameters_name_suffix='B')
+        # # Get the GlobalParameterState for the restraint
+        # restraint_parameter_state_A = omm_restraints.RestraintParameterState(
+        #     parameters_name_suffix='A',
+        #     # lambda_restraints=1.0
+        # )
+        # restraint_parameter_state_B = omm_restraints.RestraintParameterState(
+        #     parameters_name_suffix='B',
+        #     # lambda_restraints=1.0
+        # )
+        # print(restraint_parameter_state_A.lambda_restraints_A)
 
         # Set up the system constants
         temperature = settings['thermo_settings'].temperature
@@ -1080,10 +1099,17 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         if solvent_comp is not None:
             constants['pressure'] = ensure_quantity(pressure, 'openmm')
 
+        # Get the composable states
+        # if restraint_state is not None:
+        #     composable_states = [alchemical_state, restraint_state]
+        # else:
+        composable_states = [
+            alchemical_state
+        ]
         cmp_states = create_thermodynamic_state_protocol(
             alchemical_system, protocol=lambdas,
             constants=constants,
-            composable_states=[alchemical_state],
+            composable_states=composable_states,
         )
 
         sampler_state = SamplerState(positions=positions)
@@ -1440,7 +1466,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         # 10. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
             system, positions, settings,
-            lambdas, solv_comp
+            lambdas, solv_comp,
         )
 
         # 11. Create the multistate reporter & create PDB

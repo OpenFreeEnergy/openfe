@@ -1169,11 +1169,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         # Boresch restraint has to be turned on in the analytical corr.
         correction_B = correction_B * -1
 
-        # Get the GlobalParameterState for the restraint
-        restraint_parameter_state = omm_restraints.RestraintParameterState(
-            lambda_restraints=1.0
-        )
-        return restraint_parameter_state, correction_A, correction_B, thermodynamic_state.system
+        return correction_A, correction_B, thermodynamic_state.system
 
 
     def _execute(
@@ -1408,7 +1404,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         restraint.add_force(
             thermodynamic_state,
             rest_geom,
-            # controlling_parameter_name='lambda_restraints'
+            controlling_parameter_name="lambda_restraints_solvent",
         )
 
         # Get the standard state correction. This assumes that the contribution
@@ -1417,11 +1413,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             openmm.unit.MOLAR_GAS_CONSTANT_R * to_openmm(settings['thermo_settings'].temperature)
         )
 
-        # Get the GlobalParameterState for the restraint
-        restraint_parameter_state = omm_restraints.RestraintParameterState(
-            lambda_restraints=1.0
-        )
-        return restraint_parameter_state, correction, 0 * unit.kilocalorie_per_mole, thermodynamic_state.system
+        return correction, 0 * unit.kilocalorie_per_mole, thermodynamic_state.system
 
         # ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
         # ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
