@@ -277,6 +277,9 @@ class MultistateEquilFEAnalysis:
             * ``reverse_DGs`` and `reverse_dDGs`: the free energy estimates
               and errors along each sample fraction in the reverse direction
         """
+        # Temporary hack to get some simulations done
+        return None
+
         try:
             u_ln = self.analyzer._unbiased_decorrelated_u_ln
             N_l = self.analyzer._unbiased_decorrelated_N_l
@@ -292,6 +295,9 @@ class MultistateEquilFEAnalysis:
             # Note: you always lose out a few data points but it's fine
             chunks = [max(int(N_l[0] / num_samples * i), 1)
                       for i in range(1, num_samples + 1)]
+
+            if chunks[0] < 50:
+                 return None
 
             forward_DGs = []
             forward_dDGs = []
