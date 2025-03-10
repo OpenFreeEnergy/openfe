@@ -446,9 +446,9 @@ def test_log_system_probe_unconfigured():
     # if probe loggers aren't configured to run, then we shouldn't even call
     # _probe_system()
     logger_names = [
-        'openfe.utils.system_probe.log',
-        'openfe.utils.system_probe.log.gpu',
-        'openfe.utils.system_probe.log.hostname',
+        "openfe.utils.system_probe.log",
+        "openfe.utils.system_probe.log.gpu",
+        "openfe.utils.system_probe.log.hostname",
     ]
     # check that initial conditions are as expected
     for logger_name in logger_names:
@@ -456,14 +456,14 @@ def test_log_system_probe_unconfigured():
         assert not logger.isEnabledFor(logging.DEBUG)
 
     sysprobe_mock = Mock(return_value=EXPECTED_SYSTEM_INFO)
-    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+    with patch("openfe.utils.system_probe._probe_system", sysprobe_mock):
         log_system_probe(logging.DEBUG)
         assert sysprobe_mock.call_count == 0
 
     # now check that it does get called if we use a level that will emit
     # (this is effectively tests that the previous assert isn't a false
     # positive)
-    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+    with patch("openfe.utils.system_probe._probe_system", sysprobe_mock):
         log_system_probe(logging.WARNING)
         assert sysprobe_mock.call_count == 1
 
@@ -471,7 +471,7 @@ def test_log_system_probe_unconfigured():
 def test_log_system_probe(caplog):
     # this checks that the expected contents show up in log_system_probe
     sysprobe_mock = Mock(return_value=EXPECTED_SYSTEM_INFO)
-    with patch('openfe.utils.system_probe._probe_system', sysprobe_mock):
+    with patch("openfe.utils.system_probe._probe_system", sysprobe_mock):
         with caplog.at_level(logging.DEBUG):
             log_system_probe()
 
@@ -481,17 +481,27 @@ def test_log_system_probe(caplog):
         "GPU: uuid='GPU-UUID-2' NVIDIA GeForce RTX 2060 mode=Default",
         "Memory used: 27.8G (52.8%)",
         "/dev/mapper/data-root: 37% full (1.1T free)",
-        "/dev/dm-3: 42% full (2.2T free)"
+        "/dev/dm-3: 42% full (2.2T free)",
     ]
     for line in expected:
         assert line in caplog.text
 
 
-@pytest.mark.parametrize("error_type,expected", [(FileNotFoundError, "nvidia-smi command not found"),
-                                                 (subprocess.CalledProcessError(returncode=6, cmd="foo"), "no GPU available"),
-                                                 (subprocess.CalledProcessError(returncode=9, cmd="foo"), "can't communicate with NVIDIA driver"),
-                                                 (subprocess.CalledProcessError(returncode=42, cmd="foo"), "command foo returned error code 42"),
-                                                 ])
+@pytest.mark.parametrize(
+    "error_type,expected",
+    [
+        (FileNotFoundError, "nvidia-smi command not found"),
+        (subprocess.CalledProcessError(returncode=6, cmd="foo"), "no GPU available"),
+        (
+            subprocess.CalledProcessError(returncode=9, cmd="foo"),
+            "can't communicate with NVIDIA driver",
+        ),
+        (
+            subprocess.CalledProcessError(returncode=42, cmd="foo"),
+            "command foo returned error code 42",
+        ),
+    ],
+)
 def test_nvidia_smi_error(error_type, expected, caplog):
     with caplog.at_level(logging.DEBUG):
         with patch("subprocess.check_output", side_effect=error_type):
