@@ -2,6 +2,7 @@ import contextlib
 from collections import namedtuple
 import logging
 import pathlib
+import subprocess
 import sys
 from unittest.mock import Mock, patch
 
@@ -484,3 +485,15 @@ def test_log_system_probe(caplog):
     ]
     for line in expected:
         assert line in caplog.text
+
+
+@pytest.mark.parametrize("error_type,expected", [(FileNotFoundError, "nvidia-smi command not found"),
+                                                 (subprocess.CalledProcessError(returncode=6, cmd="foo"), "no GPU available"),
+                                                 (subprocess.CalledProcessError(returncode=9, cmd="foo"), "can't communicate with NVIDIA driver"),
+                                                 (subprocess.CalledProcessError(returncode=42, cmd="foo"), "command foo returned error code 42"),
+                                                 ])
+def test_nvidia_smi_error(error_type, expected, caplog):
+    with caplog.at_level(logging.DEBUG):
+        with patch("subprocess.check_output", side_effect=error_type):
+            assert _get_gpu_info() == {}
+            assert expected in caplog.text
