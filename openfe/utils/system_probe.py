@@ -346,8 +346,15 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
             " installed, this is expected if there is no GPU available"
         )
     except subprocess.CalledProcessError as e:
-        if e.returncode == 6:
-            logging.debug("Error: no GPU available")
+        match e.returncode:
+            case 6:
+                logging.debug("Error: no GPU available")
+            case 9:
+                logging.debug("Error: can't communicate with NVIDIA driver")
+            case _:
+                # New error code we haven't ran into before
+                # Dump full error to debug log
+                logging.debug(f"command {e.cmd} returned error code {e.returncode} {e.output=} {e.stdout=} {e.stderr=}")
         return {}
 
     nvidia_smi_output_lines = nvidia_smi_output.strip().split(os.linesep)
