@@ -354,7 +354,9 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
             case _:
                 # New error code we haven't ran into before
                 # Dump full error to debug log
-                logging.debug(f"command {e.cmd} returned error code {e.returncode} {e.output=} {e.stdout=} {e.stderr=}")
+                logging.debug(
+                    f"command {e.cmd} returned error code {e.returncode} {e.output=} {e.stdout=} {e.stderr=}"
+                )
         return {}
 
     nvidia_smi_output_lines = nvidia_smi_output.strip().split(os.linesep)
