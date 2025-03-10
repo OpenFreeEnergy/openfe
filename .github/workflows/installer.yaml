@@ -41,7 +41,7 @@ jobs:
         micromamba-binary-path: ~/.local/bin/micromamba
         environment-name: installer
         create-args: >-
-          python=3.10
+          python=3.11
           jinja2
           constructor
         init-shell: bash

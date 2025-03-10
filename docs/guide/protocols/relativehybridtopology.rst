@@ -94,7 +94,8 @@ the protocol also returns some metrics to help assess convergence of the results
 these are detailed in the :ref:`multistate analysis section <multistate_analysis>`.
 
 .. note:: The MBAR uncertainty of each individual transformation is estimated using bootstrapping for 1000 iterations,
-          this leads to larger errors compared to the previous error estimate method.
+          this leads to larger errors compared to the previous error estimate method. The only exception are
+          the forward and reverse convergence plots which use the MBAR analytical error.
 
 .. todo: issue 792, consolidate this page into its own analysis page and link both RBFE and AFE pages to it
 .. _multistate_analysis:
@@ -142,7 +143,8 @@ difference produced.
       Using increasingly larger portions of the total data,
       this analysis calculates the free energy difference, both in forward and backward directions.
       In this analysis, forward and backward estimates that agree within error using only a fraction of the total data
-      suggest convergence [5]_.
+      suggest convergence [5]_. Note: the error bars reported in this plot are
+      MBAR analytical errors instead of boostrap errors.
     - .. image:: img/forward_reverse_convergence.png
   * - **Timeseries of replica states.**
 

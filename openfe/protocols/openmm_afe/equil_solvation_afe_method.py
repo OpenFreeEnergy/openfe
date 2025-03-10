@@ -403,6 +403,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_afe.AbsoluteSolvationSolventUnit`
     """
     result_cls = AbsoluteSolvationProtocolResult
+    _settings_cls = AbsoluteSolvationSettings
     _settings: AbsoluteSolvationSettings
 
     @classmethod
