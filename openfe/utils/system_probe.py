@@ -345,6 +345,11 @@ def _get_gpu_info() -> dict[str, dict[str, str]]:
             "Error: nvidia-smi command not found. Make sure NVIDIA drivers are"
             " installed, this is expected if there is no GPU available"
         )
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 6:
+            logging.debug(
+            "Error: no GPU available"
+        )
         return {}
 
     nvidia_smi_output_lines = nvidia_smi_output.strip().split(os.linesep)
