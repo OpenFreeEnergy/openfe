@@ -63,11 +63,12 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMSystemGeneratorFFSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
-from ..openmm_utils import (
+from openfe.protocols.openmm_utils import (
     settings_validation, system_creation,
     multistate_analysis, charge_generation,
     omm_compute,
 )
+from openfe.protocols.restraint_utils import geometry
 from openfe.utils import without_oechem_backend
 
 
@@ -585,11 +586,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel], 
-    ) -> tuple[GlobalParameterState, unit.Quantity, openmm.System]:
+    ) -> tuple[
+        GlobalParameterState,
+        unit.Quantity,
+        openmm.System,
+        geometry.BaseRestraintGeometry
+    ]:
         """
         Placeholder method to add restraints if necessary
         """
-        return None, None, system
+        return None, None, system, None
 
     def _get_alchemical_system(
         self,
@@ -1099,7 +1105,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas = self._get_lambda_schedule(settings)
 
         # 6. Add restraints
-        restraint_parameter_state, standard_state_corr, omm_system = self._add_restraints(
+        restraint_parameter_state, standard_state_corr, omm_system, restraint_geometry = self._add_restraints(
             omm_system,
             omm_topology,
             positions, 
