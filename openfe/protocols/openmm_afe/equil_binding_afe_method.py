@@ -667,7 +667,6 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=5.0 * unit.nanosecond,
             ),
             complex_equil_output_settings=MDOutputSettings(
-                output_structure="alchemical_system.pdb",
                 output_indices="all",
                 equil_nvt_structure="equil_nvt_structure.pdb",
                 equil_npt_structure="equil_npt_structure.pdb",
@@ -680,6 +679,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=10.0 * unit.nanosecond,
             ),
             complex_output_settings=MultiStateOutputSettings(
+                output_structure="alchemical_system.pdb",
                 output_filename="complex.nc",
                 checkpoint_storage_filename="complex_checkpoint.nc",
             ),

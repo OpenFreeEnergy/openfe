@@ -199,7 +199,7 @@ def test_dry_run_solvent_benzene(
         comp_sampler = sol_unit[0].run(dry=True, verbose=True)['debug']['sampler']
         assert comp_sampler.is_periodic
 
-        pdb = mdt.load_pdb('hybrid_system.pdb')
+        pdb = mdt.load_pdb('alchemical_system.pdb')
         assert pdb.n_atoms == 2698
 
 
@@ -248,7 +248,7 @@ def test_dry_run_complex_benzene(
         comp_sampler = comp_unit[0].run(dry=True, verbose=True)['debug']['sampler']
         assert comp_sampler.is_periodic
 
-        pdb = mdt.load_pdb('hybrid_system.pdb')
+        pdb = mdt.load_pdb('alchemical_system.pdb')
         assert pdb.n_atoms == 2698
 
 
