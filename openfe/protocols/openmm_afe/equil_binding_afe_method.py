@@ -52,15 +52,22 @@ import MDAnalysis as mda
 
 from gufe import (
     settings,
-    ChemicalSystem, SmallMoleculeComponent,
-    ProteinComponent, SolventComponent
+    ChemicalSystem,
+    SmallMoleculeComponent,
+    ProteinComponent,
+    SolventComponent,
 )
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteBindingSettings,
-    OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
-    MDSimulationSettings, MDOutputSettings,
-    MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, MultiStateOutputSettings,
+    OpenMMSolvationSettings,
+    AlchemicalSettings,
+    LambdaSettings,
+    MDSimulationSettings,
+    MDOutputSettings,
+    MultiStateSimulationSettings,
+    OpenMMEngineSettings,
+    IntegratorSettings,
+    MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
     SettingsBaseModel,
     DistanceRestraintSettings,
@@ -84,36 +91,48 @@ from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
 
-due.cite(Doi("10.5281/zenodo.596504"),
-         description="Yank",
-         path="openfe.protocols.openmm_afe.equil_binding_afe_method",
-         cite_module=True)
+due.cite(
+    Doi("10.5281/zenodo.596504"),
+    description="Yank",
+    path="openfe.protocols.openmm_afe.equil_binding_afe_method",
+    cite_module=True,
+)
 
-due.cite(Doi("10.5281/zenodo.596622"),
-         description="OpenMMTools",
-         path="openfe.protocols.openmm_afe.equil_binding_afe_method",
-         cite_module=True)
+due.cite(
+    Doi("10.5281/zenodo.596622"),
+    description="OpenMMTools",
+    path="openfe.protocols.openmm_afe.equil_binding_afe_method",
+    cite_module=True,
+)
 
-due.cite(Doi("10.1371/journal.pcbi.1005659"),
-         description="OpenMM",
-         path="openfe.protocols.openmm_afe.equil_binding_afe_method",
-         cite_module=True)
+due.cite(
+    Doi("10.1371/journal.pcbi.1005659"),
+    description="OpenMM",
+    path="openfe.protocols.openmm_afe.equil_binding_afe_method",
+    cite_module=True,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a AbsoluteBindingProtocol
-    """
+    """Dict-like container for the output of a AbsoluteBindingProtocol"""
+
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
-        if any(len(pur_list) > 2 for pur_list
-               in itertools.chain(self.data['solvent'].values(), self.data['complex'].values())):
+        if any(
+            len(pur_list) > 2
+            for pur_list in itertools.chain(
+                self.data["solvent"].values(), self.data["complex"].values()
+            )
+        ):
             raise NotImplementedError("Can't stitch together results yet")
 
-    def get_individual_estimates(self) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
+    def get_individual_estimates(
+        self,
+    ) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
         """
         Get the individual estimate of the free energies.
 
@@ -135,23 +154,27 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         correction_dGs = []
         solv_dGs = []
 
-        for pus in self.data['complex'].values():
-            complex_dGs.append((
-                pus[0].outputs['unit_estimate'],
-                pus[0].outputs['unit_estimate_error']
-            ))
-            correction_dGs.append((
-                pus[0].outputs['standard_state_correction'],
-                0 * unit.kilocalorie_per_mole  # correction has no error
-            ))
+        for pus in self.data["complex"].values():
+            complex_dGs.append(
+                (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
+            )
+            correction_dGs.append(
+                (
+                    pus[0].outputs["standard_state_correction"],
+                    0 * unit.kilocalorie_per_mole,  # correction has no error
+                )
+            )
 
-        for pus in self.data['solvent'].values():
-            solv_dGs.append((
-                pus[0].outputs['unit_estimate'],
-                pus[0].outputs['unit_estimate_error']
-            ))
+        for pus in self.data["solvent"].values():
+            solv_dGs.append(
+                (pus[0].outputs["unit_estimate"], pus[0].outputs["unit_estimate_error"])
+            )
 
-        return {'solvent': solv_dGs, 'complex': complex_dGs, 'standard_state': correction_dGs}
+        return {
+            "solvent": solv_dGs,
+            "complex": complex_dGs,
+            "standard_state": correction_dGs,
+        }
 
     def get_estimate(self):
         """Get the binding free energy estimate for this calculation.
@@ -161,6 +184,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         dG : unit.Quantity
           The binding free energy. This is a Quantity defined with units.
         """
+
         def _get_average(estimates):
             # Get the unit value of the first value in the estimates
             u = estimates[0][0].u
@@ -171,13 +195,11 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             return np.average(dGs) * u
 
         individual_estimates = self.get_individual_estimates()
-        complex_dG = _get_average(individual_estimates['complex'])
-        solv_dG = _get_average(individual_estimates['solvent'])
-        standard_state_dG = _get_average(
-            individual_estimates['standard_state']
-        )
+        complex_dG = _get_average(individual_estimates["complex"])
+        solv_dG = _get_average(individual_estimates["solvent"])
+        standard_state_dG = _get_average(individual_estimates["standard_state"])
 
-        return - complex_dG + solv_dG + standard_state_dG
+        return -complex_dG + solv_dG + standard_state_dG
 
     def get_uncertainty(self):
         """Get the binding free energy error for this calculation.
@@ -188,6 +210,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
           The standard deviation between estimates of the binding free
           energy. This is a Quantity defined with units.
         """
+
         def _get_stdev(estimates):
             # Get the unit value of the first value in the estimates
             u = estimates[0][0].u
@@ -198,14 +221,16 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             return np.std(dGs) * u
 
         individual_estimates = self.get_individual_estimates()
-        complex_err = _get_stdev(individual_estimates['complex'])
-        solv_err = _get_stdev(individual_estimates['solvent'])
-        standard_state_err = _get_stdev(individual_estimates['standard_state'])
+        complex_err = _get_stdev(individual_estimates["complex"])
+        solv_err = _get_stdev(individual_estimates["solvent"])
+        standard_state_err = _get_stdev(individual_estimates["standard_state"])
 
         # return the combined error
         return np.sqrt(complex_err**2 + solv_err**2 + standard_state_err**2)
 
-    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
+    def get_forward_and_reverse_energy_analysis(
+        self,
+    ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
@@ -238,11 +263,13 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]] = {}
+        forward_reverse: dict[
+            str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        ] = {}
 
-        for key in ['solvent', 'complex']:
+        for key in ["solvent", "complex"]:
             forward_reverse[key] = [
-                pus[0].outputs['forward_and_reverse_energies']
+                pus[0].outputs["forward_and_reverse_energies"]
                 for pus in self.data[key].values()
             ]
 
@@ -280,15 +307,16 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         # Loop through and get the repeats and get the matrices
         overlap_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
 
-        for key in ['solvent', 'complex']:
+        for key in ["solvent", "complex"]:
             overlap_stats[key] = [
-                pus[0].outputs['unit_mbar_overlap']
-                for pus in self.data[key].values()
+                pus[0].outputs["unit_mbar_overlap"] for pus in self.data[key].values()
             ]
 
         return overlap_stats
 
-    def get_replica_transition_statistics(self) -> dict[str, list[dict[str, npt.NDArray]]]:
+    def get_replica_transition_statistics(
+        self,
+    ) -> dict[str, list[dict[str, npt.NDArray]]]:
         """
         Get the replica exchange transition statistics for all
         legs of the simulation.
@@ -314,14 +342,16 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         """
         repex_stats: dict[str, list[dict[str, npt.NDArray]]] = {}
         try:
-            for key in ['solvent', 'complex']:
+            for key in ["solvent", "complex"]:
                 repex_stats[key] = [
-                    pus[0].outputs['replica_exchange_statistics']
+                    pus[0].outputs["replica_exchange_statistics"]
                     for pus in self.data[key].values()
                 ]
         except KeyError:
-            errmsg = ("Replica exchange statistics were not found, "
-                      "did you run a repex calculation?")
+            errmsg = (
+                "Replica exchange statistics were not found, "
+                "did you run a repex calculation?"
+            )
             raise ValueError(errmsg)
 
         return repex_stats
@@ -337,9 +367,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
           the thermodynamic cycle, with lists of replica states
           timeseries for each repeat of that simulation type.
         """
-        replica_states: dict[str, list[npt.NDArray]] = {
-            'solvent': [], 'complex': []
-        }
+        replica_states: dict[str, list[npt.NDArray]] = {"solvent": [], "complex": []}
 
         def is_file(filename: str):
             p = pathlib.Path(filename)
@@ -356,7 +384,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             chk = is_file(dir_path / chk).name
 
             reporter = multistate.MultiStateReporter(
-                storage=nc, checkpoint_storage=chk, open_mode='r'
+                storage=nc, checkpoint_storage=chk, open_mode="r"
             )
 
             retval = np.asarray(reporter.read_replica_thermodynamic_states())
@@ -364,11 +392,11 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
             return retval
 
-        for key in ['solvent', 'complex']:
+        for key in ["solvent", "complex"]:
             for pus in self.data[key].values():
                 states = get_replica_state(
-                    pus[0].outputs['nc'],
-                    pus[0].outputs['last_checkpoint'],
+                    pus[0].outputs["nc"],
+                    pus[0].outputs["last_checkpoint"],
                 )
                 replica_states[key].append(states)
 
@@ -388,9 +416,9 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         """
         equilibration_lengths: dict[str, list[float]] = {}
 
-        for key in ['solvent', 'complex']:
+        for key in ["solvent", "complex"]:
             equilibration_lengths[key] = [
-                pus[0].outputs['equilibration_iterations']
+                pus[0].outputs["equilibration_iterations"]
                 for pus in self.data[key].values()
             ]
 
@@ -412,9 +440,9 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         """
         production_lengths: dict[str, list[float]] = {}
 
-        for key in ['solvent', 'complex']:
+        for key in ["solvent", "complex"]:
             production_lengths[key] = [
-                pus[0].outputs['production_iterations']
+                pus[0].outputs["production_iterations"]
                 for pus in self.data[key].values()
             ]
 
@@ -433,8 +461,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_afe.AbsoluteBindingSolventUnit`
     :class:`openfe.protocols.openmm_afe.AbsoluteBindingComplexUnit`
     """
+
     result_cls = AbsoluteBindingProtocolResult
-    _settings_cls = AbsoluteBindingSettings 
+    _settings_cls = AbsoluteBindingSettings
     _settings: AbsoluteBindingSettings
 
     @classmethod
@@ -460,28 +489,151 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             alchemical_settings=AlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                    0.0,
+                    0.25,
+                    0.5,
+                    0.75,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                ],
                 lambda_vdw=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
-                    0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.12,
+                    0.24,
+                    0.36,
+                    0.48,
+                    0.6,
+                    0.7,
+                    0.77,
+                    0.85,
+                    1.0,
+                ],
                 lambda_restraints=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
             ),
             complex_lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.1,
+                    0.2,
+                    0.3,
+                    0.4,
+                    0.5,
+                    0.6,
+                    0.7,
+                    0.8,
+                    0.9,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.00,
+                    1.0,
+                    1.00,
+                    1.0,
+                    1.00,
+                    1.0,
+                    1.00,
+                    1.0,
+                ],
                 lambda_vdw=[
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.1,
+                    0.2,
+                    0.3,
+                    0.4,
+                    0.5,
+                    0.6,
+                    0.65,
+                    0.7,
+                    0.75,
+                    0.8,
+                    0.85,
+                    0.9,
+                    0.95,
+                    1.0,
+                ],
                 lambda_restraints=[
-                    0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0],
+                    0.0,
+                    0.2,
+                    0.4,
+                    0.6,
+                    0.8,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.00,
+                    1.0,
+                    1.00,
+                    1.0,
+                    1.00,
+                    1.0,
+                    1.00,
+                    1.0,
+                ],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
@@ -494,10 +646,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=0.5 * unit.nanosecond,
             ),
             solvent_equil_output_settings=MDOutputSettings(
-                equil_nvt_structure='equil_nvt_structure.pdb',
-                equil_npt_structure='equil_npt_structure.pdb',
-                production_trajectory_filename='production_equil.xtc',
-                log_output='equil_simulation.log',
+                equil_nvt_structure="equil_nvt_structure.pdb",
+                equil_npt_structure="equil_npt_structure.pdb",
+                production_trajectory_filename="production_equil.xtc",
+                log_output="equil_simulation.log",
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
@@ -505,8 +657,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=10.0 * unit.nanosecond,
             ),
             solvent_output_settings=MultiStateOutputSettings(
-                output_filename='solvent.nc',
-                checkpoint_storage_filename='solvent_checkpoint.nc',
+                output_structure="alchemical_system.pdb",
+                output_filename="solvent.nc",
+                checkpoint_storage_filename="solvent_checkpoint.nc",
             ),
             complex_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.25 * unit.nanosecond,
@@ -514,11 +667,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=5.0 * unit.nanosecond,
             ),
             complex_equil_output_settings=MDOutputSettings(
-                output_indices='all',
-                equil_nvt_structure='equil_nvt_structure.pdb',
-                equil_npt_structure='equil_npt_structure.pdb',
-                production_trajectory_filename='production_equil.xtc',
-                log_output='equil_simulation.log',
+                output_structure="alchemical_system.pdb",
+                output_indices="all",
+                equil_nvt_structure="equil_nvt_structure.pdb",
+                equil_npt_structure="equil_npt_structure.pdb",
+                production_trajectory_filename="production_equil.xtc",
+                log_output="equil_simulation.log",
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=30,
@@ -526,14 +680,15 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 production_length=10.0 * unit.nanosecond,
             ),
             complex_output_settings=MultiStateOutputSettings(
-                output_filename='complex.nc',
-                checkpoint_storage_filename='complex_checkpoint.nc'
+                output_filename="complex.nc",
+                checkpoint_storage_filename="complex_checkpoint.nc",
             ),
         )
 
     @staticmethod
     def _validate_endstates(
-        stateA: ChemicalSystem, stateB: ChemicalSystem,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
     ) -> None:
         """
         A binding transformation is defined (in terms of gufe components)
@@ -556,34 +711,33 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If the stateA unique Component is not a SmallMoleculeComponent
           If stateB contains any unique Components
         """
-        if not any(
-            isinstance(comp, ProteinComponent) for comp in stateA.values()
-        ):
+        if not any(isinstance(comp, ProteinComponent) for comp in stateA.values()):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not any(
-            isinstance(comp, SolventComponent) for comp in stateA.values()
-        ):
+        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
             errmsg = "No SolventComponent found"
             raise ValueError(errmsg)
 
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)
         if len(diff[0]) > 1:
-            errmsg = ("More than one unique components found in stateA, "
-                      "only one alchemical species is supported")
+            errmsg = (
+                "More than one unique components found in stateA, "
+                "only one alchemical species is supported"
+            )
             raise ValueError(errmsg)
 
         if not isinstance(diff[0][0], SmallMoleculeComponent):
-            errmsg = ("Only dissapearing small molecule components "
-                      "are supported by this protocol. "
-                      f"Found a {type(diff[0][0])}")
+            errmsg = (
+                "Only dissapearing small molecule components "
+                "are supported by this protocol. "
+                f"Found a {type(diff[0][0])}"
+            )
             raise ValueError(errmsg)
 
         if len(diff[1]) > 0:
-            errmsg = ("Unique components are found in stateB, "
-                      "this should not happen")
+            errmsg = "Unique components are found in stateB, " "this should not happen"
             raise ValueError(errmsg)
 
     @staticmethod
@@ -624,14 +778,17 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 "Components elec, vdw, and restraints must have equal amount"
                 f" of lambda windows. Got {len(lambda_elec)} elec lambda"
                 f" windows, {len(lambda_vdw)} vdw lambda windows, and"
-                f"{len(lambda_restraints)} restraints lambda windows.")
+                f"{len(lambda_restraints)} restraints lambda windows."
+            )
             raise ValueError(errmsg)
 
         # Ensure that number of overall lambda windows matches number of lambda
         # windows for individual components
         if n_replicas != len(lambda_vdw):
-            errmsg = (f"Number of replicas {n_replicas} does not equal the"
-                      f" number of lambda windows {len(lambda_vdw)}")
+            errmsg = (
+                f"Number of replicas {n_replicas} does not equal the"
+                f" number of lambda windows {len(lambda_vdw)}"
+            )
             raise ValueError(errmsg)
 
         # Check if there are no lambda windows with naked charges
@@ -641,14 +798,17 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     "There are states along this lambda schedule "
                     "where there are atoms with charges but no LJ "
                     f"interactions: lambda {inx}: "
-                    f"elec {lam} vdW {lambda_vdw[inx]}")
+                    f"elec {lam} vdW {lambda_vdw[inx]}"
+                )
                 raise ValueError(errmsg)
 
     def _create(
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
+        mapping: Optional[
+            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
+        ] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: extensions
@@ -658,14 +818,19 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Validate components and get alchemical components
         self._validate_endstates(stateA, stateB)
         alchem_comps = system_validation.get_alchemical_components(
-            stateA, stateB,
+            stateA,
+            stateB,
         )
 
         # Validate the lambda schedule
-        self._validate_lambda_schedule(self.settings.solvent_lambda_settings,
-                                       self.settings.solvent_simulation_settings)
-        self._validate_lambda_schedule(self.settings.complex_lambda_settings,
-                                       self.settings.complex_simulation_settings)
+        self._validate_lambda_schedule(
+            self.settings.solvent_lambda_settings,
+            self.settings.solvent_simulation_settings,
+        )
+        self._validate_lambda_schedule(
+            self.settings.complex_lambda_settings,
+            self.settings.complex_simulation_settings,
+        )
 
         # Check nonbond & solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
@@ -678,13 +843,15 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         )
 
         # Make sure that we have the full system for restraint trajectory analysis
-        if self.settings.complex_equil_output_settings.output_indices != 'all':
-            errmsg = ("Complex simulations need to output the full system "
-                      "during equilibration simulations.")
+        if self.settings.complex_equil_output_settings.output_indices != "all":
+            errmsg = (
+                "Complex simulations need to output the full system "
+                "during equilibration simulations."
+            )
             raise ValueError(errmsg)
-    
+
         # Get the name of the alchemical species
-        alchname = alchem_comps['stateA'][0].name
+        alchname = alchem_comps["stateA"][0].name
 
         # Create list units for complex and solvent transforms
 
@@ -694,9 +861,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 stateA=stateA,
                 stateB=stateB,
                 alchemical_components=alchem_comps,
-                generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Binding, {alchname} solvent leg: "
-                      f"repeat {i} generation 0"),
+                generation=0,
+                repeat_id=int(uuid.uuid4()),
+                name=(
+                    f"Absolute Binding, {alchname} solvent leg: "
+                    f"repeat {i} generation 0"
+                ),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -707,9 +877,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 stateA=stateA,
                 stateB=stateB,
                 alchemical_components=alchem_comps,
-                generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"Absolute Binding, {alchname} complex leg: "
-                      f"repeat {i} generation 0"),
+                generation=0,
+                repeat_id=int(uuid.uuid4()),
+                name=(
+                    f"Absolute Binding, {alchname} complex leg: "
+                    f"repeat {i} generation 0"
+                ),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -728,19 +901,24 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             for pu in d.protocol_unit_results:
                 if not pu.ok():
                     continue
-                if pu.outputs['simtype'] == 'solvent':
-                    unsorted_solvent_repeats[pu.outputs['repeat_id']].append(pu)
+                if pu.outputs["simtype"] == "solvent":
+                    unsorted_solvent_repeats[pu.outputs["repeat_id"]].append(pu)
                 else:
-                    unsorted_complex_repeats[pu.outputs['repeat_id']].append(pu)
+                    unsorted_complex_repeats[pu.outputs["repeat_id"]].append(pu)
 
         repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
-            'solvent': {}, 'complex': {},
+            "solvent": {},
+            "complex": {},
         }
         for k, v in unsorted_solvent_repeats.items():
-            repeats['solvent'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
+            repeats["solvent"][str(k)] = sorted(
+                v, key=lambda x: x.outputs["generation"]
+            )
 
         for k, v in unsorted_complex_repeats.items():
-            repeats['complex'][str(k)] = sorted(v, key=lambda x: x.outputs['generation'])
+            repeats["complex"][str(k)] = sorted(
+                v, key=lambda x: x.outputs["generation"]
+            )
         return repeats
 
 
@@ -748,6 +926,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
     """
+
     def _get_components(self):
         """
         Get the relevant components for a complex transformation.
@@ -763,8 +942,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         small_mols : dict[SmallMoleculeComponent: OFFMolecule]
           SmallMoleculeComponents to add to the system.
         """
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
+        stateA = self._inputs["stateA"]
+        alchem_comps = self._inputs["alchemical_components"]
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
         off_comps = {m: m.to_openff() for m in small_mols}
@@ -797,26 +976,28 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
         """
-        prot_settings = self._inputs['protocol'].settings
+        prot_settings = self._inputs["protocol"].settings
 
         settings = {}
-        settings['forcefield_settings'] = prot_settings.forcefield_settings
-        settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.solvation_settings
-        settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['lambda_settings'] = prot_settings.complex_lambda_settings
-        settings['engine_settings'] = prot_settings.engine_settings
-        settings['integrator_settings'] = prot_settings.integrator_settings
-        settings['equil_simulation_settings'] = prot_settings.complex_equil_simulation_settings
-        settings['equil_output_settings'] = prot_settings.complex_equil_output_settings
-        settings['simulation_settings'] = prot_settings.complex_simulation_settings
-        settings['output_settings'] = prot_settings.complex_output_settings
-        settings['restraint_settings'] = prot_settings.restraint_settings
+        settings["forcefield_settings"] = prot_settings.forcefield_settings
+        settings["thermo_settings"] = prot_settings.thermo_settings
+        settings["charge_settings"] = prot_settings.partial_charge_settings
+        settings["solvation_settings"] = prot_settings.solvation_settings
+        settings["alchemical_settings"] = prot_settings.alchemical_settings
+        settings["lambda_settings"] = prot_settings.complex_lambda_settings
+        settings["engine_settings"] = prot_settings.engine_settings
+        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["equil_simulation_settings"] = (
+            prot_settings.complex_equil_simulation_settings
+        )
+        settings["equil_output_settings"] = prot_settings.complex_equil_output_settings
+        settings["simulation_settings"] = prot_settings.complex_simulation_settings
+        settings["output_settings"] = prot_settings.complex_output_settings
+        settings["restraint_settings"] = prot_settings.restraint_settings
 
         settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
+            settings["forcefield_settings"].hydrogen_mass,
+            settings["integrator_settings"].timestep,
         )
 
         return settings
@@ -847,6 +1028,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
           An MDAnalysis Universe of the System.
         """
         from MDAnalysis.coordinates.memory import MemoryReader
+
         # If the trajectory file doesn't exist, then we use positions
         if trajectory is not None and trajectory.is_file():
             return mda.Universe(
@@ -861,7 +1043,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
                 topology,
                 np.array(positions._value) * 10,
                 topology_format="OPENMMTOPOLOGY",
-                trajectory_format=MemoryReader
+                trajectory_format=MemoryReader,
             )
 
     @staticmethod
@@ -959,7 +1141,12 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
-    ) -> tuple[GlobalParameterState, unit.Quantity, System]:
+    ) -> tuple[
+        GlobalParameterState,
+        unit.Quantity,
+        System,
+        geometry.HostGuestRestraintGeometry,
+    ]:
         """
         Find and add restraints to the OpenMM System.
 
@@ -996,16 +1183,16 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
           The standard state correction for the restraint.
         system : openmm.System
           A copy of the System with the restraint added.
+        rest_geom : geometry.HostGuestRestraintGeometry
+          The restraint Geometry object.
         """
         if self.verbose:
             self.logger.info("Generating restraints")
 
         # Get the guest idxs and rdmol
         # concatenate a list of residue indexes for all alchemical components
-        guest_rdmol = alchem_comps['stateA'][0].to_rdkit()
-        residxs = np.concatenate(
-            [comp_resids[key] for key in alchem_comps['stateA']]
-        )
+        guest_rdmol = alchem_comps["stateA"][0].to_rdkit()
+        residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
 
         # get the alchemicical atom ids
         guest_atom_ids = self._get_idxs_from_residxs(topology, residxs)
@@ -1014,7 +1201,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # We assume this is everything but the alchemical component
         # and the solvent.
         solv_comps = [c for c in comp_resids if isinstance(c, SolventComponent)]
-        exclude_comps = [alchem_comps['stateA']] + solv_comps
+        exclude_comps = [alchem_comps["stateA"]] + solv_comps
         residxs = np.concatenate(
             [v for i, v in comp_resids.items() if i not in exclude_comps]
         )
@@ -1028,23 +1215,22 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         univ = self._get_mda_universe(
             topology,
             positions,
-            self.shared_basepath / settings['equil_output_settings'].production_trajectory_filename
+            self.shared_basepath
+            / settings["equil_output_settings"].production_trajectory_filename,
         )
 
-        if isinstance(settings['restraint_settings'], BoreschRestraintSettings):
+        if isinstance(settings["restraint_settings"], BoreschRestraintSettings):
             rest_geom, restraint = self._get_boresch_restraint(
                 univ,
                 guest_rdmol,
                 guest_atom_ids,
                 host_atom_ids,
-                settings['thermo_settings'].temperature,
-                settings['restraint_settings'],
+                settings["thermo_settings"].temperature,
+                settings["restraint_settings"],
             )
         else:
             # TODO turn this into a direction for different restraint types supported?
-            raise NotImplementedError(
-                "Other restraint types are not yet available"
-            )
+            raise NotImplementedError("Other restraint types are not yet available")
 
         if self.verbose:
             self.logger.info(f"restraint geometry is: {rest_geom}")
@@ -1053,15 +1239,15 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # & get the correction
         thermodynamic_state = ThermodynamicState(
             system,
-            temperature=to_openmm(settings['thermo_settings'].temperature),
-            pressure=to_openmm(settings['thermo_settings'].pressure),
+            temperature=to_openmm(settings["thermo_settings"].temperature),
+            pressure=to_openmm(settings["thermo_settings"].pressure),
         )
 
         # Add the force to the thermodynamic state
         restraint.add_force(
             thermodynamic_state,
             rest_geom,
-            controlling_parameter_name='lambda_restraints'
+            controlling_parameter_name="lambda_restraints",
         )
         # Get the standard state correction as a unit.Quantity
         correction = restraint.get_standard_state_correction(
@@ -1073,21 +1259,27 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         restraint_parameter_state = omm_restraints.RestraintParameterState(
             lambda_restraints=1.0
         )
-        return restraint_parameter_state, correction, thermodynamic_state.system
+        return (
+            restraint_parameter_state,
+            correction,
+            thermodynamic_state.system,
+            rest_geom,
+        )
 
     def _execute(
-        self, ctx: gufe.Context, **kwargs,
+        self,
+        ctx: gufe.Context,
+        **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
 
         return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            'simtype': 'complex',
-            **outputs
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": "complex",
+            **outputs,
         }
 
 
@@ -1095,6 +1287,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the solvent phase of an absolute binding free energy
     """
+
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -1110,8 +1303,8 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         small_mols : dict[SmallMoleculeComponent: OFFMolecule]
           SmallMoleculeComponents to add to the system.
         """
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
+        stateA = self._inputs["stateA"]
+        alchem_comps = self._inputs["alchemical_components"]
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
         off_comps = {m: m.to_openff() for m in small_mols}
@@ -1143,40 +1336,43 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
         """
-        prot_settings = self._inputs['protocol'].settings
+        prot_settings = self._inputs["protocol"].settings
 
         settings = {}
-        settings['forcefield_settings'] = prot_settings.forcefield_settings
-        settings['thermo_settings'] = prot_settings.thermo_settings
-        settings['charge_settings'] = prot_settings.partial_charge_settings
-        settings['solvation_settings'] = prot_settings.solvation_settings
-        settings['alchemical_settings'] = prot_settings.alchemical_settings
-        settings['lambda_settings'] = prot_settings.solvent_lambda_settings
-        settings['engine_settings'] = prot_settings.engine_settings
-        settings['integrator_settings'] = prot_settings.integrator_settings
-        settings['equil_simulation_settings'] = prot_settings.solvent_equil_simulation_settings
-        settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
-        settings['simulation_settings'] = prot_settings.solvent_simulation_settings
-        settings['output_settings'] = prot_settings.solvent_output_settings
+        settings["forcefield_settings"] = prot_settings.forcefield_settings
+        settings["thermo_settings"] = prot_settings.thermo_settings
+        settings["charge_settings"] = prot_settings.partial_charge_settings
+        settings["solvation_settings"] = prot_settings.solvation_settings
+        settings["alchemical_settings"] = prot_settings.alchemical_settings
+        settings["lambda_settings"] = prot_settings.solvent_lambda_settings
+        settings["engine_settings"] = prot_settings.engine_settings
+        settings["integrator_settings"] = prot_settings.integrator_settings
+        settings["equil_simulation_settings"] = (
+            prot_settings.solvent_equil_simulation_settings
+        )
+        settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
+        settings["simulation_settings"] = prot_settings.solvent_simulation_settings
+        settings["output_settings"] = prot_settings.solvent_output_settings
 
         settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
+            settings["forcefield_settings"].hydrogen_mass,
+            settings["integrator_settings"].timestep,
         )
 
         return settings
 
     def _execute(
-        self, ctx: gufe.Context, **kwargs,
+        self,
+        ctx: gufe.Context,
+        **kwargs,
     ) -> dict[str, Any]:
         log_system_probe(logging.INFO, paths=[ctx.scratch])
 
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
 
         return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            'simtype': 'solvent',
-            **outputs
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": "solvent",
+            **outputs,
         }
