@@ -562,14 +562,18 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambda_vdw = settings['lambda_settings'].lambda_vdw
         lambda_rest = settings['lambda_settings'].lambda_restraints
 
-        # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
-        # means fully interacting, not stateB
+        # Reverse lambda schedule for vdw and elect
+        # since in AbsoluteAlchemicalFactory 1 means fully
+        # interacting, not stateB (which would be non-interacting)
         for name, schedule in [
             ('lambda_electrostatics', lambda_elec),
             ('lambda_sterics', lambda_vdw),
-            ('lambda_restraints', lambda_rest),
         ]:
             lambdas[name] = np.array([1-x for x in schedule])
+
+        # Restraints on the other hand go from 0 (non-interacting)
+        # to 1 (fully-interacting), so they are the right way around.
+        lambdas['lambda_restraints'] = np.array(lambda_rest)
 
         return lambdas
 
