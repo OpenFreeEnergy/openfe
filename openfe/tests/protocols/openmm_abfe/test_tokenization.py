@@ -1,8 +1,14 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import json
+import gzip
 import openfe
-from openfe.protocols import openmm_afe
+from openfe.protocols.openmm_afe import (
+    AbsoluteBindingProtocol,
+    AbsoluteBindingSolventUnit,
+    AbsoluteBindingComplexUnit,
+    AbsoluteBindingProtocolResult,
+)
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
 import pytest
@@ -10,8 +16,8 @@ import pytest
 
 @pytest.fixture
 def protocol():
-    return openmm_afe.AbsoluteBindingProtocol(
-               openmm_afe.AbsoluteBindingProtocol.default_settings()
+    return AbsoluteBindingProtocol(
+               AbsoluteBindingProtocol.default_settings()
            )
 
 
@@ -35,27 +41,26 @@ def protocol_units(protocol, benzene_complex_system, T4_protein_component):
 @pytest.fixture
 def solvent_protocol_unit(protocol_units):
     for pu in protocol_units:
-        if isinstance(pu, openmm_afe.AbsoluteBindingSolventUnit):
+        if isinstance(pu, AbsoluteBindingSolventUnit):
             return pu
 
 
 @pytest.fixture
 def complex_protocol_unit(protocol_units):
     for pu in protocol_units:
-        if isinstance(pu, openmm_afe.AbsoluteBindingComplexUnit):
+        if isinstance(pu, AbsoluteBindingComplexUnit):
             return pu
 
 
-# @pytest.fixture
-# def protocol_result(afe_solv_transformation_json):
-#     d = json.loads(afe_solv_transformation_json,
-#                    cls=gufe.tokenization.JSON_HANDLER.decoder)
-#     pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d['protocol_result'])
-#     return pr
+@pytest.fixture
+def protocol_result(abfe_transformation_json_path):
+    with gzip.open(abfe_transformation_json_path) as f:
+        pr = AbsoluteBindingProtocolResult.from_json(f)
+    return pr
 
 
 class TestAbsoluteBindingProtocol(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteBindingProtocol
+    cls = AbsoluteBindingProtocol
     key = None
     repr = "AbsoluteBindingProtocol-"
 
@@ -72,7 +77,7 @@ class TestAbsoluteBindingProtocol(GufeTokenizableTestsMixin):
 
 
 class TestAbsoluteBindingSolventUnit(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteBindingSolventUnit
+    cls = AbsoluteBindingSolventUnit
     repr = "AbsoluteBindingSolventUnit(Absolute Binding, benzene solvent leg"
     key = None
 
@@ -89,7 +94,7 @@ class TestAbsoluteBindingSolventUnit(GufeTokenizableTestsMixin):
 
 
 class TestAbsoluteBindingComplexUnit(GufeTokenizableTestsMixin):
-    cls = openmm_afe.AbsoluteBindingComplexUnit
+    cls = AbsoluteBindingComplexUnit
     repr = "AbsoluteBindingComplexUnit(Absolute Binding, benzene complex leg"
     key = None
 
@@ -105,18 +110,18 @@ class TestAbsoluteBindingComplexUnit(GufeTokenizableTestsMixin):
         assert self.repr in repr(instance)
 
 
-# class TestAbsoluteSolvationProtocolResult(GufeTokenizableTestsMixin):
-#     cls = openmm_afe.AbsoluteSolvationProtocolResult
-#     key = None
-#     repr = "AbsoluteSolvationProtocolResult-"
-# 
-#     @pytest.fixture()
-#     def instance(self, protocol_result):
-#         return protocol_result
-# 
-#     def test_repr(self, instance):
-#         """
-#         Overwrites the base `test_repr` call.
-#         """
-#         assert isinstance(repr(instance), str)
-#         assert self.repr in repr(instance)
+class TestAbsoluteBindingProtocolResult(GufeTokenizableTestsMixin):
+    cls = AbsoluteBindingProtocolResult
+    key = None
+    repr = "AbsoluteBindingProtocolResult-"
+
+    @pytest.fixture()
+    def instance(self, protocol_result):
+        return protocol_result
+
+    def test_repr(self, instance):
+        """
+        Overwrites the base `test_repr` call.
+        """
+        assert isinstance(repr(instance), str)
+        assert self.repr in repr(instance)
