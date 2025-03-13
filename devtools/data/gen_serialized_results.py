@@ -36,6 +36,19 @@ from openfe.protocols.openmm_afe import (
 )
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 
+import sys
+import logging
+from openfecli.utils import configure_logger
+
+# avoid problems with output not showing if queueing system kills a job
+sys.stdout.reconfigure(line_buffering=True)
+
+stdout_handler = logging.StreamHandler(sys.stdout)
+configure_logger('gufekey', handler=stdout_handler)
+configure_logger('gufe', handler=stdout_handler)
+configure_logger('openfe', handler=stdout_handler)
+configure_logger('openmmtools.multistate.multistatereporter', level=logging.DEBUG, handler=stdout_handler)
+configure_logger('openmmtools.multistate.multistatesampler', level=logging.DEBUG, handler=stdout_handler)
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +178,7 @@ def generate_abfe_json():
     )
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
-    execute_and_serialize(dag, protocol, "ABFEProtocol")
+    execute_and_serialize(dag, protocol, "ABFEProtocol", new_serialization=True)
 
 
 def generate_ahfe_settings():
@@ -207,7 +220,7 @@ def generate_ahfe_json(smc):
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
 
-    execute_and_serialize(dag, protocol, "AHFEProtocol", new_serialization=True)
+    execute_and_serialize(dag, protocol, "AHFEProtocol")
 
 
 def generate_rfe_settings():

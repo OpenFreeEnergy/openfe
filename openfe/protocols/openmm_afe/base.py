@@ -1191,10 +1191,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if not dry:
             nc = self.shared_basepath / settings['output_settings'].output_filename
             chk = settings['output_settings'].checkpoint_storage_filename
-            return {
-                'nc': nc,
-                'last_checkpoint': chk,
-                **unit_result_dict,
-            }
+            unit_result_dict['nc'] = nc
+            unit_result_dict['last_checkpoint'] = chk
+
+            if restraint_geometry is not None:
+                unit_result_dict['restraint_geometry'] = restraint_geometry.dict()
+
+            return unit_result_dict
         else:
             return {'debug': {'sampler': sampler}}

@@ -45,8 +45,12 @@ from openmm.app import Topology as omm_topology
 from openmm import unit as omm_unit
 from openmm import System
 from rdkit import Chem
-from typing import Optional, Union
-from typing import Any, Iterable
+from typing import (
+    Optional,
+    Union,
+    Any,
+    Iterable,
+)
 import uuid
 import MDAnalysis as mda
 
@@ -447,6 +451,23 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             ]
 
         return production_lengths
+
+    def restraint_geometries(self) -> list[dict[str, Any]]:
+        """
+        Get a list of the restraint geometries for the
+        complex simulations. These define the atoms that have
+        been restrained in the system.
+
+        Returns
+        -------
+        geometries : list[dict[str, Any]]
+          A list of dictionaries containing the details of the atoms
+          in the system that are involved in the restraint.
+        """
+        geometries = [
+            pus[0].outputs["restraint_geometry"]
+            for pus in self.data['complex'].values()
+        ]
 
 
 class AbsoluteBindingProtocol(gufe.Protocol):
