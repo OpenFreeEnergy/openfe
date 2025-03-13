@@ -88,10 +88,8 @@ jobs:
 
       - name: "Run tests"
         env:
-          # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
-          OFE_INTEGRATION_TESTS: FALSE
         run: |
           pytest -n logical -vv --durations=10
 
