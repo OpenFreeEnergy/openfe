@@ -189,8 +189,10 @@ class MultistateEquilFEAnalysis:
     @staticmethod
     def _get_free_energy(
         analyzer: multistate.MultiStateSamplerAnalyzer,
-        u_ln: npt.NDArray, N_l: npt.NDArray,
-        return_units: unit.Quantity,
+        u_ln: npt.NDArray,
+        N_l: npt.NDArray,
+        bootstraps: int = 1000,
+        return_units: unit.Quantity = unit.kilocalorie_per_mole,
     ) -> tuple[unit.Quantity, unit.Quantity]:
         """
         Helper method to create an MBAR object and extract free energies
@@ -206,6 +208,11 @@ class MultistateEquilFEAnalysis:
         N_l : npt.NDArray
           An array containing the total number of samples drawn from each
           state.
+        bootstraps : int
+          How many bootstrap samples will be computed. If 0, no bootstraps
+          will be computed and analytical errors will be returned.
+        return_units : unit.Quantity
+          The return units the results will be provided in.
 
         Returns
         -------
@@ -221,8 +228,23 @@ class MultistateEquilFEAnalysis:
         """
 
         # pymbar 4
-        mbar = MBAR(u_ln, N_l, solver_protocol="robust", n_bootstraps=1000, bootstrap_solver_protocol="robust")
-        r = mbar.compute_free_energy_differences(compute_uncertainty=True, uncertainty_method="bootstrap")
+        mbar = MBAR(
+            u_ln,
+            N_l,
+            solver_protocol="robust",
+            n_bootstraps=bootstraps,
+            bootstrap_solver_protocol="robust"
+        )
+        if bootstraps > 0:
+            uncertainty_method='bootstrap'
+        else:
+            uncertainty_method=None
+
+        r = mbar.compute_free_energy_differences(
+            compute_uncertainty=True,
+            uncertainty_method=uncertainty_method,
+        )
+
         DF_ij = r['Delta_f']
         dDF_ij = r['dDelta_f']
 
@@ -248,7 +270,11 @@ class MultistateEquilFEAnalysis:
         N_l_decorr = self.analyzer._unbiased_decorrelated_N_l
 
         DG, dDG = self._get_free_energy(
-            self.analyzer, u_ln_decorr, N_l_decorr, self.units
+            self.analyzer,
+            u_ln_decorr,
+            N_l_decorr,
+            1000,
+            self.units
         )
 
         return DG, dDG
@@ -276,6 +302,12 @@ class MultistateEquilFEAnalysis:
               and errors along each sample fraction in the forward direction
             * ``reverse_DGs`` and `reverse_dDGs`: the free energy estimates
               and errors along each sample fraction in the reverse direction
+
+        Notes
+        -----
+        * This method does not currently use bootstrap uncertainties due to
+          issues with the solver when using low amounts of data points. All
+          uncertainties are MBAR analytical errors.
         """
         # Temporary hack to get some simulations done
         return None
@@ -312,7 +344,9 @@ class MultistateEquilFEAnalysis:
                 # Forward
                 DG, dDG = self._get_free_energy(
                     self.analyzer,
-                    u_ln[:, :samples], new_N_l,
+                    u_ln[:, :samples],
+                    new_N_l,
+                    0,
                     self.units,
                 )
                 forward_DGs.append(DG)
@@ -321,7 +355,9 @@ class MultistateEquilFEAnalysis:
                 # Reverse
                 DG, dDG = self._get_free_energy(
                     self.analyzer,
-                    u_ln[:, -samples:], new_N_l,
+                    u_ln[:, -samples:],
+                    new_N_l,
+                    0,
                     self.units,
                 )
                 reverse_DGs.append(DG)
