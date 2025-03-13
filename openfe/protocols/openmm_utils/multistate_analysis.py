@@ -309,9 +309,6 @@ class MultistateEquilFEAnalysis:
           issues with the solver when using low amounts of data points. All
           uncertainties are MBAR analytical errors.
         """
-        # Temporary hack to get some simulations done
-        return None
-
         try:
             u_ln = self.analyzer._unbiased_decorrelated_u_ln
             N_l = self.analyzer._unbiased_decorrelated_N_l
