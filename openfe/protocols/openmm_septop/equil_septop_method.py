@@ -188,7 +188,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         complex_correction_dGs_A = []
         complex_correction_dGs_B = []
         solv_dGs = []
-        solv_correction_dGs = []
+        solv_correction_dGs: list[float] = []
 
         for pus in self.data['complex'].values():
             complex_dGs.append((
@@ -1036,6 +1036,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             ligand_2_inxs_B: tuple[int],
             protein_inxs: tuple[int],
             settings: dict[str, SettingsBaseModel],
+            positions_AB: np.array,
     ) -> openmm.System:
         """
         Adds Boresch restraints to the system.
@@ -1334,6 +1335,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_2_inxs_B: tuple[int],
         protein_inxs,
         settings: dict[str, SettingsBaseModel],
+        positions_AB: np.array,
     ) -> openmm.System:
         """
         Apply the distance restraint between the ligands.
@@ -1392,20 +1394,39 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             self.logger.info(f"restraint geometry is: {rest_geom}")
         print(rest_geom)
 
-        # We need a temporary thermodynamic state to add the restraint
-        # & get the correction
-        thermodynamic_state = ThermodynamicState(
-            system,
-            temperature=to_openmm(settings['thermo_settings'].temperature),
-            pressure=to_openmm(settings['thermo_settings'].pressure),
-        )
+        # # We need a temporary thermodynamic state to add the restraint
+        # # & get the correction
+        # thermodynamic_state = ThermodynamicState(
+        #     system,
+        #     temperature=to_openmm(settings['thermo_settings'].temperature),
+        #     pressure=to_openmm(settings['thermo_settings'].pressure),
+        # )
+        #
+        # # Add the force to the thermodynamic state
+        # restraint.add_force(
+        #     thermodynamic_state,
+        #     rest_geom,
+        #     controlling_parameter_name="lambda_restraints",
+        # )
 
-        # Add the force to the thermodynamic state
-        restraint.add_force(
-            thermodynamic_state,
-            rest_geom,
-            controlling_parameter_name="lambda_restraints",
+        # Revert back to old way of adding restraints
+        distance = np.linalg.norm(
+            positions_AB[rest_geom.guest_atoms[0]] - positions_AB[rest_geom.host_atoms[0]])
+        print(distance)
+
+        k_distance = to_openmm(settings['restraint_settings'].spring_constant)
+
+        force = openmm.HarmonicBondForce()
+        force.addBond(
+            rest_geom.guest_atoms[0],
+            rest_geom.host_atoms[0],
+            distance * openmm.unit.nanometers,
+            k_distance,
         )
+        force.setName("alignment_restraint")
+        force.setForceGroup(6)
+
+        system.addForce(force)
 
         # Get the standard state correction. This assumes that the contribution
         # of the harmonic bond correction itself cancels out.
@@ -1413,7 +1434,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             openmm.unit.MOLAR_GAS_CONSTANT_R * to_openmm(settings['thermo_settings'].temperature)
         )
 
-        return correction, 0 * unit.kilocalorie_per_mole, thermodynamic_state.system
+        return correction, 0 * unit.kilocalorie_per_mole, system
 
         # ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
         # ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
@@ -1564,14 +1585,14 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         lambda_vdw_A = [1 - x for x in lambda_vdw_A]
         lambda_elec_B = [1 - x for x in lambda_elec_B]
         lambda_vdw_B = [1 - x for x in lambda_vdw_B]
-        # Set lambda restraint for the solvent to 1
-        lambda_restraints = len(lambda_elec_A) * [1]
+        # # Set lambda restraint for the solvent to 1
+        # lambda_restraints = len(lambda_elec_A) * [1]
 
         lambdas['lambda_electrostatics_A'] = lambda_elec_A
         lambdas['lambda_sterics_A'] = lambda_vdw_A
         lambdas['lambda_electrostatics_B'] = lambda_elec_B
         lambdas['lambda_sterics_B'] = lambda_vdw_B
-        lambdas['lambda_restraints'] = lambda_restraints
+        # lambdas['lambda_restraints'] = lambda_restraints
 
         return lambdas
 
