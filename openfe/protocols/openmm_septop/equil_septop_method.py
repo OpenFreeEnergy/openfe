@@ -213,7 +213,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             ))
 
         for pus in self.data['solvent_setup'].values():
-            solv_dGs.append((
+            solv_correction_dGs.append((
                 pus[0].outputs['standard_state_correction_A'],
                 0 * unit.kilocalorie_per_mole  # correction has no error
             ))
