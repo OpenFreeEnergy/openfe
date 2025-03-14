@@ -230,9 +230,7 @@ def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_
         if overwrite:
             assert "Overwriting partial charges" in result.output
 
-        network = AlchemicalNetwork.from_dict(
-            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
-        )
+        network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
         # make sure the ligands don't have dummy charges
         for node in network.nodes:
             off_mol = node.components["ligand"].to_openff()
