@@ -1392,7 +1392,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         if self.verbose:
             self.logger.info(f"restraint geometry is: {rest_geom}")
-        print(rest_geom)
 
         # # We need a temporary thermodynamic state to add the restraint
         # # & get the correction
@@ -1435,30 +1434,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         )
 
         return correction, 0 * unit.kilocalorie_per_mole, system
-
-        # ref_A = ligand_1_inxs[get_central_atom_idx(ligand_1)]
-        # ref_B = ligand_2_inxs_B[get_central_atom_idx(ligand_2)]
-        # print(ref_A, ref_B, ligand_2_inxs[ligand_2_inxs_B.index(ref_B)])
-        # distance = np.linalg.norm(
-        #     positions_AB[ref_A] - positions_AB[ligand_2_inxs[ligand_2_inxs_B.index(ref_B)]])
-        # print(distance)
-        #
-        # k_distance = to_openmm(settings['restraint_settings'].spring_constant)
-        #
-        # force = openmm.HarmonicBondForce()
-        # force.addBond(
-        #     ref_A,
-        #     ligand_2_inxs[ligand_2_inxs_B.index(ref_B)],
-        #     distance * openmm.unit.nanometers,
-        #     k_distance,
-        # )
-        # force.setName("alignment_restraint")
-        # force.setForceGroup(6)
-        #
-        # system.addForce(force)
-
-        # return system
-        # return None, None, None, system
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,
