@@ -105,10 +105,9 @@ def load_and_check_result(fpath:os.PathLike|str)->dict:
     if "unit_results" not in result.keys():
         click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
         return None
-    # TODO: there are some exceptions in our test dataset that this changes the behavior for
-    # if all('exception' in u for u in result['unit_results'].values()):
-    #     # click.echo(f"{fpath}: Exception found in 'unit_results', assuming to be a failed simulation.", err=True)
-        # return None
+    if all('exception' in u for u in result['unit_results'].values()):
+        click.echo(f"{fpath}: Exception found in 'unit_results', assuming to be a failed simulation.", err=True)
+        return None
     if result['estimate'] is None:
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation", err=True)
         return None
