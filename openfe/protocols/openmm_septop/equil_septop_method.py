@@ -1034,7 +1034,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             ligand_1_inxs: list[int],
             ligand_2_inxs: list[int],
             ligand_2_inxs_B: list[int],
-            protein_inxs: list[int],
+            protein_inxs: list[int],  # type: ignore[override]
             settings: dict[str, SettingsBaseModel],
             positions_AB: np.ndarray,
     ) -> openmm.System:
