@@ -1328,13 +1328,13 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         alchem_comps = self._inputs["alchemical_components"]
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        off_comps = {m: m.to_openff() for m in small_mols}
+        off_comps = {m: m.to_openff() for m in alchem_comps['stateA']}
 
         # We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`
         # in the Protocol's `_create`.
-        # Similarly we don't need to check prot_comp
-        return alchem_comps, solv_comp, prot_comp, off_comps
+        # Similarly we don't need to check prot_comp just return None
+        return alchem_comps, solv_comp, None, off_comps
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """

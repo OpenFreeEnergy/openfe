@@ -164,7 +164,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool
-    ) -> omm_unit.Quantity:
+    ) -> [omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -192,6 +192,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
+        box : openmm.unit.Quantity
+          Box vectors
         """
         # Prep the simulation object
         # Restrict CPU count if running vacuum simulation
@@ -262,13 +264,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             shared_basepath=self.shared_basepath,
         )
 
-        state = simulation.context.getState(getPositions=True, enforcePeriodicBox=True)
+        state = simulation.context.getState(getPositions=True) # enforcePeriodicBox=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
-
+        box = state.getPeriodicBoxVectors()
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
 
-        return equilibrated_positions
+        return equilibrated_positions, box
 
     def _prepare(
         self, verbose: bool,
@@ -550,7 +552,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        lambdas : dict[str, npt.NDArray]
+        lambdas : dict[str, list[float]]
 
         TODO
         ----
@@ -566,11 +568,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # Reverse lambda schedule for vdw and elect
         # since in AbsoluteAlchemicalFactory 1 means fully
         # interacting, not stateB (which would be non-interacting)
-        for name, schedule in [
-            ('lambda_electrostatics', lambda_elec),
-            ('lambda_sterics', lambda_vdw),
-        ]:
-            lambdas[name] = np.array([1-x for x in schedule])
+        lambdas['lambda_electrostatics'] = [1-x for x in lambda_elec]
+        lambdas['lambda_sterics'] = [1-x for x in lambda_vdw]
 
         # Restraints on the other hand go from 0 (non-interacting)
         # to 1 (fully-interacting), so they are the right way around.
@@ -651,6 +650,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         alchemical_system: openmm.System,
         positions: openmm.unit.Quantity,
+        box_vectors: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, npt.NDArray],
         solvent_comp: Optional[SolventComponent],
@@ -666,6 +666,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Alchemical system to get states for.
         positions : openmm.unit.Quantity
           Positions of the alchemical system.
+        box_vectors : openmm.unit.Quantity
+          Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
         lambdas : dict[str, npt.NDArray]
@@ -716,8 +718,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         sampler_state = SamplerState(positions=positions)
         if alchemical_system.usesPeriodicBoundaryConditions():
-            box = alchemical_system.getDefaultPeriodicBoxVectors()
-            sampler_state.box_vectors = box
+            sampler_state.box_vectors = box_vectors
 
         sampler_states = [sampler_state for _ in cmp_states]
 
@@ -1097,7 +1098,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # 4. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
-        positions = self._pre_equilibrate(
+        positions, box_vectors = self._pre_equilibrate(
             omm_system, omm_topology, positions, settings, dry
         )
 
@@ -1108,7 +1109,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         restraint_parameter_state, standard_state_corr, omm_system, restraint_geometry = self._add_restraints(
             omm_system,
             omm_topology,
-            positions, 
+            positions,
             alchem_comps,
             comp_resids,
             settings,
@@ -1123,6 +1124,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler_states, cmp_states = self._get_states(
             alchem_system,
             positions,
+            box_vectors,
             settings,
             lambdas,
             solv_comp,
