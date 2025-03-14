@@ -164,7 +164,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool
-    ) -> [omm_unit.Quantity, omm_unit.Quantity]:
+    ) -> tuple[omm_unit.Quantity, Optional[omm_unit.Quantity]]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -192,7 +192,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
-        box : openmm.unit.Quantity
+        box : Optional[openmm.unit.Quantity]
           Box vectors
         """
         # Prep the simulation object
@@ -245,7 +245,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # Don't do anything if we're doing a dry run
         if dry:
-            return positions
+            return positions, system.getDefaultPeriodicBoxVectors()
 
         # Use the _run_MD method from the PlainMDProtocolUnit
         # Should in-place modify the simulation
@@ -652,7 +652,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         alchemical_system: openmm.System,
         positions: openmm.unit.Quantity,
-        box_vectors: openmm.unit.Quantity,
+        box_vectors: Optional[openmm.unit.Quantity],
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, npt.NDArray],
         solvent_comp: Optional[SolventComponent],
@@ -668,7 +668,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Alchemical system to get states for.
         positions : openmm.unit.Quantity
           Positions of the alchemical system.
-        box_vectors : openmm.unit.Quantity
+        box_vectors : Optional[openmm.unit.Quantity]
           Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
