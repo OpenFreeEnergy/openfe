@@ -163,4 +163,4 @@ class SepTopParameterState(GlobalParameterState):
     lambda_torsions_B = _LambdaParameter('lambda_torsions_B')
 
     # Restraints solvent
-    lambda_restraints_solvent = 1.0
+    lambda_restraints = _LambdaParameter('lambda_restraints')

@@ -1404,7 +1404,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         restraint.add_force(
             thermodynamic_state,
             rest_geom,
-            controlling_parameter_name="lambda_restraints_solvent",
+            controlling_parameter_name="lambda_restraints",
         )
 
         # Get the standard state correction. This assumes that the contribution
@@ -1564,10 +1564,14 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         lambda_vdw_A = [1 - x for x in lambda_vdw_A]
         lambda_elec_B = [1 - x for x in lambda_elec_B]
         lambda_vdw_B = [1 - x for x in lambda_vdw_B]
+        # Set lambda restraint for the solvent to 1
+        lambda_restraints = len(lambda_elec_A) * [1]
+
         lambdas['lambda_electrostatics_A'] = lambda_elec_A
         lambdas['lambda_sterics_A'] = lambda_vdw_A
         lambdas['lambda_electrostatics_B'] = lambda_elec_B
         lambdas['lambda_sterics_B'] = lambda_vdw_B
+        lambdas['lambda_restraints'] = lambda_restraints
 
         return lambdas
 
