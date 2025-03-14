@@ -188,7 +188,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         complex_correction_dGs_A = []
         complex_correction_dGs_B = []
         solv_dGs = []
-        solv_correction_dGs: list[float] = []
+        solv_correction_dGs: list[tuple[Any, Any]] = []
 
         for pus in self.data['complex'].values():
             complex_dGs.append((
@@ -1031,12 +1031,12 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             u_B,
             ligand_1,
             ligand_2,
-            ligand_1_inxs: tuple[int],
-            ligand_2_inxs: tuple[int],
-            ligand_2_inxs_B: tuple[int],
-            protein_inxs: tuple[int],
+            ligand_1_inxs: list[int],
+            ligand_2_inxs: list[int],
+            ligand_2_inxs_B: list[int],
+            protein_inxs: list[int],
             settings: dict[str, SettingsBaseModel],
-            positions_AB: np.array,
+            positions_AB: np.ndarray,
     ) -> openmm.System:
         """
         Adds Boresch restraints to the system.
@@ -1330,12 +1330,12 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         u_B,
         ligand_1,
         ligand_2,
-        ligand_1_inxs: tuple[int],
-        ligand_2_inxs: tuple[int],
-        ligand_2_inxs_B: tuple[int],
+        ligand_1_inxs: list[int],
+        ligand_2_inxs: list[int],
+        ligand_2_inxs_B: list[int],
         protein_inxs,
         settings: dict[str, SettingsBaseModel],
-        positions_AB: np.array,
+        positions_AB: np.ndarray,
     ) -> openmm.System:
         """
         Apply the distance restraint between the ligands.

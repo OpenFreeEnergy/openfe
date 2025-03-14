@@ -605,12 +605,12 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             u_B: mda.Universe,
             ligand_1: Chem.rdchem.Mol,
             ligand_2: Chem.rdchem.Mol,
-            ligand_1_inxs: tuple[int],
-            ligand_2_inxs: tuple[int],
-            ligand_2_inxs_B: tuple[int],
+            ligand_1_inxs: list[int],
+            ligand_2_inxs: list[int],
+            ligand_2_inxs_B: list[int],
             protein_inxs: Optional[list[int]],
             settings: dict[str, SettingsBaseModel],
-            positions_AB: np.array,
+            positions_AB: np.ndarray,
     ) -> openmm.System:
         """
         Get new positions for the stateB after equilibration.
