@@ -264,7 +264,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             shared_basepath=self.shared_basepath,
         )
 
-        state = simulation.context.getState(getPositions=True) # enforcePeriodicBox=True)
+        # TODO: if we still see crashes, see if using enforcePeriodicBox is necessary
+        # on newer tests, these were not necessary.
+        state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
         box = state.getPeriodicBoxVectors()
         # cautiously delete out contexts & integrator
