@@ -1,9 +1,11 @@
 from click.testing import CliRunner
+import json
 import os
 import pathlib
 import pytest
 import pooch
 import sys
+from gufe.tokenization import JSON_HANDLER
 
 from ..utils import assert_click_success
 from ..conftest import HAS_INTERNET
@@ -32,8 +34,13 @@ def test_get_column(val, col):
 class TestResultLoading:
     @pytest.fixture
     def valid_result_object(self):
-        result = {{'unit_result':None}, {'estimate':None}, {'uncertainty':None}}
-        yield result
+        result = {
+            {'estimate':None},
+            {'uncertainty':None},
+            {'protocol_result':None},
+            {'unit_results':{"protocol_unit_result1":"exception"}}
+            }
+        yield json.dumps(result, cls=JSON_HANDLER.encoder)
 
     def test_missing_json(self, capsys):
         result = load_and_check_result(fpath="")
@@ -42,7 +49,8 @@ class TestResultLoading:
         assert "does not exist. Skipping" in captured.err
         
     def test_missing_unit_result(self, capsys):
-        with mock.patch("openfecli.commands.gather.load_json", return_value={'blunit_result':None}):
+        # with mock.patch("json.load", return_value={'blunit_result':None}):
+        with mock.patch('builtins.open', mock.mock_open(read_data="blunit_result")):
             result = load_and_check_result(fpath="")
             captured = capsys.readouterr()
             assert result is None
