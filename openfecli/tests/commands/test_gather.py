@@ -1,16 +1,16 @@
-from typing import Callable
 from click.testing import CliRunner
-from importlib import resources
-import tarfile
 import os
 import pathlib
 import pytest
 import pooch
+import sys
+
 from ..utils import assert_click_success
 from ..conftest import HAS_INTERNET
 
+from unittest import mock
 from openfecli.commands.gather import (
-    gather, format_estimate_uncertainty, _get_column,
+    gather, format_estimate_uncertainty, _get_column, load_and_check_result
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -27,6 +27,39 @@ def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
 ])
 def test_get_column(val, col):
     assert _get_column(val) == col
+
+
+class TestResultLoading:
+    @pytest.fixture
+    def valid_result_object(self):
+        result = {{'unit_result':None}, {'estimate':None}, {'uncertainty':None}}
+        yield result
+
+    def test_missing_json(self, capsys):
+        result = load_and_check_result(fpath="")
+        captured = capsys.readouterr()
+        assert result is None
+        assert "does not exist. Skipping" in captured.err
+        
+    def test_missing_unit_result(self, capsys):
+        with mock.patch("openfecli.commands.gather.load_json", return_value={'blunit_result':None}):
+            result = load_and_check_result(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'unit_results'" in captured.err
+
+    # def test_exception_and_success_okay(self, capsys):
+    #     with mock.patch("openfecli.commands.gather.load_json", return_value={}):
+    #         result = load_and_check_result(fpath="")
+    #         captured = capsys.readouterr()
+    #         assert result is None
+    #         assert "Exception found'" in captured.err
+
+    def test_all_exceptions(self):
+        pass
+
+    def test_no_uncertainty(self):
+        pass
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)

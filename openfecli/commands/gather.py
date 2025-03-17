@@ -78,6 +78,12 @@ def is_results_json(fpath:os.PathLike|str)->bool:
     """Sanity check that file is a result json before we try to deserialize"""
     return 'estimate' in open(fpath, 'r').read(20)
 
+def load_json(fpath):
+    "For ease of testing, we can't mock json.load directly."
+    import json
+    from gufe.tokenization import JSON_HANDLER
+
+    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
 def load_and_check_result(fpath:os.PathLike|str)->dict:
     """Load the data from a results JSON into a dict
@@ -93,15 +99,12 @@ def load_and_check_result(fpath:os.PathLike|str)->dict:
         A dict containing data from the results JSON.
     """
 
-    import json
-    from gufe.tokenization import JSON_HANDLER
 
     try:
-        result = json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
+        result = load_json(fpath)
     except FileNotFoundError:
-        click.echo(f"Error: {fpath} does not exist. Skipping.")
+        click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
         return None
-
     if "unit_results" not in result.keys():
         click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
         return None
