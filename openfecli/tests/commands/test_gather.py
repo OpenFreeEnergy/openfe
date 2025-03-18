@@ -9,7 +9,10 @@ from ..conftest import HAS_INTERNET
 
 from unittest import mock
 from openfecli.commands.gather import (
-    gather, format_estimate_uncertainty, _get_column, load_valid_result_json
+    gather,
+    format_estimate_uncertainty,
+    _get_column,
+    load_valid_result_json,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -30,7 +33,7 @@ def test_get_column(val, col):
 
 class TestResultLoading:
     @pytest.fixture
-    def valid_result_object(self):
+    def valid_result(self):
         result = {
             "estimate": {},
             "uncertainty": {},
@@ -42,12 +45,11 @@ class TestResultLoading:
         }
         yield result
 
-
-    def test_minimal_valid_results(self, capsys, valid_result_object):
-        with mock.patch("openfecli.commands.gather.load_json", return_value=valid_result_object):
+    def test_minimal_valid_results(self, capsys, valid_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=valid_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == valid_result_object
+            assert result == valid_result
             assert captured.err == ""
 
     def test_skip_missing_filepath(self, capsys):
@@ -56,9 +58,9 @@ class TestResultLoading:
         assert result is None
         assert "does not exist. Skipping" in captured.err
 
-    def test_skip_missing_unit_result(self, capsys, valid_result_object):
-        tmp_result = valid_result_object
-        del tmp_result['unit_results']
+    def test_skip_missing_unit_result(self, capsys, valid_result):
+        tmp_result = valid_result
+        del tmp_result["unit_results"]
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=tmp_result):
             result = load_valid_result_json(fpath="")
@@ -66,9 +68,9 @@ class TestResultLoading:
             assert result is None
             assert "No 'unit_results'" in captured.err
 
-    def test_skip_missing_estimate(self, capsys, valid_result_object):
-        tmp_result = valid_result_object
-        tmp_result['estimate'] = None
+    def test_skip_missing_estimate(self, capsys, valid_result):
+        tmp_result = valid_result
+        tmp_result["estimate"] = None
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=tmp_result):
             result = load_valid_result_json(fpath="")
@@ -76,9 +78,9 @@ class TestResultLoading:
             assert result is None
             assert "No 'estimate' found" in captured.err
 
-    def test_skip_missing_uncertainty(self, capsys, valid_result_object):
-        tmp_result = valid_result_object
-        tmp_result['uncertainty'] = None
+    def test_skip_missing_uncertainty(self, capsys, valid_result):
+        tmp_result = valid_result
+        tmp_result["uncertainty"] = None
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=tmp_result):
             result = load_valid_result_json(fpath="")
@@ -86,20 +88,17 @@ class TestResultLoading:
             assert result is None
             assert "No 'uncertainty' found" in captured.err
 
-    def test_skip_all_failed_runs(self,  capsys, valid_result_object):
-        tmp_result = valid_result_object
-        del tmp_result['unit_results']['ProtocolUnitResult-e85']
-        with mock.patch("openfecli.commands.gather.load_json", return_value=valid_result_object):
+    def test_skip_all_failed_runs(self, capsys, valid_result):
+        tmp_result = valid_result
+        del tmp_result["unit_results"]["ProtocolUnitResult-e85"]
+        with mock.patch(
+            "openfecli.commands.gather.load_json", return_value=valid_result
+        ):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result is None
             assert "Exception found in all" in captured.err
 
-
-
-
-    # def test_no_uncertainty(self):
-    #     pass
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
