@@ -45,31 +45,6 @@ class AlchemicalSettings(SettingsBaseModel):
     """
 
 
-# class RestraintsSettings(SettingsBaseModel):
-#     """
-#     Settings for the restraints.
-#     """
-#     k_distance: FloatQuantity['kJ/(mol*nanometers**2)'] = 1000 * unit.kilojoule_per_mole / unit.nanometer**2
-#
-#
-# class SolventRestraintsSettings(BaseRestraintSettings):
-#     """
-#     Settings for the harmonic restraint in the solvent
-#     """
-
-
-# class ComplexRestraintsSettings(BaseRestraintSettings):
-#     """
-#     Settings for the Boresch restraints in the complex
-#     """
-    # class Config:
-    #     arbitrary_types_allowed = True
-    #
-    # # k_theta: FloatQuantity['kJ/(mol*rad**2)'] = 83.68 * unit.kilojoule_per_mole / unit.radians ** 2
-    # k_theta: FloatQuantity[
-    #     'kJ/(mol*rad**2)'] = 836.8 * unit.kilojoule_per_mole / unit.radians ** 2
-
-
 class LambdaSettings(SettingsBaseModel):
     """Lambda schedule settings.
 
@@ -204,8 +179,6 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     """
 
 
-# This subclasses from SettingsBaseModel as it has vacuum_forcefield and
-# solvent_forcefield fields, not just a single forcefield_settings field
 class SepTopSettings(SettingsBaseModel):
     """
     Configuration object for ``AbsoluteSolvationProtocol``.
@@ -229,8 +202,7 @@ class SepTopSettings(SettingsBaseModel):
         return v
 
     # Inherited things
-    solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
-    complex_forcefield_settings: OpenMMSystemGeneratorFFSettings
+    forcefield_settings: OpenMMSystemGeneratorFFSettings
     """Parameters to set up the force field with OpenMM Force Fields"""
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
@@ -246,22 +218,21 @@ class SepTopSettings(SettingsBaseModel):
     """
     Alchemical protocol settings.
     """
-    lambda_settings: LambdaSettings
+    solvent_lambda_settings: LambdaSettings
     """
     Settings for controlling the lambda schedule for the different components 
-    (vdw, elec, restraints).
+    (vdw, elec, restraints) in the solvent.
+    """
+    complex_lambda_settings: LambdaSettings
+    """
+    Settings for controlling the lambda schedule for the different components 
+    (vdw, elec, restraints) in the complex.
     """
 
     # MD Engine things
-    complex_engine_settings: OpenMMEngineSettings
+    engine_settings: OpenMMEngineSettings
     """
-    Settings specific to the OpenMM engine, such as the compute platform
-    for the complex transformation.
-    """
-    solvent_engine_settings: OpenMMEngineSettings
-    """
-    Settings specific to the OpenMM engine, such as the compute platform
-    for the solvent transformation.
+    Settings specific to the OpenMM engine, such as the compute platform.
     """
 
     # Sampling State defining things

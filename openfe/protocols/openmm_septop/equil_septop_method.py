@@ -532,22 +532,26 @@ class SepTopProtocol(gufe.Protocol):
         """
         return SepTopSettings(
             protocol_repeats=1,
-            solvent_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
-            complex_forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
+                nonbonded_cutoff=0.9 * unit.nanometer
+            ),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
-            lambda_settings=LambdaSettings(
-            ),
+            solvent_lambda_settings=LambdaSettings(),
+            complex_lambda_settings=LambdaSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvent_solvation_settings=OpenMMSolvationSettings(
-                solvent_padding=1.8 * unit.nanometer
+                box_shape='dodecahedron',
+                solvent_padding=1.3 * unit.nanometer
             ),
-            complex_solvation_settings=OpenMMSolvationSettings(),
-            complex_engine_settings=OpenMMEngineSettings(),
-            solvent_engine_settings=OpenMMEngineSettings(),
+            complex_solvation_settings=OpenMMSolvationSettings(
+                box_shape='dodecahedron',
+                solvent_padding=1 * unit.nanometer
+            ),
+            engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
@@ -561,6 +565,7 @@ class SepTopProtocol(gufe.Protocol):
                 log_output='equil_simulation',
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
+                time_per_iteration=2.5 * unit.picoseconds,
                 n_replicas=19,
                 minimization_steps=5000,
                 equilibration_length=1.0 * unit.nanosecond,
@@ -582,6 +587,7 @@ class SepTopProtocol(gufe.Protocol):
                 log_output='equil_simulation',
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
+                time_per_iteration=2.5 * unit.picoseconds,
                 n_replicas=19,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
@@ -794,13 +800,13 @@ class SepTopProtocol(gufe.Protocol):
         self._validate_alchemical_components(alchem_comps)
 
         # Validate the lambda schedule
-        self._validate_lambda_schedule(self.settings.lambda_settings,
+        self._validate_lambda_schedule(self.settings.solvent_lambda_settings,
                                        self.settings.solvent_simulation_settings)
-        self._validate_lambda_schedule(self.settings.lambda_settings,
+        self._validate_lambda_schedule(self.settings.complex_lambda_settings,
                                        self.settings.complex_simulation_settings)
 
         # Check solvent compatibility
-        solv_nonbonded_method = self.settings.solvent_forcefield_settings.nonbonded_method
+        solv_nonbonded_method = self.settings.forcefield_settings.nonbonded_method
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, solv_nonbonded_method)
 
@@ -970,13 +976,13 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         prot_settings = self._inputs['protocol'].settings
 
         settings = {
-            'forcefield_settings': prot_settings.complex_forcefield_settings,
+            'forcefield_settings': prot_settings.forcefield_settings,
             'thermo_settings': prot_settings.thermo_settings,
             'charge_settings': prot_settings.partial_charge_settings,
             'solvation_settings': prot_settings.complex_solvation_settings,
             'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.lambda_settings,
-            'engine_settings': prot_settings.complex_engine_settings,
+            'lambda_settings': prot_settings.complex_lambda_settings,
+            'engine_settings': prot_settings.engine_settings,
             'integrator_settings': prot_settings.integrator_settings,
             'equil_simulation_settings':
                 prot_settings.complex_equil_simulation_settings,
@@ -1466,13 +1472,13 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         prot_settings = self._inputs['protocol'].settings
 
         settings = {
-            'forcefield_settings': prot_settings.solvent_forcefield_settings,
+            'forcefield_settings': prot_settings.forcefield_settings,
             'thermo_settings': prot_settings.thermo_settings,
             'charge_settings': prot_settings.partial_charge_settings,
             'solvation_settings': prot_settings.solvent_solvation_settings,
             'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.lambda_settings,
-            'engine_settings': prot_settings.solvent_engine_settings,
+            'lambda_settings': prot_settings.solvent_lambda_settings,
+            'engine_settings': prot_settings.engine_settings,
             'integrator_settings': prot_settings.integrator_settings,
             'equil_simulation_settings':
                 prot_settings.solvent_equil_simulation_settings,
@@ -1567,7 +1573,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
                 molA_idxs=ligand_1_inxs,
                 molB_idxs=ligand_2_inxs,
             )
-            print(rest_geom)
 
         else:
             # TODO turn this into a direction for different restraint types supported?
@@ -1807,13 +1812,13 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         prot_settings = self._inputs['protocol'].settings
 
         settings = {
-            'forcefield_settings': prot_settings.solvent_forcefield_settings,
+            'forcefield_settings': prot_settings.forcefield_settings,
             'thermo_settings': prot_settings.thermo_settings,
             'charge_settings': prot_settings.partial_charge_settings,
             'solvation_settings': prot_settings.solvent_solvation_settings,
             'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.lambda_settings,
-            'engine_settings': prot_settings.solvent_engine_settings,
+            'lambda_settings': prot_settings.solvent_lambda_settings,
+            'engine_settings': prot_settings.engine_settings,
             'integrator_settings': prot_settings.integrator_settings,
             'equil_simulation_settings':
                 prot_settings.solvent_equil_simulation_settings,
@@ -1935,13 +1940,13 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
         prot_settings = self._inputs['protocol'].settings
 
         settings = {
-            'forcefield_settings': prot_settings.complex_forcefield_settings,
+            'forcefield_settings': prot_settings.forcefield_settings,
             'thermo_settings': prot_settings.thermo_settings,
             'charge_settings': prot_settings.partial_charge_settings,
             'solvation_settings': prot_settings.complex_solvation_settings,
             'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.lambda_settings,
-            'engine_settings': prot_settings.complex_engine_settings,
+            'lambda_settings': prot_settings.complex_lambda_settings,
+            'engine_settings': prot_settings.engine_settings,
             'integrator_settings': prot_settings.integrator_settings,
             'equil_simulation_settings':
                 prot_settings.complex_equil_simulation_settings,

@@ -71,7 +71,7 @@ def test_create_default_settings():
 ])
 def test_incorrect_window_settings(val, default_settings):
     errmsg = "Lambda windows must be between 0 and 1."
-    lambda_settings = default_settings.lambda_settings
+    lambda_settings = default_settings.complex_lambda_settings
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec_A = val['elec']
         lambda_settings.lambda_vdw_A = val['vdw']
@@ -83,7 +83,7 @@ def test_incorrect_window_settings(val, default_settings):
 ])
 def test_monotonic_lambda_windows(val, default_settings):
     errmsg = "The lambda schedule is not monotonic."
-    lambda_settings = default_settings.lambda_settings
+    lambda_settings = default_settings.complex_lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec_A = val['elec']
@@ -95,12 +95,12 @@ def test_monotonic_lambda_windows(val, default_settings):
     {'elec': [1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
-    default_settings.lambda_settings.lambda_elec_A = val['elec']
-    default_settings.lambda_settings.lambda_vdw_A = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_A = val['restraints']
-    default_settings.lambda_settings.lambda_elec_B = val['elec']
-    default_settings.lambda_settings.lambda_vdw_B = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_B = val[
+    default_settings.complex_lambda_settings.lambda_elec_A = val['elec']
+    default_settings.complex_lambda_settings.lambda_vdw_A = val['vdw']
+    default_settings.complex_lambda_settings.lambda_restraints_A = val['restraints']
+    default_settings.complex_lambda_settings.lambda_elec_B = val['elec']
+    default_settings.complex_lambda_settings.lambda_vdw_B = val['vdw']
+    default_settings.complex_lambda_settings.lambda_restraints_B = val[
         'restraints']
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
@@ -108,7 +108,7 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
               f" number of lambda windows {len(val['vdw'])}")
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
-            default_settings.lambda_settings,
+            default_settings.complex_lambda_settings,
             default_settings.complex_simulation_settings,
         )
 
@@ -117,9 +117,9 @@ def test_validate_lambda_schedule_nreplicas(val, default_settings):
     {'elec': [1.0, 1.0, 1.0], 'vdw': [0.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nwindows(val, default_settings):
-    default_settings.lambda_settings.lambda_elec_A = val['elec']
-    default_settings.lambda_settings.lambda_vdw_A = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_A = val['restraints']
+    default_settings.complex_lambda_settings.lambda_elec_A = val['elec']
+    default_settings.complex_lambda_settings.lambda_vdw_A = val['vdw']
+    default_settings.complex_lambda_settings.lambda_restraints_A = val['restraints']
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     errmsg = (
@@ -127,7 +127,7 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
         "windows. Got 3 and 19 elec lambda windows")
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
-            default_settings.lambda_settings,
+            default_settings.complex_lambda_settings,
             default_settings.complex_simulation_settings,
         )
 
@@ -136,13 +136,13 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
     {'elec': [1.0, 0.5], 'vdw': [1.0, 1.0], 'restraints': [0.0, 0.0]},
 ])
 def test_validate_lambda_schedule_nakedcharge(val, default_settings):
-    default_settings.lambda_settings.lambda_elec_A = val['elec']
-    default_settings.lambda_settings.lambda_vdw_A = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_A = val[
+    default_settings.complex_lambda_settings.lambda_elec_A = val['elec']
+    default_settings.complex_lambda_settings.lambda_vdw_A = val['vdw']
+    default_settings.complex_lambda_settings.lambda_restraints_A = val[
         'restraints']
-    default_settings.lambda_settings.lambda_elec_B = val['elec']
-    default_settings.lambda_settings.lambda_vdw_B = val['vdw']
-    default_settings.lambda_settings.lambda_restraints_B = val[
+    default_settings.complex_lambda_settings.lambda_elec_B = val['elec']
+    default_settings.complex_lambda_settings.lambda_vdw_B = val['vdw']
+    default_settings.complex_lambda_settings.lambda_restraints_B = val[
         'restraints']
     n_replicas = 2
     default_settings.complex_simulation_settings.n_replicas = n_replicas
@@ -153,12 +153,12 @@ def test_validate_lambda_schedule_nakedcharge(val, default_settings):
         "interactions: Ligand A: l")
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
-            default_settings.lambda_settings,
+            default_settings.complex_lambda_settings,
             default_settings.complex_simulation_settings,
         )
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
-            default_settings.lambda_settings,
+            default_settings.complex_lambda_settings,
             default_settings.solvent_simulation_settings,
         )
 
@@ -659,7 +659,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         pdb = md.load_pdb('topology.pdb')
-        assert pdb.n_atoms == 4433
+        assert pdb.n_atoms == 1115
         central_atoms = np.array([[2, 19]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
         assert np.isclose(distance, 0.8661)
@@ -674,7 +674,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb('hybrid_system.pdb')
-        assert pdb.n_atoms == 35
+        assert pdb.n_atoms == 29
 
         complex_setup_output = complex_setup_unit[0].run(dry=True)
         serialized_topology = complex_setup_output['topology']
@@ -690,7 +690,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
                    1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb('hybrid_system.pdb')
-        assert pdb.n_atoms == 2713
+        assert pdb.n_atoms == 2687
 
 
 @pytest.mark.parametrize('pressure',
@@ -743,8 +743,8 @@ def test_dry_run_ligand_system_cutoff(
     Test that the right nonbonded cutoff is propagated to the system.
     """
     settings = SepTopProtocol.default_settings()
-    settings.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
-    settings.solvent_forcefield_settings.nonbonded_cutoff = cutoff
+    settings.solvent_solvation_settings.solvent_padding = 1.9 * offunit.nanometer
+    settings.forcefield_settings.nonbonded_cutoff = cutoff
 
     protocol = SepTopProtocol(
             settings=settings,
@@ -775,7 +775,7 @@ def test_dry_run_benzene_toluene_tip4p(
         benzene_complex_system, toluene_complex_system, tmpdir):
     s = SepTopProtocol.default_settings()
     s.protocol_repeats = 1
-    s.solvent_forcefield_settings.forcefields = [
+    s.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
@@ -967,8 +967,8 @@ def test_dry_run_solv_user_charges_benzene_toluene(
 def test_high_timestep(benzene_complex_system, toluene_complex_system, tmpdir):
     s = SepTopProtocol.default_settings()
     s.protocol_repeats = 1
-    s.solvent_forcefield_settings.hydrogen_mass = 1.0
-    s.complex_forcefield_settings.hydrogen_mass = 1.0
+    s.forcefield_settings.hydrogen_mass = 1.0
+    s.forcefield_settings.hydrogen_mass = 1.0
 
     protocol = SepTopProtocol(settings=s)
 
