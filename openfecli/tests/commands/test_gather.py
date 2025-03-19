@@ -37,7 +37,7 @@ class TestResultLoading:
         result = {
             "estimate": {},
             "uncertainty": {},
-            "protocol_result": {},
+            "protocol_result": {'data':{'2294096155646608107660849867019691905': None}},
             "unit_results": {
                 "ProtocolUnitResult-e85": {},
                 "ProtocolUnitFailure-4c9": {"exception": ["Simulation_NanError"]},
@@ -92,13 +92,23 @@ class TestResultLoading:
         tmp_result = valid_result
         del tmp_result["unit_results"]["ProtocolUnitResult-e85"]
         with mock.patch(
-            "openfecli.commands.gather.load_json", return_value=valid_result
+            "openfecli.commands.gather.load_json", return_value=tmp_result
         ):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result is None
             assert "Exception found in all" in captured.err
 
+    def test_missing_pr_data(self, capsys, valid_result):
+        tmp_result = valid_result
+        tmp_result["protocol_result"]["data"] = {}
+        with mock.patch(
+            "openfecli.commands.gather.load_json", return_value=tmp_result
+        ):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No data found" in captured.err
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
