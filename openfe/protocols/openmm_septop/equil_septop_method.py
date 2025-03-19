@@ -168,8 +168,7 @@ def _check_alchemical_charge_difference(
 
 
 class SepTopProtocolResult(gufe.ProtocolResult):
-    """Dict-like container for the output of a SepTopProtocol
-    """
+    """Dict-like container for the output of a SepTopProtocol"""
     def __init__(self, **data):
         super().__init__(**data)
         # TODO: Detect when we have extensions and stitch these together?
@@ -501,6 +500,32 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         return production_lengths
 
+    def restraint_geometries(self) -> list[dict[str, Any]]:
+        """
+        Get a list of the restraint geometries for the
+        complex simulations. These define the atoms that have
+        been restrained in the system.
+
+        Returns
+        -------
+        geometry_A : list[dict[str, Any]]
+          A list of dictionaries containing the details of the atoms
+          in the system that are involved in the restraint of ligand A.
+        geometry_B : list[dict[str, Any]]
+          A list of dictionaries containing the details of the atoms
+          in the system that are involved in the restraint of ligand B.
+        """
+        geometry_A = [
+            pus[0].outputs["restraint_geometry_A"]
+            for pus in self.data['complex_setup'].values()
+        ]
+        geometry_B = [
+            pus[0].outputs["restraint_geometry_B"]
+            for pus in self.data['complex_setup'].values()
+        ]
+
+        return geometry_A, geometry_B
+
 
 class SepTopProtocol(gufe.Protocol):
     """
@@ -516,6 +541,7 @@ class SepTopProtocol(gufe.Protocol):
     """
     result_cls = SepTopProtocolResult
     _settings_cls = SepTopSettings
+    _settings: SepTopSettings
 
     @classmethod
     def _default_settings(cls):
@@ -572,6 +598,7 @@ class SepTopProtocol(gufe.Protocol):
                 production_length=10.0 * unit.nanosecond,
             ),
             solvent_output_settings=MultiStateOutputSettings(
+                output_structure="alchemical_system.pdb",
                 output_filename='solvent.nc',
                 checkpoint_storage_filename='solvent_checkpoint.nc',
             ),
@@ -593,6 +620,7 @@ class SepTopProtocol(gufe.Protocol):
                 production_length=10.0 * unit.nanosecond,
             ),
             complex_output_settings=MultiStateOutputSettings(
+                output_structure="alchemical_system.pdb",
                 output_filename='complex.nc',
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
@@ -805,10 +833,23 @@ class SepTopProtocol(gufe.Protocol):
         self._validate_lambda_schedule(self.settings.complex_lambda_settings,
                                        self.settings.complex_simulation_settings)
 
-        # Check solvent compatibility
-        solv_nonbonded_method = self.settings.forcefield_settings.nonbonded_method
+        # Check nonbonded and solvent compatibility
+        nonbonded_method = self.settings.forcefield_settings.nonbonded_method
         # Use the more complete system validation solvent checks
-        system_validation.validate_solvent(stateA, solv_nonbonded_method)
+        system_validation.validate_solvent(stateA, nonbonded_method)
+
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvent_solvation_settings
+        )
+
+        # Make sure that we have the full system for restraint trajectory analysis
+        if self.settings.complex_equil_output_settings.output_indices != "all":
+            errmsg = (
+                "Complex simulations need to output the full system "
+                "during equilibration simulations."
+            )
+            raise ValueError(errmsg)
 
         # Validate protein component
         system_validation.validate_protein(stateA)
@@ -1001,8 +1042,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _update_positions(
-            omm_topology_A, omm_topology_B, positions_A, positions_B,
-            atom_indices_A, atom_indices_B,
+            omm_topology_A, omm_topology_B, positions_A, positions_B
     ) -> simtk.unit.Quantity:
         """
         Aligns the protein from complex B onto the protein from complex A and
@@ -1047,7 +1087,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             ligand_2_inxs_B: list[int],
             protein_inxs: list[int],  # type: ignore[override]
             settings: dict[str, SettingsBaseModel],
-            positions_AB: np.ndarray,
     ) -> openmm.System:
         """
         Adds Boresch restraints to the system.
@@ -1056,8 +1095,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         ----------
         system: openmm.System
           The OpenMM system where the restraints will be applied to.
-        positions: simtk.unit.Quantity
-          The positions of the OpenMM system
         topology: openmm.app.Topology
           The OpenMM topology of the system
         ligand_1: OFFMolecule.Topology
@@ -1181,7 +1218,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         # Boresch restraint has to be turned on in the analytical corr.
         correction_B = correction_B * -1
 
-        return correction_A, correction_B, thermodynamic_state.system
+        return correction_A, correction_B, thermodynamic_state.system, rest_geom_A, rest_geom_B
 
 
     def run(self, dry=False, verbose=True,
@@ -1280,8 +1317,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
         comp_atomids_B = self._get_atom_indices(omm_topology_B, comp_resids_B)
 
-        # Get the system A atom indices of ligand A
-        atom_indices_A = comp_atomids_A[alchem_comps['stateA'][0]]
         # Get the system B atom indices of ligand B
         atom_indices_B = comp_atomids_B[alchem_comps['stateB'][0]]
 
@@ -1290,7 +1325,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         #    - solvent: Offset ligand B with respect to ligand A
         updated_positions_B = self._update_positions(
             omm_topology_A, omm_topology_B, equ_positions_A, equ_positions_B,
-            atom_indices_A, atom_indices_B)
+        )
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
                                                    updated_positions_B,
                                                    open(self.shared_basepath / 'outputB_new.pdb',
@@ -1349,7 +1384,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         rdmol_B = off_B.to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
-        corr_A, corr_B, system = self._add_restraints(
+        corr_A, corr_B, system, restraint_geom_A, restraint_geom_B = self._add_restraints(
             alchemical_system, u_A, u_B,
             rdmol_A,
             rdmol_B,
@@ -1358,7 +1393,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             atom_indices_B,
             comp_atomids_AB[prot_comp],
             settings,
-            positions_AB,
         )
         print('Restraints', corr_A, corr_B)
         # Check that the restraints are correctly applied by running a short equilibration
@@ -1383,6 +1417,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             "topology": topology_file,
             "standard_state_correction_A": corr_A.to('kilocalorie_per_mole'),
             "standard_state_correction_B": corr_B.to('kilocalorie_per_mole'),
+            "restraint_geometry_A": restraint_geom_A,
+            "restraint_geometry_B": restraint_geom_B,
         }
 
 
