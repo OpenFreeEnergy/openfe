@@ -565,26 +565,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return comp_atomids
 
     @staticmethod
-    def _update_positions(
-            omm_topology_A: openmm.app.Topology,
-            omm_topology_B: openmm.app.Topology,
-            positions_A: simtk.unit.Quantity,
-            positions_B: simtk.unit.Quantity,
-            atom_indices_A: Optional[list],
-            atom_indices_B: Optional[list],
-    ) -> simtk.unit.Quantity:
-        """
-        Get new positions for the stateB after equilibration.
-
-        Note
-        ----
-        Must be implemented in the child class.
-        In the complex phase, this is achieved by aligning the proteins,
-        in the solvent phase, the ligand B are offset from ligand A
-        """
-        ...
-
-    @staticmethod
     def _set_positions(
             off_molecule: OFFMolecule,
             positions: unit.Quantity,
@@ -768,7 +748,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Note: Implemented in child classes due to large differences
         """
-        ...
+        return
 
 
 class BaseSepTopRunUnit(gufe.ProtocolUnit):
