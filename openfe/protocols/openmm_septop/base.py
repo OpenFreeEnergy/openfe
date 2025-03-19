@@ -721,35 +721,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         return omm_system_AB, omm_topology_AB, positions_AB, system_modeller_AB
 
-    def run(self, dry=False, verbose=True,
-            scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
-        """
-        Run the SepTop free energy calculation.
-
-        Parameters
-        ----------
-        dry : bool
-          Do a dry run of the calculation, creating all necessary alchemical
-          system components (topology, system, sampler, etc...) but without
-          running the simulation, default False
-        verbose : bool
-          Verbose output of the simulation progress. Output is provided via
-          INFO level logging, default True
-        scratch_basepath : pathlib.Path
-          Path to the scratch (temporary) directory space.
-        shared_basepath : pathlib.Path
-          Path to the shared (persistent) directory space.
-
-        Returns
-        -------
-        dict
-          Outputs created in the basepath directory or the debug objects
-          (i.e. sampler) if ``dry==True``.
-
-        Note: Implemented in child classes due to large differences
-        """
-        return
-
 
 class BaseSepTopRunUnit(gufe.ProtocolUnit):
     """
