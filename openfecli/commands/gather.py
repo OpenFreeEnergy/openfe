@@ -130,6 +130,9 @@ def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
         return None
+    if result['protocol_result']['data'] == {}:
+        click.echo(f"{fpath}: No data found for this protocol result, assuming to be a failed simulation.", err=True)
+        return None
     if all('exception' in u for u in result['unit_results'].values()):
         click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
         return None
