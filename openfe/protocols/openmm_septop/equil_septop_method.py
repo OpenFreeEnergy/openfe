@@ -64,7 +64,6 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     IntegratorSettings, MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
     SettingsBaseModel,
-    # SolventRestraintsSettings, ComplexRestraintsSettings
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
@@ -84,6 +83,12 @@ from ..restraint_utils.settings import (
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openmmtools.states import ThermodynamicState, GlobalParameterState
+from openmmtools.alchemy import (
+    AbsoluteAlchemicalFactory,
+    AlchemicalRegion,
+    AlchemicalState,
+)
+from .utils import serialize
 
 due.cite(Doi("10.5281/zenodo.596622"),
          description="OpenMMTools",
@@ -214,7 +219,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         for pus in self.data['solvent_setup'].values():
             solv_correction_dGs.append((
-                pus[0].outputs['standard_state_correction_A'],
+                pus[0].outputs['standard_state_correction'],
                 0 * unit.kilocalorie_per_mole  # correction has no error
             ))
 
@@ -1173,6 +1178,208 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         return correction_A, correction_B, thermodynamic_state.system
 
 
+    def run(self, dry=False, verbose=True,
+            scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
+        """
+        Run the SepTop free energy calculation.
+
+        Parameters
+        ----------
+        dry : bool
+          Do a dry run of the calculation, creating all necessary alchemical
+          system components (topology, system, sampler, etc...) but without
+          running the simulation, default False
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging, default True
+        scratch_basepath : pathlib.Path
+          Path to the scratch (temporary) directory space.
+        shared_basepath : pathlib.Path
+          Path to the shared (persistent) directory space.
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+        """
+        # 0. General preparation tasks
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # 1. Get components
+        self.logger.info("Creating and setting up the OpenMM systems")
+        alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+            alchem_comps, smc_comps)
+
+        # 3. Get settings
+        settings = self._handle_settings()
+
+        # 4. Assign partial charges
+        self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
+
+        # 5. Get systems, apply restraints. Here we split because the solvent
+        # leg and complex leg are so different
+
+
+        # 5. Get the OpenMM systems
+        omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = self.get_system(
+            solv_comp,
+            prot_comp,
+            smc_comps_A,
+            settings,
+        )
+
+        omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = self.get_system(
+            solv_comp,
+            prot_comp,
+            smc_comps_B,
+            settings,
+        )
+
+        omm_system_AB, omm_topology_AB, positions_AB, modeller_AB = self.get_system_AB(
+            solv_comp,
+            modeller_A,
+            smc_comps_AB,
+            smc_off_B,
+            settings,
+            self.shared_basepath
+        )
+
+        # We assume that modeller.add will always put the ligand B towards
+        # the end of the residues
+        resids_A = list(itertools.chain(*comp_resids_A.values()))
+        resids_AB = [r.index for r in modeller_AB.topology.residues()]
+        diff_resids = list(set(resids_AB) - set(resids_A))
+        comp_resids_AB = comp_resids_A | {
+            alchem_comps["stateB"][0]: np.array(diff_resids)}
+
+        # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        self.logger.info("Pre-equilibrating the systems")
+        equ_positions_A = self._pre_equilibrate(
+            omm_system_A, omm_topology_A, positions_A, settings, 'A', dry
+        )
+        equ_positions_B = self._pre_equilibrate(
+            omm_system_B, omm_topology_B, positions_B, settings, 'B', dry
+        )
+
+
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(
+            omm_topology_A, equ_positions_A, open(self.shared_basepath / 'outputA_equ.pdb', 'w'))
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(
+            omm_topology_B, equ_positions_B, open(self.shared_basepath / 'outputB_equ.pdb', 'w'))
+
+        # 7. Get all the right atom indices for alignments
+        comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
+        all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
+        comp_atomids_B = self._get_atom_indices(omm_topology_B, comp_resids_B)
+
+        # Get the system A atom indices of ligand A
+        atom_indices_A = comp_atomids_A[alchem_comps['stateA'][0]]
+        # Get the system B atom indices of ligand B
+        atom_indices_B = comp_atomids_B[alchem_comps['stateB'][0]]
+
+        # 8. Update the positions of system B:
+        #    - complex: Align protein
+        #    - solvent: Offset ligand B with respect to ligand A
+        updated_positions_B = self._update_positions(
+            omm_topology_A, omm_topology_B, equ_positions_A, equ_positions_B,
+            atom_indices_A, atom_indices_B)
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
+                                                   updated_positions_B,
+                                                   open(self.shared_basepath / 'outputB_new.pdb',
+                                                        'w'))
+
+        # Get atom indices for ligand A and ligand B and the solvent in the
+        # system AB
+        comp_atomids_AB = self._get_atom_indices(omm_topology_AB, comp_resids_AB)
+        atom_indices_AB_B = comp_atomids_AB[alchem_comps['stateB'][0]]
+        atom_indices_AB_A = comp_atomids_AB[alchem_comps['stateA'][0]]
+
+        # Update positions from AB system
+        positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
+        positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
+                     :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
+
+        # 9. Create the alchemical system
+        self.logger.info("Creating the alchemical system and applying restraints")
+
+        factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
+        # Alchemical Region for ligand A
+        alchemical_region_A = AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_A, name='A')
+        # Alchemical Region for ligand B
+        alchemical_region_B = AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_B, name='B')
+        alchemical_system = factory.create_alchemical_system(
+            omm_system_AB, [alchemical_region_A, alchemical_region_B])
+
+        # 10. Apply Restraints
+        off_A = alchem_comps["stateA"][0].to_openff()
+        lig_A_pos = positions_AB[atom_indices_AB_A[0]:atom_indices_AB_A[-1]+1, :] / omm_units.nanometers * unit.nanometer
+        self._set_positions(off_A, lig_A_pos)
+        off_B = alchem_comps["stateB"][0].to_openff()
+        lig_B_pos = positions_AB[
+                    atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
+                    :] / omm_units.nanometers * unit.nanometer
+        self._set_positions(off_B, lig_B_pos)
+
+        # Get the MDA Universe for the restraints selection
+        out_pdb = self.shared_basepath / settings['equil_output_settings'].equil_npt_structure
+        out_traj = self.shared_basepath / settings[
+            'equil_output_settings'].production_trajectory_filename
+        if (pathlib.Path(f'{out_traj}_stateA.xtc').exists()
+                and pathlib.Path(f'{out_traj}_stateB.xtc').exists()
+                and settings['equil_output_settings'].trajectory_write_interval <= settings['equil_simulation_settings'].production_length):
+            print('Traj found')
+            u_A = mda.Universe(f'{out_pdb}_stateA.pdb', f'{out_traj}_stateA.xtc')
+            u_B = mda.Universe(f'{out_pdb}_stateB.pdb', f'{out_traj}_stateB.xtc')
+        else:
+            print('No traj')
+            u_A = mda.Universe(omm_topology_A, modeller_A)
+            u_B = mda.Universe(omm_topology_B, modeller_B)
+
+        rdmol_A = off_A.to_rdkit()
+        rdmol_B = off_B.to_rdkit()
+        Chem.SanitizeMol(rdmol_A)
+        Chem.SanitizeMol(rdmol_B)
+        corr_A, corr_B, system = self._add_restraints(
+            alchemical_system, u_A, u_B,
+            rdmol_A,
+            rdmol_B,
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+            atom_indices_B,
+            comp_atomids_AB[prot_comp],
+            settings,
+            positions_AB,
+        )
+        print('Restraints', corr_A, corr_B)
+        # Check that the restraints are correctly applied by running a short equilibration
+        equ_positions_restraints = self._pre_equilibrate(
+            system, omm_topology_AB, positions_AB, settings, 'AB', dry
+        )
+        topology_file = self.shared_basepath / 'topology.pdb'
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
+                                                   equ_positions_restraints,
+                                                   open(topology_file,
+                                                        'w'))
+
+        # ToDo: also apply REST
+
+        system_outfile = self.shared_basepath / "system.xml.bz2"
+
+        # Serialize system, state and integrator
+        serialize(system, system_outfile)
+
+        return {
+            "system": system_outfile,
+            "topology": topology_file,
+            "standard_state_correction_A": corr_A.to('kilocalorie_per_mole'),
+            "standard_state_correction_B": corr_B.to('kilocalorie_per_mole'),
+        }
+
+
     def _execute(
         self, ctx: gufe.Context, **kwargs,
     ) -> dict[str, Any]:
@@ -1282,58 +1489,40 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         return settings
 
-
     @staticmethod
     def _update_positions(
-            omm_topology_A, omm_topology_B, positions_A, positions_B,
-            atom_indices_A, atom_indices_B,
+            rdmol_A,
+            rdmol_B,
     ) -> simtk.unit.Quantity:
 
         # Offset ligand B from ligand A in the solvent
-        equ_pos_ligandA = positions_A[
-                          atom_indices_A[0]:atom_indices_A[-1] + 1]
-        equ_pos_ligandB = positions_B[
-                          atom_indices_B[0]:atom_indices_B[-1] + 1]
-
-        # Get the mdtraj system of ligand B and the unit cell
-        unit_cell = omm_topology_A.getPeriodicBoxVectors()
-        unit_cell = [i[inx] for inx, i in enumerate(unit_cell)]
-        mdtraj_system_B = _get_mdtraj_from_openmm(omm_topology_B,
-                                                  positions_B)
+        pos_ligandA = rdmol_A.GetConformers()[0].GetPositions()
+        pos_ligandB = rdmol_B.GetConformers()[0].GetPositions()
 
         ligand_1_radius = np.linalg.norm(
-            equ_pos_ligandA - equ_pos_ligandA.mean(axis=0), axis=1).max()
+            pos_ligandA - pos_ligandA.mean(axis=0), axis=1).max()
         ligand_2_radius = np.linalg.norm(
-            equ_pos_ligandB - equ_pos_ligandB.mean(axis=0), axis=1).max()
-        ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5 * omm_units.nanometer
-        print(ligand_distance)
-        print(unit_cell)
-        if ligand_distance > min(unit_cell) / 2:
-            ligand_distance = min(unit_cell) / 2
+            pos_ligandB - pos_ligandB.mean(axis=0), axis=1).max()
+        ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
 
-        ligand_offset = equ_pos_ligandA.mean(0) - equ_pos_ligandB.mean(0)
+        ligand_offset = pos_ligandA.mean(0) - pos_ligandB.mean(0)
         ligand_offset[0] += ligand_distance
 
         # Offset the ligandB.
-        mdtraj_system_B.xyz[-1][atom_indices_B, :] += ligand_offset / omm_units.nanometers
+        pos_ligandB += ligand_offset
 
         # Extract updated system positions.
-        updated_positions_B = mdtraj_system_B.openmm_positions(-1)
+        rdmol_B.GetConformers()[0].SetPositions(pos_ligandB)
 
-        return updated_positions_B
+        return SmallMoleculeComponent(rdmol_B)
 
-    # @staticmethod
     def _add_restraints(
         self,
         system: openmm.System,
-        u_A,
-        u_B,
         ligand_1,
         ligand_2,
         ligand_1_inxs: list[int],
         ligand_2_inxs: list[int],
-        ligand_2_inxs_B: list[int],
-        protein_inxs,
         settings: dict[str, SettingsBaseModel],
         positions_AB: np.ndarray,
     ) -> openmm.System:
@@ -1369,7 +1558,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
           The OpenMM system with the added restraints forces
         """
 
-
         if isinstance(settings['restraint_settings'],
                       DistanceRestraintSettings):
 
@@ -1379,10 +1567,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
                 molA_idxs=ligand_1_inxs,
                 molB_idxs=ligand_2_inxs,
             )
-
-            restraint = omm_restraints.HarmonicBondRestraint(
-                settings['restraint_settings'],
-            )
+            print(rest_geom)
 
         else:
             # TODO turn this into a direction for different restraint types supported?
@@ -1393,22 +1578,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         if self.verbose:
             self.logger.info(f"restraint geometry is: {rest_geom}")
 
-        # # We need a temporary thermodynamic state to add the restraint
-        # # & get the correction
-        # thermodynamic_state = ThermodynamicState(
-        #     system,
-        #     temperature=to_openmm(settings['thermo_settings'].temperature),
-        #     pressure=to_openmm(settings['thermo_settings'].pressure),
-        # )
-        #
-        # # Add the force to the thermodynamic state
-        # restraint.add_force(
-        #     thermodynamic_state,
-        #     rest_geom,
-        #     controlling_parameter_name="lambda_restraints",
-        # )
-
-        # Revert back to old way of adding restraints
         distance = np.linalg.norm(
             positions_AB[rest_geom.guest_atoms[0]] - positions_AB[rest_geom.host_atoms[0]])
         print(distance)
@@ -1433,7 +1602,125 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             openmm.unit.MOLAR_GAS_CONSTANT_R * to_openmm(settings['thermo_settings'].temperature)
         )
 
-        return correction, 0 * unit.kilocalorie_per_mole, system
+        return correction, system
+
+    def run(self, dry=False, verbose=True,
+            scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
+        """
+        Run the SepTop free energy calculation.
+
+        Parameters
+        ----------
+        dry : bool
+          Do a dry run of the calculation, creating all necessary alchemical
+          system components (topology, system, sampler, etc...) but without
+          running the simulation, default False
+        verbose : bool
+          Verbose output of the simulation progress. Output is provided via
+          INFO level logging, default True
+        scratch_basepath : pathlib.Path
+          Path to the scratch (temporary) directory space.
+        shared_basepath : pathlib.Path
+          Path to the shared (persistent) directory space.
+
+        Returns
+        -------
+        dict
+          Outputs created in the basepath directory or the debug objects
+          (i.e. sampler) if ``dry==True``.
+        """
+        # 0. General preparation tasks
+        self._prepare(verbose, scratch_basepath, shared_basepath)
+
+        # 1. Get components
+        self.logger.info("Creating and setting up the OpenMM systems")
+        alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+            alchem_comps, smc_comps)
+
+        # 3. Get settings
+        settings = self._handle_settings()
+
+        # 4. Assign partial charges
+        self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
+
+        # 5. Update the positions of ligand B:
+        #    - solvent: Offset ligand B with respect to ligand A
+        smc_B = self._update_positions(
+            alchem_comps['stateA'][0].to_rdkit(),
+            alchem_comps['stateB'][0].to_rdkit(),
+            )
+        smc_comps_B = {smc_B: smc_B.to_openff()}
+
+        # 5. Get the OpenMM systems
+        omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = self.get_system(
+            solv_comp,
+            prot_comp,
+            smc_comps_A | smc_comps_B,
+            settings,
+        )
+
+        # Get atom indices for ligand A and ligand B and the solvent in the
+        # system AB
+        comp_atomids_AB = self._get_atom_indices(omm_topology_AB,
+                                                 comp_resids_AB)
+        atom_indices_AB_A = comp_atomids_AB[alchem_comps['stateA'][0]]
+        atom_indices_AB_B = comp_atomids_AB[smc_B]
+
+
+        # 9. Create the alchemical system
+        self.logger.info(
+            "Creating the alchemical system and applying restraints")
+
+        factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
+        # Alchemical Region for ligand A
+        alchemical_region_A = AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_A, name='A')
+        # Alchemical Region for ligand B
+        alchemical_region_B = AlchemicalRegion(
+            alchemical_atoms=atom_indices_AB_B, name='B')
+        alchemical_system = factory.create_alchemical_system(
+            omm_system_AB, [alchemical_region_A, alchemical_region_B])
+
+        # 10. Apply Restraints
+        rdmol_A = alchem_comps['stateA'][0].to_rdkit()
+        rdmol_B = smc_B.to_rdkit()
+        Chem.SanitizeMol(rdmol_A)
+        Chem.SanitizeMol(rdmol_B)
+
+        corr, system = self._add_restraints(
+            alchemical_system,
+            rdmol_A,
+            rdmol_B,
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+            settings,
+            positions_AB,
+        )
+        print('Restraints', corr)
+        # Run a short equilibration
+        equ_positions_AB = self._pre_equilibrate(
+            omm_system_AB, omm_topology_AB, positions_AB, settings, 'AB', dry
+        )
+
+        topology_file = self.shared_basepath / 'topology.pdb'
+        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
+                                                   equ_positions_AB,
+                                                   open(topology_file,
+                                                        'w'))
+
+        # ToDo: also apply REST
+
+        system_outfile = self.shared_basepath / "system.xml.bz2"
+
+        # Serialize system, state and integrator
+        serialize(system, system_outfile)
+
+        return {
+            "system": system_outfile,
+            "topology": topology_file,
+            "standard_state_correction": corr.to('kilocalorie_per_mole'),
+        }
 
     def _execute(
         self, ctx: gufe.Context, **kwargs,

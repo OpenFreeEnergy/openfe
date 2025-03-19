@@ -659,10 +659,10 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         pdb = md.load_pdb('topology.pdb')
-        assert pdb.n_atoms == 4481
-        central_atoms = np.array([[2, 4475]], dtype=np.int32)
+        assert pdb.n_atoms == 4433
+        central_atoms = np.array([[2, 19]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
-        assert np.isclose(distance, 0.76336)
+        assert np.isclose(distance, 0.8661)
         serialized_topology = solv_setup_output['topology']
         serialized_system = solv_setup_output['system']
         solv_sampler = sol_run_unit[0].run(
@@ -1016,7 +1016,6 @@ def T4L_reference_xml():
     return deserialize(pathlib.Path(f))
 
 
-# @pytest.mark.slow
 class TestT4LXmlRegression:
     """Generates SepTop system XML (solvent) and performs regression test"""
     @staticmethod
