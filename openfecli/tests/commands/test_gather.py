@@ -1,16 +1,18 @@
-from typing import Callable
 from click.testing import CliRunner
-from importlib import resources
-import tarfile
 import os
 import pathlib
 import pytest
 import pooch
+
 from ..utils import assert_click_success
 from ..conftest import HAS_INTERNET
 
+from unittest import mock
 from openfecli.commands.gather import (
-    gather, format_estimate_uncertainty, _get_column,
+    gather,
+    format_estimate_uncertainty,
+    _get_column,
+    load_valid_result_json,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -27,6 +29,76 @@ def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
 ])
 def test_get_column(val, col):
     assert _get_column(val) == col
+
+
+class TestResultLoading:
+    @pytest.fixture
+    def valid_result(self):
+        result = {
+            "estimate": {},
+            "uncertainty": {},
+            "protocol_result": {},
+            "unit_results": {
+                "ProtocolUnitResult-e85": {},
+                "ProtocolUnitFailure-4c9": {"exception": ["Simulation_NanError"]},
+            },
+        }
+        yield result
+
+    def test_minimal_valid_results(self, capsys, valid_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=valid_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result == valid_result
+            assert captured.err == ""
+
+    def test_skip_missing_filepath(self, capsys):
+        result = load_valid_result_json(fpath="")
+        captured = capsys.readouterr()
+        assert result is None
+        assert "does not exist. Skipping" in captured.err
+
+    def test_skip_missing_unit_result(self, capsys, valid_result):
+        tmp_result = valid_result
+        del tmp_result["unit_results"]
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=tmp_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'unit_results'" in captured.err
+
+    def test_skip_missing_estimate(self, capsys, valid_result):
+        tmp_result = valid_result
+        tmp_result["estimate"] = None
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=tmp_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'estimate' found" in captured.err
+
+    def test_skip_missing_uncertainty(self, capsys, valid_result):
+        tmp_result = valid_result
+        tmp_result["uncertainty"] = None
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=tmp_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'uncertainty' found" in captured.err
+
+    def test_skip_all_failed_runs(self, capsys, valid_result):
+        tmp_result = valid_result
+        del tmp_result["unit_results"]["ProtocolUnitResult-e85"]
+        with mock.patch(
+            "openfecli.commands.gather.load_json", return_value=valid_result
+        ):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "Exception found in all" in captured.err
+
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
@@ -138,10 +210,10 @@ solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 POOCH_CACHE = pooch.os_cache('openfe')
 ZENODO_RBFE_DATA = pooch.create(
         path = POOCH_CACHE,
-        base_url="doi:10.5281/zenodo.15042456",
+        base_url="doi:10.5281/zenodo.15042470",
         registry={
             "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
-            "rbfe_results_parallel_repeats.tar.gz": "md5:1301e0fe46ee785d197e75addabf7e87"},
+            "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
     )
 
 @pytest.fixture
