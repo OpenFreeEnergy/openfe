@@ -1388,10 +1388,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
         self.logger.info("Pre-equilibrating the systems")
-        equ_positions_A = self._pre_equilibrate(
+        equ_positions_A, box_A = self._pre_equilibrate(
             omm_system_A, omm_topology_A, positions_A, settings, 'A', dry
         )
-        equ_positions_B = self._pre_equilibrate(
+        equ_positions_B, box_B = self._pre_equilibrate(
             omm_system_B, omm_topology_B, positions_B, settings, 'B', dry
         )
 
@@ -1460,13 +1460,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             settings,
         )
         print('Restraints', corr_A, corr_B)
-        # Check that the restraints are correctly applied by running a short equilibration
-        equ_positions_restraints = self._pre_equilibrate(
-            system, omm_topology_AB, positions_AB, settings, 'AB', dry
-        )
+
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   equ_positions_restraints,
+                                                   positions_AB,
                                                    open(topology_file,
                                                         'w'))
 
@@ -1799,14 +1796,10 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             positions_AB,
         )
         print('Restraints', corr)
-        # Run a short equilibration
-        equ_positions_AB = self._pre_equilibrate(
-            omm_system_AB, omm_topology_AB, positions_AB, settings, 'AB', dry
-        )
 
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   equ_positions_AB,
+                                                   positions_AB,
                                                    open(topology_file,
                                                         'w'))
 
