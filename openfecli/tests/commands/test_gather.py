@@ -279,9 +279,14 @@ class TestGatherFailedEdges:
         assert "('lig_ejm_46', 'lig_jmc_28'): complex" in str(result.exception)
         assert "using the --allow-partial flag" in str(result.exception)
 
+    @pytest.mark.parametrize('report', ["", "dg"]) # "ddg", "raw"])
+    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str, report:str):
+        if report:
+            args = ["--report", report]
+        else:
+            args = []
 
-    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
         runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
+        result = runner.invoke(gather, [results_dir_serial_missing_legs] + args+ ['--allow-partial', '-o', '-'])
 
         assert_click_success(result)

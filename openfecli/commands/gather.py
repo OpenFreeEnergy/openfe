@@ -99,42 +99,34 @@ def load_json(fpath:os.PathLike|str)->dict:
 
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
-def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
-    """Load the data from a results JSON into a dict.
+def is_failed_simulation(result:dict)->bool:
+    """Determine if the results json is that of a failed simulation
 
     Parameters
     ----------
-    fpath : os.PathLike | str
-        The path to deserialized results.
+    result : dict
+        The results dict of a simulation
 
     Returns
     -------
-    dict | None
-        A dict containing data from the results JSON,
-        or None if the JSON file is invalid or missing.
-
+    bool
+        ``True`` if the simulation is failed/invalid, ``False`` if the simulation is valid.
     """
-
-
-    try:
-        result = load_json(fpath)
-    except FileNotFoundError:
-        click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
-        return None
     if "unit_results" not in result.keys():
         click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
-        return None
+        return True
     if result['estimate'] is None:
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
-        return None
+        return True
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
-        return None
+        return True
     if all('exception' in u for u in result['unit_results'].values()):
         click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
-        return None
+        return True
+    else:
+        return False
 
-    return result
 
 def get_names(result:dict) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
@@ -150,28 +142,32 @@ def get_names(result:dict) -> tuple[str, str]:
         Ligand names corresponding to the results.
     """
 
-    nm = list(result['unit_results'].values())[0]['name']
-    toks = nm.split()
-    if toks[2] == 'repeat':
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
-
+    try:
+        nm = list(result['unit_results'].values())[0]['name']
+        toks = nm.split()
+        if toks[2] == 'repeat':
+            return toks[0], toks[1]
+        else:
+            return toks[0], toks[2]
+    except KeyError:
+            raise ValueError("Failed to guess names")
 
 def get_type(res:dict)->Literal['vacuum','solvent','complex']:
     """Determine the simulation type based on the component names."""
     # TODO: use component *types* instead here
+    try:
+        list_of_pur = list(res['protocol_result']['data'].values())[0]
+        pur = list_of_pur[0]
+        components = pur['inputs']['stateA']['components']
 
-    list_of_pur = list(res['protocol_result']['data'].values())[0]
-    pur = list_of_pur[0]
-    components = pur['inputs']['stateA']['components']
-
-    if 'solvent' not in components:
-        return 'vacuum'
-    elif 'protein' in components:
-        return 'complex'
-    else:
-        return 'solvent'
+        if 'solvent' not in components:
+            return 'vacuum'
+        elif 'protein' in components:
+            return 'complex'
+        else:
+            return 'solvent'
+    except KeyError:
+        return legacy_get_type(result_fn)
 
 
 def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
@@ -434,18 +430,18 @@ def gather(rootdir:os.PathLike|str,
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        result = load_valid_result_json(result_fn)
-        if result is None:
+        try:
+            result = load_json(result_fn)
+        except FileNotFoundError:
+            click.echo(f"{result} not found, skipping")
             continue
 
-        try:
-            names = get_names(result)
-        except KeyError:
-            raise ValueError("Failed to guess names")
-        try:
-            simtype = get_type(result)
-        except KeyError:
-            simtype = legacy_get_type(result_fn)
+        if is_failed_simulation(result):
+            # collect these for better error reporting
+            continue
+
+        names = get_names(result)
+        simtype = get_type(result)
 
         if report.lower() == 'raw':
             legs[names][simtype].append(_parse_raw_units(result))
