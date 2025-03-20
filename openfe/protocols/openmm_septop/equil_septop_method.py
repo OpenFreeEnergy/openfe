@@ -80,6 +80,12 @@ from ..restraint_utils.settings import (
     DistanceRestraintSettings,
     BoreschRestraintSettings,
 )
+from openfe.protocols.restraint_utils.openmm.omm_restraints import (
+    BoreschRestraint,
+)
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    BoreschRestraintGeometry,
+)
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openmmtools.states import ThermodynamicState, GlobalParameterState
@@ -1077,8 +1083,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _get_mda_universe(
-            topology: omm_topology,
-            positions: omm_unit.Quantity,
+            topology: openmm.app.Topology,
+            positions: openmm.unit.Quantity,
             trajectory: Optional[pathlib.Path],
             settings,
     ) -> mda.Universe:
