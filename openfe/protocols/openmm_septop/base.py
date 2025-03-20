@@ -257,6 +257,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # Don't do anything if we're doing a dry run
         if dry:
             return positions
+
+        # We have to modify the output settings to have different output
+        # names for the files from the two end states
         unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
 
         if endstate == 'A' or endstate == 'B' or endstate == 'AB':
@@ -855,21 +858,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         cmp_states : list[ThermodynamicState]
           A list of ThermodynamicState for each replica in the system.
         """
-        # alchemical_state = SepTopParameterState.from_system(alchemical_system)
-        alchemical_state = SepTopParameterState.from_system(
-            alchemical_system)
-        # alchemical_state_B = AlchemicalState.from_system(
-        #     alchemical_system, parameters_name_suffix='B')
-        # # Get the GlobalParameterState for the restraint
-        # restraint_parameter_state_A = omm_restraints.RestraintParameterState(
-        #     parameters_name_suffix='A',
-        #     # lambda_restraints=1.0
-        # )
-        # restraint_parameter_state_B = omm_restraints.RestraintParameterState(
-        #     parameters_name_suffix='B',
-        #     # lambda_restraints=1.0
-        # )
-        # print(restraint_parameter_state_A.lambda_restraints_A)
+        alchemical_state = SepTopParameterState.from_system(alchemical_system)
 
         # Set up the system constants
         temperature = settings['thermo_settings'].temperature
@@ -880,9 +869,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             constants['pressure'] = ensure_quantity(pressure, 'openmm')
 
         # Get the composable states
-        # if restraint_state is not None:
-        #     composable_states = [alchemical_state, restraint_state]
-        # else:
         composable_states = [
             alchemical_state
         ]

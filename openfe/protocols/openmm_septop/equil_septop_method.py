@@ -1074,17 +1074,122 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         return updated_positions_B
 
-    # @staticmethod
+
+    @staticmethod
+    def _get_mda_universe(
+            topology: omm_topology,
+            positions: omm_unit.Quantity,
+            trajectory: Optional[pathlib.Path],
+            settings,
+    ) -> mda.Universe:
+        """
+        Helper method to get a Universe from an openmm Topology,
+        and either an input trajectory or a set of positions.
+
+        Parameters
+        ----------
+        topology : openmm.app.Topology
+          An OpenMM Topology that defines the System.
+        positions: openmm.unit.Quantity
+          The System's current positions.
+          Used if a trajectory file is None or is not a file.
+        trajectory: pathlib.Path
+          A Path to a trajectory file to read positions from.
+        settings: dict
+          The settings dictionary
+
+        Returns
+        -------
+        mda.Universe
+          An MDAnalysis Universe of the System.
+        """
+        from MDAnalysis.coordinates.memory import MemoryReader
+
+        # If the trajectory file doesn't exist, then we use positions
+        write_int = settings['equil_output_settings'].trajectory_write_interval
+        prod_length = settings['equil_simulation_settings'].production_length
+        if trajectory is not None and trajectory.is_file() and write_int <= prod_length:
+            return mda.Universe(
+                topology,
+                trajectory,
+                topology_format="OPENMMTOPOLOGY",
+            )
+        else:
+            # Positions is an openmm Quantity in nm we need
+            # to convert to angstroms
+            return mda.Universe(
+                topology,
+                np.array(positions._value) * 10,
+                topology_format="OPENMMTOPOLOGY",
+                trajectory_format=MemoryReader,
+            )
+
+    @staticmethod
+    def _get_boresch_restraint(
+            universe: mda.Universe,
+            guest_rdmol: Chem.Mol,
+            guest_atom_ids: list[int],
+            host_atom_ids: list[int],
+            temperature: unit.Quantity,
+            settings: BoreschRestraintSettings,
+    ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
+        """
+        Get a Boresch-like restraint Geometry and OpenMM restraint force
+        supplier.
+
+        Parameters
+        ----------
+        universe : mda.Universe
+          An MDAnalysis Universe defining the system to get the restraint for.
+        guest_rdmol : Chem.Mol
+          An RDKit Molecule defining the guest molecule in the system.
+        guest_atom_ids: list[int]
+          A list of atom indices defining the guest molecule in the universe.
+        host_atom_ids : list[int]
+          A list of atom indices defining the host molecules in the universe.
+        temperature : unit.Quantity
+          The temperature of the simulation where the restraint will be added.
+        settings : BoreschRestraintSettings
+          Settings on how the Boresch-like restraint should be defined.
+
+        Returns
+        -------
+        geom : BoreschRestraintGeometry
+          A class defining the Boresch-like restraint.
+        restraint : BoreschRestraint
+          A factory class for generating Boresch restraints in OpenMM.
+        """
+        frc_const = (settings.K_thetaA + settings.K_thetaB) / 2
+
+        geom = geometry.boresch.find_boresch_restraint(
+            universe=universe,
+            guest_rdmol=guest_rdmol,
+            guest_idxs=guest_atom_ids,
+            host_idxs=host_atom_ids,
+            host_selection=settings.host_selection,
+            dssp_filter=settings.dssp_filter,
+            rmsf_cutoff=settings.rmsf_cutoff,
+            host_min_distance=settings.host_min_distance,
+            host_max_distance=settings.host_max_distance,
+            angle_force_constant=frc_const,
+            temperature=temperature,
+        )
+
+        restraint = omm_restraints.BoreschRestraint(settings)
+        return geom, restraint
+
     def _add_restraints(
             self,
             system: openmm.System,
-            u_A,
-            u_B,
-            ligand_1,
-            ligand_2,
-            ligand_1_inxs: list[int],
-            ligand_2_inxs: list[int],
-            ligand_2_inxs_B: list[int],
+            topology_A,
+            topology_B,
+            positions_A,
+            positions_B,
+            rdmol_A,
+            rdmol_B,
+            ligand_A_inxs: list[int],
+            ligand_B_inxs: list[int],
+            ligand_B_inxs_B: list[int],
             protein_inxs: list[int],  # type: ignore[override]
             settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
@@ -1119,72 +1224,54 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         """
         from MDAnalysis.coordinates.memory import MemoryReader
 
-        if isinstance(settings['restraint_settings'],
-                      BoreschRestraintSettings):
-            # Get the average of the two force constant for use below
-            frc_const_average = (
-                                        settings[
-                                            'restraint_settings'].K_thetaA +
-                                        settings['restraint_settings'].K_thetaB
-                                ) / 2
+        # Get the MDA Universe for the restraints selection
+        # We try to pass the equilibration production file path through
+        # In some cases (debugging / dry runs) this won't be available
+        # so we'll default to using input positions.
+        out_traj = (self.shared_basepath
+                    / settings[
+                        'equil_output_settings'].production_trajectory_filename)
+        u_A = self._get_mda_universe(
+            topology_A,
+            positions_A,
+            pathlib.Path(f'{out_traj}_stateA.xtc'),
+            settings,
+        )
+        u_B = self._get_mda_universe(
+            topology_B,
+            positions_B,
+            pathlib.Path(f'{out_traj}_stateB.xtc'),
+            settings,
+        )
+        # Chem.SanitizeMol(rdmol_A)
+        # Chem.SanitizeMol(rdmol_B)
 
-            rest_geom_A = geometry.boresch.find_boresch_restraint(
-                universe=u_A,
-                guest_rdmol=ligand_1,
-                guest_idxs=ligand_1_inxs,
-                host_idxs=protein_inxs,
-                host_selection=settings['restraint_settings'].host_selection,
-                dssp_filter=settings['restraint_settings'].dssp_filter,
-                rmsf_cutoff=settings['restraint_settings'].rmsf_cutoff,
-                host_min_distance=settings[
-                    'restraint_settings'].host_min_distance,
-                host_max_distance=settings[
-                    'restraint_settings'].host_max_distance,
-                angle_force_constant=frc_const_average,
-                temperature=settings['thermo_settings'].temperature,
-            )
+        rest_geom_A, restraint_A = self._get_boresch_restraint(
+            u_A,
+            rdmol_A,
+            ligand_A_inxs,
+            protein_inxs,
+            settings["thermo_settings"].temperature,
+            settings["restraint_settings"],
+        )
 
-            restraint_A = omm_restraints.BoreschRestraint(
-                settings['restraint_settings'],
-            )
-
-            rest_geom_B = geometry.boresch.find_boresch_restraint(
-                universe=u_B,
-                guest_rdmol=ligand_2,
-                guest_idxs=ligand_2_inxs_B,
-                host_idxs=protein_inxs,
-                host_selection=settings['restraint_settings'].host_selection,
-                dssp_filter=settings['restraint_settings'].dssp_filter,
-                rmsf_cutoff=settings['restraint_settings'].rmsf_cutoff,
-                host_min_distance=settings[
-                    'restraint_settings'].host_min_distance,
-                host_max_distance=settings[
-                    'restraint_settings'].host_max_distance,
-                angle_force_constant=frc_const_average,
-                temperature=settings['thermo_settings'].temperature,
-            )
-
-            restraint_B = omm_restraints.BoreschRestraint(
-                settings['restraint_settings'],
-            )
-
-        else:
-            # TODO turn this into a direction for different restraint types supported?
-            raise NotImplementedError(
-                "Other restraint types are not yet available"
-            )
-
+        rest_geom_B, restraint_B = self._get_boresch_restraint(
+            u_B,
+            rdmol_B,
+            ligand_B_inxs_B,
+            protein_inxs,
+            settings["thermo_settings"].temperature,
+            settings["restraint_settings"],
+        )
+        # We have to update the indices for ligand B to match the AB complex
+        new_boresch_B_indices = [ligand_B_inxs_B.index(i) for i in
+                                 rest_geom_B.guest_atoms]
+        rest_geom_B.guest_atoms = [ligand_B_inxs[i] for i in
+                                   new_boresch_B_indices]
 
         if self.verbose:
-            self.logger.info(f"restraint geometry is: A: {rest_geom_A}"
-                             f"B: {rest_geom_B}")
-        print(rest_geom_A)
-        print(rest_geom_B)
-        print(rest_geom_B.guest_atoms)
-        # We have to update the indices for ligand B to match the AB complex
-        new_boresch_B_indices = [ligand_2_inxs_B.index(i) for i in rest_geom_B.guest_atoms]
-        rest_geom_B.guest_atoms = [ligand_2_inxs[i] for i in new_boresch_B_indices]
-        print(rest_geom_B.guest_atoms)
+            self.logger.info(f"restraint geometry is: ligand A: {rest_geom_A}"
+                             f"and ligand B: {rest_geom_B}.")
 
         # We need a temporary thermodynamic state to add the restraint
         # & get the correction
@@ -1260,10 +1347,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         # 4. Assign partial charges
         self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
-
-        # 5. Get systems, apply restraints. Here we split because the solvent
-        # leg and complex leg are so different
-
 
         # 5. Get the OpenMM systems
         omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = self.get_system(
@@ -1356,38 +1439,14 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             omm_system_AB, [alchemical_region_A, alchemical_region_B])
 
         # 10. Apply Restraints
-        off_A = alchem_comps["stateA"][0].to_openff()
-        lig_A_pos = positions_AB[atom_indices_AB_A[0]:atom_indices_AB_A[-1]+1, :] / omm_units.nanometers * unit.nanometer
-        self._set_positions(off_A, lig_A_pos)
-        off_B = alchem_comps["stateB"][0].to_openff()
-        lig_B_pos = positions_AB[
-                    atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
-                    :] / omm_units.nanometers * unit.nanometer
-        self._set_positions(off_B, lig_B_pos)
-
-        # Get the MDA Universe for the restraints selection
-        out_pdb = self.shared_basepath / settings['equil_output_settings'].equil_npt_structure
-        out_traj = self.shared_basepath / settings[
-            'equil_output_settings'].production_trajectory_filename
-        if (pathlib.Path(f'{out_traj}_stateA.xtc').exists()
-                and pathlib.Path(f'{out_traj}_stateB.xtc').exists()
-                and settings['equil_output_settings'].trajectory_write_interval <= settings['equil_simulation_settings'].production_length):
-            print('Traj found')
-            u_A = mda.Universe(f'{out_pdb}_stateA.pdb', f'{out_traj}_stateA.xtc')
-            u_B = mda.Universe(f'{out_pdb}_stateB.pdb', f'{out_traj}_stateB.xtc')
-        else:
-            print('No traj')
-            u_A = mda.Universe(omm_topology_A, modeller_A)
-            u_B = mda.Universe(omm_topology_B, modeller_B)
-
-        rdmol_A = off_A.to_rdkit()
-        rdmol_B = off_B.to_rdkit()
-        Chem.SanitizeMol(rdmol_A)
-        Chem.SanitizeMol(rdmol_B)
         corr_A, corr_B, system, restraint_geom_A, restraint_geom_B = self._add_restraints(
-            alchemical_system, u_A, u_B,
-            rdmol_A,
-            rdmol_B,
+            alchemical_system,
+            omm_topology_A,
+            omm_topology_B,
+            equ_positions_A,
+            equ_positions_B,
+            alchem_comps["stateA"][0].to_rdkit(),
+            alchem_comps["stateB"][0].to_rdkit(),
             atom_indices_AB_A,
             atom_indices_AB_B,
             atom_indices_B,
@@ -1476,11 +1535,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         solv_comp, _, _ = system_validation.get_components(stateA)
 
-        # 1. We don't need to check that solv_comp is not None, otherwise
-        # an error will have been raised when calling `validate_solvent`
-        # in the Protocol's `_create`.
-        # 2. ProteinComps can't be alchem_comps (for now), so will
-        # be returned as None
         return alchem_comps, solv_comp, None, small_mols
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
