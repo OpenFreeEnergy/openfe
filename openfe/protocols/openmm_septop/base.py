@@ -138,7 +138,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         system: openmm.System,
         alchem_indices_A: list[int],
         alchem_indices_B: list[int],
-    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
+    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System]:
         """
         Get an alchemically modified system and its associated factory
 
