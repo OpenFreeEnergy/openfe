@@ -88,9 +88,7 @@ def compare_energies(alchemical_system, positions):
     return na_A, na_B, nonbonded, energy, energy_0, energy_7, energy_8, energy_12, energy_13
 
 
-# @pytest.mark.integration  # takes too long to be a slow test ~ 4 mins locally
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
-# @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
 def test_lambda_energies(bace_ligands,  bace_protein_component, tmpdir):
     # check system parametrisation works even if confgen fails
     s = SepTopProtocol.default_settings()
@@ -217,8 +215,7 @@ def test_openmm_run_engine(platform,
     s.solvent_equil_simulation_settings.production_length = 0.1 * unit.picosecond
     s.solvent_simulation_settings.equilibration_length = 0.1 * unit.picosecond
     s.solvent_simulation_settings.production_length = 0.1 * unit.picosecond
-    s.complex_engine_settings.compute_platform = platform
-    s.solvent_engine_settings.compute_platform = platform
+    s.engine_settings.compute_platform = platform
     s.complex_simulation_settings.time_per_iteration = 20 * unit.femtosecond
     s.solvent_simulation_settings.time_per_iteration = 20 * unit.femtosecond
     s.complex_output_settings.checkpoint_interval = 20 * unit.femtosecond
@@ -272,7 +269,6 @@ def test_openmm_run_engine(platform,
     assert states['solvent'][0].shape[1] == 19
 
 
-@pytest.mark.integration
 @pytest.mark.flaky(reruns=1)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
 def test_restraints_solvent(platform,
@@ -289,7 +285,7 @@ def test_restraints_solvent(platform,
     s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
     s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
     s.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
-    s.solvent_engine_settings.compute_platform = platform
+    s.engine_settings.compute_platform = platform
 
     protocol = SepTopProtocol(
             settings=s,
@@ -307,8 +303,8 @@ def test_restraints_solvent(platform,
                        if isinstance(u, SepTopSolventSetupUnit)]
     solv_setup_output = solv_setup_unit[0].run()
     pdb = md.load_pdb('topology.pdb')
-    assert pdb.n_atoms == 4481
-    central_atoms = np.array([[2, 4475]], dtype=np.int32)
+    assert pdb.n_atoms == 1115
+    central_atoms = np.array([[2, 19]], dtype=np.int32)
     distance = md.compute_distances(pdb, central_atoms)[0][0]
     # For right now just checking that ligands at least somewhat apart
     assert distance > 0.5

@@ -1648,6 +1648,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
                 molA_idxs=ligand_1_inxs,
                 molB_idxs=ligand_2_inxs,
             )
+            print(rest_geom)
 
         else:
             # TODO turn this into a direction for different restraint types supported?
