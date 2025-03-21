@@ -1395,12 +1395,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             omm_system_B, omm_topology_B, positions_B, settings, 'B', dry
         )
 
-
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_A, equ_positions_A, open(self.shared_basepath / 'outputA_equ.pdb', 'w'))
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(
-            omm_topology_B, equ_positions_B, open(self.shared_basepath / 'outputB_equ.pdb', 'w'))
-
         # 7. Get all the right atom indices for alignments
         comp_atomids_A = self._get_atom_indices(omm_topology_A, comp_resids_A)
         all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
@@ -1415,10 +1409,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         updated_positions_B = self._update_positions(
             omm_topology_A, omm_topology_B, equ_positions_A, equ_positions_B,
         )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_B,
-                                                   updated_positions_B,
-                                                   open(self.shared_basepath / 'outputB_new.pdb',
-                                                        'w'))
 
         # Get atom indices for ligand A and ligand B and the solvent in the
         # system AB
@@ -1459,7 +1449,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             comp_atomids_AB[prot_comp],
             settings,
         )
-        print('Restraints', corr_A, corr_B)
 
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
@@ -1795,7 +1784,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             settings,
             positions_AB,
         )
-        print('Restraints', corr)
 
         topology_file = self.shared_basepath / 'topology.pdb'
         simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,

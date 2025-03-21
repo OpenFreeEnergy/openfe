@@ -264,7 +264,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # names for the files from the two end states
         unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
 
-        if endstate == 'A' or endstate == 'B' or endstate == 'AB':
+        if endstate == 'A' or endstate == 'B':
             if unfrozen_outsettings.production_trajectory_filename:
                 unfrozen_outsettings.production_trajectory_filename = (
                         unfrozen_outsettings.production_trajectory_filename + f'_state{endstate}.xtc')
@@ -284,7 +284,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                 unfrozen_outsettings.log_output = (
                         unfrozen_outsettings.log_output + f'_state{endstate}.log')
         else:
-            errmsg = f"Only 'A', 'B', and 'AB' are accepted as endstates. Got {endstate}"
+            errmsg = f"Only 'A' and 'B' are accepted as endstates. Got {endstate}"
             raise ValueError(errmsg)
 
 
@@ -695,11 +695,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         omm_topology_AB, omm_system_AB, positions_AB = self._get_omm_objects(
             system_modeller_AB, system_generator, list(smc_comps_AB.values())
         )
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   positions_AB,
-                                                   open(
-                                                       shared_basepath / 'outputAB.pdb',
-                                                       'w'))
 
         return omm_system_AB, omm_topology_AB, positions_AB, system_modeller_AB
 
@@ -811,7 +806,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             topology: openmm.app.Topology,
             positions: omm_unit.Quantity,
             settings: dict[str, SettingsBaseModel],
-            endstate: str,
             dry: bool
     ) -> omm_unit.Quantity:
         """
@@ -898,28 +892,24 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         # names for the files from the two end states
         unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
 
-        if endstate == 'A' or endstate == 'B' or endstate == 'AB':
-            if unfrozen_outsettings.production_trajectory_filename:
-                unfrozen_outsettings.production_trajectory_filename = (
-                        unfrozen_outsettings.production_trajectory_filename + f'_state{endstate}.xtc')
-            if unfrozen_outsettings.preminimized_structure:
-                unfrozen_outsettings.preminimized_structure = (
-                        unfrozen_outsettings.preminimized_structure + f'_state{endstate}.pdb')
-            if unfrozen_outsettings.minimized_structure:
-                unfrozen_outsettings.minimized_structure = (
-                        unfrozen_outsettings.minimized_structure + f'_state{endstate}.pdb')
-            if unfrozen_outsettings.equil_nvt_structure:
-                unfrozen_outsettings.equil_nvt_structure = (
-                        unfrozen_outsettings.equil_nvt_structure + f'_state{endstate}.pdb')
-            if unfrozen_outsettings.equil_npt_structure:
-                unfrozen_outsettings.equil_npt_structure = (
-                        unfrozen_outsettings.equil_npt_structure + f'_state{endstate}.pdb')
-            if unfrozen_outsettings.log_output:
-                unfrozen_outsettings.log_output = (
-                        unfrozen_outsettings.log_output + f'_state{endstate}.log')
-        else:
-            errmsg = f"Only 'A', 'B', and 'AB' are accepted as endstates. Got {endstate}"
-            raise ValueError(errmsg)
+        if unfrozen_outsettings.production_trajectory_filename:
+            unfrozen_outsettings.production_trajectory_filename = (
+                    unfrozen_outsettings.production_trajectory_filename + '.xtc')
+        if unfrozen_outsettings.preminimized_structure:
+            unfrozen_outsettings.preminimized_structure = (
+                    unfrozen_outsettings.preminimized_structure + '.pdb')
+        if unfrozen_outsettings.minimized_structure:
+            unfrozen_outsettings.minimized_structure = (
+                    unfrozen_outsettings.minimized_structure + '.pdb')
+        if unfrozen_outsettings.equil_nvt_structure:
+            unfrozen_outsettings.equil_nvt_structure = (
+                    unfrozen_outsettings.equil_nvt_structure + '.pdb')
+        if unfrozen_outsettings.equil_npt_structure:
+            unfrozen_outsettings.equil_npt_structure = (
+                    unfrozen_outsettings.equil_npt_structure + '.pdb')
+        if unfrozen_outsettings.log_output:
+            unfrozen_outsettings.log_output = (
+                    unfrozen_outsettings.log_output + '.log')
 
 
         # Use the _run_MD method from the PlainMDProtocolUnit
@@ -1355,7 +1345,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         # Check that the restraints are correctly applied by running a short equilibration
         equ_positions, box_AB = self._pre_equilibrate(
-            system, pdb.topology, positions, settings, 'AB', dry
+            system, pdb.topology, positions, settings, dry
         )
         lambdas = self._get_lambda_schedule(settings)
 

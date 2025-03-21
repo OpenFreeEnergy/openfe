@@ -1009,13 +1009,6 @@ def T4L_xml(benzene_complex_system, toluene_complex_system, tmp_path_factory):
     return deserialize(system)
 
 
-@pytest.fixture
-def T4L_reference_xml():
-    with resources.files('openfe.tests.data.openmm_septop') as d:
-        f = d / 'system.xml.bz2'
-    return deserialize(pathlib.Path(f))
-
-
 class TestT4LXmlRegression:
     """Generates SepTop system XML (solvent) and performs regression test"""
     @staticmethod

@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
 import importlib
+import pathlib
 import pytest
 from importlib import resources
 from rdkit import Chem
@@ -11,6 +12,7 @@ from openff.units import unit
 import gufe
 import openfe
 from gufe import SmallMoleculeComponent, LigandAtomMapping
+from openfe.protocols.openmm_septop.utils import deserialize
 
 
 class SlowTests:
@@ -212,6 +214,13 @@ def bace_ligands():
         for rdmol in supp:
             files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
     return files
+
+
+@pytest.fixture(scope='session')
+def T4L_reference_xml():
+    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
+        f = str(d / 'system.xml.bz2')
+    return deserialize(pathlib.Path(f))
 
 
 @pytest.fixture
