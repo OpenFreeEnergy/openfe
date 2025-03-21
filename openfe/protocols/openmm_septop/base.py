@@ -133,43 +133,45 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             generation=generation,
         )
 
-    @staticmethod
-    def _get_alchemical_indices(
-            omm_top: openmm.app.Topology,
-            comp_resids: dict[Component, npt.NDArray],
-            alchem_comps: dict[str, list[Component]]
-    ) -> list[int]:
+    def _get_alchemical_system(
+        self,
+        system: openmm.System,
+        alchem_indices_A: list[int],
+        alchem_indices_B: list[int],
+    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
         """
-        Get a list of atom indices for all the alchemical species
+        Get an alchemically modified system and its associated factory
 
         Parameters
         ----------
-        omm_top : openmm.app.Topology
-          Topology of OpenMM System.
-        comp_resids : dict[Component, npt.NDArray]
-          A dictionary of residues for each component in the System.
-        alchem_comps : dict[str, list[Component]]
-          A dictionary of alchemical components for each end state.
+        system : openmm.System
+          System to alchemically modify.
+        alchem_indices_A: list[int]
+          A list of atom indices for the alchemically modified
+          ligand A in the system.
+        alchem_indices_B: list[int]
+          A list of atom indices for the alchemically modified
+          ligand B in the system.
 
-        Return
-        ------
-        atom_ids : list[int]
-          A list of atom indices for the alchemical species
+        Returns
+        -------
+        alchemical_factory : AbsoluteAlchemicalFactory
+          Factory for creating an alchemically modified system.
+        alchemical_system : openmm.System
+          Alchemically modified system
         """
 
-        # concatenate a list of residue indexes for all alchemical components
-        residxs = np.concatenate(
-            [comp_resids[key] for key in alchem_comps['stateA']]
-        )
+        alchemical_factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
+        # Alchemical Region for ligand A
+        alchemical_region_A = AlchemicalRegion(
+            alchemical_atoms=alchem_indices_A, name='A')
+        # Alchemical Region for ligand B
+        alchemical_region_B = AlchemicalRegion(
+            alchemical_atoms=alchem_indices_B, name='B')
+        alchemical_system = alchemical_factory.create_alchemical_system(
+            system, [alchemical_region_A, alchemical_region_B])
 
-        # get the alchemicical atom ids
-        atom_ids = []
-
-        for r in omm_top.residues():
-            if r.index in residxs:
-                atom_ids.extend([at.index for at in r.atoms()])
-
-        return atom_ids
+        return alchemical_factory, alchemical_system
 
     def _pre_equilibrate(
             self,
@@ -569,20 +571,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                     atom_indices.extend([atom.index for atom in residue.atoms()])
             comp_atomids[key] = atom_indices
         return comp_atomids
-
-    @staticmethod
-    def _set_positions(
-            off_molecule: OFFMolecule,
-            positions: unit.Quantity,
-    ) -> OFFMolecule:
-        """
-        Updates the positions of an OFFMolecule.Topology
-        """
-        off_topology = off_molecule.to_topology()
-        off_topology.clear_positions()
-        off_topology.set_positions(positions)
-        return off_molecule
-
 
     @staticmethod
     def get_smc_comps(

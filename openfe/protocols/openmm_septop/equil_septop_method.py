@@ -1378,15 +1378,14 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             self.shared_basepath
         )
 
-        # We assume that modeller.add will always put the ligand B towards
-        # the end of the residues
+        # Get the comp_resids of the AB system
         resids_A = list(itertools.chain(*comp_resids_A.values()))
         resids_AB = [r.index for r in modeller_AB.topology.residues()]
         diff_resids = list(set(resids_AB) - set(resids_A))
         comp_resids_AB = comp_resids_A | {
             alchem_comps["stateB"][0]: np.array(diff_resids)}
 
-        # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        # 6. Pre-equilbrate System (for restraint selection)
         self.logger.info("Pre-equilibrating the systems")
         equ_positions_A, box_A = self._pre_equilibrate(
             omm_system_A, omm_topology_A, positions_A, settings, 'A', dry
@@ -1400,12 +1399,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         all_atom_ids_A = list(itertools.chain(*comp_atomids_A.values()))
         comp_atomids_B = self._get_atom_indices(omm_topology_B, comp_resids_B)
 
-        # Get the system B atom indices of ligand B
+        # Get the atom indices of ligand B in system B
         atom_indices_B = comp_atomids_B[alchem_comps['stateB'][0]]
 
-        # 8. Update the positions of system B:
-        #    - complex: Align protein
-        #    - solvent: Offset ligand B with respect to ligand A
+        # 8. Update the positions of system B: Align protein
         updated_positions_B = self._update_positions(
             omm_topology_A, omm_topology_B, equ_positions_A, equ_positions_B,
         )
@@ -1424,15 +1421,11 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
 
-        factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
-        # Alchemical Region for ligand A
-        alchemical_region_A = AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_A, name='A')
-        # Alchemical Region for ligand B
-        alchemical_region_B = AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_B, name='B')
-        alchemical_system = factory.create_alchemical_system(
-            omm_system_AB, [alchemical_region_A, alchemical_region_B])
+        alchemical_factory, alchemical_system = self._get_alchemical_system(
+            omm_system_AB,
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+        )
 
         # 10. Apply Restraints
         corr_A, corr_B, system, restraint_geom_A, restraint_geom_B = self._add_restraints(
@@ -1759,15 +1752,11 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         self.logger.info(
             "Creating the alchemical system and applying restraints")
 
-        factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
-        # Alchemical Region for ligand A
-        alchemical_region_A = AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_A, name='A')
-        # Alchemical Region for ligand B
-        alchemical_region_B = AlchemicalRegion(
-            alchemical_atoms=atom_indices_AB_B, name='B')
-        alchemical_system = factory.create_alchemical_system(
-            omm_system_AB, [alchemical_region_A, alchemical_region_B])
+        alchemical_factory, alchemical_system = self._get_alchemical_system(
+            omm_system_AB,
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+        )
 
         # 10. Apply Restraints
         rdmol_A = alchem_comps['stateA'][0].to_rdkit()
