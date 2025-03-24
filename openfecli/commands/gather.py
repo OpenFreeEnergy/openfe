@@ -370,7 +370,8 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     'gather',
     short_help="Gather result jsons for network of RFE results into a TSV file"
 )
-@click.argument('rootdir',
+@click.argument('results',
+                nargs=-1,  # accept any number of results
                 type=click.Path(dir_okay=True, file_okay=False,
                                 path_type=pathlib.Path),
                 required=True)
