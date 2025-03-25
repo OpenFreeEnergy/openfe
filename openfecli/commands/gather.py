@@ -401,9 +401,10 @@ def gather(results:List[os.PathLike|str],
            report:Literal['dg','ddg','raw'],
            allow_partial:bool
            ):
-    """Gather simulation result jsons of relative calculations to a tsv file
+    """Gather simulation result jsons of relative calculations to a tsv file.
 
-    This walks results recursively and finds all result JSON files from the
+
+    This walks RESULTS recursively and finds all result JSON files from the
     quickrun command (these files must end in .json). Each of these contains
     the results of a separate leg from a relative free energy thermodynamic
     cycle.
