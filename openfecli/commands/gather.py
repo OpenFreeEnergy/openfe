@@ -78,9 +78,29 @@ def is_results_json(fpath:os.PathLike|str)->bool:
     """Sanity check that file is a result json before we try to deserialize"""
     return 'estimate' in open(fpath, 'r').read(20)
 
+def load_json(fpath:os.PathLike|str)->dict:
+    """Load a JSON file containing a gufe object.
 
-def load_results(fpath:os.PathLike|str)->dict:
-    """Load the data from a results JSON into a dict
+    Parameters
+    ----------
+    fpath : os.PathLike | str
+        The path to a gufe-serialized JSON.
+
+
+    Returns
+    -------
+    dict
+        A dict containing data from the results JSON.
+
+    """
+    # TODO: move this function to openfe/utils
+    import json
+    from gufe.tokenization import JSON_HANDLER
+
+    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
+
+def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
+    """Load the data from a results JSON into a dict.
 
     Parameters
     ----------
@@ -89,15 +109,32 @@ def load_results(fpath:os.PathLike|str)->dict:
 
     Returns
     -------
-    dict
-        A dict containing data from the results JSON.
+    dict | None
+        A dict containing data from the results JSON,
+        or None if the JSON file is invalid or missing.
+
     """
 
-    import json
-    from gufe.tokenization import JSON_HANDLER
 
-    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
+    try:
+        result = load_json(fpath)
+    except FileNotFoundError:
+        click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
+        return None
+    if "unit_results" not in result.keys():
+        click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
+        return None
+    if result['estimate'] is None:
+        click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
+        return None
+    if result['uncertainty'] is None:
+        click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
+        return None
+    if all('exception' in u for u in result['unit_results'].values()):
+        click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
+        return None
 
+    return result
 
 def get_names(result:dict) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
@@ -397,12 +434,9 @@ def gather(rootdir:os.PathLike|str,
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        result = load_results(result_fn)
+        result = load_valid_result_json(result_fn)
         if result is None:
             continue
-        elif result['estimate'] is None or result['uncertainty'] is None:
-            click.echo(f"WARNING: Calculations for {result_fn} did not finish successfully!",
-                       err=True)
 
         try:
             names = get_names(result)
