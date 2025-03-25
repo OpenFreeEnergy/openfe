@@ -14,16 +14,12 @@ def plan_alchemical_network_output(
 ):
     """Write the contents of an alchemical network into the structure
     """
-    import gufe
-    from gufe import tokenization
-
-    an_dict = alchemical_network.to_dict()
 
     base_name = folder_path.name
     folder_path.mkdir(parents=True, exist_ok=True)
 
     an_json = folder_path / f"{base_name}.json"
-    json.dump(an_dict, an_json.open(mode="w"), cls=tokenization.JSON_HANDLER.encoder)
+    alchemical_network.to_json(an_json)
     write("\t\t- " + base_name + ".json")
 
     ln_fname = "ligand_network.graphml"
