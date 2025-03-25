@@ -429,13 +429,14 @@ def gather(results:List[os.PathLike|str],
     import glob
     import csv
 
+    results = sorted(results)  # not necessary, but ensures reproducibility
     def collect_jsons(results:List[os.PathLike]):
         all_jsons = []
         for p in results:
             if str(p).endswith('json'):
                 all_jsons.append(p)
             elif p.is_dir():
-                all_jsons.extend(glob.glob(str(p)+"/**/*json", recursive=True))
+                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
         
         return all_jsons
 
