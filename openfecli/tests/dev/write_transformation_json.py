@@ -19,7 +19,6 @@ import pathlib
 
 from gufe.tests.conftest import benzene_modifications
 from gufe.tests.test_protocol import DummyProtocol, BrokenProtocol
-from gufe.tokenization import JSON_HANDLER
 
 parser = argparse.ArgumentParser()
 parser.add_argument('directory')

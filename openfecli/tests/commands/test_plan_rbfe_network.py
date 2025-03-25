@@ -13,7 +13,6 @@ from openfecli.commands.plan_rbfe_network import (
 )
 
 from gufe import AlchemicalNetwork, SmallMoleculeComponent
-from gufe.tokenization import JSON_HANDLER
 import json
 import numpy as np
 from openff.utilities import skip_if_missing
