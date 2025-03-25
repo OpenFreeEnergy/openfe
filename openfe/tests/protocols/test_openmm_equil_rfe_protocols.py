@@ -1718,7 +1718,7 @@ def benzene_solvent_openmm_system(benzene_modifications):
 
     modeller, _ = system_creation.get_omm_modeller(
         protein_comps=None,
-        solvent_comp=openfe.SolventComponent(),
+        solvent_comps=openfe.SolventComponent(),
         small_mols={smc: offmol},
         omm_forcefield=system_generator.forcefield,
         solvent_settings=settings.solvation_settings,
@@ -1759,7 +1759,7 @@ def benzene_tip4p_solvent_openmm_system(benzene_modifications):
 
     modeller, _ = system_creation.get_omm_modeller(
         protein_comps=None,
-        solvent_comp=openfe.SolventComponent(),
+        solvent_comps=openfe.SolventComponent(),
         small_mols={smc: offmol},
         omm_forcefield=system_generator.forcefield,
         solvent_settings=settings.solvation_settings,

@@ -604,7 +604,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             # c. get OpenMM Modeller + a resids dictionary for each component
             stateA_modeller, comp_resids = system_creation.get_omm_modeller(
                 protein_comps=protein_comp,
-                solvent_comp=solvent_comp,
+                solvent_comps=solvent_comp,
                 small_mols=smc_components,
                 omm_forcefield=system_generator.forcefield,
                 solvent_settings=solvation_settings,

@@ -8,7 +8,6 @@ import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
 from openmm import unit as omm_unit
-from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
 from typing import Optional, Iterable
@@ -134,9 +133,9 @@ ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 
 
 def get_omm_modeller(
-    protein_comps: Iterable[ProteinComponent] | ProteinComponent,
-    solvent_comp: Optional[SolventComponent],
-    small_mols: Iterable[SmallMoleculeComponent] | SmallMoleculeComponent,
+    protein_comps: Optional[Iterable[ProteinComponent] | ProteinComponent],
+    solvent_comps: Optional[Iterable[SolventComponent] | SolventComponent],
+    small_mols: Optional[Iterable[SmallMoleculeComponent] | SmallMoleculeComponent],
     omm_forcefield : app.ForceField,
     solvent_settings : OpenMMSolvationSettings
 ) -> ModellerReturn:
@@ -146,11 +145,11 @@ def get_omm_modeller(
 
     Parameters
     ----------
-    protein_comps : Iterable[ProteinComponent] or ProteinComponent
+    protein_comps : Optional[Iterable[ProteinComponent] or ProteinComponent]
       Protein Component, if it exists.
-    solvent_comp : Optional[SolventComponent]
+    solvent_comps : Optional[Iterable[SolventComponent] or SolventComponent]
       Solvent Component, if it exists.
-    small_mols : Iterable[SmallMoleculeComponent] or SmallMoleculeComponent
+    small_mols : Optional[Iterable[SmallMoleculeComponent] or SmallMoleculeComponent]
       Small molecules to add.
     omm_forcefield : app.ForceField
       ForceField object for system.
@@ -201,7 +200,7 @@ def get_omm_modeller(
             )
             # if we solvate temporarily rename water molecules to 'WAT'
             # see openmm issue #4103
-            if solvent_comp is not None:
+            if solvent_comps is not None:
                 for r in system_modeller.topology.residues():
                     if r.name == 'HOH':
                         r.name = 'WAT'
@@ -214,7 +213,12 @@ def get_omm_modeller(
                            component_resids)
 
     # Add solvent if neeeded
-    if solvent_comp is not None:
+    if solvent_comps:
+        # TODO: Support multiple solvent components? Is there a use case for it?
+        # Error out when we have more than one solvent component in the states/systems
+        if len(set(solvent_comps)) > 1:
+            raise ValueError("More than one solvent component found in systems. Only one supported.")
+        solvent_comp = set(solvent_comps).pop()  # Get the first (and only) solvent component
         # Do unit conversions if necessary
         solvent_padding = None
         box_size = None
