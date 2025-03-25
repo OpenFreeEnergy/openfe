@@ -435,7 +435,7 @@ def gather(results:List[os.PathLike|str],
             if str(p).endswith('json'):
                 all_jsons.append(p)
             elif p.is_dir():
-                all_jsons.extend(glob.glob(str(p)+"**/*json", recursive=True))\
+                all_jsons.extend(glob.glob(str(p)+"/**/*json", recursive=True))
         
         return all_jsons
 
