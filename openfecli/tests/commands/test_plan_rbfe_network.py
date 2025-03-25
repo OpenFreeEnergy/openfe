@@ -13,7 +13,6 @@ from openfecli.commands.plan_rbfe_network import (
 )
 
 from gufe import AlchemicalNetwork, SmallMoleculeComponent
-from gufe.tokenization import JSON_HANDLER
 import json
 import numpy as np
 from openff.utilities import skip_if_missing
@@ -190,9 +189,7 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
         assert_click_success(result)
 
         # make sure the number of repeats is correct
-        network = AlchemicalNetwork.from_dict(
-            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
-        )
+        network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
         for edge in network.edges:
             assert edge.protocol.settings.protocol_repeats == expected_n_repeat
 
@@ -229,9 +226,7 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
         if overwrite:
             assert "Overwriting partial charges" in result.output
 
-        network = AlchemicalNetwork.from_dict(
-            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
-        )
+        network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
         # make sure the ligands don't have dummy charges
         for node in network.nodes:
             off_mol = node.components["ligand"].to_openff()
@@ -280,9 +275,7 @@ def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
         assert "assigning cofactor partial charges -- this may be slow"
 
         # make sure the cofactor is in the transformations
-        network = AlchemicalNetwork.from_dict(
-            json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
-        )
+        network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
         for edge in network.edges:
             if "protein" in edge.stateA.components:
                 assert "cofactor1" in edge.stateA.components
@@ -324,9 +317,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
 
             assert result.exit_code == 0
             # load the transformations and check the settings
-            network = AlchemicalNetwork.from_dict(
-                json.load(open("alchemicalNetwork/alchemicalNetwork.json"), cls=JSON_HANDLER.decoder)
-            )
+            network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
             for edge in network.edges:
                 settings = edge.protocol.settings
                 # check the charged transform
