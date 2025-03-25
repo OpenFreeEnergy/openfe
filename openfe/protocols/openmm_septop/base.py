@@ -917,8 +917,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             verbose=self.verbose,
             shared_basepath=self.shared_basepath,
         )
-        state = simulation.context.getState(getPositions=True)
-                                            # ,enforcePeriodicBox=True)
+        state = simulation.context.getState(getPositions=True
+                                            ,enforcePeriodicBox=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
         box = state.getPeriodicBoxVectors()
 
@@ -985,7 +985,6 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         sampler_state = SamplerState(positions=positions)
         if alchemical_system.usesPeriodicBoundaryConditions():
             sampler_state.box_vectors = box_vectors
-
         sampler_states = [sampler_state for _ in cmp_states]
         # potentials = [state.getPotentialEnergy() for state in sampler_states]
         # print(potentials)
