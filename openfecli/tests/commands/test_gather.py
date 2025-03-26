@@ -215,6 +215,7 @@ ZENODO_RBFE_DATA = pooch.create(
         registry={
             "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
             "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
+        retry_if_failed=3,
     )
 
 @pytest.fixture
