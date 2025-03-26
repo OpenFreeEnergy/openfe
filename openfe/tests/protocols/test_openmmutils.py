@@ -1,35 +1,38 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from importlib import resources
 import copy
-from pathlib import Path
-import pytest
+import os
 import sys
-from pymbar.utils import ParameterError
+from importlib import resources
+from pathlib import Path
+from unittest import mock
+
 import numpy as np
-from numpy.testing import assert_equal, assert_allclose
-from openmm import app, MonteCarloBarostat, NonbondedForce
-from openmm import unit as ommunit
-from openmmtools import multistate
+import openfe
+import pooch
+import pytest
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
+from numpy.testing import assert_allclose, assert_equal
+from openfe.protocols.openmm_rfe.equil_rfe_settings import (
+    IntegratorSettings, OpenMMSolvationSettings)
+from openfe.protocols.openmm_utils import (charge_generation,
+                                           multistate_analysis, omm_settings,
+                                           settings_validation,
+                                           system_creation, system_validation)
+from openfe.protocols.openmm_utils.charge_generation import (HAS_ESPALOMA,
+                                                             HAS_NAGL,
+                                                             HAS_OPENEYE)
 from openff.toolkit import Molecule as OFFMol
-from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm
-from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
-import openfe
-from openfe.protocols.openmm_utils import (
-    settings_validation, system_validation, system_creation,
-    multistate_analysis, omm_settings, charge_generation
-)
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_ESPALOMA, HAS_OPENEYE
-)
-from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    IntegratorSettings,
-    OpenMMSolvationSettings,
-)
-from unittest import mock
+from openmm import MonteCarloBarostat, NonbondedForce, app
+from openmm import unit as ommunit
+from openmmtools import multistate
+from pymbar.utils import ParameterError
+
+from ..conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
@@ -928,10 +931,26 @@ class TestOFFPartialCharge:
             )
 
 
+POOCH_CACHE = pooch.os_cache('openfe')
+RFE_OUTPUT = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.6084/m9.figshare.24101655",
+    registry={
+        "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
+        "db.json": "b671f9eb4daf9853f3e1645f9fd7c18150fd2a9bf17c18f23c5cf0c9fd5ca5b3",
+        "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
+        "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
+        "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
+    },
+    retry_if_failed=3,
+)
+
+@pytest.fixture
+def simulation_nc():
+    return RFE_OUTPUT.fetch("simulation.nc")
+
 @pytest.mark.slow
-@pytest.mark.download
-# Sometimes we get a DOI lookup error from duecredit
-#@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,
