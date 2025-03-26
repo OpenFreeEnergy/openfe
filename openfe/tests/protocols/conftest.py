@@ -243,7 +243,8 @@ RFE_OUTPUT = pooch.create(
         "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
         "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
         "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
-    }
+    },
+    retry_if_failed=3,
 )
 
 
