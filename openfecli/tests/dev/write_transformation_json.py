@@ -19,7 +19,6 @@ import pathlib
 
 from gufe.tests.conftest import benzene_modifications
 from gufe.tests.test_protocol import DummyProtocol, BrokenProtocol
-from gufe.tokenization import JSON_HANDLER
 
 parser = argparse.ArgumentParser()
 parser.add_argument('directory')
@@ -51,5 +50,5 @@ bad_protocol = BrokenProtocol(settings=BrokenProtocol.default_settings())
 bad_transformation = gufe.Transformation(solv_benz, solv_tol,
                                          bad_protocol, mapping)
 
-transformation.dump(directory / "transformation.json")
-bad_transformation.dump(directory / "bad_transformation.json")
+transformation.to_json(directory / "transformation.json")
+bad_transformation.to_json(directory / "bad_transformation.json")

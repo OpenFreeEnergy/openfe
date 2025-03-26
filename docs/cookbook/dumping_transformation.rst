@@ -17,26 +17,18 @@ sophisticated techniques we have developed.
 
 For these cases, we have made it very easy for a user to dump a
 transformation to JSON. Simply use the method
-:meth:`.Transformation.dump`. This can take a filename (pathlike) or an
-already-opened file object. For example:
+:meth:`.Transformation.to_json`. For example:
 
 .. code::
 
-    transformation.dump("mytransformation.json")
-
-Be aware this this is not designed to be space-efficient. That is, if you
-have the same object in memory used in two locations (for example, the same
-``ProteinComponent`` is in both ``ChemicalSystems``), then there will be a
-copy for each. This is particularly problematic if you are running an entire
-network of calculations; in that case, dumping transformation by
-transformation is not the most efficient way to prepare your simulations.
+    transformation.to_json("mytransformation.json")
 
 When you do dump a single transformation, it can be reloaded into memory
-with the :meth:`.Transformation.load` method:
+with the :meth:`.Transformation.from_json` method:
 
 .. code::
 
-    transformation = Transformation.load("mytransformation.json")
+    transformation = Transformation.from_json("mytransformation.json")
 
 Once you've saved to it JSON, you can also run this transformation with the
 ``openfe`` command line tool's :ref:`cli_quickrun`, e.g.:
