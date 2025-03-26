@@ -401,7 +401,7 @@ def gather(results:List[os.PathLike|str],
            report:Literal['dg','ddg','raw'],
            allow_partial:bool
            ):
-    """Gather simulation result jsons of relative calculations to a tsv file.
+    """Gather simulation result JSON files of relative calculations to a tsv file.
 
 
     This walks RESULTS recursively and finds all result JSON files from the
