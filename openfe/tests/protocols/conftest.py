@@ -235,7 +235,7 @@ def md_json() -> str:
 
 
 RFE_OUTPUT = pooch.create(
-    path=pooch.os_cache("openfe_analysis"),
+    path=pooch.os_cache("openfe"),
     base_url="doi:10.6084/m9.figshare.24101655",
     registry={
         "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
