@@ -5,6 +5,7 @@ import copy
 from pathlib import Path
 import pytest
 import sys
+import pooch
 from pymbar.utils import ParameterError
 import numpy as np
 from numpy.testing import assert_equal, assert_allclose
@@ -16,7 +17,10 @@ from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm
+import os
+from ..conftest import HAS_INTERNET
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
+
 import openfe
 from openfe.protocols.openmm_utils import (
     settings_validation, system_validation, system_creation,
@@ -928,10 +932,27 @@ class TestOFFPartialCharge:
             )
 
 
+POOCH_CACHE = pooch.os_cache('openfe')
+RFE_OUTPUT = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.6084/m9.figshare.24101655",
+    registry={
+        "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
+        "db.json": "b671f9eb4daf9853f3e1645f9fd7c18150fd2a9bf17c18f23c5cf0c9fd5ca5b3",
+        "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
+        "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
+        "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
+    },
+    retry_if_failed=3,
+)
+
+@pytest.fixture
+def simulation_nc():
+    return RFE_OUTPUT.fetch("simulation.nc")
+
 @pytest.mark.slow
 @pytest.mark.download
-# Sometimes we get a DOI lookup error from duecredit
-#@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,
