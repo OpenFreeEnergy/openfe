@@ -950,7 +950,6 @@ def simulation_nc():
     return RFE_OUTPUT.fetch("simulation.nc")
 
 @pytest.mark.slow
-@pytest.mark.download
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
