@@ -10,6 +10,7 @@ Bugfix release - Improved error handling and code cleanup.
 
 We are also dropping official support for MacOSX-x86_64.
 Any platform-specific bugs will be addressed when possible, but as a low priority.
+
 **Added:**
 
 * ``openfe gather`` now detects failed simulations up-front and prints warnings to stdout (PR #1207).
