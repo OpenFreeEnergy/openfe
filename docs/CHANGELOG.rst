@@ -19,8 +19,7 @@ v1.3.1
 **Removed:**
 
 * Dropped official support for MacOSX-x86_64. Any platform-specific bugs will be addressed when possible, but as a low priority.
-* Unused trajectory handling code was removed from `openfe.utils`, please use
-  `openfe-analysis` instead (PR #1182).
+* Unused trajectory handling code was removed from ``openfe.utils``, please use ``openfe-analysis`` instead (PR #1182).
 
 **Fixed:**
 
