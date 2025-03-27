@@ -27,7 +27,7 @@ Any platform-specific bugs will be addressed when possible, but as a low priorit
 **Fixed:**
 
 * Fixed issue #1178 -- The GPU system probe is now more robust to different ways the ``nvidia-smi`` command can fail (PR #1186)
-
+* Fixed bug where openmm protocols using default settings would re-load from JSON as a different gufe key due to unit name string representation discrepancies (PR #1210)
 
 
 v1.3.0
