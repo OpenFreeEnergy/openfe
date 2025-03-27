@@ -26,7 +26,7 @@ Any platform-specific bugs will be addressed when possible, but as a low priorit
 
 **Fixed:**
 
-* Fixed issue #1178 -- The GPU system probe is now more robust to different ways the ``nvidia-smi`` command can fail (#1186)
+* Fixed issue #1178 -- The GPU system probe is now more robust to different ways the ``nvidia-smi`` command can fail (PR #1186)
 
 
 
