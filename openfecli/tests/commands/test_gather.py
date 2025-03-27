@@ -284,6 +284,7 @@ class TestGatherFailedEdges:
 
     def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
         runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
-
-        assert_click_success(result)
+        # we *dont* want the suggestion to use --allow-partial if the user already used it!
+        with pytest.warns(match='[^using the \-\-allow\-partial]'):
+            result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
+            assert_click_success(result)
