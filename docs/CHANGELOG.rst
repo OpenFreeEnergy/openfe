@@ -4,6 +4,30 @@ Changelog
 
 .. current developments
 
+v1.3.1
+====================
+
+**Added:**
+
+* ``openfe gather`` now detects failed simulations up-front and prints warnings to stdout.
+
+**Changed:**
+
+* Temporarily disabled bootstrap uncertainties in forward/reverse analysis due
+  to solver loop issues when dealing with too small a set of samples.
+
+**Removed:**
+
+* Dropped official support for MacOSX-x86_64. Any platform-specific bugs will be addressed when possible, but as a low priority.
+* Unused trajectory handling code was removed from `openfe.utils`, please use
+  `openfe-analysis` instead (PR #1182).
+
+**Fixed:**
+
+* Fixed issue #1178 -- The GPU system probe is now more robust to different ways the ``nvidia-smi`` command can fail (#1186)
+
+
+
 v1.3.0
 ====================
 
