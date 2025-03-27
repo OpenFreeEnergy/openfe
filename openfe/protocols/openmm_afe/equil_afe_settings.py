@@ -253,8 +253,10 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     thermo_settings: ThermoSettings
     """Settings for thermodynamic parameters"""
 
-    solvation_settings: OpenMMSolvationSettings
-    """Settings for solvating the system."""
+    solvent_solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the system in the solvent."""
+    complex_solvation_settings: OpenMMSolvationSettings
+    """Settings for solvating the system in the complex."""
 
     # Alchemical settings
     alchemical_settings: AlchemicalSettings

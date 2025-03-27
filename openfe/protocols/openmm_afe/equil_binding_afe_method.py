@@ -657,7 +657,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 ],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
-            solvation_settings=OpenMMSolvationSettings(),
+            complex_solvation_settings=OpenMMSolvationSettings(),
+            solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             restraint_settings=BoreschRestraintSettings(),
@@ -860,7 +861,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(
-            self.settings.solvation_settings
+            self.settings.solvent_solvation_settings
+        )
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.complex_solvation_settings
         )
 
         # Make sure that we have the full system for restraint trajectory analysis
@@ -1003,7 +1007,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["forcefield_settings"] = prot_settings.forcefield_settings
         settings["thermo_settings"] = prot_settings.thermo_settings
         settings["charge_settings"] = prot_settings.partial_charge_settings
-        settings["solvation_settings"] = prot_settings.solvation_settings
+        settings["solvation_settings"] = prot_settings.complex_solvation_settings
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.complex_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
@@ -1363,7 +1367,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["forcefield_settings"] = prot_settings.forcefield_settings
         settings["thermo_settings"] = prot_settings.thermo_settings
         settings["charge_settings"] = prot_settings.partial_charge_settings
-        settings["solvation_settings"] = prot_settings.solvation_settings
+        settings["solvation_settings"] = prot_settings.solvent_solvation_settings
         settings["alchemical_settings"] = prot_settings.alchemical_settings
         settings["lambda_settings"] = prot_settings.solvent_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
