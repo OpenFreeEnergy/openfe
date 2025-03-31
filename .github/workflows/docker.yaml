@@ -122,8 +122,8 @@ jobs:
         run: |
           mkdir test_apptainer
           cd test_apptainer
-          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --help
-          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif --version
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif openfe --help
+          singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif openfe --version
           singularity run ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif pytest --pyargs openfe openfecli -v -n auto
           echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
           singularity push ../openfe_${{ steps.latest-version.outputs.VERSION }}.sif oras://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}-apptainer
