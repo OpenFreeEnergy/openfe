@@ -390,10 +390,6 @@ def _get_indices(topology, resids):
     residue_name : str
         Name of the residue to get the indices for.
     """
-    # TODO: remove, this shouldn't be necessary anymore
-    if len(resids) > 1:
-        raise ValueError("multiple residues were found")
-
     # create list of openmm residues
     top_res = [r for r in topology.residues() if r.index in resids]
 
@@ -502,6 +498,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
 
             to_del.append(pick_H(i, j, x, y))
 
+    # to_del = set(to_del) # Making a set to avoid repeated indices (TODO: TEST!!)
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
 
@@ -677,7 +674,7 @@ def set_and_check_new_positions(mapping, old_topology, new_topology,
         state.
     tolerance : float
         Warning threshold for deviations along any dimension (x,y,z) in mapped
-        atoms between the "old" and "new" positions. Default 1.0.
+        atoms between the "old" and "new" positions, in Angstroms. Default 1.0.
     """
     # Get the positions in Angstrom as raw numpy arrays
     old_pos_array = old_positions.value_in_unit(omm_unit.angstrom)
