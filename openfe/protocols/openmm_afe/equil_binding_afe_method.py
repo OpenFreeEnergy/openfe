@@ -203,7 +203,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         solv_dG = _get_average(individual_estimates["solvent"])
         standard_state_dG = _get_average(individual_estimates["standard_state"])
 
-        return -complex_dG + solv_dG + standard_state_dG
+        return -(complex_dG + standard_state_dG) + solv_dG
 
     def get_uncertainty(self):
         """Get the binding free energy error for this calculation.
