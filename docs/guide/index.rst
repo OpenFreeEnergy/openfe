@@ -9,4 +9,5 @@ User Guide
     results/index
     cli/index
     protocols/index
+    under_the_hood
     troubleshooting
