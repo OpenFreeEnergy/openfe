@@ -1,16 +1,18 @@
-from typing import Callable
 from click.testing import CliRunner
-from importlib import resources
-import tarfile
 import os
 import pathlib
 import pytest
 import pooch
+
 from ..utils import assert_click_success
 from ..conftest import HAS_INTERNET
 
+from unittest import mock
 from openfecli.commands.gather import (
-    gather, format_estimate_uncertainty, _get_column,
+    gather,
+    format_estimate_uncertainty,
+    _get_column,
+    load_valid_result_json,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -27,6 +29,77 @@ def test_format_estimate_uncertainty(est, unc, unc_prec, est_str, unc_str):
 ])
 def test_get_column(val, col):
     assert _get_column(val) == col
+
+
+class TestResultLoading:
+    @pytest.fixture
+    def sim_result(self):
+        result = {
+            "estimate": {},
+            "uncertainty": {},
+            "protocol_result": {'data':{'2294096155646608107660849867019691905': None}},
+            "unit_results": {
+                "ProtocolUnitResult-e85": {},
+                "ProtocolUnitFailure-4c9": {"exception": ["Simulation_NanError"]},
+            },
+        }
+        yield result
+
+    def test_minimal_valid_results(self, capsys, sim_result):
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result == sim_result
+            assert captured.err == ""
+
+    def test_skip_missing_filepath(self, capsys):
+        result = load_valid_result_json(fpath="")
+        captured = capsys.readouterr()
+        assert result is None
+        assert "does not exist. Skipping" in captured.err
+
+    def test_skip_missing_unit_result(self, capsys, sim_result):
+        del sim_result["unit_results"]
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'unit_results'" in captured.err
+
+    def test_skip_missing_estimate(self, capsys, sim_result):
+        sim_result["estimate"] = None
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'estimate' found" in captured.err
+
+    def test_skip_missing_uncertainty(self, capsys, sim_result):
+        sim_result["uncertainty"] = None
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No 'uncertainty' found" in captured.err
+
+    def test_skip_all_failed_runs(self, capsys, sim_result):
+        del sim_result["unit_results"]["ProtocolUnitResult-e85"]
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "Exception found in all" in captured.err
+
+    def test_missing_pr_data(self, capsys, sim_result):
+        sim_result["protocol_result"]["data"] = {}
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = load_valid_result_json(fpath="")
+            captured = capsys.readouterr()
+            assert result is None
+            assert "No data found" in captured.err
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
@@ -138,10 +211,11 @@ solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 POOCH_CACHE = pooch.os_cache('openfe')
 ZENODO_RBFE_DATA = pooch.create(
         path = POOCH_CACHE,
-        base_url="doi:10.5281/zenodo.14884797",
+        base_url="doi:10.5281/zenodo.15042470",
         registry={
-            "rbfe_results_serial_repeats.tar.gz": "md5:d7c5e04786d03e1280a74639c2981546",
-            "rbfe_results_parallel_repeats.tar.gz": "md5:cc54afe32b56232339a9315f4c3d6d91"},
+            "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
+            "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
+        retry_if_failed=3,
     )
 
 @pytest.fixture
@@ -210,6 +284,7 @@ class TestGatherFailedEdges:
 
     def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
         runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
-
-        assert_click_success(result)
+        # we *dont* want the suggestion to use --allow-partial if the user already used it!
+        with pytest.warns(match='[^using the \-\-allow\-partial]'):
+            result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
+            assert_click_success(result)
