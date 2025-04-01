@@ -188,7 +188,7 @@ def _validate_alchemical_components(
     Parameters
     ----------
     alchemical_components : dict[str, list[Component]]
-      Dictionary contatining the alchemical components for
+      Dictionary containing the alchemical components for
       states A and B.
     mapping : Optional[Union[ComponentMapping, list[ComponentMapping]]]
       all mappings between transforming components.
