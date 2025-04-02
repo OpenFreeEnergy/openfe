@@ -22,4 +22,4 @@ def test_hostguest_positiveidxs_validator():
     Check that the validator is working as intended.
     """
     with pytest.raises(ValueError, match="negative indices passed"):
-        geom = HostGuestRestraintGeometry(guest_atoms=[-1, 1], host_atoms=[0])
+        _ = HostGuestRestraintGeometry(guest_atoms=[-1, 1], host_atoms=[0])

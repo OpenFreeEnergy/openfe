@@ -159,18 +159,18 @@ def find_boresch_restraint(
       User selected indices of the guest molecule itself (i.e. indexed
       starting a 0 for the guest molecule). This overrides the
       restraint search and a restraint using these indices will
-      be retruned. Must be defined alongside ``host_restraint_atoms_idxs``.
+      be returned. Must be defined alongside ``host_restraint_atoms_idxs``.
     host_restraint_atoms_idxs : Optional[list[int]]
       User selected indices of the host molecule itself (i.e. indexed
       starting a 0 for the hosts molecule). This overrides the
       restraint search and a restraint using these indices will
-      be returnned. Must be defined alongside ``guest_restraint_atoms_idxs``.
+      be returned. Must be defined alongside ``guest_restraint_atoms_idxs``.
     host_selection : str
       An MDAnalysis selection string to sub-select the host atoms.
     dssp_filter : bool
       Whether or not to filter the host atoms by their secondary structure.
     rmsf_cutoff : unit.Quantity
-      The cutoff value for atom root mean square fluction. Atoms with RMSF
+      The cutoff value for atom root mean square fluctuation. Atoms with RMSF
       values above this cutoff will be disregarded.
       Must be in units compatible with nanometer.
     host_min_distance : unit.Quantity

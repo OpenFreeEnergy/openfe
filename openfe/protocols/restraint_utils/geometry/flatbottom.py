@@ -38,7 +38,7 @@ class COMDistanceAnalysis(AnalysisBase):
     ----------
     group1 : MDAnalysis.AtomGroup
       Atoms defining the first centroid.
-    group2 : MDANalysis.AtomGroup
+    group2 : MDAnalysis.AtomGroup
       Atoms defining the second centroid.
     """
     _analysis_algorithm_is_parallelizable = False
