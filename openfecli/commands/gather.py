@@ -365,77 +365,22 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         writer.writerow([ligA, DG, unc_DG])
 
-
-@click.command(
-    'gather',
-    short_help="Gather result jsons for network of RFE results into a TSV file"
-)
-@click.argument('rootdir',
-                type=click.Path(dir_okay=True, file_okay=False,
-                                path_type=pathlib.Path),
-                required=True)
-@click.option(
-    '--alchemical-network',
-    type=click.Path(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        readable=True,
-        resolve_path=True,
-        path_type=pathlib.Path),
-    help=("Path to the alchemical network JSON to gather."),
-    required=False
-)
-@click.option(
-    '--report',
-    type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
-                           case_sensitive=False),
-    default="dg", show_default=True,
-    help=(
-        "What data to report. 'dg' gives maximum-likelihood estimate of "
-        "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
-        "the raw result of the deltaG for a leg."
-    )
-)
-@click.option('output', '-o',
-              type=click.File(mode='w'),
-              default='-')
-@click.option(
-    '--allow-partial', is_flag=True, default=False,
-    help=(
-        "Do not raise errors if results are missing parts for some edges. "
-        "(Skip those edges and issue warning instead.)"
-    )
-)
-def gather(rootdir:os.PathLike|str,
-           alchemical_network: os.PathLike|str,
-           output:os.PathLike|str,
-           report:Literal['dg','ddg','raw'],
-           allow_partial:bool
-           ):
-    """Gather simulation result jsons of relative calculations to a tsv file
-
+def legacy_gather(
+        rootdir:os.PathLike|str,
+        output:os.PathLike|str,
+        report:Literal['dg','ddg','raw'],
+        allow_partial:bool):
+    """
+    Legacy CLI gather behavior (as of v1.3.1).
+    TODO: remove this in v2.0.0
+    
     This walks ROOTDIR recursively and finds all result JSON files from the
     quickrun command (these files must end in .json). Each of these contains
     the results of a separate leg from a relative free energy thermodynamic
     cycle.
 
-    The results reported depend on ``--report`` flag:
-
-    \b
-    * 'dg' (default) reports the ligand, its absolute free energy, and
-      the associated uncertainty as the maximum likelihood estimate obtained
-      from DDG replica averages and standard deviations.  These MLE estimates
-      are centred around 0.0, and when plotted can be shifted to match
-      experimental values.
-    * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
-      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
-    * 'raw' reports the raw results, which each repeat simulation given
-      separately (i.e. no combining of redundant simulations is performed)
-
-    The output is a table of **tab** separated values. By default, this
-    outputs to stdout, use the -o option to choose an output file.
     """
+
     from collections import defaultdict
     import glob
     import csv
@@ -486,6 +431,75 @@ def gather(rootdir:os.PathLike|str,
         'raw': _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
+
+@click.command(
+    'gather',
+    short_help="Gather result jsons for network of RFE results into a TSV file"
+)
+@click.argument('rootdir',
+                type=click.Path(dir_okay=True, file_okay=False,
+                                path_type=pathlib.Path),
+                required=True)
+@click.option(
+    '--alchemical-network',
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        readable=True,
+        resolve_path=True,
+        path_type=pathlib.Path),
+    help=("Path to the alchemical network JSON to gather."),
+    required=False
+)
+@click.option(
+    '--report',
+    type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
+                           case_sensitive=False),
+    default="dg", show_default=True,
+    help=(
+        "What data to report. 'dg' gives maximum-likelihood estimate of "
+        "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
+        "the raw result of the deltaG for a leg."
+    )
+)
+@click.option('output', '-o',
+              type=click.File(mode='w'),
+              default='-')
+@click.option(
+    '--allow-partial', is_flag=True, default=False,
+    help=(
+        "Do not raise errors if results are missing parts for some edges. "
+        "(Skip those edges and issue warning instead.)"
+    )
+)
+def gather(rootdir:os.PathLike|str,
+           alchemical_network: os.PathLike|str,
+           output:os.PathLike|str,
+           report:Literal['dg','ddg','raw'],
+           allow_partial:bool
+           ):
+    """Gather simulation result jsons of relative calculations to a tsv file
+
+    The results reported depend on ``--report`` flag:
+
+    \b
+    * 'dg' (default) reports the ligand, its absolute free energy, and
+      the associated uncertainty as the maximum likelihood estimate obtained
+      from DDG replica averages and standard deviations.  These MLE estimates
+      are centred around 0.0, and when plotted can be shifted to match
+      experimental values.
+    * 'ddg' reports pairs of ligand_i and ligand_j, the calculated
+      relative free energy DDG(i->j) = DG(j) - DG(i) and its uncertainty.
+    * 'raw' reports the raw results, which each repeat simulation given
+      separately (i.e. no combining of redundant simulations is performed)
+
+    The output is a table of **tab** separated values. By default, this
+    outputs to stdout, use the -o option to choose an output file.
+    """
+
+    if not alchemical_network:
+        legacy_gather(rootdir, output, report, allow_partial)
 
 
 PLUGIN = OFECommandPlugin(
