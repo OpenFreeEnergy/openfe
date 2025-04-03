@@ -373,7 +373,7 @@ def legacy_gather(
     """
     Legacy CLI gather behavior (as of v1.3.1).
     TODO: remove this in v2.0.0
-    
+
     This walks ROOTDIR recursively and finds all result JSON files from the
     quickrun command (these files must end in .json). Each of these contains
     the results of a separate leg from a relative free energy thermodynamic
@@ -499,6 +499,10 @@ def gather(rootdir:os.PathLike|str,
     """
 
     if not alchemical_network:
+        msg = "WARNING: --alchemical-network was not provided; falling back to legacy gather behavior.\n"\
+        "For optimal performance and usability, please provide the path to the alchemical network JSON file created during the planning stage."
+        # click.secho(msg, fg='yellow')  # TODO: make this an actual warning? this seemed like the clearest way for now.
+
         legacy_gather(rootdir, output, report, allow_partial)
 
 
