@@ -104,8 +104,8 @@ class BaseHostGuestRestraints(abc.ABC):
     Add some developer examples here.
     """
 
-    _settings_cls: type[SettingsBaseModel]
-    _geometry_cls: type[BaseRestraintGeometry]
+    _settings_cls: SettingsBaseModel
+    _geometry_cls: BaseRestraintGeometry
 
     def __init__(
         self,
