@@ -375,6 +375,18 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
                                 path_type=pathlib.Path),
                 required=True)
 @click.option(
+    '--alchemical-network',
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        readable=True,
+        resolve_path=True,
+        path_type=pathlib.Path),
+    help=("Path to the alchemical network JSON to gather."),
+    required=False
+)
+@click.option(
     '--report',
     type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
                            case_sensitive=False),
@@ -396,6 +408,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     )
 )
 def gather(rootdir:os.PathLike|str,
+           alchemical_network: os.PathLike|str,
            output:os.PathLike|str,
            report:Literal['dg','ddg','raw'],
            allow_partial:bool
