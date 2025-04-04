@@ -378,17 +378,24 @@ Now the CLI tool should work as well ::
      --log PATH  logging configuration file
      -h, --help  Show this message and exit.
 
-   Setup Commands:
-     atommapping        Check the atom mapping of a given pair of ligands
-     plan-rhfe-network  Plan a relative hydration free energy network, saved in a
-                        dir with multiple JSON files
-     plan-rbfe-network  Plan a relative binding free energy network, saved in a
-                        dir with multiple JSON files.
+   Network Planning Commands:
+     plan-rhfe-network    Plan a relative hydration free energy network, saved as
+                          JSON files for the quickrun command.
+     plan-rbfe-network    Plan a relative binding free energy network, saved as
+                          JSON files for the quickrun command.
+     view-ligand-network  Visualize a ligand network
 
-   Simulation Commands:
-     gather    Gather DAG result jsons for network of RFE results into single TSV
-               file
+   Quickrun Executor Commands:
+     gather    Gather result jsons for network of RFE results into a TSV file
      quickrun  Run a given transformation, saved as a JSON file
+
+   Miscellaneous Commands:
+     fetch             Fetch tutorial or other resource.
+     charge-molecules  Generate partial charges for a set of molecules.
+     test              Run the OpenFE test suite
+
+
+
 
 To make sure everything is working, run the tests ::
 
