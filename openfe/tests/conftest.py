@@ -8,6 +8,7 @@ from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from openff.units import unit
+import urllib.request
 
 import gufe
 import openfe
@@ -343,3 +344,10 @@ def am1bcc_ref_charges():
         ] * unit.elementary_charge,
     }
     return ref_chgs
+
+try:
+    urllib.request.urlopen('https://www.google.com')
+except:  # -no-cov-
+    HAS_INTERNET = False
+else:
+    HAS_INTERNET = True

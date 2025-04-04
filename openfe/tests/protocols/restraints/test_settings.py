@@ -52,11 +52,10 @@ def test_flatbottom_restraint_negative_well():
     Check that an error is raised if you have a negative
     well radius.
     """
-    with pytest.raises(ValueError, match="negative indices passed"):
-        _ = DistanceRestraintSettings(
+    with pytest.raises(ValueError, match="well radius cannot be negative"):
+        _ = FlatBottomRestraintSettings(
             spring_constant=10 * unit.kilojoule_per_mole / unit.nm ** 2,
-            host_atoms=[-1, 0, 2],
-            guest_atoms=[0, 1, 2],
+            well_radius=-1 * unit.nm
         )
 
 

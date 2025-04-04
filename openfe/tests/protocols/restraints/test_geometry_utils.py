@@ -50,8 +50,10 @@ def test_mda_selection_universe_atom_list(eg5_pdb_universe):
 
 
 def test_mda_selection_atomgroup_string(eg5_pdb_universe):
-    test_ag = _get_mda_selection(eg5_pdb_universe.atoms, selection='all')
-    assert test_ag == eg5_pdb_universe.atoms
+    # test that the selection is reducing the atom group
+    test_ag = _get_mda_selection(eg5_pdb_universe.atoms, selection='protein')
+    assert test_ag != eg5_pdb_universe.atoms
+    assert test_ag.n_atoms == 5474
 
 
 @pytest.mark.parametrize('smiles, expected', [
@@ -75,7 +77,7 @@ def test_aromatic_rings(smiles, expected):
     for i, r in enumerate(rings):
         assert len(r) == expected[i]
 
-    # check that there is no overlap in atom between each ring
+    # check that there is no overlap in atoms between each ring
     for x, y in itertools.combinations(rings, 2):
         assert x.isdisjoint(y)
 
@@ -88,7 +90,7 @@ def test_aromatic_rings(smiles, expected):
     # Also check the lengths match
     assert sum(len(r) for r in rings) == len(arom_idxs)
 
-    # Finallly check that all the arom_idxs are actually aromatic
+    # Finally check that all the arom_idxs are actually aromatic
     for idx in arom_idxs:
         at = mol.GetAtomWithIdx(idx)
         assert at.GetIsAromatic()
@@ -161,10 +163,10 @@ def test_collinear_index_match_error_length():
 
 
 def test_collinear_index_match_error_index():
-    with pytest.raises(ValueError, match='indices do not match'):
+    with pytest.raises(ValueError, match='atoms is not a list of index integers'):
         _ = is_collinear(
-            positions=np.zeros((3, 3)),
-            atoms=[1, 2, 3],
+            positions=np.zeros((4, 3)),
+            atoms=[1, 2.5, 3],
         )
 
 
@@ -288,7 +290,7 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
     assert _atomgroup_has_bonds(u) is False
     assert _atomgroup_has_bonds(u.select_atoms('resname HOH')) is True
 
-    # Delete the topoplogy attr and everything is false
+    # Delete the topology attr and everything is false
     u.del_TopologyAttr('bonds')
     assert _atomgroup_has_bonds(u) is False
     assert _atomgroup_has_bonds(u.select_atoms('resname HOH')) is False

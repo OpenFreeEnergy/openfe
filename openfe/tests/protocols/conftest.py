@@ -7,7 +7,6 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 import openfe
 from openff.units import unit
-import pooch
 
 
 @pytest.fixture

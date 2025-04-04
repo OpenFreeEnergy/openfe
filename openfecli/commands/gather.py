@@ -130,6 +130,9 @@ def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
         return None
+    if result['protocol_result']['data'] == {}:
+        click.echo(f"{fpath}: No data found for this protocol result, assuming to be a failed simulation.", err=True)
+        return None
     if all('exception' in u for u in result['unit_results'].values()):
         click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
         return None
@@ -201,12 +204,6 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
     for leg_types, ligpair in bad_legs:
         msg += f"{ligpair}: {','.join(leg_types)}\n"
 
-    msg += (
-        "\nYou can force partial gathering of results, without "
-        "problematic edges, by using the --allow-partial flag of the gather "
-        "command.\nNOTE: This may cause problems with predicting "
-        "absolute free energies from the relative free energies."
-    )
     return msg
 
 
@@ -220,7 +217,7 @@ def _parse_raw_units(results: dict) -> list[tuple]:
              pu[0]['outputs']['unit_estimate_error'])
             for pu in list_of_pur]
 
-def _get_ddgs(legs:dict, error_on_missing=True):
+def _get_ddgs(legs:dict, allow_partial=False):
     import numpy as np
     from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
 
@@ -263,16 +260,22 @@ def _get_ddgs(legs:dict, error_on_missing=True):
 
     if bad_legs:
         err_msg = _generate_bad_legs_error_message(bad_legs)
-        if error_on_missing:
-            raise RuntimeError(err_msg)
-        else:
+        if allow_partial:
             warnings.warn(err_msg)
+        else:
+            err_msg += (
+                "\nYou can force partial gathering of results, without "
+                "problematic edges, by using the --allow-partial flag of the gather "
+                "command.\nNOTE: This may cause problems with predicting "
+                "absolute free energies from the relative free energies."
+                )
+            raise RuntimeError(err_msg)
 
     return DDGs
 
 
 def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
-    DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
+    DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
@@ -315,7 +318,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
-    DDGs = _get_ddgs(legs, error_on_missing=not allow_partial)
+    DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
     # 4b) perform MLE
     g = nx.DiGraph()

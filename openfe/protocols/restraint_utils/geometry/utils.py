@@ -157,7 +157,7 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
     Parameters
     ----------
     rdmol : Chem.Mol
-      RDKit Molcule to query
+      RDKit Molecule to query
 
     Returns
     -------
@@ -201,10 +201,10 @@ def is_collinear(
     Check whether any sequential vectors in a sequence of atoms are collinear.
 
     Approach: for each sequential set of 3 atoms (defined as A, B, and C),
-    calculates the nomralized inner product (i.e. cos^-1(angle)) between
-    vectors AB adn BC. If the absolute value  of this inner product is
+    calculates the normalized inner product (i.e. cos^-1(angle)) between
+    vectors AB and BC. If the absolute value  of this inner product is
     close to 1 (i.e. an angle of 0 radians), then the three atoms are
-    considered as colinear. You can use ``threshold`` to define how close
+    considered as collinear. You can use ``threshold`` to define how close
     to 1 is considered "flat".
 
     Parameters
@@ -269,7 +269,7 @@ def _wrap_angle(angle: unit.Quantity) -> unit.Quantity:
 
     Notes
     -----
-    Print automatically converts the angle to radians
+    Pint automatically converts the angle to radians
     as it passes it through arctan2.
     """
     return np.arctan2(np.sin(angle), np.cos(angle))
@@ -562,7 +562,7 @@ def _atomgroup_has_bonds(
     atomgroup: Union[mda.AtomGroup, mda.Universe]
 ) -> bool:
     """
-    Check if all residues in an AtomGroup or Univese has bonds.
+    Check if all residues in an AtomGroup or Universe has bonds.
 
     Parameters
     ----------
@@ -769,7 +769,7 @@ def protein_chain_selection(
     # To do this, we need bonds!
     if not _atomgroup_has_bonds(copy_protein_ag):
         wmsg = (
-            "No bonds found in input Universe, will attept to guess them."
+            "No bonds found in input Universe, will attempt to guess them."
         )
         warnings.warn(wmsg)
         copy_protein_ag.guess_bonds()
