@@ -770,7 +770,7 @@ def protein_chain_selection(
     # To do this, we need bonds!
     if not _atomgroup_has_bonds(copy_protein_ag):
         wmsg = (
-            "No bonds found in input Universe, will attept to guess them."
+            "No bonds found in input Universe, will attempt to guess them."
         )
         warnings.warn(wmsg)
         copy_protein_ag.guess_bonds()

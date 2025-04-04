@@ -143,7 +143,7 @@ class EvaluateHostAtoms1(AnalysisBase):
     Parameters
     ----------
     reference : MDAnalysis.AtomGroup
-      The reference preceeding three atoms.
+      The reference preceding three atoms.
     host_atom_pool : MDAnalysis.AtomGroup
       The pool of atoms to pick an atom from.
     minimum_distance : unit.Quantity
@@ -279,7 +279,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
     Parameters
     ----------
     reference : MDAnalysis.AtomGroup
-      The reference preceeding three atoms.
+      The reference preceding three atoms.
     host_atom_pool : MDAnalysis.AtomGroup
       The pool of atoms to pick an atom from.
     minimum_distance : unit.Quantity

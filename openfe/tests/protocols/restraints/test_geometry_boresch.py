@@ -21,7 +21,7 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     return mda.Merge(protein.atoms, lig.atoms)
 
 
-def test_get_boresh_missing_atoms(eg5_protein_ligand_universe, eg5_ligands):
+def test_get_boresch_missing_atoms(eg5_protein_ligand_universe, eg5_ligands):
     """
     Test an error is raised if we do not provide guest and host atoms
     """
@@ -39,7 +39,7 @@ def test_get_boresh_missing_atoms(eg5_protein_ligand_universe, eg5_ligands):
         )
 
 
-def test_boresh_too_few_host_atoms_found(eg5_protein_ligand_universe, eg5_ligands):
+def test_boresch_too_few_host_atoms_found(eg5_protein_ligand_universe, eg5_ligands):
     """
     Test an error is raised if we can not find a set of host atoms
     """
@@ -56,7 +56,7 @@ def test_boresh_too_few_host_atoms_found(eg5_protein_ligand_universe, eg5_ligand
         )
 
 
-def test_boresh_restraint_user_defined(eg5_protein_ligand_universe, eg5_ligands):
+def test_boresch_restraint_user_defined(eg5_protein_ligand_universe, eg5_ligands):
     """
     Test creating a restraint with a user supplied set of atoms.
     """
@@ -87,7 +87,7 @@ def test_boresh_restraint_user_defined(eg5_protein_ligand_universe, eg5_ligands)
     assert -0.0239690127 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
 
 
-def test_boresh_no_guest_atoms_found_ethane(eg5_protein_pdb):
+def test_boresch_no_guest_atoms_found_ethane(eg5_protein_pdb):
     """
     Test an error is raised if we don't have enough ligand candidate atoms, we use ethane as
     it has no rings and less than 3 heavy atoms.
@@ -109,7 +109,7 @@ def test_boresh_no_guest_atoms_found_ethane(eg5_protein_pdb):
         )
 
 
-def test_boresh_no_guest_atoms_found_collinear(eg5_protein_pdb):
+def test_boresch_no_guest_atoms_found_collinear(eg5_protein_pdb):
     protein = mda.Universe(eg5_protein_pdb)
     # generate ethane with a single conformation
     lig = mda.Universe.from_smiles("O=C=O")
@@ -127,7 +127,7 @@ def test_boresh_no_guest_atoms_found_collinear(eg5_protein_pdb):
         )
 
 
-def test_boresh_no_host_atom_small_search(eg5_protein_ligand_universe, eg5_ligands):
+def test_boresch_no_host_atom_pool(eg5_protein_ligand_universe, eg5_ligands):
     """
     Make sure an error is raised if no good host atom can be found by setting the search distance very low
     """
@@ -144,8 +144,28 @@ def test_boresh_no_host_atom_small_search(eg5_protein_ligand_universe, eg5_ligan
             host_max_distance=0.1 * unit.angstrom
         )
 
+def test_boresch_no_host_anchor(eg5_protein_ligand_universe, eg5_ligands):
+    """
+    Make sure an error is raised if we can not find a host anchor from the pool.
+    The anchor atoms have a hard coded min distance of 0.5nm so we make the initial atom pool all atoms
+    closer than this cutoff.
+    """
 
-def test_get_boresh_restraint_single_frame(eg5_protein_ligand_universe, eg5_ligands):
+    ligand_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG")
+    host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
+    with pytest.raises(ValueError, match="No suitable host atoms could be found"):
+        _ = find_boresch_restraint(
+            universe=eg5_protein_ligand_universe,
+            guest_rdmol=eg5_ligands[1].to_rdkit(),
+            guest_idxs=[a.ix for a in ligand_atoms],
+            host_idxs=[a.ix for a in host_atoms],
+            host_selection="backbone",
+            host_min_distance=0.0 * unit.angstrom,
+            host_max_distance=0.499 * unit.nanometers
+        )
+
+
+def test_get_boresch_restraint_single_frame(eg5_protein_ligand_universe, eg5_ligands):
     """
     Make sure we can find a boresh restraint using a single frame
     """
@@ -165,6 +185,8 @@ def test_get_boresh_restraint_single_frame(eg5_protein_ligand_universe, eg5_liga
         # backbone atom names
         assert a.name in ["CA", "C", "O", "N"]
     assert restraint_geometry.guest_atoms == [5528, 5507, 5508]
+    for a in restraint_geometry.host_atoms:
+        print(eg5_protein_ligand_universe.atoms[a])
     assert restraint_geometry.host_atoms == [3517, 1843, 3920]
     # check the measured values
     assert 1.01590371 == pytest.approx(restraint_geometry.r_aA0.to("nanometer").m)
@@ -175,7 +197,7 @@ def test_get_boresh_restraint_single_frame(eg5_protein_ligand_universe, eg5_liga
     assert -0.0239690127 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
 
 
-def test_get_boresh_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
+def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     """
     Make sure we can find a boresh restraint using a single frame
     """

@@ -13,7 +13,6 @@ from rdkit import Chem
 
 from openff.units import unit
 import MDAnalysis as mda
-import numpy as np
 import numpy.typing as npt
 
 from openfe.protocols.restraint_utils.geometry.utils import (
@@ -116,9 +115,10 @@ def _bonded_angles_from_pool(
                     return True
             return False
 
-        for angle in angles:
-            if not _belongs_to_ring(angle, aromatic_rings):
-                angles.remove(angle)
+        # build a list of angles to remove
+        angles_to_remove = [angle for angle in angles if not _belongs_to_ring(angle, aromatic_rings)]
+        for angle in angles_to_remove:
+            angles.remove(angle)
 
     return angles
 
@@ -165,8 +165,8 @@ def _get_guest_atom_pool(
         ring_atoms_only = False
         heavy_atoms = get_heavy_atom_idxs(rdmol)
         atom_pool = set(
-            idx for enum, idx in enumerate(heavy_atoms)
-            if rmsf[enum] < rmsf_cutoff
+            idx for idx in heavy_atoms
+            if rmsf[idx] < rmsf_cutoff
         )
         if len(atom_pool) < 3:
             return None, False
