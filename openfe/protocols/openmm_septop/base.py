@@ -266,7 +266,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # names for the files from the two end states
         unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
 
-        if endstate == 'A' or endstate == 'B':
+        if endstate == 'A' or endstate == 'B' or endstate == 'AB':
             if unfrozen_outsettings.production_trajectory_filename:
                 unfrozen_outsettings.production_trajectory_filename = (
                         unfrozen_outsettings.production_trajectory_filename + f'_state{endstate}.xtc')
@@ -286,7 +286,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                 unfrozen_outsettings.log_output = (
                         unfrozen_outsettings.log_output + f'_state{endstate}.log')
         else:
-            errmsg = f"Only 'A' and 'B' are accepted as endstates. Got {endstate}"
+            errmsg = f"Only 'A', 'B', and 'AB' are accepted as endstates. Got {endstate}"
             raise ValueError(errmsg)
 
 
