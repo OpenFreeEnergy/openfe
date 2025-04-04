@@ -216,8 +216,8 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
 
 _yaml_help = """
-Path to a YAML file specifying the atom mapper (``mapper:``), network planning algorithm (`network:`),
-and/or partial charge method (``partial_charge:``) to use.
+Path to a YAML file specifying the atom mapper (``mapper``), network planning algorithm (``network``),
+and/or partial charge method (``partial_charge``) to use.
 
 \b
 Supported atom mapper choices are:
