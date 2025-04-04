@@ -90,7 +90,7 @@ def find_host_atom_candidates(
         if len(stable_ag) < 20:
             wmsg = (
                 "Secondary structure filtering: "
-                "Too few atoms found via secondary strcuture filtering will "
+                "Too few atoms found via secondary structure filtering will "
                 "try to only select all residues in protein chains instead."
             )
             warnings.warn(wmsg)
@@ -118,6 +118,12 @@ def find_host_atom_candidates(
         max_search_distance=max_distance,
     )
     atom_finder.run()
+
+
+    if not atom_finder.results.host_idxs.any():
+        errmsg = (f"No host atoms found within the search distance "
+                  f"{min_distance}-{max_distance} consider widening the search window.")
+        raise ValueError(errmsg)
 
     # Now we sort them!
     atom_sorter = CentroidDistanceSort(
@@ -386,7 +392,7 @@ def find_host_anchor(
     Optional[list[int]]
       A list of indices for a selected combination of H0, H1, and H2.
     """
-    # Evalulate the host_atom_pool for suitability as H0 atoms
+    # Evaluate the host_atom_pool for suitability as H0 atoms
     h0_eval = EvaluateHostAtoms1(
         guest_atoms,
         host_atom_pool,

@@ -198,11 +198,11 @@ def find_boresch_restraint(
     if (guest_restraint_atoms_idxs is not None) and (host_restraint_atoms_idxs is not None):  # fmt: skip
         # In this case assume the picked atoms were intentional /
         # representative of the input and go with it
-        guest_ag = universe.select_atoms[guest_idxs]
+        guest_ag = universe.atoms[guest_idxs]
         guest_atoms = [
             at.ix for at in guest_ag.atoms[guest_restraint_atoms_idxs]
         ]
-        host_ag = universe.select_atoms[host_idxs]
+        host_ag = universe.atoms[host_idxs]
         host_atoms = [
             at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]
         ]

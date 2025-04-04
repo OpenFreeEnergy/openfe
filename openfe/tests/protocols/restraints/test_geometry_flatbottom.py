@@ -14,6 +14,8 @@ import MDAnalysis as mda
 def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     protein = mda.Universe(eg5_protein_pdb)
     lig = mda.Universe(eg5_ligands[1].to_rdkit())
+    # add the residue name of the ligand
+    lig.add_TopologyAttr("resname", ["LIG"])
     return mda.Merge(protein.atoms, lig.atoms)
 
 def test_no_atoms_found(eg5_protein_ligand_universe):
@@ -24,23 +26,23 @@ def test_no_atoms_found(eg5_protein_ligand_universe):
             # the protein starts at 15
             host_selection="resnum 2",
             # the ligand is resnum 1, get only the heavy atoms
-            guest_selection="resnum 1 and not name H*"
+            guest_selection="resname LIG and not name H*"
         )
 
 @pytest.mark.parametrize("padding, well_radius", [
-    pytest.param(0.5, 0.637, id="0.5"),
-    pytest.param(0.8, 0.937, id="0.8"),
+    pytest.param(0.5, 0.666, id="0.5"),
+    pytest.param(0.8, 0.966, id="0.8"),
 ])
 def test_get_flatbottom_restraint_from_selection(eg5_protein_ligand_universe, padding, well_radius):
 
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resnum 1 and not name H*")
-    water_atoms = eg5_protein_ligand_universe.select_atoms("resnum 372:499")
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
+    water_atoms = eg5_protein_ligand_universe.select_atoms("resname HOH")
     restraint_geometry = get_flatbottom_distance_restraint(
         universe=eg5_protein_ligand_universe,
         # select all residues around the ligand
-        host_selection="same resid as (around 4 resnum 1) and not resnum 372:499",
+        host_selection="backbone and same resid as (around 4 resname LIG) and not resname HOH",
         # get all heavy atoms in the ligand
-        guest_selection="resnum 1 and not name H*",
+        guest_selection="resname LIG and not name H*",
         padding=padding * unit.nanometer
 
     )
@@ -53,8 +55,8 @@ def test_get_flatbottom_restraint_from_selection(eg5_protein_ligand_universe, pa
     assert well_radius == pytest.approx(restraint_geometry.well_radius.to("nanometer").m, abs=1e-4)
 
 def test_get_flatbottom_restraint_from_atoms(eg5_protein_ligand_universe):
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resnum 1 and not name H*")
-    host_atoms = eg5_protein_ligand_universe.select_atoms("same resid as (around 4 resnum 1) and not resnum 372:499")
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
+    host_atoms = eg5_protein_ligand_universe.select_atoms("backbone and same resid as (around 4 resname LIG) and not resname HOH")
     host_atom_ix = [a.ix for a in host_atoms]
     restraint_geometry = get_flatbottom_distance_restraint(
         universe=eg5_protein_ligand_universe,
@@ -66,4 +68,4 @@ def test_get_flatbottom_restraint_from_atoms(eg5_protein_ligand_universe):
     guest_atoms = [a.ix for a in expected_guest_atoms]
     assert all(i in guest_atoms for i in restraint_geometry.guest_atoms)
     assert restraint_geometry.host_atoms == host_atom_ix
-    assert 1.1091 == pytest.approx(restraint_geometry.well_radius.to("nanometer").m, abs=1e-4)
+    assert 1.1415 == pytest.approx(restraint_geometry.well_radius.to("nanometer").m, abs=1e-4)

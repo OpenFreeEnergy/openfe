@@ -14,6 +14,8 @@ import MDAnalysis as mda
 def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     protein = mda.Universe(eg5_protein_pdb)
     lig = mda.Universe(eg5_ligands[1].to_rdkit())
+    # add the residue name of the ligand
+    lig.add_TopologyAttr("resname", ["LIG"])
     return mda.Merge(protein.atoms, lig.atoms)
 
 
@@ -30,13 +32,14 @@ def test_get_distance_restraint_selection(eg5_protein_ligand_universe):
     """
     Check that you get a distance restraint using atom selections.
     """
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resnum 1 and not name H*")
-    water_atoms = eg5_protein_ligand_universe.select_atoms("resnum 372:499")
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
+    water_atoms = eg5_protein_ligand_universe.select_atoms("resname HOH")
     restraint_geometry = get_distance_restraint(
         universe=eg5_protein_ligand_universe,
-        host_selection="same resid as (around 4 resnum 1) and not resnum 372:499",
-        guest_selection="resnum 1 and not name H*"
+        host_selection="backbone and same resid as (around 4 resname LIG) and not resname HOH",
+        guest_selection="resname LIG and not name H*"
     )
+
     # make sure the guest atoms cover all heavy atoms in the ligand
     assert restraint_geometry.guest_atoms == [a.ix for a in expected_guest_atoms]
     # make sure no water atoms are selected as a host
@@ -48,7 +51,7 @@ def test_get_distance_restraint_atom_list(eg5_protein_ligand_universe):
     """
     Check that we can get a restraint using a set of host and guest atom lists
     """
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resnum 1 and not name H*")
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
     host_atoms = [1, 2, 3]
     restraint_geometry = get_distance_restraint(
         universe=eg5_protein_ligand_universe,
