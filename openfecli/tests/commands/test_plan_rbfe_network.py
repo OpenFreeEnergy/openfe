@@ -39,7 +39,7 @@ def dummy_charge_dir_args(tmpdir_factory):
     return ["--molecules", ofe_dir_path]
 
 @pytest.fixture(scope='session')
-def cdk8_files(tmpdir_factory):
+def cdk8_files(tmpdir_factory)->tuple[str, str]:
     cdk8_tmpdir = tmpdir_factory.mktemp("cdk8_data")
 
     with tarfile.open("../../../openfe/tests/data/cdk8.tar.gz") as f:
@@ -48,7 +48,7 @@ def cdk8_files(tmpdir_factory):
     protein = str(cdk8_tmpdir/'cdk8'/'cdk8_protein.pdb')
     ligand = str(cdk8_tmpdir/'cdk8'/'cdk8_ligands.sdf')
 
-    yield (protein, ligand)
+    return (protein, ligand)
 
 @pytest.fixture
 def protein_args():
