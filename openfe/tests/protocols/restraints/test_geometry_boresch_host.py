@@ -65,7 +65,8 @@ def test_evaluate_host1_bad_ref(eg5_protein_ligand_universe):
             reference=eg5_protein_ligand_universe.atoms,
             host_atom_pool=eg5_protein_ligand_universe.atoms,
             angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
-            temperature=298.15 * unit.kelvin
+            temperature=298.15 * unit.kelvin,
+            minimum_distance=1 * unit.nanometer
         )
 
 
@@ -83,7 +84,7 @@ def test_evaluate_host1_good(eg5_protein_ligand_universe):
         temperature=temp
     )
     # make sure properties are used during the evaluation
-    assert ho_eval.minimum_distance == min_distance
+    assert ho_eval.minimum_distance == min_distance.to("angstrom").m
     assert ho_eval.temperature == temp
     assert ho_eval.angle_force_constant == angle_fc
     ho_eval.run()
@@ -144,4 +145,5 @@ def test_find_host_anchor_none(eg5_protein_ligand_universe):
         angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
         temperature=298.15 * unit.kelvin
     )
+    # we should get None if no atoms can be found
     assert host_anchor is None

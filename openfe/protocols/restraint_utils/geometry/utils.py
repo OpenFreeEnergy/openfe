@@ -466,7 +466,7 @@ class FindHostAtoms(AnalysisBase):
     ----------
     host_atoms : MDAnalysis.AtomGroup
       Initial selection of host atoms to filter from.
-    guest_atoms : MDANalysis.AtomGroup
+    guest_atoms : MDAnalysis.AtomGroup
       Selection of guest atoms to search around.
     min_search_distance: unit.Quantity
       Minimum distance to filter atoms within.
@@ -666,7 +666,7 @@ def stable_secondary_structure_selection(
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
     if not _atomgroup_has_bonds(copy_protein_ag):
-        wmsg = "No bonds found in input Universe, will attept to guess them."
+        wmsg = "No bonds found in input Universe, will attempt to guess them."
         warnings.warn(wmsg)
         copy_protein_ag.guess_bonds()
 

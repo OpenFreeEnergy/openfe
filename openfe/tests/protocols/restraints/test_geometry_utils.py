@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+from importlib import resources
 import pytest
 
 import itertools
@@ -21,6 +22,11 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     check_dihedral_bounds,
     check_angular_variance,
     _atomgroup_has_bonds,
+    CentroidDistanceSort,
+    FindHostAtoms,
+    stable_secondary_structure_selection,
+    get_local_rmsf,
+    protein_chain_selection,
 )
 
 
@@ -28,6 +34,26 @@ from openfe.protocols.restraint_utils.geometry.utils import (
 @pytest.fixture(scope='module')
 def eg5_pdb_universe(eg5_protein_pdb):
     return mda.Universe(eg5_protein_pdb)
+
+
+@pytest.fixture
+def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
+    protein = mda.Universe(eg5_protein_pdb)
+    lig = mda.Universe(eg5_ligands[1].to_rdkit())
+    # add the residue name of the ligand
+    lig.add_TopologyAttr("resname", ["LIG"])
+    return mda.Merge(protein.atoms, lig.atoms)
+
+@pytest.fixture
+def t4_lysozyme_trajectory_universe():
+    # toluene in complex with t4 lysozyme plain MD trajectory
+    root = resources.files("openfe.tests.data")
+    universe = mda.Universe(
+        str(root / "t4_lysozyme_trajectory" / "t4_toluene_complex.pdb"),
+        str(root / "t4_lysozyme_trajectory" / "t4_toluene_complex.xtc"),
+    )
+    return universe
+
 
 
 def test_mda_selection_none_error(eg5_pdb_universe):
@@ -299,3 +325,117 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
     ag = u.atoms[:100]
     ag.guess_bonds()
     assert _atomgroup_has_bonds(ag) is True
+
+
+def test_centroid_distance_sort(eg5_protein_ligand_universe):
+
+    # quickly sort the atoms of the first residue
+    atom_sort = CentroidDistanceSort(
+        sortable_atoms=eg5_protein_ligand_universe.select_atoms("backbone and resnum 15"),
+        reference_atoms=eg5_protein_ligand_universe.select_atoms("resname LIG")
+    )
+    atom_sort.run()
+    sorted_ids = [a.ix for a in atom_sort.results.sorted_atomgroup]
+    # hard code the ids we expect
+    assert sorted_ids == [2, 1]
+
+
+def test_find_host_atoms(eg5_protein_ligand_universe):
+
+    # very small window to limit atoms for speed
+    min_cutoff = 1 * unit.nanometer
+    max_cutoff = 1.1 * unit.nanometer
+
+    atom_finder = FindHostAtoms(
+        host_atoms=eg5_protein_ligand_universe.select_atoms("backbone"),
+        # hand picked ring atom
+        guest_atoms=eg5_protein_ligand_universe.atoms[5528],
+        min_search_distance=min_cutoff,
+        max_search_distance=max_cutoff
+    )
+    atom_finder.min_cutoff == min_cutoff.to("angstrom").m
+    atom_finder.max_cutoff == max_cutoff.to("angstrom").m
+
+    atom_finder.run()
+    # should find the 28 close backbone atoms
+    assert len(atom_finder.results.host_idxs) == 28
+
+
+def test_get_rmsf_single_frame(eg5_protein_ligand_universe):
+    ligand = eg5_protein_ligand_universe.select_atoms("resname LIG")
+    rmsf = get_local_rmsf(
+        atomgroup=ligand
+    )
+    # as we have a single frame we should get all zeros back
+    assert np.allclose(rmsf.m, np.zeros(ligand.n_atoms))
+
+
+def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
+    # get the RMSF of just the ligand
+    ligand = t4_lysozyme_trajectory_universe.select_atoms("resname UNK")
+    rmsf = get_local_rmsf(
+        atomgroup=ligand
+    )
+    assert len(rmsf) == ligand.n_atoms
+    # regression test the calculation of the rmsf
+    assert np.allclose(
+        rmsf.to("angstrom").m,
+        np.array(
+            [
+                0.054697843819888965,
+                0.07512308066036011,
+                0.06000502046267635,
+                0.07180001811557828,
+                0.043416981393784,
+                0.05909972948285153,
+                0.13061051498104648,
+                0.15166255437235665,
+                0.17860692733595412,
+                0.1483198866730507,
+                0.14193714526412668,
+                0.06730488032625732,
+                1.0235330857263523,
+                1.0048466548200004,
+                1.0209553834502236
+            ]
+        )
+    )
+    
+    
+def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
+
+    # use a copy as we need to remove the bonds first
+    universe_copy = t4_lysozyme_trajectory_universe.copy()
+    universe_copy.del_TopologyAttr("bonds")
+
+    ligand = universe_copy.select_atoms("resname LIG")
+
+    with pytest.warns(match="No bonds found in input Universe, will attempt to guess them."):
+        stable_protein = stable_secondary_structure_selection(
+            # DDSP should filter by protein we will check at the end
+            atomgroup=universe_copy.atoms,
+        )
+        # make sure the ligand is not in this selection
+        overlapping_ligand = stable_protein.intersection(ligand.atoms)
+        assert overlapping_ligand.n_atoms == 0
+        # make sure we get the expected number of atoms
+        assert stable_protein.n_atoms == 780
+
+
+def test_protein_chain_selection(eg5_protein_ligand_universe):
+
+    # use a copy as we need to remove the bonds first
+    universe_copy = eg5_protein_ligand_universe.copy()
+    universe_copy.del_TopologyAttr("bonds")
+
+    ligand = universe_copy.select_atoms("resname LIG")
+
+    with pytest.warns(match="No bonds found in input Universe, will attempt to guess them."):
+        chain_selection = protein_chain_selection(
+            # the selection should filter for the protein we will check at the end
+            atomgroup=universe_copy.atoms,
+        )
+        overlapping_ligand = chain_selection.intersection(ligand.atoms)
+        assert overlapping_ligand.n_atoms == 0
+        # make sure we get the expected number of atoms
+        assert chain_selection.n_atoms == 5150
