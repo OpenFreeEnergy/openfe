@@ -1,3 +1,4 @@
+import glob
 from click.testing import CliRunner
 import os
 import pathlib
@@ -230,7 +231,8 @@ def rbfe_result_dir()->pathlib.Path:
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
-def test_gather(rbfe_result_dir, dataset, report):
+@pytest.mark.parametrize('input_mode', ['directory','filepaths'])
+def test_gather(rbfe_result_dir, dataset, report, input_mode):
 
     expected = {
         "": _EXPECTED_DG,
@@ -245,12 +247,18 @@ def test_gather(rbfe_result_dir, dataset, report):
     else:
         args = []
 
-    results_dir = rbfe_result_dir(dataset)
-    result = runner.invoke(gather, [str(results_dir)] + args + ['-o', '-'])
+    results = rbfe_result_dir(dataset)
+    if input_mode == 'directory':
+        results = [str(results)]
+    elif input_mode == 'filepaths':
+        results = glob.glob(f"{results}/*", recursive=True)
+        assert len(results) > 1  # sanity check to make sure we're passing in multiple paths
 
-    assert_click_success(result)
+    cli_result = runner.invoke(gather, results + args + ['-o', '-'])
 
-    actual_lines = set(result.stdout_bytes.split(b'\n'))
+    assert_click_success(cli_result)
+
+    actual_lines = set(cli_result.stdout_bytes.split(b'\n'))
     assert set(expected.split(b'\n')) == actual_lines
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
