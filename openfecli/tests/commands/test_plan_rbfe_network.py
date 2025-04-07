@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 from importlib import resources
 import shutil
+import tarfile
 from click.testing import CliRunner
 from ..utils import assert_click_success
 
@@ -37,6 +38,17 @@ def dummy_charge_dir_args(tmpdir_factory):
 
     return ["--molecules", ofe_dir_path]
 
+@pytest.fixture(scope='session')
+def cdk8_files(tmpdir_factory):
+    cdk8_tmpdir = tmpdir_factory.mktemp("cdk8_data")
+
+    with tarfile.open("../../../openfe/tests/data/cdk8.tar.gz") as f:
+        f.extractall(cdk8_tmpdir, filter='tar')
+
+    protein = str(cdk8_tmpdir/'cdk8'/'cdk8_protein.pdb')
+    ligand = str(cdk8_tmpdir/'cdk8'/'cdk8_ligands.sdf')
+
+    yield (protein, ligand)
 
 @pytest.fixture
 def protein_args():
@@ -288,15 +300,6 @@ def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
             validate_charges(node.components["ligand"])
             if "cofactor1" in node.components:
                 validate_charges(node.components["cofactor1"])
-
-
-@pytest.fixture
-def cdk8_files():
-    with resources.files("openfe.tests.data.cdk8") as p:
-        pdb_path = str(p.joinpath("cdk8_protein.pdb"))
-        lig_path = str(p.joinpath("cdk8_ligands.sdf"))
-
-        yield pdb_path, lig_path
 
 def test_plan_rbfe_network_charge_changes(cdk8_files):
     """
