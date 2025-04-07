@@ -42,7 +42,7 @@ def dummy_charge_dir_args(tmpdir_factory):
 def cdk8_files(tmpdir_factory)->tuple[str, str]:
     cdk8_tmpdir = tmpdir_factory.mktemp("cdk8_data")
 
-    with tarfile.open("../../../openfe/tests/data/cdk8.tar.gz") as f:
+    with tarfile.open("openfe/tests/data/cdk8.tar.gz") as f:
         f.extractall(cdk8_tmpdir, filter='tar')
 
     protein = str(cdk8_tmpdir/'cdk8'/'cdk8_protein.pdb')
