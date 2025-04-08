@@ -376,6 +376,18 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
                                 path_type=pathlib.Path),
                 required=True)
 @click.option(
+    '--alchemical-network',
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        readable=True,
+        resolve_path=True,
+        path_type=pathlib.Path),
+    help=("Path to the alchemical network JSON to gather."),
+    required=False
+)
+@click.option(
     '--report',
     type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
                            case_sensitive=False),
@@ -397,6 +409,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     )
 )
 def gather(results:List[os.PathLike|str],
+           alchemical_network: os.PathLike|str,
            output:os.PathLike|str,
            report:Literal['dg','ddg','raw'],
            allow_partial:bool
@@ -425,6 +438,12 @@ def gather(results:List[os.PathLike|str],
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
+
+    if not alchemical_network:
+        msg = "WARNING: --alchemical-network was not provided; falling back to legacy gather behavior.\n"\
+        "For optimal performance and usability, please provide the path to the alchemical network JSON file created during the planning stage."
+        # click.secho(msg, fg='yellow')  # TODO: make this an actual warning? this seemed like the clearest way for now.
+
     from collections import defaultdict
     import glob
     import csv
