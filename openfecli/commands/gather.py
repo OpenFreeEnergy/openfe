@@ -2,10 +2,12 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+import gufe
 import os
 import pathlib
 from typing import Callable, Literal, List
 import warnings
+
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -365,7 +367,169 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         writer.writerow([ligA, DG, unc_DG])
 
+def _collect_result_jsons(results):
+    results = sorted(results)  # not necessary, but ensures reproducibility
+    def collect_jsons(results:List[os.PathLike]):
+        all_jsons = []
+        for p in results:
+            if str(p).endswith('json'):
+                all_jsons.append(p)
+            elif p.is_dir():
+                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
+        
+        return all_jsons
 
+    # 1) find all possible jsons
+    json_fns = collect_jsons(results)
+
+    # 2) filter only result jsons
+    result_fns = filter(is_results_json, json_fns)
+    return result_fns
+
+def legacy_gather_results(results:List[os.PathLike|str],
+                  output:os.PathLike|str,
+                  report:Literal['dg','ddg','raw'],
+                  allow_partial:bool
+                  ):
+
+    from collections import defaultdict
+    import glob
+    import csv
+
+    result_fns =  _collect_result_jsons(results)
+
+    # 3) pair legs of simulations together into dict of dicts
+    legs = defaultdict(lambda: defaultdict(list))
+
+    for result_fn in result_fns:
+        result = load_valid_result_json(result_fn)
+        if result is None:
+            continue
+
+        try:
+            names = get_names(result)
+        except KeyError:
+            raise ValueError("Failed to guess names")
+        try:
+            simtype = get_type(result)
+        except KeyError:
+            simtype = legacy_get_type(result_fn)
+
+        if report.lower() == 'raw':
+            legs[names][simtype].append(_parse_raw_units(result))
+        else:
+            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
+            ## for jobs run in parallel, we need to compute these values
+            legs[names][simtype].extend(dGs)
+
+    writer = csv.writer(
+        output,
+        delimiter="\t",
+        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
+    )
+
+    # 5a) write out MLE values
+    # 5b) write out DDG values
+    # 5c) write out each leg
+    writing_func = {
+        'dg': _write_dg_mle,
+        'ddg': _write_ddg,
+        #  'dg-raw': _write_dg_raw,
+        'raw': _write_raw,
+    }[report.lower()]
+    writing_func(legs, writer, allow_partial)
+
+def _load_alchemical_network(filepath: os.PathLike|str)->gufe.AlchemicalNetwork:
+        alch_network = gufe.AlchemicalNetwork.from_json(filepath)
+        if not isinstance(alch_network, gufe.AlchemicalNetwork):
+            raise ValueError(f"{filepath} does not contain an alchemical network. Please provide a path to a valid alchemical network JSON.")
+
+def get_transform_name(result: dict, alchemical_network: gufe.AlchemicalNetwork) -> tuple[str, str, str]:
+    """
+    Get the name of this transformation, taking into account that the inputs might have accidentally been deleted.
+
+    Returns
+    -------
+    The name of the transformation as a tuple of (phase, ligand_a name, ligand_b name)
+    TODO: this could be optimized?
+
+    """
+    # grab the gufe key of the chemical systems used in the inputs
+    unit_result = list(result["unit_results"].values())[0]
+    state_a_key = unit_result["inputs"]["stateA"][":gufe-key:"]
+    mapping_key = unit_result["inputs"]["ligandmapping"][":gufe-key:"]
+    # work out which system this is in the alchemical network
+    system_look_up = dict((str(node.key), node) for node in alchemical_network.nodes)
+    mapping_look_up = dict((str(edge.mapping.key), edge.mapping) for edge in alchemical_network.edges)
+    # build the transform
+    if any([isinstance(comp, gufe.ProteinComponent) for comp in system_look_up[state_a_key].components.values()]):
+        phase = "complex"
+    else:
+        phase = "solvent"
+
+    ligmap = mapping_look_up[mapping_key]
+    return phase, ligmap.componentA.name, ligmap.componentB.name
+
+def gather_results(results:List[os.PathLike|str],
+                alchemical_network: os.PathLike|str,  # TODO: have this take in the AlchemicalNetwork directly
+                output:os.PathLike|str,
+                report:Literal['dg','ddg','raw'],
+                allow_partial:bool,
+                ):
+    alch_network = _load_alchemical_network(alchemical_network)
+
+    from collections import defaultdict
+    import glob
+    import csv
+
+    result_fns =  _collect_result_jsons(results)
+
+    # 3) pair legs of simulations together into dict of dicts
+    legs = defaultdict(lambda: defaultdict(list))
+
+    for result_fn in result_fns:
+        result = load_valid_result_json(result_fn)
+        if result is None:
+            continue
+
+        # try:
+        #     names = get_names(result)
+        # except KeyError:
+        #     raise ValueError("Failed to guess names")
+        # try:
+        #     simtype = get_type(result)
+        # except KeyError:
+        #     simtype = legacy_get_type(result_fn)
+        try:
+            simtype, ligand_a, ligand_b = get_transform_name(result=result, alchemical_network=alch_network)
+        except KeyError:
+            warnings.warn(f"Result {result_fn} contains a transformation which is not present in {alchemical_network}.\
+                           Please verify that you are using the correct alchemical network and results files.")
+        names = (ligand_a, ligand_b)
+        
+        if report.lower() == 'raw':
+            legs[names][simtype].append(_parse_raw_units(result))
+        else:
+            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
+            ## for jobs run in parallel, we need to compute these values
+            legs[names][simtype].extend(dGs)
+
+    writer = csv.writer(
+        output,
+        delimiter="\t",
+        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
+    )
+
+    # 5a) write out MLE values
+    # 5b) write out DDG values
+    # 5c) write out each leg
+    writing_func = {
+        'dg': _write_dg_mle,
+        'ddg': _write_ddg,
+        #  'dg-raw': _write_dg_raw,
+        'raw': _write_raw,
+    }[report.lower()]
+    writing_func(legs, writer, allow_partial)
 @click.command(
     'gather',
     short_help="Gather result jsons for network of RFE results into a TSV file"
@@ -444,68 +608,10 @@ def gather(results:List[os.PathLike|str],
         "For optimal performance and usability, please provide the path to the alchemical network JSON file created during the planning stage."
         # click.secho(msg, fg='yellow')  # TODO: make this an actual warning? this seemed like the clearest way for now.
 
-    from collections import defaultdict
-    import glob
-    import csv
+        legacy_gather_results(results, output, report, allow_partial)
 
-    results = sorted(results)  # not necessary, but ensures reproducibility
-    def collect_jsons(results:List[os.PathLike]):
-        all_jsons = []
-        for p in results:
-            if str(p).endswith('json'):
-                all_jsons.append(p)
-            elif p.is_dir():
-                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
-        
-        return all_jsons
-
-    # 1) find all possible jsons
-    json_fns = collect_jsons(results)
-
-    # 2) filter only result jsons
-    result_fns = filter(is_results_json, json_fns)
-
-    # 3) pair legs of simulations together into dict of dicts
-    legs = defaultdict(lambda: defaultdict(list))
-
-    for result_fn in result_fns:
-        result = load_valid_result_json(result_fn)
-        if result is None:
-            continue
-
-        try:
-            names = get_names(result)
-        except KeyError:
-            raise ValueError("Failed to guess names")
-        try:
-            simtype = get_type(result)
-        except KeyError:
-            simtype = legacy_get_type(result_fn)
-
-        if report.lower() == 'raw':
-            legs[names][simtype].append(_parse_raw_units(result))
-        else:
-            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
-            ## for jobs run in parallel, we need to compute these values
-            legs[names][simtype].extend(dGs)
-
-    writer = csv.writer(
-        output,
-        delimiter="\t",
-        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
-    )
-
-    # 5a) write out MLE values
-    # 5b) write out DDG values
-    # 5c) write out each leg
-    writing_func = {
-        'dg': _write_dg_mle,
-        'ddg': _write_ddg,
-        #  'dg-raw': _write_dg_raw,
-        'raw': _write_raw,
-    }[report.lower()]
-    writing_func(legs, writer, allow_partial)
-
+    else:
+        gather_results(results, alchemical_network, output, report, allow_partial)
 
 PLUGIN = OFECommandPlugin(
     command=gather,
