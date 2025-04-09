@@ -1444,7 +1444,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         )
 
         equ_positions_AB, box_AB = self._pre_equilibrate(
-            omm_system_AB, omm_topology_AB, positions_AB, settings, 'AB', dry
+            system, omm_topology_AB, positions_AB, settings, 'AB', dry
         )
 
         topology_file = self.shared_basepath / 'topology.pdb'
