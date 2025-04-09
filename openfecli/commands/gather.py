@@ -152,8 +152,11 @@ def get_names(result:dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
+    try:
+        nm = list(result['unit_results'].values())[0]['name']
+    except KeyError:
+        raise ValueError("Failed to guess names")
 
-    nm = list(result['unit_results'].values())[0]['name']
     toks = nm.split()
     if toks[2] == 'repeat':
         return toks[0], toks[1]
@@ -408,10 +411,8 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
         if result is None:
             continue
 
-        try:
-            names = get_names(result)
-        except KeyError:
-            raise ValueError("Failed to guess names")
+        names = get_names(result)
+
         try:
             simtype = get_type(result)
         except KeyError:
