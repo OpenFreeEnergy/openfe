@@ -318,11 +318,17 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     from cinnabar.stats import mle
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
+    expected_ligs = []
+
     # 4b) perform MLE
     g = nx.DiGraph()
     nm_to_idx = {}
     DDGbind_count = 0
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
+        for lig in (ligA, ligB):
+            if lig not in expected_ligs:
+                expected_ligs.append(lig)
+
         if DDGbind is None:
             continue
         DDGbind_count += 1
@@ -362,6 +368,10 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         writer.writerow([ligA, DG, unc_DG])
+        expected_ligs.remove(ligA)
+
+    for lig in expected_ligs:
+        writer.writerow([lig, FAIL_STR, FAIL_STR])
 
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
@@ -418,7 +428,7 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
             legs[names][simtype].append(parsed_raw_data)
         else:
             if result is None:
-                dGs = [FAIL_STR]
+                dGs = [None]
             else:
                 dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
             legs[names][simtype].extend(dGs)
