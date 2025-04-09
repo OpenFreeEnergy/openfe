@@ -38,10 +38,14 @@ class TestResultLoading:
         result = {
             "estimate": {},
             "uncertainty": {},
-            "protocol_result": {'data':{'2294096155646608107660849867019691905': None}},
+            "protocol_result": {'data':{'2294096155646608107660849867019691905':  [
+                {"name": "lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
+                  "inputs": {"stateA": {"components": {"ligand":None}}}}
+                  ]}},
             "unit_results": {
-                "ProtocolUnitResult-e85": {},
-                "ProtocolUnitFailure-4c9": {"exception": ["Simulation_NanError"]},
+                "ProtocolUnitResult-e85": {"name":"lig_ejm_31 to lig_ejm_42 repeat 0 generation 0"},
+                "ProtocolUnitFailure-4c9": {"name":"lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
+                                            "exception": ["Simulation_NanError"]},
             },
         }
         yield result
@@ -50,13 +54,13 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == sim_result
+            assert result == (('lig_ejm_31', 'lig_ejm_42', 'vacuum'), sim_result)
             assert captured.err == ""
 
     def test_skip_missing_filepath(self, capsys):
         result = load_valid_result_json(fpath="")
         captured = capsys.readouterr()
-        assert result is None
+        assert result == (None, None)
         assert "does not exist. Skipping" in captured.err
 
     def test_skip_missing_unit_result(self, capsys, sim_result):
@@ -65,8 +69,8 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
-            assert "No 'unit_results'" in captured.err
+            assert result == (None, None)
+            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
     def test_skip_missing_estimate(self, capsys, sim_result):
         sim_result["estimate"] = None
@@ -74,7 +78,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
+            assert result == (('lig_ejm_31', 'lig_ejm_42', 'vacuum'), None)
             assert "No 'estimate' found" in captured.err
 
     def test_skip_missing_uncertainty(self, capsys, sim_result):
@@ -83,7 +87,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
+            assert result == (('lig_ejm_31', 'lig_ejm_42', 'vacuum'), None)
             assert "No 'uncertainty' found" in captured.err
 
     def test_skip_all_failed_runs(self, capsys, sim_result):
@@ -91,7 +95,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
+            assert result == (('lig_ejm_31', 'lig_ejm_42', 'vacuum'), None)
             assert "Exception found in all" in captured.err
 
     def test_missing_pr_data(self, capsys, sim_result):
@@ -99,8 +103,8 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
-            assert "No data found" in captured.err
+            assert result == (None, None)
+            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
 _EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)

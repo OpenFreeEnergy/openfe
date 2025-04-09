@@ -134,21 +134,15 @@ def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
         return None, None
     try:
         result_info = get_result_info(result, fpath)
-    except ValueError:
-        click.echo(f"{fpath}: No ligand names found. Skipping.", err=True)
+    except (ValueError, IndexError):
+        click.echo(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True)
         return None, None
 
-    if "unit_results" not in result.keys():
-        click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
-        return result_info, None
     if result['estimate'] is None:
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
         return result_info, None
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
-        return result_info, None
-    if result['protocol_result']['data'] == {}:
-        click.echo(f"{fpath}: No data found for this protocol result, assuming to be a failed simulation.", err=True)
         return result_info, None
     if all('exception' in u for u in result['unit_results'].values()):
         click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
@@ -171,8 +165,11 @@ def get_names(result:dict) -> tuple[str, str]:
     """
     try:
         nm = list(result['unit_results'].values())[0]['name']
+
     except KeyError:
         raise ValueError("Failed to guess names")
+
+    # TODO: make this more robust by pulling names from inputs.state[A/B].name
 
     toks = nm.split()
     if toks[2] == 'repeat':
@@ -184,7 +181,6 @@ def get_names(result:dict) -> tuple[str, str]:
 def get_type(res:dict)->Literal['vacuum','solvent','complex']:
     """Determine the simulation type based on the component names."""
     # TODO: use component *types* instead here
-
     list_of_pur = list(res['protocol_result']['data'].values())[0]
     pur = list_of_pur[0]
     components = pur['inputs']['stateA']['components']
