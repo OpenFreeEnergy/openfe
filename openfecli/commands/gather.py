@@ -73,7 +73,6 @@ def format_estimate_uncertainty(
 
     return est_str, unc_str
 
-
 def is_results_json(fpath:os.PathLike|str)->bool:
     """Sanity check that file is a result json before we try to deserialize"""
     return 'estimate' in open(fpath, 'r').read(20)
@@ -208,17 +207,6 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
         msg += f"{ligpair}: {','.join(leg_types)}\n"
 
     return msg
-
-
-def _parse_raw_units(results: dict) -> list[tuple]:
-    # grab individual unit results from master results dict
-    # returns list of (estimate, uncertainty) tuples
-    list_of_pur = list(results['protocol_result']['data'].values())
-
-    # could add to each tuple pu[0]["source_key"] for repeat ID
-    return [(pu[0]['outputs']['unit_estimate'],
-             pu[0]['outputs']['unit_estimate_error'])
-            for pu in list_of_pur]
 
 def _get_ddgs(legs:dict, allow_partial=False):
     import numpy as np
@@ -389,9 +377,7 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
         """Sanity check that file is a result json before we try to deserialize"""
         return "estimate" in open(fpath, "r").read(20)
 
-    results = sorted(
-        results
-    )  # ensures reproducible output order regardless of input order
+    results = sorted(results)  # ensures reproducible output order regardless of input order
 
     # 1) find all possible jsons
     json_fns = collect_jsons(results)
@@ -418,14 +404,14 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
         except KeyError:
             simtype = legacy_get_type(result_fn)
 
+        raw_data = result["protocol_result"]["data"].values()
         if report.lower() == "raw":
-            legs[names][simtype].append(_parse_raw_units(result))
+            parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
+                                v[0]['outputs']['unit_estimate_error'])
+                                for v in raw_data]
+            legs[names][simtype].append(parsed_raw_data)
         else:
-            dGs = [
-                v[0]["outputs"]["unit_estimate"]
-                for v in result["protocol_result"]["data"].values()
-            ]
-            ## for jobs run in parallel, we need to compute these values
+            dGs = [v[0]["outputs"]["unit_estimate"] for v in raw_data]
             legs[names][simtype].extend(dGs)
 
     return legs
