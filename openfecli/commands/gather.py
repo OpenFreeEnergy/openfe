@@ -11,6 +11,7 @@ import warnings
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
+FAIL_STR = "NaN" # string used to indicate a failed run in output tables.
 
 def _get_column(val:float|int)->int:
     """Determine the index (where the 0th index is the decimal) at which the
@@ -129,6 +130,7 @@ def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
 
     try:
         result = load_json(fpath)
+    # in practice, this will never get called because we check for 'estimate' in the JSON in ``collect_jsons``
     except FileNotFoundError:
         click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
         return None, None
@@ -137,7 +139,6 @@ def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
     except (ValueError, IndexError):
         click.echo(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True)
         return None, None
-
     if result['estimate'] is None:
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
         return result_info, None
@@ -260,7 +261,7 @@ def _get_ddgs(legs:dict, allow_partial=False):
 
         if not do_rbfe and not do_rhfe:
             bad_legs.append((leg_types, ligpair))
-            continue
+            DDGs.append((*ligpair, FAIL_STR, FAIL_STR, FAIL_STR, FAIL_STR))
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
@@ -276,7 +277,6 @@ def _get_ddgs(legs:dict, allow_partial=False):
                 "absolute free energies from the relative free energies."
                 )
             raise RuntimeError(err_msg)
-
     return DDGs
 
 
@@ -285,6 +285,9 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
+        if DDGbind == FAIL_STR or DDGhyd == FAIL_STR:
+            writer.writerow([ligA, ligB, DDGbind, bind_unc])
+            continue
         if DDGbind is not None:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             writer.writerow([ligA, ligB, DDGbind, bind_unc])
@@ -301,7 +304,9 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
         for simtype, repeats in sorted(results.items()):
             for repeat in repeats:
                 for m, u in repeat:
-                    if m is None:
+                    if m == FAIL_STR | u == FAIL_STR:
+                        pass
+                    elif m is None:
                         m, u = 'NaN', 'NaN'
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
@@ -405,19 +410,18 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
 
         if report.lower() == "raw":
             if result is None:
-                legs[names][simtype].append(['Failed'])
+                parsed_raw_data =[(FAIL_STR, FAIL_STR)]
             else:
                 parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
                                     v[0]['outputs']['unit_estimate_error'])
                                     for v in result["protocol_result"]["data"].values()]
-                legs[names][simtype].append(parsed_raw_data)
+            legs[names][simtype].append(parsed_raw_data)
         else:
             if result is None:
-                legs[names][simtype].extend(['Failed'])
+                dGs = [FAIL_STR]
             else:
                 dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
-                legs[names][simtype].extend(dGs)
-
+            legs[names][simtype].extend(dGs)
     return legs
 
 @click.command(
@@ -485,7 +489,6 @@ def gather(results:List[os.PathLike|str],
 
     # 3) pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
-
     writer = csv.writer(
         output,
         delimiter="\t",
