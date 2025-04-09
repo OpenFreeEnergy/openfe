@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+from multiprocessing import Value
 import click
 import os
 import pathlib
@@ -98,7 +99,18 @@ def load_json(fpath:os.PathLike|str)->dict:
 
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
-def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
+def get_result_info(result, result_fn):
+    # TODO: only take in result_fn for legacy support, remove this in 2.0
+    ligA, ligB = get_names(result)
+
+    try:
+        simtype = get_type(result)
+    except KeyError:
+        simtype = legacy_get_type(result_fn)
+
+    return ligA, ligB, simtype
+
+def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -119,24 +131,30 @@ def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
         result = load_json(fpath)
     except FileNotFoundError:
         click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
-        return None
+        return None, None
+    try:
+        result_info = get_result_info(result, fpath)
+    except ValueError:
+        click.echo(f"{fpath}: No ligand names found. Skipping.", err=True)
+        return None, None
+
     if "unit_results" not in result.keys():
         click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
-        return None
+        return result_info, None
     if result['estimate'] is None:
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
-        return None
+        return result_info, None
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
-        return None
+        return result_info, None
     if result['protocol_result']['data'] == {}:
         click.echo(f"{fpath}: No data found for this protocol result, assuming to be a failed simulation.", err=True)
-        return None
+        return result_info, None
     if all('exception' in u for u in result['unit_results'].values()):
         click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
-        return None
+        return result_info, None
 
-    return result
+    return result_info, result
 
 def get_names(result:dict) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
@@ -186,6 +204,7 @@ def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex
         return 'solvent'
     elif 'vacuum' in res_fn:
         return 'vacuum'
+    # TODO: if there is no identifier in the filename, do we really want to assume it's a complex?
     else:
         return 'complex'
 
@@ -380,26 +399,28 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        result = load_valid_result_json(result_fn)
-        if result is None:
+        result_info, result = load_valid_result_json(result_fn)
+
+        if result_info is None:  # this means it couldn't find names and/or simtype
             continue
 
-        names = get_names(result)
+        ligA, ligB, simtype = result_info
+        names = (ligA, ligB)
 
-        try:
-            simtype = get_type(result)
-        except KeyError:
-            simtype = legacy_get_type(result_fn)
-
-        raw_data = result["protocol_result"]["data"].values()
         if report.lower() == "raw":
-            parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
-                                v[0]['outputs']['unit_estimate_error'])
-                                for v in raw_data]
-            legs[names][simtype].append(parsed_raw_data)
+            if result is None:
+                legs[names][simtype].append(['Failed'])
+            else:
+                parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
+                                    v[0]['outputs']['unit_estimate_error'])
+                                    for v in result["protocol_result"]["data"].values()]
+                legs[names][simtype].append(parsed_raw_data)
         else:
-            dGs = [v[0]["outputs"]["unit_estimate"] for v in raw_data]
-            legs[names][simtype].extend(dGs)
+            if result is None:
+                legs[names][simtype].extend(['Failed'])
+            else:
+                dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
+                legs[names][simtype].extend(dGs)
 
     return legs
 
