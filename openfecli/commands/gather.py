@@ -292,19 +292,6 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
                         m, u = format_estimate_uncertainty(m.m, u.m)
                     writer.writerow([simtype, *ligpair, m, u])
 
-
-def _write_dg_raw(legs:dict, writer:Callable,  allow_partial):  # pragma: no-cover
-    writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
-    for ligpair, vals in sorted(legs.items()):
-        for simtype, (m, u) in sorted(vals.items()):
-            if m is None:
-                m, u = 'NaN', 'NaN'
-            else:
-                m, u = format_estimate_uncertainty(m.m, u.m)
-            writer.writerow([simtype, *ligpair, m, u])
-
-
 def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     import networkx as nx
     import numpy as np
