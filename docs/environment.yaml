@@ -16,6 +16,7 @@ dependencies:
 - openff-units
 - openmm
 - packaging
+- pip
 - plugcli
 - python=3.10
 - sphinx <7.3
