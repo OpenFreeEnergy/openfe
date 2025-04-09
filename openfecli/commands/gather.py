@@ -77,10 +77,6 @@ def format_estimate_uncertainty(
     return est_str, unc_str
 
 
-def is_results_json(fpath:os.PathLike|str)->bool:
-    """Sanity check that file is a result json before we try to deserialize"""
-    return 'estimate' in open(fpath, 'r').read(20)
-
 def load_json(fpath:os.PathLike|str)->dict:
     """Load a JSON file containing a gufe object.
 
@@ -127,7 +123,7 @@ def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
     if "unit_results" not in result.keys():
         click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
         return None
-    if result['estimate'] is None:
+    if result['estimate'] is None:  # This will never happen because `is_results_json` filters based on the existence of `estimate`
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
         return None
     if result['uncertainty'] is None:
@@ -164,7 +160,7 @@ def get_names(result:dict) -> tuple[str, str]:
         return toks[0], toks[2]
 
 
-def get_type(res:dict)->Literal['vacuum','solvent','complex']:
+def get_sim_type(res:dict)->Literal['vacuum','solvent','complex']:
     """Determine the simulation type based on the component names."""
     # TODO: use component *types* instead here
 
@@ -180,8 +176,8 @@ def get_type(res:dict)->Literal['vacuum','solvent','complex']:
         return 'solvent'
 
 
-def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
-    # TODO: Deprecate this when we no longer rely on key names in `get_type()`
+def legacy_get_sim_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
+    # TODO: Deprecate this when we no longer rely on key names in `get_sim_type()`
 
     if 'solvent' in res_fn:
         return 'solvent'
@@ -368,8 +364,9 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         writer.writerow([ligA, DG, unc_DG])
 
-def _collect_result_jsons(results):
-    results = sorted(results)  # ensures reproducible output order regardless of input order
+def _collect_result_jsons(results:List[os.PathLike|str]):
+    """Recursively collects all results JSONs within """
+
     def collect_jsons(results:List[os.PathLike]):
         all_jsons = []
         for p in results:
@@ -379,6 +376,12 @@ def _collect_result_jsons(results):
                 all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
 
         return all_jsons
+    
+    def is_results_json(fpath:os.PathLike|str)->bool:
+        """Sanity check that file is a result json before we try to deserialize"""
+        return 'estimate' in open(fpath, 'r').read(20)
+    
+    results = sorted(results)  # ensures reproducible output order regardless of input order
 
     # 1) find all possible jsons
     json_fns = collect_jsons(results)
@@ -404,16 +407,16 @@ def legacy_gather_results(results:List[os.PathLike|str],
     for result_fn in result_fns:
         result = load_valid_result_json(result_fn)
         if result is None:
-            continue  # maybe load this anyway so we can show missing results in output
+            continue
 
         try:
             names = get_names(result)
         except KeyError:
             raise ValueError("Failed to guess names")
         try:
-            simtype = get_type(result)
+            simtype = get_sim_type(result)
         except KeyError:
-            simtype = legacy_get_type(result_fn)
+            simtype = legacy_get_sim_type(result_fn)
 
         if report.lower() == 'raw':
             legs[names][simtype].append(_parse_raw_units(result))
@@ -439,77 +442,80 @@ def legacy_gather_results(results:List[os.PathLike|str],
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
 
-def _load_alchemical_network(filepath: os.PathLike|str)->gufe.AlchemicalNetwork:
-        alch_network = gufe.AlchemicalNetwork.from_json(filepath)
-        if not isinstance(alch_network, gufe.AlchemicalNetwork):
-            raise ValueError(f"{filepath} does not contain an alchemical network. Please provide a path to a valid alchemical network JSON.")
 
-def get_transform_name(result: dict, alchemical_network: gufe.AlchemicalNetwork) -> tuple[str, str, str]:
-    """
-    Get the name of this transformation, taking into account that the inputs might have accidentally been deleted.
+def _load_alchemical_network(filepath: os.PathLike | str) -> gufe.AlchemicalNetwork:
+    """Load a valid AlchemicalNetwork from a JSON."""
+    al_net = gufe.AlchemicalNetwork.from_json(filepath)
+    if not isinstance(al_net, gufe.AlchemicalNetwork):
+        raise ValueError(
+            f"{filepath} does not contain an alchemical network. Please provide a path to a valid alchemical network JSON."
+        )
+    
+def get_transformation_name(edge:gufe.Transformation) -> tuple[Literal['vacuum','solvent','complex'], str, str]:
+    """Extract the names and simulation type from a gufe transformation."""
+    def _get_chem_system_component_types(chemical_system:gufe.ChemicalSystem)->set[gufe.tokenization.GufeTokenizable]:
+        """return a set of the unique component types in the given chemical system"""
+        return {type(v) for v in chemical_system.components.values()}
 
-    Returns
-    -------
-    The name of the transformation as a tuple of (phase, ligand_a name, ligand_b name)
-    TODO: this could be optimized?
+    def _get_simtype(component_types: set[gufe.tokenization.GufeTokenizable])->Literal['vacuum','solvent','complex']:
+        if gufe.SolventComponent not in component_types:
+            return 'vacuum'
+        elif gufe.ProteinComponent in component_types:
+            return 'complex'
+        else:
+            return 'solvent'
+    
+    edge_component_types = set.union(_get_chem_system_component_types(edge.stateA),
+                                    _get_chem_system_component_types(edge.stateB))
+    simtype = _get_simtype(edge_component_types)
+    
+    return simtype, edge.mapping.componentA.name, edge.mapping.componentB.name
 
-    """
-    # grab the gufe key of the chemical systems used in the inputs
-    unit_result = list(result["unit_results"].values())[0]
-    state_a_key = unit_result["inputs"]["stateA"][":gufe-key:"]
-    mapping_key = unit_result["inputs"]["ligandmapping"][":gufe-key:"]
-    # work out which system this is in the alchemical network
-    system_look_up = dict((str(node.key), node) for node in alchemical_network.nodes)
-    mapping_look_up = dict((str(edge.mapping.key), edge.mapping) for edge in alchemical_network.edges)
-    # build the transform
-    if any([isinstance(comp, gufe.ProteinComponent) for comp in system_look_up[state_a_key].components.values()]):
-        phase = "complex"
-    else:
-        phase = "solvent"
-
-    ligmap = mapping_look_up[mapping_key]
-    return phase, ligmap.componentA.name, ligmap.componentB.name
-
-def gather_results(results:List[os.PathLike|str],
-                alchemical_network: os.PathLike|str,  # TODO: have this take in the AlchemicalNetwork directly
-                output:os.PathLike|str,
-                report:Literal['dg','ddg','raw'],
-                allow_partial:bool,
-                ):
-    alch_network = _load_alchemical_network(alchemical_network)
-
+def gather_results(
+    results: List[os.PathLike | str],
+    alchemical_network: os.PathLike | str | None,
+    output: os.PathLike | str,
+    report: Literal["dg", "ddg", "raw"],
+    allow_partial: bool,
+):
     from collections import defaultdict
     import csv
 
-    result_fns =  _collect_result_jsons(results)
+    al_net = _load_alchemical_network(alchemical_network)
+
+    al_net_legs = []
+    for edge in al_net.edges:
+        simtype, A, B = get_transformation_name(edge)
+    al_net_legs.append(((A, B), simtype))
+
+
+    result_fns = _collect_result_jsons(results)
 
     # 3) pair legs of simulations together into dict of dicts
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
         result = load_valid_result_json(result_fn)
-        if result is None:
+        if result is None:  # pass these through as failed
             continue
-
-        # try:
-        #     names = get_names(result)
-        # except KeyError:
-        #     raise ValueError("Failed to guess names")
-        # try:
-        #     simtype = get_type(result)
-        # except KeyError:
-        #     simtype = legacy_get_type(result_fn)
         try:
-            simtype, ligand_a, ligand_b = get_transform_name(result=result, alchemical_network=alch_network)
+            simtype, ligand_a, ligand_b = get_transform_name(
+                result=result, alchemical_network=al_net
+            )
         except KeyError:
-            warnings.warn(f"Result {result_fn} contains a transformation which is not present in {alchemical_network}.\
-                           Please verify that you are using the correct alchemical network and results files.")
+            warnings.warn(
+                f"Result {result_fn} contains a transformation which is not present in {alchemical_network}.\
+                           Please verify that you are using the correct alchemical network and results files."
+            )
         names = (ligand_a, ligand_b)
 
-        if report.lower() == 'raw':
+        if report.lower() == "raw":
             legs[names][simtype].append(_parse_raw_units(result))
         else:
-            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
+            dGs = [
+                v[0]["outputs"]["unit_estimate"]
+                for v in result["protocol_result"]["data"].values()
+            ]
             ## for jobs run in parallel, we need to compute these values
             legs[names][simtype].extend(dGs)
 
@@ -523,12 +529,13 @@ def gather_results(results:List[os.PathLike|str],
     # 5b) write out DDG values
     # 5c) write out each leg
     writing_func = {
-        'dg': _write_dg_mle,
-        'ddg': _write_ddg,
+        "dg": _write_dg_mle,
+        "ddg": _write_ddg,
         #  'dg-raw': _write_dg_raw,
-        'raw': _write_raw,
+        "raw": _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
+
 
 @click.command(
     'gather',
