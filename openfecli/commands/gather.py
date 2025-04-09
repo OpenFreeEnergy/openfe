@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+import glob
 import gufe
 import os
 import pathlib
@@ -368,7 +369,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         writer.writerow([ligA, DG, unc_DG])
 
 def _collect_result_jsons(results):
-    results = sorted(results)  # not necessary, but ensures reproducibility
+    results = sorted(results)  # ensures reproducible output order regardless of input order
     def collect_jsons(results:List[os.PathLike]):
         all_jsons = []
         for p in results:
@@ -376,7 +377,7 @@ def _collect_result_jsons(results):
                 all_jsons.append(p)
             elif p.is_dir():
                 all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
-        
+
         return all_jsons
 
     # 1) find all possible jsons
@@ -393,7 +394,6 @@ def legacy_gather_results(results:List[os.PathLike|str],
                   ):
 
     from collections import defaultdict
-    import glob
     import csv
 
     result_fns =  _collect_result_jsons(results)
@@ -404,7 +404,7 @@ def legacy_gather_results(results:List[os.PathLike|str],
     for result_fn in result_fns:
         result = load_valid_result_json(result_fn)
         if result is None:
-            continue
+            continue  # maybe load this anyway so we can show missing results in output
 
         try:
             names = get_names(result)
@@ -479,7 +479,6 @@ def gather_results(results:List[os.PathLike|str],
     alch_network = _load_alchemical_network(alchemical_network)
 
     from collections import defaultdict
-    import glob
     import csv
 
     result_fns =  _collect_result_jsons(results)
@@ -506,7 +505,7 @@ def gather_results(results:List[os.PathLike|str],
             warnings.warn(f"Result {result_fn} contains a transformation which is not present in {alchemical_network}.\
                            Please verify that you are using the correct alchemical network and results files.")
         names = (ligand_a, ligand_b)
-        
+
         if report.lower() == 'raw':
             legs[names][simtype].append(_parse_raw_units(result))
         else:
@@ -530,6 +529,7 @@ def gather_results(results:List[os.PathLike|str],
         'raw': _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
+
 @click.command(
     'gather',
     short_help="Gather result jsons for network of RFE results into a TSV file"
@@ -603,15 +603,17 @@ def gather(results:List[os.PathLike|str],
     outputs to stdout, use the -o option to choose an output file.
     """
 
-    if not alchemical_network:
+    if alchemical_network:
+        gather_results(results, alchemical_network, output, report, allow_partial)
+
+    else:
         msg = "WARNING: --alchemical-network was not provided; falling back to legacy gather behavior.\n"\
         "For optimal performance and usability, please provide the path to the alchemical network JSON file created during the planning stage."
-        # click.secho(msg, fg='yellow')  # TODO: make this an actual warning? this seemed like the clearest way for now.
+        warnings.warn(msg)
+        # click.secho(msg, fg='yellow')  # TODO: use this instead of warning for cleaner output?
 
         legacy_gather_results(results, output, report, allow_partial)
 
-    else:
-        gather_results(results, alchemical_network, output, report, allow_partial)
 
 PLUGIN = OFECommandPlugin(
     command=gather,
