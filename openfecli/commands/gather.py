@@ -366,6 +366,69 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         writer.writerow([ligA, DG, unc_DG])
 
 
+def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
+    """Recursively collects all results JSONs from the paths in ``results``,
+    which can include directories and/or filepaths.
+    """
+    import glob
+
+    def collect_jsons(results: List[os.PathLike]):
+        all_jsons = []
+        for p in results:
+            if str(p).endswith("json"):
+                all_jsons.append(p)
+            elif p.is_dir():
+                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
+
+        return all_jsons
+
+    def is_results_json(fpath: os.PathLike | str) -> bool:
+        """Sanity check that file is a result json before we try to deserialize"""
+        return "estimate" in open(fpath, "r").read(20)
+
+    results = sorted(
+        results
+    )  # ensures reproducible output order regardless of input order
+
+    # 1) find all possible jsons
+    json_fns = collect_jsons(results)
+
+    # 2) filter only result jsons
+    result_fns = filter(is_results_json, json_fns)
+    return result_fns
+
+
+def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]) -> dict:
+    from collections import defaultdict
+
+    legs = defaultdict(lambda: defaultdict(list))
+
+    for result_fn in result_fns:
+        result = load_valid_result_json(result_fn)
+        if result is None:
+            continue
+
+        try:
+            names = get_names(result)
+        except KeyError:
+            raise ValueError("Failed to guess names")
+        try:
+            simtype = get_type(result)
+        except KeyError:
+            simtype = legacy_get_type(result_fn)
+
+        if report.lower() == "raw":
+            legs[names][simtype].append(_parse_raw_units(result))
+        else:
+            dGs = [
+                v[0]["outputs"]["unit_estimate"]
+                for v in result["protocol_result"]["data"].values()
+            ]
+            ## for jobs run in parallel, we need to compute these values
+            legs[names][simtype].extend(dGs)
+
+    return legs
+
 @click.command(
     'gather',
     short_help="Gather result jsons for network of RFE results into a TSV file"
@@ -403,7 +466,6 @@ def gather(results:List[os.PathLike|str],
            ):
     """Gather simulation result JSON files of relative calculations to a tsv file.
 
-
     This walks RESULTS recursively and finds all result JSON files from the
     quickrun command (these files must end in .json). Each of these contains
     the results of a separate leg from a relative free energy thermodynamic
@@ -425,50 +487,13 @@ def gather(results:List[os.PathLike|str],
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    from collections import defaultdict
-    import glob
     import csv
 
-    results = sorted(results)  # not necessary, but ensures reproducibility
-    def collect_jsons(results:List[os.PathLike]):
-        all_jsons = []
-        for p in results:
-            if str(p).endswith('json'):
-                all_jsons.append(p)
-            elif p.is_dir():
-                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
-        
-        return all_jsons
-
-    # 1) find all possible jsons
-    json_fns = collect_jsons(results)
-
-    # 2) filter only result jsons
-    result_fns = filter(is_results_json, json_fns)
+    # 1 & 2) find and filter result jsons
+    result_fns = _collect_result_jsons(results)
 
     # 3) pair legs of simulations together into dict of dicts
-    legs = defaultdict(lambda: defaultdict(list))
-
-    for result_fn in result_fns:
-        result = load_valid_result_json(result_fn)
-        if result is None:
-            continue
-
-        try:
-            names = get_names(result)
-        except KeyError:
-            raise ValueError("Failed to guess names")
-        try:
-            simtype = get_type(result)
-        except KeyError:
-            simtype = legacy_get_type(result_fn)
-
-        if report.lower() == 'raw':
-            legs[names][simtype].append(_parse_raw_units(result))
-        else:
-            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
-            ## for jobs run in parallel, we need to compute these values
-            legs[names][simtype].extend(dGs)
+    legs = _get_legs_from_result_jsons(result_fns, report)
 
     writer = csv.writer(
         output,
