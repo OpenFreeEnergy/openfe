@@ -260,7 +260,7 @@ def _get_ddgs(legs:dict, allow_partial=False):
 
         if not do_rbfe and not do_rhfe:
             bad_legs.append((leg_types, ligpair))
-            DDGs.append((*ligpair, FAIL_STR, FAIL_STR, FAIL_STR, FAIL_STR))
+            DDGs.append((*ligpair, None, None, None, None))
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
@@ -284,16 +284,14 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        if DDGbind == FAIL_STR or DDGhyd == FAIL_STR:
-            writer.writerow([ligA, ligB, DDGbind, bind_unc])
-            continue
-        if DDGbind is not None:
+        if DDGbind:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             writer.writerow([ligA, ligB, DDGbind, bind_unc])
-        if DDGhyd is not None:
+        if DDGhyd:
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
-
+        elif not DDGbind and not DDGhyd:
+            writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
 
 def _write_raw(legs:dict, writer:Callable, allow_partial=True):
     writer.writerow(["leg", "ligand_i", "ligand_j",
