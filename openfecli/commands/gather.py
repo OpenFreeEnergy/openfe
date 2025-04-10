@@ -99,8 +99,24 @@ def load_json(fpath:os.PathLike|str)->dict:
 
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
-def get_result_info(result, result_fn):
-    # TODO: only take in ``result_fn`` for legacy support, remove this in 2.0
+def _get_result_info(
+    result: dict, result_fn: os.PathLike | str
+) -> tuple[tuple[str, str], Literal["vacuum", "solvent", "complex"]]:
+    """Extract the name and simulation type from a results dict.
+
+    Parameters
+    ----------
+    result : dict
+        A result object
+    result_fn : os.PathLike | str
+        The path to deserialized results, only used if unable to extract from results dict.
+        TODO: only take in ``result_fn`` for backwards compatibility, remove this in 2.0
+
+    Returns
+    -------
+    tuple
+        Identifying information (ligand names and simulation type) for the given results data.
+    """
     ligA, ligB = get_names(result)
 
     try:
@@ -108,7 +124,7 @@ def get_result_info(result, result_fn):
     except KeyError:
         simtype = legacy_get_type(result_fn)
 
-    return ligA, ligB, simtype
+    return (ligA, ligB), simtype
 
 def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
     """Load the data from a results JSON into a dict.
@@ -125,8 +141,6 @@ def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
         or None if the JSON file is invalid or missing.
 
     """
-
-
     try:
         result = load_json(fpath)
     # in practice, this will never get called because we check for 'estimate' in the JSON in ``collect_jsons``
@@ -134,7 +148,7 @@ def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
         click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
         return None, None
     try:
-        result_info = get_result_info(result, fpath)
+        result_info = _get_result_info(result, fpath)
     except (ValueError, IndexError):
         click.echo(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True)
         return None, None
@@ -438,7 +452,9 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
     return result_fns
 
 
-def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]) -> dict:
+def _get_legs_from_result_jsons(
+    result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]
+) -> dict[tuple[str, str], dict[str, list]]:
     """
     Iterate over a list of result JSONs and populate a dict of dicts with all data needed
     for results processing.
@@ -453,8 +469,8 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
 
     Returns
     -------
-    dict
-        {()}
+    legs: dict[tuple[str,str],dict[str, list]]
+        Data extracted from the given result JSONs, organized by the legg's ligand names and simulation type.
     """
     from collections import defaultdict
 
