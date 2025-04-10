@@ -223,9 +223,11 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
 
     return msg
 
-def _get_ddgs(legs:dict, allow_partial=False):
+def _get_ddgs(legs: dict, allow_partial=False) -> None:
     import numpy as np
-    from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
+    from openfe.protocols.openmm_rfe.equil_rfe_methods import (
+        RelativeHybridTopologyProtocolResult as rfe_result,
+    )
 
     DDGs = []
     bad_legs = []
@@ -279,7 +281,19 @@ def _get_ddgs(legs:dict, allow_partial=False):
     return DDGs
 
 
-def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
+def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
+    """Compute and write out DDG values for the given legs.
+
+    Parameters
+    ----------
+    legs : dict
+        Dict of legs to write out.
+    writer : Callable
+        The CSV writer to use.
+    allow_partial : bool
+        If ``True``, no error will be thrown for incomplete or invalid results,
+        and DDGs will be reported for whatever valid results are found.
+    """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
@@ -293,7 +307,19 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
         elif not DDGbind and not DDGhyd:
             writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
 
-def _write_raw(legs:dict, writer:Callable, allow_partial=True):
+def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
+    """
+    Write out all legs found and their DG values, or indicate that they have failed.
+
+    Parameters
+    ----------
+    legs : dict
+        Dict of legs to write out.
+    writer : Callable
+        The CSV writer to use.
+    allow_partial : bool, optional
+        Unused for this function, since all results will be included.
+    """
     writer.writerow(["leg", "ligand_i", "ligand_j",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
@@ -307,15 +333,28 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
                         m, u = format_estimate_uncertainty(m.m, u.m)
                     writer.writerow([simtype, *ligpair, m, u])
 
-def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
+def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
+    """Compute and write out DG values for the given legs.
+
+    Parameters
+    ----------
+    legs : dict
+        Dict of legs to write out.
+    writer : Callable
+        The CSV writer to use.
+    allow_partial : bool
+        If ``True``, no error will be thrown for incomplete or invalid results,
+        and DGs will be reported for whatever valid results are found.
+    """
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
+
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
     expected_ligs = []
 
-    # 4b) perform MLE
+    # perform MLE
     g = nx.DiGraph()
     nm_to_idx = {}
     DDGbind_count = 0
