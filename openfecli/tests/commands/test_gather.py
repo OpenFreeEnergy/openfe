@@ -202,10 +202,6 @@ def rbfe_result_dir()->pathlib.Path:
         return  cache_dir
 
     return _rbfe_result_dir
-@pytest.fixture()
-def rbfe_result_paths(rbfe_resul)->list[pathlib.Path]:
-    results = glob.glob(f"{results}/*", recursive=True)
-
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
@@ -243,23 +239,21 @@ def test_gather(rbfe_result_dir, dataset, report, input_mode):
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 class TestGatherFailedEdges:
     @pytest.fixture()
-    def results_dir_serial_missing_legs(self, rbfe_result_dir, tmpdir)->str:
+    def results_paths_serial_missing_legs(self, rbfe_result_dir)->str:
         """Example output data, with replicates run in serial and two missing results JSONs."""
-        # TODO: update to return a list of paths without doing this symlink mess, when gather supports it.
-        rbfe_result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
-        tmp_results_dir =  tmpdir
+        result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
+        results = glob.glob(f"{result_dir}/*", recursive=True)
+
         files_to_skip = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
-                         "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
-                            ]
-        for item in os.listdir(rbfe_result_dir):
-            if item not in files_to_skip:
-                os.symlink(rbfe_result_dir/item, tmp_results_dir/item)
+                         "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"]
 
-        return str(tmp_results_dir)
+        results_filtered = [f for f in results if os.path.basename(f) not in files_to_skip]
 
-    def test_missing_leg_error(self, results_dir_serial_missing_legs: str):
+        return results_filtered
+
+    def test_missing_leg_error(self, results_paths_serial_missing_legs: str):
         runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['-o', '-'])
+        result = runner.invoke(gather, results_paths_serial_missing_legs + ['-o', '-'])
 
         assert result.exit_code == 1
         assert isinstance(result.exception, RuntimeError)
@@ -269,9 +263,9 @@ class TestGatherFailedEdges:
         assert "using the --allow-partial flag" in str(result.exception)
 
 
-    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
+    def test_missing_leg_allow_partial(self, results_paths_serial_missing_legs: str):
         runner = CliRunner()
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
-            result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
+            result = runner.invoke(gather, results_paths_serial_missing_legs + ['--allow-partial', '-o', '-'])
             assert_click_success(result)
