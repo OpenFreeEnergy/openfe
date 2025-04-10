@@ -126,7 +126,7 @@ def _get_result_info(
 
     return (ligA, ligB), simtype
 
-def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
+def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -142,6 +142,7 @@ def load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
 
     """
     try:
+        # only load this once in collection, then pass namedtuple(fname, dict) into this function
         result = load_json(fpath)
     # in practice, this will never get called because we check for 'estimate' in the JSON in ``collect_jsons``
     except FileNotFoundError:
@@ -477,7 +478,7 @@ def _get_legs_from_result_jsons(
     legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
-        result_info, result = load_valid_result_json(result_fn)
+        result_info, result = _load_valid_result_json(result_fn)
 
         if result_info is None:  # this means it couldn't find names and/or simtype
             continue

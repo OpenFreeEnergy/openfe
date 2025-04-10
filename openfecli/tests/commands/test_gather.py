@@ -13,7 +13,7 @@ from openfecli.commands.gather import (
     gather,
     format_estimate_uncertainty,
     _get_column,
-    load_valid_result_json,
+    _load_valid_result_json,
 )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -52,13 +52,13 @@ class TestResultLoading:
 
     def test_minimal_valid_results(self, capsys, sim_result):
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), sim_result)
             assert captured.err == ""
 
     def test_skip_missing_filepath(self, capsys):
-        result = load_valid_result_json(fpath="")
+        result = _load_valid_result_json(fpath="")
         captured = capsys.readouterr()
         assert result == (None, None)
         assert "does not exist. Skipping" in captured.err
@@ -67,7 +67,7 @@ class TestResultLoading:
         del sim_result["unit_results"]
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
@@ -76,7 +76,7 @@ class TestResultLoading:
         sim_result["estimate"] = None
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), None)
             assert "No 'estimate' found" in captured.err
@@ -85,7 +85,7 @@ class TestResultLoading:
         sim_result["uncertainty"] = None
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), None)
             assert "No 'uncertainty' found" in captured.err
@@ -93,7 +93,7 @@ class TestResultLoading:
     def test_skip_all_failed_runs(self, capsys, sim_result):
         del sim_result["unit_results"]["ProtocolUnitResult-e85"]
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), None)
             assert "Exception found in all" in captured.err
@@ -101,7 +101,7 @@ class TestResultLoading:
     def test_missing_pr_data(self, capsys, sim_result):
         sim_result["protocol_result"]["data"] = {}
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
