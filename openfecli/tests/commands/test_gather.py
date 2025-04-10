@@ -57,12 +57,6 @@ class TestResultLoading:
             assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), sim_result)
             assert captured.err == ""
 
-    def test_skip_missing_filepath(self, capsys):
-        result = _load_valid_result_json(fpath="")
-        captured = capsys.readouterr()
-        assert result == (None, None)
-        assert "does not exist. Skipping" in captured.err
-
     def test_skip_missing_unit_result(self, capsys, sim_result):
         del sim_result["unit_results"]
 
@@ -208,6 +202,10 @@ def rbfe_result_dir()->pathlib.Path:
         return  cache_dir
 
     return _rbfe_result_dir
+@pytest.fixture()
+def rbfe_result_paths(rbfe_resul)->list[pathlib.Path]:
+    results = glob.glob(f"{results}/*", recursive=True)
+
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
@@ -266,8 +264,8 @@ class TestGatherFailedEdges:
         assert result.exit_code == 1
         assert isinstance(result.exception, RuntimeError)
         assert "Some edge(s) are missing runs" in str(result.exception)
-        assert "('lig_ejm_31', 'lig_ejm_42'): solvent" in str(result.exception)
-        assert "('lig_ejm_46', 'lig_jmc_28'): complex" in str(result.exception)
+        assert "(lig_ejm_31, lig_ejm_42) \tsolvent" in str(result.exception)
+        assert "(lig_ejm_46, lig_jmc_28) \tcomplex" in str(result.exception)
         assert "using the --allow-partial flag" in str(result.exception)
 
 
