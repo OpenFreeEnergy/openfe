@@ -133,29 +133,6 @@ lig_ejm_46	lig_jmc_27	-0.1	0.1
 lig_ejm_46	lig_jmc_28	-0.27	0.06
 """
 
-_EXPECTED_DG_RAW = b"""
-leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
-complex	lig_ejm_31	lig_ejm_42	-15.0	0.1
-solvent	lig_ejm_31	lig_ejm_42	-15.71	0.03
-complex	lig_ejm_31	lig_ejm_46	-40.75	0.04
-solvent	lig_ejm_31	lig_ejm_46	-39.86	0.05
-complex	lig_ejm_31	lig_ejm_47	-27.8	0.1
-solvent	lig_ejm_31	lig_ejm_47	-27.83	0.06
-complex	lig_ejm_31	lig_ejm_48	-16.14	0.08
-solvent	lig_ejm_31	lig_ejm_48	-16.76	0.03
-complex	lig_ejm_31	lig_ejm_50	-57.33	0.04
-solvent	lig_ejm_31	lig_ejm_50	-58.33	0.02
-complex	lig_ejm_42	lig_ejm_43	-18.9	0.2
-solvent	lig_ejm_42	lig_ejm_43	-20.28	0.03
-complex	lig_ejm_46	lig_jmc_23	17.42	0.06
-solvent	lig_ejm_46	lig_jmc_23	17.12	0.06
-complex	lig_ejm_46	lig_jmc_27	15.81	0.09
-solvent	lig_ejm_46	lig_jmc_27	15.91	0.05
-complex	lig_ejm_46	lig_jmc_28	23.14	0.04
-solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
-"""
-
-
 _EXPECTED_RAW = b"""\
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	lig_ejm_31	lig_ejm_42	-14.9	0.8
