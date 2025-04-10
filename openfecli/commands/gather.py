@@ -100,7 +100,7 @@ def load_json(fpath:os.PathLike|str)->dict:
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
 def get_result_info(result, result_fn):
-    # TODO: only take in result_fn for legacy support, remove this in 2.0
+    # TODO: only take in ``result_fn`` for legacy support, remove this in 2.0
     ligA, ligB = get_names(result)
 
     try:
@@ -404,6 +404,23 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
 
 
 def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]) -> dict:
+    """
+    Iterate over a list of result JSONs and populate a dict of dicts with all data needed
+    for results processing.
+
+
+    Parameters
+    ----------
+    result_fns : list[pathlib.Path]
+        List of filepaths containing results formatted as JSON.
+    report : Literal["dg", "ddg", "raw"]
+        Type of report to generate.
+
+    Returns
+    -------
+    dict
+        {()}
+    """
     from collections import defaultdict
 
     legs = defaultdict(lambda: defaultdict(list))
@@ -493,10 +510,10 @@ def gather(results:List[os.PathLike|str],
     """
     import csv
 
-    # 1 & 2) find and filter result jsons
+    # find and filter result jsons
     result_fns = _collect_result_jsons(results)
 
-    # 3) pair legs of simulations together into dict of dicts
+    # pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
     writer = csv.writer(
         output,
@@ -504,13 +521,9 @@ def gather(results:List[os.PathLike|str],
         lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
     )
 
-    # 5a) write out MLE values
-    # 5b) write out DDG values
-    # 5c) write out each leg
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
-        #  'dg-raw': _write_dg_raw,
         'raw': _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
