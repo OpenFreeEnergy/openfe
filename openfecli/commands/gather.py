@@ -298,13 +298,13 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        if DDGbind:
+        if DDGbind is not None:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
             writer.writerow([ligA, ligB, DDGbind, bind_unc])
-        if DDGhyd:
+        if DDGhyd is not None:
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
-        elif not DDGbind and not DDGhyd:
+        elif DDGbind is None and DDGhyd is None:
             writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
 
 def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
