@@ -303,7 +303,7 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
         for simtype, repeats in sorted(results.items()):
             for repeat in repeats:
                 for m, u in repeat:
-                    if m == FAIL_STR | u == FAIL_STR:
+                    if m == FAIL_STR or u == FAIL_STR:
                         pass
                     elif m is None:
                         m, u = 'NaN', 'NaN'
@@ -328,7 +328,7 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
             if lig not in expected_ligs:
                 expected_ligs.append(lig)
 
-        if DDGbind is None:
+        if DDGbind is None or DDGbind == FAIL_STR:
             continue
         DDGbind_count += 1
 
