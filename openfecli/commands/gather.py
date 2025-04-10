@@ -482,8 +482,7 @@ def _get_legs_from_result_jsons(
         if result_info is None:  # this means it couldn't find names and/or simtype
             continue
 
-        ligA, ligB, simtype = result_info
-        names = (ligA, ligB)
+        names, simtype = result_info
 
         if report.lower() == "raw":
             if result is None:
