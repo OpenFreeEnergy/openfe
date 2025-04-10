@@ -301,10 +301,8 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
         for simtype, repeats in sorted(results.items()):
             for repeat in repeats:
                 for m, u in repeat:
-                    if m == FAIL_STR or u == FAIL_STR:
-                        pass
-                    elif m is None:
-                        m, u = 'NaN', 'NaN'
+                    if m is None:
+                        m, u = FAIL_STR, FAIL_STR
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
                     writer.writerow([simtype, *ligpair, m, u])
@@ -434,7 +432,7 @@ def _get_legs_from_result_jsons(result_fns: list[pathlib.Path], report: Literal[
 
         if report.lower() == "raw":
             if result is None:
-                parsed_raw_data =[(FAIL_STR, FAIL_STR)]
+                parsed_raw_data =[(None, None)]
             else:
                 parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
                                     v[0]['outputs']['unit_estimate_error'])
