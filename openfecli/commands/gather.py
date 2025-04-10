@@ -99,7 +99,7 @@ def load_json(fpath:os.PathLike|str)->dict:
 
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
-def _get_result_info(
+def _get_result_id(
     result: dict, result_fn: os.PathLike | str
 ) -> tuple[tuple[str, str], Literal["vacuum", "solvent", "complex"]]:
     """Extract the name and simulation type from a results dict.
@@ -141,29 +141,27 @@ def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]
         or None if the JSON file is invalid or missing.
 
     """
+
+    # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
+    # for now though, it's not the bottleneck on performance
+    result = load_json(fpath)
+
     try:
-        # only load this once in collection, then pass namedtuple(fname, dict) into this function
-        result = load_json(fpath)
-    # in practice, this will never get called because we check for 'estimate' in the JSON in ``collect_jsons``
-    except FileNotFoundError:
-        click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
-        return None, None
-    try:
-        result_info = _get_result_info(result, fpath)
+        result_id = _get_result_id(result, fpath)
     except (ValueError, IndexError):
         click.echo(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True)
         return None, None
     if result['estimate'] is None:
         click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
-        return result_info, None
+        return result_id, None
     if result['uncertainty'] is None:
         click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
-        return result_info, None
+        return result_id, None
     if all('exception' in u for u in result['unit_results'].values()):
         click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
-        return result_info, None
+        return result_id, None
 
-    return result_info, result
+    return result_id, result
 
 def get_names(result:dict) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
@@ -232,9 +230,9 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
     str
         An error message containing information on all failed legs.
     """
-    msg="Some edge(s) are missing runs!\nBelow are the problematic edges and run types found:\n\n"
-    for leg_types, ligpair in bad_legs:
-        msg += f"{ligpair}: {','.join(leg_types)}\n"
+    msg="Some edge(s) are missing runs!\n\nThe following run types (solvent, complex, or vacuum) were found and are missing one or more run types to complete the calculation:\n\n"
+    for ligA, ligB, leg_types in bad_legs:
+        msg += f"({ligA}, {ligB}) \t{','.join(leg_types)}\n"
 
     return msg
 
@@ -276,7 +274,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            bad_legs.append((leg_types, ligpair))
+            bad_legs.append((*ligpair, leg_types))
             DDGs.append((*ligpair, None, None, None, None))
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
