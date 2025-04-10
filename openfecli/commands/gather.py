@@ -482,7 +482,6 @@ def _get_legs_from_result_jsons(
             continue
 
         names, simtype = result_info
-
         if report.lower() == "raw":
             if result is None:
                 parsed_raw_data =[(None, None)]
@@ -564,12 +563,13 @@ def gather(results:List[os.PathLike|str],
 
     # pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
+
+    # compute report and write to output
     writer = csv.writer(
         output,
         delimiter="\t",
         lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
     )
-
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
