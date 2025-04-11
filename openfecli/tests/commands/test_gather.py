@@ -16,6 +16,22 @@ from openfecli.commands.gather import (
     _load_valid_result_json,
 )
 
+POOCH_CACHE = pooch.os_cache('openfe')
+ZENODO_RBFE_DATA = pooch.create(
+        path = POOCH_CACHE,
+        base_url="doi:10.5281/zenodo.15042470",
+        registry={
+            "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
+            "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
+        retry_if_failed=3,
+    )
+ZENODO_CMET_DATA = pooch.create(
+        path = POOCH_CACHE,
+        base_url="doi:10.5281/zenodo.15200083",
+        registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
+        retry_if_failed=3,
+    )
+
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
     (12.432, 0.111, 2, "12.43", "0.11"),
     (0.9999, 0.01, 2, "1.000", "0.010"),
@@ -100,7 +116,7 @@ class TestResultLoading:
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
-_EXPECTED_DG = b"""
+_RBFE_EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	-0.09	0.05
 lig_ejm_42	0.7	0.1
@@ -114,7 +130,7 @@ lig_jmc_27	-1.1	0.1
 lig_jmc_28	-1.25	0.08
 """
 
-_EXPECTED_DDG = b"""
+_RBFE_EXPECTED_DDG = b"""
 ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	lig_ejm_42	0.8	0.1
 lig_ejm_31	lig_ejm_46	-0.89	0.06
@@ -127,7 +143,7 @@ lig_ejm_46	lig_jmc_27	-0.1	0.1
 lig_ejm_46	lig_jmc_28	-0.27	0.06
 """
 
-_EXPECTED_RAW = b"""\
+_RBFE_EXPECTED_RAW = b"""\
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	lig_ejm_31	lig_ejm_42	-14.9	0.8
 complex	lig_ejm_31	lig_ejm_42	-14.8	0.8
@@ -184,21 +200,6 @@ solvent	lig_ejm_46	lig_jmc_28	23.5	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
-POOCH_CACHE = pooch.os_cache('openfe')
-ZENODO_RBFE_DATA = pooch.create(
-        path = POOCH_CACHE,
-        base_url="doi:10.5281/zenodo.15042470",
-        registry={
-            "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
-            "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
-        retry_if_failed=3,
-    )
-ZENODO_CMET_DATA = pooch.create(
-        path = POOCH_CACHE,
-        base_url="doi:10.5281/zenodo.15200083",
-        registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
-        retry_if_failed=3,
-    )
 
 @pytest.fixture
 def rbfe_result_dir()->pathlib.Path:
@@ -258,13 +259,13 @@ class TestGatherCMET:
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 @pytest.mark.parametrize('input_mode', ['directory','filepaths'])
-def test_gather(rbfe_result_dir, dataset, report, input_mode):
+def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
 
     expected = {
-        "": _EXPECTED_DG,
-        "dg": _EXPECTED_DG,
-        "ddg": _EXPECTED_DDG,
-        "raw": _EXPECTED_RAW,
+        "": _RBFE_EXPECTED_DG,
+        "dg": _RBFE_EXPECTED_DG,
+        "ddg": _RBFE_EXPECTED_DDG,
+        "raw": _RBFE_EXPECTED_RAW,
     }[report]
     runner = CliRunner()
 
@@ -288,7 +289,7 @@ def test_gather(rbfe_result_dir, dataset, report, input_mode):
     assert set(expected.split(b'\n')) == actual_lines
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
-class TestGatherFailedEdges:
+class TestRBFEGatherFailedEdges:
     @pytest.fixture()
     def results_paths_serial_missing_legs(self, rbfe_result_dir)->str:
         """Example output data, with replicates run in serial and two missing results JSONs."""
