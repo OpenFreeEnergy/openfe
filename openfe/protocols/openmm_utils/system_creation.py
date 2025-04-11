@@ -189,7 +189,10 @@ def get_omm_modeller(
 
     # We first add all the protein components, if any
     if protein_comps:
-        protein_comps = iter(protein_comps)  # Support both input iterable or not
+        try:
+            protein_comps = iter(protein_comps)
+        except TypeError:
+            protein_comps = {protein_comps}  # make it a set/iterable with the comp
         for protein_comp in protein_comps:
             system_modeller.add(protein_comp.to_openmm_topology(),
                                 protein_comp.to_openmm_positions())
@@ -207,16 +210,23 @@ def get_omm_modeller(
 
     # Now loop through small mols
     if small_mols:
-        small_mols = iter(small_mols)  # Support both input iterable or not
+        try:
+            small_mols = iter(small_mols)
+        except:
+            small_mols = {small_mols} # make it a set/iterable with the comp
         for small_mol_comp in small_mols:
             _add_small_mol(small_mol_comp, small_mol_comp.to_openff(), system_modeller,
                            component_resids)
 
     # Add solvent if neeeded
     if solvent_comps:
+        try:
+            solvent_comps = iter(solvent_comps)
+        except TypeError:
+            solvent_comps = {solvent_comps}  # make it a set/iterable with the comp
         # TODO: Support multiple solvent components? Is there a use case for it?
         # Error out when we have more than one solvent component in the states/systems
-        if len(set(iter(solvent_comps))) > 1:
+        if len(set(solvent_comps)) > 1:
             raise ValueError("More than one solvent component found in systems. Only one supported.")
         solvent_comp = set(solvent_comps).pop()  # Get the first (and only) solvent component
         # Do unit conversions if necessary
