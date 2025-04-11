@@ -193,15 +193,31 @@ ZENODO_RBFE_DATA = pooch.create(
             "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
         retry_if_failed=3,
     )
+ZENODO_CMET_DATA = pooch.create(
+        path = POOCH_CACHE,
+        base_url="doi:10.5281/zenodo.15200083",
+        registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
+        retry_if_failed=3,
+    )
 
 @pytest.fixture
 def rbfe_result_dir()->pathlib.Path:
     def _rbfe_result_dir(dataset)->str:
         ZENODO_RBFE_DATA.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
-        cache_dir = pathlib.Path(pooch.os_cache('openfe'))/f'{dataset}.tar.gz.untar/{dataset}/'
+        cache_dir = pathlib.Path(POOCH_CACHE)/f'{dataset}.tar.gz.untar/{dataset}/'
         return  cache_dir
 
     return _rbfe_result_dir
+
+@pytest.fixture
+def cmet_result_dir()->pathlib.Path:
+    ZENODO_CMET_DATA.fetch(f'cmet_results.tar.gz', processor=pooch.Untar())
+    result_dir = pathlib.Path(POOCH_CACHE)/f'cmet_results.tar.gz.untar/cmet_results/'
+
+    return result_dir
+
+def test_cmet(cmet_result_dir):
+    pass
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
