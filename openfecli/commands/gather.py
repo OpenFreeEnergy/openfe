@@ -471,7 +471,7 @@ def _get_legs_from_result_jsons(
     Returns
     -------
     legs: dict[tuple[str,str],dict[str, list]]
-        Data extracted from the given result JSONs, organized by the legg's ligand names and simulation type.
+        Data extracted from the given result JSONs, organized by the leg's ligand names and simulation type.
     """
     from collections import defaultdict
 
