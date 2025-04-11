@@ -216,7 +216,7 @@ def get_omm_modeller(
     if solvent_comps:
         # TODO: Support multiple solvent components? Is there a use case for it?
         # Error out when we have more than one solvent component in the states/systems
-        if len(set(solvent_comps)) > 1:
+        if len(set(iter(solvent_comps))) > 1:
             raise ValueError("More than one solvent component found in systems. Only one supported.")
         solvent_comp = set(solvent_comps).pop()  # Get the first (and only) solvent component
         # Do unit conversions if necessary
