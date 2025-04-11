@@ -241,13 +241,14 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     from openfe.protocols.openmm_rfe.equil_rfe_methods import (
         RelativeHybridTopologyProtocolResult as rfe_result,
     )
-
+    # TODO: if there's a failed edge but other valid results in a leg, ddgs will be computed
+    # only fails if there are no valid results
     DDGs = []
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
         # drop any leg types that only have None (these are failed runs)
-        valid_leg_types = {k for k in vals if set(vals[k]) is not None}
+        valid_leg_types = {k for k in vals if vals[k]}
 
         DDGbind = None
         DDGhyd = None
@@ -256,6 +257,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
 
         do_rbfe = (len(valid_leg_types & {'complex', 'solvent'}) == 2)
         do_rhfe = (len(valid_leg_types & {'vacuum', 'solvent'}) == 2)
+
         if do_rbfe:
             DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
             DG1_unc = rfe_result.compute_uncertainty(vals['complex'])
@@ -494,7 +496,8 @@ def _get_legs_from_result_jsons(
             legs[names][simtype].append(parsed_raw_data)
         else:
             if result is None:
-                dGs = [None]
+                # we want the dict name/simtype entry to exist for error reporting, even if there's no valid data
+                dGs = []
             else:
                 dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
             legs[names][simtype].extend(dGs)
