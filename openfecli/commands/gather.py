@@ -246,14 +246,16 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
+        # drop any leg types that only have None (these are failed runs)
+        valid_leg_types = {k for k in vals if set(vals[k]) is not None}
+
         DDGbind = None
         DDGhyd = None
         bind_unc = None
         hyd_unc = None
 
-        do_rbfe = (len(leg_types & {'complex', 'solvent'}) == 2)
-        do_rhfe = (len(leg_types & {'vacuum', 'solvent'}) == 2)
-
+        do_rbfe = (len(valid_leg_types & {'complex', 'solvent'}) == 2)
+        do_rhfe = (len(valid_leg_types & {'vacuum', 'solvent'}) == 2)
         if do_rbfe:
             DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
             DG1_unc = rfe_result.compute_uncertainty(vals['complex'])
