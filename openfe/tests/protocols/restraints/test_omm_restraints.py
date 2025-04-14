@@ -2,8 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import pytest
-from importlib import resources
-
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     RestraintParameterState,
     HarmonicBondRestraint,
@@ -21,10 +19,14 @@ from openfe.protocols.restraint_utils.settings import (
     FlatBottomRestraintSettings,
     DistanceRestraintSettings
 )
+from ...conftest import HAS_INTERNET
 from openff.units import unit
 import openmm
 from openmmtools.states import ThermodynamicState
 from gufe import SmallMoleculeComponent
+import pooch
+import pathlib
+import os
 
 def test_parameter_state_default():
     param_state = RestraintParameterState()
@@ -87,20 +89,35 @@ def test_verify_geometry():
         geometry = DistanceRestraintGeometry(guest_atoms=[0], host_atoms=[1])
         restraint._verify_geometry(geometry)
 
+POOCH_CACHE = pooch.os_cache("openfe")
+zenodo_restraint_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
+    }
+    ,retry_if_failed=3
+)
 
 @pytest.fixture
 def tyk2_protein_ligand_system():
-    root = resources.files("openfe.tests.data.industry_benchmark_systems")
-    with open(str(root / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
+    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems")
+    with open(str(cache_dir / "jacs_set" / "tyk2" / "protein_ligand_system.xml")) as xml:
         return openmm.XmlSerializer.deserialize(xml.read())
+
 
 @pytest.fixture
 def tyk2_rdkit_ligand():
-    root = resources.files("openfe.tests.data.industry_benchmark_systems")
-    ligand = SmallMoleculeComponent.from_sdf_file(str(root / "jacs_set" / "tyk2" / "test_ligand.sdf"))
+    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems")
+    ligand = SmallMoleculeComponent.from_sdf_file(str(cache_dir / "jacs_set" / "tyk2" / "test_ligand.sdf"))
     return ligand.to_rdkit()
 
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_harmonic_add_force(tyk2_protein_ligand_system):
     restraint = HarmonicBondRestraint(
         restraint_settings=DistanceRestraintSettings(
@@ -135,6 +152,7 @@ def test_harmonic_add_force(tyk2_protein_ligand_system):
     assert params[0] == restraint.settings.spring_constant.m
 
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_flatbottom_add_force(tyk2_protein_ligand_system):
     restraint = FlatBottomBondRestraint(
         restraint_settings=FlatBottomRestraintSettings(
@@ -171,6 +189,7 @@ def test_flatbottom_add_force(tyk2_protein_ligand_system):
     assert params[1] == geometry.well_radius.m
 
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_centriod_harmonic_add_force(tyk2_protein_ligand_system):
     restraint = CentroidHarmonicRestraint(
         restraint_settings=DistanceRestraintSettings(
@@ -207,6 +226,7 @@ def test_centriod_harmonic_add_force(tyk2_protein_ligand_system):
     assert guest_atoms == geometry.guest_atoms
 
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_centroid_flat_bottom_add_force(tyk2_protein_ligand_system):
     restraint = CentroidFlatBottomRestraint(
         restraint_settings=FlatBottomRestraintSettings(
@@ -245,7 +265,7 @@ def test_centroid_flat_bottom_add_force(tyk2_protein_ligand_system):
     assert guest_atoms == geometry.guest_atoms
 
 
-
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_add_boresch_force(tyk2_protein_ligand_system, tyk2_rdkit_ligand):
 
     restraint = BoreschRestraint(
@@ -291,6 +311,7 @@ def test_add_boresch_force(tyk2_protein_ligand_system, tyk2_rdkit_ligand):
             assert parameters[i] == getattr(geometry, per_bond_parameter).m
 
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_get_boresch_state_correction(tyk2_protein_ligand_system, tyk2_rdkit_ligand):
     restraint = BoreschRestraint(
         restraint_settings=BoreschRestraintSettings()
