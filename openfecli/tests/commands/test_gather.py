@@ -241,17 +241,6 @@ class TestGatherCMET:
         file_regression.check(cli_result.output, extension='.tsv')
 
     @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
-    def test_cmet_missing_all_complex_legs(self, cmet_result_dir, report, file_regression):
-        """Missing one complex replicate from one leg."""
-        results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
-        args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
-
-        assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension='.tsv')
-
-    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
     def test_cmet_missing_edge(self, cmet_result_dir, report,file_regression):
         results = [str(cmet_result_dir / f'results_{i}_remove_edge') for i in range(3)]
         args = ["--report", report]
@@ -272,7 +261,28 @@ class TestGatherCMET:
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
 
+    @pytest.mark.parametrize('report', ["dg", "ddg"])
+    def test_cmet_missing_all_complex_legs_fail(self, cmet_result_dir, report, file_regression):
+        """Missing one complex replicate from one leg."""
+        results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
 
+        cli_result.exit_code == 1
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["dg", "ddg"])
+    def test_cmet_missing_all_complex_legs_allow_partial(self, cmet_result_dir, report, file_regression):
+        """Missing one complex replicate from one leg."""
+        results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
+        args = ["--report", report, "--allow-partial"]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension='.tsv')
+        
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
