@@ -4,7 +4,7 @@
 import click
 import os
 import pathlib
-from typing import Callable, Literal
+from typing import Callable, Literal, List
 import warnings
 
 from openfecli import OFECommandPlugin
@@ -370,8 +370,9 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
     'gather',
     short_help="Gather result jsons for network of RFE results into a TSV file"
 )
-@click.argument('rootdir',
-                type=click.Path(dir_okay=True, file_okay=False,
+@click.argument('results',
+                nargs=-1,  # accept any number of results
+                type=click.Path(dir_okay=True, file_okay=True,
                                 path_type=pathlib.Path),
                 required=True)
 @click.option(
@@ -395,14 +396,15 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         "(Skip those edges and issue warning instead.)"
     )
 )
-def gather(rootdir:os.PathLike|str,
+def gather(results:List[os.PathLike|str],
            output:os.PathLike|str,
            report:Literal['dg','ddg','raw'],
            allow_partial:bool
            ):
-    """Gather simulation result jsons of relative calculations to a tsv file
+    """Gather simulation result JSON files of relative calculations to a tsv file.
 
-    This walks ROOTDIR recursively and finds all result JSON files from the
+
+    This walks RESULTS recursively and finds all result JSON files from the
     quickrun command (these files must end in .json). Each of these contains
     the results of a separate leg from a relative free energy thermodynamic
     cycle.
@@ -427,8 +429,19 @@ def gather(rootdir:os.PathLike|str,
     import glob
     import csv
 
+    results = sorted(results)  # not necessary, but ensures reproducibility
+    def collect_jsons(results:List[os.PathLike]):
+        all_jsons = []
+        for p in results:
+            if str(p).endswith('json'):
+                all_jsons.append(p)
+            elif p.is_dir():
+                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
+        
+        return all_jsons
+
     # 1) find all possible jsons
-    json_fns = glob.glob(str(rootdir) + '/**/*json', recursive=True)
+    json_fns = collect_jsons(results)
 
     # 2) filter only result jsons
     result_fns = filter(is_results_json, json_fns)
