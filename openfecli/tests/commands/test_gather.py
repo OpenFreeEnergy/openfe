@@ -228,9 +228,20 @@ class TestGatherCMET:
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
 
-
+    # TODO: add --allow-partial behavior checks
     @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
     def test_cmet_missing_complex_leg(self, cmet_result_dir, report, file_regression):
+        """Missing one complex replicate from one leg."""
+        results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_missing_all_complex_legs(self, cmet_result_dir, report, file_regression):
         """Missing one complex replicate from one leg."""
         results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
         args = ["--report", report]
@@ -315,11 +326,10 @@ class TestRBFEGatherFailedEdges:
         result = runner.invoke(gather, results_paths_serial_missing_legs + ['-o', '-'])
 
         assert result.exit_code == 1
-        assert isinstance(result.exception, RuntimeError)
-        assert "Some edge(s) are missing runs" in str(result.exception)
-        assert "lig_ejm_31\tlig_ejm_42)\tsolvent" in str(result.exception)
-        assert "lig_ejm_46\tlig_jmc_28)\tcomplex" in str(result.exception)
-        assert "using the --allow-partial flag" in str(result.exception)
+        assert "Some edge(s) are missing runs" in str(result.stderr)
+        assert "lig_ejm_31\tlig_ejm_42\tsolvent" in str(result.stderr)
+        assert "lig_ejm_46\tlig_jmc_28\tcomplex" in str(result.stderr)
+        assert "using the --allow-partial flag" in str(result.stderr)
 
 
     def test_missing_leg_allow_partial(self, results_paths_serial_missing_legs: str):

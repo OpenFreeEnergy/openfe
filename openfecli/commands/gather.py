@@ -4,6 +4,7 @@
 import click
 import os
 import pathlib
+import sys
 from typing import Callable, Literal, List
 
 from openfecli import OFECommandPlugin
@@ -230,14 +231,14 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
         An error message containing information on all failed legs.
     """
     msg = (
-        "Some edge(s) are missing runs!\n"
+        "\nSome edge(s) are missing runs!\n"
         "The following edges were found but are missing one or more run types "
         "('solvent', 'complex', or 'vacuum') to complete the calculation:\n\n"
         "ligand_i\tligand_j\trun_type_found\n"
     )
     # TODO: format this better
     for ligA, ligB, leg_types in bad_legs:
-        msg += f"{ligA}\t{ligB})\t{','.join(leg_types)}\n"
+        msg += f"{ligA}\t{ligB}\t{','.join(leg_types)}\n"
 
     return msg
 
@@ -253,7 +254,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
-        # drop any leg types that only have None (these are failed runs)
+        # drop any leg types that have no values (these are failed runs)
         valid_leg_types = {k for k in vals if vals[k]}
 
         DDGbind = None
@@ -300,7 +301,8 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
                 "command.\nNOTE: This may cause problems with predicting "
                 "absolute free energies from the relative free energies."
                 )
-            raise RuntimeError(err_msg)
+            click.secho(err_msg, err=True, fg='red')
+            sys.exit(1)
     return DDGs
 
 
