@@ -218,41 +218,43 @@ def cmet_result_dir()->pathlib.Path:
     return result_dir
 
 class TestGatherCMET:
-    @pytest.mark.parametrize('report', ["dg","ddg", "raw"])
-    def test_cmet_full_results(self, cmet_result_dir, report):
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_full_results(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['-o', '-'])
-
+        file_regression.check(cli_result.output, extension='.tsv')
         assert_click_success(cli_result)
 
-    @pytest.mark.parametrize('report', ["dg","ddg", "raw"])
-    def test_cmet_missing_complex_leg(self, cmet_result_dir, report):
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_missing_complex_leg(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        file_regression.check(cli_result.output, extension='.tsv')
 
         assert_click_success(cli_result)
 
-    @pytest.mark.parametrize('report', ["dg","ddg", "raw"])
-    def test_cmet_missing_edge(self, cmet_result_dir, report):
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_missing_edge(self, cmet_result_dir, report,file_regression):
         results = [str(cmet_result_dir / f'results_{i}_remove_edge') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        file_regression.check(cli_result.output, extension='.tsv')
 
         assert_click_success(cli_result)
 
     
     @pytest.mark.parametrize('report', ["dg","ddg", "raw"])
-    def test_cmet_missing_failed_edge(self, cmet_result_dir, report):
+    def test_cmet_missing_failed_edge(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / f'results_{i}_failed_edge') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['-o', '-'])
-
+        file_regression.check(cli_result.output, extension='.tsv')
         assert_click_success(cli_result)
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")

@@ -1,0 +1,4 @@
+/Users/atravitz/Library/Caches/openfe/cmet_results.tar.gz.untar/cmet_results/results_0_failed_edge/lig_CHEMBL3402745_200_5_solvent_lig_CHEMBL3402744_300_4_solvent_solvent.json: Exception found in all 'unit_results', assuming to be a failed simulation.
+ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
+lig_CHEMBL3402745_200_5	NaN	NaN
+lig_CHEMBL3402744_300_4	NaN	NaN
