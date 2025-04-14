@@ -28,6 +28,7 @@ dependencies:
   - openfe-analysis>=0.3.1
   - click
   - typing-extensions
+  - numpy<2.0.0
   - openmm >=8.0.0,!=8.1.0,<8.2.0
   - openmmtools >=0.24.1
   - openmmforcefields
