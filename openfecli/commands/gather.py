@@ -5,7 +5,6 @@ import click
 import os
 import pathlib
 from typing import Callable, Literal, List
-import warnings
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -149,16 +148,16 @@ def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]
     try:
         result_id = _get_result_id(result, fpath)
     except (ValueError, IndexError):
-        click.echo(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True)
+        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True, fg='yellow')
         return None, None
     if result['estimate'] is None:
-        click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
+        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True, fg='yellow')
         return result_id, None
     if result['uncertainty'] is None:
-        click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
+        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True, fg='yellow')
         return result_id, None
     if all('exception' in u for u in result['unit_results'].values()):
-        click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
+        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True, fg='yellow')
         return result_id, None
 
     return result_id, result
@@ -230,11 +229,18 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
     str
         An error message containing information on all failed legs.
     """
-    msg="Some edge(s) are missing runs!\n\nThe following run types (solvent, complex, or vacuum) were found and are missing one or more run types to complete the calculation:\n\n"
+    msg = (
+        "Some edge(s) are missing runs!\n"
+        "The following edges were found but are missing one or more run types "
+        "('solvent', 'complex', or 'vacuum') to complete the calculation:\n\n"
+        "ligand_i\tligand_j\trun_type_found\n"
+    )
+    # TODO: format this better
     for ligA, ligB, leg_types in bad_legs:
-        msg += f"({ligA}, {ligB}) \t{','.join(leg_types)}\n"
+        msg += f"{ligA}\t{ligB})\t{','.join(leg_types)}\n"
 
     return msg
+
 
 def _get_ddgs(legs: dict, allow_partial=False) -> None:
     import numpy as np
@@ -286,7 +292,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     if bad_legs:
         err_msg = _generate_bad_legs_error_message(bad_legs)
         if allow_partial:
-            warnings.warn(err_msg)
+            click.secho(err_msg, err=True, fg='yellow')
         else:
             err_msg += (
                 "\nYou can force partial gathering of results, without "
