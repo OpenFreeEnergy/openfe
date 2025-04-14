@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
-from importlib import resources
+import pathlib
 
 import MDAnalysis as mda
 import pytest
@@ -13,6 +12,9 @@ from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
 
 from openff.units import unit
 from rdkit import Chem
+import pooch
+import os
+from ...conftest import HAS_INTERNET
 
 
 @pytest.fixture()
@@ -230,7 +232,23 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     assert -0.142658924 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
     assert -1.5340895 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
 
+POOCH_CACHE = pooch.os_cache("openfe")
+zenodo_restraint_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
+    }
+    ,retry_if_failed=3
+)
 
+@pytest.fixture
+def industry_benchmark_files():
+    zenodo_restraint_data.fetch("industry_benchmark_systems.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(pooch.os_cache("openfe") / "industry_benchmark_systems.zip.unzip/industry_benchmark_systems")
+    return cache_dir
+
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize("system", [
     "jacs_set/bace",
     "jacs_set/cdk2",
@@ -269,17 +287,16 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     "miscellaneous_set/galectin",
     "miscellaneous_set/hiv1_protease"
 ])
-def test_get_boresch_restrain_industry_benchmark_systems(system):
+def test_get_boresch_restrain_industry_benchmark_systems(system, industry_benchmark_files):
     """
     Regression test generating boresch restraints for a single frame for most industry benchmark systems.
     Currently, a single ligand is used from each system and the expected reference data is stored as SDtags
     on the ligand.
     """
-    root = resources.files("openfe.tests.data.industry_benchmark_systems")
     # load the protein
-    protein = mda.Universe(str(root / system / "protein.pdb"))
+    protein = mda.Universe(str(industry_benchmark_files / system / "protein.pdb"))
     # load the ligand
-    ligand = [m for m in Chem.SDMolSupplier(str(root / system/ "test_ligand.sdf"), removeHs=False)][0]
+    ligand = [m for m in Chem.SDMolSupplier(str(industry_benchmark_files / system/ "test_ligand.sdf"), removeHs=False)][0]
     lig_uni = mda.Universe(ligand)
     lig_uni.add_TopologyAttr("resname", ["LIG"])
     universe = mda.Merge(protein.atoms, lig_uni.atoms)

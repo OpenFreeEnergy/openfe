@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from importlib import resources
 import pytest
 
 import itertools
@@ -9,6 +8,9 @@ from rdkit import Chem
 import MDAnalysis as mda
 from openff.units import unit
 import numpy as np
+import pooch
+import pathlib
+import os
 
 from openfe.protocols.restraint_utils.geometry.utils import (
     _get_mda_selection,
@@ -28,6 +30,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     get_local_rmsf,
     protein_chain_selection,
 )
+from ...conftest import HAS_INTERNET
 
 
 
@@ -44,13 +47,24 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     lig.add_TopologyAttr("resname", ["LIG"])
     return mda.Merge(protein.atoms, lig.atoms)
 
+POOCH_CACHE = pooch.os_cache("openfe")
+zenodo_restraint_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
+    }
+    ,retry_if_failed=3
+)
+
 @pytest.fixture
 def t4_lysozyme_trajectory_universe():
-    # toluene in complex with t4 lysozyme plain MD trajectory
-    root = resources.files("openfe.tests.data")
+    zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        pooch.os_cache("openfe") / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory")
     universe = mda.Universe(
-        str(root / "t4_lysozyme_trajectory" / "t4_toluene_complex.pdb"),
-        str(root / "t4_lysozyme_trajectory" / "t4_toluene_complex.xtc"),
+        str(cache_dir / "t4_toluene_complex.pdb"),
+        str(cache_dir / "t4_toluene_complex.xtc"),
     )
     return universe
 
@@ -370,6 +384,7 @@ def test_get_rmsf_single_frame(eg5_protein_ligand_universe):
     assert np.allclose(rmsf.m, np.zeros(ligand.n_atoms))
 
 
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
     # get the RMSF of just the ligand
     ligand = t4_lysozyme_trajectory_universe.select_atoms("resname UNK")
@@ -401,7 +416,8 @@ def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
         )
     )
     
-    
+
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET, reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
 
     # use a copy as we need to remove the bonds first
