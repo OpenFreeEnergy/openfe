@@ -231,55 +231,90 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     assert -1.5340895 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
 
 
-# TODO turn back on once we have a good way to handle zip data files
-# TODO change to use a single ligand per system
-# @pytest.mark.parametrize("system", [
-#     "jacs_set/bace",
-#     "jacs_set/cdk2",
-#     "jacs_set/jnk1",
-#     "jacs_set/mcl1",
-#     "jacs_set/p38",
-#     "jacs_set/ptp1b",
-#     "jacs_set/thrombin"
-# ])
-# def test_get_boresch_restrain_industry_benchmark_systems(system):
-#     """
-#     Regression test generating boresch restraints for a single frame for most industry benchmark systems
-#     """
-#     root = resources.files("openfe.tests.data.industry_benchmark_systems")
-#     # load the protein
-#     protein = mda.Universe(str(root / system / "protein.pdb"))
-#     # load the ligands
-#     ligands = [m for m in Chem.SDMolSupplier(str(root / system/ "ligands.sdf"), removeHs=False)]
-#     for ligand in ligands:
-#         lig_uni = mda.Universe(ligand)
-#         lig_uni.add_TopologyAttr("resname", ["LIG"])
-#         universe = mda.Merge(protein.atoms, lig_uni.atoms)
-#
-#         ligand_atoms = universe.select_atoms("resname LIG")
-#         lig_ids = [a.ix for a in ligand_atoms]
-#         host_atoms = universe.select_atoms("protein")
-#         host_ids = [a.ix for a in host_atoms]
-#
-#         # create the geometry
-#         restraint_geometry = find_boresch_restraint(
-#             universe=universe,
-#             guest_rdmol=ligand,
-#             guest_idxs=lig_ids,
-#             host_idxs=host_ids,
-#             host_selection="backbone",
-#             dssp_filter=False,
-#             # reduce the search space for CI speed!
-#             host_max_distance=1.5 * unit.nanometer
-#         )
-#
-#         # make sure we have backbone atoms as requested
-#         host_restrain_atoms = universe.atoms[restraint_geometry.host_atoms]
-#         # make sure we have backbone atoms
-#         for a in host_restrain_atoms:
-#             # backbone atom names
-#             assert a.name in ["CA", "C", "O", "N"]
-#
-#         # make sure the host/guest atoms are in the selection we gave
-#         assert all(i in lig_ids for i in restraint_geometry.guest_atoms)
-#         assert all(i in host_ids for i in restraint_geometry.host_atoms)
+@pytest.mark.parametrize("system", [
+    "jacs_set/bace",
+    "jacs_set/cdk2",
+    "jacs_set/jnk1",
+    "jacs_set/mcl1",
+    "jacs_set/p38",
+    "jacs_set/ptp1b",
+    "jacs_set/thrombin",
+    "jacs_set/tyk2",
+    "janssen_bace/bace_ciordia_prospective",
+    "janssen_bace/bace_p3_arg368_in",
+    "janssen_bace/ciordia_retro",
+    "janssen_bace/keranen_p2",
+    "merck/cdk8",
+    "merck/cmet",
+    "merck/eg5",
+    "merck/hif2a",
+    "merck/pfkfb3",
+    "merck/shp2",
+    "merck/syk",
+    "merck/tnks2",
+    "mcs_docking_set/hne",
+    "mcs_docking_set/renin",
+    "fragments/hsp90_2rings",
+    "fragments/hsp90_single_ring",
+    "fragments/jak2_set1",
+    "fragments/jak2_set2",
+    "fragments/liga",
+    "fragments/mcl1",
+    "fragments/mup1",
+    "fragments/p38",
+    "fragments/t4_lysozyme",
+    "miscellaneous_set/btk",
+    "miscellaneous_set/cdk8",
+    "miscellaneous_set/faah",
+    "miscellaneous_set/galectin",
+    "miscellaneous_set/hiv1_protease"
+])
+def test_get_boresch_restrain_industry_benchmark_systems(system):
+    """
+    Regression test generating boresch restraints for a single frame for most industry benchmark systems.
+    Currently, a single ligand is used from each system and the expected reference data is stored as SDtags
+    on the ligand.
+    """
+    root = resources.files("openfe.tests.data.industry_benchmark_systems")
+    # load the protein
+    protein = mda.Universe(str(root / system / "protein.pdb"))
+    # load the ligand
+    ligand = [m for m in Chem.SDMolSupplier(str(root / system/ "test_ligand.sdf"), removeHs=False)][0]
+    lig_uni = mda.Universe(ligand)
+    lig_uni.add_TopologyAttr("resname", ["LIG"])
+    universe = mda.Merge(protein.atoms, lig_uni.atoms)
+
+    ligand_atoms = universe.select_atoms("resname LIG")
+    lig_ids = [a.ix for a in ligand_atoms]
+    host_atoms = universe.select_atoms("protein")
+    host_ids = [a.ix for a in host_atoms]
+
+    # create the geometry
+    restraint_geometry = find_boresch_restraint(
+        universe=universe,
+        guest_rdmol=ligand,
+        guest_idxs=lig_ids,
+        host_idxs=host_ids,
+        host_selection="backbone",
+        dssp_filter=False,
+        # reduce the search space for CI speed!
+        host_max_distance=1.5 * unit.nanometer
+    )
+
+    # make sure we have backbone atoms as requested
+    host_restrain_atoms = universe.atoms[restraint_geometry.host_atoms]
+    for a in host_restrain_atoms:
+        # backbone atom names
+        assert a.name in ["CA", "C", "O", "N"]
+
+    # make sure the host/guest atoms are in the selection we gave
+    assert all(i in lig_ids for i in restraint_geometry.guest_atoms)
+    assert all(i in host_ids for i in restraint_geometry.host_atoms)
+
+    # finally make sure we get the expected values
+    for i, atom in enumerate(restraint_geometry.host_atoms):
+        assert ligand.GetIntProp(f"Host{i}") == atom
+    for i , atom in enumerate(restraint_geometry.guest_atoms):
+        assert ligand.GetIntProp(f"Guest{i}") == atom
+    for prop in ["r_aA0", "theta_A0", "theta_B0", "phi_A0", "phi_B0", "phi_C0"]:
+        assert pytest.approx(ligand.GetDoubleProp(prop)) == getattr(restraint_geometry, prop).m
