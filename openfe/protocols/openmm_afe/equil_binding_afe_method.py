@@ -1139,7 +1139,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         restraint : BoreschRestraint
           A factory class for generating Boresch restraints in OpenMM.
         """
-        frc_const = (settings.K_thetaA + settings.K_thetaB) / 2
+        # Take the maximum of the two possible force constants to check against
+        frc_const = max(settings.K_thetaA, settings.K_thetaB)
 
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
