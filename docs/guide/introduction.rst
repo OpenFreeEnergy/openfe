@@ -43,6 +43,8 @@ calculate that :math:`\Delta G`.
 The :ref:`gather results <userguide_results>` stage aggregates the individual results for further analysis. For example, the CLI's ``gather`` command will create a
 table of the :math:`\Delta G` for each leg.
 
+For more workflow details, see :ref:`under-the-hood`.
+
 .. TODO: Should the CLI workflow be moved to under "CLI Interface"?
 
 CLI Workflow

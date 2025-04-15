@@ -41,6 +41,7 @@ from openfe.protocols.restraint_utils.geometry import (
 
 from openfe.protocols.restraint_utils.settings import (
     DistanceRestraintSettings,
+    FlatBottomRestraintSettings,
     BoreschRestraintSettings,
 )
 
@@ -67,7 +68,7 @@ class RestraintParameterState(GlobalParameterState):
       The scaling parameter for the restraint. If defined,
       must be between 0 and 1. In most cases, a value of 1 indicates that the
       restraint is fully turned on, whilst a value of 0 indicates that it is
-      innactive.
+      inactive.
 
     Acknowledgement
     ---------------
@@ -95,11 +96,16 @@ class BaseHostGuestRestraints(abc.ABC):
     An abstract base class for defining objects that apply a restraint between
     two entities (referred to as a Host and a Guest).
 
+    The following class variables must be set to the intended class to allow for type validation during the
+    instantiation of the restraints.
 
     TODO
     ----
     Add some developer examples here.
     """
+
+    _settings_cls: SettingsBaseModel
+    _geometry_cls: BaseRestraintGeometry
 
     def __init__(
         self,
@@ -108,19 +114,22 @@ class BaseHostGuestRestraints(abc.ABC):
         self.settings = restraint_settings
         self._verify_inputs()
 
-    @abc.abstractmethod
     def _verify_inputs(self):
         """
         Method for validating that the inputs to the class are correct.
         """
-        pass
+        if not isinstance(self.settings, self._settings_cls):
+            errmsg = f"Incorrect settings type {self.settings.__class__.__qualname__} passed through expected a `{self._settings_cls.__qualname__}` instance"
+            raise ValueError(errmsg)
 
-    @abc.abstractmethod
     def _verify_geometry(self, geometry):
         """
         Method for validating that the geometry object passed is correct.
         """
-        pass
+        if not isinstance(geometry, self._geometry_cls):
+            errmsg = f"Incorrect geometry class type {geometry.__class__.__qualname__} passed through expected a `{self._geometry_cls.__qualname__}` instance"
+            raise ValueError(errmsg)
+
 
     @abc.abstractmethod
     def add_force(
@@ -135,7 +144,7 @@ class BaseHostGuestRestraints(abc.ABC):
 
         Parameters
         ----------
-        thermodymamic_state : ThermodynamicState
+        thermodynamic_state : ThermodynamicState
           The ThermodynamicState with a System to inplace modify with the
           new force.
         geometry : BaseRestraintGeometry
@@ -157,7 +166,7 @@ class BaseHostGuestRestraints(abc.ABC):
 
         Parameters
         ----------
-        thermodymamic_state : ThermodynamicState
+        thermodynamic_state : ThermodynamicState
           The ThermodynamicState with a System to inplace modify with the
           new force.
         geometry : BaseRestraintGeometry
@@ -202,20 +211,13 @@ class SingleBondMixin:
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     """
-    A base class for all radially symmetic Forces acting between
+    A base class for all radially symmetric Forces acting between
     two sets of atoms.
 
     Must be subclassed.
     """
-    def _verify_inputs(self) -> None:
-        if not isinstance(self.settings, DistanceRestraintSettings):
-            errmsg = f"Incorrect settings type {self.settings} passed through"
-            raise ValueError(errmsg)
-
-    def _verify_geometry(self, geometry: DistanceRestraintGeometry):
-        if not isinstance(geometry, DistanceRestraintGeometry):
-            errmsg = f"Incorrect geometry class type {geometry} passed through"
-            raise ValueError(errmsg)
+    _settings_cls = DistanceRestraintSettings
+    _geometry_cls = DistanceRestraintGeometry
 
     def add_force(
         self,
@@ -229,7 +231,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
         Parameters
         ----------
-        thermodymamic_state : ThermodynamicState
+        thermodynamic_state : ThermodynamicState
           The ThermodynamicState with a System to inplace modify with the
           new force.
         geometry : BaseRestraintGeometry
@@ -258,7 +260,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
         Parameters
         ----------
-        thermodymamic_state : ThermodynamicState
+        thermodynamic_state : ThermodynamicState
           The ThermodynamicState with a System to inplace modify with the
           new force.
         geometry : BaseRestraintGeometry
@@ -275,7 +277,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         # controlling parameter name
         force = self._get_force(geometry, 'lambda_restraints')
         corr = force.compute_standard_state_correction(
-            thermodynamic_state, volume="system"
+            thermodynamic_state, max_volume="system"
         )
         dg = corr * thermodynamic_state.kT
         return from_openmm(dg).to('kilojoule_per_mole')
@@ -290,7 +292,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
 #  Note: we type ignore this class due to mypy issues with the mixin method
 class HarmonicBondRestraint(  # type: ignore[misc]
-    BaseRadiallySymmetricRestraintForce, SingleBondMixin
+    SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
     A class to add a harmonic restraint between two atoms
@@ -338,7 +340,7 @@ class HarmonicBondRestraint(  # type: ignore[misc]
 
 #  Note: we type ignore this class due to mypy issues with the mixin method
 class FlatBottomBondRestraint(  # type: ignore[misc]
-    BaseRadiallySymmetricRestraintForce, SingleBondMixin
+    SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
     A class to add a flat bottom restraint between two atoms
@@ -352,6 +354,9 @@ class FlatBottomBondRestraint(  # type: ignore[misc]
     * Settings must contain a ``spring_constant`` for the
       Force in units compatible with kilojoule/mole/nm**2.
     """
+    _settings_cls = FlatBottomRestraintSettings
+    _geometry_cls = FlatBottomDistanceGeometry
+
     def _get_force(
         self,
         geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
@@ -403,7 +408,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
+        geometry: DistanceRestraintGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -427,8 +432,8 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
         ).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintForce(
             spring_constant=spring_constant,
-            restrained_atom_index1=geometry.host_atoms,
-            restrained_atom_index2=geometry.guest_atoms,
+            restrained_atom_indices1=geometry.host_atoms,
+            restrained_atom_indices2=geometry.guest_atoms,
             controlling_parameter_name=controlling_parameter_name,
         )
 
@@ -470,14 +475,16 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
         spring_constant = to_openmm(
             self.settings.spring_constant
         ).value_in_unit_system(omm_unit.md_unit_system)
+        # the geometry will take precedence over the settings
+        well_radius = self.settings.well_radius or geometry.well_radius
         well_radius = to_openmm(
-            geometry.well_radius
+            well_radius
         ).value_in_unit_system(omm_unit.md_unit_system)
         return FlatBottomRestraintForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
-            restrained_atom_index1=geometry.host_atoms,
-            restrained_atom_index2=geometry.guest_atoms,
+            restrained_atom_indices1=geometry.host_atoms,
+            restrained_atom_indices2=geometry.guest_atoms,
             controlling_parameter_name=controlling_parameter_name,
         )
 
@@ -540,21 +547,8 @@ class BoreschRestraint(BaseHostGuestRestraints):
     -----
     * Settings must define the ``K_r`` (d)
     """
-    def _verify_inputs(self) -> None:
-        """
-        Method for validating that the geometry object is correct.
-        """
-        if not isinstance(self.settings, BoreschRestraintSettings):
-            errmsg = f"Incorrect settings type {self.settings} passed through"
-            raise ValueError(errmsg)
-
-    def _verify_geometry(self, geometry: BoreschRestraintGeometry):
-        """
-        Method for validating that the geometry object is correct.
-        """
-        if not isinstance(geometry, BoreschRestraintGeometry):
-            errmsg = f"Incorrect geometry class type {geometry} passed through"
-            raise ValueError(errmsg)
+    _settings_cls = BoreschRestraintSettings
+    _geometry_cls = BoreschRestraintGeometry
 
     def add_force(
         self,
@@ -568,7 +562,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
 
         Parameters
         ----------
-        thermodymamic_state : ThermodynamicState
+        thermodynamic_state : ThermodynamicState
           The ThermodynamicState with a System to inplace modify with the
           new force.
         geometry : BaseRestraintGeometry
@@ -666,7 +660,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
 
         Parameters
         ----------
-        thermodymamic_state : ThermodynamicState
+        thermodynamic_state : ThermodynamicState
           The ThermodynamicState with a System to inplace modify with the
           new force.
         geometry : BaseRestraintGeometry
