@@ -469,6 +469,8 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             for pus in self.data['complex'].values()
         ]
 
+        return geometries
+
 
 class AbsoluteBindingProtocol(gufe.Protocol):
     """
