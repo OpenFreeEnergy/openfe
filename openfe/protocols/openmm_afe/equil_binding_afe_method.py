@@ -1215,9 +1215,18 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         if self.verbose:
             self.logger.info("Generating restraints")
 
-        # Get the guest idxs and rdmol
-        # concatenate a list of residue indexes for all alchemical components
+        # Get the guest rdmol
         guest_rdmol = alchem_comps["stateA"][0].to_rdkit()
+
+        # sanitize the rdmol if possible - warn if you can't
+        err = Chem.SanitizeMol(guest_rdmol, catchErrors=True)
+
+        if err:
+            msg = "restraint generation: could not sanitize ligand rdmol"
+            logger.warning(msg)
+
+        # Get the guest idxs
+        # concatenate a list of residue indexes for all alchemical components
         residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
 
         # get the alchemicical atom ids
