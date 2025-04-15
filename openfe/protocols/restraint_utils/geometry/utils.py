@@ -466,7 +466,7 @@ class FindHostAtoms(AnalysisBase):
     ----------
     host_atoms : MDAnalysis.AtomGroup
       Initial selection of host atoms to filter from.
-    guest_atoms : MDANalysis.AtomGroup
+    guest_atoms : MDAnalysis.AtomGroup
       Selection of guest atoms to search around.
     min_search_distance: unit.Quantity
       Minimum distance to filter atoms within.
@@ -648,7 +648,7 @@ def stable_secondary_structure_selection(
     * We recommend always trimming at least one residue at the ends of
       each chain using ``trim_chain_start`` and ``trim_chain_end`` to
       avoid issues with capping residues.
-    * DSSP assignement is done on the final frame of the trajectory.
+    * DSSP assignment is done on the final frame of the trajectory.
 
     References
     ----------

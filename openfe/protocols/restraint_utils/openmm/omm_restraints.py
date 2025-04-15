@@ -119,7 +119,7 @@ class BaseHostGuestRestraints(abc.ABC):
         Method for validating that the inputs to the class are correct.
         """
         if not isinstance(self.settings, self._settings_cls):
-            errmsg = f"Incorrect settings type {self.settings} passed through expected a `{self._settings_cls.__qualname__}` instance"
+            errmsg = f"Incorrect settings type {self.settings.__class__.__qualname__} passed through expected a `{self._settings_cls.__qualname__}` instance"
             raise ValueError(errmsg)
 
     def _verify_geometry(self, geometry):
@@ -127,7 +127,7 @@ class BaseHostGuestRestraints(abc.ABC):
         Method for validating that the geometry object passed is correct.
         """
         if not isinstance(geometry, self._geometry_cls):
-            errmsg = f"Incorrect geometry class type {geometry} passed through expected a `{self._geometry_cls.__qualname__}` instance"
+            errmsg = f"Incorrect geometry class type {geometry.__class__.__qualname__} passed through expected a `{self._geometry_cls.__qualname__}` instance"
             raise ValueError(errmsg)
 
 
@@ -292,7 +292,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
 #  Note: we type ignore this class due to mypy issues with the mixin method
 class HarmonicBondRestraint(  # type: ignore[misc]
-    BaseRadiallySymmetricRestraintForce, SingleBondMixin
+    SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
     A class to add a harmonic restraint between two atoms
@@ -340,7 +340,7 @@ class HarmonicBondRestraint(  # type: ignore[misc]
 
 #  Note: we type ignore this class due to mypy issues with the mixin method
 class FlatBottomBondRestraint(  # type: ignore[misc]
-    BaseRadiallySymmetricRestraintForce, SingleBondMixin
+    SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
     A class to add a flat bottom restraint between two atoms
@@ -408,7 +408,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
+        geometry: DistanceRestraintGeometry,  # type: ignore[override]
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -432,8 +432,8 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
         ).value_in_unit_system(omm_unit.md_unit_system)
         return HarmonicRestraintForce(
             spring_constant=spring_constant,
-            restrained_atom_index1=geometry.host_atoms,
-            restrained_atom_index2=geometry.guest_atoms,
+            restrained_atom_indices1=geometry.host_atoms,
+            restrained_atom_indices2=geometry.guest_atoms,
             controlling_parameter_name=controlling_parameter_name,
         )
 
@@ -483,8 +483,8 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
         return FlatBottomRestraintForce(
             spring_constant=spring_constant,
             well_radius=well_radius,
-            restrained_atom_index1=geometry.host_atoms,
-            restrained_atom_index2=geometry.guest_atoms,
+            restrained_atom_indices1=geometry.host_atoms,
+            restrained_atom_indices2=geometry.guest_atoms,
             controlling_parameter_name=controlling_parameter_name,
         )
 
