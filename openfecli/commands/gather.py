@@ -99,6 +99,58 @@ def load_json(fpath:os.PathLike|str)->dict:
 
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
+def _get_names(result:dict) -> tuple[str, str]:
+    """Get the ligand names from a unit's results data.
+
+    Parameters
+    ----------
+    result : dict
+        A results dict.
+
+    Returns
+    -------
+    tuple[str, str]
+        Ligand names corresponding to the results.
+    """
+    try:
+        nm = list(result['unit_results'].values())[0]['name']
+
+    except KeyError:
+        raise ValueError("Failed to guess names")
+
+    # TODO: make this more robust by pulling names from inputs.state[A/B].name
+
+    toks = nm.split()
+    if toks[2] == 'repeat':
+        return toks[0], toks[1]
+    else:
+        return toks[0], toks[2]
+
+def _get_type(res:dict)->Literal['vacuum','solvent','complex']:
+    """Determine the simulation type based on the component names."""
+    # TODO: use component *types* instead here
+    list_of_pur = list(res['protocol_result']['data'].values())[0]
+    pur = list_of_pur[0]
+    components = pur['inputs']['stateA']['components']
+
+    if 'solvent' not in components:
+        return 'vacuum'
+    elif 'protein' in components:
+        return 'complex'
+    else:
+        return 'solvent'
+
+def _legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
+    # TODO: Deprecate this when we no longer rely on key names in `_get_type()`
+
+    if 'solvent' in res_fn:
+        return 'solvent'
+    elif 'vacuum' in res_fn:
+        return 'vacuum'
+    # TODO: if there is no identifier in the filename, do we really want to assume it's a complex?
+    else:
+        return 'complex'
+
 def _get_result_id(
     result: dict, result_fn: os.PathLike | str
 ) -> tuple[tuple[str, str], Literal["vacuum", "solvent", "complex"]]:
@@ -117,12 +169,12 @@ def _get_result_id(
     tuple
         Identifying information (ligand names and simulation type) for the given results data.
     """
-    ligA, ligB = get_names(result)
+    ligA, ligB = _get_names(result)
 
     try:
-        simtype = get_type(result)
+        simtype = _get_type(result)
     except KeyError:
-        simtype = legacy_get_type(result_fn)
+        simtype = _legacy_get_type(result_fn)
 
     return (ligA, ligB), simtype
 
@@ -162,60 +214,6 @@ def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]
         return result_id, None
 
     return result_id, result
-
-def get_names(result:dict) -> tuple[str, str]:
-    """Get the ligand names from a unit's results data.
-
-    Parameters
-    ----------
-    result : dict
-        A results dict.
-
-    Returns
-    -------
-    tuple[str, str]
-        Ligand names corresponding to the results.
-    """
-    try:
-        nm = list(result['unit_results'].values())[0]['name']
-
-    except KeyError:
-        raise ValueError("Failed to guess names")
-
-    # TODO: make this more robust by pulling names from inputs.state[A/B].name
-
-    toks = nm.split()
-    if toks[2] == 'repeat':
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
-
-
-def get_type(res:dict)->Literal['vacuum','solvent','complex']:
-    """Determine the simulation type based on the component names."""
-    # TODO: use component *types* instead here
-    list_of_pur = list(res['protocol_result']['data'].values())[0]
-    pur = list_of_pur[0]
-    components = pur['inputs']['stateA']['components']
-
-    if 'solvent' not in components:
-        return 'vacuum'
-    elif 'protein' in components:
-        return 'complex'
-    else:
-        return 'solvent'
-
-
-def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
-    # TODO: Deprecate this when we no longer rely on key names in `get_type()`
-
-    if 'solvent' in res_fn:
-        return 'solvent'
-    elif 'vacuum' in res_fn:
-        return 'vacuum'
-    # TODO: if there is no identifier in the filename, do we really want to assume it's a complex?
-    else:
-        return 'complex'
 
 def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
     """Format output describing RBFE or RHFE legs that are missing runs.
