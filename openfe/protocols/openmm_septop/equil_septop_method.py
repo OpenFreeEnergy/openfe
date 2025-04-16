@@ -1165,7 +1165,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         restraint : BoreschRestraint
           A factory class for generating Boresch restraints in OpenMM.
         """
-        frc_const = max(settings.K_thetaA, settings.K_thetaB)
+        frc_const = min(settings.K_thetaA, settings.K_thetaB)
 
         geom = geometry.boresch.find_boresch_restraint(
             universe=universe,
