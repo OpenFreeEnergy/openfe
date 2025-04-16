@@ -54,9 +54,9 @@ class TestResultLoading:
         result = {
             "estimate": {},
             "uncertainty": {},
-            "protocol_result": {'data':{'2294096155646608107660849867019691905':  [
+            "protocol_result": {'data':{'22940961':  [
                 {"name": "lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
-                  "inputs": {"stateA": {"components": {"ligand":None}}}}
+                  "inputs": {"stateA": {"components": {"ligand":None, 'solvent': None}}}}
                   ]}},
             "unit_results": {
                 "ProtocolUnitResult-e85": {"name":"lig_ejm_31 to lig_ejm_42 repeat 0 generation 0"},
@@ -70,7 +70,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), sim_result)
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), sim_result)
             assert captured.err == ""
 
     def test_skip_missing_unit_result(self, capsys, sim_result):
@@ -88,7 +88,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), None)
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), None)
             assert "No 'estimate' found" in captured.err
 
     def test_skip_missing_uncertainty(self, capsys, sim_result):
@@ -97,7 +97,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), None)
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), None)
             assert "No 'uncertainty' found" in captured.err
 
     def test_skip_all_failed_runs(self, capsys, sim_result):
@@ -105,7 +105,7 @@ class TestResultLoading:
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
             result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'vacuum'), None)
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), None)
             assert "Exception found in all" in captured.err
 
     def test_missing_pr_data(self, capsys, sim_result):
@@ -282,7 +282,7 @@ class TestGatherCMET:
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
-        
+
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
