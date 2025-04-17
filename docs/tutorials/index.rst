@@ -35,7 +35,7 @@ Generating Partial Charges
 
 .. todo: this should be in cookbook
 
--  :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>` demonstrates how the command line interface can be used to assign and store partial charges for mall molecules which can be used throughout the OpenFE ecosystem.
+-  :ref:`Generating Partial Charges CLI tutorial <charge_molecules_cli_tutorial>`: how to use the CLI to assign and store partial charges for mall molecules which can be used throughout the OpenFE ecosystem.
 
 .. toctree::
     :maxdepth: 1
