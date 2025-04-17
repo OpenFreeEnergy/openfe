@@ -10,16 +10,16 @@ dependencies:
   - lomap2>=3.2.1
   - networkx
   - numpy<2.0.0
-  - openff-toolkit>=0.16.2
-  - openff-nagl-base >=0.3.3
-  - openff-nagl-models>=0.1.2
-  - openff-units==0.2.0
+  - openfe-analysis>=0.3.1
   - openff-interchange
   - openff-models>=0.0.5
-  - openfe-analysis>=0.3.1
+  - openff-nagl-base >=0.3.3
+  - openff-nagl-models>=0.1.2
+  - openff-toolkit>=0.16.2
+  - openff-units==0.2.0
   - openmm >=8.0.0,!=8.1.0,<8.2.0
-  - openmmtools >=0.24.1
   - openmmforcefields
+  - openmmtools >=0.24.1
   - packaging
   - perses>=0.10.3
   - plugcli
@@ -28,12 +28,12 @@ dependencies:
   - pooch
   - py3dmol
   - pydantic >=1.10.17
+  - pygraphviz
   - pytest
   - pytest-xdist
   - pytest-cov
   - pytest-rerunfailures
   - pyyaml
-  - pygraphviz
   - rdkit
   - tqdm
   - typing-extensions
