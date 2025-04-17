@@ -342,9 +342,9 @@ class TestRBFEGatherFailedEdges:
         assert "using the --allow-partial flag" in str(result.stderr)
 
 
-    def test_missing_leg_allow_partial(self, results_paths_serial_missing_legs: str):
+    def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
         runner = CliRunner(mix_stderr=False)
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
             result = runner.invoke(gather, results_paths_serial_missing_legs + ['--allow-partial', '-o', '-'])
-            assert_click_success(result)
+            assert result.exit_code == 1
