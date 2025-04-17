@@ -251,28 +251,41 @@ class TestGatherCMET:
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
 
-    @pytest.mark.parametrize('report', ["dg","ddg", "raw"])
+    @pytest.mark.parametrize('report', ["ddg", "raw"])
     def test_cmet_failed_edge(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / f'results_{i}_failed_edge') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        cli_result = runner.invoke(gather, results + args)
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.output, extension=".tsv")
 
-    @pytest.mark.parametrize('report', ["dg", "ddg"])
+    @pytest.mark.parametrize("allow_partial", ["--allow-partial", ""])
+    def test_cmet_too_few_edges_error(self, cmet_result_dir, allow_partial):
+        results = [str(cmet_result_dir / f"result_{i}_failed_edge") for i in range(3)]
+        args = ["--report", "dg", allow_partial]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args)
+
+        assert cli_result.exit_code == 1
+        assert (
+            "The results network has 0 node(s), but 3 or more nodes are required"
+            in str(cli_result.stderr)
+        )
+
+    @pytest.mark.parametrize("report", ["dg", "ddg"])
     def test_cmet_missing_all_complex_legs_fail(self, cmet_result_dir, report, file_regression):
         """Missing one complex replicate from one leg."""
         results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
         args = ["--report", report]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        cli_result = runner.invoke(gather, results + args + ["-o", "-"])
 
         cli_result.exit_code == 1
         file_regression.check(cli_result.output, extension='.tsv')
 
-    @pytest.mark.parametrize('report', ["dg", "ddg"])
+    @pytest.mark.parametrize('report', ["ddg"])
     def test_cmet_missing_all_complex_legs_allow_partial(self, cmet_result_dir, report, file_regression):
         """Missing one complex replicate from one leg."""
         results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
@@ -345,10 +358,9 @@ class TestRBFEGatherFailedEdges:
     def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
         runner = CliRunner(mix_stderr=False)
         with pytest.warns():
-            args =  ["--report", "dg"]
-            args += ['--allow-partial']
+            args =  ["--report", "dg", "--allow-partial"]
             result = runner.invoke(gather, results_paths_serial_missing_legs + args)
-            assert result.exit_code == 0
+            assert result.exit_code == 1
             assert "The results network is disconnected" in str(result.stderr)
 
 
@@ -356,7 +368,6 @@ class TestRBFEGatherFailedEdges:
         runner = CliRunner(mix_stderr=False)
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
-            args =  ["--report", "ddg"]
-            args += ['--allow-partial']
+            args =  ["--report", "ddg", "--allow-partial"]
             result = runner.invoke(gather, results_paths_serial_missing_legs + args)
-            assert result.exit_code == 0
+            assert_click_success(result)

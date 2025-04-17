@@ -381,7 +381,7 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     g = nx.DiGraph()
     nm_to_idx = {}
     DDGbind_count = 0
-    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
+    for ligA, ligB, DDGbind, bind_unc, _, _ in DDGs:
         for lig in (ligA, ligB):
             if lig not in expected_ligs:
                 expected_ligs.append(lig)
@@ -414,15 +414,15 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     if DDGbind_count > 2:
         if not nx.is_weakly_connected(g):
             # TODO: dump the network for debugging?
+            # TODO: use largest connected component when possible
             msg = (
-                "The results network is disconnected, likely due to failed edges.\n"
-                "Some dg values will not be able to be computed."
-                # "Absolute free energies cannot be generated from the relative free energies.\n"
-                # "Please either connect the network by addressing failed runs or adding more edges.\n"
-                # "Alternatively, you can compute relative free energies using the ``--report=ddg`` flag."
+                "ERROR: The results network is disconnected due to failed or missing edges.\n"
+                "Absolute free energies cannot be calculated in a disconnected network.\n"
+                "Please either connect the network by addressing failed runs or adding edges.\n"
+                "You can still compute relative free energies using the ``--report=ddg`` flag."
             )
-            click.secho(msg, err=True, fg='yellow')
-            # sys.exit(1)
+            click.secho(msg, err=True, fg='red')
+            sys.exit(1)
         idx_to_nm = {v: k for k, v in nm_to_idx.items()}
         f_i, df_i = mle(g, factor="calc_DDG")
         df_i = np.diagonal(df_i) ** 0.5
@@ -430,9 +430,15 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
         for node, f, df in zip(g.nodes, f_i, df_i):
             ligname = idx_to_nm[node]
             MLEs.append((ligname, f, df))
+    else:
+        click.secho(
+            f"The results network has {DDGbind_count} node(s), but 3 or more nodes are required to calculate DG values.",
+            err=True,
+            fg="red",
+        )
+        sys.exit(1)
 
-    writer.writerow(["ligand", "DG(MLE) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+    writer.writerow(["ligand", "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)"])
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         writer.writerow([ligA, DG, unc_DG])
