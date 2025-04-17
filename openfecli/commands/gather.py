@@ -414,10 +414,17 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     if DDGbind_count > 2:
         if not nx.is_weakly_connected(g):
             # TODO: dump the network for debugging?
-            click.secho("The resulting graph is not connected, likely due to failed edges.")
-            sys.exit(1)
+            msg = (
+                "The results network is disconnected, likely due to failed edges.\n"
+                "Some dg values will not be able to be computed."
+                # "Absolute free energies cannot be generated from the relative free energies.\n"
+                # "Please either connect the network by addressing failed runs or adding more edges.\n"
+                # "Alternatively, you can compute relative free energies using the ``--report=ddg`` flag."
+            )
+            click.secho(msg, err=True, fg='yellow')
+            # sys.exit(1)
         idx_to_nm = {v: k for k, v in nm_to_idx.items()}
-        f_i, df_i = mle(g, factor='calc_DDG')
+        f_i, df_i = mle(g, factor="calc_DDG")
         df_i = np.diagonal(df_i) ** 0.5
 
         for node, f, df in zip(g.nodes, f_i, df_i):

@@ -333,7 +333,7 @@ class TestRBFEGatherFailedEdges:
 
     def test_missing_leg_error(self, results_paths_serial_missing_legs: str):
         runner = CliRunner(mix_stderr=False)
-        result = runner.invoke(gather, results_paths_serial_missing_legs + ['-o', '-'])
+        result = runner.invoke(gather, results_paths_serial_missing_legs + ["--report", "dg"])
 
         assert result.exit_code == 1
         assert "Some edge(s) are missing runs" in str(result.stderr)
@@ -344,7 +344,17 @@ class TestRBFEGatherFailedEdges:
 
     def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
         runner = CliRunner(mix_stderr=False)
+        with pytest.warns():
+            result = runner.invoke(gather, results_paths_serial_missing_legs + ["--report", "dg"])
+            result += ['--allow-partial']
+            assert result.exit_code == 0
+            assert "The results network is disconnected" in str(result.stderr)
+
+
+    def test_missing_leg_allow_partial_(self, results_paths_serial_missing_legs: str):
+        runner = CliRunner(mix_stderr=False)
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
-            result = runner.invoke(gather, results_paths_serial_missing_legs + ['--allow-partial', '-o', '-'])
-            assert result.exit_code == 1
+            result = runner.invoke(gather, results_paths_serial_missing_legs + ["--report", "ddg"])
+            result += ['--allow-partial']
+            assert result.exit_code == 0
