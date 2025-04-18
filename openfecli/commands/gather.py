@@ -10,7 +10,7 @@ from typing import Callable, Literal, List
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
-FAIL_STR = "NaN" # string used to indicate a failed run in output tables.
+FAIL_STR = "Error" # string used to indicate a failed run in output tables.
 
 def _get_column(val:float|int)->int:
     """Determine the index (where the 0th index is the decimal) at which the
