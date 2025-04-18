@@ -4,12 +4,13 @@
 import click
 import os
 import pathlib
+import sys
 from typing import Callable, Literal, List
-import warnings
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
+FAIL_STR = "Error" # string used to indicate a failed run in output tables.
 
 def _get_column(val:float|int)->int:
     """Determine the index (where the 0th index is the decimal) at which the
@@ -73,7 +74,6 @@ def format_estimate_uncertainty(
 
     return est_str, unc_str
 
-
 def is_results_json(fpath:os.PathLike|str)->bool:
     """Sanity check that file is a result json before we try to deserialize"""
     return 'estimate' in open(fpath, 'r').read(20)
@@ -99,7 +99,86 @@ def load_json(fpath:os.PathLike|str)->dict:
 
     return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
 
-def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
+def _get_names(result:dict) -> tuple[str, str]:
+    """Get the ligand names from a unit's results data.
+
+    Parameters
+    ----------
+    result : dict
+        A results dict.
+
+    Returns
+    -------
+    tuple[str, str]
+        Ligand names corresponding to the results.
+    """
+    try:
+        nm = list(result['unit_results'].values())[0]['name']
+
+    except KeyError:
+        raise ValueError("Failed to guess names")
+
+    # TODO: make this more robust by pulling names from inputs.state[A/B].name
+
+    toks = nm.split()
+    if toks[2] == 'repeat':
+        return toks[0], toks[1]
+    else:
+        return toks[0], toks[2]
+
+def _get_type(res:dict)->Literal['vacuum','solvent','complex']:
+    """Determine the simulation type based on the component names."""
+    # TODO: use component *types* instead here
+    list_of_pur = list(res['protocol_result']['data'].values())[0]
+    pur = list_of_pur[0]
+    components = pur['inputs']['stateA']['components']
+
+    if 'solvent' not in components:
+        return 'vacuum'
+    elif 'protein' in components:
+        return 'complex'
+    else:
+        return 'solvent'
+
+def _legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
+    # TODO: Deprecate this when we no longer rely on key names in `_get_type()`
+
+    if 'solvent' in res_fn:
+        return 'solvent'
+    elif 'vacuum' in res_fn:
+        return 'vacuum'
+    # TODO: if there is no identifier in the filename, do we really want to assume it's a complex?
+    else:
+        return 'complex'
+
+def _get_result_id(
+    result: dict, result_fn: os.PathLike | str
+) -> tuple[tuple[str, str], Literal["vacuum", "solvent", "complex"]]:
+    """Extract the name and simulation type from a results dict.
+
+    Parameters
+    ----------
+    result : dict
+        A result object
+    result_fn : os.PathLike | str
+        The path to deserialized results, only used if unable to extract from results dict.
+        TODO: only take in ``result_fn`` for backwards compatibility, remove this in 2.0
+
+    Returns
+    -------
+    tuple
+        Identifying information (ligand names and simulation type) for the given results data.
+    """
+    ligA, ligB = _get_names(result)
+
+    try:
+        simtype = _get_type(result)
+    except KeyError:
+        simtype = _legacy_get_type(result_fn)
+
+    return (ligA, ligB), simtype
+
+def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -115,77 +194,25 @@ def load_valid_result_json(fpath:os.PathLike|str)->dict|None:
 
     """
 
-
+    # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
+    # for now though, it's not the bottleneck on performance
+    result = load_json(fpath)
     try:
-        result = load_json(fpath)
-    except FileNotFoundError:
-        click.echo(f"Warning: {fpath} does not exist. Skipping.", err=True)
-        return None
-    if "unit_results" not in result.keys():
-        click.echo(f"{fpath}: No 'unit_results' found, assuming to be a failed simulation.", err=True)
-        return None
+        result_id = _get_result_id(result, fpath)
+    except (ValueError, IndexError):
+        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True, fg='yellow')
+        return None, None
     if result['estimate'] is None:
-        click.echo(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True)
-        return None
+        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True, fg='yellow')
+        return result_id, None
     if result['uncertainty'] is None:
-        click.echo(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True)
-        return None
-    if result['protocol_result']['data'] == {}:
-        click.echo(f"{fpath}: No data found for this protocol result, assuming to be a failed simulation.", err=True)
-        return None
+        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True, fg='yellow')
+        return result_id, None
     if all('exception' in u for u in result['unit_results'].values()):
-        click.echo(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True)
-        return None
+        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True, fg='yellow')
+        return result_id, None
 
-    return result
-
-def get_names(result:dict) -> tuple[str, str]:
-    """Get the ligand names from a unit's results data.
-
-    Parameters
-    ----------
-    result : dict
-        A results dict.
-
-    Returns
-    -------
-    tuple[str, str]
-        Ligand names corresponding to the results.
-    """
-
-    nm = list(result['unit_results'].values())[0]['name']
-    toks = nm.split()
-    if toks[2] == 'repeat':
-        return toks[0], toks[1]
-    else:
-        return toks[0], toks[2]
-
-
-def get_type(res:dict)->Literal['vacuum','solvent','complex']:
-    """Determine the simulation type based on the component names."""
-    # TODO: use component *types* instead here
-
-    list_of_pur = list(res['protocol_result']['data'].values())[0]
-    pur = list_of_pur[0]
-    components = pur['inputs']['stateA']['components']
-
-    if 'solvent' not in components:
-        return 'vacuum'
-    elif 'protein' in components:
-        return 'complex'
-    else:
-        return 'solvent'
-
-
-def legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
-    # TODO: Deprecate this when we no longer rely on key names in `get_type()`
-
-    if 'solvent' in res_fn:
-        return 'solvent'
-    elif 'vacuum' in res_fn:
-        return 'vacuum'
-    else:
-        return 'complex'
+    return result_id, result
 
 def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
     """Format output describing RBFE or RHFE legs that are missing runs.
@@ -200,38 +227,40 @@ def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])
     str
         An error message containing information on all failed legs.
     """
-    msg="Some edge(s) are missing runs!\nBelow are the problematic edges and run types found:\n\n"
-    for leg_types, ligpair in bad_legs:
-        msg += f"{ligpair}: {','.join(leg_types)}\n"
+    msg = (
+        "\nSome edge(s) are missing runs!\n"
+        "The following edges were found but are missing one or more run types "
+        "('solvent', 'complex', or 'vacuum') to complete the calculation:\n\n"
+        "ligand_i\tligand_j\trun_type_found\n"
+    )
+    # TODO: format this better
+    for ligA, ligB, leg_types in bad_legs:
+        msg += f"{ligA}\t{ligB}\t{','.join(leg_types)}\n"
 
     return msg
 
 
-def _parse_raw_units(results: dict) -> list[tuple]:
-    # grab individual unit results from master results dict
-    # returns list of (estimate, uncertainty) tuples
-    list_of_pur = list(results['protocol_result']['data'].values())
-
-    # could add to each tuple pu[0]["source_key"] for repeat ID
-    return [(pu[0]['outputs']['unit_estimate'],
-             pu[0]['outputs']['unit_estimate_error'])
-            for pu in list_of_pur]
-
-def _get_ddgs(legs:dict, allow_partial=False):
+def _get_ddgs(legs: dict, allow_partial=False) -> None:
     import numpy as np
-    from openfe.protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocolResult as rfe_result
-
+    from openfe.protocols.openmm_rfe.equil_rfe_methods import (
+        RelativeHybridTopologyProtocolResult as rfe_result,
+    )
+    # TODO: if there's a failed edge but other valid results in a leg, ddgs will be computed
+    # only fails if there are no valid results
     DDGs = []
     bad_legs = []
     for ligpair, vals in sorted(legs.items()):
         leg_types = set(vals)
+        # drop any leg types that have no values (these are failed runs)
+        valid_leg_types = {k for k in vals if vals[k]}
+
         DDGbind = None
         DDGhyd = None
         bind_unc = None
         hyd_unc = None
 
-        do_rbfe = (len(leg_types & {'complex', 'solvent'}) == 2)
-        do_rhfe = (len(leg_types & {'vacuum', 'solvent'}) == 2)
+        do_rbfe = (len(valid_leg_types & {'complex', 'solvent'}) == 2)
+        do_rhfe = (len(valid_leg_types & {'vacuum', 'solvent'}) == 2)
 
         if do_rbfe:
             DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
@@ -253,15 +282,15 @@ def _get_ddgs(legs:dict, allow_partial=False):
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if not do_rbfe and not do_rhfe:
-            bad_legs.append((leg_types, ligpair))
-            continue
+            bad_legs.append((*ligpair, leg_types))
+            DDGs.append((*ligpair, None, None, None, None))
         else:
             DDGs.append((*ligpair, DDGbind, bind_unc, DDGhyd, hyd_unc))
 
     if bad_legs:
         err_msg = _generate_bad_legs_error_message(bad_legs)
         if allow_partial:
-            warnings.warn(err_msg)
+            click.secho(err_msg, err=True, fg='yellow')
         else:
             err_msg += (
                 "\nYou can force partial gathering of results, without "
@@ -269,12 +298,24 @@ def _get_ddgs(legs:dict, allow_partial=False):
                 "command.\nNOTE: This may cause problems with predicting "
                 "absolute free energies from the relative free energies."
                 )
-            raise RuntimeError(err_msg)
-
+            click.secho(err_msg, err=True, fg='red')
+            sys.exit(1)
     return DDGs
 
 
-def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
+def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
+    """Compute and write out DDG values for the given legs.
+
+    Parameters
+    ----------
+    legs : dict
+        Dict of legs to write out.
+    writer : Callable
+        The CSV writer to use.
+    allow_partial : bool
+        If ``True``, no error will be thrown for incomplete or invalid results,
+        and DDGs will be reported for whatever valid results are found.
+    """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
                      "uncertainty (kcal/mol)"])
@@ -285,9 +326,22 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool):
         if DDGhyd is not None:
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
             writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
+        elif DDGbind is None and DDGhyd is None:
+            writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
 
+def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
+    """
+    Write out all legs found and their DG values, or indicate that they have failed.
 
-def _write_raw(legs:dict, writer:Callable, allow_partial=True):
+    Parameters
+    ----------
+    legs : dict
+        Dict of legs to write out.
+    writer : Callable
+        The CSV writer to use.
+    allow_partial : bool, optional
+        Unused for this function, since all results will be included.
+    """
     writer.writerow(["leg", "ligand_i", "ligand_j",
                      "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
 
@@ -296,36 +350,42 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True):
             for repeat in repeats:
                 for m, u in repeat:
                     if m is None:
-                        m, u = 'NaN', 'NaN'
+                        m, u = FAIL_STR, FAIL_STR
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
                     writer.writerow([simtype, *ligpair, m, u])
 
+def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
+    """Compute and write out DG values for the given legs.
 
-def _write_dg_raw(legs:dict, writer:Callable,  allow_partial):  # pragma: no-cover
-    writer.writerow(["leg", "ligand_i", "ligand_j", "DG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
-    for ligpair, vals in sorted(legs.items()):
-        for simtype, (m, u) in sorted(vals.items()):
-            if m is None:
-                m, u = 'NaN', 'NaN'
-            else:
-                m, u = format_estimate_uncertainty(m.m, u.m)
-            writer.writerow([simtype, *ligpair, m, u])
-
-
-def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
+    Parameters
+    ----------
+    legs : dict
+        Dict of legs to write out.
+    writer : Callable
+        The CSV writer to use.
+    allow_partial : bool
+        If ``True``, no error will be thrown for incomplete or invalid results,
+        and DGs will be reported for whatever valid results are found.
+    """
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
+
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
-    # 4b) perform MLE
+    expected_ligs = []
+
+    # perform MLE
     g = nx.DiGraph()
     nm_to_idx = {}
     DDGbind_count = 0
-    for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
-        if DDGbind is None:
+    for ligA, ligB, DDGbind, bind_unc, _, _ in DDGs:
+        for lig in (ligA, ligB):
+            if lig not in expected_ligs:
+                expected_ligs.append(lig)
+
+        if DDGbind is None or DDGbind == FAIL_STR:
             continue
         DDGbind_count += 1
 
@@ -349,22 +409,120 @@ def _write_dg_mle(legs:dict, writer:Callable, allow_partial:bool):
         g.add_edge(
             idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc,
         )
-    if DDGbind_count > 2:
-        idx_to_nm = {v: k for k, v in nm_to_idx.items()}
 
-        f_i, df_i = mle(g, factor='calc_DDG')
+    if DDGbind_count > 2:
+        if not nx.is_weakly_connected(g):
+            # TODO: dump the network for debugging?
+            # TODO: use largest connected component when possible
+            msg = (
+                "ERROR: The results network is disconnected due to failed or missing edges.\n"
+                "Absolute free energies cannot be calculated in a disconnected network.\n"
+                "Please either connect the network by addressing failed runs or adding edges.\n"
+                "You can still compute relative free energies using the ``--report=ddg`` flag."
+            )
+            click.secho(msg, err=True, fg='red')
+            sys.exit(1)
+        idx_to_nm = {v: k for k, v in nm_to_idx.items()}
+        f_i, df_i = mle(g, factor="calc_DDG")
         df_i = np.diagonal(df_i) ** 0.5
 
         for node, f, df in zip(g.nodes, f_i, df_i):
             ligname = idx_to_nm[node]
             MLEs.append((ligname, f, df))
+    else:
+        click.secho(
+            f"The results network has {DDGbind_count} edge(s), but 3 or more edges are required to calculate DG values.",
+            err=True,
+            fg="red",
+        )
+        sys.exit(1)
 
-    writer.writerow(["ligand", "DG(MLE) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+    writer.writerow(["ligand", "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)"])
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         writer.writerow([ligA, DG, unc_DG])
+        expected_ligs.remove(ligA)
 
+    for lig in expected_ligs:
+        writer.writerow([lig, FAIL_STR, FAIL_STR])
+
+
+def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
+    """Recursively collects all results JSONs from the paths in ``results``,
+    which can include directories and/or filepaths.
+    """
+    import glob
+
+    def collect_jsons(results: List[os.PathLike]):
+        all_jsons = []
+        for p in results:
+            if str(p).endswith("json"):
+                all_jsons.append(p)
+            elif p.is_dir():
+                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
+
+        return all_jsons
+
+    def is_results_json(fpath: os.PathLike | str) -> bool:
+        """Sanity check that file is a result json before we try to deserialize"""
+        return "estimate" in open(fpath, "r").read(20)
+
+    results = sorted(results)  # ensures reproducible output order regardless of input order
+
+    # 1) find all possible jsons
+    json_fns = collect_jsons(results)
+
+    # 2) filter only result jsons
+    result_fns = filter(is_results_json, json_fns)
+    return result_fns
+
+
+def _get_legs_from_result_jsons(
+    result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]
+) -> dict[tuple[str, str], dict[str, list]]:
+    """
+    Iterate over a list of result JSONs and populate a dict of dicts with all data needed
+    for results processing.
+
+
+    Parameters
+    ----------
+    result_fns : list[pathlib.Path]
+        List of filepaths containing results formatted as JSON.
+    report : Literal["dg", "ddg", "raw"]
+        Type of report to generate.
+
+    Returns
+    -------
+    legs: dict[tuple[str,str],dict[str, list]]
+        Data extracted from the given result JSONs, organized by the leg's ligand names and simulation type.
+    """
+    from collections import defaultdict
+
+    legs = defaultdict(lambda: defaultdict(list))
+
+    for result_fn in result_fns:
+        result_info, result = _load_valid_result_json(result_fn)
+
+        if result_info is None:  # this means it couldn't find names and/or simtype
+            continue
+        names, simtype = result_info
+        if report.lower() == "raw":
+            if result is None:
+                parsed_raw_data =[(None, None)]
+            else:
+                parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
+                                    v[0]['outputs']['unit_estimate_error'])
+                                    for v in result["protocol_result"]["data"].values()]
+            legs[names][simtype].append(parsed_raw_data)
+        else:
+            if result is None:
+                # we want the dict name/simtype entry to exist for error reporting, even if there's no valid data
+                dGs = []
+            else:
+                dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
+            legs[names][simtype].extend(dGs)
+    return legs
 
 @click.command(
     'gather',
@@ -403,7 +561,6 @@ def gather(results:List[os.PathLike|str],
            ):
     """Gather simulation result JSON files of relative calculations to a tsv file.
 
-
     This walks RESULTS recursively and finds all result JSON files from the
     quickrun command (these files must end in .json). Each of these contains
     the results of a separate leg from a relative free energy thermodynamic
@@ -425,64 +582,23 @@ def gather(results:List[os.PathLike|str],
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    from collections import defaultdict
-    import glob
     import csv
 
-    results = sorted(results)  # not necessary, but ensures reproducibility
-    def collect_jsons(results:List[os.PathLike]):
-        all_jsons = []
-        for p in results:
-            if str(p).endswith('json'):
-                all_jsons.append(p)
-            elif p.is_dir():
-                all_jsons.extend(glob.glob(f"{p}/**/*json", recursive=True))
-        
-        return all_jsons
+    # find and filter result jsons
+    result_fns = _collect_result_jsons(results)
 
-    # 1) find all possible jsons
-    json_fns = collect_jsons(results)
+    # pair legs of simulations together into dict of dicts
+    legs = _get_legs_from_result_jsons(result_fns, report)
 
-    # 2) filter only result jsons
-    result_fns = filter(is_results_json, json_fns)
-
-    # 3) pair legs of simulations together into dict of dicts
-    legs = defaultdict(lambda: defaultdict(list))
-
-    for result_fn in result_fns:
-        result = load_valid_result_json(result_fn)
-        if result is None:
-            continue
-
-        try:
-            names = get_names(result)
-        except KeyError:
-            raise ValueError("Failed to guess names")
-        try:
-            simtype = get_type(result)
-        except KeyError:
-            simtype = legacy_get_type(result_fn)
-
-        if report.lower() == 'raw':
-            legs[names][simtype].append(_parse_raw_units(result))
-        else:
-            dGs = [v[0]['outputs']['unit_estimate'] for v in result['protocol_result']['data'].values()]
-            ## for jobs run in parallel, we need to compute these values
-            legs[names][simtype].extend(dGs)
-
+    # compute report and write to output
     writer = csv.writer(
         output,
         delimiter="\t",
         lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
     )
-
-    # 5a) write out MLE values
-    # 5b) write out DDG values
-    # 5c) write out each leg
     writing_func = {
         'dg': _write_dg_mle,
         'ddg': _write_ddg,
-        #  'dg-raw': _write_dg_raw,
         'raw': _write_raw,
     }[report.lower()]
     writing_func(legs, writer, allow_partial)
