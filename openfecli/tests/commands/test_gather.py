@@ -282,7 +282,7 @@ class TestGatherCMET:
 
         assert cli_result.exit_code == 1
         assert (
-            "The results network has 0 node(s), but 3 or more nodes are required"
+            "The results network has 0 edge(s), but 3 or more edges are required"
             in str(cli_result.stderr)
         )
 
