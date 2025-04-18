@@ -432,7 +432,7 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
             MLEs.append((ligname, f, df))
     else:
         click.secho(
-            f"The results network has {DDGbind_count} node(s), but 3 or more nodes are required to calculate DG values.",
+            f"The results network has {DDGbind_count} edge(s), but 3 or more edges are required to calculate DG values.",
             err=True,
             fg="red",
         )
