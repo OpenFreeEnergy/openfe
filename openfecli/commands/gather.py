@@ -197,7 +197,6 @@ def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
     result = load_json(fpath)
-
     try:
         result_id = _get_result_id(result, fpath)
     except (ValueError, IndexError):
@@ -507,7 +506,6 @@ def _get_legs_from_result_jsons(
 
         if result_info is None:  # this means it couldn't find names and/or simtype
             continue
-
         names, simtype = result_info
         if report.lower() == "raw":
             if result is None:

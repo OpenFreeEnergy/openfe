@@ -14,6 +14,7 @@ from openfecli.commands.gather import (
     format_estimate_uncertainty,
     _get_column,
     _load_valid_result_json,
+    _get_legs_from_result_jsons,
 )
 
 POOCH_CACHE = pooch.os_cache('openfe')
@@ -115,6 +116,17 @@ class TestResultLoading:
             captured = capsys.readouterr()
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
+    
+    def test_get_legs_from_result_jsons(self, capsys, sim_result):
+        """Test that exceptions are handled correctly at the _get_legs_from_results_json level."""
+        sim_result["protocol_result"]["data"] = {}
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = _get_legs_from_result_jsons(result_fns=[""], report='dg')
+            captured = capsys.readouterr()
+            assert result == {}
+            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
+    
 
 _RBFE_EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
