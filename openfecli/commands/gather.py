@@ -215,12 +215,12 @@ def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]
 
     return result_id, result
 
-def _generate_bad_legs_error_message(bad_legs:list[tuple[str, str, str]])->str:
+def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
     """Format output describing RBFE or RHFE legs that are missing runs.
 
     Parameters
     ----------
-    bad_legs : list[tuple[str]]]
+    bad_legs : list[set[str], tuple[str]]]
         A list of tuples of (leg_types, ligpair) pairs from failed edges/legs.
 
     Returns
@@ -366,26 +366,12 @@ def _generate_raw(legs:dict, allow_partial=True) -> None:
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
 
-    bad_legs = []
-    for lig_pair, leg in legs.items():
+    for leg in legs.values():
         for run_type, sim_results in leg.items():
-            n_repeats = len(sim_results)
-            if n_repeats < 2:
-                bad_legs += [(*lig_pair, run_type, n_repeats)]
-
-    if bad_legs:
-        # TODO: improve this formatting
-        msg = (
-            "ERROR: Every edge must have at least two simulation repeats.\n"
-            "The following legs have an insufficient number of repeats:\n\n"
-            "ligand_i,ligand_j\trun_type: n_repeats_found\n"
-        )
-        for ligA, ligB, leg_types, n_repeats in bad_legs:
-            msg += f"{ligA}, {ligB}\t{leg_types}: {n_repeats}\n"
-
-        click.secho(msg, err=True, fg="red")
-        sys.exit(1)
-
+            if len(sim_results) < 2:
+                msg='ERROR: Every edge must have at least two simulation repeats'
+                click.secho(msg, err=True, fg='red')
+                sys.exit(1)
 
 def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
