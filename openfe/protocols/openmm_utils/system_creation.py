@@ -212,23 +212,24 @@ def get_omm_modeller(
     if small_mols:
         try:
             small_mols = iter(small_mols)
-        except:
-            small_mols = {small_mols} # make it a set/iterable with the comp
+        except TypeError:
+            small_mols = {small_mols}  # make it a set/iterable with the comp
         for small_mol_comp in small_mols:
             _add_small_mol(small_mol_comp, small_mol_comp.to_openff(), system_modeller,
                            component_resids)
 
     # Add solvent if neeeded
     if solvent_comps:
+        # Making it a list to make our life easier -- TODO: Maybe there's a better type for this
         try:
-            solvent_comps = iter(solvent_comps)
+            solvent_comps = list(set(solvent_comps))  # if given iterable
         except TypeError:
-            solvent_comps = {solvent_comps}  # make it a set/iterable with the comp
+            solvent_comps = [solvent_comps]  # if not iterable, given single obj
         # TODO: Support multiple solvent components? Is there a use case for it?
-        # Error out when we have more than one solvent component in the states/systems
-        if len(set(solvent_comps)) > 1:
+        # Error out when we iter(have more than one solvent component in the states/systems
+        if len(solvent_comps) > 1:
             raise ValueError("More than one solvent component found in systems. Only one supported.")
-        solvent_comp = set(solvent_comps).pop()  # Get the first (and only) solvent component
+        solvent_comp = solvent_comps[0]  # Get the first (and only?) solvent component
         # Do unit conversions if necessary
         solvent_padding = None
         box_size = None
