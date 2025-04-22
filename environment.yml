@@ -9,7 +9,7 @@ dependencies:
   - kartograf>=1.0.0
   - lomap2>=3.2.1
   - networkx
-  - numpy<2.0.0
+  - numpy
   - openfe-analysis>=0.3.1
   - openff-interchange
   - openff-models>=0.0.5
