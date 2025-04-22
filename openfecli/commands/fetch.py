@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
+import rich_click as click
 import urllib
 import shutil
 from plugcli.cli import CLI, CONTEXT_SETTINGS
@@ -47,7 +47,7 @@ class FetchCLI(CLI):
 
 @click.command(
     cls=FetchCLI,
-    short_help="Fetch tutorial or other resource."
+    short_help="Fetch tutorial or other resource.",
 )
 def fetch():
     """

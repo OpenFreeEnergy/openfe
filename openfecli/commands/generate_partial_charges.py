@@ -1,13 +1,15 @@
 import pathlib
 
 import click
+from rich_click import RichCommand
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES, OVERWRITE
 
 
 @click.command(
     "charge-molecules",
-    short_help="Generate partial charges for a set of molecules."
+    short_help="Generate partial charges for a set of molecules.",
+    cls=RichCommand
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."

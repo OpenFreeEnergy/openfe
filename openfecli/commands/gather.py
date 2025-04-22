@@ -6,6 +6,7 @@ import os
 import pathlib
 import sys
 from typing import Callable, Literal, List
+from rich_click import RichCommand
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -526,7 +527,8 @@ def _get_legs_from_result_jsons(
 
 @click.command(
     'gather',
-    short_help="Gather result jsons for network of RFE results into a TSV file"
+    short_help="Gather result jsons for network of RFE results into a TSV file",
+    cls=RichCommand
 )
 @click.argument('results',
                 nargs=-1,  # accept any number of results

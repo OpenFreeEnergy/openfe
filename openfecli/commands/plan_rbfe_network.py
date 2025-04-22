@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
+from rich_click import RichCommand
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
@@ -110,7 +111,8 @@ def plan_rbfe_network_main(
     short_help=(
         "Plan a relative binding free energy network, saved as JSON files "
         "for the quickrun command."
-    )
+    ),
+    cls=RichCommand,
 )
 @MOL_DIR.parameter(
     required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."

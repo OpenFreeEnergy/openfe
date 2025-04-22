@@ -1,9 +1,11 @@
 import click
+from rich_click import RichCommand
 from openfecli import OFECommandPlugin
 
 @click.command(
     "view-ligand-network",
-    short_help="Visualize a ligand network"
+    short_help="Visualize a ligand network",
+    cls=RichCommand,
 )
 @click.argument(
     "ligand-network",

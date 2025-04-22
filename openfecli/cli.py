@@ -5,7 +5,7 @@ import pathlib
 import logging
 import logging.config
 
-import click
+import rich_click as click
 from plugcli.cli import CLI, CONTEXT_SETTINGS
 from plugcli.plugin_management import FilePluginLoader
 

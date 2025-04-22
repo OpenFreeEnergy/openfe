@@ -5,6 +5,8 @@ import click
 import json
 import pathlib
 
+from rich_click import RichCommand
+
 from openfecli import OFECommandPlugin
 from openfecli.utils import write, print_duration, configure_logger
 
@@ -15,10 +17,10 @@ def _format_exception(exception) -> str:
     return f"{exception[0]}: {exception[1][0]}"
 
 
-
 @click.command(
     'quickrun',
-    short_help="Run a given transformation, saved as a JSON file"
+    short_help="Run a given transformation, saved as a JSON file",
+    cls=RichCommand
 )
 @click.argument('transformation', type=click.File(mode='r'),
                 required=True)

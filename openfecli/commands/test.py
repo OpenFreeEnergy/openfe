@@ -1,4 +1,5 @@
 import click
+from rich_click import RichCommand
 from openfecli import OFECommandPlugin
 
 import pytest
@@ -8,7 +9,8 @@ from openfecli.utils import write
 
 @click.command(
     "test",
-    short_help="Run the OpenFE test suite"
+    short_help="Run the OpenFE test suite",
+    cls=RichCommand,
 )
 @click.option('--long', is_flag=True, default=False,
               help="Run additional tests (takes much longer)")

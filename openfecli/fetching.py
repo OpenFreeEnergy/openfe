@@ -4,6 +4,8 @@ from plugcli.plugin_management import CommandPlugin
 import urllib.request
 import importlib.resources
 import shutil
+
+from rich_click import RichCommand
 from .utils import write
 
 import pathlib
@@ -71,6 +73,7 @@ class _Fetcher:
             self.short_name,
             short_help=short_help,
             help=docs,
+            cls=RichCommand
         )
         @click.option(
             '-d', '--directory', default='.',
