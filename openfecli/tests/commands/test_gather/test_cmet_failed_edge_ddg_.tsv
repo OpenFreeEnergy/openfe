@@ -1,0 +1,2 @@
+ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
+lig_CHEMBL3402745_200_5	lig_CHEMBL3402744_300_4	1.1	0.1
