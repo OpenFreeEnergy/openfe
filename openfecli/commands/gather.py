@@ -4,6 +4,7 @@
 import click
 import os
 import pathlib
+import pandas as pd
 import sys
 from typing import Callable, Literal, List
 
@@ -317,18 +318,19 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
         and DDGs will be reported for whatever valid results are found.
     """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
-    writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+    # writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
+    data = []
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         if DDGbind is not None:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
-            writer.writerow([ligA, ligB, DDGbind, bind_unc])
+            data.append((ligA, ligB, DDGbind, bind_unc))
         if DDGhyd is not None:
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
-            writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
+            data.append((ligA, ligB, DDGhyd, hyd_unc))
         elif DDGbind is None and DDGhyd is None:
-            writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
-
+            data.append((ligA, ligB, FAIL_STR, FAIL_STR))
+    df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
+    click.echo(df.to_string(index=False, justify='left', col_space=15))
 def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
@@ -342,9 +344,7 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     allow_partial : bool, optional
         Unused for this function, since all results will be included.
     """
-    writer.writerow(["leg", "ligand_i", "ligand_j",
-                     "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
-
+    data = []
     for ligpair, results in sorted(legs.items()):
         for simtype, repeats in sorted(results.items()):
             for repeat in repeats:
@@ -353,7 +353,11 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
                         m, u = FAIL_STR, FAIL_STR
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
-                    writer.writerow([simtype, *ligpair, m, u])
+                    data.append(
+                        {"leg": simtype, "ligand_i": ligpair[0], "ligand_j": ligpair[1], 'DG(i->j) (kcal/mol)':m, 'MBAR uncertainty (kcal/mol)':u}
+                    )    
+    df = pd.DataFrame(data)
+    click.echo(df.to_string(index=False, justify='left'))
 
 def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
@@ -375,6 +379,7 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
     expected_ligs = []
+    data = []
 
     # perform MLE
     g = nx.DiGraph()
@@ -437,15 +442,16 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
         )
         sys.exit(1)
 
-    writer.writerow(["ligand", "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)"])
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
-        writer.writerow([ligA, DG, unc_DG])
+        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
         expected_ligs.remove(ligA)
 
-    for lig in expected_ligs:
-        writer.writerow([lig, FAIL_STR, FAIL_STR])
+    for ligA in expected_ligs:
+        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})
 
+    df = pd.DataFrame(data)
+    click.echo(df.to_string(index=False, justify='left'))
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
     """Recursively collects all results JSONs from the paths in ``results``,
