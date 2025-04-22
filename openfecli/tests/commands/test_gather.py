@@ -349,6 +349,15 @@ def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
     actual_lines = set(cli_result.stdout_bytes.split(b'\n'))
     assert set(expected.split(b'\n')) == actual_lines
 
+def test_rbfe_gather_single_repeats_dg_error(rbfe_result_dir, dataset):
+    """A single repeat is insufficient for a dg calculation - should fail cleanly."""
+
+    runner = CliRunner(mix_stderr=False)
+    results = rbfe_result_dir("rbfe_results_parallel_repeats")
+    args = ['report','dg']
+    cli_result = runner.invoke(gather, f"{results}/replicate_0" + args)
+    assert cli_result.exit_code == 1
+
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 class TestRBFEGatherFailedEdges:
     @pytest.fixture()
