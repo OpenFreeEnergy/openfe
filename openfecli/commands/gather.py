@@ -393,6 +393,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
     expected_ligs = []
+    data = []
 
     # perform MLE
     g = nx.DiGraph()
