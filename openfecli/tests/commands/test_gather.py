@@ -325,6 +325,17 @@ class TestGatherCMET:
         # TODO: figure out how to mock terminal size, since it affects the table wrapping
         # file_regression.check(cli_result.output, extension='.txt')
 
+    def test_write_to_file(self, cmet_result_dir):
+        runner = CliRunner(mix_stderr=False)
+        with runner.isolated_filesystem():
+            results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
+            fname = "output.tsv"
+            args = ["--report", "raw", "-o", fname]
+            cli_result = runner.invoke(gather, results + args)
+            assert "writing raw output to 'output.tsv'" in cli_result.output
+            assert pathlib.Path(fname).is_file()
+
+
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
