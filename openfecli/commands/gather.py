@@ -579,26 +579,37 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
     '--report',
     type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
                            case_sensitive=False),
-    default="dg", show_default=True,
+    default="dg",
+    show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
         "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
         "the raw result of the deltaG for a leg."
     )
 )
-@click.option('output', '-o',
-              type=click.File(mode='w'),
-              default='-')
+@click.option("output", "-o", type=click.File(mode="w"), default="-")
 @click.option(
-    '--allow-partial', is_flag=True, default=False,
+    "--tsv",
+    is_flag=True,
+    default=False,
+    help=("Results that are output to stdout will be formatted as tab-separated, "
+          "identical to the formatting used when writing to file."
+          "By default, the output table will be formatted for human-readability."
+    ),
+)
+@click.option(
+    "--allow-partial",
+    is_flag=True,
+    default=False,
     help=(
         "Do not raise errors if results are missing parts for some edges. "
         "(Skip those edges and issue warning instead.)"
-    )
+    ),
 )
 def gather(results:List[os.PathLike|str],
            output:os.PathLike|str,
            report:Literal['dg','ddg','raw'],
+           tsv:bool,
            allow_partial:bool
            ):
     """Gather simulation result JSON files of relative calculations to a tsv file.
@@ -643,7 +654,7 @@ def gather(results:List[os.PathLike|str],
     df = report_func(legs, allow_partial)
 
     # write output
-    if isinstance(output, click.utils.LazyFile):
+    if isinstance(output, click.utils.LazyFile) or tsv:
         click.echo(f"writing {report} output to '{output.name}'")
         df.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
