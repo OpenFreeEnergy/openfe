@@ -2,42 +2,43 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
+  - cinnabar ~=0.4.0
+  - click
+  - coverage
   - duecredit<0.10
   - kartograf>=1.0.0
   - lomap2>=3.2.1
-  - numpy
   - networkx
-  - rdkit
+  - numpy<2.0.0
+  - openfe-analysis>=0.3.1
+  - openff-interchange
+  - openff-models>=0.0.5
+  - openff-nagl-base >=0.3.3
+  - openff-nagl-models>=0.1.2
+  - openff-toolkit>=0.16.2
+  - openff-units==0.2.0
+  - openmm >=8.0.0,!=8.1.0,<8.2.0
+  - openmmforcefields
+  - openmmtools >=0.24.1
   - packaging
+  - perses>=0.10.3
+  - plugcli
+  - pint<0.22
   - pip
+  - pooch
+  - py3dmol
+  - pydantic >=1.10.17
+  - pygraphviz
   - pytest
   - pytest-xdist
   - pytest-cov
+  - pytest-regressions
   - pytest-rerunfailures
   - pydantic >=1.10.17
   - pyyaml
-  - coverage
-  - cinnabar ~=0.4.0
-  - openff-toolkit>=0.16.2
-  - openff-nagl-base >=0.3.3
-  - openff-nagl-models>=0.1.2
-  - openff-units==0.2.0
-  - openff-interchange
-  - pint<0.22
-  - openff-models>=0.0.5
-  - openfe-analysis>=0.3.1
-  - click
-  - typing-extensions
-  - numpy<2.0.0
-  - openmm >=8.0.0,!=8.1.0,<8.2.0
-  - openmmtools >=0.24.1
-  - openmmforcefields
-  - perses>=0.10.3
-  - pooch
-  - py3dmol
-  - plugcli
+  - rdkit
   - tqdm
-  - pygraphviz
+  - typing-extensions
   - zstandard
   # Issue #443
   - pymbar>4.0
