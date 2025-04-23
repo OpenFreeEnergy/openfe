@@ -116,7 +116,7 @@ class TestResultLoading:
             captured = capsys.readouterr()
             assert result == (None, None)
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
-    
+
     def test_get_legs_from_result_jsons(self, capsys, sim_result):
         """Test that exceptions are handled correctly at the _get_legs_from_results_json level."""
         sim_result["protocol_result"]["data"] = {}
@@ -126,7 +126,13 @@ class TestResultLoading:
             captured = capsys.readouterr()
             assert result == {}
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
-    
+
+def test_no_results_found():
+    runner = CliRunner(mix_stderr=False)
+
+    cli_result = runner.invoke(gather, "not_a_file.txt")
+    assert cli_result.exit_code == 1
+    assert "No results JSON files found" in str(cli_result.stderr)
 
 _RBFE_EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
@@ -275,7 +281,7 @@ class TestGatherCMET:
 
     @pytest.mark.parametrize("allow_partial", [True, False])
     def test_cmet_too_few_edges_error(self, cmet_result_dir, allow_partial):
-        results = [str(cmet_result_dir / f"result_{i}_failed_edge") for i in range(3)]
+        results = [str(cmet_result_dir / f"results_{i}_failed_edge") for i in range(3)]
         args = ["--report", "dg"]
         runner = CliRunner(mix_stderr=False)
         if allow_partial:
@@ -284,7 +290,7 @@ class TestGatherCMET:
         cli_result = runner.invoke(gather, results + args)
         assert cli_result.exit_code == 1
         assert (
-            "The results network has 0 edge(s), but 3 or more edges are required"
+            "The results network has 1 edge(s), but 3 or more edges are required"
             in str(cli_result.stderr)
         )
 
