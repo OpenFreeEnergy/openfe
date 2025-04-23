@@ -6,7 +6,7 @@ import os
 import pathlib
 import pandas as pd
 import sys
-from typing import Callable, Literal, List
+from typing import Literal, List
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -304,21 +304,18 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     return DDGs
 
 
-def _generate_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
+def _generate_ddg(legs:dict, allow_partial:bool) -> None:
     """Compute and write out DDG values for the given legs.
 
     Parameters
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DDGs will be reported for whatever valid results are found.
     """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
-    # writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
     data = []
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         if DDGbind is not None:
@@ -330,8 +327,9 @@ def _generate_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
         elif DDGbind is None and DDGhyd is None:
             data.append((ligA, ligB, FAIL_STR, FAIL_STR))
     df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
-    click.echo(df.to_string(index=False, justify='left', col_space=15))
-def _generate_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
+    return df
+
+def _generate_raw(legs:dict, allow_partial=True) -> None:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
 
@@ -339,8 +337,6 @@ def _generate_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool, optional
         Unused for this function, since all results will be included.
     """
@@ -353,21 +349,27 @@ def _generate_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
                         m, u = FAIL_STR, FAIL_STR
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
-                    data.append(
-                        {"leg": simtype, "ligand_i": ligpair[0], "ligand_j": ligpair[1], 'DG(i->j) (kcal/mol)':m, 'MBAR uncertainty (kcal/mol)':u}
-                    )    
-    df = pd.DataFrame(data)
-    click.echo(df.to_string(index=False, justify='left'))
+                    data.append((simtype, ligpair[0], ligpair[1], m, u))
 
-def _generate_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
+    df = pd.DataFrame(
+        data,
+        columns=[
+            "leg",
+            "ligand_i",
+            "ligand_j",
+            "DG(i->j) (kcal/mol)",
+            "MBAR uncertainty (kcal/mol)",
+        ],
+    )
+    return df
+
+def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
 
     Parameters
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DGs will be reported for whatever valid results are found.
@@ -379,7 +381,6 @@ def _generate_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
     expected_ligs = []
-    data = []
 
     # perform MLE
     g = nx.DiGraph()
@@ -442,6 +443,7 @@ def _generate_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
         )
         sys.exit(1)
 
+    data = []
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
         data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
@@ -451,7 +453,7 @@ def _generate_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
         data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})
 
     df = pd.DataFrame(data)
-    click.echo(df.to_string(index=False, justify='left'))
+    return df
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
     """Recursively collects all results JSONs from the paths in ``results``,
@@ -588,27 +590,25 @@ def gather(results:List[os.PathLike|str],
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    import csv
-
     # find and filter result jsons
     result_fns = _collect_result_jsons(results)
 
     # pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
 
-    # compute report and write to output
-    writer = csv.writer(
-        output,
-        delimiter="\t",
-        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
-    )
+    # compute report
     report_func = {
         'dg': _generate_dg_mle,
         'ddg': _generate_ddg,
         'raw': _generate_raw,
     }[report.lower()]
-    report_func(legs, writer, allow_partial)
-
+    df = report_func(legs, allow_partial)
+    # write output
+    if isinstance(output, os.PathLike):
+        df.to_csv(output, sep="\t", lineterminator='\n', index=False)
+    # TODO: we can use rich to make this output prettier
+    else:
+        click.echo(df.to_string(output, index=False, justify='left', col_space=15))
 
 PLUGIN = OFECommandPlugin(
     command=gather,
