@@ -241,7 +241,7 @@ class TestGatherCMET:
         results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
@@ -253,7 +253,7 @@ class TestGatherCMET:
         results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
         args = ["--report", report]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
@@ -263,7 +263,7 @@ class TestGatherCMET:
         results = [str(cmet_result_dir / f'results_{i}_remove_edge') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
         file_regression.check(cli_result.output, extension='.tsv')
 
         assert_click_success(cli_result)
@@ -274,7 +274,7 @@ class TestGatherCMET:
         results = [str(cmet_result_dir / f'results_{i}_failed_edge') for i in range(3)]
         args = ["--report", report]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension=".tsv")
@@ -287,7 +287,7 @@ class TestGatherCMET:
         if allow_partial:
             args += ['--allow-partial']
 
-        cli_result = runner.invoke(gather, results + args)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
         assert cli_result.exit_code == 1
         assert (
             "The results network has 1 edge(s), but 3 or more edges are required"
@@ -311,7 +311,7 @@ class TestGatherCMET:
         results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
         args = ["--report", report, "--allow-partial"]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
@@ -342,7 +342,7 @@ def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
         results = glob.glob(f"{results}/*", recursive=True)
         assert len(results) > 1  # sanity check to make sure we're passing in multiple paths
 
-    cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+    cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
     assert_click_success(cli_result)
 
@@ -355,7 +355,7 @@ def test_rbfe_gather_single_repeats_dg_error(rbfe_result_dir):
     runner = CliRunner(mix_stderr=False)
     results = rbfe_result_dir("rbfe_results_parallel_repeats")
     args = ['report','dg']
-    cli_result = runner.invoke(gather, [f"{results}/replicate_0"] + args)
+    cli_result = runner.invoke(gather, [f"{results}/replicate_0"] + args + ['--tsv'])
     assert cli_result.exit_code == 1
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
@@ -388,7 +388,7 @@ class TestRBFEGatherFailedEdges:
         runner = CliRunner(mix_stderr=False)
         with pytest.warns():
             args =  ["--report", "dg", "--allow-partial"]
-            result = runner.invoke(gather, results_paths_serial_missing_legs + args)
+            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
             assert result.exit_code == 1
             assert "The results network is disconnected" in str(result.stderr)
 
@@ -398,5 +398,5 @@ class TestRBFEGatherFailedEdges:
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
             args =  ["--report", "ddg", "--allow-partial"]
-            result = runner.invoke(gather, results_paths_serial_missing_legs + args)
+            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
             assert_click_success(result)

@@ -654,8 +654,10 @@ def gather(results:List[os.PathLike|str],
     df = report_func(legs, allow_partial)
 
     # write output
-    if isinstance(output, click.utils.LazyFile) or tsv:
+    is_output_file = isinstance(output, click.utils.LazyFile)
+    if is_output_file:
         click.echo(f"writing {report} output to '{output.name}'")
+    if is_output_file or tsv:
         df.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
     # TODO: we can add a --pretty flag if we want this to be optional/preserve backwards compatibility
