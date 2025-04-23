@@ -275,7 +275,7 @@ class TestGatherCMET:
 
     @pytest.mark.parametrize("allow_partial", [True, False])
     def test_cmet_too_few_edges_error(self, cmet_result_dir, allow_partial):
-        results = [str(cmet_result_dir / f"result_{i}_failed_edge") for i in range(3)]
+        results = [str(cmet_result_dir / f"results_{i}_failed_edge") for i in range(3)]
         args = ["--report", "dg"]
         runner = CliRunner(mix_stderr=False)
         if allow_partial:
@@ -284,7 +284,7 @@ class TestGatherCMET:
         cli_result = runner.invoke(gather, results + args)
         assert cli_result.exit_code == 1
         assert (
-            "The results network has 0 edge(s), but 3 or more edges are required"
+            "The results network has 1 edge(s), but 3 or more edges are required"
             in str(cli_result.stderr)
         )
 
