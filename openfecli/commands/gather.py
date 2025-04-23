@@ -604,7 +604,8 @@ def gather(results:List[os.PathLike|str],
     }[report.lower()]
     df = report_func(legs, allow_partial)
     # write output
-    if isinstance(output, os.PathLike):
+    if isinstance(output, click.utils.LazyFile):
+        click.echo(f"writing {report} output to '{output.name}'")
         df.to_csv(output, sep="\t", lineterminator='\n', index=False)
     # TODO: we can use rich to make this output prettier
     else:
