@@ -363,6 +363,16 @@ def _generate_raw(legs:dict, allow_partial=True) -> None:
     )
     return df
 
+def _check_legs_have_sufficient_repeats(legs):
+    """Throw an error if all legs do not have 2 or more simulation repeat results"""
+
+    for leg in legs.values():
+        for run_type, sim_results in leg.items():
+            if len(sim_results) < 2:
+                msg='ERROR: Every edge must have at least two simulation repeats'
+                click.secho(msg, err=True, fg='red')
+                sys.exit(1)
+
 def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
 
@@ -377,6 +387,8 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
+
+    _check_legs_have_sufficient_repeats(legs)
 
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
