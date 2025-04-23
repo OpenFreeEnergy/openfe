@@ -508,9 +508,7 @@ def _get_legs_from_result_jsons(
     from collections import defaultdict
 
     legs = defaultdict(lambda: defaultdict(list))
-    if legs == {}:
-        click.secho('No results JSON files found.',err=True)
-        sys.exit(1)
+
     for result_fn in result_fns:
         result_info, result = _load_valid_result_json(result_fn)
 
@@ -532,6 +530,11 @@ def _get_legs_from_result_jsons(
             else:
                 dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
             legs[names][simtype].extend(dGs)
+
+    if legs == {}:
+        click.secho('No results JSON files found.',err=True)
+        sys.exit(1)
+
     return legs
 
 @click.command(
