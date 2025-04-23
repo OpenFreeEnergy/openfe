@@ -304,7 +304,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     return DDGs
 
 
-def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
+def _generate_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
     """Compute and write out DDG values for the given legs.
 
     Parameters
@@ -331,7 +331,7 @@ def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
             data.append((ligA, ligB, FAIL_STR, FAIL_STR))
     df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
     click.echo(df.to_string(index=False, justify='left', col_space=15))
-def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
+def _generate_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
 
@@ -359,7 +359,7 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     df = pd.DataFrame(data)
     click.echo(df.to_string(index=False, justify='left'))
 
-def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
+def _generate_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
 
     Parameters
@@ -602,12 +602,12 @@ def gather(results:List[os.PathLike|str],
         delimiter="\t",
         lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
     )
-    writing_func = {
-        'dg': _write_dg_mle,
-        'ddg': _write_ddg,
-        'raw': _write_raw,
+    report_func = {
+        'dg': _generate_dg_mle,
+        'ddg': _generate_ddg,
+        'raw': _generate_raw,
     }[report.lower()]
-    writing_func(legs, writer, allow_partial)
+    report_func(legs, writer, allow_partial)
 
 
 PLUGIN = OFECommandPlugin(
