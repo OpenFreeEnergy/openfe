@@ -4,8 +4,9 @@
 import click
 import os
 import pathlib
+import pandas as pd
 import sys
-from typing import Callable, Literal, List
+from typing import Literal, List
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -303,33 +304,32 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     return DDGs
 
 
-def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
+def _generate_ddg(legs:dict, allow_partial:bool) -> None:
     """Compute and write out DDG values for the given legs.
 
     Parameters
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DDGs will be reported for whatever valid results are found.
     """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
-    writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+    data = []
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         if DDGbind is not None:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
-            writer.writerow([ligA, ligB, DDGbind, bind_unc])
+            data.append((ligA, ligB, DDGbind, bind_unc))
         if DDGhyd is not None:
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
-            writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
+            data.append((ligA, ligB, DDGhyd, hyd_unc))
         elif DDGbind is None and DDGhyd is None:
-            writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
+            data.append((ligA, ligB, FAIL_STR, FAIL_STR))
+    df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
+    return df
 
-def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
+def _generate_raw(legs:dict, allow_partial=True) -> None:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
 
@@ -337,14 +337,10 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool, optional
         Unused for this function, since all results will be included.
     """
-    writer.writerow(["leg", "ligand_i", "ligand_j",
-                     "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
-
+    data = []
     for ligpair, results in sorted(legs.items()):
         for simtype, repeats in sorted(results.items()):
             for repeat in repeats:
@@ -353,17 +349,27 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
                         m, u = FAIL_STR, FAIL_STR
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
-                    writer.writerow([simtype, *ligpair, m, u])
+                    data.append((simtype, ligpair[0], ligpair[1], m, u))
 
-def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
+    df = pd.DataFrame(
+        data,
+        columns=[
+            "leg",
+            "ligand_i",
+            "ligand_j",
+            "DG(i->j) (kcal/mol)",
+            "MBAR uncertainty (kcal/mol)",
+        ],
+    )
+    return df
+
+def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
 
     Parameters
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DGs will be reported for whatever valid results are found.
@@ -437,15 +443,17 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
         )
         sys.exit(1)
 
-    writer.writerow(["ligand", "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)"])
+    data = []
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
-        writer.writerow([ligA, DG, unc_DG])
+        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
         expected_ligs.remove(ligA)
 
-    for lig in expected_ligs:
-        writer.writerow([lig, FAIL_STR, FAIL_STR])
+    for ligA in expected_ligs:
+        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})
 
+    df = pd.DataFrame(data)
+    return df
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
     """Recursively collects all results JSONs from the paths in ``results``,
@@ -582,27 +590,25 @@ def gather(results:List[os.PathLike|str],
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    import csv
-
     # find and filter result jsons
     result_fns = _collect_result_jsons(results)
 
     # pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
 
-    # compute report and write to output
-    writer = csv.writer(
-        output,
-        delimiter="\t",
-        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
-    )
-    writing_func = {
-        'dg': _write_dg_mle,
-        'ddg': _write_ddg,
-        'raw': _write_raw,
+    # compute report
+    report_func = {
+        'dg': _generate_dg_mle,
+        'ddg': _generate_ddg,
+        'raw': _generate_raw,
     }[report.lower()]
-    writing_func(legs, writer, allow_partial)
+    df = report_func(legs, allow_partial)
+    # write output
+    if isinstance(output, click.utils.LazyFile):
+        click.echo(f"writing {report} output to '{output.name}'")
 
+    # TODO: we can use rich to make this output prettier
+    df.to_csv(output, sep="\t", lineterminator='\n', index=False)
 
 PLUGIN = OFECommandPlugin(
     command=gather,
