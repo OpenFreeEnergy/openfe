@@ -624,10 +624,9 @@ def gather(results:List[os.PathLike|str],
     # write output
     if isinstance(output, click.utils.LazyFile):
         click.echo(f"writing {report} output to '{output.name}'")
-        df.to_csv(output, sep="\t", lineterminator='\n', index=False)
+
     # TODO: we can use rich to make this output prettier
-    else:
-        click.echo(df.to_string(output, index=False, justify='left', col_space=15))
+    df.to_csv(output, sep="\t", lineterminator='\n', index=False)
 
 PLUGIN = OFECommandPlugin(
     command=gather,
