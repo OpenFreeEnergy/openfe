@@ -636,14 +636,15 @@ def gather(results:List[os.PathLike|str],
 
     # compute report
     report_func = {
-        "dg": _generate_dg_mle,
-        "ddg": _generate_ddg,
-        "raw": _generate_raw,
+        'dg': _generate_dg_mle,
+        'ddg': _generate_ddg,
+        'raw': _generate_raw,
     }[report.lower()]
     df = report_func(legs, allow_partial)
 
     # write output
     if isinstance(output, click.utils.LazyFile):
+        click.echo(f"writing {report} output to '{output.name}'")
         df.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
     # TODO: we can add a --pretty flag if we want this to be optional/preserve backwards compatibility
@@ -653,7 +654,7 @@ def gather(results:List[os.PathLike|str],
 
 PLUGIN = OFECommandPlugin(
     command=gather,
-    section="Quickrun Executor",
+    section='Quickrun Executor',
     requires_ofe=(0, 6),
 )
 
