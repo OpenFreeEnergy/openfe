@@ -129,7 +129,6 @@ class TestResultLoading:
 
 def test_no_results_found():
     runner = CliRunner(mix_stderr=False)
-
     cli_result = runner.invoke(gather, "not_a_file.txt")
     assert cli_result.exit_code == 1
     assert "No results JSON files found" in str(cli_result.stderr)
@@ -315,6 +314,16 @@ class TestGatherCMET:
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_pretty_print(self, cmet_result_dir, report, file_regression):
+        results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args)
+        assert_click_success(cli_result)
+        # TODO: figure out how to mock terminal size, since it affects the table wrapping
+        # file_regression.check(cli_result.output, extension='.txt')
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
