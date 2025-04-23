@@ -554,11 +554,12 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
     from rich import box
 
     table = Table(box=box.MINIMAL_HEAVY_HEAD)
+
     for col in df.columns:
         table.add_column(col)
 
-    for value_list in df.values.tolist():
-        row = [str(x) for x in value_list]
+    for row_values in df.values:
+        row = [str(val) for val in row_values]
         table.add_row(*row)
 
     console = Console()
