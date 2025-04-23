@@ -553,7 +553,7 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
     from rich.table import Table
     from rich import box
 
-    table = Table(box=box.MINIMAL_HEAVY_HEAD)
+    table = Table(box=box.SQUARE)
 
     for col in df.columns:
         table.add_column(col)
