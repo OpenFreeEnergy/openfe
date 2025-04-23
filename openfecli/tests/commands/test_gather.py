@@ -273,13 +273,15 @@ class TestGatherCMET:
         assert_click_success(cli_result)
         file_regression.check(cli_result.output, extension=".tsv")
 
-    @pytest.mark.parametrize("allow_partial", ["--allow-partial", ""])
+    @pytest.mark.parametrize("allow_partial", [True, False])
     def test_cmet_too_few_edges_error(self, cmet_result_dir, allow_partial):
         results = [str(cmet_result_dir / f"result_{i}_failed_edge") for i in range(3)]
-        args = ["--report", "dg", allow_partial]
+        args = ["--report", "dg"]
         runner = CliRunner(mix_stderr=False)
-        cli_result = runner.invoke(gather, results + args)
+        if allow_partial:
+            args += ['--allow-partial']
 
+        cli_result = runner.invoke(gather, results + args)
         assert cli_result.exit_code == 1
         assert (
             "The results network has 0 edge(s), but 3 or more edges are required"
