@@ -531,10 +531,6 @@ def _get_legs_from_result_jsons(
                 dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
             legs[names][simtype].extend(dGs)
 
-    if legs == {}:
-        click.secho('No results JSON files found.',err=True)
-        sys.exit(1)
-
     return legs
 
 @click.command(
@@ -601,6 +597,10 @@ def gather(results:List[os.PathLike|str],
     # pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
 
+    if legs == {}:
+        click.secho('No results JSON files found.',err=True)
+        sys.exit(1)
+
     # compute report
     report_func = {
         'dg': _generate_dg_mle,
@@ -608,6 +608,7 @@ def gather(results:List[os.PathLike|str],
         'raw': _generate_raw,
     }[report.lower()]
     df = report_func(legs, allow_partial)
+
     # write output
     if isinstance(output, click.utils.LazyFile):
         click.echo(f"writing {report} output to '{output.name}'")
