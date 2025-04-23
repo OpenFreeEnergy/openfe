@@ -615,22 +615,36 @@ def gather(results:List[os.PathLike|str],
 
     # compute report
     report_func = {
-        'dg': _generate_dg_mle,
-        'ddg': _generate_ddg,
-        'raw': _generate_raw,
+        "dg": _generate_dg_mle,
+        "ddg": _generate_ddg,
+        "raw": _generate_raw,
     }[report.lower()]
     df = report_func(legs, allow_partial)
 
     # write output
     if isinstance(output, click.utils.LazyFile):
-        click.echo(f"writing {report} output to '{output.name}'")
+        df.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
-    # TODO: we can use rich to make this output prettier
-    df.to_csv(output, sep="\t", lineterminator='\n', index=False)
+    # TODO: we can add a --pretty flag if we want this to be optional/preserve backwards compatibility
+    else:
+        from rich.console import Console
+        from rich.table import Table
+        from rich import box
+
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        for col in df.columns:
+            table.add_column(col)
+
+        for index, value_list in enumerate(df.values.tolist()):
+            row = [str(x) for x in value_list]
+            table.add_row(*row)
+        console = Console()
+        console.print(table)
+
 
 PLUGIN = OFECommandPlugin(
     command=gather,
-    section='Quickrun Executor',
+    section="Quickrun Executor",
     requires_ofe=(0, 6),
 )
 
