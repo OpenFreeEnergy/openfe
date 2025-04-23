@@ -545,6 +545,26 @@ def _get_legs_from_result_jsons(
 
     return legs
 
+
+def rich_print_to_stdout(df: pd.DataFrame) -> None:
+    """Use rich to pretty print a table to stdout."""
+
+    from rich.console import Console
+    from rich.table import Table
+    from rich import box
+
+    table = Table(box=box.MINIMAL_HEAVY_HEAD)
+    for col in df.columns:
+        table.add_column(col)
+
+    for value_list in df.values.tolist():
+        row = [str(x) for x in value_list]
+        table.add_row(*row)
+
+    console = Console()
+    console.print(table)
+
+
 @click.command(
     'gather',
     short_help="Gather result jsons for network of RFE results into a TSV file"
@@ -627,19 +647,7 @@ def gather(results:List[os.PathLike|str],
 
     # TODO: we can add a --pretty flag if we want this to be optional/preserve backwards compatibility
     else:
-        from rich.console import Console
-        from rich.table import Table
-        from rich import box
-
-        table = Table(box=box.MINIMAL_HEAVY_HEAD)
-        for col in df.columns:
-            table.add_column(col)
-
-        for index, value_list in enumerate(df.values.tolist()):
-            row = [str(x) for x in value_list]
-            table.add_row(*row)
-        console = Console()
-        console.print(table)
+        rich_print_to_stdout(df)
 
 
 PLUGIN = OFECommandPlugin(
