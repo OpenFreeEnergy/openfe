@@ -393,7 +393,6 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
     expected_ligs = []
-    data = []
 
     # perform MLE
     g = nx.DiGraph()
@@ -625,9 +624,10 @@ def gather(results:List[os.PathLike|str],
     # write output
     if isinstance(output, click.utils.LazyFile):
         click.echo(f"writing {report} output to '{output.name}'")
-
+        df.to_csv(output, sep="\t", lineterminator='\n', index=False)
     # TODO: we can use rich to make this output prettier
-    df.to_csv(output, sep="\t", lineterminator='\n', index=False)
+    else:
+        click.echo(df.to_string(output, index=False, justify='left', col_space=15))
 
 PLUGIN = OFECommandPlugin(
     command=gather,
