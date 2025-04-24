@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
 import pytest
+import pooch
 from importlib import resources
 from rdkit import Chem
 from rdkit.Geometry import Point3D
