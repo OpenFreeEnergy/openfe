@@ -11,7 +11,7 @@ v1.4.0
 
 * ``openfe gather`` now accepts any number of filepaths and/or directories containing results JSON files, instead of only accepting one results directory.
 * When running ``openfe gather`` with ``--report=dg`` and result edges have fewer than 2 replicates, an error will be thrown up-front instead of failing downstream with a ```numpy.linalg.LinAlgError: SVD did not converge`` error.
-* ``openfe gather`` includes failed simulations in its output, with ``Error`` listed instead of a computed value, instead of simply omitting those results from the output table.
+* ``openfe gather`` includes failed simulations in its output, with ``Error`` listed in place of a computed value, instead of simply omitting those results from the output table.
 * ``openfe gather --report=dg`` (the default) checks for connectivity of the results network and throws an error if the network is disconnected or has fewer than 3 edges.
 * `openfe gather` prints warnings for all results JSONs whose simulations have failed or are otherwise invalid.
 * `openfe gather` now throws an error up-front if no valid results are provided, instead of returning an empty table (PR #1245).
