@@ -41,7 +41,6 @@ def charge_molecules(
     Generate partial charges for the set of input molecules and write them to file.
     """
     from openfecli.utils import write
-    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     if output.exists():
         raise FileExistsError(f"The output file {output} already exists, choose a new file to write the charged"
@@ -50,6 +49,8 @@ def charge_molecules(
     write("SMALL MOLECULE PARTIAL CHARGE GENERATOR")
     write("_________________________________________")
     write("")
+
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     write("Parsing in Files: ")
 
