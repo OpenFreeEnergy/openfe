@@ -7,6 +7,8 @@ Changelog
 v1.4.0
 ====================
 
+This release includes significant quality of life improvements for the CLI's ``openfe gather`` command. 
+
 **Added:**
 
 * ``openfe gather`` now accepts any number of filepaths and/or directories containing results JSON files, instead of only accepting one results directory (`PR #1212 <https://github.com/OpenFreeEnergy/openfe/pull/1212>`_).
