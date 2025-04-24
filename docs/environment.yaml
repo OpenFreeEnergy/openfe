@@ -21,6 +21,7 @@ dependencies:
 - python=3.10
 - sphinx <7.3
 - sphinx-click
+- sphinxcontrib-programoutput
 - sphinx-design
 - sphinx-toolbox
 - threadpoolctl

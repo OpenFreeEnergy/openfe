@@ -44,6 +44,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_click.ext",
     "sphinxcontrib.autodoc_pydantic",
+    "sphinxcontrib.programoutput",
     "sphinx_toolbox.collapse",
     "sphinx.ext.autosectionlabel",
     "sphinx_design",
