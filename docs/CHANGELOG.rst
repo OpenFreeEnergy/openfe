@@ -13,8 +13,8 @@ v1.4.0
 * When running ``openfe gather`` with ``--report=dg`` and result edges have fewer than 2 replicates, an error will be thrown up-front instead of failing downstream with a ``numpy.linalg.LinAlgError: SVD did not converge`` error.
 * ``openfe gather`` includes failed simulations in its output, with ``Error`` listed in place of a computed value, instead of simply omitting those results from the output table.
 * ``openfe gather --report=dg`` (the default) checks for connectivity of the results network and throws an error if the network is disconnected or has fewer than 3 edges.
-* `openfe gather` prints warnings for all results JSONs whose simulations have failed or are otherwise invalid.
-* `openfe gather` now throws an error up-front if no valid results are provided, instead of returning an empty table (PR #1245).
+* ``openfe gather`` prints warnings for all results JSONs whose simulations have failed or are otherwise invalid.
+* ``openfe gather`` now throws an error up-front if no valid results are provided, instead of returning an empty table (`PR #1245 <https://github.com/OpenFreeEnergy/openfe/pull/1245>`_).
 
 **Changed:**
 
@@ -31,21 +31,21 @@ Any platform-specific bugs will be addressed when possible, but as a low priorit
 
 **Added:**
 
-* ``openfe gather`` now detects failed simulations up-front and prints warnings to stdout (PR #1207).
+* ``openfe gather`` now detects failed simulations up-front and prints warnings to stdout (`PR #1207 <https://github.com/OpenFreeEnergy/openfe/pull/1207>`_).
 
 **Changed:**
 
-* Temporarily disabled bootstrap uncertainties in forward/reverse analysis due to solver loop issues when dealing with too small a set of samples (PR #1174).
+* Temporarily disabled bootstrap uncertainties in forward/reverse analysis due to solver loop issues when dealing with too small a set of samples (`PR #1174 <https://github.com/OpenFreeEnergy/openfe/pull/1174>`_).
 
 **Removed:**
 
 * Dropped official support for MacOSX-x86_64. Any platform-specific bugs will be addressed when possible, but as a low priority.
-* Unused trajectory handling code was removed from ``openfe.utils``, please use ``openfe-analysis`` instead (PR #1182).
+* Unused trajectory handling code was removed from ``openfe.utils``, please use ``openfe-analysis`` instead (`PR #1182 <https://github.com/OpenFreeEnergy/openfe/pull/1182>`_).
 
 **Fixed:**
 
-* Fixed issue #1178 -- The GPU system probe is now more robust to different ways the ``nvidia-smi`` command can fail (PR #1186)
-* Fixed bug where openmm protocols using default settings would re-load from JSON as a different gufe key due to unit name string representation discrepancies (PR #1210)
+* Fixed `issue #1178 <https://github.com/OpenFreeEnergy/openfe/issues/1178>`_ -- The GPU system probe is now more robust to different ways the ``nvidia-smi`` command can fail (`PR #1186 <https://github.com/OpenFreeEnergy/openfe/pull/1186>`_)
+* Fixed bug where openmm protocols using default settings would re-load from JSON as a different gufe key due to unit name string representation discrepancies (`PR #1210 <https://github.com/OpenFreeEnergy/openfe/pull/1210>`_)
 
 
 v1.3.0
@@ -111,23 +111,23 @@ v1.1.0
 * The `PersesAtomMapper` now uses openff.units inline with the rest of the package.
 * Structural analysis data is no longer written to `structural_analysis.json`
   but rather a 32bit numpy compressed file named `structural_analysis.npz`
-  (PR #937).
+  (`PR #937 <https://github.com/OpenFreeEnergy/openfe/pull/937>`_).
 * Structural analysis array data is no longer directly returned in the
   RelativeHybridTopologyProtocol result dictionary. Instead it should
   be accessed from the serialized NPZ file `structural_analysis.npz`.
   The `structural_analysis` key now contains a path to the NPZ file,
   if the structural analysis did not fail (the `structural_analysis_error`
-  key will instead be present on failure) (PR #937).
+  key will instead be present on failure) (`PR #937 <https://github.com/OpenFreeEnergy/openfe/pull/937>`_).
 * Add duecredit citations for pymbar when calling
   `openfe.protocols.openmm_utils.multistate_analysis`.
 
 **Fixed:**
 
-* 2D RMSD plotting now allows for fewer than 5 states (PR #896).
+* 2D RMSD plotting now allows for fewer than 5 states (`PR #896 <https://github.com/OpenFreeEnergy/openfe/pull/896>`_).
 * 2D RMSD plotting no longer draws empty axes when
-  the number of states - 1 is not divisible by 4 (PR #896).
+  the number of states - 1 is not divisible by 4 (`PR #896 <https://github.com/OpenFreeEnergy/openfe/pull/896>`_).
 * The RelativeHybridTopologyProtocol result unit is now much smaller,
-  due to the removal of structural analysis data (PR #937).
+  due to the removal of structural analysis data (`PR #937 <https://github.com/OpenFreeEnergy/openfe/pull/937>`_).
 
 
 
@@ -149,6 +149,6 @@ v1.0.1
 * Calling `get_forward_and_reverse_energy_analysis` in the RFE and AFE protocols now results a warning if any results are ``None`` due to MBAR convergence issues.
 * Checkpoint interval default value has been set to 250 ps instead of 1 ps.
   This better matches the previous default for openfe versions < 1.0rc
-  (See issue #772).
+  (See `issue #772 <https://github.com/OpenFreeEnergy/openfe/issues/772>`_ ).
 
 
