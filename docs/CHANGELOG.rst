@@ -21,7 +21,7 @@ This release includes significant quality of life improvements for the CLI's ``o
 **Changed:**
 
 * Improved formatting of ``openfe gather`` output tables. Use ``--tsv`` to instead view the raw tsv formatted output (this was the default behavior as of v1.3.x) (`PR #1246 <https://github.com/OpenFreeEnergy/openfe/pull/1246>`_).
-
+* Improved responsiveness of several CLI commands (`PR #1254 <https://github.com/OpenFreeEnergy/openfe/pull/1254>`_).
 
 
 v1.3.1
