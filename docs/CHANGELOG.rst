@@ -9,16 +9,16 @@ v1.4.0
 
 **Added:**
 
-* ``openfe gather`` now accepts any number of filepaths and/or directories containing results JSON files, instead of only accepting one results directory.
-* When running ``openfe gather`` with ``--report=dg`` and result edges have fewer than 2 replicates, an error will be thrown up-front instead of failing downstream with a ``numpy.linalg.LinAlgError: SVD did not converge`` error.
-* ``openfe gather`` includes failed simulations in its output, with ``Error`` listed in place of a computed value, instead of simply omitting those results from the output table.
-* ``openfe gather --report=dg`` (the default) checks for connectivity of the results network and throws an error if the network is disconnected or has fewer than 3 edges.
-* ``openfe gather`` prints warnings for all results JSONs whose simulations have failed or are otherwise invalid.
+* ``openfe gather`` now accepts any number of filepaths and/or directories containing results JSON files, instead of only accepting one results directory (`PR #1212 <https://github.com/OpenFreeEnergy/openfe/pull/1212>`_).
+* When running ``openfe gather --report=dg`` and result edges have fewer than 2 replicates, an error will be thrown up-front instead of failing downstream with a ``numpy.linalg.LinAlgError: SVD did not converge`` error (`PR #1243 <https://github.com/OpenFreeEnergy/openfe/pull/1243>`_).
+* ``openfe gather`` includes failed simulations in its output, with ``Error`` listed in place of a computed value, instead of simply omitting those results from the output table (`PR #1227 <https://github.com/OpenFreeEnergy/openfe/pull/1227>`_).
+* ``openfe gather --report=dg`` (the default) checks for connectivity of the results network and throws an error if the network is disconnected or has fewer than 3 edges (`PR #1227 <https://github.com/OpenFreeEnergy/openfe/pull/1227>`_).
+* ``openfe gather`` prints warnings for all results JSONs whose simulations have failed or are otherwise invalid  (`PR #1227 <https://github.com/OpenFreeEnergy/openfe/pull/1227>`_ ).
 * ``openfe gather`` now throws an error up-front if no valid results are provided, instead of returning an empty table (`PR #1245 <https://github.com/OpenFreeEnergy/openfe/pull/1245>`_).
 
 **Changed:**
 
-* Improved formatting of ``openfe gather`` output tables. Use ``--tsv`` to instead view the raw tsv formatted output (this was the default behavior as of v1.3.x)
+* Improved formatting of ``openfe gather`` output tables. Use ``--tsv`` to instead view the raw tsv formatted output (this was the default behavior as of v1.3.x) (`PR #1246 <https://github.com/OpenFreeEnergy/openfe/pull/1246>`_).
 
 
 
