@@ -4,26 +4,20 @@ Relative Hybrid Topology Protocol
 Overview
 --------
 
-The relative free energy calculation approach calculates the difference in 
-free energy between two similar ligands. Depending on the :class:`.ChemicalSystem` 
-provided, the protocol either calculates the relative binding free energy 
-(RBFE), or the relative hydration free energy (RHFE).
-Further information on constructing chemical systems to define thermodynamic cycles,
-see :ref:`userguide_chemicalsystems_and_components`
+The relative free energy calculation approach calculates the difference in free energy between two similar ligands.
+Depending on the :class:`.ChemicalSystem` provided, the protocol either calculates the relative binding free energy (RBFE), or the relative hydration free energy (RHFE).
+For further information on constructing chemical systems to define thermodynamic cycles, see :ref:`userguide_chemicalsystems_and_components`
 
-In a thermodynamic 
-cycle, one ligand is converted into the other ligand by alchemically 
-transforming the atoms that vary between the two ligands. The 
-transformation is carried out in both environments, meaning both in the 
-solvent (ΔG\ :sub:`solv`\) and in the binding site (ΔG\ :sub:`site`\) for RBFE calculations 
-and in the solvent (ΔG\ :sub:`solv`\) and vacuum (ΔG\ :sub:`vacuum`\) for RHFE calculations.
+In a thermodynamic cycle, one ligand is converted into the other ligand by alchemically transforming the atoms that vary between the two ligands.
+The transformation is carried out in both environments.
+For RBFE calculations that means in the solvent (ΔG\ :sub:`solv`\) and in the binding site (ΔG\ :sub:`site`\), and for RHFE calculations that means in the solvent (ΔG\ :sub:`solv`\) and in vacuum (ΔG\ :sub:`vacuum`\).
 
 .. _label: Thermodynamic cycle for the relative binding free energy protocol
 .. figure:: img/rbfe_thermocycle.png
    :scale: 50%
 
-   Thermodynamic cycle for the relative binding free energy protocol.
-   
+   Thermodynamic cycle for the Relative Binding Free Energy (RBFE) protocol.
+
 Scientific Details
 ------------------
 

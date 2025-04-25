@@ -1,7 +1,7 @@
 .. _userguide_protocols:
 
-Details of Specific Protocols
-=============================
+Protocols in OpenFE
+===================
 
 Details on the theory and behaviour of different Protocols are listed here.
 
