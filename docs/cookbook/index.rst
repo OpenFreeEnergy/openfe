@@ -1,21 +1,23 @@
 .. _cookbooks:
 
-Cookbook
-========
+Python Cookbooks
+================
 
-This section describes common tasks involving the OpenFE Python API.
-
-The :any:`OpenFE CLI<cli-reference>` provides a simple way to perform the most common procedures for free energy calculations, but does not provide much flexibility for fine-tuning your approach or combining OpenFE with other tools. The :any:`Python API<api>` allows that flexibility, but using it is more complex. This cookbook breaks down common steps that would be implemented in Python to help navigate that complexity.
-
-.. note:: This section is a work-in-progress.
+OpenFE's :any:`Python API<api>` is the most flexible and transparent way to use the OpenFE ecosystem, and includes all the latest features OpenFE has to offer.
+However, the Python API is more complex than :any:`CLI interface<cli-reference>`, which provides a simple way to perform the most common procedures for free energy calculations, but does not provide much flexibility.
+The cookbooks in this section break down common use-cases of the Python API to help you use OpenFE to its full potential.
 
 .. module:: openfe
     :noindex:
 
-The Basic Workflow
-------------------
+Cookbooks Organized in a Workflow
+---------------------------------
 
-The typical way to use the Python API is to load a number of molecules you want to calculate free energies of, construct a :class:`LigandNetwork` connecting them in an efficient way, and then combine that with information for how each ligand should be simulated to construct an :class:`AlchemicalNetwork`, which specifies the entire simulation campaign. This provides a lot of flexibility in how molecules are specified, mapped, connected, and simulated, without exposing a great deal of complexity. OpenFE recommends this workflow for most users.
+The typical way to use the Python API is to load a number of molecules you want to calculate free energies of, construct a :class:`LigandNetwork` connecting them in an efficient way, and then combine that with information for how each ligand should be simulated to construct an :class:`AlchemicalNetwork`, which specifies the entire simulation campaign.
+This provides a lot of flexibility in how molecules are specified, mapped, connected, and simulated, without exposing a great deal of complexity.
+OpenFE recommends this workflow for most users.
+
+In the workflow below, click any link to see its relevant documentation:
 
 .. container:: deflist-flowchart
 
@@ -145,8 +147,8 @@ The typical way to use the Python API is to load a number of molecules you want 
         - :any:`openfe gather <cli_gather>`
             OpenFE recommends using the ``openfe gather`` CLI command to collect the results of a transformation.
 
-List of Cookbooks
------------------
+Full List of Cookbooks
+----------------------
 
 .. toctree::
     :maxdepth: 1
@@ -163,4 +165,4 @@ List of Cookbooks
     user_charges
     bespoke_parameters
 
-    
+
