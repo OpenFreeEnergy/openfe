@@ -572,7 +572,56 @@ class SepTopProtocol(gufe.Protocol):
                 pressure=1 * unit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
-            solvent_lambda_settings=LambdaSettings(),
+            solvent_lambda_settings=LambdaSettings(
+                lambda_elec_A=9 * [0.0] + [
+                    0.0,
+                    0.125,
+                    0.25,
+                    0.375,
+                    0.5,
+                    0.625,
+                    0.75,
+                    0.875,
+                    1.0,
+                ] + 9 * [1.0],
+                lambda_elec_B=9 * [1.0] + [
+                    1.0,
+                    0.875,
+                    0.75,
+                    0.625,
+                    0.5,
+                    0.375,
+                    0.25,
+                    0.125,
+                    0.0,
+                ] + 9 * [0.0],
+                lambda_vdw_A=[0.0] * 17 + [
+                    0.00,
+                    0.15,
+                    0.23,
+                    0.3,
+                    0.4,
+                    0.52,
+                    0.64,
+                    0.76,
+                    0.88,
+                    1.00
+                ],
+                lambda_vdw_B=[
+                                 1.00,
+                                 0.85,
+                                 0.77,
+                                 0.7,
+                                 0.6,
+                                 0.48,
+                                 0.36,
+                                 0.24,
+                                 0.12,
+                                 0.00
+                             ] + [0.0] * 17,
+                lambda_restraints_A=27 * [0],
+                lambda_restraints_B=27 * [0],
+            ),
             complex_lambda_settings=LambdaSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvent_solvation_settings=OpenMMSolvationSettings(
@@ -588,7 +637,7 @@ class SepTopProtocol(gufe.Protocol):
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=0.1 * unit.nanosecond,
-                production_length=0.5 * unit.nanosecond,
+                production_length=2.0 * unit.nanosecond,
             ),
             solvent_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
@@ -598,7 +647,7 @@ class SepTopProtocol(gufe.Protocol):
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 time_per_iteration=2.5 * unit.picoseconds,
-                n_replicas=19,
+                n_replicas=27,
                 minimization_steps=5000,
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=10.0 * unit.nanosecond,
@@ -611,7 +660,7 @@ class SepTopProtocol(gufe.Protocol):
             complex_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * unit.nanosecond,
                 equilibration_length=0.1 * unit.nanosecond,
-                production_length=0.5 * unit.nanosecond,
+                production_length=2.0 * unit.nanosecond,
             ),
             complex_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
@@ -633,7 +682,10 @@ class SepTopProtocol(gufe.Protocol):
             solvent_restraint_settings=DistanceRestraintSettings(
                 spring_constant=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
             ),
-            complex_restraint_settings=BoreschRestraintSettings(),
+            complex_restraint_settings=BoreschRestraintSettings(
+                K_r=8368.0 * unit.kilojoule_per_mole / unit.nanometer ** 2,
+                K_thetaA=1000 * unit.kilojoule_per_mole / unit.radian ** 2
+            ),
         )
 
     @staticmethod
