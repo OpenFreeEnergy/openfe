@@ -18,6 +18,7 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCO
 )
 @OUTPUT_FILE_AND_EXT.parameter(
     help="The name of the SDF file the charged ligands should be written to.",
+    required=True,
     type=click.Path(exists=False, path_type=pathlib.Path)
 )
 @NCORES.parameter(
@@ -40,7 +41,6 @@ def charge_molecules(
     Generate partial charges for the set of input molecules and write them to file.
     """
     from openfecli.utils import write
-    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     if output.exists():
         raise FileExistsError(f"The output file {output} already exists, choose a new file to write the charged"
@@ -49,6 +49,8 @@ def charge_molecules(
     write("SMALL MOLECULE PARTIAL CHARGE GENERATOR")
     write("_________________________________________")
     write("")
+
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     write("Parsing in Files: ")
 

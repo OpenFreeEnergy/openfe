@@ -145,11 +145,11 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     future tools).
     """
 
-    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
     write("RHFE-NETWORK PLANNER")
     write("______________________")
     write("")
+
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
 

@@ -21,6 +21,7 @@ dependencies:
   - openmmforcefields
   - openmmtools >=0.24.1
   - packaging
+  - pandas
   - perses>=0.10.3
   - plugcli
   - pint
@@ -32,9 +33,12 @@ dependencies:
   - pytest
   - pytest-xdist
   - pytest-cov
+  - pytest-regressions
   - pytest-rerunfailures
+  - pydantic >=1.10.17
   - pyyaml
   - rdkit
+  - rich
   - tqdm
   - typing-extensions
   - zstandard
