@@ -37,7 +37,7 @@ dependencies:
   - pytest-rerunfailures
   - pydantic >=1.10.17
   - pyyaml
-  - rdkit
+  - rdkit <2025.03.1  # https://github.com/OpenFreeEnergy/gufe/issues/541#issuecomment-2834569617
   - rich
   - tqdm
   - typing-extensions
