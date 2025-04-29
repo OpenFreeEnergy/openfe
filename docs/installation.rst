@@ -99,7 +99,7 @@ Next we will create an environment called ``openfe_env`` with the ``openfe`` pac
 
 .. parsed-literal::
 
-  mamba create -n openfe_env openfe=\ |version|
+  mamba create -n openfe_env openfe=\ |version_short|
 
 Now we need to activate our new environment ::
 
@@ -134,7 +134,7 @@ If you already have a `Mamba <https://mamba.readthedocs.io/en/latest/installatio
 
 .. parsed-literal::
 
-  mamba create -c conda-forge -n openfe_env openfe=\ |version|
+  mamba create -c conda-forge -n openfe_env openfe=\ |version_short|
   mamba activate openfe_env
 
 Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
@@ -427,8 +427,8 @@ The Apptainer image is pre-built and can be pulled with ::
 
    .. parsed-literal::
 
-     $ docker pull ghcr.io/openfreeenergy/openfe:\ |version|
-     $ singularity pull oras://ghcr.io/openfreeenergy/openfe:\ |version|-apptainer
+     $ docker pull ghcr.io/openfreeenergy/openfe:\ |version_short|
+     $ singularity pull oras://ghcr.io/openfreeenergy/openfe:\ |version_short|-apptainer
 
 We recommend testing the container to ensure that it can access a GPU (if desired).
 This can be done with the following command ::
@@ -593,7 +593,7 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 
 .. parsed-literal::
 
-  $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version|
+  $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version_short|
 
 Developer install
 -----------------

@@ -31,7 +31,9 @@ os.environ["SPHINX"] = "True"
 project = "OpenFE"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
-version = parse(version("openfe")).base_version
+version = parse(version("openfe"))
+ # don't include patch version in our install docs due to setuptools_scm behavior
+version_short = f"{version.major}.{version.minor}" 
 
 
 # -- General configuration ---------------------------------------------------
