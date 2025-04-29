@@ -9,7 +9,7 @@ dependencies:
   - kartograf>=1.0.0
   - lomap2>=3.2.1
   - networkx
-  - numpy<2.0.0
+  - numpy
   - openfe-analysis>=0.3.1
   - openff-interchange
   - openff-models>=0.0.5
@@ -17,7 +17,7 @@ dependencies:
   - openff-nagl-models>=0.1.2
   - openff-toolkit>=0.16.2
   - openff-units==0.2.0
-  - openmm >=8.0.0,!=8.1.0,<8.2.0
+  - openmm >=8.0
   - openmmforcefields
   - openmmtools >=0.24.1
   - packaging
