@@ -4,8 +4,9 @@
 import click
 import os
 import pathlib
+import pandas as pd
 import sys
-from typing import Callable, Literal, List
+from typing import Literal, List
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -303,33 +304,32 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     return DDGs
 
 
-def _write_ddg(legs:dict, writer:Callable, allow_partial:bool) -> None:
+def _generate_ddg(legs:dict, allow_partial:bool) -> None:
     """Compute and write out DDG values for the given legs.
 
     Parameters
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DDGs will be reported for whatever valid results are found.
     """
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
-    writer.writerow(["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)",
-                     "uncertainty (kcal/mol)"])
+    data = []
     for ligA, ligB, DDGbind, bind_unc, DDGhyd, hyd_unc in DDGs:
         if DDGbind is not None:
             DDGbind, bind_unc = format_estimate_uncertainty(DDGbind, bind_unc)
-            writer.writerow([ligA, ligB, DDGbind, bind_unc])
+            data.append((ligA, ligB, DDGbind, bind_unc))
         if DDGhyd is not None:
             DDGhyd, hyd_unc = format_estimate_uncertainty(DDGhyd, hyd_unc)
-            writer.writerow([ligA, ligB, DDGhyd, hyd_unc])
+            data.append((ligA, ligB, DDGhyd, hyd_unc))
         elif DDGbind is None and DDGhyd is None:
-            writer.writerow([ligA, ligB, FAIL_STR, FAIL_STR])
+            data.append((ligA, ligB, FAIL_STR, FAIL_STR))
+    df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
+    return df
 
-def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
+def _generate_raw(legs:dict, allow_partial=True) -> None:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
 
@@ -337,14 +337,10 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool, optional
         Unused for this function, since all results will be included.
     """
-    writer.writerow(["leg", "ligand_i", "ligand_j",
-                     "DG(i->j) (kcal/mol)", "MBAR uncertainty (kcal/mol)"])
-
+    data = []
     for ligpair, results in sorted(legs.items()):
         for simtype, repeats in sorted(results.items()):
             for repeat in repeats:
@@ -353,17 +349,37 @@ def _write_raw(legs:dict, writer:Callable, allow_partial=True) -> None:
                         m, u = FAIL_STR, FAIL_STR
                     else:
                         m, u = format_estimate_uncertainty(m.m, u.m)
-                    writer.writerow([simtype, *ligpair, m, u])
+                    data.append((simtype, ligpair[0], ligpair[1], m, u))
 
-def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
+    df = pd.DataFrame(
+        data,
+        columns=[
+            "leg",
+            "ligand_i",
+            "ligand_j",
+            "DG(i->j) (kcal/mol)",
+            "MBAR uncertainty (kcal/mol)",
+        ],
+    )
+    return df
+
+def _check_legs_have_sufficient_repeats(legs):
+    """Throw an error if all legs do not have 2 or more simulation repeat results"""
+
+    for leg in legs.values():
+        for run_type, sim_results in leg.items():
+            if len(sim_results) < 2:
+                msg='ERROR: Every edge must have at least two simulation repeats'
+                click.secho(msg, err=True, fg='red')
+                sys.exit(1)
+
+def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
 
     Parameters
     ----------
     legs : dict
         Dict of legs to write out.
-    writer : Callable
-        The CSV writer to use.
     allow_partial : bool
         If ``True``, no error will be thrown for incomplete or invalid results,
         and DGs will be reported for whatever valid results are found.
@@ -371,6 +387,8 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
     import networkx as nx
     import numpy as np
     from cinnabar.stats import mle
+
+    _check_legs_have_sufficient_repeats(legs)
 
     DDGs = _get_ddgs(legs, allow_partial=allow_partial)
     MLEs = []
@@ -437,15 +455,17 @@ def _write_dg_mle(legs: dict, writer: Callable, allow_partial: bool) -> None:
         )
         sys.exit(1)
 
-    writer.writerow(["ligand", "DG(MLE) (kcal/mol)", "uncertainty (kcal/mol)"])
+    data = []
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
-        writer.writerow([ligA, DG, unc_DG])
+        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
         expected_ligs.remove(ligA)
 
-    for lig in expected_ligs:
-        writer.writerow([lig, FAIL_STR, FAIL_STR])
+    for ligA in expected_ligs:
+        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})
 
+    df = pd.DataFrame(data)
+    return df
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
     """Recursively collects all results JSONs from the paths in ``results``,
@@ -522,7 +542,29 @@ def _get_legs_from_result_jsons(
             else:
                 dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
             legs[names][simtype].extend(dGs)
+
     return legs
+
+
+def rich_print_to_stdout(df: pd.DataFrame) -> None:
+    """Use rich to pretty print a table to stdout."""
+
+    from rich.console import Console
+    from rich.table import Table
+    from rich import box
+
+    table = Table(box=box.SQUARE)
+
+    for col in df.columns:
+        table.add_column(col)
+
+    for row_values in df.values:
+        row = [str(val) for val in row_values]
+        table.add_row(*row)
+
+    console = Console()
+    console.print(table)
+
 
 @click.command(
     'gather',
@@ -537,26 +579,37 @@ def _get_legs_from_result_jsons(
     '--report',
     type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
                            case_sensitive=False),
-    default="dg", show_default=True,
+    default="dg",
+    show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
         "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
         "the raw result of the deltaG for a leg."
     )
 )
-@click.option('output', '-o',
-              type=click.File(mode='w'),
-              default='-')
+@click.option("output", "-o", type=click.File(mode="w"), default="-")
 @click.option(
-    '--allow-partial', is_flag=True, default=False,
+    "--tsv",
+    is_flag=True,
+    default=False,
+    help=("Results that are output to stdout will be formatted as tab-separated, "
+          "identical to the formatting used when writing to file."
+          "By default, the output table will be formatted for human-readability."
+    ),
+)
+@click.option(
+    "--allow-partial",
+    is_flag=True,
+    default=False,
     help=(
         "Do not raise errors if results are missing parts for some edges. "
         "(Skip those edges and issue warning instead.)"
-    )
+    ),
 )
 def gather(results:List[os.PathLike|str],
            output:os.PathLike|str,
            report:Literal['dg','ddg','raw'],
+           tsv:bool,
            allow_partial:bool
            ):
     """Gather simulation result JSON files of relative calculations to a tsv file.
@@ -582,26 +635,34 @@ def gather(results:List[os.PathLike|str],
     The output is a table of **tab** separated values. By default, this
     outputs to stdout, use the -o option to choose an output file.
     """
-    import csv
-
     # find and filter result jsons
     result_fns = _collect_result_jsons(results)
 
     # pair legs of simulations together into dict of dicts
     legs = _get_legs_from_result_jsons(result_fns, report)
 
-    # compute report and write to output
-    writer = csv.writer(
-        output,
-        delimiter="\t",
-        lineterminator="\n",  # to exactly reproduce previous, prefer "\r\n"
-    )
-    writing_func = {
-        'dg': _write_dg_mle,
-        'ddg': _write_ddg,
-        'raw': _write_raw,
+    if legs == {}:
+        click.secho('No results JSON files found.',err=True)
+        sys.exit(1)
+
+    # compute report
+    report_func = {
+        'dg': _generate_dg_mle,
+        'ddg': _generate_ddg,
+        'raw': _generate_raw,
     }[report.lower()]
-    writing_func(legs, writer, allow_partial)
+    df = report_func(legs, allow_partial)
+
+    # write output
+    is_output_file = isinstance(output, click.utils.LazyFile)
+    if is_output_file:
+        click.echo(f"writing {report} output to '{output.name}'")
+    if is_output_file or tsv:
+        df.to_csv(output, sep="\t", lineterminator="\n", index=False)
+
+    # TODO: we can add a --pretty flag if we want this to be optional/preserve backwards compatibility
+    else:
+        rich_print_to_stdout(df)
 
 
 PLUGIN = OFECommandPlugin(
