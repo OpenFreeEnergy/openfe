@@ -32,7 +32,7 @@ project = "OpenFE"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
 version = parse(version("openfe"))
- # don't include patch version in our install docs due to setuptools_scm behavior
+ # don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
 version_short = f"{version.major}.{version.minor}" 
 
 
