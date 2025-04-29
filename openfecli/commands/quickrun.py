@@ -27,8 +27,8 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=True, file_okay=False, writable=True,
                     path_type=pathlib.Path),
     help=(
-        "Directory in which to store files in (defaults to current directory).\
-        If the directory does not exist, it will be created at runtime."
+        "Directory in which to store files in (defaults to current directory). "
+        "If the directory does not exist, it will be created at runtime."
     ),
 )
 @click.option(
