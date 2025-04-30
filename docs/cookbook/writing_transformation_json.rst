@@ -1,6 +1,6 @@
-.. _dumping_transformations:
+.. _writing_transformations:
 
-Dumping a ``Transformation`` to JSON
+Writing a ``Transformation`` to JSON
 ====================================
 
 If you're trying to run a full campaign of simulations representing an
@@ -15,7 +15,7 @@ compare results run on different machines. This also provides a trivial way
 for a user to run edges in parallel, if they don't want to use the more
 sophisticated techniques we have developed.
 
-For these cases, we have made it very easy for a user to dump a
+For these cases, we have made it very easy for a user to write a
 transformation to JSON. Simply use the method
 :meth:`.Transformation.to_json`. For example:
 
@@ -23,7 +23,7 @@ transformation to JSON. Simply use the method
 
     transformation.to_json("mytransformation.json")
 
-When you do dump a single transformation, it can be reloaded into memory
+When you do write a single transformation, it can be reloaded into memory
 with the :meth:`.Transformation.from_json` method:
 
 .. code::

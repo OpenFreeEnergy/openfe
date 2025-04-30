@@ -132,7 +132,7 @@ The typical way to use the Python API is to load a number of molecules you want 
             A complete simulation campaign.
 
       .. rst-class:: arrow-down
-    * :any:`dumping_transformations`
+    * :any:`writing_transformations`
 
     * Run
         - :any:`openfe quickrun <cli_quickrun>`
@@ -152,7 +152,7 @@ List of Cookbooks
     :maxdepth: 1
 
     loading_molecules
-    dumping_transformation
+    writing_transformation_json
     choose_protocol
     generate_ligand_network
     rfe_alchemical_planners

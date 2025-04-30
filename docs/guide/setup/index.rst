@@ -39,4 +39,4 @@ instructions can be found in the following sections:
 
 To set up your alchemical network using the Python interface, but run it using the CLI,
 you will need to export the network in the same format used by the CLI.
-See :ref:`dumping transformations <dumping_transformations>` for more details.
+See :ref:`writing transformations to JSON <writing_transformation_json>` for more details.
