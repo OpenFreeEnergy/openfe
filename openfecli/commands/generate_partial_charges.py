@@ -5,7 +5,7 @@ from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES, OVERWRITE
 
 YAML_HELP = """
-Path to a YAML file specifying the method to use to charge the molecules.
+Path to a YAML file specifying the method to use to charge the molecules
 (any atom mapper or network generation options will be ignored).
 
 Supported partial charge method choices are:
@@ -14,7 +14,7 @@ Supported partial charge method choices are:
     - ``nagl`` (must have openff-nagl installed)
     - ``espaloma`` (must have espaloma_charge installed)
 
-``settings:`` allows for passing in any keyword arguments of the method's corresponding Python API.
+``settings`` allows for passing in any keyword arguments of the method's corresponding Python API.
 
 For example:
 ::

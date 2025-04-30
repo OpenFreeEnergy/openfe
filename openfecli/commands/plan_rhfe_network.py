@@ -132,13 +132,13 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     The tool will parse the input and run the rbfe network planner, which
     executes following steps:
 
-        1. generate an atom mapping for all possible ligand pairs. (default:
-           Lomap)
+    1. generate an atom mapping for all possible ligand pairs. (default:
+        Lomap)
 
-        2. score all atom mappings. (default: Lomap default score)
+    2. score all atom mappings. (default: Lomap default score)
 
-        3. build network form all atom mapping scores (default: minimal
-           spanning graph)
+    3. build network form all atom mapping scores (default: minimal
+        spanning graph)
 
     The generated Network will be stored in a folder containing for each
     transformation a JSON file, that can be run with quickrun (or other
