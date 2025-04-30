@@ -30,7 +30,7 @@ class OpenFECLI(CLI):
 
 _MAIN_HELP = """
 A command line interface to provide access to basic
-functionality from the openfe Python library.
+functionality of the openfe Python library.
 """
 
 
