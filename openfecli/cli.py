@@ -3,7 +3,6 @@
 
 import pathlib
 import logging
-import logging.config
 
 import click
 from plugcli.cli import CLI, CONTEXT_SETTINGS
@@ -30,8 +29,8 @@ class OpenFECLI(CLI):
 
 
 _MAIN_HELP = """
-This is the command line tool to provide easy access to functionality from
-the OpenFE Python library.
+A command line interface to provide access to basic
+functionality from the openfe Python library.
 """
 
 
