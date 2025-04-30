@@ -213,7 +213,27 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         solvent,
         partial_charge_settings,
     )
+# TODO: do we want this in the docs anywhere?
+DEFAULT_YAML="""
+    mapper: LomapAtomMapper
+        settings:
+            time: 20
+            threed: True
+            max3d: 1.0
+            element_change: true
+            seed: ''
+            shift: false
 
+    network:
+        method: generate_minimal_spanning_network
+
+    partial_charge:
+        method: am1bcc
+        settings:
+            off_toolkit_backend: ambertools
+            number_of_conformers: None
+            nagl_model: None
+"""
 
 _yaml_help = """
 Path to a YAML file specifying the atom mapper (``mapper``), network planning algorithm (``network``),
@@ -221,17 +241,17 @@ and/or partial charge method (``partial_charge``) to use.
 
 \b
 Supported atom mapper choices are:
-    - ``LomapAtomMapper``
+    - ``LomapAtomMapper`` (default)
     - ``KartografAtomMapper``
 \b
 Supported network planning algorithms include (but are not limited to):
-    - ``generate_minimal_spanning_tree``
+    - ``generate_minimal_spanning_network`` (default)
     - ``generate_minimal_redundant_network``
     - ``generate_radial_network``
     - ``generate_lomap_network``
 \b
 Supported partial charge method choices are:
-    - ``am1bcc``
+    - ``am1bcc`` (default)
     - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` is ``openeye``)
     - ``nagl`` (must have openff-nagl installed)
     - ``espaloma`` (must have espaloma_charge installed)
