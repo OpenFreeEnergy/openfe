@@ -13,8 +13,25 @@ from openfecli.commands.gather import (
     gather,
     format_estimate_uncertainty,
     _get_column,
-    load_valid_result_json,
+    _load_valid_result_json,
+    _get_legs_from_result_jsons,
 )
+
+POOCH_CACHE = pooch.os_cache('openfe')
+ZENODO_RBFE_DATA = pooch.create(
+        path = POOCH_CACHE,
+        base_url="doi:10.5281/zenodo.15042470",
+        registry={
+            "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
+            "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
+        retry_if_failed=3,
+    )
+ZENODO_CMET_DATA = pooch.create(
+        path = POOCH_CACHE,
+        base_url="doi:10.5281/zenodo.15200083",
+        registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
+        retry_if_failed=3,
+    )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
     (12.432, 0.111, 2, "12.43", "0.11"),
@@ -38,71 +55,85 @@ class TestResultLoading:
         result = {
             "estimate": {},
             "uncertainty": {},
-            "protocol_result": {'data':{'2294096155646608107660849867019691905': None}},
+            "protocol_result": {'data':{'22940961':  [
+                {"name": "lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
+                  "inputs": {"stateA": {"components": {"ligand":None, 'solvent': None}}}}
+                  ]}},
             "unit_results": {
-                "ProtocolUnitResult-e85": {},
-                "ProtocolUnitFailure-4c9": {"exception": ["Simulation_NanError"]},
+                "ProtocolUnitResult-e85": {"name":"lig_ejm_31 to lig_ejm_42 repeat 0 generation 0"},
+                "ProtocolUnitFailure-4c9": {"name":"lig_ejm_31 to lig_ejm_42 repeat 0 generation 0",
+                                            "exception": ["Simulation_NanError"]},
             },
         }
         yield result
 
     def test_minimal_valid_results(self, capsys, sim_result):
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result == sim_result
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), sim_result)
             assert captured.err == ""
-
-    def test_skip_missing_filepath(self, capsys):
-        result = load_valid_result_json(fpath="")
-        captured = capsys.readouterr()
-        assert result is None
-        assert "does not exist. Skipping" in captured.err
 
     def test_skip_missing_unit_result(self, capsys, sim_result):
         del sim_result["unit_results"]
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
-            assert "No 'unit_results'" in captured.err
+            assert result == (None, None)
+            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
     def test_skip_missing_estimate(self, capsys, sim_result):
         sim_result["estimate"] = None
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), None)
             assert "No 'estimate' found" in captured.err
 
     def test_skip_missing_uncertainty(self, capsys, sim_result):
         sim_result["uncertainty"] = None
 
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), None)
             assert "No 'uncertainty' found" in captured.err
 
     def test_skip_all_failed_runs(self, capsys, sim_result):
         del sim_result["unit_results"]["ProtocolUnitResult-e85"]
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
+            assert result == ((('lig_ejm_31', 'lig_ejm_42'), 'solvent'), None)
             assert "Exception found in all" in captured.err
 
     def test_missing_pr_data(self, capsys, sim_result):
         sim_result["protocol_result"]["data"] = {}
         with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
-            result = load_valid_result_json(fpath="")
+            result = _load_valid_result_json(fpath="")
             captured = capsys.readouterr()
-            assert result is None
-            assert "No data found" in captured.err
+            assert result == (None, None)
+            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
-_EXPECTED_DG = b"""
+    def test_get_legs_from_result_jsons(self, capsys, sim_result):
+        """Test that exceptions are handled correctly at the _get_legs_from_results_json level."""
+        sim_result["protocol_result"]["data"] = {}
+
+        with mock.patch("openfecli.commands.gather.load_json", return_value=sim_result):
+            result = _get_legs_from_result_jsons(result_fns=[""], report='dg')
+            captured = capsys.readouterr()
+            assert result == {}
+            assert "Missing ligand names and/or simulation type. Skipping" in captured.err
+
+def test_no_results_found():
+    runner = CliRunner(mix_stderr=False)
+    cli_result = runner.invoke(gather, "not_a_file.txt")
+    assert cli_result.exit_code == 1
+    assert "No results JSON files found" in str(cli_result.stderr)
+
+_RBFE_EXPECTED_DG = b"""
 ligand	DG(MLE) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	-0.09	0.05
 lig_ejm_42	0.7	0.1
@@ -116,7 +147,7 @@ lig_jmc_27	-1.1	0.1
 lig_jmc_28	-1.25	0.08
 """
 
-_EXPECTED_DDG = b"""
+_RBFE_EXPECTED_DDG = b"""
 ligand_i	ligand_j	DDG(i->j) (kcal/mol)	uncertainty (kcal/mol)
 lig_ejm_31	lig_ejm_42	0.8	0.1
 lig_ejm_31	lig_ejm_46	-0.89	0.06
@@ -129,30 +160,7 @@ lig_ejm_46	lig_jmc_27	-0.1	0.1
 lig_ejm_46	lig_jmc_28	-0.27	0.06
 """
 
-_EXPECTED_DG_RAW = b"""
-leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	uncertainty (kcal/mol)
-complex	lig_ejm_31	lig_ejm_42	-15.0	0.1
-solvent	lig_ejm_31	lig_ejm_42	-15.71	0.03
-complex	lig_ejm_31	lig_ejm_46	-40.75	0.04
-solvent	lig_ejm_31	lig_ejm_46	-39.86	0.05
-complex	lig_ejm_31	lig_ejm_47	-27.8	0.1
-solvent	lig_ejm_31	lig_ejm_47	-27.83	0.06
-complex	lig_ejm_31	lig_ejm_48	-16.14	0.08
-solvent	lig_ejm_31	lig_ejm_48	-16.76	0.03
-complex	lig_ejm_31	lig_ejm_50	-57.33	0.04
-solvent	lig_ejm_31	lig_ejm_50	-58.33	0.02
-complex	lig_ejm_42	lig_ejm_43	-18.9	0.2
-solvent	lig_ejm_42	lig_ejm_43	-20.28	0.03
-complex	lig_ejm_46	lig_jmc_23	17.42	0.06
-solvent	lig_ejm_46	lig_jmc_23	17.12	0.06
-complex	lig_ejm_46	lig_jmc_27	15.81	0.09
-solvent	lig_ejm_46	lig_jmc_27	15.91	0.05
-complex	lig_ejm_46	lig_jmc_28	23.14	0.04
-solvent	lig_ejm_46	lig_jmc_28	23.41	0.05
-"""
-
-
-_EXPECTED_RAW = b"""\
+_RBFE_EXPECTED_RAW = b"""\
 leg	ligand_i	ligand_j	DG(i->j) (kcal/mol)	MBAR uncertainty (kcal/mol)
 complex	lig_ejm_31	lig_ejm_42	-14.9	0.8
 complex	lig_ejm_31	lig_ejm_42	-14.8	0.8
@@ -209,38 +217,138 @@ solvent	lig_ejm_46	lig_jmc_28	23.5	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.3	0.8
 solvent	lig_ejm_46	lig_jmc_28	23.4	0.8
 """
-POOCH_CACHE = pooch.os_cache('openfe')
-ZENODO_RBFE_DATA = pooch.create(
-        path = POOCH_CACHE,
-        base_url="doi:10.5281/zenodo.15042470",
-        registry={
-            "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
-            "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
-        retry_if_failed=3,
-    )
 
 @pytest.fixture
 def rbfe_result_dir()->pathlib.Path:
     def _rbfe_result_dir(dataset)->str:
         ZENODO_RBFE_DATA.fetch(f'{dataset}.tar.gz', processor=pooch.Untar())
-        cache_dir = pathlib.Path(pooch.os_cache('openfe'))/f'{dataset}.tar.gz.untar/{dataset}/'
+        cache_dir = pathlib.Path(POOCH_CACHE)/f'{dataset}.tar.gz.untar/{dataset}/'
         return  cache_dir
 
     return _rbfe_result_dir
+
+@pytest.fixture
+def cmet_result_dir()->pathlib.Path:
+    ZENODO_CMET_DATA.fetch(f'cmet_results.tar.gz', processor=pooch.Untar())
+    result_dir = pathlib.Path(POOCH_CACHE)/f'cmet_results.tar.gz.untar/cmet_results/'
+
+    return result_dir
+
+class TestGatherCMET:
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_full_results(self, cmet_result_dir, report, file_regression):
+        results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    # TODO: add --allow-partial behavior checks
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_missing_complex_leg(self, cmet_result_dir, report, file_regression):
+        """Missing one complex replicate from one leg."""
+        results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_cmet_missing_edge(self, cmet_result_dir, report,file_regression):
+        results = [str(cmet_result_dir / f'results_{i}_remove_edge') for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
+        file_regression.check(cli_result.output, extension='.tsv')
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["ddg", "raw"])
+    def test_cmet_failed_edge(self, cmet_result_dir, report, file_regression):
+        results = [str(cmet_result_dir / f'results_{i}_failed_edge') for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension=".tsv")
+
+    @pytest.mark.parametrize("allow_partial", [True, False])
+    def test_cmet_too_few_edges_error(self, cmet_result_dir, allow_partial):
+        results = [str(cmet_result_dir / f"results_{i}_failed_edge") for i in range(3)]
+        args = ["--report", "dg"]
+        runner = CliRunner(mix_stderr=False)
+        if allow_partial:
+            args += ['--allow-partial']
+
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
+        assert cli_result.exit_code == 1
+        assert (
+            "The results network has 1 edge(s), but 3 or more edges are required"
+            in str(cli_result.stderr)
+        )
+
+    @pytest.mark.parametrize("report", ["dg", "ddg"])
+    def test_cmet_missing_all_complex_legs_fail(self, cmet_result_dir, report, file_regression):
+        """Missing one complex replicate from one leg."""
+        results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ["-o", "-"])
+
+        cli_result.exit_code == 1
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["ddg"])
+    def test_cmet_missing_all_complex_legs_allow_partial(self, cmet_result_dir, report, file_regression):
+        """Missing one complex replicate from one leg."""
+        results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
+        args = ["--report", report, "--allow-partial"]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args + ['--tsv'])
+
+        assert_click_success(cli_result)
+        file_regression.check(cli_result.output, extension='.tsv')
+
+    @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
+    def test_pretty_print(self, cmet_result_dir, report, file_regression):
+        results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
+        args = ["--report", report]
+        runner = CliRunner(mix_stderr=False)
+        cli_result = runner.invoke(gather, results + args)
+        assert_click_success(cli_result)
+        # TODO: figure out how to mock terminal size, since it affects the table wrapping
+        # file_regression.check(cli_result.output, extension='.txt')
+
+    def test_write_to_file(self, cmet_result_dir):
+        runner = CliRunner(mix_stderr=False)
+        with runner.isolated_filesystem():
+            results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
+            fname = "output.tsv"
+            args = ["--report", "raw", "-o", fname]
+            cli_result = runner.invoke(gather, results + args)
+            assert "writing raw output to 'output.tsv'" in cli_result.output
+            assert pathlib.Path(fname).is_file()
+
 
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 @pytest.mark.parametrize('dataset', ['rbfe_results_serial_repeats', 'rbfe_results_parallel_repeats'])
 @pytest.mark.parametrize('report', ["", "dg", "ddg", "raw"])
 @pytest.mark.parametrize('input_mode', ['directory','filepaths'])
-def test_gather(rbfe_result_dir, dataset, report, input_mode):
+def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
 
     expected = {
-        "": _EXPECTED_DG,
-        "dg": _EXPECTED_DG,
-        "ddg": _EXPECTED_DDG,
-        "raw": _EXPECTED_RAW,
+        "": _RBFE_EXPECTED_DG,
+        "dg": _RBFE_EXPECTED_DG,
+        "ddg": _RBFE_EXPECTED_DDG,
+        "raw": _RBFE_EXPECTED_RAW,
     }[report]
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
 
     if report:
         args = ["--report", report]
@@ -254,45 +362,61 @@ def test_gather(rbfe_result_dir, dataset, report, input_mode):
         results = glob.glob(f"{results}/*", recursive=True)
         assert len(results) > 1  # sanity check to make sure we're passing in multiple paths
 
-    cli_result = runner.invoke(gather, results + args + ['-o', '-'])
+    cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
     assert_click_success(cli_result)
 
     actual_lines = set(cli_result.stdout_bytes.split(b'\n'))
     assert set(expected.split(b'\n')) == actual_lines
 
+def test_rbfe_gather_single_repeats_dg_error(rbfe_result_dir):
+    """A single repeat is insufficient for a dg calculation - should fail cleanly."""
+
+    runner = CliRunner(mix_stderr=False)
+    results = rbfe_result_dir("rbfe_results_parallel_repeats")
+    args = ['report','dg']
+    cli_result = runner.invoke(gather, [f"{results}/replicate_0"] + args + ['--tsv'])
+    assert cli_result.exit_code == 1
+
 @pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
-class TestGatherFailedEdges:
+class TestRBFEGatherFailedEdges:
     @pytest.fixture()
-    def results_dir_serial_missing_legs(self, rbfe_result_dir, tmpdir)->str:
+    def results_paths_serial_missing_legs(self, rbfe_result_dir)->str:
         """Example output data, with replicates run in serial and two missing results JSONs."""
-        # TODO: update to return a list of paths without doing this symlink mess, when gather supports it.
-        rbfe_result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
-        tmp_results_dir =  tmpdir
+        result_dir = rbfe_result_dir('rbfe_results_serial_repeats')
+        results = glob.glob(f"{result_dir}/*", recursive=True)
+
         files_to_skip = ["rbfe_lig_ejm_31_complex_lig_ejm_42_complex.json",
-                         "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"
-                            ]
-        for item in os.listdir(rbfe_result_dir):
-            if item not in files_to_skip:
-                os.symlink(rbfe_result_dir/item, tmp_results_dir/item)
+                         "rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json"]
 
-        return str(tmp_results_dir)
+        results_filtered = [f for f in results if os.path.basename(f) not in files_to_skip]
 
-    def test_missing_leg_error(self, results_dir_serial_missing_legs: str):
-        runner = CliRunner()
-        result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['-o', '-'])
+        return results_filtered
+
+    def test_missing_leg_error(self, results_paths_serial_missing_legs: str):
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(gather, results_paths_serial_missing_legs + ["--report", "dg"])
 
         assert result.exit_code == 1
-        assert isinstance(result.exception, RuntimeError)
-        assert "Some edge(s) are missing runs" in str(result.exception)
-        assert "('lig_ejm_31', 'lig_ejm_42'): solvent" in str(result.exception)
-        assert "('lig_ejm_46', 'lig_jmc_28'): complex" in str(result.exception)
-        assert "using the --allow-partial flag" in str(result.exception)
+        assert "Some edge(s) are missing runs" in str(result.stderr)
+        assert "lig_ejm_31\tlig_ejm_42\tsolvent" in str(result.stderr)
+        assert "lig_ejm_46\tlig_jmc_28\tcomplex" in str(result.stderr)
+        assert "using the --allow-partial flag" in str(result.stderr)
 
 
-    def test_missing_leg_allow_partial(self, results_dir_serial_missing_legs: str):
-        runner = CliRunner()
+    def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
+        runner = CliRunner(mix_stderr=False)
+        with pytest.warns():
+            args =  ["--report", "dg", "--allow-partial"]
+            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
+            assert result.exit_code == 1
+            assert "The results network is disconnected" in str(result.stderr)
+
+
+    def test_missing_leg_allow_partial_(self, results_paths_serial_missing_legs: str):
+        runner = CliRunner(mix_stderr=False)
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
-            result = runner.invoke(gather, [results_dir_serial_missing_legs] + ['--allow-partial', '-o', '-'])
+            args =  ["--report", "ddg", "--allow-partial"]
+            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
             assert_click_success(result)
