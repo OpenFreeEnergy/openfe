@@ -1,30 +1,24 @@
 .. _userguide_quickrun:
 
-Execution with Quickrun
-=======================
+Execution with ``openfe quickrun``
+==================================
 
-The planning and preparation of a campaign of alchemical simulations using the ``openfe`` package is intended to be
-achievable on a local workstation in a matter of minutes.
-The **execution** of these simulations however requires a large amount of computational power,
-and beyond running single calculations locally,
-is intended to be distributed across a HPC environment.
-Doing this requires storing and sending the details of the simulation from the local workstation to a HPC environment,
-this can be done via the :func:`.Transformation.dump` function which
-:ref:`creates a saved "json" version of the data<dumping_transformations>`.
-These serialised "json" files are the currency of executing a campaign of simulations,
-and contain all the information required to execute a single simulation.
+While **openfe** intends to make the *planning* and *preparation* of an free energy campaign achievable on a local workstation in a matter of minutes,
+the *execution* of these simulations requires significant computational power.
+**openfe** is designed for distributing simulation execution across HPC environment(s).
 
-To read this information and execute the simulation, the command line interface provides a ``quickrun`` command,
-the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
-Briefly, this command takes a "json" simulation as an input and will then execute the simulation contained within,
-therefore this command would execute a simulation saved to a file called "transformation.json".
+The :ref:`Transformation.to_json()<dumping_transformations>` method JSON serializes all the information needed to run a ``Transformation`` to a JSON-formatted file, so that you can plan and prepare your campaign locally, then send these JSON files to an HPC to execute the simulations.
+
+The ``openfe quickrun`` command is a simple way to execute a single transformation JSON. It takes in a JSON-serialized ``Transformation`` as input, then executes the simulation.
+
+The following command would execute a simulation saved to a file called "transformation.json" and write the results of the simulation to ``results.json``.
 
 ::
 
   openfe quickrun transformation.json -o results.json
 
 
-Which will produce a results file called ``results.json``.
+For full details, see :ref:`the CLI reference section<cli_quickrun>`.
 
 Executing within a job submission script
 ----------------------------------------
