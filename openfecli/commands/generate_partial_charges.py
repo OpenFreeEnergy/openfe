@@ -4,6 +4,27 @@ import click
 from openfecli import OFECommandPlugin
 from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES, OVERWRITE
 
+YAML_HELP = """
+Path to a YAML file specifying the method to use to charge the molecules
+(any atom mapper or network generation options will be ignored).
+
+Supported partial charge method choices are:
+    - ``am1bcc``
+    - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` is ``openeye``)
+    - ``nagl`` (must have openff-nagl installed)
+    - ``espaloma`` (must have espaloma_charge installed)
+
+``settings`` allows for passing in any keyword arguments of the method's corresponding Python API.
+
+For example:
+::
+
+  partial_charge:
+    method: am1bcc
+    settings:
+      off_toolkit_backend: ambertools
+
+"""
 
 @click.command(
     "charge-molecules",
@@ -14,10 +35,11 @@ from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCO
 )
 @YAML_OPTIONS.parameter(
     multiple=False, required=False, default=None,
-    help=YAML_OPTIONS.kwargs["help"],
+    help=YAML_HELP,
 )
 @OUTPUT_FILE_AND_EXT.parameter(
     help="The name of the SDF file the charged ligands should be written to.",
+    required=True,
     type=click.Path(exists=False, path_type=pathlib.Path)
 )
 @NCORES.parameter(
@@ -40,7 +62,6 @@ def charge_molecules(
     Generate partial charges for the set of input molecules and write them to file.
     """
     from openfecli.utils import write
-    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     if output.exists():
         raise FileExistsError(f"The output file {output} already exists, choose a new file to write the charged"
@@ -49,6 +70,8 @@ def charge_molecules(
     write("SMALL MOLECULE PARTIAL CHARGE GENERATOR")
     write("_________________________________________")
     write("")
+
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     write("Parsing in Files: ")
 
