@@ -1716,7 +1716,6 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
         distance = np.linalg.norm(
             positions_AB[rest_geom.guest_atoms[0]] - positions_AB[rest_geom.host_atoms[0]])
-        print(distance)
 
         k_distance = to_openmm(settings['restraint_settings'].spring_constant)
 
