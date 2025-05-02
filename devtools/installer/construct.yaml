@@ -1,9 +1,12 @@
 name: OpenFEforge
-version: {{ environ["VERSION"] }}
+version: 1.5.0.dev0
 company: OpenFE
 license_file: ../../LICENSE
 
 channels:
+  - conda-forge/label/gufe_rc
+  - conda-forge/label/cinnabar_rc
+  - conda-forge/label/openfe_dev
   - conda-forge
 
 write_condarc: True
@@ -15,13 +18,13 @@ specs:
   - jupyterlab
   - mamba
   - notebook <7
-  - openfe=={{ environ["VERSION"] }}
+  - openfe==1.5.0.dev0
   - pip
   - pytest
   - pytest-xdist
   # python needs to match https://github.com/googlecolab/backend-info/blob/main/os-info.txt
   # until colab pushes a fix
-  - python 3.11.11
+  - python 3.11.12
 
 # Not building an .exe for windows or a .pkg for macOS
 installer_type: sh
