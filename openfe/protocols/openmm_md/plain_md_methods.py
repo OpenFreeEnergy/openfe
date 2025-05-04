@@ -434,12 +434,14 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         if output_settings.production_trajectory_filename:
-            simulation.reporters.append(XTCReporter(
+            xtc_reporter = XTCReporter(
                 file=str(
                     shared_basepath /
                     output_settings.production_trajectory_filename),
                 reportInterval=write_interval,
-                atomSubset=selection_indices))
+                atomSubset=selection_indices
+            )
+            simulation.reporters.append(xtc_reporter)
         if output_settings.checkpoint_storage_filename:
             simulation.reporters.append(openmm.app.CheckpointReporter(
                 file=str(
@@ -463,6 +465,13 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
+        # Write out the final frame --temp debug
+        state = simulation.context.getState(
+                getPositions=True,
+                enforcePeriodicBox=False,
+        )
+        xtc_reporter.report(simulation, state)
+
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
 
