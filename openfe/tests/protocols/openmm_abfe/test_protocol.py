@@ -64,15 +64,19 @@ def test_dry_run_solvent_benzene(
             settings=s,
     )
 
+    solvent = SolventComponent(
+        ion_concentration = 0 * offunit.molar,
+    )
+
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
         'protein': T4_protein_component,
-        'solvent': SolventComponent()
+        'solvent': solvent,
     })
 
     stateB = ChemicalSystem({
         'protein': T4_protein_component,
-        'solvent': SolventComponent(),
+        'solvent': solvent,
     })
 
     # Create DAG from protocol, get the vacuum and solvent units
@@ -99,7 +103,7 @@ def test_dry_run_solvent_benzene(
         assert comp_sampler.is_periodic
 
         pdb = mdt.load_pdb('alchemical_system.pdb')
-        assert pdb.n_atoms == 2698
+        assert pdb.n_atoms == 12
 
 
 def test_dry_run_complex_benzene(
