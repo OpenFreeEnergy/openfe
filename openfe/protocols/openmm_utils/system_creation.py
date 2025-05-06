@@ -8,10 +8,9 @@ import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat
 from openmm import unit as omm_unit
-from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import to_openmm, ensure_quantity
 from openmmforcefields.generators import SystemGenerator
-from typing import Optional
+from typing import Optional, Iterable
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
@@ -134,9 +133,9 @@ ModellerReturn = tuple[app.Modeller, dict[Component, npt.NDArray]]
 
 
 def get_omm_modeller(
-    protein_comp: Optional[ProteinComponent],
-    solvent_comp: Optional[SolventComponent],
-    small_mols: dict[SmallMoleculeComponent, OFFMol],
+    protein_comps: Optional[Iterable[ProteinComponent] | ProteinComponent],
+    solvent_comps: Optional[Iterable[SolventComponent] | SolventComponent],
+    small_mols: Optional[Iterable[SmallMoleculeComponent] | SmallMoleculeComponent],
     omm_forcefield : app.ForceField,
     solvent_settings : OpenMMSolvationSettings
 ) -> ModellerReturn:
@@ -146,11 +145,11 @@ def get_omm_modeller(
 
     Parameters
     ----------
-    protein_comp : Optional[ProteinComponent]
+    protein_comps : Optional[Iterable[ProteinComponent] or ProteinComponent]
       Protein Component, if it exists.
-    solvent_comp : Optional[ProteinCompoinent]
+    solvent_comps : Optional[Iterable[SolventComponent] or SolventComponent]
       Solvent Component, if it exists.
-    small_mols : dict
+    small_mols : Optional[Iterable[SmallMoleculeComponent] or SmallMoleculeComponent]
       Small molecules to add.
     omm_forcefield : app.ForceField
       ForceField object for system.
@@ -188,28 +187,49 @@ def get_omm_modeller(
     # Create empty modeller
     system_modeller = app.Modeller(app.Topology(), [])
 
-    # If there's a protein in the system, we add it first to the Modeller
-    if protein_comp is not None:
-        system_modeller.add(protein_comp.to_openmm_topology(),
-                            protein_comp.to_openmm_positions())
-        # add missing virtual particles (from crystal waters)
-        system_modeller.addExtraParticles(omm_forcefield)
-        component_resids[protein_comp] = np.array(
-          [r.index for r in system_modeller.topology.residues()]
-        )
-        # if we solvate temporarily rename water molecules to 'WAT'
-        # see openmm issue #4103
-        if solvent_comp is not None:
-            for r in system_modeller.topology.residues():
-                if r.name == 'HOH':
-                    r.name = 'WAT'
+    # We first add all the protein components, if any
+    if protein_comps:
+        try:
+            protein_comps = iter(protein_comps)
+        except TypeError:
+            protein_comps = {protein_comps}  # make it a set/iterable with the comp
+        for protein_comp in protein_comps:
+            system_modeller.add(protein_comp.to_openmm_topology(),
+                                protein_comp.to_openmm_positions())
+            # add missing virtual particles (from crystal waters)
+            system_modeller.addExtraParticles(omm_forcefield)
+            component_resids[protein_comp] = np.array(
+              [r.index for r in system_modeller.topology.residues()]
+            )
+            # if we solvate temporarily rename water molecules to 'WAT'
+            # see openmm issue #4103
+            if solvent_comps is not None:
+                for r in system_modeller.topology.residues():
+                    if r.name == 'HOH':
+                        r.name = 'WAT'
 
     # Now loop through small mols
-    for comp, mol in small_mols.items():
-        _add_small_mol(comp, mol, system_modeller, component_resids)
+    if small_mols:
+        try:
+            small_mols = iter(small_mols)
+        except TypeError:
+            small_mols = {small_mols}  # make it a set/iterable with the comp
+        for small_mol_comp in small_mols:
+            _add_small_mol(small_mol_comp, small_mol_comp.to_openff(), system_modeller,
+                           component_resids)
 
     # Add solvent if neeeded
-    if solvent_comp is not None:
+    if solvent_comps:
+        # Making it a list to make our life easier -- TODO: Maybe there's a better type for this
+        try:
+            solvent_comps = list(set(solvent_comps))  # if given iterable
+        except TypeError:
+            solvent_comps = [solvent_comps]  # if not iterable, given single obj
+        # TODO: Support multiple solvent components? Is there a use case for it?
+        # Error out when we iter(have more than one solvent component in the states/systems
+        if len(solvent_comps) > 1:
+            raise ValueError("More than one solvent component found in systems. Only one supported.")
+        solvent_comp = solvent_comps[0]  # Get the first (and only?) solvent component
         # Do unit conversions if necessary
         solvent_padding = None
         box_size = None
