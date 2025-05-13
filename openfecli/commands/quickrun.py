@@ -27,8 +27,8 @@ def _format_exception(exception) -> str:
     type=click.Path(dir_okay=True, file_okay=False, writable=True,
                     path_type=pathlib.Path),
     help=(
-        "Directory in which to store files in (defaults to current directory).\
-        If the directory does not exist, it will be created at runtime."
+        "Directory in which to store files in (defaults to current directory). "
+        "If the directory does not exist, it will be created at runtime."
     ),
 )
 @click.option(
@@ -42,10 +42,10 @@ def quickrun(transformation, work_dir, output):
 
     Simulation JSON files can be created with the
     :ref:`cli_plan-rbfe-network`
-    or from Python a :class:`.Transformation` can be saved using its dump
+    or from Python a :class:`.Transformation` can be saved using its to_json
     method::
 
-        transformation.dump("filename.json")
+        transformation.to_json("filename.json")
 
     That will save a JSON file suitable to be input for this command.
 
@@ -54,9 +54,9 @@ def quickrun(transformation, work_dir, output):
     For example, when running the OpenMM HREX Protocol a directory will be created
     for each repeat of the sampling process (by default 3).
     """
-    import gufe
     import os
     import sys
+    from gufe.transformations.transformation import Transformation
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
     from openfe.utils.logging_filter import MsgIncludesStringFilter
@@ -92,9 +92,7 @@ def quickrun(transformation, work_dir, output):
         work_dir.mkdir(exist_ok=True, parents=True)
 
     write("Loading file...")
-    # TODO: change this to `Transformation.load(transformation)`
-    dct = json.load(transformation, cls=JSON_HANDLER.decoder)
-    trans = gufe.Transformation.from_dict(dct)
+    trans = Transformation.from_json(transformation)
 
     if output is None:
         output = work_dir / (str(trans.key) + '_results.json')

@@ -89,16 +89,16 @@ Customising the partial charge generation
 
 There are a range of partial charge generation schemes available, including
 
-    - ``am1bcc``
-    - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` in settings is set to ``openeye``)
-    - ``nagl`` (must have ``openff-nagl`` installed)
-    - ``espaloma`` (must have ``espaloma_charge`` installed)
+* ``am1bcc``
+* ``am1bccelf10`` (only possible if ``off_toolkit_backend`` in settings is set to ``openeye``)
+* ``nagl`` (must have ``openff-nagl`` installed)
+* ``espaloma`` (must have ``espaloma_charge`` installed)
 
 The following settings can also be set
 
-    - ``off_toolkit_backend`` The backend to use for partial charge generation. Choose from  ``ambertools`` (default), ``openeye`` or ``rdkit``.
-    - ``number_of_conformers`` The number of conformers to use for partial charge generation. If unset (default), the input conformer will be used.
-    - ``nagl_model``: The NAGL model to use. If unset (default), the latest available production charge model will be used.
+* ``off_toolkit_backend`` The backend to use for partial charge generation. Choose from  ``ambertools`` (default), ``openeye`` or ``rdkit``.
+* ``number_of_conformers`` The number of conformers to use for partial charge generation. If unset (default), the input conformer will be used.
+* ``nagl_model``: The NAGL model to use. If unset (default), the latest available production charge model will be used.
 
 For example, to generate the partial charges using the ``am1bccelf10`` method from ``openeye`` the following should be added to the YAML settings file ::
 

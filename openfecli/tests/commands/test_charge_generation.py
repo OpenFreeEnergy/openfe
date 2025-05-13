@@ -1,3 +1,4 @@
+from click import ClickException
 import pytest
 from click.testing import CliRunner
 
@@ -30,6 +31,15 @@ def methane_with_charges(methane) -> Molecule:
     methane._partial_charges = [-1.0, 0.25, 0.25, 0.25, 0.25] * unit.elementary_charge
     return methane
 
+def test_missing_output(methane, tmpdir):
+    runner = CliRunner()
+    mol_path = tmpdir / "methane.sdf"
+    methane.to_file(str(mol_path), "sdf")
+
+    cli_result = runner.invoke(charge_molecules,["-M", mol_path,])
+    assert cli_result.exit_code==2
+    assert "Missing option '-o'" in cli_result.output
+    
 
 def test_write_charges_to_input(methane, tmpdir):
     runner = CliRunner()

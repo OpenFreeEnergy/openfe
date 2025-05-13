@@ -1,7 +1,7 @@
 [build-system]
 requires = [
-	"setuptools>=61.2",
-	"versioningit",
+	"setuptools>=64",
+	"setuptools-scm>=8",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -23,20 +23,8 @@ classifiers = [
 ]
 urls = {Homepage = "https://github.com/OpenFreeEnergy/openfe"}
 requires-python = ">= 3.10"
-dependencies = [
-    "numpy",
-    "networkx",
-    "click",
-    "plugcli",
-    "packaging",
-]
-dynamic = ["version"]
 
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-xdist",
-]
+dynamic = ["version"]
 
 [project.scripts]
 openfe = "openfecli.cli:main"
@@ -72,15 +60,5 @@ exclude_lines = [
     "raise NotImplementedError",
 ]
 
-[tool.versioningit]
-default-version = "1+unknown"
-
-[tool.versioningit.format]
-distance = "{base_version}+{distance}.{vcs}{rev}"
-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-
-[tool.versioningit.vcs]
-method = "git" 
-match = ["*"]
-default-tag = "0.0.0"
+[tool.setuptools_scm]
+fallback_version = "0.0.0"

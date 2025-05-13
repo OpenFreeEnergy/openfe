@@ -118,7 +118,7 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
             result2 = runner.invoke(quickrun, [fn])
             assert_click_success(result2)
 
-        gather_result = runner.invoke(gather, ["--report", "ddg", '.'])
+        gather_result = runner.invoke(gather, ["--report", "ddg", '.', '--tsv'])
 
         assert_click_success(gather_result)
         assert gather_result.stdout == ref_gather

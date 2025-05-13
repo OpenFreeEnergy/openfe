@@ -573,7 +573,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default `250`.
     
     """
-    early_termination_target_error: Optional[FloatQuantity['kcal/mol']] = 0.0 * unit.kilocalorie_per_mole
+    early_termination_target_error: Optional[FloatQuantity['kilocalorie_per_mole']] = 0.0 * unit.kilocalorie_per_mole
     # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
     #  (later would give an example of unit).
     """

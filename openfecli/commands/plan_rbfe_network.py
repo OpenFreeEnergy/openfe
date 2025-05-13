@@ -180,11 +180,11 @@ def plan_rbfe_network(
     which is detailed in the Options section.
     For more advanced setups, please consider using the Python layer of openfe.
     """
-    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
     write("RBFE-NETWORK PLANNER")
     write("______________________")
     write("")
+
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
 
