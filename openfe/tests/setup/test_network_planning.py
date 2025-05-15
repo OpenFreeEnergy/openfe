@@ -527,7 +527,7 @@ def test_network_from_indices(
     network = openfe.setup.ligand_network_planning.generate_network_from_indices(
         ligands=ligs,
         indices=requested,
-        mappers=lomap_old_mapper,
+        mapper=lomap_old_mapper,
     )
 
     assert len(network.nodes) == len(ligs)
@@ -552,7 +552,7 @@ def test_network_from_indices_indexerror(
         network = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligs,
             indices=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
 
 
@@ -566,7 +566,7 @@ def test_network_from_indices_disconnected_warning(
         _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligs,
             indices=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
 
 

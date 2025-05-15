@@ -352,7 +352,7 @@ def generate_network_from_names(
 
 def generate_network_from_indices(
     ligands: list[SmallMoleculeComponent],
-    mappers: AtomMapper,
+    mapper: AtomMapper,
     indices: list[tuple[int, int]],
 ) -> LigandNetwork:
     """
@@ -362,8 +362,8 @@ def generate_network_from_indices(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mappers: AtomMapper
-      the atom mappers to use to construct edges
+    mapper: AtomMapper
+      the atom mapper to use to construct edges
     indices : list of tuples of indices
       the edges to form where the values refer to names of the small molecules,
       eg `[(3, 4), ...]` will create an edge between the 3rd and 4th molecules
@@ -380,9 +380,9 @@ def generate_network_from_indices(
     """
     nodes = list(ligands)
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
     network = network_planner.generate_network_from_indices(
-        ligands=nodes, indices=indices
+        components=nodes, indices=indices
     )
     return network
 
