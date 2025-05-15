@@ -69,12 +69,12 @@ def generate_radial_network(
     ligands : iterable of SmallMoleculeComponents
       the ligands to arrange around the central ligand.  If the central ligand
       is present it will be ignored (i.e. avoiding a self edge)
-    mappers : AtomMapper or iterable of AtomMappers
-      mapper(s) to use, at least 1 required
     central_ligand : SmallMoleculeComponent or str or int
       the ligand to use as the hub/central ligand.
       If this is a string, this should match to one and only one ligand name.
       If this is an integer, this refers to the index from within ligands
+    mappers : AtomMapper or iterable of AtomMappers
+      mapper(s) to use, at least 1 required
     scorer : scoring function, optional
       a callable which returns a float for any LigandAtomMapping.  Used to
       assign scores to potential mappings; higher scores indicate better
@@ -313,7 +313,7 @@ def generate_minimal_redundant_network(
 
 def generate_network_from_names(
     ligands: list[SmallMoleculeComponent],
-    mapper: AtomMapper,
+    mappers: AtomMapper,
     names: list[tuple[str, str]],
 ) -> LigandNetwork:
     """
@@ -323,7 +323,7 @@ def generate_network_from_names(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
+    mappers: AtomMapper
       the atom mapper to use to construct edges
     names : list of tuples of names
       the edges to form where the values refer to names of the small molecules,
@@ -355,7 +355,7 @@ def generate_network_from_names(
 
 def generate_network_from_indices(
     ligands: list[SmallMoleculeComponent],
-    mapper: AtomMapper,
+    mappers: AtomMapper,
     indices: list[tuple[int, int]],
 ) -> LigandNetwork:
     """
@@ -365,8 +365,8 @@ def generate_network_from_indices(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
-      the atom mapper to use to construct edges
+    mappers: AtomMapper
+      the atom mappers to use to construct edges
     indices : list of tuples of indices
       the edges to form where the values refer to names of the small molecules,
       eg `[(3, 4), ...]` will create an edge between the 3rd and 4th molecules
@@ -392,7 +392,7 @@ def generate_network_from_indices(
 
 def load_orion_network(
     ligands: list[SmallMoleculeComponent],
-    mapper: AtomMapper,
+    mappers: AtomMapper,
     network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an Orion NES network file.
@@ -401,7 +401,7 @@ def load_orion_network(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
+    mappers: AtomMapper
       the atom mapper to use to construct edges
     network_file : str
       path to NES network file.
@@ -441,7 +441,7 @@ def load_orion_network(
 
 def load_fepplus_network(
     ligands: list[SmallMoleculeComponent],
-    mapper: AtomMapper,
+    mappers: AtomMapper,
     network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
@@ -450,7 +450,7 @@ def load_fepplus_network(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mapper: AtomMapper
+    mappers: AtomMapper
       the atom mapper to use to construct edges
     network_file : str
       path to edges network file.
