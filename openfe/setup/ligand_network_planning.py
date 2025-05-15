@@ -55,8 +55,8 @@ def generate_radial_network(
     central_ligand: Union[SmallMoleculeComponent, str, int],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
-    n_processes: int = 1,
     progress: bool = False,
+    n_processes: int = 1,
 ) -> LigandNetwork:
     """
     Plan a radial network with all ligands connected to a central node.
@@ -103,10 +103,8 @@ def generate_radial_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [
-        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
-        for m in mappers
-    ]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
 
     # handle central_ligand arg possibilities
     # after this, central_ligand is resolved to a SmallMoleculeComponent
