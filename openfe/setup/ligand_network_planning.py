@@ -33,10 +33,9 @@ def _hasten_lomap(mapper, ligands):
         return mapper
 
     try:
-        core = _find_common_core(
-            [m.to_rdkit() for m in ligands],
-            element_change=mapper.element_change,
-        )
+        core = _find_common_core([m.to_rdkit() for m in ligands],
+                                 element_change=mapper.element_change)
+
     except RuntimeError:  # in case MCS throws a hissy fit
         core = ""
 
