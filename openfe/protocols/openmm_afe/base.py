@@ -1034,7 +1034,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
-        positions = self._pre_equilibrate(
+        positions, box_vectors = self._pre_equilibrate(
             omm_system, omm_topology, positions, settings, dry
         )
 
@@ -1051,8 +1051,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 10. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
-            alchem_system, positions, settings,
-            lambdas, solv_comp
+            alchem_system,
+            positions,
+            box_vectors,
+            settings,
+            lambdas,
+            solv_comp
         )
 
         # 11. Create the multistate reporter & create PDB
