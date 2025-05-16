@@ -7,7 +7,7 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 """
 
 from openfe.utils import requires_package
-from openff.models.types import FloatQuantity
+from gufe.vendor.openff.models.types import FloatQuantity
 from openff.units import unit
 from openff.units.openmm import to_openmm
 
