@@ -188,6 +188,7 @@ class TestRadialNetworkGenerator:
 @pytest.mark.parametrize('extra_mapper', [True, False])
 def test_generate_maximal_network(toluene_vs_others, with_progress,
                                   with_scorer, extra_mapper, lomap_old_mapper):
+    """TODO: add test for throwing an error if there is no scorer but multiple mappings"""
     toluene, others = toluene_vs_others
 
 
@@ -213,10 +214,7 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
 
     assert len(network.nodes) == len(others) + 1
 
-    if extra_mapper:
-        edge_count = len(others) * (len(others) + 1)
-    else:
-        edge_count = len(others) * (len(others) + 1) / 2
+    edge_count = len(others) * (len(others) + 1) / 2
 
     assert len(network.edges) == edge_count
 
