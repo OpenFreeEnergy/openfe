@@ -136,7 +136,7 @@ def test_radial_network_with_scorer(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
     def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
+        return 1-1/len(mapping.componentA_to_componentB)
 
     network = openfe.setup.ligand_network_planning.generate_radial_network(
         ligands=others,
@@ -150,7 +150,7 @@ def test_radial_network_with_scorer(toluene_vs_others, lomap_old_mapper):
         # we didn't take the bad mapper
         assert len(edge.componentA_to_componentB) > 1
         assert 'score' in edge.annotations
-        assert edge.annotations['score'] == len(edge.componentA_to_componentB)
+        assert edge.annotations['score'] == 1-1/len(edge.componentA_to_componentB)
 
 
 def test_radial_network_multiple_mappers_no_scorer(toluene_vs_others,
