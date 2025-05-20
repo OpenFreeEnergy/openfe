@@ -466,7 +466,7 @@ class TestNetworkFromNames:
             names=requested,
             mappers=lomap_old_mapper,
         )
-
+        # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
         assert len(network.nodes) == len(ligs)
         assert len(network.edges) == 2
         actual_edges = [(e.componentA.name, e.componentB.name)
@@ -514,6 +514,7 @@ class TestNetworkFromIndices:
 
         requested = [(0, 1), (2, 3)]
 
+        # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
         network = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligs,
             indices=requested,
