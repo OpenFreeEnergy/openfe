@@ -181,7 +181,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             settings: dict[str, SettingsBaseModel],
             endstate: str,
             dry: bool
-    ) -> omm_unit.Quantity:
+    ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -210,8 +210,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
-        box : Optional[openmm.unit.Quantity]
-          Box vectors
+        box : openmm.unit.Quantity
+          Box vectors of the equilibrated system.
         """
         # Prep the simulation object
         platform = omm_compute.get_openmm_platform(
@@ -256,7 +256,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
 
         if self.verbose:
-            logger.info("running non-alchemical equilibration MD")
+            self.logger.info("running non-alchemical equilibration MD")
 
         # Don't do anything if we're doing a dry run
         if dry:
@@ -795,7 +795,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             positions: omm_unit.Quantity,
             settings: dict[str, SettingsBaseModel],
             dry: bool
-    ) -> omm_unit.Quantity:
+    ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -824,12 +824,13 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
-        box : Optional[openmm.unit.Quantity]
-          Box vectors
+        box : openmm.unit.Quantity
+          Box vectors of the equilibrated system.
         """
         # Prep the simulation object
         platform = omm_compute.get_openmm_platform(
-            settings['engine_settings'].compute_platform
+            platform_name=settings['engine_settings'].compute_platform,
+            gpu_device_index=settings['engine_settings'].gpu_device_index,
         )
 
         integrator = openmm.LangevinMiddleIntegrator(
@@ -870,7 +871,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         )
 
         if self.verbose:
-            logger.info("running non-alchemical equilibration MD")
+            self.logger.info("running non-alchemical equilibration MD")
 
         # Don't do anything if we're doing a dry run
         if dry:
@@ -1359,8 +1360,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         # 10. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
-            system, equ_positions, box_AB, settings,
-            lambdas, solv_comp,
+            system,
+            equ_positions,
+            box_AB,
+            settings,
+            lambdas,
+            solv_comp,
         )
 
         # 11. Create the multistate reporter & create PDB
