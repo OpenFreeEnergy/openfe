@@ -539,7 +539,7 @@ class TestNetworkFromIndices:
 
         requested = [(20, 1), (2, 3)]
 
-        with pytest.raises(IndexError, match="Invalid ligand id"):
+        with pytest.raises(IndexError, match="Invalid ligand index"):
             network = openfe.setup.ligand_network_planning.generate_network_from_indices(
                 ligands=ligs,
                 indices=requested,
