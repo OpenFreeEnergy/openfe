@@ -310,8 +310,8 @@ def generate_minimal_redundant_network(
 
 def generate_network_from_names(
     ligands: list[SmallMoleculeComponent],
-    mappers: AtomMapper,
-    names: list[tuple[str, str]],
+    mappers: AtomMapper,  # TODO: rename this to 'mapper' and only accept one
+    names: list[tuple[str, str]],  # TODO: rename to 'edges' or `edge_names`
 ) -> LigandNetwork:
     """
     Generate a :class:`.LigandNetwork` by specifying edges as tuples of names.
