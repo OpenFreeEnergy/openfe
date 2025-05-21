@@ -35,7 +35,6 @@ dependencies:
   - pytest-cov
   - pytest-regressions
   - pytest-rerunfailures
-  - pydantic >=1.10.17
   - pyyaml
   - rdkit
   - rich
