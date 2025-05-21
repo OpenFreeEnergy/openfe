@@ -174,7 +174,7 @@ class TestRadialNetworkGenerator:
     def test_radial_network_failure(self, atom_mapping_basic_test_files, lomap_old_mapper):
         nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'))
 
-        with pytest.raises(ValueError, match='No mapping found for'):
+        with pytest.raises(RuntimeError, match='Could not generate any mapping!'):
             network = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=[nigel],
                 central_ligand=atom_mapping_basic_test_files['toluene'],
