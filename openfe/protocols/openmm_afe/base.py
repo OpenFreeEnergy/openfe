@@ -161,7 +161,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool
-    ) -> omm_unit.Quantity:
+    ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -189,6 +189,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
+        box : openmm.unit.Quantity
+          Box vectors of the equilibrated system.
         """
         # Prep the simulation object
         # Restrict CPU count if running vacuum simulation
@@ -236,11 +238,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         if self.verbose:
-            logger.info("running non-alchemical equilibration MD")
+            self.logger.info("running non-alchemical equilibration MD")
 
         # Don't do anything if we're doing a dry run
         if dry:
-            return positions
+            return positions, system.getDefaultPeriodicBoxVectors()
 
         # Use the _run_MD method from the PlainMDProtocolUnit
         # Should in-place modify the simulation
@@ -261,11 +263,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
+        box = state.getPeriodicBoxVectors()
 
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
 
-        return equilibrated_positions
+        return equilibrated_positions, box
 
     def _prepare(
         self, verbose: bool,
@@ -604,6 +607,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         alchemical_system: openmm.System,
         positions: openmm.unit.Quantity,
+        box_vectors: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, npt.NDArray],
         solvent_comp: Optional[SolventComponent],
@@ -618,6 +622,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Alchemical system to get states for.
         positions : openmm.unit.Quantity
           Positions of the alchemical system.
+        box_vectors :  openmm.unit.Quantity
+          Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
         lambdas : dict[str, npt.NDArray]
@@ -648,8 +654,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         sampler_state = SamplerState(positions=positions)
         if alchemical_system.usesPeriodicBoundaryConditions():
-            box = alchemical_system.getDefaultPeriodicBoxVectors()
-            sampler_state.box_vectors = box
+            sampler_state.box_vectors = box_vectors
 
         sampler_states = [sampler_state for _ in cmp_states]
 
@@ -1029,7 +1034,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
-        positions = self._pre_equilibrate(
+        positions, box_vectors = self._pre_equilibrate(
             omm_system, omm_topology, positions, settings, dry
         )
 
@@ -1046,8 +1051,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 10. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
-            alchem_system, positions, settings,
-            lambdas, solv_comp
+            alchem_system,
+            positions,
+            box_vectors,
+            settings,
+            lambdas,
+            solv_comp
         )
 
         # 11. Create the multistate reporter & create PDB
