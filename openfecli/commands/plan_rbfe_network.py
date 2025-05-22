@@ -149,7 +149,7 @@ def plan_rbfe_network(
         overwrite_charges: bool
 ):
     """
-    Plan a relative binding free energy network, saved as JSON files for
+    Plan a relative binding free energy network, saved as JSON files for use by
     the quickrun command.
 
     This tool is an easy way to set up a RBFE calculation campaign.
