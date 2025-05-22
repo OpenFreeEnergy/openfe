@@ -53,54 +53,97 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
+class BaseABFESystemTests:
+    @pytest.fixture(scope='class')
+    def protocol(self, settings):
+        return openmm_afe.AbsoluteBindingProtocol(
+            settings=s,
+        )
+
+    @pytest.fixture(scope='class')
+    def dag(self, protocol, stateA, stateB):
+        return protocol.create(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=None,
+        )
+
+    @pytest.fixture(scope='class')
+    def complex_units(self, dag):
+        return [
+            u for u in prot_units
+            if isinstance(u, AbsoluteBindingComplexUnit)
+        ]
+
+    @pytest.fixture(scope='class')
+    def solvent_units(self, dag):
+        return [
+            u for u in prot_units
+            if isinstance(u, AbsoluteBindingSolventUnit)
+        ]
+
+class BaseBenzeneT4Tests(BaseABFESystemTests):
+    @pytest.fixture(scope='class')
+    def solvent(self):
+        return SolventComponent(
+            ion_concentration = 0 * offunit.molar
+        )
+
+    @pytest.fixture(scope='class')
+    def settings(self):
+        s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+        s.protocol_repeats = 1
+        s.complex_output_settings.output_indices = "not water"
+        return s
+
+    @pytest.fixture(scope='class')
+    def stateA(self, benzene_modifications, T4_protein_component, solvent):
+        return ChemicalSystem(
+            {
+                'benzene': benzene_modifications['benzene'],
+                'protein': T4_protein_component,
+                'solvent': solvent,
+            }
+        )
+
+    @pytest.fixture(scope='class')
+    def stateB(self, T4_protein_component, solvent):
+        return ChemicalSystem(
+            {
+                'protein': T4_protein_component,
+                'solvent': solvent,
+            }
+        )
+
+    @pytest.fixture(scope='class')
+    def sampler(self, request):
+        phase_unit = request.getfixturevalue(self.phase_unit_name)
+        with tmpdir.as_cwd():
+            return phase_unit[0].run(
+                dry=True, verbose=True
+            )['debug']['sampler']
+
+    def test_number_of_units(self, dag, complex_units, solvent_units):
+        assert len(list(dag.protocol_units)) == 2
+        assert len(complex_units) == 1
+        assert len(solvent_units) == 1
+
+    def test_sampler_periodicity(self, sampler):
+        assert sampler.is_periodic
+
+    def test_sampler
+
+
+class TestBenzeneSolventDry(BaseBenzeneT4Tests):
+    @pytest.fixture(scope='class')
+    def sampler(self, solvent_units
+
+
 def test_dry_run_solvent_benzene(
     benzene_modifications, T4_protein_component, tmpdir,
 ):
-    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.complex_output_settings.output_indices = "not water"
-
-    protocol = openmm_afe.AbsoluteBindingProtocol(
-            settings=s,
-    )
-
-    solvent = SolventComponent(
-        ion_concentration = 0 * offunit.molar,
-    )
-
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': solvent,
-    })
-
-    stateB = ChemicalSystem({
-        'protein': T4_protein_component,
-        'solvent': solvent,
-    })
-
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
-
-    assert len(prot_units) == 2
-
-    comp_unit = [u for u in prot_units
-                 if isinstance(u, AbsoluteBindingComplexUnit)]
-    sol_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteBindingSolventUnit)]
-
-    assert len(comp_unit) == 1
-    assert len(sol_unit) == 1
 
     with tmpdir.as_cwd():
-        comp_sampler = sol_unit[0].run(dry=True, verbose=True)['debug']['sampler']
-        assert comp_sampler.is_periodic
 
         pdb = mdt.load_pdb('alchemical_system.pdb')
         assert pdb.n_atoms == 12
