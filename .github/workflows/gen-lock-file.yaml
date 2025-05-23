@@ -11,12 +11,6 @@ jobs:
   create-conda-lock-file:
     runs-on: ubuntu-latest
     
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
     - name: Install conda-lock with Micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -24,11 +18,15 @@ jobs:
         create-args: >-
           conda-lock
 
-    - name: Get Latest Version
-      id: latest-version
+    # This saves me some time since we only need the latest tag
+    - name: Get latest tag
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
       run: |
-        LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-        # slice off the v, ie v0.7.2 -> 0.7.2
+        LATEST_TAG=$(curl -s -H "Authorization: token $GH_TOKEN" \
+          https://api.github.com/repos/$REPO/tags \
+          | jq -r '.[0].name')
         VERSION=${LATEST_TAG:1}
         echo $VERSION
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
