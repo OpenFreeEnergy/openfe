@@ -37,6 +37,7 @@ def get_alchemical_components(
     ValueError
       If there are any duplicate components in states A or B.
     """
+    # TODO: We probably want to rewrite this using sets. As in _check_states_compatibility in feflow.protocols.ProteinMutationProtocol
     matched_components: dict[Component, Component]  = {}
     alchemical_components: dict[str, list[Component]] = {
         'stateA': [], 'stateB': [],

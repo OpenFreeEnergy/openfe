@@ -461,8 +461,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
             # get OpenMM modeller + dictionary of resids for each component
             system_modeller, comp_resids = system_creation.get_omm_modeller(
-                protein_comp=protein_component,
-                solvent_comp=solvent_component,
+                protein_comps=protein_component,
+                solvent_comps=solvent_component,
                 small_mols=smc_components,
                 omm_forcefield=system_generator.forcefield,
                 solvent_settings=solvation_settings,
