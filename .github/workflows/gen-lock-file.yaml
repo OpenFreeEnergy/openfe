@@ -55,6 +55,11 @@ jobs:
         conda lock --with-cuda 11.8 -f environment-to-lock.yaml --lockfile openfe-conda-lock.yml 
         cp openfe-conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
 
+    - name: Test lock file (linux)
+      run: |
+        conda-lock install -n lf-test openfe-conda-lock.yml
+        micromamba run -n lf-test openfe test
+
     - name: Upload openfe forge to release
       uses: svenstaro/upload-release-action@v2
       with:
