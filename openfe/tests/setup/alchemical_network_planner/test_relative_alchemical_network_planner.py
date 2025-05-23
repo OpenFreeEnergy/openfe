@@ -38,8 +38,9 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
         protein=T4_protein_component,
     )
     
+    # TODO: methylcyclohexane isn't included in this network, possibly because of a score tie in _map_scoring, which means it doesn't get included in maximal_network_generator's "mappings"
     assert isinstance(alchem_network, AlchemicalNetwork)
-    
+
     edges = alchem_network.edges
     assert len(edges) == 14 # we build 2envs*8ligands-2startLigands = 14 relative edges. 
 
