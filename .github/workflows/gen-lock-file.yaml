@@ -85,8 +85,8 @@ jobs:
 
     - name: Test lock file (osx)
       run: |
-        conda-lock install -p /home/runner/micromamba/envs/lf-test openfe-conda-lock.yml
-        micromamba activate /home/runner/micromamba/envs/lf-test
+        conda-lock install -p /Users/runner/micromamba/envs/lf-test openfe-conda-lock.yml
+        micromamba activate /Users/runner/micromamba/envs/lf-test
         openfe test
 
     - name: Upload openfe forge to release
