@@ -164,7 +164,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool
-    ) -> tuple[omm_unit.Quantity, Optional[omm_unit.Quantity]]:
+    ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
@@ -192,8 +192,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
-        box : Optional[openmm.unit.Quantity]
-          Box vectors
+        box : openmm.unit.Quantity
+          Box vectors of the equilibrated system.
         """
         # Prep the simulation object
         # Restrict CPU count if running vacuum simulation
@@ -269,6 +269,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
         box = state.getPeriodicBoxVectors()
+
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
 
@@ -652,7 +653,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         alchemical_system: openmm.System,
         positions: openmm.unit.Quantity,
-        box_vectors: Optional[openmm.unit.Quantity],
+        box_vectors: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, npt.NDArray],
         solvent_comp: Optional[SolventComponent],
@@ -668,7 +669,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Alchemical system to get states for.
         positions : openmm.unit.Quantity
           Positions of the alchemical system.
-        box_vectors : Optional[openmm.unit.Quantity]
+        box_vectors :  openmm.unit.Quantity
           Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
@@ -1131,6 +1132,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             lambdas,
             solv_comp,
             restraint_parameter_state,
+            solv_comp
         )
 
         # 9. Create the multistate reporter & create PDB
