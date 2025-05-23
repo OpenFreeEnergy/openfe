@@ -58,7 +58,36 @@ jobs:
     - name: Test lock file (linux)
       run: |
         conda-lock install -p /home/runner/micromamba/envs/lf-test openfe-conda-lock.yml
-        micromamba run -n lf-test openfe test
+        micromamba activate /home/runner/micromamba/envs/lf-test
+        openfe test
+
+    - name: Upload file as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: conda-lock-files
+        path: "*conda-lock.yml"
+
+  test-osx-lock-file:
+    needs: create-conda-lock-file
+    runs-on: macos-latest
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: conda-lock-files
+
+    - name: Install conda-lock with Micromamba
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: conda-lock
+        create-args: >-
+          conda-lock
+
+    - name: Test lock file (osx)
+      run: |
+        conda-lock install -p /home/runner/micromamba/envs/lf-test openfe-conda-lock.yml
+        micromamba activate /home/runner/micromamba/envs/lf-test
+        openfe test
 
     - name: Upload openfe forge to release
       uses: svenstaro/upload-release-action@v2
