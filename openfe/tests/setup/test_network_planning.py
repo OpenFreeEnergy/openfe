@@ -438,15 +438,16 @@ class TestMinimalRedundantNetworkGenerator:
                 len(network.graph.out_edges(node)) >= 2
 
 
-    def test_minimal_redundant_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
+    def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
-        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
+        # lomap_old_mapper won't return anything for nimrod, so it won't have any edges
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"), name='nimrod')
 
         def scorer(mapping):
             return len(mapping.componentA_to_componentB)
 
-        with pytest.raises(RuntimeError, match="Unable to create edges"):
-            network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+        with pytest.raises(RuntimeError, match="Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+            openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
                 scorer=scorer
