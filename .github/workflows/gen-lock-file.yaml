@@ -52,8 +52,8 @@ jobs:
 
     - name: Generate lock files
       run: | 
-        conda lock -f environment-to-lock.yaml 
-        cp conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
+        conda lock --with-cuda 11.8 -f environment-to-lock.yaml openfe-conda-lock.yml 
+        cp openfe-conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
 
     - name: Upload openfe forge to release
       uses: svenstaro/upload-release-action@v2
