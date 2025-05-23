@@ -128,7 +128,7 @@ class TestResultLoading:
             assert "Missing ligand names and/or simulation type. Skipping" in captured.err
 
 def test_no_results_found():
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     cli_result = runner.invoke(gather, "not_a_file.txt")
     assert cli_result.exit_code == 1
     assert "No results JSON files found" in str(cli_result.stderr)
@@ -239,11 +239,11 @@ class TestGatherCMET:
     def test_cmet_full_results(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
         args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.stdout, extension='.tsv')
 
     # TODO: add --allow-partial behavior checks
     @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
@@ -251,38 +251,38 @@ class TestGatherCMET:
         """Missing one complex replicate from one leg."""
         results = [str(cmet_result_dir / d) for d in ['results_0_partial', 'results_1', "results_2"]]
         args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.stdout, extension='.tsv')
 
     @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
     def test_cmet_missing_edge(self, cmet_result_dir, report,file_regression):
         results = [str(cmet_result_dir / f'results_{i}_remove_edge') for i in range(3)]
         args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['--tsv'])
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.stdout, extension='.tsv')
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.stdout, extension='.tsv')
 
     @pytest.mark.parametrize('report', ["ddg", "raw"])
     def test_cmet_failed_edge(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / f'results_{i}_failed_edge') for i in range(3)]
         args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension=".tsv")
+        file_regression.check(cli_result.stdout, extension=".tsv")
 
     @pytest.mark.parametrize("allow_partial", [True, False])
     def test_cmet_too_few_edges_error(self, cmet_result_dir, allow_partial):
         results = [str(cmet_result_dir / f"results_{i}_failed_edge") for i in range(3)]
         args = ["--report", "dg"]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         if allow_partial:
             args += ['--allow-partial']
 
@@ -298,41 +298,41 @@ class TestGatherCMET:
         """Missing one complex replicate from one leg."""
         results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
         args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ["-o", "-"])
 
         cli_result.exit_code == 1
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.stdout, extension='.tsv')
 
     @pytest.mark.parametrize('report', ["ddg"])
     def test_cmet_missing_all_complex_legs_allow_partial(self, cmet_result_dir, report, file_regression):
         """Missing one complex replicate from one leg."""
         results = glob.glob(f"{cmet_result_dir}/results_*/*solvent*", recursive=True)
         args = ["--report", report, "--allow-partial"]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args + ['--tsv'])
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.output, extension='.tsv')
+        file_regression.check(cli_result.stdout, extension='.tsv')
 
     @pytest.mark.parametrize('report', ["dg", "ddg", "raw"])
     def test_pretty_print(self, cmet_result_dir, report, file_regression):
         results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
         args = ["--report", report]
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         cli_result = runner.invoke(gather, results + args)
         assert_click_success(cli_result)
         # TODO: figure out how to mock terminal size, since it affects the table wrapping
-        # file_regression.check(cli_result.output, extension='.txt')
+        # file_regression.check(cli_result.stdout, extension='.txt')
 
     def test_write_to_file(self, cmet_result_dir):
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with runner.isolated_filesystem():
             results = [str(cmet_result_dir / f'results_{i}') for i in range(3)]
             fname = "output.tsv"
             args = ["--report", "raw", "-o", fname]
             cli_result = runner.invoke(gather, results + args)
-            assert "writing raw output to 'output.tsv'" in cli_result.output
+            assert "writing raw output to 'output.tsv'" in cli_result.stdout
             assert pathlib.Path(fname).is_file()
 
 
@@ -348,7 +348,7 @@ def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
         "ddg": _RBFE_EXPECTED_DDG,
         "raw": _RBFE_EXPECTED_RAW,
     }[report]
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
 
     if report:
         args = ["--report", report]
@@ -372,7 +372,7 @@ def test_rbfe_gather(rbfe_result_dir, dataset, report, input_mode):
 def test_rbfe_gather_single_repeats_dg_error(rbfe_result_dir):
     """A single repeat is insufficient for a dg calculation - should fail cleanly."""
 
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     results = rbfe_result_dir("rbfe_results_parallel_repeats")
     args = ['report','dg']
     cli_result = runner.invoke(gather, [f"{results}/replicate_0"] + args + ['--tsv'])
@@ -394,7 +394,7 @@ class TestRBFEGatherFailedEdges:
         return results_filtered
 
     def test_missing_leg_error(self, results_paths_serial_missing_legs: str):
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(gather, results_paths_serial_missing_legs + ["--report", "dg"])
 
         assert result.exit_code == 1
@@ -405,7 +405,7 @@ class TestRBFEGatherFailedEdges:
 
 
     def test_missing_leg_allow_partial_disconnected(self, results_paths_serial_missing_legs: str):
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         with pytest.warns():
             args =  ["--report", "dg", "--allow-partial"]
             result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
@@ -414,7 +414,7 @@ class TestRBFEGatherFailedEdges:
 
 
     def test_missing_leg_allow_partial_(self, results_paths_serial_missing_legs: str):
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
         with pytest.warns(match='[^using the \-\-allow\-partial]'):
             args =  ["--report", "ddg", "--allow-partial"]
