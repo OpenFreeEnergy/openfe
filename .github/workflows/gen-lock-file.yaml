@@ -52,7 +52,7 @@ jobs:
 
     - name: Generate lock files
       run: | 
-        conda lock --with-cuda 11.8 -f environment-to-lock.yaml openfe-conda-lock.yml 
+        conda lock --with-cuda 11.8 -f environment-to-lock.yaml --name openfe-conda-lock.yml 
         cp openfe-conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
 
     - name: Upload openfe forge to release
