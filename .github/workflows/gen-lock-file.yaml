@@ -11,6 +11,7 @@ jobs:
   create-conda-lock-file:
     runs-on: ubuntu-latest
     
+    steps:  
     - name: Install conda-lock with Micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
