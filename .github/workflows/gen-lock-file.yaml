@@ -1,0 +1,66 @@
+name: Create OpenFE Conda-Lock File
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  create-conda-lock-file:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Install conda-lock with Micromamba
+      uses: mamba-org/setup-micromamba
+      with:
+        environment-name: conda-lock
+        create-args: >-
+          conda-lock
+
+    - name: Get Latest Version
+      id: latest-version
+      run: |
+        LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+        # slice off the v, ie v0.7.2 -> 0.7.2
+        VERSION=${LATEST_TAG:1}
+        echo $VERSION
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Print Latest Version
+      run: echo ${{ steps.latest-version.outputs.VERSION }}
+    
+    - name: Create environment file to lock
+      run: |
+        cat > environment-to-lock.yaml << 'EOF'
+        name: openfe_env
+        channels:
+          - conda-forge
+        platforms:
+          - linux-64
+          - osx-arm64
+        dependencies:
+          - openfe==${{ steps.latest-version.outputs.VERSION }}
+          - python=3.10
+        EOF
+
+    - name: Generate lock files
+      run: | 
+        conda lock -f environment-to-lock.yaml 
+        cp conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
+
+    - name: Upload openfe forge to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: *conda-lock.yml
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true
+      if: startsWith(github.ref, 'refs/tags/')
