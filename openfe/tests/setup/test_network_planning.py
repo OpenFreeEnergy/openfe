@@ -130,7 +130,7 @@ class TestRadialNetworkGenerator:
                 ligands=ligands, central_ligand=2077,
                 mappers=lomap_old_mapper, scorer=None,
             )
-            
+
 
     def test_radial_network_with_scorer(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
@@ -446,7 +446,8 @@ class TestMinimalRedundantNetworkGenerator:
         def scorer(mapping):
             return len(mapping.componentA_to_componentB)
 
-        with pytest.raises(RuntimeError, match="Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+        err_str = r"ERROR: Unable to create edges for the following nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"
+        with pytest.raises(RuntimeError, match=err_str):
             openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
