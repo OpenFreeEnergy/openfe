@@ -21,6 +21,7 @@ jobs:
 
     # This saves me some time since we only need the latest tag
     - name: Get latest tag
+      id: latest-version
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO: ${{ github.repository }}
