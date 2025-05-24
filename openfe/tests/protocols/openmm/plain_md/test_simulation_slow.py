@@ -23,7 +23,7 @@ def test_vacuum_sim(
     settings.simulation_settings.equilibration_length_nvt = None
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 20 * unit.picosecond
-    settings.output_settings.checkpoint_interval = 10 * unit.picosecond
+    settings.output_settings.checkpoint_interval = 40 * unit.picosecond
     settings.forcefield_settings.nonbonded_method = "nocutoff"
     settings.engine_settings.compute_platform = platform
 
@@ -55,7 +55,6 @@ def test_vacuum_sim(
 
     # check the files
     files = [
-        "checkpoint.chk",
         "equil_npt.pdb",
         "minimized.pdb",
         "simulation.xtc",
@@ -67,14 +66,15 @@ def test_vacuum_sim(
 
     # NVT PDB should not exist
     assert not (unit_shared / "equil_nvt.pdb").exists()
+    assert not (unit_shared / "checkpoint.chk").exists()
 
     # check that the output file paths are correct
     assert pur.outputs['system_pdb'] == unit_shared / "system.pdb"
     assert pur.outputs['minimized_pdb'] == unit_shared / "minimized.pdb"
     assert pur.outputs['trajectory'] == unit_shared / "simulation.xtc"
-    assert pur.outputs['last_checkpoint'] == unit_shared / "checkpoint.chk"
+    assert pur.outputs['last_checkpoint'] is None
     assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"
-    assert "nvt_equil_pdb" not in pur.outputs.keys()
+    assert pur.outputs['nvt_equil_pdb'] is None
 
 
 @pytest.mark.integration

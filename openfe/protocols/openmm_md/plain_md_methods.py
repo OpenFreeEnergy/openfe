@@ -683,11 +683,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 'trajectory': shared_basepath / output_settings.production_trajectory_filename,
                 'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
+            # The checkpoint file can not exist if frequency > sim length
+            if not output['last_checkpoint'].exists():
+                output['last_checkpoint'] = None
+
+            # The NVT PDB can be ommitted if we don't run the simulation
+            # Note: we could also just check the file exist
             if (
                 output_settings.equil_nvt_structure
                 and sim_settings.equilibration_length_nvt is not None
             ):
                 output['nvt_equil_pdb'] = shared_basepath / output_settings.equil_nvt_structure
+            else:
+                output['nvt_equil_pdb'] = None
+
             if output_settings.equil_npt_structure:
                 output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
 
