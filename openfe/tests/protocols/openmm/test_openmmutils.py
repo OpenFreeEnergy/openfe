@@ -32,7 +32,7 @@ from openmm import unit as ommunit
 from openmmtools import multistate
 from pymbar.utils import ParameterError
 
-from ..conftest import HAS_INTERNET
+from openfe.tests.conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
