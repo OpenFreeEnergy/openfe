@@ -71,7 +71,7 @@ def test_vacuum_sim(
     # check that the output file paths are correct
     assert pur.outputs['system_pdb'] == unit_shared / "system.pdb"
     assert pur.outputs['minimized_pdb'] == unit_shared / "minimized.pdb"
-    assert pur.outputs['trajectory'] == unit_shared / "simulation.xtc"
+    assert pur.outputs['nc'] == unit_shared / "simulation.xtc"
     assert pur.outputs['last_checkpoint'] is None
     assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"
     assert pur.outputs['nvt_equil_pdb'] is None
@@ -138,7 +138,7 @@ def test_complex_solvent_sim_gpu(
     # check that the output file paths are correct
     assert pur.outputs['system_pdb'] == unit_shared / "system.pdb"
     assert pur.outputs['minimized_pdb'] == unit_shared / "minimized.pdb"
-    assert pur.outputs['trajectory'] == unit_shared / "simulation.xtc"
+    assert pur.outputs['nc'] == unit_shared / "simulation.xtc"
     assert pur.outputs['last_checkpoint'] == unit_shared / "checkpoint.chk"
     assert pur.outputs['nvt_equil_pdb'] == unit_shared / "equil_nvt.pdb"
     assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"

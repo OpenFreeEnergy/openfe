@@ -87,7 +87,7 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
         traj : list[pathlib.Path]
           list of paths (pathlib.Path) to the simulation trajectory
         """
-        traj = [pus[0].outputs['trajectory'] for pus in self.data.values()]
+        traj = [pus[0].outputs['nc'] for pus in self.data.values()]
 
         return traj
 
@@ -680,7 +680,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             output = {
                 'system_pdb': shared_basepath / output_settings.preminimized_structure,
                 'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                'trajectory': shared_basepath / output_settings.production_trajectory_filename,
+                'nc': shared_basepath / output_settings.production_trajectory_filename,
                 'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
             # The checkpoint file can not exist if frequency > sim length
