@@ -4,7 +4,6 @@ import json
 import pytest
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
-import openfe
 from openfe.protocols import openmm_md
 
 

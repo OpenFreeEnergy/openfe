@@ -19,18 +19,17 @@ from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
 import openmm.unit as omm_unit
 from typing import Optional
-from openmm import app
 import pathlib
 from typing import Any, Iterable
 import uuid
 import time
-import numpy as np
 import mdtraj
 from mdtraj.reporters import XTCReporter
 from openfe.utils import without_oechem_backend, log_system_probe
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
-    ProteinComponent, SolventComponent
+    settings,
+    ChemicalSystem,
+    SmallMoleculeComponent,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
@@ -88,7 +87,7 @@ class PlainMDProtocolResult(gufe.ProtocolResult):
         traj : list[pathlib.Path]
           list of paths (pathlib.Path) to the simulation trajectory
         """
-        traj = [pus[0].outputs['nc'] for pus in self.data.values()]
+        traj = [pus[0].outputs['trajectory'] for pus in self.data.values()]
 
         return traj
 
@@ -681,10 +680,13 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             output = {
                 'system_pdb': shared_basepath / output_settings.preminimized_structure,
                 'minimized_pdb': shared_basepath / output_settings.minimized_structure,
-                'nc': shared_basepath / output_settings.production_trajectory_filename,
+                'trajectory': shared_basepath / output_settings.production_trajectory_filename,
                 'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
-            if output_settings.equil_nvt_structure:
+            if (
+                output_settings.equil_nvt_structure
+                and sim_settings.equilibration_length_nvt is not None
+            ):
                 output['nvt_equil_pdb'] = shared_basepath / output_settings.equil_nvt_structure
             if output_settings.equil_npt_structure:
                 output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
