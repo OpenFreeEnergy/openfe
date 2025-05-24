@@ -1,5 +1,6 @@
 import click
 from openfecli import OFECommandPlugin
+import sys
 
 import pytest
 import os
@@ -30,7 +31,8 @@ def test(long):
     write("Testing can import....")
     import openfe
     write("Running the main package tests")
-    pytest.main(["-v", "--pyargs", "openfe", "--pyargs", "openfecli"])
+    return_value = pytest.main(["-v", "--pyargs", "openfe", "--pyargs", "openfecli"])
+    sys.exit(return_value)
 
     os.environ.clear()
     os.environ.update(old_env)
