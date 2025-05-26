@@ -673,17 +673,24 @@ class MDOutputSettings(OutputSettings):
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
     preminimized_structure: Optional[str] = 'system.pdb'
-    """Path to the pdb file of the full pre-minimized system. 
+    """Filename for the pdb file of the full pre-minimized system. 
     Default 'system.pdb'."""
     minimized_structure: Optional[str] = 'minimized.pdb'
-    """Path to the pdb file of the system after minimization. 
-    Only the specified atom subset is saved. Default 'minimized.pdb'."""
+    """Filename for the pdb file of the system after minimization. 
+    Only the specified atom subset defined by ``output_indices`` is saved. 
+    Default 'minimized.pdb'."""
     equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
-    """Path to the pdb file of the system after NVT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
+    """Filename for the pdb file of the system after NVT equilibration. 
+    Only the specified atom subset defined by ``output_indices`` is saved. 
+    Default 'equil_nvt.pdb'."""
     equil_npt_structure: Optional[str] = 'equil_npt.pdb'
-    """Path to the pdb file of the system after NPT equilibration. 
-    Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
+    """Filename for the pdb file of the system after NPT equilibration. 
+    Only the specified atom subset defined by ``output_indices`` is saved. 
+    Default 'equil_npt.pdb'."""
+    production_structure: Optional[str] = 'production.pdb'
+    """Filename of the pdb file of the system after the production simulation. 
+    Only the specified atom subset defined by ``output_indices`` is saved. 
+    Default to 'production.pdb'."""
     log_output: Optional[str] = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,

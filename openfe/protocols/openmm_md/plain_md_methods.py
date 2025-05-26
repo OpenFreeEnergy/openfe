@@ -25,6 +25,7 @@ import uuid
 import time
 import mdtraj
 from mdtraj.reporters import XTCReporter
+import numpy.typing as npt
 from openfe.utils import without_oechem_backend, log_system_probe
 from gufe import (
     settings,
@@ -268,6 +269,40 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
     @staticmethod
+    def _save_simulation_pdb(
+        simulation: openmm.app.Simulation,
+        selection_indices: npt.NDArray,
+        filepath: pathlib.Path
+    ) -> None:
+        """
+        Helper method to write out PDB for the current state of the simulation.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+          The simulation to save the PDB for.
+        output_indices : str
+          A string defining which parts of the system to save an output for.
+        filepath : pathlib.Path
+          The full path of the file to be written.
+        """
+        state = simulation.context.getState(
+            getPositions=True,
+            enforcePeriodicBox=False,
+        )
+
+        positions = to_openmm(from_openmm(state.getPositions()))
+
+        # Store subset of atoms, specified in input, as PDB file
+        mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
+        traj = mdtraj.Trajectory(
+            positions[selection_indices, :],
+            mdtraj_top.subset(selection_indices),
+        )
+
+        traj.save_pdb(filepath)
+
+    @staticmethod
     def _run_MD(simulation: openmm.app.Simulation,
                 positions: omm_unit.Quantity,
                 simulation_settings: MDSimulationSettings,
@@ -326,25 +361,19 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             maxIterations=simulation_settings.minimization_steps
         )
 
-        # Get the sub selection of the system to save coords for
-        selection_indices = mdtraj.Topology.from_openmm(
-            simulation.topology).select(output_settings.output_indices)
+        # Get the sub selection of the system for coord saving
+        # will be using this going forward
+        mdtop = mdtraj.Topology.from_openmm(simulation.topology)
+        selection_indices = mdtop.select(output_settings.output_indices)
 
-        positions = to_openmm(from_openmm(
-            simulation.context.getState(getPositions=True,
-                                        enforcePeriodicBox=False
-                                        ).getPositions()))
-        # Store subset of atoms, specified in input, as PDB file
-        mdtraj_top = mdtraj.Topology.from_openmm(simulation.topology)
-        traj = mdtraj.Trajectory(
-            positions[selection_indices, :],
-            mdtraj_top.subset(selection_indices),
-        )
-
+        # Save a PDB of the minimized structure
         if output_settings.minimized_structure:
-            traj.save_pdb(
+            PlainMDProtocolUnit._save_simulation_pdb(
+                simulation,
+                selection_indices,
                 shared_basepath / output_settings.minimized_structure
             )
+
         # equilibrate
         # NVT equilibration
         if equil_steps_nvt:
@@ -366,18 +395,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 logger.info(
                     f"Completed NVT equilibration in {t1 - t0} seconds")
 
-            # Save last frame NVT equilibration
-            positions = to_openmm(
-                from_openmm(simulation.context.getState(
-                    getPositions=True, enforcePeriodicBox=False
-                ).getPositions()))
-
-            traj = mdtraj.Trajectory(
-                positions[selection_indices, :],
-                mdtraj_top.subset(selection_indices),
-            )
+            # Optionally save last frame NVT equilibration
             if output_settings.equil_nvt_structure is not None:
-                traj.save_pdb(
+                PlainMDProtocolUnit._save_simulation_pdb(
+                    simulation,
+                    selection_indices,
                     shared_basepath / output_settings.equil_nvt_structure
                 )
 
@@ -400,17 +422,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 f"Completed NPT equilibration in {t1 - t0} seconds")
 
         # Save last frame NPT equilibration
-        positions = to_openmm(
-            from_openmm(simulation.context.getState(
-                getPositions=True, enforcePeriodicBox=False
-            ).getPositions()))
-
-        traj = mdtraj.Trajectory(
-            positions[selection_indices, :],
-            mdtraj_top.subset(selection_indices),
-        )
         if output_settings.equil_npt_structure is not None:
-            traj.save_pdb(
+            PlainMDProtocolUnit._save_simulation_pdb(
+                simulation,
+                selection_indices,
                 shared_basepath / output_settings.equil_npt_structure
             )
 
@@ -433,12 +448,15 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         )
 
         if output_settings.production_trajectory_filename:
-            simulation.reporters.append(XTCReporter(
+            xtc_reporter = XTCReporter(
                 file=str(
                     shared_basepath /
-                    output_settings.production_trajectory_filename),
+                    output_settings.production_trajectory_filename
+                ),
                 reportInterval=write_interval,
-                atomSubset=selection_indices))
+                atomSubset=selection_indices
+            )
+            simulation.reporters.append(xtc_reporter)
         if output_settings.checkpoint_storage_filename:
             simulation.reporters.append(openmm.app.CheckpointReporter(
                 file=str(
@@ -462,6 +480,22 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
+
+        if output_settings.production_trajectory_filename:
+            state = simulation.context.getState(
+                getPositions=True,
+                enforcePeriodicBox=False,
+            )
+            xtc_reporter.report(simulation, state)
+
+        # Write the final production frame
+        if output_settings.production_structure is not None:
+            PlainMDProtocolUnit._save_simulation_pdb(
+                simulation,
+                selection_indices,
+                shared_basepath / output_settings.production_structure
+            )
+
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
 
@@ -699,6 +733,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
             if output_settings.equil_npt_structure:
                 output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
+
+            if output_settings.production_structure:
+                output['production_pdb'] = shared_basepath / output_settings.production_structure
 
             return output
         else:

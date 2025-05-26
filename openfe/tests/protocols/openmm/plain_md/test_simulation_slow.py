@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import MDAnalysis as mda
+from numpy.testing import assert_allclose
 import pathlib
 import pytest
 from openff.units import unit
@@ -127,6 +129,7 @@ def test_complex_solvent_sim_gpu(
         "checkpoint.chk",
         "equil_nvt.pdb",
         "equil_npt.pdb",
+        "production.pdb",
         "minimized.pdb",
         "simulation.xtc",
         "simulation.log",
@@ -142,3 +145,10 @@ def test_complex_solvent_sim_gpu(
     assert pur.outputs['last_checkpoint'] == unit_shared / "checkpoint.chk"
     assert pur.outputs['nvt_equil_pdb'] == unit_shared / "equil_nvt.pdb"
     assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"
+    assert pur.outputs['production_pdb'] == unit_shared / "production.pdb"
+
+    # Check the final trajectory frame
+    u = mda.Universe(pur.outputs['production_pdb'])
+    u2 = mda.Universe(pur.outputs['minimized_pdb'], pur.outputs['nc'])
+    u2.trajectory[-1]
+    assert_allclose(u.atoms.positions, u2.atoms.positions, rtol=0, atol=1e-2)
