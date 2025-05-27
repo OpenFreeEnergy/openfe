@@ -8,7 +8,7 @@ defaults:
     shell: bash -leo pipefail {0}
 
 jobs:
-  create-conda-lock-file:
+  create-conda-lock-file-and-test-linux:
     runs-on: ubuntu-latest
     
     steps:  
