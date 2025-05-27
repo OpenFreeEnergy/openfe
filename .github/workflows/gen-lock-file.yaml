@@ -68,7 +68,7 @@ jobs:
         path: "*conda-lock.yml"
 
   test-osx-lock-file:
-    needs: create-conda-lock-file
+    needs: create-conda-lock-file-and-test-linux
     runs-on: macos-latest
     steps:
     - name: Download artifact
