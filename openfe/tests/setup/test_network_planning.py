@@ -26,7 +26,7 @@ class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
         yield {0: 0}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def toluene_vs_others(atom_mapping_basic_test_files):
     central_ligand_name = 'toluene'
     others = [v for (k, v) in atom_mapping_basic_test_files.items()
@@ -261,7 +261,7 @@ def test_generate_maximal_network(
         for edge in network.edges:
             assert 'score' not in edge.annotations
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="module")
 def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
@@ -366,7 +366,7 @@ class TestMinimalSpanningNetworkGenerator:
             )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="module")
 def minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
