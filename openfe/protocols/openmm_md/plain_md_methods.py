@@ -288,7 +288,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         """
         state = simulation.context.getState(
             getPositions=True,
-            enforcePeriodicBox=False,
+            enforcePeriodicBox=True,
         )
 
         positions = to_openmm(from_openmm(state.getPositions()))
@@ -441,6 +441,8 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             "timestep",
         )
 
+        simulation.context.setStepCount(0)
+
         checkpoint_interval = settings_validation.get_simsteps(
             sim_length=output_settings.checkpoint_interval,
             timestep=timestep,
@@ -481,12 +483,12 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         simulation.step(prod_steps)
         t1 = time.time()
 
-        if output_settings.production_trajectory_filename:
-            state = simulation.context.getState(
-                getPositions=True,
-                enforcePeriodicBox=False,
-            )
-            xtc_reporter.report(simulation, state)
+        #if output_settings.production_trajectory_filename:
+        #    state = simulation.context.getState(
+        #        getPositions=True,
+        #        enforcePeriodicBox=True,
+        #    )
+        #    xtc_reporter.report(simulation, state)
 
         # Write the final production frame
         if output_settings.production_structure is not None:
