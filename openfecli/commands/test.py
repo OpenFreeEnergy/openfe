@@ -1,5 +1,6 @@
 import click
 from openfecli import OFECommandPlugin
+import sys
 
 import pytest
 import os
@@ -24,16 +25,18 @@ def test(long):
     terminals, these show as green or yellow. Warnings are not a concern.
     However, You should not see anything that fails or errors (red).
     """
-    old_env = dict(os.environ)
-    os.environ["OFE_SLOW_TESTS"] = str(long)
+    try:
+        old_env = dict(os.environ)
+        os.environ["OFE_SLOW_TESTS"] = str(long)
 
-    write("Testing can import....")
-    import openfe
-    write("Running the main package tests")
-    pytest.main(["-v", "--pyargs", "openfe", "--pyargs", "openfecli"])
-
-    os.environ.clear()
-    os.environ.update(old_env)
+        write("Testing can import....")
+        import openfe
+        write("Running the main package tests")
+        return_value = pytest.main(["-v", "--pyargs", "openfe", "--pyargs", "openfecli"])
+    finally:
+        os.environ.clear()
+        os.environ.update(old_env)
+        sys.exit(return_value)
 
 PLUGIN = OFECommandPlugin(
     test,
