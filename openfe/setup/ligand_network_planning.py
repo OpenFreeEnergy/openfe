@@ -28,14 +28,13 @@ from konnektor import network_analysis, network_planners, network_tools
 
 
 def _hasten_lomap(mapper, ligands):
-    """take a mapper and some ligands, put a common core arg into the mapper"""
+    """take a mapper and some ligands, put a common core arg into the mapper """
     if mapper.seed:
         return mapper
 
     try:
         core = _find_common_core([m.to_rdkit() for m in ligands],
                                  element_change=mapper.element_change)
-
     except RuntimeError:  # in case MCS throws a hissy fit
         core = ""
 
@@ -310,8 +309,8 @@ def generate_minimal_redundant_network(
 
 def generate_network_from_names(
     ligands: list[SmallMoleculeComponent],
-    mappers: AtomMapper,  # TODO: rename this to 'mapper' and only accept one
-    names: list[tuple[str, str]],  # TODO: rename to 'edges' or `edge_names`
+    mapper: AtomMapper,
+    names: list[tuple[str, str]],
 ) -> LigandNetwork:
     """
     Generate a :class:`.LigandNetwork` by specifying edges as tuples of names.
@@ -320,7 +319,7 @@ def generate_network_from_names(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mappers: AtomMapper
+    mapper: AtomMapper
       the atom mapper to use to construct edges
     names : list of tuples of names
       the edges to form where the values refer to names of the small molecules,
@@ -341,7 +340,7 @@ def generate_network_from_names(
     """
     nodes = list(ligands)
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
 
     network = network_planner.generate_network_from_names(
         components=nodes, names=names
@@ -389,7 +388,7 @@ def generate_network_from_indices(
 
 def load_orion_network(
     ligands: list[SmallMoleculeComponent],
-    mappers: AtomMapper,
+    mapper: AtomMapper,
     network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an Orion NES network file.
@@ -398,7 +397,7 @@ def load_orion_network(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mappers: AtomMapper
+    mapper: AtomMapper
       the atom mapper to use to construct edges
     network_file : str
       path to NES network file.
@@ -413,32 +412,28 @@ def load_orion_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, "r") as f:
-        network_lines = [
-            line.strip().split(" ") for line in f if not line.startswith("#")
-        ]
+    with open(network_file, 'r') as f:
+        network_lines = [l.strip().split(' ') for l in f
+                         if not l.startswith('#')]
 
     names = []
     for entry in network_lines:
         if len(entry) != 3 or entry[1] != ">>":
-            errmsg = (
-                "line does not match expected name >> name format: " f"{entry}"
-            )
+            errmsg = ("line does not match expected name >> name format: "
+                      f"{entry}")
             raise KeyError(errmsg)
 
         names.append((entry[0], entry[2]))
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
-    network = network_planner.generate_network_from_names(
-        components=ligands, names=names
-    )
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
+    network = network_planner.generate_network_from_names(components=ligands, names=names)
 
     return network
 
 
 def load_fepplus_network(
     ligands: list[SmallMoleculeComponent],
-    mappers: AtomMapper,
+    mapper: AtomMapper,
     network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
@@ -447,7 +442,7 @@ def load_fepplus_network(
     ----------
     ligands : list of SmallMoleculeComponent
       the small molecules to place into the network
-    mappers: AtomMapper
+    mapper: AtomMapper
       the atom mapper to use to construct edges
     network_file : str
       path to edges network file.
@@ -462,23 +457,20 @@ def load_fepplus_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, "r") as f:
+    with open(network_file, 'r') as f:
         network_lines = [l.split() for l in f.readlines()]
 
     names = []
     for entry in network_lines:
-        if len(entry) != 5 or entry[1] != "#" or entry[3] != "->":
-            errmsg = (
-                "line does not match expected format "
-                f"hash:hash # name -> name\n"
-                "line format: {entry}"
-            )
+        if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
+            errmsg = ("line does not match expected format "
+                      "hash:hash # name -> name\n"
+                      f"line format: {entry}")
             raise KeyError(errmsg)
 
         names.append((entry[2], entry[4]))
 
-    network_planner = ExplicitNetworkGenerator(mappers=mappers, scorer=None)
-    network = network_planner.generate_network_from_names(
-        components=ligands, names=names
-    )
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
+    network = network_planner.generate_network_from_names(components=ligands, names=names)
+
     return network

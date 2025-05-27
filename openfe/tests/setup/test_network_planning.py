@@ -216,8 +216,8 @@ class TestRadialNetworkGenerator:
             )
 
 
-@pytest.mark.parametrize("with_progress", [True, False])
-@pytest.mark.parametrize("with_scorer", [True, False])
+@pytest.mark.parametrize('with_progress', [True, False])
+@pytest.mark.parametrize('with_scorer', [True, False])
 @pytest.mark.parametrize("extra_mapper", [True, False])
 def test_generate_maximal_network(
     toluene_vs_others, with_progress, with_scorer, extra_mapper, lomap_old_mapper
@@ -383,21 +383,21 @@ def minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
         """Scores are designed to give the same mst every time"""
         scores = {
             # MST edges
-            ("1,3,7-trimethylnaphthalene", "2,6-dimethylnaphthalene"): 3,
-            ("1-butyl-4-methylbenzene", "2-methyl-6-propylnaphthalene"): 3,
-            ("2,6-dimethylnaphthalene", "2-methyl-6-propylnaphthalene"): 3,
-            ("2,6-dimethylnaphthalene", "2-methylnaphthalene"): 3,
-            ("2,6-dimethylnaphthalene", "2-naftanol"): 3,
-            ("2,6-dimethylnaphthalene", "methylcyclohexane"): 3,
-            ("2,6-dimethylnaphthalene", "toluene"): 3,
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 3,
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 3,
+            ('2,6-dimethylnaphthalene', '2-naftanol'): 3,
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 3,
+            ('2,6-dimethylnaphthalene', 'toluene'): 3,
             # MST redundant edges
-            ("1,3,7-trimethylnaphthalene", "2-methyl-6-propylnaphthalene"): 2,
-            ("1-butyl-4-methylbenzene", "2,6-dimethylnaphthalene"): 2,
-            ("1-butyl-4-methylbenzene", "toluene"): 2,
-            ("2-methyl-6-propylnaphthalene", "2-methylnaphthalene"): 2,
-            ("2-methylnaphthalene", "2-naftanol"): 2,
-            ("2-methylnaphthalene", "methylcyclohexane"): 2,
-            ("2-methylnaphthalene", "toluene"): 2,
+            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 2,
+            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'): 2,
+            ('1-butyl-4-methylbenzene', 'toluene'): 2,
+            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'): 2,
+            ('2-methylnaphthalene', '2-naftanol'): 2,
+            ('2-methylnaphthalene', 'methylcyclohexane'): 2,
+            ('2-methylnaphthalene', 'toluene'): 2,
         }
         return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
 
@@ -480,6 +480,7 @@ class TestMinimalRedundantNetworkGenerator:
                 >= 2
             )
 
+
     def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
         # lomap_old_mapper won't return anything for nimrod, so it won't have any edges
@@ -490,7 +491,7 @@ class TestMinimalRedundantNetworkGenerator:
 
         err_str = r"ERROR: Unable to create edges for the following nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"
         with pytest.raises(RuntimeError, match=err_str):
-            openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
+            _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
                 scorer=scorer
@@ -508,7 +509,7 @@ class TestNetworkFromNames:
         network = openfe.setup.ligand_network_planning.generate_network_from_names(
             ligands=ligs,
             names=requested,
-            mappers=lomap_old_mapper,
+            mapper=lomap_old_mapper,
         )
         # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
         assert len(network.nodes) == len(ligs)
@@ -618,7 +619,7 @@ def test_network_from_external(file_fixture, loader, request, benzene_modificati
 
     network = loader(
         ligands=[l for l in benzene_modifications.values()],
-        mappers=openfe.LomapAtomMapper(),
+        mapper=openfe.LomapAtomMapper(),
         network_file=network_file,
     )
 
@@ -653,7 +654,7 @@ def test_network_from_external_unknown_edge(file_fixture, loader, request,
     with pytest.raises(KeyError, match="Invalid name"):
         _ = loader(
             ligands=ligs,
-            mappers=openfe.LomapAtomMapper(),
+            mapper=openfe.LomapAtomMapper(),
             network_file=network_file,
         )
 
@@ -678,7 +679,7 @@ def test_bad_orion_network(benzene_modifications, tmpdir):
         with pytest.raises(KeyError, match="line does not match"):
             _ = openfe.setup.ligand_network_planning.load_orion_network(
                 ligands=[l for l in benzene_modifications.values()],
-                mappers=openfe.LomapAtomMapper(),
+                mapper=openfe.LomapAtomMapper(),
                 network_file='bad_orion_net.dat',
             )
 
@@ -701,6 +702,6 @@ def test_bad_edges_network(benzene_modifications, tmpdir):
         with pytest.raises(KeyError, match="line does not match"):
             _ = openfe.setup.ligand_network_planning.load_fepplus_network(
                 ligands=[l for l in benzene_modifications.values()],
-                mappers=openfe.LomapAtomMapper(),
+                mapper=openfe.LomapAtomMapper(),
                 network_file='bad_edges.edges',
             )
