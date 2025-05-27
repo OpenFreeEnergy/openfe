@@ -107,7 +107,7 @@ def test_rhfe_alchemical_network_planner_call(atom_mapping_basic_test_files):
 
     edges = alchem_network.edges
 
-    assert (len(edges) == 14)  # we build 2envs*8ligands-2startLigands = 14 relative edges.
+    assert (len(edges) == 14)  # we build 2envs*(8 ligands - 1) = 14 relative edges.
     expected_names = {
         "rhfe_2,6-dimethylnaphthalene_solvent_toluene_solvent",
         "rhfe_1,3,7-trimethylnaphthalene_vacuum_2,6-dimethylnaphthalene_vacuum",
