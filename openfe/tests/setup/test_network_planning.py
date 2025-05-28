@@ -53,13 +53,13 @@ class TestRadialNetworkGenerator:
     @pytest.mark.parametrize("as_list", [False, True])
     def test_radial_network(
         self,
-        atom_mapping_basic_test_files,
         toluene_vs_others,
         as_list,
         lomap_old_mapper,
     ):
         toluene, others = toluene_vs_others
         central_ligand_name = "toluene"
+
         mapper = lomap_old_mapper
         if as_list:
             mapper = [mapper]
@@ -70,13 +70,16 @@ class TestRadialNetworkGenerator:
             mappers=mapper,
             scorer=None,
         )
+
+        expected_names = set([c.name for c in others] + [central_ligand_name])
+
         # couple sanity checks
-        assert len(network.nodes) == len(atom_mapping_basic_test_files)
-        assert len(network.edges) == len(others)
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
 
         # check that all ligands are present, i.e. we included everyone
         ligands_in_network = {mol.name for mol in network.nodes}
-        assert ligands_in_network == set(atom_mapping_basic_test_files.keys())
+        assert ligands_in_network == expected_names
 
         # check that every edge contains the central ligand as a node
         assert all(
@@ -85,14 +88,13 @@ class TestRadialNetworkGenerator:
         )
 
     @pytest.mark.parametrize("central_ligand_arg", [0, "toluene"])
-    def test_radial_network_int_str(
+    def test_radial_network_central_ligand_int_str(
         self,
-        atom_mapping_basic_test_files,
         toluene_vs_others,
         central_ligand_arg,
         lomap_old_mapper,
     ):
-        """check that passing either an integer or string to radial network still works"""
+        """check that passing either an integer or string to indicate the central ligand works"""
         toluene, others = toluene_vs_others
         ligands = [toluene] + others
 
@@ -102,24 +104,30 @@ class TestRadialNetworkGenerator:
             mappers=lomap_old_mapper,
             scorer=None,
         )
-        assert len(network.nodes) == len(ligands)
-        assert len(network.edges) == len(others)
+
+        central_ligand_name = "toluene"
+        expected_names = set([c.name for c in others] + [central_ligand_name])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
 
         # check that all ligands are present, i.e. we included everyone
         ligands_in_network = {mol.name for mol in network.nodes}
-        assert ligands_in_network == set(atom_mapping_basic_test_files.keys())
-        # check that every edge has the central ligand within
+        assert ligands_in_network == expected_names
+
+        # check that every edge contains the central ligand as a node
         assert all(
-            ("toluene" in {mapping.componentA.name, mapping.componentB.name})
+            (central_ligand_name in {mapping.componentA.name, mapping.componentB.name})
             for mapping in network.edges
         )
 
-    def test_radial_network_bad_str(self, toluene_vs_others, lomap_old_mapper):
-        """check for failure on missing name"""
+    def test_radial_network_bad_name(self, toluene_vs_others, lomap_old_mapper):
+        """Error if the central ligand requested is not present."""
         toluene, others = toluene_vs_others
         ligands = [toluene] + others
 
-        with pytest.raises(ValueError, match="No ligand called"):
+        with pytest.raises(ValueError, match="No ligand called 'unobtainium"):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligands,
                 central_ligand="unobtainium",
@@ -128,7 +136,7 @@ class TestRadialNetworkGenerator:
             )
 
     def test_radial_network_multiple_str(self, toluene_vs_others, lomap_old_mapper):
-        """check for failure on multiple of specified name, it's ambiguous"""
+        """Error if more than one ligand has the name passed to 'central_ligand'."""
         toluene, others = toluene_vs_others
         ligands = [toluene, toluene] + others
 
@@ -141,11 +149,11 @@ class TestRadialNetworkGenerator:
             )
 
     def test_radial_network_index_error(self, toluene_vs_others, lomap_old_mapper):
-        """if we ask for an out-of-bounds ligand, we should get a meaningful error"""
+        """Throw a helpful error if the index value passed to 'central_ligand' is out-of-bounds."""
         toluene, others = toluene_vs_others
         ligands = [toluene] + others
 
-        with pytest.raises(ValueError, match="out of bounds"):
+        with pytest.raises(ValueError, match="index '2077' out of bounds, there are 8 ligands"):
             openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligands,
                 central_ligand=2077,
@@ -154,60 +162,87 @@ class TestRadialNetworkGenerator:
             )
 
     def test_radial_network_self_central(self, toluene_vs_others, lomap_old_mapper):
-        """issue #544, include the central ligand in "ligands", shouldn't get a self-edge"""
-        ligs = [toluene_vs_others[0]] + toluene_vs_others[1]
+        """(issue #544) If the central ligand is included in "ligands",
+        there shouldn't be a self-edge to the central ligand, and a warning should be raised.
+        """
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
 
-        with pytest.warns(UserWarning, match="The central_ligand"):
+        with pytest.warns(UserWarning, match="The central_ligand toluene was also found in the list of ligands"):
             network = openfe.setup.ligand_network_planning.generate_radial_network(
-                ligands=ligs,
-                central_ligand=ligs[0],
+                ligands=ligands,
+                central_ligand=toluene,
                 mappers=lomap_old_mapper,
                 scorer=None,
             )
 
-        assert len(network.edges) == len(ligs) - 1
+        assert len(network.edges) == len(ligands) - 1
+
+        # explicitly check to make sure there is no toluene self-edge
+        name_pairs =  [(c.componentA, c.componentB) for c in network.edges]
+        assert ('toluene', 'toluene') not in name_pairs
 
     def test_radial_network_with_scorer(self, toluene_vs_others, lomap_old_mapper):
+        """Test that the scorer chooses the mapper with the best score (in this case, the LOMAP mapper)."""
         toluene, others = toluene_vs_others
+        mappers = [BadMapper(), lomap_old_mapper]
 
         def scorer(mapping):
-            return len(mapping.componentA_to_componentB)
+            return 1 - (1 / len(mapping.componentA_to_componentB))
 
         network = openfe.setup.ligand_network_planning.generate_radial_network(
             ligands=others,
             central_ligand=toluene,
-            mappers=[BadMapper(), lomap_old_mapper],
+            mappers=mappers,
             scorer=scorer
         )
-        assert len(network.edges) == len(others)
+
+        expected_names = set([c.name for c in others] + ['toluene'])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
 
         for edge in network.edges:
-            # we didn't take the bad mapper
+            # we didn't take the bad mapper, which would always be a length of 1 ({0:0})
             assert len(edge.componentA_to_componentB) > 1
             assert 'score' in edge.annotations
-            assert edge.annotations['score'] == len(edge.componentA_to_componentB)
+            assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
 
     def test_radial_network_multiple_mappers_no_scorer(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
-
         mappers = [BadMapper(), lomap_old_mapper]
 
-        # in this one, we should always take the bad mapper
         network = openfe.setup.ligand_network_planning.generate_radial_network(
             ligands=others,
             central_ligand=toluene,
             mappers=mappers,
         )
-        assert len(network.edges) == len(others)
 
+        expected_names = set([c.name for c in others] + ['toluene'])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
+
+        # we should always take the first valid mapper (BadMapper) when there is no scorer.
         for edge in network.edges:
             assert edge.componentA_to_componentB == {0: 0}
 
 
-    def test_radial_network_failure(self, atom_mapping_basic_test_files, lomap_old_mapper):
-        nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'))
+    def test_radial_network_no_mapping_failure(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        # lomap cannot make a mapping to nigel, and will return nothing.
+        nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nigel')
 
-        with pytest.raises(ValueError, match='No mapping found for'):
+        with pytest.raises(ValueError, match='No mapping found for SmallMoleculeComponent\(name=nigel\)'):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=[nigel],
                 central_ligand=atom_mapping_basic_test_files['toluene'],
