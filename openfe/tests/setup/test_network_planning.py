@@ -233,10 +233,10 @@ class TestRadialNetworkGenerator:
         ligands_in_network = {mol.name for mol in network.nodes}
         assert ligands_in_network == expected_names
 
-        # we should always take the first valid mapper (BadMapper) when there is no scorer.
         for edge in network.edges:
+            # we should always take the first valid mapper (BadMapper) when there is no scorer.
             assert edge.componentA_to_componentB == {0: 0}
-
+            assert "score" not in edge.annotations
 
     def test_radial_network_no_mapping_failure(self, toluene_vs_others, lomap_old_mapper):
         """Error if any node does not have a mapping to the central component."""
@@ -295,7 +295,7 @@ def test_generate_maximal_network(
 
     assert len(network.edges) == edge_count
 
-    if scorer:
+    if with_scorer:
         for edge in network.edges:
             score = edge.annotations["score"]
             assert score == 1 - 1 / len(edge.componentA_to_componentB)
@@ -305,7 +305,7 @@ def test_generate_maximal_network(
 
 
 @pytest.fixture()
-def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
+def deterministic_minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
     def scorer(mapping):
@@ -330,26 +330,22 @@ def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
 
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
-    def test_minimal_spanning_network_mappers(
-        self, atom_mapping_basic_test_files, multi_mappers, lomap_old_mapper
-    ):
-        ligands = [
-            atom_mapping_basic_test_files["toluene"],
-            atom_mapping_basic_test_files["2-naftanol"],
-        ]
+    def test_minimal_spanning_network(self, toluene_vs_others, multi_mappers, lomap_old_mapper):
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
 
         if multi_mappers:
             mappers = [BadMapper(), lomap_old_mapper]
         else:
             mappers = lomap_old_mapper
 
-        def scorer(mapping):
-            return len(mapping.componentA_to_componentB)
+        def scoring_func(mapping):
+            return 1 - (1 / len(mapping.componentA_to_componentB))
 
         network = openfe.ligand_network_planning.generate_minimal_spanning_network(
             ligands=ligands,
             mappers=mappers,
-            scorer=scorer,
+            scorer=scoring_func,
         )
 
         expected_names = {c.name for c in ligands}
@@ -369,22 +365,35 @@ class TestMinimalSpanningNetworkGenerator:
             assert 'score' in edge.annotations
             assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
 
-    def test_minimal_spanning_network_connectedness(self, minimal_spanning_network):
-        # make sure we don't have duplicate edges?
+    def test_minimal_spanning_network_no_scorer_error(self, toluene_vs_others, lomap_old_mapper):
+        """Except a KeyError if no scorer is passed."""
+        # NOTE: I'm not making this error handling prettier until the konnektor integration
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+
+        with pytest.raises(KeyError, match="score"):
+            _ = openfe.ligand_network_planning.generate_minimal_spanning_network(
+                ligands=ligands,
+                mappers=lomap_old_mapper,
+                scorer=None,
+            )
+
+    def test_minimal_spanning_network_connectedness(self, deterministic_minimal_spanning_network):
+        # makes sure we don't have duplicate edges?
         found_pairs = set()
-        for edge in minimal_spanning_network.edges:
+        for edge in deterministic_minimal_spanning_network.edges:
             pair = frozenset([edge.componentA, edge.componentB])
             assert pair not in found_pairs
             found_pairs.add(pair)
 
-        assert nx.is_connected(nx.MultiGraph(minimal_spanning_network.graph))
+        assert nx.is_connected(nx.MultiGraph(deterministic_minimal_spanning_network.graph))
 
 
-    def test_minimal_spanning_network_regression(self, minimal_spanning_network):
+    def test_minimal_spanning_network_regression(self, deterministic_minimal_spanning_network):
         """issue #244, this was previously giving non-reproducible (yet valid) networks when scores were tied."""
         edge_ids = sorted(
             (edge.componentA.name, edge.componentB.name)
-            for edge in minimal_spanning_network.edges
+            for edge in deterministic_minimal_spanning_network.edges
         )
         ref = sorted([
             ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
