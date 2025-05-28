@@ -288,7 +288,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         """
         state = simulation.context.getState(
             getPositions=True,
-            enforcePeriodicBox=True,
+            enforcePeriodicBox=simulation._usesPBC,
         )
 
         positions = to_openmm(from_openmm(state.getPositions()))
@@ -433,6 +433,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         if verbose:
             logger.info("running production phase")
 
+        # For the production simulation, we reset the step counter to 0
+        simulation.context.setStepCount(0)
+
         # Setup the reporters
         write_interval = settings_validation.divmod_time_and_check(
             output_settings.trajectory_write_interval,
@@ -440,8 +443,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             "trajectory_write_interval",
             "timestep",
         )
-
-        simulation.context.setStepCount(0)
 
         checkpoint_interval = settings_validation.get_simsteps(
             sim_length=output_settings.checkpoint_interval,
@@ -459,12 +460,14 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 atomSubset=selection_indices
             )
             simulation.reporters.append(xtc_reporter)
+
         if output_settings.checkpoint_storage_filename:
             simulation.reporters.append(openmm.app.CheckpointReporter(
                 file=str(
                     shared_basepath /
                     output_settings.checkpoint_storage_filename),
                 reportInterval=checkpoint_interval))
+
         if output_settings.log_output:
             simulation.reporters.append(openmm.app.StateDataReporter(
                 str(shared_basepath / output_settings.log_output),
@@ -479,16 +482,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 density=True,
                 speed=True,
             ))
+
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
-
-        #if output_settings.production_trajectory_filename:
-        #    state = simulation.context.getState(
-        #        getPositions=True,
-        #        enforcePeriodicBox=True,
-        #    )
-        #    xtc_reporter.report(simulation, state)
 
         # Write the final production frame
         if output_settings.production_structure is not None:
