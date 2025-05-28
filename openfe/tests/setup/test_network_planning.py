@@ -238,14 +238,16 @@ class TestRadialNetworkGenerator:
             assert edge.componentA_to_componentB == {0: 0}
 
 
-    def test_radial_network_no_mapping_failure(self, atom_mapping_basic_test_files, lomap_old_mapper):
-        # lomap cannot make a mapping to nigel, and will return nothing.
+    def test_radial_network_no_mapping_failure(self, toluene_vs_others, lomap_old_mapper):
+        """Error if any node does not have a mapping to the central component."""
+        toluene, others = toluene_vs_others
+        # lomap cannot make a mapping to nigel, and will return nothing for the (toluene, nigel) pair
         nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nigel')
 
         with pytest.raises(ValueError, match='No mapping found for SmallMoleculeComponent\(name=nigel\)'):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
-                ligands=[nigel],
-                central_ligand=atom_mapping_basic_test_files['toluene'],
+                ligands=others + [nigel],
+                central_ligand=toluene,
                 mappers=[lomap_old_mapper],
                 scorer=None
             )
