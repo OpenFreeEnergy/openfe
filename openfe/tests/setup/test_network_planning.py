@@ -1,6 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+from typing import Callable
 from gufe import AtomMapper
 import pytest
 import networkx as nx
@@ -48,6 +49,58 @@ def lomap_old_mapper() -> AtomMapper:
         time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
     )
 
+
+@pytest.fixture()
+def deterministic_toluene_mst_scorer() -> Callable:
+    def _scorer(mapping):
+        """These scores give the same mst or rmst every time for the toluene_vs_others dataset."""
+        scores = {
+            # MST edges
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 0.3,
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 0.3,
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 0.3,
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 0.3,
+            ('2,6-dimethylnaphthalene', '2-naftanol'): 0.3,
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 0.3,
+            ('2,6-dimethylnaphthalene', 'toluene'): 0.3,
+            # MST redundant edges
+            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 0.2,
+            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'): 0.2,
+            ('1-butyl-4-methylbenzene', 'toluene'): 0.2,
+            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'): 0.2,
+            ('2-methylnaphthalene', '2-naftanol'): 0.2,
+            ('2-methylnaphthalene', 'methylcyclohexane'): 0.2,
+            ('2-methylnaphthalene', 'toluene'): 0.2,
+        }
+        return scores.get((mapping.componentA.name, mapping.componentB.name), 0.1)
+    return _scorer
+
+
+@pytest.fixture()
+def deterministic_minimal_spanning_network(toluene_vs_others, lomap_old_mapper, deterministic_toluene_mst_scorer):
+    toluene, others = toluene_vs_others
+    scorer = deterministic_toluene_mst_scorer
+
+    network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
+        ligands=others + [toluene],
+        mappers=lomap_old_mapper,
+        scorer=scorer,
+    )
+    return network
+
+
+@pytest.fixture()
+def deterministic_minimal_redundant_network(toluene_vs_others, lomap_old_mapper, deterministic_toluene_mst_scorer):
+    toluene, others = toluene_vs_others
+    scorer = deterministic_toluene_mst_scorer
+
+    network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+        ligands=others + [toluene],
+        mappers=lomap_old_mapper,
+        scorer=scorer,
+        mst_num=2
+    )
+    return network
 
 class TestRadialNetworkGenerator:
     @pytest.mark.parametrize("as_list", [False, True])
@@ -302,32 +355,6 @@ def test_generate_maximal_network(
     else:
         for edge in network.edges:
             assert "score" not in edge.annotations
-
-
-@pytest.fixture()
-def deterministic_minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
-    def scorer(mapping):
-        """Scores are designed to give the same mst everytime"""
-        scores = {
-            # MST edges
-            ("1,3,7-trimethylnaphthalene", "2,6-dimethylnaphthalene"): 0.3,
-            ("1-butyl-4-methylbenzene", "2-methyl-6-propylnaphthalene"): 0.3,
-            ("2,6-dimethylnaphthalene", "2-methyl-6-propylnaphthalene"): 0.3,
-            ("2,6-dimethylnaphthalene", "2-methylnaphthalene"): 0.3,
-            ("2,6-dimethylnaphthalene", "2-naftanol"): 0.3,
-            ("2,6-dimethylnaphthalene", "methylcyclohexane"): 0.3,
-            ("2,6-dimethylnaphthalene", "toluene"): 0.3,
-        }
-        return scores.get((mapping.componentA.name, mapping.componentB.name), 0.1)
-
-    network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
-        ligands=others + [toluene], mappers=lomap_old_mapper, scorer=scorer
-    )
-    return network
-
-
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
     def test_minimal_spanning_network(self, toluene_vs_others, multi_mappers, lomap_old_mapper):
@@ -366,7 +393,7 @@ class TestMinimalSpanningNetworkGenerator:
             assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
 
     def test_minimal_spanning_network_no_scorer_error(self, toluene_vs_others, lomap_old_mapper):
-        """Except a KeyError if no scorer is passed."""
+        """Expect a KeyError if no scorer is passed."""
         # NOTE: I'm not making this error handling prettier until the konnektor integration
         toluene, others = toluene_vs_others
         ligands = [toluene] + others
@@ -386,16 +413,13 @@ class TestMinimalSpanningNetworkGenerator:
             assert pair not in found_pairs
             found_pairs.add(pair)
 
-        assert nx.is_connected(nx.MultiGraph(deterministic_minimal_spanning_network.graph))
+        assert deterministic_minimal_spanning_network.is_connected()
 
 
     def test_minimal_spanning_network_regression(self, deterministic_minimal_spanning_network):
         """issue #244, this was previously giving non-reproducible (yet valid) networks when scores were tied."""
-        edge_ids = sorted(
-            (edge.componentA.name, edge.componentB.name)
-            for edge in deterministic_minimal_spanning_network.edges
-        )
-        ref = sorted([
+        edge_names = {(e.componentA.name, e.componentB.name) for e in deterministic_minimal_spanning_network.edges}
+        expected_edge_names = {
             ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
             ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
             ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
@@ -403,10 +427,10 @@ class TestMinimalSpanningNetworkGenerator:
             ('2,6-dimethylnaphthalene', '2-naftanol'),
             ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
             ('2,6-dimethylnaphthalene', 'toluene'),
-        ])
-
-        assert len(edge_ids) == len(ref)
-        assert edge_ids == ref
+        }
+        assert len(deterministic_minimal_spanning_network.nodes) == 8
+        assert len(edge_names) == len(expected_edge_names)
+        assert edge_names == expected_edge_names
 
 
     def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
@@ -423,42 +447,6 @@ class TestMinimalSpanningNetworkGenerator:
                 scorer=scorer,
             )
 
-
-@pytest.fixture()
-def deterministic_minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
-    mappers = [lomap_old_mapper]
-
-    def scorer(mapping):
-        """Scores are designed to give the same mst every time"""
-        scores = {
-            # MST edges
-            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 0.3,
-            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 0.3,
-            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 0.3,
-            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 0.3,
-            ('2,6-dimethylnaphthalene', '2-naftanol'): 0.3,
-            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 0.3,
-            ('2,6-dimethylnaphthalene', 'toluene'): 0.3,
-            # MST redundant edges
-            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 0.2,
-            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'): 0.2,
-            ('1-butyl-4-methylbenzene', 'toluene'): 0.2,
-            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'): 0.2,
-            ('2-methylnaphthalene', '2-naftanol'): 0.2,
-            ('2-methylnaphthalene', 'methylcyclohexane'): 0.2,
-            ('2-methylnaphthalene', 'toluene'): 0.2,
-        }
-        return scores.get((mapping.componentA.name, mapping.componentB.name), 0.1)
-
-    network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
-        ligands=others + [toluene],
-        mappers=mappers,
-        scorer=scorer,
-        mst_num=2
-    )
-    return network
 
 class TestMinimalRedundantNetworkGenerator:
     def test_minimal_redundant_network(self, deterministic_minimal_redundant_network, toluene_vs_others):
