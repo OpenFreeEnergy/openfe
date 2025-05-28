@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import math
+
 from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
 import itertools
@@ -15,7 +15,7 @@ from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
 
-from lomap import generate_lomap_network, LomapAtomMapper
+from lomap import LomapAtomMapper
 from lomap.dbmol import _find_common_core
 
 
