@@ -156,14 +156,6 @@ def test_complex_solvent_sim_gpu(
     # Check we have the right number of frames
     assert len(simulation.trajectory) == 10
 
-    # # Check that the first frame matches
-    # assert_allclose(
-    #     first_frame.atoms.positions,
-    #     simulation.atoms.positions,
-    #     rtol=0,
-    #     atol=1e-2,  # The PDBs are written at 2d.p. accuracy
-    # )
-
     # Check that the final frame matches
     simulation.trajectory[-1]  # fast-forward
     assert_allclose(
