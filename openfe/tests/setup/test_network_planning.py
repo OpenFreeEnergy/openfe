@@ -559,12 +559,17 @@ class TestGenerateNetworkFromNames:
             mapper=lomap_old_mapper,
         )
 
-        assert len(network.nodes) == len(ligands)
-        assert len(network.edges) == 2
-        actual_edges = [(e.componentA.name, e.componentB.name) for e in network.edges]
-        assert set(requested) == set(actual_edges)
+        expected_node_names = {c.name for c in ligands}
+        actual_node_names = {n.name for n in network.nodes}
 
-    def test_generate_network_from_names_bad_name(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        assert len(network.nodes) == len(ligands)
+        assert actual_node_names == expected_node_names
+
+        assert len(network.edges) == 2
+        actual_edges = {(e.componentA.name, e.componentB.name) for e in network.edges}
+        assert set(requested) == actual_edges
+
+    def test_generate_network_from_names_bad_name_error(self, atom_mapping_basic_test_files, lomap_old_mapper):
         ligands = list(atom_mapping_basic_test_files.values())
 
         requested = [
@@ -572,7 +577,7 @@ class TestGenerateNetworkFromNames:
             ('2-methylnaphthalene', '2-naftanol'),
         ]
 
-        with pytest.raises(KeyError, match="Invalid name"):
+        with pytest.raises(KeyError, match="Invalid name\(s\) requested \['hank'\]."):
             _ = openfe.setup.ligand_network_planning.generate_network_from_names(
                 ligands=ligands,
                 names=requested,
@@ -589,7 +594,7 @@ class TestGenerateNetworkFromNames:
             ('2-methylnaphthalene', '2-naftanol'),
         ]
 
-        with pytest.raises(ValueError, match="Duplicate names"):
+        with pytest.raises(ValueError, match="Duplicate names: \['1,3,7-trimethylnaphthalene'\]"):
             _ = openfe.setup.ligand_network_planning.generate_network_from_names(
                 ligands=ligands,
                 names=requested,
