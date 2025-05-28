@@ -425,7 +425,7 @@ class TestMinimalSpanningNetworkGenerator:
 
 
 @pytest.fixture()
-def minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
+def deterministic_minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
 
     mappers = [lomap_old_mapper]
@@ -461,45 +461,45 @@ def minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
     return network
 
 class TestMinimalRedundantNetworkGenerator:
-    def test_minimal_redundant_network(self, minimal_redundant_network, toluene_vs_others):
+    def test_minimal_redundant_network(self, deterministic_minimal_redundant_network, toluene_vs_others):
         tol, others = toluene_vs_others
 
         # test for correct number of nodes
-        assert len(minimal_redundant_network.nodes) == len(others) + 1
+        assert len(deterministic_minimal_redundant_network.nodes) == len(others) + 1
 
         # test for correct number of edges
-        assert len(minimal_redundant_network.edges) == 2 * \
-            (len(minimal_redundant_network.nodes) - 1)
+        assert len(deterministic_minimal_redundant_network.edges) == 2 * \
+            (len(deterministic_minimal_redundant_network.nodes) - 1)
 
-        for edge in minimal_redundant_network.edges:
+        for edge in deterministic_minimal_redundant_network.edges:
             # lomap should find something
             assert edge.componentA_to_componentB != {0: 0}
 
 
-    def test_minimal_redundant_network_connectedness(self, minimal_redundant_network):
+    def test_minimal_redundant_network_connectedness(self, deterministic_minimal_redundant_network):
         found_pairs = set()
-        for edge in minimal_redundant_network.edges:
+        for edge in deterministic_minimal_redundant_network.edges:
             pair = frozenset([edge.componentA, edge.componentB])
             assert pair not in found_pairs
             found_pairs.add(pair)
 
-        assert nx.is_connected(nx.MultiGraph(minimal_redundant_network.graph))
+        assert nx.is_connected(nx.MultiGraph(deterministic_minimal_redundant_network.graph))
 
 
-    def test_redundant_vs_spanning_network(self, minimal_redundant_network, minimal_spanning_network):
+    def test_redundant_vs_spanning_network(self, deterministic_minimal_redundant_network, deterministic_minimal_spanning_network):
         """when setting minimal redundant network to only take one MST,
         it should have as many edges as the regular minimum spanning network
         """
-        assert 2 * len(minimal_spanning_network.edges) == len(
-            minimal_redundant_network.edges)
+        assert 2 * len(deterministic_minimal_spanning_network.edges) == len(
+            deterministic_minimal_redundant_network.edges)
 
 
-    def test_minimal_redundant_network_edges(self, minimal_redundant_network):
+    def test_minimal_redundant_network_edges(self, deterministic_minimal_redundant_network):
         """issue #244, this was previously giving non-reproducible (yet valid)
         networks when scores were tied."""
         edge_ids = sorted(
             (edge.componentA.name, edge.componentB.name)
-            for edge in minimal_redundant_network.edges
+            for edge in deterministic_minimal_redundant_network.edges
         )
         ref = sorted([
             ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
@@ -522,9 +522,9 @@ class TestMinimalRedundantNetworkGenerator:
         assert edge_ids == ref
 
 
-    def test_minimal_redundant_network_redundant(self, minimal_redundant_network):
+    def test_minimal_redundant_network_redundant(self, deterministic_minimal_redundant_network):
         """test that each node is connected to 2 edges"""
-        network = minimal_redundant_network
+        network = deterministic_minimal_redundant_network
         for node in network.nodes:
             assert (
                 len(network.graph.in_edges(node)) + len(network.graph.out_edges(node))
