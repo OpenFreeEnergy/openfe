@@ -415,7 +415,6 @@ class TestMinimalSpanningNetworkGenerator:
 
         assert deterministic_minimal_spanning_network.is_connected()
 
-
     def test_minimal_spanning_network_regression(self, deterministic_minimal_spanning_network):
         """issue #244, this was previously giving non-reproducible (yet valid) networks when scores were tied."""
         edge_names = {(e.componentA.name, e.componentB.name) for e in deterministic_minimal_spanning_network.edges}
@@ -431,7 +430,6 @@ class TestMinimalSpanningNetworkGenerator:
         assert len(deterministic_minimal_spanning_network.nodes) == 8
         assert len(edge_names) == len(expected_edge_names)
         assert edge_names == expected_edge_names
-
 
     def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
@@ -450,46 +448,58 @@ class TestMinimalSpanningNetworkGenerator:
 
 class TestMinimalRedundantNetworkGenerator:
     def test_minimal_redundant_network(self, deterministic_minimal_redundant_network, toluene_vs_others):
-        tol, others = toluene_vs_others
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+        expected_names = {c.name for c in ligands}
 
-        # test for correct number of nodes
-        assert len(deterministic_minimal_redundant_network.nodes) == len(others) + 1
+        # check that all ligands are present, i.e. we included everyone
+        assert len(deterministic_minimal_redundant_network.nodes) == len(ligands)
+        ligands_in_network = {mol.name for mol in deterministic_minimal_redundant_network.nodes}
+        assert ligands_in_network == expected_names
 
-        # test for correct number of edges
-        assert len(deterministic_minimal_redundant_network.edges) == 2 * \
-            (len(deterministic_minimal_redundant_network.nodes) - 1)
+        # we expect double the number of edges of an mst
+        assert len(deterministic_minimal_redundant_network.edges) == 2 * (len(ligands) - 1)
 
         for edge in deterministic_minimal_redundant_network.edges:
             # lomap should find something
             assert edge.componentA_to_componentB != {0: 0}
 
-
     def test_minimal_redundant_network_connectedness(self, deterministic_minimal_redundant_network):
+        # makes sure we don't have duplicate edges?
+
         found_pairs = set()
         for edge in deterministic_minimal_redundant_network.edges:
             pair = frozenset([edge.componentA, edge.componentB])
             assert pair not in found_pairs
             found_pairs.add(pair)
 
-        assert nx.is_connected(nx.MultiGraph(deterministic_minimal_redundant_network.graph))
+        assert deterministic_minimal_redundant_network.is_connected()
 
+    def test_redundant_vs_spanning_network(
+        self,
+        toluene_vs_others,
+        lomap_old_mapper,
+        deterministic_toluene_mst_scorer,
+        deterministic_minimal_spanning_network,
+    ):
+        """when setting minimal redundant network to only take one MST, it should be equivalent to the base MST."""
 
-    def test_redundant_vs_spanning_network(self, deterministic_minimal_redundant_network, deterministic_minimal_spanning_network):
-        """when setting minimal redundant network to only take one MST,
-        it should have as many edges as the regular minimum spanning network
-        """
-        assert 2 * len(deterministic_minimal_spanning_network.edges) == len(
-            deterministic_minimal_redundant_network.edges)
+        toluene, others = toluene_vs_others
+        scorer = deterministic_toluene_mst_scorer
 
+        minimal_redundant_network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+            ligands=others + [toluene],
+            mappers=lomap_old_mapper,
+            scorer=scorer,
+            mst_num=1
+        )
+        assert deterministic_minimal_spanning_network.edges == minimal_redundant_network.edges
 
     def test_minimal_redundant_network_edges(self, deterministic_minimal_redundant_network):
         """issue #244, this was previously giving non-reproducible (yet valid)
         networks when scores were tied."""
-        edge_ids = sorted(
-            (edge.componentA.name, edge.componentB.name)
-            for edge in deterministic_minimal_redundant_network.edges
-        )
-        ref = sorted([
+        edge_names = {(e.componentA.name, e.componentB.name) for e in deterministic_minimal_redundant_network.edges}
+        expected_names = {
             ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
             ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
             ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'),
@@ -504,11 +514,10 @@ class TestMinimalRedundantNetworkGenerator:
             ('2-methylnaphthalene', '2-naftanol'),
             ('2-methylnaphthalene', 'methylcyclohexane'),
             ('2-methylnaphthalene', 'toluene')
-        ])
+        }
 
-        assert len(edge_ids) == len(ref)
-        assert edge_ids == ref
-
+        assert len(edge_names) == len(expected_names)
+        assert edge_names == expected_names
 
     def test_minimal_redundant_network_redundant(self, deterministic_minimal_redundant_network):
         """test that each node is connected to 2 edges"""
@@ -519,15 +528,14 @@ class TestMinimalRedundantNetworkGenerator:
                 >= 2
             )
 
-
     def test_minimal_redundant_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
-        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"), name='nimrod')
 
         def scorer(mapping):
-            return len(mapping.componentA_to_componentB)
+            return 1 - (1 / len(mapping.componentA_to_componentB))
 
-        with pytest.raises(RuntimeError, match="Unable to create edges"):
+        with pytest.raises(RuntimeError, match="Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
             _ = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
