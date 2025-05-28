@@ -203,7 +203,8 @@ def generate_maximal_network(
 def generate_minimal_spanning_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
-    scorer: Callable[[LigandAtomMapping], float],
+    scorer: Callable[[LigandAtomMapping], float],  # TODO: scorer is currently required, but that's not actually necessary.
+
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ) -> LigandNetwork:
     """

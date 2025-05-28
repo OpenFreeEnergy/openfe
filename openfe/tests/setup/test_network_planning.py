@@ -208,7 +208,7 @@ class TestRadialNetworkGenerator:
         assert ligands_in_network == expected_names
 
         for edge in network.edges:
-            # we didn't take the bad mapper, which would always be a length of 1 ({0:0})
+            # make sure we didn't take the bad mapper, which would always be a length of 1 ({0:0})
             assert len(edge.componentA_to_componentB) > 1
             assert 'score' in edge.annotations
             assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
@@ -352,17 +352,25 @@ class TestMinimalSpanningNetworkGenerator:
             scorer=scorer,
         )
 
-        assert isinstance(network, openfe.LigandNetwork)
-        assert list(network.edges)
+        expected_names = {c.name for c in ligands}
 
-    def test_minimal_spanning_network(self, minimal_spanning_network, toluene_vs_others):
-        tol, others = toluene_vs_others
-        assert len(minimal_spanning_network.nodes) == len(others) + 1
-        for edge in minimal_spanning_network.edges:
-            # lomap should find something
-            assert edge.componentA_to_componentB != {0: 0}
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+        assert network.is_connected()
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
+
+        for edge in network.edges:
+            # make sure we didn't take the bad mapper, which would always be a length of 1 ({0:0})
+            assert len(edge.componentA_to_componentB) > 1
+            assert 'score' in edge.annotations
+            assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
 
     def test_minimal_spanning_network_connectedness(self, minimal_spanning_network):
+        # make sure we don't have duplicate edges?
         found_pairs = set()
         for edge in minimal_spanning_network.edges:
             pair = frozenset([edge.componentA, edge.componentB])
