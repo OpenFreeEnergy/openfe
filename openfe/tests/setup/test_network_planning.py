@@ -241,12 +241,12 @@ class TestRadialNetworkGenerator:
     def test_radial_network_no_mapping_failure(self, toluene_vs_others, lomap_old_mapper):
         """Error if any node does not have a mapping to the central component."""
         toluene, others = toluene_vs_others
-        # lomap cannot make a mapping to nigel, and will return nothing for the (toluene, nigel) pair
-        nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nigel')
+        # lomap cannot make a mapping to nimrod, and will return nothing for the (toluene, nimrod) pair
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nimrod')
 
-        with pytest.raises(ValueError, match='No mapping found for SmallMoleculeComponent\(name=nigel\)'):
+        with pytest.raises(ValueError, match='No mapping found for SmallMoleculeComponent\(name=nimrod\)'):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
-                ligands=others + [nigel],
+                ligands=others + [nimrod],
                 central_ligand=toluene,
                 mappers=[lomap_old_mapper],
                 scorer=None
@@ -411,16 +411,16 @@ class TestMinimalSpanningNetworkGenerator:
 
     def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
-        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"), name='nimrod')
 
         def scorer(mapping):
-            return len(mapping.componentA_to_componentB)
+            return 1 - (1 / len(mapping.componentA_to_componentB))
 
-        with pytest.raises(RuntimeError, match="Unable to create edges"):
+        with pytest.raises(RuntimeError, match="Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
             _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
-                scorer=scorer
+                scorer=scorer,
             )
 
 
