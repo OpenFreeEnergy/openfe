@@ -253,8 +253,8 @@ class TestRadialNetworkGenerator:
             )
 
 
-@pytest.mark.parametrize('with_progress', [True, False])
-@pytest.mark.parametrize('with_scorer', [True, False])
+@pytest.mark.parametrize("with_progress", [True, False])
+@pytest.mark.parametrize("with_scorer", [True, False])
 @pytest.mark.parametrize("extra_mapper", [True, False])
 def test_generate_maximal_network(
     toluene_vs_others, with_progress, with_scorer, extra_mapper, lomap_old_mapper
@@ -262,15 +262,12 @@ def test_generate_maximal_network(
     toluene, others = toluene_vs_others
 
     if extra_mapper:
-        mappers = [
-            lomap_old_mapper,
-            BadMapper()
-        ]
+        mappers = [lomap_old_mapper, BadMapper()]
     else:
         mappers = lomap_old_mapper
 
-    def scoring_func(mapping):
-        return len(mapping.componentA_to_componentB)
+    def scoring_func(mapping) -> float:
+        return 1 - 1 / len(mapping.componentA_to_componentB)
 
     scorer = scoring_func if with_scorer else None
 
@@ -281,28 +278,35 @@ def test_generate_maximal_network(
         progress=with_progress,
     )
 
-    assert len(network.nodes) == len(others) + 1
+    expected_names = set([c.name for c in others] + ["toluene"])
+
+    assert len(network.nodes) == len(expected_names)
+
+    # check that all ligands are present, i.e. we included everyone
+    ligands_in_network = {mol.name for mol in network.nodes}
+    assert ligands_in_network == expected_names
 
     if extra_mapper:
-        edge_count = len(others) * (len(others) + 1)
+        # two edges per pair of nodes, one for each mapper
+        edge_count = len(expected_names) * (len(expected_names) - 1)
     else:
-        edge_count = len(others) * (len(others) + 1) / 2
+        # one edge per pair of nodes
+        edge_count = (len(expected_names) * (len(expected_names) - 1)) / 2
 
     assert len(network.edges) == edge_count
 
     if scorer:
         for edge in network.edges:
-            score = edge.annotations['score']
-            assert score == len(edge.componentA_to_componentB)
+            score = edge.annotations["score"]
+            assert score == 1 - 1 / len(edge.componentA_to_componentB)
     else:
         for edge in network.edges:
-            assert 'score' not in edge.annotations
+            assert "score" not in edge.annotations
+
 
 @pytest.fixture()
 def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
     toluene, others = toluene_vs_others
-
-    mappers = [lomap_old_mapper]
 
     def scorer(mapping):
         """Scores are designed to give the same mst everytime"""
@@ -319,7 +323,7 @@ def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
         return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
 
     network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
-        ligands=others + [toluene], mappers=mappers, scorer=scorer
+        ligands=others + [toluene], mappers=lomap_old_mapper, scorer=scorer
     )
     return network
 
