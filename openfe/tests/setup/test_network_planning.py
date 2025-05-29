@@ -156,7 +156,7 @@ class TestRadialNetworkGenerator:
         """issue #544, include the central ligand in "ligands", shouldn't get a self-edge"""
         ligs = [toluene_vs_others[0]] + toluene_vs_others[1]
 
-        with pytest.warns(UserWarning, match="The central_ligand"):
+        with pytest.warns(UserWarning, match="The central component 'toluene' was"):
             network = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligs,
                 central_ligand=ligs[0],
