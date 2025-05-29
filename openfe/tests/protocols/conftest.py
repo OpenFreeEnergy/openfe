@@ -243,7 +243,7 @@ def get_available_openmm_platforms() -> set[str]:
     platforms = {Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())}
 
     # Now check if we can actually use the platforms
-    working_platforms = {}
+    working_platforms = set()
     for platform in platforms:
         system = openmm.System()
         system.addParticle(1.0)
