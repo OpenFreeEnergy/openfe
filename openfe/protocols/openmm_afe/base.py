@@ -168,7 +168,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         Parameters
         ----------
         system : openmm.System
-          An OpenMM System to equilibrate.
+          The OpenMM System to equilibrate.
         topology : openmm.app.Topology
           OpenMM Topology of the System.
         positions : openmm.unit.Quantity
@@ -502,7 +502,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         topology : app.Topology
           OpenMM Topology object describing the parameterized system.
         system : openmm.System
-          An non-alchemical OpenMM System of the simulated system.
+          A non-alchemical OpenMM System of the simulated system.
         positions : openmm.unit.Quantity
           Positions of the system.
         comp_resids : dict[Component, npt.NDArray]

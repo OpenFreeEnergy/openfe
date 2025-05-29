@@ -4,37 +4,21 @@
 from gufe.protocols import execute_DAG
 import pytest
 from openff.units import unit
-from openmm import Platform
-import os
 import pathlib
 
 import openfe
 from openfe.protocols import openmm_afe
 
 
-@pytest.fixture
-def set_openmm_threads_1():
-    # for vacuum sims, we want to limit threads to one
-    # this fixture sets OPENMM_CPU_THREADS='1' for a single test, then reverts to previously held value
-    previous: str | None = os.environ.get('OPENMM_CPU_THREADS')
-
-    try:
-        os.environ['OPENMM_CPU_THREADS'] = '1'
-        yield
-    finally:
-        if previous is None:
-            del os.environ['OPENMM_CPU_THREADS']
-        else:
-            os.environ['OPENMM_CPU_THREADS'] = previous
-
-
 @pytest.mark.integration  # takes too long to be a slow test ~ 4 mins locally
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_openmm_run_engine(platform,
-                           get_available_openmm_platforms,
-                           benzene_modifications,
-                           set_openmm_threads_1, tmpdir):
+def test_openmm_run_engine(
+    platform,
+    get_available_openmm_platforms,
+    benzene_modifications,
+    tmpdir
+):
     if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
 
