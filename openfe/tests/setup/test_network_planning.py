@@ -222,6 +222,8 @@ class TestRadialNetworkGenerator:
                 scorer=None,
             )
 
+        # make sure there's no self-edge for the central ligand (toluene)
+        assert ('toluene', 'toluene') not in {(e.componentA.name, e.componentB.name) for e in network.edges}
         assert len(network.edges) == len(ligands) - 1
 
         # explicitly check to make sure there is no toluene self-edge
