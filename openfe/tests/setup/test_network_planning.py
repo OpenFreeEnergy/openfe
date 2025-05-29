@@ -1,6 +1,5 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-
 from gufe import AtomMapper
 import pytest
 import networkx as nx
@@ -146,7 +145,7 @@ class TestRadialNetworkGenerator:
         ligands = [toluene] + others
 
         with pytest.raises(ValueError, match="out of bounds"):
-            openfe.setup.ligand_network_planning.generate_radial_network(
+            _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligands,
                 central_ligand=2077,
                 mappers=lomap_old_mapper,
@@ -157,7 +156,7 @@ class TestRadialNetworkGenerator:
         """issue #544, include the central ligand in "ligands", shouldn't get a self-edge"""
         ligs = [toluene_vs_others[0]] + toluene_vs_others[1]
 
-        with pytest.warns(UserWarning, match="The central_ligand"):
+        with pytest.warns(UserWarning, match="The central component 'toluene'"):
             network = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligs,
                 central_ligand=ligs[0],
@@ -171,7 +170,7 @@ class TestRadialNetworkGenerator:
         toluene, others = toluene_vs_others
 
         def scorer(mapping):
-            return len(mapping.componentA_to_componentB)
+            return 1-1/len(mapping.componentA_to_componentB)
 
         network = openfe.setup.ligand_network_planning.generate_radial_network(
             ligands=others,
@@ -182,10 +181,11 @@ class TestRadialNetworkGenerator:
         assert len(network.edges) == len(others)
 
         for edge in network.edges:
-            # we didn't take the bad mapper
+            # make sure we didn't take BadMapper
             assert len(edge.componentA_to_componentB) > 1
             assert 'score' in edge.annotations
-            assert edge.annotations['score'] == len(edge.componentA_to_componentB)
+            assert edge.annotations['score'] == 1-1/len(edge.componentA_to_componentB)
+
 
     def test_radial_network_multiple_mappers_no_scorer(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
@@ -207,7 +207,7 @@ class TestRadialNetworkGenerator:
     def test_radial_network_failure(self, atom_mapping_basic_test_files, lomap_old_mapper):
         nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'))
 
-        with pytest.raises(ValueError, match='No mapping found for'):
+        with pytest.raises(RuntimeError, match='Could not generate any mapping!'):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=[nigel],
                 central_ligand=atom_mapping_basic_test_files['toluene'],
@@ -222,13 +222,11 @@ class TestRadialNetworkGenerator:
 def test_generate_maximal_network(
     toluene_vs_others, with_progress, with_scorer, extra_mapper, lomap_old_mapper
 ):
+    """TODO: add test for throwing an error if there is no scorer but multiple mappings"""
     toluene, others = toluene_vs_others
 
     if extra_mapper:
-        mappers = [
-            lomap_old_mapper,
-            BadMapper()
-        ]
+        mappers = [lomap_old_mapper, BadMapper()]
     else:
         mappers = lomap_old_mapper
 
@@ -246,10 +244,7 @@ def test_generate_maximal_network(
 
     assert len(network.nodes) == len(others) + 1
 
-    if extra_mapper:
-        edge_count = len(others) * (len(others) + 1)
-    else:
-        edge_count = len(others) * (len(others) + 1) / 2
+    edge_count = len(others) * (len(others) + 1) / 2
 
     assert len(network.edges) == edge_count
 
@@ -285,7 +280,20 @@ def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
         ligands=others + [toluene], mappers=mappers, scorer=scorer
     )
     return network
+class TestMinimalSpanningNetworkGenerator:
+    @pytest.mark.parametrize("multi_mappers", [False, True])
+    def test_minimal_spanning_network_mappers(
+        self, atom_mapping_basic_test_files, multi_mappers, lomap_old_mapper
+    ):
+        ligands = [
+            atom_mapping_basic_test_files["toluene"],
+            atom_mapping_basic_test_files["2-naftanol"],
+        ]
 
+        if multi_mappers:
+            mappers = [BadMapper(), lomap_old_mapper]
+        else:
+            mappers = lomap_old_mapper
 
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
@@ -349,7 +357,6 @@ class TestMinimalSpanningNetworkGenerator:
 
         assert len(edge_ids) == len(ref)
         assert edge_ids == ref
-
 
     def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
@@ -474,15 +481,17 @@ class TestMinimalRedundantNetworkGenerator:
             )
 
 
-    def test_minimal_redundant_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
+    def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper):
         toluene, others = toluene_vs_others
-        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
+        # lomap_old_mapper won't return anything for nimrod, so it won't have any edges
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"), name='nimrod')
 
         def scorer(mapping):
             return len(mapping.componentA_to_componentB)
 
-        with pytest.raises(RuntimeError, match="Unable to create edges"):
-            _ = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+        err_str = r"ERROR: Unable to create edges for the following nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"
+        with pytest.raises(RuntimeError, match=err_str):
+            _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
                 scorer=scorer
@@ -502,6 +511,12 @@ class TestNetworkFromNames:
             names=requested,
             mapper=lomap_old_mapper,
         )
+        # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
+        assert len(network.nodes) == len(ligs)
+        assert len(network.edges) == 2
+        actual_edges = [(e.componentA.name, e.componentB.name)
+                        for e in network.edges]
+        assert set(requested) == set(actual_edges)
 
         assert len(network.nodes) == len(ligs)
         assert len(network.edges) == 2
@@ -546,6 +561,7 @@ class TestNetworkFromIndices:
 
         requested = [(0, 1), (2, 3)]
 
+        # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
         network = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligs,
             indices=requested,
@@ -569,7 +585,7 @@ class TestNetworkFromIndices:
 
         requested = [(20, 1), (2, 3)]
 
-        with pytest.raises(IndexError, match="Invalid ligand id"):
+        with pytest.raises(IndexError, match="Invalid ligand index"):
             _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
                 ligands=ligs,
                 indices=requested,
