@@ -15,6 +15,8 @@ from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
 
+# import to expose generate_lomap_network in openfe
+from lomap import generate_lomap_network as generate_lomap_network
 from lomap import LomapAtomMapper
 from lomap.dbmol import _find_common_core
 
