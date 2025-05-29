@@ -1,12 +1,9 @@
 name: OpenFEforge
-version: 1.5.0.dev0
+version: {{ environ["VERSION"] }}
 company: OpenFE
 license_file: ../../LICENSE
 
 channels:
-  - conda-forge/label/gufe_rc
-  - conda-forge/label/cinnabar_rc
-  - conda-forge/label/openfe_dev
   - conda-forge
 
 write_condarc: True
@@ -18,7 +15,7 @@ specs:
   - jupyterlab
   - mamba
   - notebook <7
-  - openfe==1.5.0.dev0
+  - openfe=={{ environ["VERSION"] }}
   - pip
   - pytest
   - pytest-xdist
