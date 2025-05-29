@@ -31,8 +31,8 @@ os.environ["SPHINX"] = "True"
 project = "OpenFE"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
-version = parse(version("openfe")).base_version
-
+ # don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
+version = f"{parse(version('openfe')).major}.{parse(version('openfe')).minor}"
 
 # -- General configuration ---------------------------------------------------
 
