@@ -12,13 +12,11 @@ import openfe
 
 def test_rhfe_alchemical_network_planner_init():
     alchem_planner = RHFEAlchemicalNetworkPlanner()
-
     assert alchem_planner.name == "rhfe"
 
 
 def test_rbfe_alchemical_network_planner_init():
     alchem_planner = RBFEAlchemicalNetworkPlanner()
-
     assert alchem_planner.name == "rbfe"
 
 
@@ -42,7 +40,7 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
 
     edges = alchem_network.edges
 
-    assert len(edges) == 14 # we build 2envs*8ligands-2startLigands = 14 relative edges.
+    assert len(edges) == 14 # we build 2envs * (8 ligands - 1) = 14 relative edges.
     assert sum([r_complex_edge(e) for e in edges]) == 7 # half of the transformations should be complex (they always are)!
     assert sum([r_solvent_edge(e) for e in edges]) == 7 # half of the transformations should be solvent!
     assert sum([r_vacuum_edge(e) for e in edges]) == 0 # no vacuum here!
