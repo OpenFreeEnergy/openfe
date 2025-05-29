@@ -214,7 +214,7 @@ def afe_solv_transformation_json() -> str:
     """
     d = resources.files('openfe.tests.data.openmm_afe')
     fname = "AHFEProtocol_json_results.gz"
-    
+
     with gzip.open((d / fname).as_posix(), 'r') as f:  # type: ignore
         return f.read().decode()  # type: ignore
 
@@ -231,3 +231,31 @@ def md_json() -> str:
 
     with gzip.open((d / fname).as_posix(), 'r') as f:  # type: ignore
         return f.read().decode()  # type: ignore
+
+@pytest.fixture
+def get_available_openmm_platforms() -> set[str]:
+    """
+    OpenMM Platforms that are available and functional on system
+    """
+    import openmm
+    from openmm import Platform
+    # Get platforms that openmm was built with
+    platforms = {Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())}
+
+    # Now check if we can actually use the platforms
+    working_platforms = {}
+    for platform in platforms:
+        system = openmm.System()
+        system.addParticle(1.0)
+        integrator = openmm.VerletIntegrator(0.001)
+        try:
+            context = openmm.Context(system, integrator, Platform.getPlatformByName(platform))
+            working_platforms.add(platform)
+            del context
+        except openmm.OpenMMException:
+            continue
+        finally:
+            del system, integrator
+
+
+    return working_platforms

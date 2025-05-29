@@ -13,11 +13,6 @@ from openfe.protocols import openmm_afe
 
 
 @pytest.fixture
-def available_platforms() -> set[str]:
-    return {Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())}
-
-
-@pytest.fixture
 def set_openmm_threads_1():
     # for vacuum sims, we want to limit threads to one
     # this fixture sets OPENMM_CPU_THREADS='1' for a single test, then reverts to previously held value
@@ -37,10 +32,10 @@ def set_openmm_threads_1():
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
 def test_openmm_run_engine(platform,
-                           available_platforms,
+                           get_available_openmm_platforms,
                            benzene_modifications,
                            set_openmm_threads_1, tmpdir):
-    if platform not in available_platforms:
+    if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
 
     # Run a really short calculation to check everything is going well
