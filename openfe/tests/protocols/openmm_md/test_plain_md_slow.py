@@ -1,5 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import MDAnalysis as mda
+from numpy.testing import assert_allclose
 import pathlib
 import pytest
 from openff.units import unit
@@ -94,6 +96,7 @@ def test_complex_solvent_sim_gpu(
     settings.simulation_settings.equilibration_length = 50 * unit.picosecond
     settings.simulation_settings.production_length = 100 * unit.picosecond
     settings.output_settings.checkpoint_interval = 10 * unit.picosecond
+    settings.output_settings.trajectory_write_interval = 10 * unit.picosecond
     settings.engine_settings.compute_platform = platform
 
     prot = openmm_md.PlainMDProtocol(settings)
@@ -127,6 +130,7 @@ def test_complex_solvent_sim_gpu(
         "checkpoint.chk",
         "equil_nvt.pdb",
         "equil_npt.pdb",
+        "production.pdb",
         "minimized.pdb",
         "simulation.xtc",
         "simulation.log",
@@ -142,3 +146,22 @@ def test_complex_solvent_sim_gpu(
     assert pur.outputs['last_checkpoint'] == unit_shared / "checkpoint.chk"
     assert pur.outputs['nvt_equil_pdb'] == unit_shared / "equil_nvt.pdb"
     assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"
+    assert pur.outputs['production_pdb'] == unit_shared / "production.pdb"
+
+    # Check the final trajectory frame
+    first_frame = mda.Universe(pur.outputs['npt_equil_pdb'])
+    final_frame = mda.Universe(pur.outputs['production_pdb'])
+    simulation = mda.Universe(pur.outputs['minimized_pdb'], pur.outputs['nc'])
+
+    # Check we have the right number of frames
+    assert len(simulation.trajectory) == 10
+
+    # Check that the final frame matches
+    simulation.trajectory[-1]  # fast-forward
+    assert_allclose(
+        final_frame.atoms.positions,
+        simulation.atoms.positions,
+        rtol=0,
+        atol=1e-2
+    )
+
