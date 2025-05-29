@@ -303,7 +303,7 @@ class TestRadialNetworkGenerator:
         # lomap cannot make a mapping to nimrod, and will return nothing for the (toluene, nimrod) pair
         nimrod = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nimrod')
 
-        with pytest.raises(ValueError, match='No mapping found for SmallMoleculeComponent\(name=nimrod\)'):
+        with pytest.raises(ValueError, match=r'No mapping found for SmallMoleculeComponent\(name=nimrod\)'):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=others + [nimrod],
                 central_ligand=toluene,
@@ -444,7 +444,7 @@ class TestMinimalSpanningNetworkGenerator:
 
         scorer = simple_scorer
 
-        with pytest.raises(RuntimeError, match="Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
             _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
@@ -540,7 +540,7 @@ class TestMinimalRedundantNetworkGenerator:
 
         scorer = simple_scorer
 
-        with pytest.raises(RuntimeError, match="Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
             _ = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
@@ -580,7 +580,7 @@ class TestGenerateNetworkFromNames:
             ('2-methylnaphthalene', '2-naftanol'),
         ]
 
-        with pytest.raises(KeyError, match="Invalid name\(s\) requested \['hank'\]."):
+        with pytest.raises(KeyError, match=r"Invalid name\(s\) requested \['hank'\]."):
             _ = openfe.setup.ligand_network_planning.generate_network_from_names(
                 ligands=ligands,
                 names=requested,
@@ -597,7 +597,7 @@ class TestGenerateNetworkFromNames:
             ('2-methylnaphthalene', '2-naftanol'),
         ]
 
-        with pytest.raises(ValueError, match="Duplicate names: \['1,3,7-trimethylnaphthalene'\]"):
+        with pytest.raises(ValueError, match=r"Duplicate names: \['1,3,7-trimethylnaphthalene'\]"):
             _ = openfe.setup.ligand_network_planning.generate_network_from_names(
                 ligands=ligands,
                 names=requested,
