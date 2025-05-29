@@ -1,9 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from ast import Call
 from typing import Callable
-from gufe import AtomMapper
 import pytest
 
 import openfe
@@ -35,19 +33,6 @@ def toluene_vs_others(atom_mapping_basic_test_files):
     toluene = atom_mapping_basic_test_files[central_ligand_name]
     return toluene, others
 
-
-@pytest.fixture()
-def lomap_old_mapper() -> AtomMapper:
-    """
-    LomapAtomMapper with the old default settings.
-
-    This is necessary as atom_mapping_basic_test_files
-    are not all fully aligned and need both shift and
-    a large max3d value.
-    """
-    return openfe.setup.atom_mapping.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
-    )
 
 @pytest.fixture()
 def simple_scorer() -> Callable:

@@ -11,7 +11,8 @@ import urllib.request
 
 import gufe
 import openfe
-from gufe import SmallMoleculeComponent, LigandAtomMapping
+
+from gufe import AtomMapper, SmallMoleculeComponent, LigandAtomMapping
 
 
 class SlowTests:
@@ -180,6 +181,20 @@ def atom_mapping_basic_test_files():
             files[f] = SmallMoleculeComponent(mol, name=f)
 
     return files
+
+
+@pytest.fixture()
+def lomap_old_mapper() -> AtomMapper:
+    """
+    LomapAtomMapper with the old default settings.
+
+    This is necessary as atom_mapping_basic_test_files
+    are not all fully aligned and need both shift and
+    a large max3d value.
+    """
+    return openfe.setup.atom_mapping.LomapAtomMapper(
+        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
+    )
 
 
 @pytest.fixture(scope='session')
