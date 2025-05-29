@@ -188,12 +188,16 @@ def lomap_old_mapper() -> AtomMapper:
     """
     LomapAtomMapper with the old default settings.
 
-    This is necessary as atom_mapping_basic_test_files
-    are not all fully aligned and need both shift and
-    a large max3d value.
+    This is necessary as atom_mapping_basic_test_files are not all fully aligned
+    and need both shift and a large max3d value.
     """
     return openfe.setup.atom_mapping.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0, element_change=True, seed="", shift=True
+        time=20,
+        threed=True,
+        max3d=1000.0,
+        element_change=True,
+        seed="",
+        shift=True,
     )
 
 
