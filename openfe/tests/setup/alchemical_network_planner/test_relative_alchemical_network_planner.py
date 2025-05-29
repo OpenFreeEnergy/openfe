@@ -2,8 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
 
-from ...conftest import atom_mapping_basic_test_files, T4_protein_component
-
 from gufe import SolventComponent, AlchemicalNetwork
 from openfe.setup.alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner
 from .edge_types import r_complex_edge, r_solvent_edge, r_vacuum_edge
