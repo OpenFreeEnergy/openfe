@@ -83,8 +83,8 @@ def test_rhfe_alchemical_network_planner_call_multigraph(atom_mapping_basic_test
             solvent=SolventComponent()
         )
 
-    with pytest.raises(ValueError, match="There were multiple transformations with the same edge label! This might lead to overwritting your files."):
-        alchem_network = alchem_planner._build_transformations(
+    with pytest.raises(ValueError, match="There were multiple transformations with the same edge label! This might lead to overwriting your files."):
+        _ = alchem_planner._build_transformations(
             ligand_network_edges=ligand_network_edges,
             protocol=alchem_planner.transformation_protocol,
             chemical_system_generator=chemical_system_generator)
@@ -105,7 +105,7 @@ def test_rhfe_alchemical_network_planner_call(atom_mapping_basic_test_files):
 
     edges = alchem_network.edges
 
-    assert (len(edges) == 14)  # we build 2envs*(8 ligands - 1) = 14 relative edges.
+    assert len(edges) == 14  # we build 2envs*(8 ligands - 1) = 14 relative edges.
     expected_names = {
         "rhfe_2,6-dimethylnaphthalene_solvent_toluene_solvent",
         "rhfe_1,3,7-trimethylnaphthalene_vacuum_2,6-dimethylnaphthalene_vacuum",
