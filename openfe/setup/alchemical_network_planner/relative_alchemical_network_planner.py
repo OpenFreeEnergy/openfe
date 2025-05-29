@@ -175,7 +175,7 @@ class RelativeAlchemicalNetworkPlanner(
             set(all_transformation_labels)
         ):
             raise ValueError(
-                "There were multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
+                "There were multiple transformations with the same edge label! This might lead to overwriting your files. \n labels: "
                 + str(len(all_transformation_labels))
                 + "\nunique: "
                 + str(len(set(all_transformation_labels)))
