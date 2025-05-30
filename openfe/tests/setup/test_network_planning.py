@@ -350,6 +350,8 @@ def test_generate_maximal_network(
     else:
         for edge in network.edges:
             assert "score" not in edge.annotations
+
+
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
     def test_minimal_spanning_network(self, toluene_vs_others, multi_mappers, lomap_old_mapper, simple_scorer):
