@@ -88,6 +88,7 @@ jobs:
         env:
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
+          OMP_NUM_THREADS: 1
         run: |
           pytest -n logical -vv --durations=10 openfecli/tests/ openfe/tests/
 
