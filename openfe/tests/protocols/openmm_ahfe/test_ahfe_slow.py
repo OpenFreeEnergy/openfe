@@ -15,11 +15,11 @@ from openfe.protocols import openmm_afe
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
 def test_openmm_run_engine(
     platform,
-    available_platforms,
+    get_available_openmm_platforms,
     benzene_modifications,
     tmpdir
 ):
-    if platform not in available_platforms:
+    if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
 
     # Run a really short calculation to check everything is going well
