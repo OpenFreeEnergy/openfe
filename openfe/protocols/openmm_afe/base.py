@@ -44,7 +44,7 @@ import openmmtools
 import mdtraj as mdt
 
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
+    ChemicalSystem, SmallMoleculeComponent,
     ProteinComponent, SolventComponent
 )
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -56,12 +56,12 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
+    IntegratorSettings, MultiStateOutputSettings,
     ThermoSettings, OpenFFPartialChargeSettings,
     OpenMMSystemGeneratorFFSettings,
 )
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
-from ..openmm_utils import (
+from openfe.protocols.openmm_utils import (
     settings_validation, system_creation,
     multistate_analysis, charge_generation,
     omm_compute,
@@ -161,14 +161,14 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: omm_unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         dry: bool
-    ) -> omm_unit.Quantity:
+    ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
 
         Parameters
         ----------
         system : openmm.System
-          An OpenMM System to equilibrate.
+          The OpenMM System to equilibrate.
         topology : openmm.app.Topology
           OpenMM Topology of the System.
         positions : openmm.unit.Quantity
@@ -189,6 +189,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         -------
         equilibrated_positions : npt.NDArray
           Equilibrated system positions
+        box : openmm.unit.Quantity
+          Box vectors of the equilibrated system.
         """
         # Prep the simulation object
         # Restrict CPU count if running vacuum simulation
@@ -236,11 +238,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         if self.verbose:
-            logger.info("running non-alchemical equilibration MD")
+            self.logger.info("running non-alchemical equilibration MD")
 
         # Don't do anything if we're doing a dry run
         if dry:
-            return positions
+            return positions, system.getDefaultPeriodicBoxVectors()
 
         # Use the _run_MD method from the PlainMDProtocolUnit
         # Should in-place modify the simulation
@@ -261,11 +263,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
+        box = state.getPeriodicBoxVectors()
 
         # cautiously delete out contexts & integrator
         del simulation.context, integrator
 
-        return equilibrated_positions
+        return equilibrated_positions, box
 
     def _prepare(
         self, verbose: bool,
@@ -312,7 +315,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ...
 
     @abc.abstractmethod
-    def _handle_settings(self):
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
         Get a dictionary with the following entries:
           * forcefield_settings : OpenMMSystemGeneratorFFSettings
@@ -469,45 +472,71 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     def _get_omm_objects(
         self,
-        system_modeller: app.Modeller,
-        system_generator: SystemGenerator,
-        smc_components: list[OFFMolecule],
-    ) -> tuple[app.Topology, openmm.unit.Quantity, openmm.System]:
+        settings: dict[str, SettingsBaseModel],
+        protein_component: Optional[ProteinComponent],
+        solvent_component: Optional[SolventComponent],
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+    ) -> tuple[
+        app.Topology,
+        openmm.System,
+        openmm.unit.Quantity,
+        dict[Component, npt.NDArray],
+    ]:
         """
         Get the OpenMM Topology, Positions and System of the
         parameterised system.
 
         Parameters
         ----------
-        system_modeller : app.Modeller
-          OpenMM Modeller object representing the system to be
-          parametrized.
-        system_generator : SystemGenerator
-          SystemGenerator object to create a System with.
-        smc_components : list[openff.toolkit.Molecule]
-          A list of openff Molecules to add to the system.
+        settings : dict[str, SettingsBaseModel]
+          Protocol settings
+        protein_component : Optional[ProteinComponent]
+          Protein component for the system.
+        solvent_component : Optional[SolventComponent]
+          Solvent component for the system.
+        smc_components : dict[str, OFFMolecule]
+          SmallMoleculeComponents defining ligands to be added to the system
 
         Returns
         -------
         topology : app.Topology
-          Topology object describing the parameterized system
+          OpenMM Topology object describing the parameterized system.
         system : openmm.System
-          An OpenMM System of the alchemical system.
-        positionns : openmm.unit.Quantity
+          A non-alchemical OpenMM System of the simulated system.
+        positions : openmm.unit.Quantity
           Positions of the system.
+        comp_resids : dict[Component, npt.NDArray]
+          A dictionary of the residues for each component in the System.
         """
-        topology = system_modeller.getTopology()
+        if self.verbose:
+            self.logger.info("Parameterizing system")
+
+        system_generator = self._get_system_generator(
+            settings=settings,
+            solvent_comp=solvent_component
+        )
+
+        modeller, comp_resids = self._get_modeller(
+            protein_component=protein_component,
+            solvent_component=solvent_component,
+            smc_components=smc_components,
+            system_generator=system_generator,
+            partial_charge_settings=settings['charge_settings'],
+            solvation_settings=settings['solvation_settings']
+        )
+
+        topology = modeller.getTopology()
         # roundtrip positions to remove vec3 issues
-        positions = to_openmm(from_openmm(system_modeller.getPositions()))
+        positions = to_openmm(from_openmm(modeller.getPositions()))
 
         # Block out oechem backend to avoid any issues with
         # smiles roundtripping between rdkit and oechem
         with without_oechem_backend():
             system = system_generator.create_system(
-                system_modeller.topology,
-                molecules=smc_components,
+                topology=modeller.topology,
+                molecules=list(smc_components.values()),
             )
-        return topology, system, positions
+        return topology, system, positions, comp_resids
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
@@ -604,6 +633,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         self,
         alchemical_system: openmm.System,
         positions: openmm.unit.Quantity,
+        box_vectors: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, npt.NDArray],
         solvent_comp: Optional[SolventComponent],
@@ -618,6 +648,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Alchemical system to get states for.
         positions : openmm.unit.Quantity
           Positions of the alchemical system.
+        box_vectors :  openmm.unit.Quantity
+          Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
         lambdas : dict[str, npt.NDArray]
@@ -648,8 +680,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         sampler_state = SamplerState(positions=positions)
         if alchemical_system.usesPeriodicBoundaryConditions():
-            box = alchemical_system.getDefaultPeriodicBoxVectors()
-            sampler_state.box_vectors = box
+            sampler_state.box_vectors = box_vectors
 
         sampler_states = [sampler_state for _ in cmp_states]
 
@@ -1013,44 +1044,41 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 2. Get settings
         settings = self._handle_settings()
 
-        # 3. Get system generator
-        system_generator = self._get_system_generator(settings, solv_comp)
-
-        # 4. Get modeller
-        system_modeller, comp_resids = self._get_modeller(
-            prot_comp, solv_comp, smc_comps, system_generator,
-            settings['charge_settings'],
-            settings['solvation_settings'],
+        # 3. Get OpenMM topology, positions, system, and comp_resids
+        omm_topology, omm_system, positions, comp_resids = self._get_omm_objects(
+            settings=settings,
+            protein_component=prot_comp,
+            solvent_component=solv_comp,
+            smc_components=smc_comps,
         )
 
-        # 5. Get OpenMM topology, positions and system
-        omm_topology, omm_system, positions = self._get_omm_objects(
-            system_modeller, system_generator, list(smc_comps.values())
-        )
-
-        # 6. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
-        positions = self._pre_equilibrate(
+        # 4. Pre-equilbrate System (Test + Avoid NaNs + get stable system)
+        positions, box_vectors = self._pre_equilibrate(
             omm_system, omm_topology, positions, settings, dry
         )
 
-        # 7. Get lambdas
+        # 5. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
 
-        # 8. Add restraints
+        # 6. Add restraints
         self._add_restraints(omm_system, omm_topology, settings)
 
-        # 9. Get alchemical system
+        # 7. Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
             omm_topology, omm_system, comp_resids, alchem_comps
         )
 
-        # 10. Get compound and sampler states
+        # 8. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
-            alchem_system, positions, settings,
-            lambdas, solv_comp
+            alchem_system,
+            positions,
+            box_vectors,
+            settings,
+            lambdas,
+            solv_comp
         )
 
-        # 11. Create the multistate reporter & create PDB
+        # 9. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology, positions,
             settings['simulation_settings'],
@@ -1059,19 +1087,19 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # Wrap in try/finally to avoid memory leak issues
         try:
-            # 12. Get context caches
+            # 10. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
                 settings['forcefield_settings'],
                 settings['engine_settings']
             )
 
-            # 13. Get integrator
+            # 11. Get integrator
             integrator = self._get_integrator(
                 settings['integrator_settings'],
                 settings['simulation_settings'],
             )
 
-            # 14. Get sampler
+            # 12. Get sampler
             sampler = self._get_sampler(
                 integrator, reporter, settings['simulation_settings'],
                 settings['thermo_settings'],
@@ -1079,7 +1107,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 energy_ctx_cache, sampler_ctx_cache
             )
 
-            # 15. Run simulation
+            # 13. Run simulation
             unit_result_dict = self._run_simulation(
                 sampler, reporter, settings, dry
             )

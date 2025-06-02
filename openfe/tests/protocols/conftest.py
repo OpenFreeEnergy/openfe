@@ -6,8 +6,17 @@ import pooch
 from importlib import resources
 from rdkit import Chem
 from rdkit.Geometry import Point3D
+from openmm import Platform
 import openfe
 from openff.units import unit
+
+
+@pytest.fixture
+def available_platforms() -> set[str]:
+    return {
+        Platform.getPlatform(i).getName()
+        for i in range(Platform.getNumPlatforms())
+    }
 
 
 @pytest.fixture
