@@ -114,10 +114,8 @@ def generate_radial_network(
             central_ligand = ligands[central_ligand]
             ligands.remove(central_ligand)
         except IndexError:
-            raise ValueError(
-                f"index '{central_ligand}' out of bounds, there are "
-                f"{len(ligands)} ligands"
-            )
+            raise ValueError(f"index '{central_ligand}' out of bounds, there are "
+                             f"{len(ligands)} ligands")
     elif isinstance(central_ligand, str):
         ligands = list(ligands)
         possibles = [l for l in ligands if l.name == central_ligand]
