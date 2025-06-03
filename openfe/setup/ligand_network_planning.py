@@ -122,10 +122,8 @@ def generate_radial_network(
         ligands = list(ligands)
         possibles = [l for l in ligands if l.name == central_ligand]
         if not possibles:
-            raise ValueError(
-                f"No ligand called '{central_ligand}' "
-                f"available: {', '.join(l.name for l in ligands)}"
-            )
+            raise ValueError(f"No ligand called '{central_ligand}' "
+                f"available: {', '.join(l.name for l in ligands)}")
         if len(possibles) > 1:
             raise ValueError(f"Multiple ligands called '{central_ligand}'")
         central_ligand = possibles[0]
@@ -183,10 +181,8 @@ def generate_maximal_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [
-        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
-        for m in mappers
-    ]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
     nodes = list(ligands)
 
     # Construct network
@@ -232,10 +228,8 @@ def generate_minimal_spanning_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [
-        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
-        for m in mappers
-    ]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
     nodes = list(ligands)
 
     # Construct network
@@ -290,10 +284,8 @@ def generate_minimal_redundant_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [
-        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m
-        for m in mappers
-    ]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+               else m for m in mappers]
     nodes = list(ligands)
 
     # Construct network
