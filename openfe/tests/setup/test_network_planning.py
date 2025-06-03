@@ -214,7 +214,7 @@ class TestRadialNetworkGenerator:
         toluene, others = toluene_vs_others
         ligands = [toluene] + others
 
-        with pytest.warns(UserWarning, match="The central_ligand toluene was also found in the list of ligands"):
+        with pytest.warns(UserWarning, match="The central component 'toluene' is present in the list of components"):
             network = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligands,
                 central_ligand=toluene,
@@ -471,7 +471,7 @@ class TestMinimalSpanningNetworkGenerator:
 
         scorer = simple_scorer
 
-        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+        with pytest.raises(RuntimeError, match=r"Unable to create edges for the following nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
             _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
@@ -579,32 +579,27 @@ class TestGenerateNetworkFromNames:
     def test_generate_network_from_names(self, atom_mapping_basic_test_files, lomap_old_mapper):
         ligands = list(atom_mapping_basic_test_files.values())
 
-        requested = [
+        requested_names = [
             ('toluene', '2-naftanol'),
             ('2-methylnaphthalene', '2-naftanol'),
         ]
 
         network = openfe.setup.ligand_network_planning.generate_network_from_names(
             ligands=ligands,
-            names=requested,
+            names=requested_names,
             mapper=lomap_old_mapper,
         )
         # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
-        assert len(network.nodes) == len(ligs)
+        assert len(network.nodes) == len(ligands)
         assert len(network.edges) == 2
-        actual_edges = [(e.componentA.name, e.componentB.name)
-                        for e in network.edges]
-        assert set(requested) == set(actual_edges)
 
         expected_node_names = {c.name for c in ligands}
         actual_node_names = {n.name for n in network.nodes}
 
-        assert len(network.nodes) == len(ligands)
         assert actual_node_names == expected_node_names
 
-        assert len(network.edges) == 2
         actual_edges = {(e.componentA.name, e.componentB.name) for e in network.edges}
-        assert set(requested) == actual_edges
+        assert set(requested_names) == actual_edges
 
     def test_generate_network_from_names_bad_name_error(self, atom_mapping_basic_test_files, lomap_old_mapper):
         ligands = list(atom_mapping_basic_test_files.values())
