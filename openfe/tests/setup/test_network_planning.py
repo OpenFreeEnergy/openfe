@@ -293,7 +293,8 @@ class TestRadialNetworkGenerator:
         # lomap cannot make a mapping to nimrod, and will return nothing for the (toluene, nimrod) pair
         nimrod = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nimrod')
 
-        with pytest.raises(ValueError, match=r'No mapping found for SmallMoleculeComponent\(name=nimrod\)'):
+        err_str = r"No mapping found between the central ligand \('toluene'\) and the following node\(s\): \['nimrod'\]"
+        with pytest.raises(RuntimeError, match=err_str):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=others + [nimrod],
                 central_ligand=toluene,

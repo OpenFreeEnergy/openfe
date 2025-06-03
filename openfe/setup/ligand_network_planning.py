@@ -139,6 +139,19 @@ def generate_radial_network(
         components=ligands, central_component=central_ligand
     )
 
+    if network.is_connected():
+        connected_nodes = network.nodes
+    else:
+        connected_nodes = max(nx.weakly_connected_components(network.graph), key=len)
+
+    # check for disconnected nodes
+    missing_nodes = set(ligands + [central_ligand]) - set(connected_nodes)
+    missing_node_names = [node.name for node in missing_nodes]
+    if missing_nodes:
+        raise RuntimeError(
+            f"ERROR: No mapping found between the central ligand ('{central_ligand.name}') and the following node(s): {missing_node_names}"
+        )
+
     return network
 
 
