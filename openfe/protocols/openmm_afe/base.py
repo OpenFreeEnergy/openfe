@@ -540,7 +540,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
-    ) -> dict[str, npt.NDArray]:
+    ) -> dict[str, list[float]]:
         """
         Create the lambda schedule
 
@@ -551,7 +551,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        lambdas : dict[str, npt.NDArray]
+        lambdas : dict[str, list[float]]
 
         TODO
         ----
@@ -635,7 +635,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         positions: openmm.unit.Quantity,
         box_vectors: openmm.unit.Quantity,
         settings: dict[str, SettingsBaseModel],
-        lambdas: dict[str, npt.NDArray],
+        lambdas: dict[str, list[float]],
         solvent_comp: Optional[SolventComponent],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
@@ -652,7 +652,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
-        lambdas : dict[str, npt.NDArray]
+        lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
         solvent_comp : Optional[SolventComponent]
           The solvent component of the system, if there is one.
