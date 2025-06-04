@@ -1,10 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from rdkit import Chem
-import pytest
-import networkx as nx
 
-import openfe.setup
+from typing import Callable
+import pytest
+
+import openfe
 
 from ..conftest import mol_from_smiles
 
@@ -25,7 +25,7 @@ class BadMapper(openfe.setup.atom_mapping.LigandAtomMapper):
         yield {0: 0}
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def toluene_vs_others(atom_mapping_basic_test_files):
     central_ligand_name = 'toluene'
     others = [v for (k, v) in atom_mapping_basic_test_files.items()
@@ -34,189 +34,290 @@ def toluene_vs_others(atom_mapping_basic_test_files):
     return toluene, others
 
 
-@pytest.fixture(scope='session')
-def lomap_old_mapper():
-    """
-    LomapAtomMapper with the old default settings.
+@pytest.fixture()
+def simple_scorer() -> Callable:
+    def _scorer(mapping) -> float:
+        "Returns a score proportional to the length of the mapping, normalized to be in [0,1]"
+        return 1 - (1 / len(mapping.componentA_to_componentB))
+    return _scorer
 
-    This is necessary as atom_mapping_basic_test_files
-    are not all fully aligned and need both shift and
-    a large max3d value.
-    """
-    return openfe.setup.atom_mapping.LomapAtomMapper(
-        time=20, threed=True, max3d=1000.0,
-        element_change=True, seed='', shift=True
+@pytest.fixture()
+def deterministic_toluene_mst_scorer() -> Callable:
+    def _scorer(mapping)-> float:
+        """These scores give the same mst or rmst every time for the toluene_vs_others dataset."""
+        scores = {
+            # MST edges
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 0.3,
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 0.3,
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 0.3,
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 0.3,
+            ('2,6-dimethylnaphthalene', '2-naftanol'): 0.3,
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 0.3,
+            ('2,6-dimethylnaphthalene', 'toluene'): 0.3,
+            # MST redundant edges
+            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 0.2,
+            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'): 0.2,
+            ('1-butyl-4-methylbenzene', 'toluene'): 0.2,
+            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'): 0.2,
+            ('2-methylnaphthalene', '2-naftanol'): 0.2,
+            ('2-methylnaphthalene', 'methylcyclohexane'): 0.2,
+            ('2-methylnaphthalene', 'toluene'): 0.2,
+        }
+        return scores.get((mapping.componentA.name, mapping.componentB.name), 0.1)
+    return _scorer
+
+
+@pytest.fixture()
+def deterministic_minimal_spanning_network(toluene_vs_others, lomap_old_mapper, deterministic_toluene_mst_scorer):
+    # TODO: I'm not convinced this needs to be its own fixture
+    toluene, others = toluene_vs_others
+    scorer = deterministic_toluene_mst_scorer
+
+    network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
+        ligands=others + [toluene],
+        mappers=lomap_old_mapper,
+        scorer=scorer,
     )
+    return network
 
 
-@pytest.mark.parametrize('as_list', [False, True])
-def test_radial_network(
-    atom_mapping_basic_test_files, toluene_vs_others,
-    as_list, lomap_old_mapper,
+@pytest.fixture()
+def deterministic_minimal_redundant_network(toluene_vs_others, lomap_old_mapper, deterministic_toluene_mst_scorer):
+    # TODO: I'm not convinced this needs to be its own fixture
+    toluene, others = toluene_vs_others
+    scorer = deterministic_toluene_mst_scorer
+
+    network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+        ligands=others + [toluene],
+        mappers=lomap_old_mapper,
+        scorer=scorer,
+        mst_num=2
+    )
+    return network
+
+class TestRadialNetworkGenerator:
+    @pytest.mark.parametrize("as_list", [False, True])
+    def test_radial_network(
+        self,
+        toluene_vs_others,
+        as_list,
+        lomap_old_mapper,
+    ):
+        toluene, others = toluene_vs_others
+        central_ligand_name = "toluene"
+
+        mapper = lomap_old_mapper
+        if as_list:
+            mapper = [mapper]
+
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=others,
+            central_ligand=toluene,
+            mappers=mapper,
+            scorer=None,
+        )
+
+        expected_names = set([c.name for c in others] + [central_ligand_name])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
+
+        # check that every edge contains the central ligand as a node
+        assert all(
+            (central_ligand_name in {mapping.componentA.name, mapping.componentB.name})
+            for mapping in network.edges
+        )
+
+    @pytest.mark.parametrize("central_ligand_arg", [0, "toluene"])
+    def test_radial_network_central_ligand_int_str(
+        self,
+        toluene_vs_others,
+        central_ligand_arg,
+        lomap_old_mapper,
+    ):
+        """check that passing either an integer or string to indicate the central ligand works"""
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=ligands,
+            central_ligand=central_ligand_arg,
+            mappers=lomap_old_mapper,
+            scorer=None,
+        )
+
+        central_ligand_name = "toluene"
+        expected_names = set([c.name for c in others] + [central_ligand_name])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
+
+        # check that every edge contains the central ligand as a node
+        assert all(
+            (central_ligand_name in {mapping.componentA.name, mapping.componentB.name})
+            for mapping in network.edges
+        )
+
+    def test_radial_network_bad_name(self, toluene_vs_others, lomap_old_mapper):
+        """Error if the central ligand requested is not present."""
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+
+        with pytest.raises(ValueError, match="No ligand called 'unobtainium"):
+            _ = openfe.setup.ligand_network_planning.generate_radial_network(
+                ligands=ligands,
+                central_ligand="unobtainium",
+                mappers=lomap_old_mapper,
+                scorer=None,
+            )
+
+    def test_radial_network_multiple_str(self, toluene_vs_others, lomap_old_mapper):
+        """Error if more than one ligand has the name passed to 'central_ligand'."""
+        toluene, others = toluene_vs_others
+        ligands = [toluene, toluene] + others
+
+        with pytest.raises(ValueError, match="Multiple ligands called"):
+            _ = openfe.setup.ligand_network_planning.generate_radial_network(
+                ligands=ligands,
+                central_ligand="toluene",
+                mappers=lomap_old_mapper,
+                scorer=None,
+            )
+
+    def test_radial_network_index_error(self, toluene_vs_others, lomap_old_mapper):
+        """Throw a helpful error if the index value passed to 'central_ligand' is out-of-bounds."""
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+
+        with pytest.raises(ValueError, match="index '2077' out of bounds, there are 8 ligands"):
+            openfe.setup.ligand_network_planning.generate_radial_network(
+                ligands=ligands,
+                central_ligand=2077,
+                mappers=lomap_old_mapper,
+                scorer=None,
+            )
+
+    def test_radial_network_self_central(self, toluene_vs_others, lomap_old_mapper):
+        """(issue #544) If the central ligand is included in "ligands",
+        there shouldn't be a self-edge to the central ligand, and a warning should be raised.
+        """
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+
+        with pytest.warns(UserWarning, match="The central_ligand toluene was also found in the list of ligands"):
+            network = openfe.setup.ligand_network_planning.generate_radial_network(
+                ligands=ligands,
+                central_ligand=toluene,
+                mappers=lomap_old_mapper,
+                scorer=None,
+            )
+
+        # make sure there's no self-edge for the central ligand (toluene)
+        assert ('toluene', 'toluene') not in {(e.componentA.name, e.componentB.name) for e in network.edges}
+        assert len(network.edges) == len(ligands) - 1
+
+        # explicitly check to make sure there is no toluene self-edge
+        name_pairs =  [(c.componentA, c.componentB) for c in network.edges]
+        assert ('toluene', 'toluene') not in name_pairs
+
+    def test_radial_network_with_scorer(self, toluene_vs_others, lomap_old_mapper, simple_scorer):
+        """Test that the scorer chooses the mapper with the best score (in this case, the LOMAP mapper)."""
+        toluene, others = toluene_vs_others
+        mappers = [BadMapper(), lomap_old_mapper]
+        scorer = simple_scorer
+
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=others,
+            central_ligand=toluene,
+            mappers=mappers,
+            scorer=scorer
+        )
+
+        expected_names = set([c.name for c in others] + ['toluene'])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
+
+        for edge in network.edges:
+            # make sure we didn't take the bad mapper, which would always be a length of 1 ({0:0})
+            assert len(edge.componentA_to_componentB) > 1
+            assert 'score' in edge.annotations
+            assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
+
+    def test_radial_network_multiple_mappers_no_scorer(self, toluene_vs_others, lomap_old_mapper):
+        toluene, others = toluene_vs_others
+        mappers = [BadMapper(), lomap_old_mapper]
+
+        network = openfe.setup.ligand_network_planning.generate_radial_network(
+            ligands=others,
+            central_ligand=toluene,
+            mappers=mappers,
+        )
+
+        expected_names = set([c.name for c in others] + ['toluene'])
+
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
+
+        for edge in network.edges:
+            # we should always take the first valid mapper (BadMapper) when there is no scorer.
+            assert edge.componentA_to_componentB == {0: 0}
+            assert "score" not in edge.annotations
+
+    def test_radial_network_no_mapping_failure(self, toluene_vs_others, lomap_old_mapper):
+        """Error if any node does not have a mapping to the central component."""
+        toluene, others = toluene_vs_others
+        # lomap cannot make a mapping to nimrod, and will return nothing for the (toluene, nimrod) pair
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nimrod')
+
+        with pytest.raises(ValueError, match=r'No mapping found for SmallMoleculeComponent\(name=nimrod\)'):
+            _ = openfe.setup.ligand_network_planning.generate_radial_network(
+                ligands=others + [nimrod],
+                central_ligand=toluene,
+                mappers=[lomap_old_mapper],
+                scorer=None
+            )
+
+
+@pytest.mark.parametrize("with_progress", [True, False])
+@pytest.mark.parametrize("with_scorer", [True, False])
+@pytest.mark.parametrize("extra_mapper", [True, False])
+def test_generate_maximal_network(
+    toluene_vs_others,
+    with_progress,
+    with_scorer,
+    extra_mapper,
+    lomap_old_mapper,
+    simple_scorer,
 ):
     toluene, others = toluene_vs_others
-    central_ligand_name = 'toluene'
-    mapper = lomap_old_mapper
-    if as_list:
-        mapper = [mapper]
-
-    network = openfe.setup.ligand_network_planning.generate_radial_network(
-        ligands=others, central_ligand=toluene,
-        mappers=mapper, scorer=None,
-    )
-    # couple sanity checks
-    assert len(network.nodes) == len(atom_mapping_basic_test_files)
-    assert len(network.edges) == len(others)
-    # check that all ligands are present, i.e. we included everyone
-    ligands_in_network = {mol.name for mol in network.nodes}
-    assert ligands_in_network == set(atom_mapping_basic_test_files.keys())
-    # check that every edge has the central ligand within
-    assert all((central_ligand_name in {mapping.componentA.name, mapping.componentB.name})
-               for mapping in network.edges)
-
-
-@pytest.mark.parametrize('central_ligand_arg', [0, 'toluene'])
-def test_radial_network_int_str(atom_mapping_basic_test_files, toluene_vs_others,
-                                central_ligand_arg, lomap_old_mapper):
-    # check that passing either an integer or string to radial network still works
-    toluene, others = toluene_vs_others
-    ligands = [toluene] + others
-
-    network = openfe.setup.ligand_network_planning.generate_radial_network(
-        ligands=ligands, central_ligand=central_ligand_arg,
-        mappers=lomap_old_mapper, scorer=None,
-    )
-    assert len(network.nodes) == len(ligands)
-    assert len(network.edges) == len(others)
-    # check that all ligands are present, i.e. we included everyone
-    ligands_in_network = {mol.name for mol in network.nodes}
-    assert ligands_in_network == set(atom_mapping_basic_test_files.keys())
-    # check that every edge has the central ligand within
-    assert all(('toluene' in {mapping.componentA.name, mapping.componentB.name})
-               for mapping in network.edges)
-
-
-def test_radial_network_bad_str(toluene_vs_others, lomap_old_mapper):
-    # check failure on missing name
-    toluene, others = toluene_vs_others
-    ligands = [toluene] + others
-
-    with pytest.raises(ValueError, match='No ligand called'):
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=ligands, central_ligand='unobtainium',
-            mappers=lomap_old_mapper, scorer=None,
-        )
-
-
-def test_radial_network_multiple_str(toluene_vs_others, lomap_old_mapper):
-    # check failure on multiple of specified name, it's ambiguous
-    toluene, others = toluene_vs_others
-    ligands = [toluene, toluene] + others
-
-    with pytest.raises(ValueError, match='Multiple ligands called'):
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=ligands, central_ligand='toluene',
-            mappers=lomap_old_mapper, scorer=None,
-        )
-
-
-def test_radial_network_index_error(toluene_vs_others, lomap_old_mapper):
-    # check if we ask for a out of bounds ligand we get a meaningful failure
-    toluene, others = toluene_vs_others
-    ligands = [toluene] + others
-
-    with pytest.raises(ValueError, match='out of bounds'):
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=ligands, central_ligand=2077,
-            mappers=lomap_old_mapper, scorer=None,
-        )
-
-
-def test_radial_network_self_central(toluene_vs_others, lomap_old_mapper):
-    # issue #544, include the central ligand in "ligands",
-    # shouldn't get self edge
-    ligs = [toluene_vs_others[0]] + toluene_vs_others[1]
-
-    with pytest.warns(UserWarning, match="The central_ligand"):
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=ligs, central_ligand=ligs[0],
-            mappers=lomap_old_mapper, scorer=None
-        )
-
-    assert len(network.edges) == len(ligs) - 1
-
-
-def test_radial_network_with_scorer(toluene_vs_others, lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
-    def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
-
-    network = openfe.setup.ligand_network_planning.generate_radial_network(
-        ligands=others,
-        central_ligand=toluene,
-        mappers=[BadMapper(), lomap_old_mapper],
-        scorer=scorer
-    )
-    assert len(network.edges) == len(others)
-
-    for edge in network.edges:
-        # we didn't take the bad mapper
-        assert len(edge.componentA_to_componentB) > 1
-        assert 'score' in edge.annotations
-        assert edge.annotations['score'] == len(edge.componentA_to_componentB)
-
-
-def test_radial_network_multiple_mappers_no_scorer(toluene_vs_others,
-                                                   lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
-    mappers = [BadMapper(), lomap_old_mapper]
-
-    # in this one, we should always take the bad mapper
-    network = openfe.setup.ligand_network_planning.generate_radial_network(
-        ligands=others,
-        central_ligand=toluene,
-        mappers=mappers,
-    )
-    assert len(network.edges) == len(others)
-
-    for edge in network.edges:
-        assert edge.componentA_to_componentB == {0: 0}
-
-
-def test_radial_network_failure(atom_mapping_basic_test_files, lomap_old_mapper):
-    nigel = openfe.SmallMoleculeComponent(mol_from_smiles('N'))
-
-    with pytest.raises(ValueError, match='No mapping found for'):
-        network = openfe.setup.ligand_network_planning.generate_radial_network(
-            ligands=[nigel],
-            central_ligand=atom_mapping_basic_test_files['toluene'],
-            mappers=[lomap_old_mapper],
-            scorer=None
-        )
-
-
-@pytest.mark.parametrize('with_progress', [True, False])
-@pytest.mark.parametrize('with_scorer', [True, False])
-@pytest.mark.parametrize('extra_mapper', [True, False])
-def test_generate_maximal_network(toluene_vs_others, with_progress,
-                                  with_scorer, extra_mapper, lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
 
     if extra_mapper:
-        mappers = [
-            lomap_old_mapper,
-            BadMapper()
-        ]
+        mappers = [lomap_old_mapper, BadMapper()]
     else:
         mappers = lomap_old_mapper
 
-    def scoring_func(mapping):
-        return len(mapping.componentA_to_componentB)
-
-    scorer = scoring_func if with_scorer else None
+    scorer = simple_scorer if with_scorer else None
 
     network = openfe.setup.ligand_network_planning.generate_maximal_network(
         ligands=others + [toluene],
@@ -225,373 +326,331 @@ def test_generate_maximal_network(toluene_vs_others, with_progress,
         progress=with_progress,
     )
 
-    assert len(network.nodes) == len(others) + 1
+    expected_names = set([c.name for c in others] + ["toluene"])
+
+    assert len(network.nodes) == len(expected_names)
+
+    # check that all ligands are present, i.e. we included everyone
+    ligands_in_network = {mol.name for mol in network.nodes}
+    assert ligands_in_network == expected_names
 
     if extra_mapper:
-        edge_count = len(others) * (len(others) + 1)
+        # two edges per pair of nodes, one for each mapper
+        edge_count = len(expected_names) * (len(expected_names) - 1)
     else:
-        edge_count = len(others) * (len(others) + 1) / 2
+        # one edge per pair of nodes
+        edge_count = (len(expected_names) * (len(expected_names) - 1)) / 2
 
     assert len(network.edges) == edge_count
 
-    if scorer:
+    if with_scorer:
         for edge in network.edges:
-            score = edge.annotations['score']
-            assert score == len(edge.componentA_to_componentB)
+            score = edge.annotations["score"]
+            assert score == 1 - 1 / len(edge.componentA_to_componentB)
     else:
         for edge in network.edges:
-            assert 'score' not in edge.annotations
+            assert "score" not in edge.annotations
 
 
-@pytest.mark.parametrize('multi_mappers', [False, True])
-def test_minimal_spanning_network_mappers(
-    atom_mapping_basic_test_files, multi_mappers, lomap_old_mapper
-):
-    ligands = [atom_mapping_basic_test_files['toluene'],
-               atom_mapping_basic_test_files['2-naftanol'],
-               ]
+class TestMinimalSpanningNetworkGenerator:
+    @pytest.mark.parametrize("multi_mappers", [False, True])
+    def test_minimal_spanning_network(self, toluene_vs_others, multi_mappers, lomap_old_mapper, simple_scorer):
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
 
-    if multi_mappers:
-        mappers = [BadMapper(), lomap_old_mapper]
-    else:
-        mappers = lomap_old_mapper
+        if multi_mappers:
+            mappers = [BadMapper(), lomap_old_mapper]
+        else:
+            mappers = lomap_old_mapper
 
-    def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
+        scorer = simple_scorer
 
-    network = openfe.ligand_network_planning.generate_minimal_spanning_network(
-        ligands=ligands,
-        mappers=mappers,
-        scorer=scorer,
-    )
-
-    assert isinstance(network, openfe.LigandNetwork)
-    assert list(network.edges)
-
-
-@pytest.fixture(scope='session')
-def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
-    mappers = [lomap_old_mapper]
-
-    def scorer(mapping):
-        """Scores are designed to give the same mst everytime"""
-        scores = {
-            # MST edges
-            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 3,
-            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 3,
-            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 3,
-            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 3,
-            ('2,6-dimethylnaphthalene', '2-naftanol'): 3,
-            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 3,
-            ('2,6-dimethylnaphthalene', 'toluene'): 3,
-        }
-        return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
-
-    network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
-        ligands=others + [toluene],
-        mappers=mappers,
-        scorer=scorer
-    )
-    return network
-
-
-def test_minimal_spanning_network(minimal_spanning_network, toluene_vs_others):
-    tol, others = toluene_vs_others
-    assert len(minimal_spanning_network.nodes) == len(others) + 1
-    for edge in minimal_spanning_network.edges:
-        assert edge.componentA_to_componentB != {
-            0: 0}  # lomap should find something
-
-
-def test_minimal_spanning_network_connectedness(minimal_spanning_network):
-    found_pairs = set()
-    for edge in minimal_spanning_network.edges:
-        pair = frozenset([edge.componentA, edge.componentB])
-        assert pair not in found_pairs
-        found_pairs.add(pair)
-
-    assert nx.is_connected(nx.MultiGraph(minimal_spanning_network.graph))
-
-
-def test_minimal_spanning_network_regression(minimal_spanning_network):
-    # issue #244, this was previously giving non-reproducible (yet valid)
-    # networks when scores were tied.
-    edge_ids = sorted(
-        (edge.componentA.name, edge.componentB.name)
-        for edge in minimal_spanning_network.edges
-    )
-    ref = sorted([
-        ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
-        ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-methylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-naftanol'),
-        ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
-        ('2,6-dimethylnaphthalene', 'toluene'),
-    ])
-
-    assert len(edge_ids) == len(ref)
-    assert edge_ids == ref
-
-
-def test_minimal_spanning_network_unreachable(toluene_vs_others,
-                                              lomap_old_mapper):
-    toluene, others = toluene_vs_others
-    nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
-
-    def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
-
-    with pytest.raises(RuntimeError, match="Unable to create edges"):
-        network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
-            ligands=others + [toluene, nimrod],
-            mappers=[lomap_old_mapper],
-            scorer=scorer
+        network = openfe.ligand_network_planning.generate_minimal_spanning_network(
+            ligands=ligands,
+            mappers=mappers,
+            scorer=scorer,
         )
 
+        expected_names = {c.name for c in ligands}
 
-@pytest.fixture(scope='session')
-def minimal_redundant_network(toluene_vs_others, lomap_old_mapper):
-    toluene, others = toluene_vs_others
+        # couple sanity checks
+        assert len(network.nodes) == len(expected_names)
+        assert len(network.edges) == len(expected_names) - 1
+        assert network.is_connected()
 
-    mappers = [lomap_old_mapper]
+        # check that all ligands are present, i.e. we included everyone
+        ligands_in_network = {mol.name for mol in network.nodes}
+        assert ligands_in_network == expected_names
 
-    def scorer(mapping):
-        """Scores are designed to give the same mst everytime"""
-        scores = {
-            # MST edges
-            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'): 3,
-            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'): 3,
-            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 3,
-            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'): 3,
-            ('2,6-dimethylnaphthalene', '2-naftanol'): 3,
-            ('2,6-dimethylnaphthalene', 'methylcyclohexane'): 3,
-            ('2,6-dimethylnaphthalene', 'toluene'): 3,
-            # MST redundant edges
-            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'): 2,
-            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'): 2,
-            ('1-butyl-4-methylbenzene', 'toluene'): 2,
-            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'): 2,
-            ('2-methylnaphthalene', '2-naftanol'): 2,
-            ('2-methylnaphthalene', 'methylcyclohexane'): 2,
-            ('2-methylnaphthalene', 'toluene'): 2,
+        for edge in network.edges:
+            # make sure we didn't take the bad mapper, which would always be a length of 1 ({0:0})
+            assert len(edge.componentA_to_componentB) > 1
+            assert 'score' in edge.annotations
+            assert edge.annotations['score'] == 1 - 1 / len(edge.componentA_to_componentB)
+
+    def test_minimal_spanning_network_no_scorer_error(self, toluene_vs_others, lomap_old_mapper):
+        """Expect a KeyError if no scorer is passed."""
+        # NOTE: I'm not making this error handling prettier until the konnektor integration
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+
+        with pytest.raises(KeyError, match="score"):
+            _ = openfe.ligand_network_planning.generate_minimal_spanning_network(
+                ligands=ligands,
+                mappers=lomap_old_mapper,
+                scorer=None,
+            )
+
+    def test_minimal_spanning_network_connectedness(self, deterministic_minimal_spanning_network):
+        # makes sure we don't have duplicate edges?
+        found_pairs = set()
+        for edge in deterministic_minimal_spanning_network.edges:
+            pair = frozenset([edge.componentA, edge.componentB])
+            assert pair not in found_pairs
+            found_pairs.add(pair)
+
+        assert deterministic_minimal_spanning_network.is_connected()
+
+    def test_minimal_spanning_network_regression(self, deterministic_minimal_spanning_network):
+        """issue #244, this was previously giving non-reproducible (yet valid) networks when scores were tied."""
+        edge_names = {(e.componentA.name, e.componentB.name) for e in deterministic_minimal_spanning_network.edges}
+        expected_edge_names = {
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'),
+            ('2,6-dimethylnaphthalene', '2-naftanol'),
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
+            ('2,6-dimethylnaphthalene', 'toluene'),
         }
-        return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
+        assert len(deterministic_minimal_spanning_network.nodes) == 8
+        assert len(edge_names) == len(expected_edge_names)
+        assert edge_names == expected_edge_names
 
-    network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
-        ligands=others + [toluene],
-        mappers=mappers,
-        scorer=scorer,
-        mst_num=2
-    )
-    return network
+    def test_minimal_spanning_network_unreachable(self, toluene_vs_others, lomap_old_mapper, simple_scorer):
+        toluene, others = toluene_vs_others
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"), name='nimrod')
 
+        scorer = simple_scorer
 
-def test_minimal_redundant_network(minimal_redundant_network, toluene_vs_others):
-    tol, others = toluene_vs_others
-
-    # test for correct number of nodes
-    assert len(minimal_redundant_network.nodes) == len(others) + 1
-
-    # test for correct number of edges
-    assert len(minimal_redundant_network.edges) == 2 * \
-        (len(minimal_redundant_network.nodes) - 1)
-
-    for edge in minimal_redundant_network.edges:
-        assert edge.componentA_to_componentB != {
-            0: 0}  # lomap should find something
+        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+            _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
+                ligands=others + [toluene, nimrod],
+                mappers=[lomap_old_mapper],
+                scorer=scorer,
+            )
 
 
-def test_minimal_redundant_network_connectedness(minimal_redundant_network):
-    found_pairs = set()
-    for edge in minimal_redundant_network.edges:
-        pair = frozenset([edge.componentA, edge.componentB])
-        assert pair not in found_pairs
-        found_pairs.add(pair)
+class TestMinimalRedundantNetworkGenerator:
+    def test_minimal_redundant_network(self, deterministic_minimal_redundant_network, toluene_vs_others):
+        toluene, others = toluene_vs_others
+        ligands = [toluene] + others
+        expected_names = {c.name for c in ligands}
 
-    assert nx.is_connected(nx.MultiGraph(minimal_redundant_network.graph))
+        # check that all ligands are present, i.e. we included everyone
+        assert len(deterministic_minimal_redundant_network.nodes) == len(ligands)
+        ligands_in_network = {mol.name for mol in deterministic_minimal_redundant_network.nodes}
+        assert ligands_in_network == expected_names
 
+        # we expect double the number of edges of an mst
+        assert len(deterministic_minimal_redundant_network.edges) == 2 * (len(ligands) - 1)
 
-def test_redundant_vs_spanning_network(minimal_redundant_network, minimal_spanning_network):
-    # when setting minimal redundant network to only take one MST, it should have as many
-    # edges as the regular minimum spanning network
-    assert 2 * len(minimal_spanning_network.edges) == len(
-        minimal_redundant_network.edges)
+        for edge in deterministic_minimal_redundant_network.edges:
+            # lomap should find something
+            assert edge.componentA_to_componentB != {0: 0}
 
+    def test_minimal_redundant_network_connectedness(self, deterministic_minimal_redundant_network):
+        # makes sure we don't have duplicate edges?
 
-def test_minimal_redundant_network_edges(minimal_redundant_network):
-    # issue #244, this was previously giving non-reproducible (yet valid)
-    # networks when scores were tied.
-    edge_ids = sorted(
-        (edge.componentA.name, edge.componentB.name)
-        for edge in minimal_redundant_network.edges
-    )
-    ref = sorted([
-        ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
-        ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
-        ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'),
-        ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
-        ('1-butyl-4-methylbenzene', 'toluene'),
-        ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-methylnaphthalene'),
-        ('2,6-dimethylnaphthalene', '2-naftanol'),
-        ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
-        ('2,6-dimethylnaphthalene', 'toluene'),
-        ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'),
-        ('2-methylnaphthalene', '2-naftanol'),
-        ('2-methylnaphthalene', 'methylcyclohexane'),
-        ('2-methylnaphthalene', 'toluene')
-    ])
+        found_pairs = set()
+        for edge in deterministic_minimal_redundant_network.edges:
+            pair = frozenset([edge.componentA, edge.componentB])
+            assert pair not in found_pairs
+            found_pairs.add(pair)
 
-    assert len(edge_ids) == len(ref)
-    assert edge_ids == ref
+        assert deterministic_minimal_redundant_network.is_connected()
 
+    def test_redundant_vs_spanning_network(
+        self,
+        toluene_vs_others,
+        lomap_old_mapper,
+        deterministic_toluene_mst_scorer,
+        deterministic_minimal_spanning_network,
+    ):
+        """when setting minimal redundant network to only take one MST, it should be equivalent to the base MST."""
 
-def test_minimal_redundant_network_redundant(minimal_redundant_network):
-    # test that each node is connected to 2 edges.
-    network = minimal_redundant_network
-    for node in network.nodes:
-        assert len(network.graph.in_edges(node)) + \
-            len(network.graph.out_edges(node)) >= 2
+        toluene, others = toluene_vs_others
+        scorer = deterministic_toluene_mst_scorer
 
-
-def test_minimal_redundant_network_unreachable(toluene_vs_others,
-                                               lomap_old_mapper):
-    toluene, others = toluene_vs_others
-    nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"))
-
-    def scorer(mapping):
-        return len(mapping.componentA_to_componentB)
-
-    with pytest.raises(RuntimeError, match="Unable to create edges"):
-        network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
-            ligands=others + [toluene, nimrod],
-            mappers=[lomap_old_mapper],
-            scorer=scorer
+        minimal_redundant_network = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+            ligands=others + [toluene],
+            mappers=lomap_old_mapper,
+            scorer=scorer,
+            mst_num=1
         )
+        assert deterministic_minimal_spanning_network.edges == minimal_redundant_network.edges
 
+    def test_minimal_redundant_network_edges(self, deterministic_minimal_redundant_network):
+        """issue #244, this was previously giving non-reproducible (yet valid)
+        networks when scores were tied."""
+        edge_names = {(e.componentA.name, e.componentB.name) for e in deterministic_minimal_redundant_network.edges}
+        expected_names = {
+            ('1,3,7-trimethylnaphthalene', '2,6-dimethylnaphthalene'),
+            ('1,3,7-trimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+            ('1-butyl-4-methylbenzene', '2,6-dimethylnaphthalene'),
+            ('1-butyl-4-methylbenzene', '2-methyl-6-propylnaphthalene'),
+            ('1-butyl-4-methylbenzene', 'toluene'),
+            ('2,6-dimethylnaphthalene', '2-methyl-6-propylnaphthalene'),
+            ('2,6-dimethylnaphthalene', '2-methylnaphthalene'),
+            ('2,6-dimethylnaphthalene', '2-naftanol'),
+            ('2,6-dimethylnaphthalene', 'methylcyclohexane'),
+            ('2,6-dimethylnaphthalene', 'toluene'),
+            ('2-methyl-6-propylnaphthalene', '2-methylnaphthalene'),
+            ('2-methylnaphthalene', '2-naftanol'),
+            ('2-methylnaphthalene', 'methylcyclohexane'),
+            ('2-methylnaphthalene', 'toluene')
+        }
 
-def test_network_from_names(atom_mapping_basic_test_files, lomap_old_mapper):
-    ligs = list(atom_mapping_basic_test_files.values())
+        assert len(edge_names) == len(expected_names)
+        assert edge_names == expected_names
 
-    requested = [
-        ('toluene', '2-naftanol'),
-        ('2-methylnaphthalene', '2-naftanol'),
-    ]
+    def test_minimal_redundant_network_redundant(self, deterministic_minimal_redundant_network):
+        """test that each node is connected to 2 edges"""
+        network = deterministic_minimal_redundant_network
+        for node in network.nodes:
+            assert (
+                len(network.graph.in_edges(node)) + len(network.graph.out_edges(node))
+                >= 2
+            )
 
-    network = openfe.setup.ligand_network_planning.generate_network_from_names(
-        ligands=ligs,
-        names=requested,
-        mapper=lomap_old_mapper,
-    )
+    def test_minimal_redundant_network_unreachable(self, toluene_vs_others, lomap_old_mapper, simple_scorer):
+        toluene, others = toluene_vs_others
+        nimrod = openfe.SmallMoleculeComponent(mol_from_smiles("N"), name='nimrod')
 
-    assert len(network.nodes) == len(ligs)
-    assert len(network.edges) == 2
-    actual_edges = [(e.componentA.name, e.componentB.name)
-                    for e in network.edges]
-    assert set(requested) == set(actual_edges)
+        scorer = simple_scorer
 
+        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+            _ = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+                ligands=others + [toluene, nimrod],
+                mappers=[lomap_old_mapper],
+                scorer=scorer
+            )
 
-def test_network_from_names_bad_name(
-    atom_mapping_basic_test_files, lomap_old_mapper
-):
-    ligs = list(atom_mapping_basic_test_files.values())
+class TestGenerateNetworkFromNames:
+    def test_generate_network_from_names(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        ligands = list(atom_mapping_basic_test_files.values())
 
-    requested = [
-        ('hank', '2-naftanol'),
-        ('2-methylnaphthalene', '2-naftanol'),
-    ]
+        requested = [
+            ('toluene', '2-naftanol'),
+            ('2-methylnaphthalene', '2-naftanol'),
+        ]
 
-    with pytest.raises(KeyError, match="Invalid name"):
-        _ = openfe.setup.ligand_network_planning.generate_network_from_names(
-            ligands=ligs,
+        network = openfe.setup.ligand_network_planning.generate_network_from_names(
+            ligands=ligands,
             names=requested,
             mapper=lomap_old_mapper,
         )
 
+        expected_node_names = {c.name for c in ligands}
+        actual_node_names = {n.name for n in network.nodes}
 
-def test_network_from_names_duplicate_name(
-    atom_mapping_basic_test_files, lomap_old_mapper
-):
-    ligs = list(atom_mapping_basic_test_files.values())
-    ligs = ligs + [ligs[0]]
+        assert len(network.nodes) == len(ligands)
+        assert actual_node_names == expected_node_names
 
-    requested = [
-        ('toluene', '2-naftanol'),
-        ('2-methylnaphthalene', '2-naftanol'),
-    ]
+        assert len(network.edges) == 2
+        actual_edges = {(e.componentA.name, e.componentB.name) for e in network.edges}
+        assert set(requested) == actual_edges
 
-    with pytest.raises(ValueError, match="Duplicate names"):
-        _ = openfe.setup.ligand_network_planning.generate_network_from_names(
-            ligands=ligs,
-            names=requested,
-            mapper=lomap_old_mapper,
-        )
+    def test_generate_network_from_names_bad_name_error(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        ligands = list(atom_mapping_basic_test_files.values())
 
+        requested = [
+            ('hank', '2-naftanol'),
+            ('2-methylnaphthalene', '2-naftanol'),
+        ]
 
-def test_network_from_indices(
-    atom_mapping_basic_test_files, lomap_old_mapper
-):
-    ligs = list(atom_mapping_basic_test_files.values())
-
-    requested = [(0, 1), (2, 3)]
-
-    network = openfe.setup.ligand_network_planning.generate_network_from_indices(
-        ligands=ligs,
-        indices=requested,
-        mapper=lomap_old_mapper,
-    )
-
-    assert len(network.nodes) == len(ligs)
-    assert len(network.edges) == 2
-
-    edges = list(network.edges)
-    expected_edges = {(ligs[0], ligs[1]), (ligs[2], ligs[3])}
-    actual_edges = {(edges[0].componentA, edges[0].componentB),
-                    (edges[1].componentA, edges[1].componentB)}
-
-    assert actual_edges == expected_edges
+        with pytest.raises(KeyError, match=r"Invalid name\(s\) requested \['hank'\]."):
+            _ = openfe.setup.ligand_network_planning.generate_network_from_names(
+                ligands=ligands,
+                names=requested,
+                mapper=lomap_old_mapper,
+            )
 
 
-def test_network_from_indices_indexerror(
-    atom_mapping_basic_test_files, lomap_old_mapper,
-):
-    ligs = list(atom_mapping_basic_test_files.values())
+    def test_generate_network_from_names_duplicate_name(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        ligands = list(atom_mapping_basic_test_files.values())
+        ligands = ligands + [ligands[0]]
 
-    requested = [(20, 1), (2, 3)]
+        requested = [
+            ('toluene', '2-naftanol'),
+            ('2-methylnaphthalene', '2-naftanol'),
+        ]
 
-    with pytest.raises(IndexError, match="Invalid ligand id"):
+        with pytest.raises(ValueError, match=r"Duplicate names: \['1,3,7-trimethylnaphthalene'\]"):
+            _ = openfe.setup.ligand_network_planning.generate_network_from_names(
+                ligands=ligands,
+                names=requested,
+                mapper=lomap_old_mapper,
+            )
+
+class TestNetworkFromIndices:
+    def test_network_from_indices(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        ligands = list(atom_mapping_basic_test_files.values())
+
+        requested = [(0, 1), (2, 3)]
+
         network = openfe.setup.ligand_network_planning.generate_network_from_indices(
-            ligands=ligs,
+            ligands=ligands,
             indices=requested,
             mapper=lomap_old_mapper,
         )
 
+        assert len(network.nodes) == len(ligands)
+        assert len(network.edges) == 2
 
-def test_network_from_indices_disconnected_warning(
-    atom_mapping_basic_test_files, lomap_old_mapper,
-):
-    ligs = list(atom_mapping_basic_test_files.values())
-    requested = [(0, 1), (1, 2)]
+        edges = list(network.edges)
+        expected_edges = {(ligands[0], ligands[1]), (ligands[2], ligands[3])}
+        actual_edges = {
+            (edges[0].componentA, edges[0].componentB),
+            (edges[1].componentA, edges[1].componentB),
+        }
 
-    with pytest.warns(UserWarning):
-        _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
-            ligands=ligs,
-            indices=requested,
-            mapper=lomap_old_mapper,
-        )
+        assert actual_edges == expected_edges
+
+    def test_network_from_indices_indexerror(self, atom_mapping_basic_test_files, lomap_old_mapper):
+        ligands = list(atom_mapping_basic_test_files.values())
+
+        requested = [(20, 1), (2, 3)]
+
+        with pytest.raises(IndexError, match="Invalid ligand id"):
+            _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
+                ligands=ligands,
+                indices=requested,
+                mapper=lomap_old_mapper,
+            )
+
+    def test_network_from_indices_disconnected_warning(
+        self, atom_mapping_basic_test_files, lomap_old_mapper
+    ):
+        ligands = list(atom_mapping_basic_test_files.values())
+        requested = [(0, 1), (1, 2)]
+
+        with pytest.warns(UserWarning):
+            _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
+                ligands=ligands,
+                indices=requested,
+                mapper=lomap_old_mapper,
+            )
 
 
-@pytest.mark.parametrize('file_fixture, loader', [
-    ['orion_network',
-     openfe.setup.ligand_network_planning.load_orion_network],
-    ['fepplus_network',
-     openfe.setup.ligand_network_planning.load_fepplus_network],
-])
-def test_network_from_external(file_fixture, loader, request,
-                               benzene_modifications):
+@pytest.mark.parametrize(
+    "file_fixture, loader",
+    [
+        ["orion_network", openfe.setup.ligand_network_planning.load_orion_network],
+        ["fepplus_network", openfe.setup.ligand_network_planning.load_fepplus_network],
+    ],
+)
+def test_network_from_external(file_fixture, loader, request, benzene_modifications):
 
     network_file = request.getfixturevalue(file_fixture)
 
@@ -602,14 +661,12 @@ def test_network_from_external(file_fixture, loader, request,
     )
 
     expected_edges = {
-        (benzene_modifications['benzene'], benzene_modifications['toluene']),
-        (benzene_modifications['benzene'], benzene_modifications['phenol']),
-        (benzene_modifications['benzene'],
-         benzene_modifications['benzonitrile']),
-        (benzene_modifications['benzene'], benzene_modifications['anisole']),
-        (benzene_modifications['benzene'], benzene_modifications['styrene']),
-        (benzene_modifications['benzene'],
-         benzene_modifications['benzaldehyde']),
+        (benzene_modifications["benzene"], benzene_modifications["toluene"]),
+        (benzene_modifications["benzene"], benzene_modifications["phenol"]),
+        (benzene_modifications["benzene"], benzene_modifications["benzonitrile"]),
+        (benzene_modifications["benzene"], benzene_modifications["anisole"]),
+        (benzene_modifications["benzene"], benzene_modifications["styrene"]),
+        (benzene_modifications["benzene"], benzene_modifications["benzaldehyde"]),
     }
 
     actual_edges = {(e.componentA, e.componentB) for e in list(network.edges)}
@@ -619,20 +676,21 @@ def test_network_from_external(file_fixture, loader, request,
     assert actual_edges == expected_edges
 
 
-@pytest.mark.parametrize('file_fixture, loader', [
-    ['orion_network',
-     openfe.setup.ligand_network_planning.load_orion_network],
-    ['fepplus_network',
-     openfe.setup.ligand_network_planning.load_fepplus_network],
-])
+@pytest.mark.parametrize(
+    "file_fixture, loader",
+    [
+        ["orion_network", openfe.setup.ligand_network_planning.load_orion_network],
+        ["fepplus_network", openfe.setup.ligand_network_planning.load_fepplus_network],
+    ],
+)
 def test_network_from_external_unknown_edge(file_fixture, loader, request,
                                             benzene_modifications):
     network_file = request.getfixturevalue(file_fixture)
-    ligs = [l for l in benzene_modifications.values() if l.name != 'phenol']
+    ligands = [l for l in benzene_modifications.values() if l.name != 'phenol']
 
     with pytest.raises(KeyError, match="Invalid name"):
-        network = loader(
-            ligands=ligs,
+        _ = loader(
+            ligands=ligands,
             mapper=openfe.LomapAtomMapper(),
             network_file=network_file,
         )
@@ -656,7 +714,7 @@ def test_bad_orion_network(benzene_modifications, tmpdir):
             f.write(BAD_ORION_NETWORK)
 
         with pytest.raises(KeyError, match="line does not match"):
-            network = openfe.setup.ligand_network_planning.load_orion_network(
+            _ = openfe.setup.ligand_network_planning.load_orion_network(
                 ligands=[l for l in benzene_modifications.values()],
                 mapper=openfe.LomapAtomMapper(),
                 network_file='bad_orion_net.dat',
@@ -679,7 +737,7 @@ def test_bad_edges_network(benzene_modifications, tmpdir):
             f.write(BAD_EDGES)
 
         with pytest.raises(KeyError, match="line does not match"):
-            network = openfe.setup.ligand_network_planning.load_fepplus_network(
+            _ = openfe.setup.ligand_network_planning.load_fepplus_network(
                 ligands=[l for l in benzene_modifications.values()],
                 mapper=openfe.LomapAtomMapper(),
                 network_file='bad_edges.edges',
