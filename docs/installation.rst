@@ -469,9 +469,10 @@ skipped, or xfailed (expected fail).
 
 With that, you should be ready to use ``openfe``!
 
-   .. note::
+.. note::
+
    If building a custom docker image, you may need to need to add ``--ulimit nofile=262144:262144`` to the ``docker build`` command.
-  See this `issue <https://github.com/OpenFreeEnergy/openfe/issues/1269>`_ for details. 
+   See this `issue <https://github.com/OpenFreeEnergy/openfe/issues/1269>`_ for details. 
 
 HPC Environments
 ----------------
