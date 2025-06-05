@@ -1,4 +1,4 @@
-name: GPU Runner (manual dispatch)
+name: CPU Long Tests (manual dispatch)
 on:
   workflow_dispatch:
 
@@ -21,9 +21,8 @@ jobs:
         uses: omsf/start-aws-gha-runner@v1.0.0
         with:
           aws_image_id: ami-0b7f661c228e6a4bb
-          aws_instance_type: g4dn.xlarge
+          aws_instance_type: t3a.small  # TODO try t3a.medium next
           aws_home_dir: /home/ubuntu
-          aws_root_device_size: 125
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
