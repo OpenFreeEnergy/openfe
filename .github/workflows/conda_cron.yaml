@@ -30,7 +30,7 @@ jobs:
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          micromamba-version: '1.5.6-0'
+          micromamba-version: 'latest'
           micromamba-binary-path: ~/.local/bin/micromamba
           environment-name: openfe
           create-args: >-
