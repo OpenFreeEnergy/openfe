@@ -13,7 +13,7 @@ N_PROTOCOL_REPEATS = Option(
 NCORES = Option(
     "-n",
     "--n-cores",
-    help=" Number of cores to use for multiprocessing."
+    help="Number of cores to use for multiprocessing."
 )
 
 OVERWRITE = Option(
