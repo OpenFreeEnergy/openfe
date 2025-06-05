@@ -31,7 +31,6 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           micromamba-version: 'latest'
-          micromamba-binary-path: ~/.local/bin/micromamba
           environment-name: openfe
           create-args: >-
             python=${{ matrix.python-version }}
