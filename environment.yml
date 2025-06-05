@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - cinnabar ~=0.4.0
-  - click <8.2.0
+  - click >=8.2.0
   - coverage
   - duecredit<0.10
   - kartograf>=1.0.0
@@ -35,7 +35,6 @@ dependencies:
   - pytest-cov
   - pytest-regressions
   - pytest-rerunfailures
-  - pydantic >=1.10.17
   - pyyaml
   - rdkit
   - rich
