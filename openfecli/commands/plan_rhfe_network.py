@@ -111,12 +111,13 @@ def plan_rhfe_network_main(
 )
 @print_duration
 def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int, overwrite_charges: bool, n_protocol_repeats: int):
+    # TODO: make this match the rbfe network docstring, or vice-versa?
     """
-    Plan a relative hydration free energy network, saved as JSON files for
+    Plan a relative hydration free energy network, saved as JSON files for use by
     the quickrun command.
 
-    This tool is an easy way to setup a RHFE-Calculation Campaign. This can
-    be useful for testing our tools.  Plan-rhfe-network finds a reasonable
+    This tool is an easy way to setup a RHFE calculation campaign.
+    This can  be useful for testing our tools.  Plan-rhfe-network finds a reasonable
     network of transformations and adds the openfe rbfe protocol of year one
     to the transformations.  The output of the command can be used, in order
     to run the planned transformations with the quickrun tool.  For more

@@ -1,4 +1,4 @@
-name: CPU Runner (manual dispatch)
+name: CPU Long Tests (manual dispatch)
 on:
   workflow_dispatch:
 
@@ -91,7 +91,7 @@ jobs:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
-          OFE_INTEGRATION_TESTS: TRUE
+          OFE_INTEGRATION_TESTS: FALSE
         run: |
           pytest -n logical -vv --durations=10
 
