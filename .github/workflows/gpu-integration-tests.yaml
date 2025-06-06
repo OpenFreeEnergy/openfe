@@ -1,4 +1,4 @@
-name: GPU Runner (manual dispatch)
+name: GPU Integration Tests (manual dispatch)
 on:
   workflow_dispatch:
 
