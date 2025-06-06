@@ -16,15 +16,15 @@ both in the solvent and in the binding site.
 Restraints are required to keep the weakly
 coupled and fully decoupled ligand in the binding site region and thereby reduce the phase
 space that needs to be sampled. In the :class:`SepTopProtocol <.SepTopProtocol>`
-we apply orientational, or Boresch-style restraints, see below.
+we apply orientational, or Boresch-style, restraints, as described below.
 
-In this cycle, the interactions of the molecule are decoupled, meaning turned off, using a partial annihilation scheme (see below) both in the solvent and in the complex phases.
+In this cycle, the interactions of one molecule are turned off while simultaneously turning on interactions of the other molecule both in the solvent and complex phases.
 The relative binding free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
 
 .. figure:: img/septop_cycle.png
-   :scale: 80%
+   :scale: 50%
 
-   Thermodynamic cycle for the absolute solvation free energy protocol.
+   Thermodynamic cycle for the SepTop free energy protocol.
 
 Scientific Details
 ------------------
@@ -32,7 +32,7 @@ Scientific Details
 Orientational restraints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Orientational, or Boresch-style restraints are applied between three protein and three ligand atoms through one bond,
+Orientational, or Boresch-style, restraints are applied between three protein and three ligand atoms using one bond,
 two angle, and three dihedral restraints. Reference atoms are picked based on different criteria, such as the root mean squared
 fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms, based on heuristics from Baumann et al. [1]_.
 
@@ -46,15 +46,16 @@ The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
 Molecular interactions are modified during an alchemical path using a discrete set of lambda windows.
-For the transformation of ligand A to ligand B in the binding site, ligand A is first fully interacting while ligand B is decoupled.
+For the transformation of ligand A to ligand B in the binding site, ligand A is initially fully interacting while ligand B is decoupled.
 First, the non-interacting dummy ligand B is inserted into the binding site and restrained using
-orientational restraints. Then the van der Waals (vdW) interactions of ligand B are turned
-on and orientational restraints on ligand A are turned on. In the next step the electrostatic interactions of ligand B are
-turned on while at the same time the electrostatics of ligand A are turned off. Then, vdW interactions
-of ligand A are turned off while at the same time releasing restraints on ligand B. Lastly, the
+orientational restraints. This contribution is accounted for analytically. Then, the van der Waals (vdW) interactions of ligand B are turned
+on while also turning on orientational restraints on ligand A. In the next step the electrostatic interactions of ligand B are
+turned on while at the same time turning off the electrostatics of ligand A.
+Then, vdW interactions
+of ligand A are turned off while simultaneously releasing restraints on ligand B. Lastly, the
 restraints of the now dummy ligand A are released analytically and the ligand transferred into the solvent.
-The lambda schedule in the solvent is similar to the one in the complex, accept that a single harmonic distance restraint is
-applied between the two ligands and accounted for analytically.
+The lambda schedule in the solvent phase is similar to the one in the complex, except that a single harmonic distance restraint is
+applied between the two ligands.
 A soft-core potential from Beutler et al. [2]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_A``, ``lambda_elec_B``,  ``lambda_vdw_A``, ``lambda_vdw_B``,
 ``lambda_restraints_A``, and ``lambda_restraints_B``.
