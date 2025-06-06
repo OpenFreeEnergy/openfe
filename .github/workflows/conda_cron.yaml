@@ -30,7 +30,7 @@ jobs:
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: 'latest'
+          micromamba-version: '2.2.0-0'
           environment-name: openfe
           create-args: >-
             python=${{ matrix.python-version }}
