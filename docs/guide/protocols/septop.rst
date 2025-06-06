@@ -113,7 +113,8 @@ See Also
 
 **API Documentation**
 
-* :ref:`OpenMM SepTop Free Energy <septop protocol api>`
+..
+   _* :ref:`OpenMM SepTop Free Energy <septop protocol api>`
 * :ref:`OpenMM Protocol Settings <openmm protocol settings api>`
 
 References
