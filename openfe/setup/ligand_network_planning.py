@@ -3,13 +3,8 @@
 
 from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
-import itertools
-from collections import Counter
-import functools
-import warnings
 
 import networkx as nx
-from tqdm.auto import tqdm
 
 from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
