@@ -64,7 +64,7 @@ Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
 The :class:`.ProtocolDAG` of the :class:`SepTopProtocol <.SepTopProtocol>` contains :class:`.ProtocolUnit`\ s from both the complex and solvent transformations.
-This means that both legs of the thermodynamic cycle are constructed and run concurrently in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
+This means that both legs of the thermodynamic cycle are constructed and run sequentially in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
 If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=1``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both complex and solvent transformations.
 
 Simulation steps
