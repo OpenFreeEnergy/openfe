@@ -178,9 +178,11 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
         raise ValueError(errmsg)
 
     # Get a list of all shortest paths
+    # Note: we call dict on shortest_path to support py3.10 which doesn't
+    # support networkx 3.5
     shortest_paths = [
         path
-        for node_paths in nx.shortest_path(nx_mol).values()
+        for node_paths in dict(nx.shortest_path(nx_mol)).values()
         for path in node_paths.values()
     ]
 
