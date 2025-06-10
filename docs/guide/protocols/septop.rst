@@ -7,7 +7,7 @@ Overview
 The :class:`SepTopProtocol <.SepTopProtocol>` calculates the difference in binding free energy between two ligands.
 This protocol essentially performs two absolute binding free energy calculations simultaneously in opposite directions,
 by (alchemically) inserting one ligand into the binding site, while removing the other ligand at the same time.
-In contrast to the :class:`.RelativeHybridTopologyProtocol`, the two ligand topologies are
+In contrast to the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`, the two ligand topologies are
 completely separate (meaning there is no common core), making atom mapping unnecessary and allowing transformations between chemically diverse ligands.
 
 The relative binding free energy is calculated through a thermodynamic cycle by transforming one ligand into the other ligand
@@ -46,14 +46,14 @@ The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
 Molecular interactions are modified during an alchemical path using a discrete set of lambda windows.
-For the transformation of ligand A to ligand B in the binding site, ligand A is initially fully interacting while ligand B is decoupled.
-First, the non-interacting dummy ligand B is inserted into the binding site and restrained using
-orientational restraints. This contribution is accounted for analytically. Then, the van der Waals (vdW) interactions of ligand B are turned
-on while also turning on orientational restraints on ligand A. In the next step the electrostatic interactions of ligand B are
-turned on while at the same time turning off the electrostatics of ligand A.
-Then, vdW interactions
-of ligand A are turned off while simultaneously releasing restraints on ligand B. Lastly, the
-restraints of the now dummy ligand A are released analytically and the ligand transferred into the solvent.
+For the transformation of ligand A to ligand B in the binding site, the following steps are carried out, starting with ligand A being fully interacting in the binding site while ligand B is decoupled.
+
+1. Insert the non-interacting dummy ligand B into the binding site and restrain it using orientational restraints. The contribution of the restraints is calculated analytically.
+2. Turn on the van der Waals (vdW) interactions of ligand B while also turning on orientational restraints on ligand A.
+3. Turn on the electrostatic interactions of ligand B while at the same time turning off the electrostatics of ligand A.
+4. Turn off vdW interactions of ligand A while simultaneously releasing restraints on ligand B.
+5. Release the restraints of the now dummy ligand A analytically and transfer the ligand into the solvent.
+
 The lambda schedule in the solvent phase is similar to the one in the complex, except that a single harmonic distance restraint is
 applied between the two ligands.
 A soft-core potential from Beutler et al. [2]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
@@ -81,8 +81,9 @@ Each :class:`.ProtocolUnit` (whether complex or solvent) carries out the followi
 7. Analyze results for the transformation.
 
 
-Note: three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted).
-By default the HREX approach is selected, this can be altered using ``solvent_simulation_settings.sampler_method`` or ``complex_simulation_settings.sampler_method`` (default: ``repex``).
+.. note:: Three different types of multistate sampling (i.e. replica swapping between lambda states) methods can be chosen; HREX, SAMS, and independent (no lambda swaps attempted).
+          By default the HREX approach is selected, this can be altered using ``solvent_simulation_settings.sampler_method`` or ``complex_simulation_settings.sampler_method`` (default: ``repex``).
+
 
 Simulation details
 """"""""""""""""""
