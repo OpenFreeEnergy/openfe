@@ -99,10 +99,11 @@ def generate_radial_network(
     mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
                else m for m in mappers]
 
+    ligands = list(ligands)
+
     # handle central_ligand arg possibilities
     # after this, central_ligand is resolved to a SmallMoleculeComponent
     if isinstance(central_ligand, int):
-        ligands = list(ligands)
         try:
             central_ligand = ligands[central_ligand]
             ligands.remove(central_ligand)
@@ -110,7 +111,6 @@ def generate_radial_network(
             raise ValueError(f"index '{central_ligand}' out of bounds, there are "
                              f"{len(ligands)} ligands")
     elif isinstance(central_ligand, str):
-        ligands = list(ligands)
         possibles = [lig for lig in ligands if lig.name == central_ligand]
         if not possibles:
             raise ValueError(f"No ligand called '{central_ligand}' "

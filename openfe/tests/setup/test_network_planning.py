@@ -376,20 +376,6 @@ def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
         ligands=others + [toluene], mappers=mappers, scorer=scorer
     )
     return network
-class TestMinimalSpanningNetworkGenerator:
-    @pytest.mark.parametrize("multi_mappers", [False, True])
-    def test_minimal_spanning_network_mappers(
-        self, atom_mapping_basic_test_files, multi_mappers, lomap_old_mapper
-    ):
-        ligands = [
-            atom_mapping_basic_test_files["toluene"],
-            atom_mapping_basic_test_files["2-naftanol"],
-        ]
-
-        if multi_mappers:
-            mappers = [BadMapper(), lomap_old_mapper]
-        else:
-            mappers = lomap_old_mapper
 
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
