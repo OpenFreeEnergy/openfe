@@ -79,10 +79,8 @@ def generate_radial_network(
       a callable which returns a float for any LigandAtomMapping.  Used to
       assign scores to potential mappings; higher scores indicate better
       mappings.
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
     n_processes: int
         number of cpu processes to use if parallelizing network generation.
 
@@ -159,7 +157,7 @@ def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    progress: bool = True,
     n_processes: int = 1,
 ) -> LigandNetwork:
     """
@@ -183,12 +181,10 @@ def generate_maximal_network(
       but many can be given.
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
     n_processes: int
-        number of cpu processes to use if parallelizing network generation.
+      number of cpu processes to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
@@ -214,7 +210,7 @@ def generate_minimal_spanning_network(
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     # TODO: scorer is currently required, but not actually necessary.
     scorer: Callable[[LigandAtomMapping], float],
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    progress: bool = True,
     n_processes: int = 1,
 ) -> LigandNetwork:
     """
@@ -230,10 +226,8 @@ def generate_minimal_spanning_network(
       highest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
     n_processes: int
         number of cpu processes to use if parallelizing network generation.
     """
@@ -260,7 +254,7 @@ def generate_minimal_redundant_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Callable[[LigandAtomMapping], float],
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    progress: bool = True,
     mst_num: int = 2,
     n_processes: int = 1,
 ) -> LigandNetwork:
@@ -281,10 +275,8 @@ def generate_minimal_redundant_network(
       highest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
     mst_num : int
       Minimum Spanning Tree number: the number of minimum spanning trees to
       generate. If two, the second-best edges are included in the returned
