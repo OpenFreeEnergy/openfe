@@ -234,8 +234,6 @@ class TestRadialNetworkGenerator:
         """Test that the scorer chooses the mapper with the best score (in this case, the LOMAP mapper)."""
         toluene, others = toluene_vs_others
 
-        def scorer(mapping):
-            return 1-1/len(mapping.componentA_to_componentB)
         mappers = [BadMapper(), lomap_old_mapper]
         scorer = simple_scorer
 
@@ -351,31 +349,6 @@ def test_generate_maximal_network(
         for edge in network.edges:
             assert "score" not in edge.annotations
             assert 'score' not in edge.annotations
-
-@pytest.fixture()
-def minimal_spanning_network(toluene_vs_others, lomap_old_mapper):
-    toluene, others = toluene_vs_others
-
-    mappers = [lomap_old_mapper]
-
-    def scorer(mapping):
-        """Scores are designed to give the same mst everytime"""
-        scores = {
-            # MST edges
-            ("1,3,7-trimethylnaphthalene", "2,6-dimethylnaphthalene"): 3,
-            ("1-butyl-4-methylbenzene", "2-methyl-6-propylnaphthalene"): 3,
-            ("2,6-dimethylnaphthalene", "2-methyl-6-propylnaphthalene"): 3,
-            ("2,6-dimethylnaphthalene", "2-methylnaphthalene"): 3,
-            ("2,6-dimethylnaphthalene", "2-naftanol"): 3,
-            ("2,6-dimethylnaphthalene", "methylcyclohexane"): 3,
-            ("2,6-dimethylnaphthalene", "toluene"): 3,
-        }
-        return scores.get((mapping.componentA.name, mapping.componentB.name), 1)
-
-    network = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
-        ligands=others + [toluene], mappers=mappers, scorer=scorer
-    )
-    return network
 
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
