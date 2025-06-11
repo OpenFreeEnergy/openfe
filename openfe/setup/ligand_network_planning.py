@@ -1,6 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import math
+
 from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
 import itertools
@@ -15,7 +15,9 @@ from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
 
-from lomap import generate_lomap_network, LomapAtomMapper
+# import to expose generate_lomap_network in openfe
+from lomap import generate_lomap_network as generate_lomap_network
+from lomap import LomapAtomMapper
 from lomap.dbmol import _find_common_core
 
 
@@ -203,6 +205,7 @@ def generate_maximal_network(
 def generate_minimal_spanning_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    # TODO: scorer is currently required, but not actually necessary.
     scorer: Callable[[LigandAtomMapping], float],
     progress: Union[bool, Callable[[Iterable], Iterable]] = True,
 ) -> LigandNetwork:

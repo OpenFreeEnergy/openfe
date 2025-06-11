@@ -1,16 +1,23 @@
 import click
 from openfecli import OFECommandPlugin
+import os
 
 @click.command(
     "view-ligand-network",
-    short_help="Visualize a ligand network"
+    short_help="Visualize a ligand network from a .graphml file."
 )
 @click.argument(
     "ligand-network",
     type=click.Path(exists=True, readable=True, dir_okay=False,
                     file_okay=True),
 )
-def view_ligand_network(ligand_network):
+def view_ligand_network(ligand_network: os.PathLike):
+    """
+    Visualize a ligand network from a .graphml file.
+
+    e.g. ``openfe view-ligand-network network_setup/ligand_network.graphml``
+    
+    """
     from openfe.utils.atommapping_network_plotting import (
         plot_atommapping_network
     )
