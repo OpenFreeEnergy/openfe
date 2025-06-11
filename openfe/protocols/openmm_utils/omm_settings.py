@@ -411,9 +411,9 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 250.0 * unit.picosecond
+    checkpoint_interval: FloatQuantity['picosecond'] = 1.0 * unit.nanosecond
     """
-    Frequency to write the checkpoint file. Default 1 * unit.picosecond.
+    Frequency to write the checkpoint file. Default 1 * unit.nanosecond.
     """
     checkpoint_storage_filename = 'checkpoint.chk'
     """
@@ -567,8 +567,6 @@ class MultiStateSimulationSettings(SimulationSettings):
 
     If ``None``, no real time analysis will be performed and the yaml
     file will not be written.
-
-    Must be a multiple of ``OutputSettings.checkpoint_interval``
 
     Default `250`.
 
