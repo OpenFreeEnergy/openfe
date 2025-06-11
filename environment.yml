@@ -19,7 +19,7 @@ dependencies:
   - openff-units==0.2.0
   - openmm >=8.0.0,!=8.1.0,<8.2.0
   - openmmforcefields
-  - openmmtools >=0.25
+  - openmmtools >=0.25.0
   - packaging
   - pandas
   - perses>=0.10.3
