@@ -17,11 +17,11 @@ from openfe.protocols import openmm_rfe
 def test_openmm_run_engine(
     benzene_vacuum_system,
     platform,
-    available_platforms,
+    get_available_openmm_platforms,
     benzene_modifications,
     tmpdir
 ):
-    if platform not in available_platforms:
+    if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
     # this test actually runs MD
     # these settings are a small self to self sim, that has enough eq that
