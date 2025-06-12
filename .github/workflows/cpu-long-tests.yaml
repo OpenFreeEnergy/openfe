@@ -21,8 +21,9 @@ jobs:
         uses: omsf/start-aws-gha-runner@v1.0.0
         with:
           aws_image_id: ami-0b7f661c228e6a4bb
-          aws_instance_type: t3a.small  # TODO try t3a.medium next
+          aws_instance_type: c7i.xlarge
           aws_home_dir: /home/ubuntu
+          aws_root_device_size: 125 
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
@@ -45,9 +46,6 @@ jobs:
 
       - name: Print Docker details
         run: "docker version || true"
-
-      - name: Check for nvidia-smi
-        run: "nvidia-smi"
 
       - name: "Setup Micromamba"
         uses: mamba-org/setup-micromamba@v2
@@ -88,12 +86,11 @@ jobs:
 
       - name: "Run tests"
         env:
-          # Set the OFE_SLOW_TESTS to True if running a Cron job
           OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
           OFE_INTEGRATION_TESTS: FALSE
         run: |
-          pytest -n logical -vv --durations=10
+          pytest -n logical -vv --durations=10 openfecli/tests/ openfe/tests/
 
   stop-aws-runner:
     runs-on: ubuntu-latest
