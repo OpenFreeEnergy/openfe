@@ -37,9 +37,9 @@ jobs:
         os: ["ubuntu-latest"]
         pydantic-version: [">1"]
         python-version:
-          - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
         openeye: ["no"]
         include:
           - os: "macos-latest"
