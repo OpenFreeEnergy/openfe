@@ -6,6 +6,7 @@ import pooch
 from importlib import resources
 from rdkit import Chem
 from rdkit.Geometry import Point3D
+import openmm
 from openmm import Platform
 import openfe
 from openff.units import unit
@@ -242,7 +243,6 @@ def md_json() -> str:
     with gzip.open((d / fname).as_posix(), 'r') as f:  # type: ignore
         return f.read().decode()  # type: ignore
 
-<<<<<<< start_septop
 
 @pytest.fixture
 def septop_json() -> str:
@@ -274,7 +274,8 @@ RFE_OUTPUT = pooch.create(
 @pytest.fixture
 def simulation_nc():
     return RFE_OUTPUT.fetch("simulation.nc")
-=======
+
+
 @pytest.fixture
 def get_available_openmm_platforms() -> set[str]:
     """
@@ -302,4 +303,52 @@ def get_available_openmm_platforms() -> set[str]:
 
 
     return working_platforms
->>>>>>> main
+
+
+def compute_energy(
+        system: openmm.System,
+        positions: openmm.unit.Quantity,
+        box_vectors: openmm.unit.Quantity | None,
+        context_params: dict[str, float] | None = None,
+        platform=None,
+) -> openmm.unit.Quantity:
+    """
+    Computes the potential energy of a system at a given set of positions.
+
+    Parameters
+    ----------
+    system: openmm.System
+      The system to compute the energy of.
+    positions: openmm.unit.Quantity
+      The positions to compute the energy at.
+    box_vectors: openmm.unit.Quantity
+      The box vectors to use if any.
+    context_params: dict[str, float]
+      Any global context parameters to set.
+    platform: str
+      The platform to use.
+
+    Returns
+    -------
+    energy : openmm.unit.Quantity
+        The computed energy.
+    """
+    context_params = context_params if context_params is not None else {}
+
+    integrator = openmm.VerletIntegrator(0.0001 * openmm.unit.femtoseconds)
+
+    if platform is None:
+        context = openmm.Context(system, integrator)
+    if platform is not None:
+        context = openmm.Context(system, integrator, platform)
+
+    for key, value in context_params.items():
+        context.setParameter(key, value)
+
+    if box_vectors is not None:
+        context.setPeriodicBoxVectors(*box_vectors)
+    context.setPositions(positions)
+
+    energy = context.getState(getEnergy=True).getPotentialEnergy()
+
+    return energy

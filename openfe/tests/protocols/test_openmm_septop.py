@@ -1,9 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pathlib
-
 import pytest
 import math
+
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
@@ -16,10 +16,13 @@ from openfe.protocols.openmm_septop import (
 )
 from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
 from openfe.protocols.openmm_utils import system_validation
-import numpy
+from openfe.protocols.openmm_septop.utils import deserialize
+from openfe.tests.protocols.conftest import compute_energy
+
+import numpy as np
 from numpy.testing import assert_allclose
 from math import sqrt
-from openfe.protocols.openmm_septop.utils import deserialize
+
 import openmm
 import openmm.app
 import openmm.unit
@@ -30,9 +33,7 @@ from unittest import mock
 import json
 import mdtraj as md
 import itertools
-import numpy as np
 
-from openfe.protocols.openmm_septop.femto_utils import compute_energy
 from openmmtools.alchemy import AlchemicalRegion, AbsoluteAlchemicalFactory
 from openff.units.openmm import ensure_quantity, from_openmm
 from openmm import (
@@ -40,9 +41,6 @@ from openmm import (
     NonbondedForce, CustomNonbondedForce
 )
 from importlib import resources
-
-KJ_PER_MOL = openmm.unit.kilojoule_per_mole
-
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -52,7 +50,7 @@ EPSILON0 = (
     * openmm.unit.farad
     / openmm.unit.meter
 )
-ONE_4PI_EPS0 = 1 / (4 * numpy.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstrom
+ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstrom
 
 
 @pytest.fixture()
@@ -433,7 +431,7 @@ def compute_interaction_energy(
         4.0 * lambda_vdw * epsilon * ((sigma / r_vdw) ** 12 - (sigma / r_vdw) ** 6)
         # electrostatics
         + ONE_4PI_EPS0 * lambda_charges * charge / r_electrostatics
-    ) * KJ_PER_MOL
+    ) * openmm.unit.kilojoule_per_mole
 
 
 @pytest.fixture
@@ -461,7 +459,7 @@ def three_particle_system():
     def interaction_energy_fn(
         idx_a, idx_b, lambda_vdw: float = 1.0, lambda_charges: float = 1.0
     ):
-        epsilon = numpy.sqrt(epsilons[idx_a] * epsilons[idx_b])
+        epsilon = np.sqrt(epsilons[idx_a] * epsilons[idx_b])
         sigma = 0.5 * (sigmas[idx_a] + sigmas[idx_b])
         charge = charges[idx_a] * charges[idx_b]
 
@@ -470,7 +468,7 @@ def three_particle_system():
         )
 
     coords = (
-        numpy.array(
+        np.array(
             [[0.0, 0.0, 0.0], [distances[0][1], 0.0, 0.0], [0.0, distances[0][2], 0.0]]
         )
         * openmm.unit.angstrom
