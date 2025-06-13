@@ -4,7 +4,7 @@ Separated Topologies Protocol
 Overview
 --------
 
-The :class:`SepTopProtocol <.SepTopProtocol>` calculates the difference in binding free energy between two ligands.
+The :class:`SepTopProtocol <.SepTopProtocol>` [1]_, [2]_ calculates the difference in binding free energy between two ligands.
 This protocol essentially performs two absolute binding free energy calculations simultaneously in opposite directions,
 by (alchemically) inserting one ligand into the binding site, while removing the other ligand at the same time.
 In contrast to the :ref:`RelativeHybridTopologyProtocol <userguide_relative_hybrid_topology_protocol>`, the two ligand topologies are
@@ -34,7 +34,7 @@ Orientational restraints
 
 Orientational, or Boresch-style, restraints are automaticallly (unless manually specified) applied between three protein and three ligand atoms using one bond,
 two angle, and three dihedral restraints. Reference atoms are picked based on different criteria, such as the root mean squared
-fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms, based on heuristics from Baumann et al. [1]_.
+fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms, based on heuristics from Baumann et al. [2]_.
 
 Partial annihilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,8 +55,8 @@ For the transformation of ligand A to ligand B in the binding site, the followin
 5. Release the restraints of the now dummy ligand A analytically and transfer the ligand into the solvent.
 
 The lambda schedule in the solvent phase is similar to the one in the complex, except that a single harmonic distance restraint is
-applied between the two ligands.
-A soft-core potential from Beutler et al. [2]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
+applied between central atoms in the two ligands.
+A soft-core potential from Beutler et al. [3]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_A``, ``lambda_elec_B``,  ``lambda_vdw_A``, ``lambda_vdw_B``,
 ``lambda_restraints_A``, and ``lambda_restraints_B``.
 
@@ -90,7 +90,7 @@ Simulation details
 
 Here are some details of how the simulation is carried out which are not detailed in the :class:`SepTopProtocol <.SepTopProtocol>`:
 
-* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [3]_.
+* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [4]_.
 * A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
@@ -125,6 +125,7 @@ References
 * `OpenMMTools <https://openmmtools.readthedocs.io/en/stable/>`_
 * `OpenMM <https://openmm.org/>`_
 
-.. [1] Broadening the Scope of Binding Free Energy Calculations Using a Separated Topologies Approach, H. Baumann, E. Dybeck, C. McClendon, F. Pickard IV, V. Gapsys, L. Pérez-Benito, D. Hahn, G. Tresadern, A. Mathiowetz, D. Mobley, J. Chem. Theory Comput., 2023, 19, 15, 5058–5076
-.. [2] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
-.. [3] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+.. [1] Separated topologies--a method for relative binding free energy calculations using orientational restraints, G. Rocklin, D. Mobley, K. Dill;  Chem Phys, 2013; 138(8):085104. doi: 10.1063/1.4792251.
+.. [2] Broadening the Scope of Binding Free Energy Calculations Using a Separated Topologies Approach, H. Baumann, E. Dybeck, C. McClendon, F. Pickard IV, V. Gapsys, L. Pérez-Benito, D. Hahn, G. Tresadern, A. Mathiowetz, D. Mobley, J. Chem. Theory Comput., 2023, 19, 15, 5058–5076
+.. [3] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
+.. [4] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
