@@ -21,4 +21,6 @@ __all__ = [
     "SepTopProtocolResult",
     "SepTopComplexSetupUnit",
     "SepTopSolventSetupUnit",
+    "SepTopSolventRunUnit",
+    "SepTopComplexRunUnit",
 ]
