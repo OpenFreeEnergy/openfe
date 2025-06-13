@@ -9,6 +9,7 @@ from rdkit.Geometry import Point3D
 import openmm
 from openmm import Platform
 import openfe
+from openff.units.openmm import from_openmm
 from openff.units import unit
 
 
@@ -311,7 +312,7 @@ def compute_energy(
         box_vectors: openmm.unit.Quantity | None,
         context_params: dict[str, float] | None = None,
         platform=None,
-) -> openmm.unit.Quantity:
+) -> unit.Quantity:
     """
     Computes the potential energy of a system at a given set of positions.
 
@@ -330,8 +331,8 @@ def compute_energy(
 
     Returns
     -------
-    energy : openmm.unit.Quantity
-        The computed energy.
+    potential : openmm.unit.Quantity
+        The computed potential energy in openff unit.
     """
     context_params = context_params if context_params is not None else {}
 
@@ -349,6 +350,7 @@ def compute_energy(
         context.setPeriodicBoxVectors(*box_vectors)
     context.setPositions(positions)
 
-    energy = context.getState(getEnergy=True).getPotentialEnergy()
-
-    return energy
+    state = context.getState(getEnergy=True)
+    potential = state.getPotentialEnergy()
+    del context, integrator, state
+    return from_openmm(potential)
