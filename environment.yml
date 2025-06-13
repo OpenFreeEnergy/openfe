@@ -16,7 +16,7 @@ dependencies:
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
   - openff-toolkit>=0.16.2
-  - openff-units==0.2.0
+  - openff-units>=0.3.0
   - openmm >=8.2.0
   - openmmforcefields
   - openmmtools >=0.25.0
@@ -24,7 +24,7 @@ dependencies:
   - pandas
   - perses>=0.10.3
   - plugcli
-  - pint<0.22
+  - pint
   - pip
   - pooch
   - py3dmol
