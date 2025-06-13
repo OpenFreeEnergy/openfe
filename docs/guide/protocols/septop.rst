@@ -32,7 +32,7 @@ Scientific Details
 Orientational restraints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Orientational, or Boresch-style, restraints are applied between three protein and three ligand atoms using one bond,
+Orientational, or Boresch-style, restraints are automaticallly (unless manually specified) applied between three protein and three ligand atoms using one bond,
 two angle, and three dihedral restraints. Reference atoms are picked based on different criteria, such as the root mean squared
 fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms, based on heuristics from Baumann et al. [1]_.
 
@@ -45,7 +45,7 @@ The Lennard-Jones interactions are instead decoupled, meaning the intermolecular
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
 
-Molecular interactions are modified during an alchemical path using a discrete set of lambda windows.
+Molecular interactions are modified along an alchemical path using a discrete set of lambda windows.
 For the transformation of ligand A to ligand B in the binding site, the following steps are carried out, starting with ligand A being fully interacting in the binding site while ligand B is decoupled.
 
 1. Insert the non-interacting dummy ligand B into the binding site and restrain it using orientational restraints. The contribution of the restraints is calculated analytically.
