@@ -11,14 +11,17 @@ from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
     SepTopProtocol,
 )
-from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
+import numpy as np
+from numpy.testing import assert_allclose
+from openff.units.openmm import from_openmm
 from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
 
 from openmm import Platform
 import os
 import pathlib
 import mdtraj as md
-import numpy as np
+
+from openfecli.tests.commands.test_atommapping import print_test
 
 
 @pytest.fixture()
@@ -143,31 +146,42 @@ def test_lambda_energies(bace_ligands,  bace_protein_component, tmpdir):
 
         for key, value in energy.items():
             if key == na_A:
-                assert is_close(value, energy_0[key])
-                assert is_close(value, energy_7[key])
-                assert is_close(value, energy_8[key])
-                assert is_close(value, energy_12[key])
-                assert not is_close(value, energy_13[key])
+                assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
+                assert not np.allclose(from_openmm(value), from_openmm(energy_13[key]))
+
             elif key == na_B:
-                assert not is_close(value, energy_0[key])
-                assert energy_0[key].value_in_unit(
-                    simtk.unit.kilojoule_per_mole) == 0
-                assert is_close(value, energy_7[key])
-                assert is_close(value, energy_8[key])
-                assert is_close(value, energy_12[key])
-                assert is_close(value, energy_13[key])
+                assert not np.allclose(
+                    from_openmm(value), from_openmm(energy_0[key]))
+                assert_allclose(from_openmm(energy_0[key]), 0)
+                assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
+
             elif key == nonbonded:
-                assert not is_close(value, energy_0[key])
-                assert is_close(energy_0[key], energy_7[key])
-                assert not is_close(energy_0[key], energy_8[key])
-                assert not is_close(energy_0[key], energy_12[key])
-                assert not is_close(energy_0[key], energy_13[key])
+                assert not np.allclose(
+                    from_openmm(value), from_openmm(energy_0[key]))
+                assert_allclose(
+                    from_openmm(energy_0[key]),
+                    from_openmm(energy_7[key]),
+                    rtol = 1e-05,
+                )
+                assert not np.allclose(
+                    from_openmm(energy_0[key]), from_openmm(energy_8[key]))
+                assert not np.allclose(
+                    from_openmm(energy_0[key]), from_openmm(energy_12[key]))
+                assert not np.allclose(
+                    from_openmm(energy_0[key]), from_openmm(energy_13[key]))
+
             else:
-                assert is_close(value, energy_0[key])
-                assert is_close(value, energy_7[key])
-                assert is_close(value, energy_8[key])
-                assert is_close(value, energy_12[key])
-                assert is_close(value, energy_13[key])
+                assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_7[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_8[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_12[key]))
+                assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
 
 
 @pytest.fixture

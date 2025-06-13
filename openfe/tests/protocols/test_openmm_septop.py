@@ -32,7 +32,7 @@ import mdtraj as md
 import itertools
 import numpy as np
 
-from openfe.protocols.openmm_septop.femto_utils import compute_energy, is_close
+from openfe.protocols.openmm_septop.femto_utils import compute_energy
 from openmmtools.alchemy import AlchemicalRegion, AbsoluteAlchemicalFactory
 from openff.units.openmm import ensure_quantity, from_openmm
 from openmm import (
@@ -505,7 +505,7 @@ class TestNonbondedInteractions:
         # interaction when
         # lambda=0
         expected_energy_0 = energy_fn(0, 2) + energy_fn(0, 1) + energy_fn(1, 2)
-        assert is_close(energy_0, expected_energy_0)
+        assert_allclose(from_openmm(energy_0), expected_energy_0, rtol = 1e-05)
 
         # expect only lig_2 + solvent interaction when lambda=1
         energy_1 = compute_energy(
@@ -518,7 +518,7 @@ class TestNonbondedInteractions:
             },
         )
         expected_energy_1 = energy_fn(1, 2)
-        assert is_close(energy_1, expected_energy_1)
+        assert_allclose(from_openmm(energy_1), expected_energy_1, rtol = 1e-05)
 
         # expect all particles to interact but only lig - solvent interactions to be
         # scaled
@@ -534,7 +534,7 @@ class TestNonbondedInteractions:
         expected_energy_05 = (
             energy_fn(1, 2) + energy_fn(0, 2, 0.5, 0.5) + energy_fn(0, 1, 0.5, 0.5)
         )
-        assert is_close(energy_05, expected_energy_05)
+        assert_allclose(from_openmm(energy_05), expected_energy_05, rtol = 1e-05)
 
     def test_two_ligands(self, three_particle_system):
         """Test scaling the nonbonded interactions of single particles."""
@@ -563,7 +563,7 @@ class TestNonbondedInteractions:
 
         # expect only lig_1 + solvent interaction when lambda=0
         expected_energy_0 = energy_fn(0, 2)
-        assert is_close(energy_0, expected_energy_0)
+        assert_allclose(from_openmm(energy_0), expected_energy_0, rtol = 1e-05)
 
         # expect only lig_2 + solvent interaction when lambda=1
         energy_1 = compute_energy(
@@ -578,7 +578,7 @@ class TestNonbondedInteractions:
             },
         )
         expected_energy_1 = energy_fn(1, 2)
-        assert is_close(energy_1, expected_energy_1)
+        assert_allclose(from_openmm(energy_1), expected_energy_1, rtol = 1e-05)
 
         # expect lig_1 + solvent and lig_2 + solvent interaction when lambda=0.5
         # but no lig_1 + lig_2 interaction by default
@@ -594,7 +594,7 @@ class TestNonbondedInteractions:
             },
         )
         expected_energy_05 = energy_fn(0, 2, 0.5, 0.5) + energy_fn(1, 2, 0.5, 0.5)
-        assert is_close(energy_05, expected_energy_05)
+        assert_allclose(from_openmm(energy_05), expected_energy_05, rtol = 1e-05)
 
     def test_two_ligands_charges(self, three_particle_system):
         """Test scaling the nonbonded interactions of single particles."""
@@ -621,7 +621,7 @@ class TestNonbondedInteractions:
             },
         )
         expected_energy = energy_fn(0, 2, 1.0, 0.8) + energy_fn(1, 2, 1.0, 0.2)
-        assert is_close(energy, expected_energy)
+        assert_allclose(from_openmm(energy), expected_energy, rtol = 1e-05)
 
 
 @pytest.fixture
@@ -858,7 +858,7 @@ def test_dry_run_benzene_toluene_noncubic(
                            ] * offunit.nanometer
         assert_allclose(
             expected_vectors,
-            from_openmm(vectors)
+            from_openmm(vectors),
         )
 
 
