@@ -106,7 +106,7 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     [1] Baumann, Hannah M., et al. "Broadening the scope of binding free
         energy calculations using a Separated Topologies approach." (2023).
     """
-    K_r: FloatQuantity['kilojoule_per_mole / nm ** 2'] = 83.68 * unit.kilojoule_per_mole / unit.nm ** 2
+    K_r: FloatQuantity['kilojoule_per_mole / nm ** 2'] = 8368.0 * unit.kilojoule_per_mole / unit.nm ** 2
     """
     The bond spring constant between H0 and G0.
     """
