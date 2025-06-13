@@ -174,13 +174,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return alchemical_factory, alchemical_system
 
     def _pre_equilibrate(
-            self,
-            system: openmm.System,
-            topology: openmm.app.Topology,
-            positions: omm_unit.Quantity,
-            settings: dict[str, SettingsBaseModel],
-            endstate: str,
-            dry: bool
+        self,
+        system: openmm.System,
+        topology: openmm.app.Topology,
+        positions: omm_unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+        endstate: str,
+        dry: bool
     ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
@@ -318,9 +318,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return equilibrated_positions, box
 
     def _prepare(
-            self, verbose: bool,
-            scratch_basepath: Optional[pathlib.Path],
-            shared_basepath: Optional[pathlib.Path],
+        self, verbose: bool,
+        scratch_basepath: Optional[pathlib.Path],
+        shared_basepath: Optional[pathlib.Path],
     ):
         """
         Set basepaths and do some initial logging.
@@ -391,9 +391,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         ...
 
     def _get_system_generator(
-            self,
-            settings: dict[str, SettingsBaseModel],
-            solvent_comp: Optional[SolventComponent]
+        self,
+        settings: dict[str, SettingsBaseModel],
+        solvent_comp: Optional[SolventComponent]
     ) -> SystemGenerator:
         """
         Get a system generator through the system creation
@@ -429,8 +429,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _assign_partial_charges(
-            partial_charge_settings: OpenFFPartialChargeSettings,
-            smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        partial_charge_settings: OpenFFPartialChargeSettings,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
         Assign partial charges to SMCs.
@@ -454,12 +454,12 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             )
 
     def _get_modeller(
-            self,
-            protein_component: Optional[ProteinComponent],
-            solvent_component: SolventComponent,
-            smc_components: dict[SmallMoleculeComponent, OFFMolecule],
-            system_generator: SystemGenerator,
-            solvation_settings: BaseSolvationSettings
+        self,
+        protein_component: Optional[ProteinComponent],
+        solvent_component: SolventComponent,
+        smc_components: dict[SmallMoleculeComponent, OFFMolecule],
+        system_generator: SystemGenerator,
+        solvation_settings: BaseSolvationSettings
     ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
@@ -517,10 +517,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return system_modeller, comp_resids
 
     def _get_omm_objects(
-            self,
-            system_modeller: openmm.app.Modeller,
-            system_generator: SystemGenerator,
-            smc_components: list[OFFMolecule],
+        self,
+        system_modeller: openmm.app.Modeller,
+        system_generator: SystemGenerator,
+        smc_components: list[OFFMolecule],
     ) -> tuple[openmm.app.Topology, openmm.unit.Quantity, openmm.System]:
         """
         Get the OpenMM Topology, Positions and System of the
@@ -560,8 +560,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_atom_indices(
-            omm_topology: openmm.app.Topology,
-            comp_resids: dict[Component, npt.NDArray],
+        omm_topology: openmm.app.Topology,
+        comp_resids: dict[Component, npt.NDArray],
     ):
         comp_atomids = {}
         for key, values in comp_resids.items():
@@ -574,8 +574,8 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def get_smc_comps(
-            alchem_comps: dict[str, list[Component]],
-            smc_comps: dict[SmallMoleculeComponent, OFFMolecule],
+        alchem_comps: dict[str, list[Component]],
+        smc_comps: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> tuple[dict[SmallMoleculeComponent, OFFMolecule],
                dict[SmallMoleculeComponent, OFFMolecule],
                dict[SmallMoleculeComponent, OFFMolecule],
@@ -593,11 +593,11 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B
 
     def get_system(
-            self,
-            solv_comp: SolventComponent,
-            prot_comp: ProteinComponent,
-            smc_comp: dict[SmallMoleculeComponent, OFFMolecule],
-            settings: dict[str, SettingsBaseModel],
+        self,
+        solv_comp: SolventComponent,
+        prot_comp: ProteinComponent,
+        smc_comp: dict[SmallMoleculeComponent, OFFMolecule],
+        settings: dict[str, SettingsBaseModel],
     ):
         """
         Creates an OpenMM system, topology, positions, modeller and also
@@ -637,13 +637,13 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return omm_system, omm_topology, positions, system_modeller, comp_resids
 
     def get_system_AB(
-            self,
-            solv_comp: SolventComponent,
-            system_modeller_A: openmm.app.Modeller,
-            smc_comps_AB: dict[SmallMoleculeComponent, OFFMolecule],
-            smc_off_B: dict[SmallMoleculeComponent, OFFMolecule],
-            settings: dict[str, SettingsBaseModel],
-            shared_basepath: pathlib.Path,
+        self,
+        solv_comp: SolventComponent,
+        system_modeller_A: openmm.app.Modeller,
+        smc_comps_AB: dict[SmallMoleculeComponent, OFFMolecule],
+        smc_off_B: dict[SmallMoleculeComponent, OFFMolecule],
+        settings: dict[str, SettingsBaseModel],
+        shared_basepath: pathlib.Path,
     ):
         """
         Creates an OpenMM system, topology, positions, and modeller.
@@ -693,9 +693,9 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
     """
 
     def _prepare(
-            self, verbose: bool,
-            scratch_basepath: Optional[pathlib.Path],
-            shared_basepath: Optional[pathlib.Path],
+        self, verbose: bool,
+        scratch_basepath: Optional[pathlib.Path],
+        shared_basepath: Optional[pathlib.Path],
     ):
         """
         Set basepaths and do some initial logging.
@@ -768,7 +768,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
     @abc.abstractmethod
     def _get_lambda_schedule(
-            self, settings: dict[str, SettingsBaseModel]
+        self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, npt.NDArray]:
         """
         Create the lambda schedule
@@ -789,12 +789,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         ...
 
     def _pre_equilibrate(
-            self,
-            system: openmm.System,
-            topology: openmm.app.Topology,
-            positions: omm_unit.Quantity,
-            settings: dict[str, SettingsBaseModel],
-            dry: bool
+        self,
+        system: openmm.System,
+        topology: openmm.app.Topology,
+        positions: omm_unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+        dry: bool
     ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
         """
         Run a non-alchemical equilibration to get a stable system.
@@ -929,13 +929,13 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         return equilibrated_positions, box
 
     def _get_states(
-            self,
-            alchemical_system: openmm.System,
-            positions: openmm.unit.Quantity,
-            box_vectors: Optional[openmm.unit.Quantity],
-            settings: dict[str, SettingsBaseModel],
-            lambdas: dict[str, npt.NDArray],
-            solvent_comp: Optional[SolventComponent],
+        self,
+        alchemical_system: openmm.System,
+        positions: openmm.unit.Quantity,
+        box_vectors: Optional[openmm.unit.Quantity],
+        settings: dict[str, SettingsBaseModel],
+        lambdas: dict[str, npt.NDArray],
+        solvent_comp: Optional[SolventComponent],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
         Get a list of sampler and thermodynmic states from an
@@ -1107,8 +1107,8 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_integrator(
-            integrator_settings: IntegratorSettings,
-            simulation_settings: MultiStateSimulationSettings
+        integrator_settings: IntegratorSettings,
+        simulation_settings: MultiStateSimulationSettings
     ) -> openmmtools.mcmc.LangevinDynamicsMove:
         """
         Return a LangevinDynamicsMove integrator
@@ -1141,14 +1141,14 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
     @staticmethod
     def _get_sampler(
-            integrator: openmmtools.mcmc.LangevinDynamicsMove,
-            reporter: openmmtools.multistate.MultiStateReporter,
-            simulation_settings: MultiStateSimulationSettings,
-            thermo_settings: ThermoSettings,
-            cmp_states: list[ThermodynamicState],
-            sampler_states: list[SamplerState],
-            energy_context_cache: openmmtools.cache.ContextCache,
-            sampler_context_cache: openmmtools.cache.ContextCache
+        integrator: openmmtools.mcmc.LangevinDynamicsMove,
+        reporter: openmmtools.multistate.MultiStateReporter,
+        simulation_settings: MultiStateSimulationSettings,
+        thermo_settings: ThermoSettings,
+        cmp_states: list[ThermodynamicState],
+        sampler_states: list[SamplerState],
+        energy_context_cache: openmmtools.cache.ContextCache,
+        sampler_context_cache: openmmtools.cache.ContextCache
     ) -> multistate.MultiStateSampler:
         """
         Get a sampler based on the equilibrium sampling method requested.
@@ -1222,13 +1222,13 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         return sampler
 
     def _run_simulation(
-            self,
-            sampler: multistate.MultiStateSampler,
-            reporter: multistate.MultiStateReporter,
-            settings: dict[str, SettingsBaseModel],
-            dry: bool,
-            verbose: bool,
-            shared_basepath: pathlib.Path,
+        self,
+        sampler: multistate.MultiStateSampler,
+        reporter: multistate.MultiStateReporter,
+        settings: dict[str, SettingsBaseModel],
+        dry: bool,
+        verbose: bool,
+        shared_basepath: pathlib.Path,
     ):
         """
         Run the simulation.
@@ -1318,9 +1318,9 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             return None
 
     def run(
-            self, serialized_system, serialized_topology, dry=False, verbose=True,
-            scratch_basepath=None, shared_basepath=None,
-                 ) -> dict[str, Any]:
+        self, serialized_system, serialized_topology, dry=False, verbose=True,
+        scratch_basepath=None, shared_basepath=None,
+    ) -> dict[str, Any]:
         """
         Run the simulation part of the SepTop protocol.
 

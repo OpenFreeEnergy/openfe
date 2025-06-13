@@ -137,8 +137,8 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
 
 
 def _check_alchemical_charge_difference(
-        ligandA: SmallMoleculeComponent,
-        ligandB: SmallMoleculeComponent,
+    ligandA: SmallMoleculeComponent,
+    ligandB: SmallMoleculeComponent,
 ):
     """
     Checks and returns the difference in formal charge between state A
@@ -797,8 +797,8 @@ class SepTopProtocol(gufe.Protocol):
 
     @staticmethod
     def _validate_lambda_schedule(
-            lambda_settings: LambdaSettings,
-            simulation_settings: MultiStateSimulationSettings,
+        lambda_settings: LambdaSettings,
+        simulation_settings: MultiStateSimulationSettings,
     ) -> None:
         """
         Checks that the lambda schedule is set up correctly.
@@ -1100,7 +1100,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _update_positions(
-            omm_topology_A, omm_topology_B, positions_A, positions_B
+        omm_topology_A, omm_topology_B, positions_A, positions_B
     ) -> simtk.unit.Quantity:
         """
         Aligns the protein from complex B onto the protein from complex A and
@@ -1135,10 +1135,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _get_mda_universe(
-            topology: openmm.app.Topology,
-            positions: openmm.unit.Quantity,
-            trajectory: Optional[pathlib.Path],
-            settings,
+        topology: openmm.app.Topology,
+        positions: openmm.unit.Quantity,
+        trajectory: Optional[pathlib.Path],
+        settings,
     ) -> mda.Universe:
         """
         Helper method to get a Universe from an openmm Topology,
@@ -1184,12 +1184,12 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _get_boresch_restraint(
-            universe: mda.Universe,
-            guest_rdmol: Chem.Mol,
-            guest_atom_ids: list[int],
-            host_atom_ids: list[int],
-            temperature: unit.Quantity,
-            settings: BoreschRestraintSettings,
+        universe: mda.Universe,
+        guest_rdmol: Chem.Mol,
+        guest_atom_ids: list[int],
+        host_atom_ids: list[int],
+        temperature: unit.Quantity,
+        settings: BoreschRestraintSettings,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
         Get a Boresch-like restraint Geometry and OpenMM restraint force
@@ -1237,19 +1237,19 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         return geom, restraint
 
     def _add_restraints(
-            self,
-            system: openmm.System,
-            topology_A,
-            topology_B,
-            positions_A,
-            positions_B,
-            rdmol_A,
-            rdmol_B,
-            ligand_A_inxs: list[int],
-            ligand_B_inxs: list[int],
-            ligand_B_inxs_B: list[int],
-            protein_inxs: list[int],  # type: ignore[override]
-            settings: dict[str, SettingsBaseModel],
+        self,
+        system: openmm.System,
+        topology_A,
+        topology_B,
+        positions_A,
+        positions_B,
+        rdmol_A,
+        rdmol_B,
+        ligand_A_inxs: list[int],
+        ligand_B_inxs: list[int],
+        ligand_B_inxs_B: list[int],
+        protein_inxs: list[int],  # type: ignore[override]
+        settings: dict[str, SettingsBaseModel],
     ) -> openmm.System:
         """
         Adds Boresch restraints to the system.
@@ -1367,7 +1367,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
 
     def run(self, dry=False, verbose=True,
-            scratch_basepath=None, shared_basepath=None) -> dict[str, Any]:
+            scratch_basepath=None, shared_basepath=None,
+            ) -> dict[str, Any]:
         """
         Run the SepTop free energy calculation.
 
@@ -1628,8 +1629,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _update_positions(
-            rdmol_A,
-            rdmol_B,
+        rdmol_A,
+        rdmol_B,
     ) -> simtk.unit.Quantity:
 
         # Offset ligand B from ligand A in the solvent
@@ -1957,7 +1958,7 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         return settings
 
     def _get_lambda_schedule(
-            self, settings: dict[str, SettingsBaseModel]
+        self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, npt.NDArray]:
 
         lambdas = dict()
@@ -2085,7 +2086,7 @@ class SepTopComplexRunUnit(BaseSepTopRunUnit):
         return settings
 
     def _get_lambda_schedule(
-            self, settings: dict[str, SettingsBaseModel]
+        self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, npt.NDArray]:
         lambdas = dict()
 
