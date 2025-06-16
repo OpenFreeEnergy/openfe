@@ -1276,7 +1276,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         system: openmm.System
           The OpenMM system with the added restraints forces
         """
-        from MDAnalysis.coordinates.memory import MemoryReader
 
         # Get the MDA Universe for the restraints selection
         # We try to pass the equilibration production file path through
