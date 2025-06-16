@@ -1112,7 +1112,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
           OpenMM topology from complex A
         omm_topology_B: openmm.app.Topology
           OpenMM topology from complex B
-        positions_A: simtk.unit.Quantity
+        positions_A: openmm.unit.Quantity
           Positions of the system in state A
         positions_B: simtk.unit.Quantity
           Positions of the system in state B
