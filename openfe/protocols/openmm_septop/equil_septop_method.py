@@ -1831,10 +1831,11 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         )
 
         topology_file = self.shared_basepath / 'topology.pdb'
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   positions_AB,
-                                                   open(topology_file,
-                                                        'w'))
+        openmm.app.pdbfile.PDBFile.writeFile(
+            omm_topology_AB,
+            positions_AB,
+            open(topology_file, 'w')
+        )
 
         # ToDo: also apply REST
 
