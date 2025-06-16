@@ -307,11 +307,11 @@ def get_available_openmm_platforms() -> set[str]:
 
 
 def compute_energy(
-        system: openmm.System,
-        positions: openmm.unit.Quantity,
-        box_vectors: openmm.unit.Quantity | None,
-        context_params: dict[str, float] | None = None,
-        platform=None,
+    system: openmm.System,
+    positions: openmm.unit.Quantity,
+    box_vectors: openmm.unit.Quantity | None,
+    context_params: dict[str, float] | None = None,
+    platform=None,
 ) -> unit.Quantity:
     """
     Computes the potential energy of a system at a given set of positions.

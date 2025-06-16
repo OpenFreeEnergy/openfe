@@ -92,19 +92,20 @@ def compare_energies(alchemical_system, positions):
 
 
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
-def test_lambda_energies(bace_ligands,  bace_protein_component, tmpdir):
+def test_lambda_energies(
+    bace_ligands,  bace_protein_component, tmpdir, default_settings,
+):
     # check system parametrisation works even if confgen fails
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_equil_simulation_settings.minimization_steps = 100
-    s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
-    s.solvent_solvation_settings.box_shape = 'dodecahedron'
-    s.solvent_solvation_settings.solvent_padding = 1.8 * unit.nanometer
+    default_settings.protocol_repeats = 1
+    default_settings.solvent_equil_simulation_settings.minimization_steps = 100
+    default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
+    default_settings.solvent_solvation_settings.box_shape = 'dodecahedron'
+    default_settings.solvent_solvation_settings.solvent_padding = 1.8 * unit.nanometer
 
     protocol = SepTopProtocol(
-        settings=s,
+        settings=default_settings,
     )
 
     stateA = ChemicalSystem({
@@ -208,35 +209,38 @@ def set_openmm_threads_1():
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_openmm_run_engine(platform,
-                           available_platforms,
-                           benzene_modifications,
-                           T4_protein_component,
-                           set_openmm_threads_1, tmpdir):
+def test_openmm_run_engine(
+    platform,
+    available_platforms,
+    benzene_modifications,
+    T4_protein_component,
+    set_openmm_threads_1,
+    tmpdir,
+    default_settings
+):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
 
     # Run a really short calculation to check everything is going well
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_output_settings.output_indices = "resname UNK"
-    s.complex_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.complex_equil_simulation_settings.production_length = 0.1 * unit.picosecond
-    s.complex_simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.complex_simulation_settings.production_length = 0.1 * unit.picosecond
-    s.solvent_equil_simulation_settings.equilibration_length_nvt = 0.1 * unit.picosecond
-    s.solvent_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.solvent_equil_simulation_settings.production_length = 0.1 * unit.picosecond
-    s.solvent_simulation_settings.equilibration_length = 0.1 * unit.picosecond
-    s.solvent_simulation_settings.production_length = 0.1 * unit.picosecond
-    s.engine_settings.compute_platform = platform
-    s.complex_simulation_settings.time_per_iteration = 20 * unit.femtosecond
-    s.solvent_simulation_settings.time_per_iteration = 20 * unit.femtosecond
-    s.complex_output_settings.checkpoint_interval = 20 * unit.femtosecond
-    s.solvent_output_settings.checkpoint_interval = 20 * unit.femtosecond
+    default_settings.protocol_repeats = 1
+    default_settings.solvent_output_settings.output_indices = "resname UNK"
+    default_settings.complex_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.complex_equil_simulation_settings.production_length = 0.1 * unit.picosecond
+    default_settings.complex_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.complex_simulation_settings.production_length = 0.1 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = 0.1 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.production_length = 0.1 * unit.picosecond
+    default_settings.solvent_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.solvent_simulation_settings.production_length = 0.1 * unit.picosecond
+    default_settings.engine_settings.compute_platform = platform
+    default_settings.complex_simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    default_settings.solvent_simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    default_settings.complex_output_settings.checkpoint_interval = 20 * unit.femtosecond
+    default_settings.solvent_output_settings.checkpoint_interval = 20 * unit.femtosecond
 
     protocol = SepTopProtocol(
-            settings=s,
+            settings=default_settings,
     )
 
     stateA = openfe.ChemicalSystem({
@@ -285,24 +289,27 @@ def test_openmm_run_engine(platform,
 
 @pytest.mark.flaky(reruns=1)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_restraints_solvent(platform,
-                           available_platforms,
-                           benzene_complex_system,
-                           toluene_complex_system,
-                           set_openmm_threads_1, tmpdir):
+def test_restraints_solvent(
+    platform,
+    available_platforms,
+    benzene_complex_system,
+    toluene_complex_system,
+    set_openmm_threads_1,
+    tmpdir,
+    default_settings
+):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
 
     # Run a really short calculation to check everything is going well
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
-    s.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
-    s.engine_settings.compute_platform = platform
+    default_settings.protocol_repeats = 1
+    default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
+    default_settings.engine_settings.compute_platform = platform
 
     protocol = SepTopProtocol(
-            settings=s,
+            settings=default_settings,
     )
 
     # Create DAG from protocol, get the vacuum and solvent units

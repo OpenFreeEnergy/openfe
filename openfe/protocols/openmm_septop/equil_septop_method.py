@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 """OpenMM Equilibrium SepTop RBFE Protocol --- :mod:`openfe.protocols.openmm_septop.equil_septop_method`
-========================================================================================================
+=========================================================================================================
 
 This module implements the necessary methodology tooling to run a
 Separated Topologies RBFE calculation using OpenMM tools and one of the
@@ -108,7 +108,10 @@ due.cite(Doi("10.1371/journal.pcbi.1005659"),
 logger = logging.getLogger(__name__)
 
 
-def _get_mdtraj_from_openmm(omm_topology, omm_positions):
+def _get_mdtraj_from_openmm(
+    omm_topology: openmm.app.Topology,
+    omm_positions: openmm.unit.Quantity,
+):
     """
     Get an mdtraj object from an OpenMM topology and positions.
 
@@ -679,7 +682,6 @@ class SepTopProtocol(gufe.Protocol):
                 spring_constant=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
             ),
             complex_restraint_settings=BoreschRestraintSettings(
-                K_r=8368.0 * unit.kilojoule_per_mole / unit.nanometer ** 2,
                 K_thetaA=1000 * unit.kilojoule_per_mole / unit.radian ** 2
             ),
         )
@@ -1079,24 +1081,26 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             'lambda_settings': prot_settings.complex_lambda_settings,
             'engine_settings': prot_settings.engine_settings,
             'integrator_settings': prot_settings.integrator_settings,
-            'equil_simulation_settings':
-                prot_settings.complex_equil_simulation_settings,
-            'equil_output_settings':
-                prot_settings.complex_equil_output_settings,
+            'equil_simulation_settings': prot_settings.complex_equil_simulation_settings,
+            'equil_output_settings': prot_settings.complex_equil_output_settings,
             'simulation_settings': prot_settings.complex_simulation_settings,
             'output_settings': prot_settings.complex_output_settings,
-            'restraint_settings': prot_settings.complex_restraint_settings}
+            'restraint_settings': prot_settings.complex_restraint_settings,
+        }
 
         settings_validation.validate_timestep(
             settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
+            settings['integrator_settings'].timestep,
         )
 
         return settings
 
     @staticmethod
     def _update_positions(
-        omm_topology_A, omm_topology_B, positions_A, positions_B
+        omm_topology_A: openmm.app.Topology,
+        omm_topology_B: openmm.app.Topology,
+        positions_A: openmm.unit.Quantity,
+        positions_B: openmm.unit.Quantity,
     ) -> openmm.unit.Quantity:
         """
         Aligns the protein from complex B onto the protein from complex A and
@@ -1120,9 +1124,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         """
         mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
         mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
-        mdtraj_complex_B.superpose(mdtraj_complex_A,
-                                   atom_indices=mdtraj_complex_A.topology.select(
-                                       'backbone'))
+        mdtraj_complex_B.superpose(
+            mdtraj_complex_A,
+            atom_indices=mdtraj_complex_A.topology.select('backbone'),
+        )
         # Extract updated system positions.
         updated_positions_B = mdtraj_complex_B.openmm_positions(-1)
 
@@ -1235,18 +1240,24 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     def _add_restraints(
         self,
         system: openmm.System,
-        topology_A,
-        topology_B,
-        positions_A,
-        positions_B,
-        rdmol_A,
-        rdmol_B,
+        topology_A: openmm.app.Topology,
+        topology_B: openmm.app.Topology,
+        positions_A: openmm.unit.Quantity,
+        positions_B: openmm.unit.Quantity,
+        mol_A: SmallMoleculeComponent,
+        mol_B: SmallMoleculeComponent,
         ligand_A_inxs: list[int],
         ligand_B_inxs: list[int],
         ligand_B_inxs_B: list[int],
         protein_inxs: list[int],  # type: ignore[override]
         settings: dict[str, SettingsBaseModel],
-    ) -> openmm.System:
+    ) -> tuple[
+        unit.Quantity,
+        unit.Quantity,
+        openmm.System,
+        geometry.HostGuestRestraintGeometry,
+        geometry.HostGuestRestraintGeometry,
+    ]:
         """
         Adds Boresch restraints to the system.
 
@@ -1254,36 +1265,50 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         ----------
         system: openmm.System
           The OpenMM system where the restraints will be applied to.
-        topology: openmm.app.Topology
-          The OpenMM topology of the system
-        ligand_1: OFFMolecule.Topology
-          The topology of the OpenFF Molecule of ligand A
-        ligand_2: OFFMolecule.Topology
-          The topology of the OpenFF Molecule of ligand B
+        topology_A: openmm.app.Topology
+          The OpenMM topology that defines the system A
+        topology_B: openmm.app.Topology
+          The OpenMM topology that defines the system B
+        positions_A: openmm.unit.Quantity
+          Positions of the system A. This could be a single set of positions,
+          or a full trajectory.
+        positions_B: openmm.unit.Quantity
+          Positions of the system B. This could be a single set of positions,
+          or a full trajectory.
+        mol_A: SmallMoleculeComponent
+          The SmallMoleculeComponent of ligand A
+        mol_B: SmallMoleculeComponent
+          The SmallMoleculeComponent of ligand B
+        ligand_A_inxs: list[int]
+          Atom indices of ligand A in the complex A
+        ligand_B_inxs: list[int]
+          Atom indices of ligand B in the complex B
+        ligand_B_inxs_B: list[int]
+          Atom indices of ligand B in the full system (AB)
+        protein_inxs: list[int]
+          Atom indices from the protein atoms
         settings: dict[str, SettingsBaseModel]
           The settings dict
-        ligand_1_ref_idxs: tuple[int, int, int]
-          indices from the ligand A topology
-        ligand_2_ref_idxs: tuple[int, int, int]
-          indices from the ligand B topology
-        ligand_1_idxs: tuple[int, int, int]
-          indices from the ligand A in the full topology
-        ligand_1_idxs: tuple[int, int, int]
-          indices from the ligand B in the full topology
 
         Returns
         -------
-        system: openmm.System
+        correction_A: unit.Quantity
+          The standard state correction for the restraint for ligand A.
+        correction_B: unit.Quantity
+          The standard state correction for the restraint for ligand B.
+        thermodynamic_state.system: openmm.System
           The OpenMM system with the added restraints forces
+        rest_geom_A: geometry.HostGuestRestraintGeometry
+          The restraint Geometry object for ligand A.
+        rest_geom_B: geometry.HostGuestRestraintGeometry
+          The restraint Geometry object for ligand B.
         """
-
         # Get the MDA Universe for the restraints selection
         # We try to pass the equilibration production file path through
         # In some cases (debugging / dry runs) this won't be available
         # so we'll default to using input positions.
         out_traj = (self.shared_basepath
-                    / settings[
-                        'equil_output_settings'].production_trajectory_filename)
+                    / settings['equil_output_settings'].production_trajectory_filename)
         u_A = self._get_mda_universe(
             topology_A,
             positions_A,
@@ -1296,6 +1321,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             pathlib.Path(f'{out_traj}_stateB.xtc'),
             settings,
         )
+        rdmol_A = mol_A.to_rdkit()
+        rdmol_B = mol_B.to_rdkit()
         Chem.SanitizeMol(rdmol_A)
         Chem.SanitizeMol(rdmol_B)
 
@@ -1496,8 +1523,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             omm_topology_B,
             equil_positions_A,
             equil_positions_B,
-            alchem_comps["stateA"][0].to_rdkit(),
-            alchem_comps["stateB"][0].to_rdkit(),
+            alchem_comps["stateA"][0],
+            alchem_comps["stateB"][0],
             atom_indices_AB_A,
             atom_indices_AB_B,
             atom_indices_B,
@@ -1647,10 +1674,30 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
 
     @staticmethod
     def _update_positions(
-        rdmol_A,
-        rdmol_B,
-    ) -> openmm.unit.Quantity:
+        mol_A: SmallMoleculeComponent,
+        mol_B: SmallMoleculeComponent,
+    ) -> SmallMoleculeComponent:
+        """
+        Computes the amount to offset the second ligand by in the solution
+        phase during RBFE calculations and applies the offset to the ligand,
+        returning the SmallMoleculeComponent with the updated positions.
 
+        Parameters
+        ----------
+        mol_A: SmallMoleculeComponent
+          The SmallMoleculeComponent of ligand A
+        mol_B: SmallMoleculeComponent
+          The SmallMoleculeComponent of ligand B
+        Returns
+        -------
+        updated_mol_B: SmallMoleculeComponent
+          The SmallMoleculeComponent of ligand B after updating its positions
+          to be a certain distance away from ligand A
+        """
+
+        # Convert SmallMolecule to Rdkit Molecule
+        rdmol_A = mol_A.to_rdkit()
+        rdmol_B = mol_B.to_rdkit()
         # Offset ligand B from ligand A in the solvent
         pos_ligandA = rdmol_A.GetConformers()[0].GetPositions()
         pos_ligandB = rdmol_B.GetConformers()[0].GetPositions()
@@ -1670,18 +1717,23 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         # Extract updated system positions.
         rdmol_B.GetConformers()[0].SetPositions(pos_ligandB)
 
-        return SmallMoleculeComponent(rdmol_B)
+        updated_mol_B = SmallMoleculeComponent(rdmol_B)
+
+        return updated_mol_B
 
     def _add_restraints(
         self,
         system: openmm.System,
-        ligand_1,
-        ligand_2,
+        ligand_1: rdkit.Chem.rdchem.Mol,
+        ligand_2: rdkit.Chem.rdchem.Mol,
         ligand_1_inxs: list[int],
         ligand_2_inxs: list[int],
         settings: dict[str, SettingsBaseModel],
         positions_AB: np.ndarray,
-    ) -> openmm.System:
+    ) -> tuple[
+        unit.Quantity,
+        openmm.System:
+    ]:
         """
         Apply the distance restraint between the ligands.
 
@@ -1689,27 +1741,23 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ----------
         system: openmm.System
           The OpenMM system where the restraints will be applied to.
-        positions: openmm.unit.Quantity
-          The positions of the OpenMM system
-        topology: openmm.app.Topology
-          The OpenMM topology of the system
-        ligand_1: OFFMolecule.Topology
-          The topology of the OpenFF Molecule of ligand A
-        ligand_2: OFFMolecule.Topology
-          The topology of the OpenFF Molecule of ligand B
+        ligand_1: rdkit.Chem.rdchem.Mol
+          The RDKit Molecule of ligand A
+        ligand_2: rdkit.Chem.rdchem.Mol
+          The RDKit Molecule of ligand B
+        ligand_1_idxs: list[int]
+          Atom indices from the ligand A in the system.
+        ligand_2_idxs: list[int]
+          Atom indices from the ligand B in the system.
         settings: dict[str, SettingsBaseModel]
           The settings dict
-        ligand_1_ref_idxs: tuple[int, int, int]
-          indices from the ligand A topology
-        ligand_2_ref_idxs: tuple[int, int, int]
-          indices from the ligand B topology
-        ligand_1_idxs: tuple[int, int, int]
-          indices from the ligand A in the full topology
-        ligand_1_idxs: tuple[int, int, int]
-          indices from the ligand B in the full topology
+        positions_AB: openmm.unit.Quantity
+          The positions of the OpenMM system
 
         Returns
         -------
+        correction: unit.Quantity
+          Standard state correction for the harmonic distance restraint.
         system: openmm.System
           The OpenMM system with the added restraints forces
         """
@@ -1801,8 +1849,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         # 5. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
         smc_B = self._update_positions(
-            alchem_comps['stateA'][0].to_rdkit(),
-            alchem_comps['stateB'][0].to_rdkit(),
+            alchem_comps['stateA'][0],
+            alchem_comps['stateB'][0],
             )
         smc_comps_B = {smc_B: smc_B.to_openff()}
 

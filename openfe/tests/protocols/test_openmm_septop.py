@@ -180,15 +180,14 @@ def test_serialize_protocol(default_settings):
 
 
 def test_create_independent_repeat_ids(
-        benzene_complex_system, toluene_complex_system,
+    benzene_complex_system, toluene_complex_system, default_settings
 ):
     # if we create two dags each with 3 repeats, they should give 6 repeat_ids
     # this allows multiple DAGs in flight for one Transformation that don't clash on gather
-    settings = SepTopProtocol.default_settings()
     # Default protocol is 1 repeat, change to 3 repeats
-    settings.protocol_repeats = 3
+    default_settings.protocol_repeats = 3
     protocol = SepTopProtocol(
-            settings=settings,
+            settings=default_settings,
     )
 
     dag1 = protocol.create(
@@ -222,15 +221,14 @@ def test_check_alchem_charge_diff(charged_benzene_modifications):
 
 
 def test_charge_error_create(
-        charged_benzene_modifications, T4_protein_component,
+    charged_benzene_modifications, T4_protein_component, default_settings
 ):
     # if we create two dags each with 3 repeats, they should give 6 repeat_ids
     # this allows multiple DAGs in flight for one Transformation that don't clash on gather
-    settings = SepTopProtocol.default_settings()
     # Default protocol is 1 repeat, change to 3 repeats
-    settings.protocol_repeats = 3
+    default_settings.protocol_repeats = 3
     protocol = SepTopProtocol(
-            settings=settings,
+            settings=default_settings,
     )
     stateA = ChemicalSystem({
         'benzene': charged_benzene_modifications['benzene'],
@@ -624,10 +622,10 @@ class TestNonbondedInteractions:
 
 
 @pytest.fixture
-def benzene_toluene_dag(benzene_complex_system, toluene_complex_system):
-    s = SepTopProtocol.default_settings()
-
-    protocol = SepTopProtocol(settings=s)
+def benzene_toluene_dag(
+    benzene_complex_system, toluene_complex_system, default_settings,
+):
+    protocol = SepTopProtocol(settings=default_settings)
 
     return protocol.create(
              stateA=benzene_complex_system,
@@ -698,16 +696,15 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
                           1.1 * openmm.unit.atmosphere]
                          )
 def test_dry_run_ligand_system_pressure(
-    pressure, benzene_complex_system, toluene_complex_system, tmpdir
+    pressure, benzene_complex_system, toluene_complex_system, tmpdir, default_settings,
 ):
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    settings = SepTopProtocol.default_settings()
-    settings.thermo_settings.pressure = pressure
+    default_settings.thermo_settings.pressure = pressure
 
     protocol = SepTopProtocol(
-            settings=settings,
+            settings=default_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -736,17 +733,16 @@ def test_dry_run_ligand_system_pressure(
                           0.9 * offunit.nanometer]
                          )
 def test_dry_run_ligand_system_cutoff(
-    cutoff, benzene_complex_system, toluene_complex_system, tmpdir
+    cutoff, benzene_complex_system, toluene_complex_system, tmpdir, default_settings,
 ):
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    settings = SepTopProtocol.default_settings()
-    settings.solvent_solvation_settings.solvent_padding = 1.9 * offunit.nanometer
-    settings.forcefield_settings.nonbonded_cutoff = cutoff
+    default_settings.solvent_solvation_settings.solvent_padding = 1.9 * offunit.nanometer
+    default_settings.forcefield_settings.nonbonded_cutoff = cutoff
 
     protocol = SepTopProtocol(
-            settings=settings,
+            settings=default_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -771,18 +767,18 @@ def test_dry_run_ligand_system_cutoff(
 
 
 def test_dry_run_benzene_toluene_tip4p(
-        benzene_complex_system, toluene_complex_system, tmpdir):
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.forcefield_settings.forcefields = [
+    benzene_complex_system, toluene_complex_system, tmpdir, default_settings,
+):
+    default_settings.protocol_repeats = 1
+    default_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    s.solvent_solvation_settings.solvent_model = 'tip4pew'
-    s.integrator_settings.reassign_velocities = True
+    default_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
+    default_settings.integrator_settings.reassign_velocities = True
 
-    protocol = SepTopProtocol(settings=s)
+    protocol = SepTopProtocol(settings=default_settings)
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
@@ -814,13 +810,13 @@ def test_dry_run_benzene_toluene_tip4p(
 
 
 def test_dry_run_benzene_toluene_noncubic(
-        benzene_complex_system, toluene_complex_system, tmpdir):
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
-    s.solvent_solvation_settings.box_shape = 'dodecahedron'
+    benzene_complex_system, toluene_complex_system, tmpdir, default_settings,
+):
+    default_settings.protocol_repeats = 1
+    default_settings.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
+    default_settings.solvent_solvation_settings.box_shape = 'dodecahedron'
 
-    protocol = SepTopProtocol(settings=s)
+    protocol = SepTopProtocol(settings=default_settings)
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
@@ -862,16 +858,16 @@ def test_dry_run_benzene_toluene_noncubic(
 
 
 def test_dry_run_solv_user_charges_benzene_toluene(
-        benzene_modifications, T4_protein_component, tmpdir):
+    benzene_modifications, T4_protein_component, tmpdir, default_settings,
+):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
     alchemical system.
     """
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
+    default_settings.protocol_repeats = 1
 
-    protocol = SepTopProtocol(settings=s)
+    protocol = SepTopProtocol(settings=default_settings)
 
     def assign_fictitious_charges(offmol):
         """
@@ -963,13 +959,14 @@ def test_dry_run_solv_user_charges_benzene_toluene(
             assert pytest.approx(c) == toluene_charge[inx]
 
 
-def test_high_timestep(benzene_complex_system, toluene_complex_system, tmpdir):
-    s = SepTopProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.forcefield_settings.hydrogen_mass = 1.0
-    s.forcefield_settings.hydrogen_mass = 1.0
+def test_high_timestep(
+    benzene_complex_system, toluene_complex_system, tmpdir, default_settings,
+):
+    default_settings.protocol_repeats = 1
+    default_settings.forcefield_settings.hydrogen_mass = 1.0
+    default_settings.forcefield_settings.hydrogen_mass = 1.0
 
-    protocol = SepTopProtocol(settings=s)
+    protocol = SepTopProtocol(settings=default_settings)
 
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -985,10 +982,10 @@ def test_high_timestep(benzene_complex_system, toluene_complex_system, tmpdir):
 
 
 @pytest.fixture
-def T4L_xml(benzene_complex_system, toluene_complex_system, tmp_path_factory):
-    s = SepTopProtocol.default_settings()
-
-    protocol = SepTopProtocol(settings=s)
+def T4L_xml(
+    benzene_complex_system, toluene_complex_system, tmp_path_factory, default_settings,
+):
+    protocol = SepTopProtocol(settings=default_settings)
 
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -1044,33 +1041,33 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     # test that executing the units includes correct gen and repeat info
     dag_units = benzene_toluene_dag.protocol_units
     with (
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopComplexSetupUnit.run',
-                return_value={'system': pathlib.Path('system.xml.bz2'),
-                              'topology': 'topology.pdb'}),
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopComplexRunUnit._execute',
-                return_value={'repeat_id': 0,
-                              'generation': 0,
-                              'simtype': 'complex',
-                              'nc': 'file.nc',
-                              'last_checkpoint': 'chck.nc'},
-            ),
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopSolventSetupUnit.run',
-                return_value={'system': pathlib.Path('system.xml.bz2'),
-                              'topology': 'topology.pdb'}),
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopSolventRunUnit._execute',
-                return_value={'repeat_id': 0,
-                              'generation': 0,
-                              'simtype': 'solvent',
-                              'nc': 'file.nc',
-                              'last_checkpoint': 'chck.nc'}),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopComplexSetupUnit.run',
+            return_value={'system': pathlib.Path('system.xml.bz2'),
+                          'topology': 'topology.pdb'}),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopComplexRunUnit._execute',
+            return_value={'repeat_id': 0,
+                          'generation': 0,
+                          'simtype': 'complex',
+                          'nc': 'file.nc',
+                          'last_checkpoint': 'chck.nc'},
+        ),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopSolventSetupUnit.run',
+            return_value={'system': pathlib.Path('system.xml.bz2'),
+                          'topology': 'topology.pdb'}),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopSolventRunUnit._execute',
+            return_value={'repeat_id': 0,
+                          'generation': 0,
+                          'simtype': 'solvent',
+                          'nc': 'file.nc',
+                          'last_checkpoint': 'chck.nc'}),
     ):
         results = []
         for u in dag_units:
@@ -1093,33 +1090,33 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
 def test_gather(benzene_toluene_dag, tmpdir):
     # check that .gather behaves as expected
     with (
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopComplexSetupUnit.run',
-                return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
-                              'topology.pdb'}),
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopComplexRunUnit._execute',
-                return_value={'repeat_id': 0,
-                              'generation': 0,
-                              'simtype': 'complex',
-                              'nc': 'file.nc',
-                              'last_checkpoint': 'chck.nc'},
-            ),
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopSolventSetupUnit.run',
-                return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
-                              'topology.pdb'}),
-            mock.patch(
-                'openfe.protocols.openmm_septop.equil_septop_method'
-                '.SepTopSolventRunUnit._execute',
-                return_value={'repeat_id': 0,
-                              'generation': 0,
-                              'simtype': 'solvent',
-                              'nc': 'file.nc',
-                              'last_checkpoint': 'chck.nc'}),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopComplexSetupUnit.run',
+            return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
+                          'topology.pdb'}),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopComplexRunUnit._execute',
+            return_value={'repeat_id': 0,
+                          'generation': 0,
+                          'simtype': 'complex',
+                          'nc': 'file.nc',
+                          'last_checkpoint': 'chck.nc'},
+        ),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopSolventSetupUnit.run',
+            return_value={'system': pathlib.Path('system.xml.bz2'), 'topology':
+                          'topology.pdb'}),
+        mock.patch(
+            'openfe.protocols.openmm_septop.equil_septop_method'
+            '.SepTopSolventRunUnit._execute',
+            return_value={'repeat_id': 0,
+                          'generation': 0,
+                          'simtype': 'solvent',
+                          'nc': 'file.nc',
+                          'last_checkpoint': 'chck.nc'}),
     ):
         dagres = gufe.protocols.execute_DAG(benzene_toluene_dag,
                                             shared_basedir=tmpdir,
