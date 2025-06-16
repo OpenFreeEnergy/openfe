@@ -1101,7 +1101,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
     @staticmethod
     def _update_positions(
         omm_topology_A, omm_topology_B, positions_A, positions_B
-    ) -> simtk.unit.Quantity:
+    ) -> openmm.unit.Quantity:
         """
         Aligns the protein from complex B onto the protein from complex A and
         updates the positions of complex B.
