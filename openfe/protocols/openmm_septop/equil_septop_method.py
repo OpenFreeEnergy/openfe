@@ -236,7 +236,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             'standard_state_solvent': solv_correction_dGs,
         }
 
-    def get_estimate(self):
+    def get_estimate(self) -> unit.Quantity:
         """Get the difference in binding free energy estimate for this calculation.
 
         Returns
