@@ -118,7 +118,7 @@ def _get_mdtraj_from_openmm(omm_topology, omm_positions):
     ----------
     omm_topology: openmm.app.Topology
       The OpenMM topology
-    omm_positions: simtk.unit.Quantity
+    omm_positions: openmm.unit.Quantity
       The OpenMM positions
 
     Returns
