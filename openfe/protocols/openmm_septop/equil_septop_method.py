@@ -36,8 +36,7 @@ from collections import defaultdict
 import gufe
 import openmm
 import openmm.unit
-import simtk
-import simtk.unit as omm_units
+import openmm.unit as omm_units
 from gufe.components import Component
 import itertools
 import numpy as np
@@ -66,7 +65,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     SettingsBaseModel,
 )
 from ..openmm_utils import system_validation, settings_validation
-from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit
+from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit, _pre_equilibrate
 from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 from openff.units.openmm import to_openmm
@@ -1114,12 +1113,12 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
           OpenMM topology from complex B
         positions_A: openmm.unit.Quantity
           Positions of the system in state A
-        positions_B: simtk.unit.Quantity
+        positions_B: openmm.unit.Quantity
           Positions of the system in state B
 
         Returns
         -------
-        updated_positions_B: simtk.unit.Quantity
+        updated_positions_B: openmm.unit.Quantity
           Updated positions of the complex B
         """
         mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
@@ -1428,7 +1427,6 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             smc_comps_AB,
             smc_off_B,
             settings,
-            self.shared_basepath
         )
 
         # Get the comp_resids of the AB system
@@ -1440,11 +1438,27 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         # 6. Pre-equilbrate System (for restraint selection)
         self.logger.info("Pre-equilibrating the systems")
-        equ_positions_A, box_A = self._pre_equilibrate(
-            omm_system_A, omm_topology_A, positions_A, settings, 'A', dry
+        equil_positions_A, box_A = _pre_equilibrate(
+            omm_system_A,
+            omm_topology_A,
+            positions_A,
+            settings,
+            'A',
+            dry,
+            self.shared_basepath,
+            self.verbose,
+            self.logger,
         )
-        equ_positions_B, box_B = self._pre_equilibrate(
-            omm_system_B, omm_topology_B, positions_B, settings, 'B', dry
+        equil_positions_B, box_B = _pre_equilibrate(
+            omm_system_B,
+            omm_topology_B,
+            positions_B,
+            settings,
+            'B',
+            dry,
+            self.shared_basepath,
+            self.verbose,
+            self.logger,
         )
 
         # 7. Get all the right atom indices for alignments
@@ -1457,7 +1471,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         # 8. Update the positions of system B: Align protein
         updated_positions_B = self._update_positions(
-            omm_topology_A, omm_topology_B, equ_positions_A, equ_positions_B,
+            omm_topology_A, omm_topology_B, equil_positions_A, equil_positions_B,
         )
 
         # Get atom indices for ligand A and ligand B and the solvent in the
@@ -1467,7 +1481,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         atom_indices_AB_A = comp_atomids_AB[alchem_comps['stateA'][0]]
 
         # Update positions from AB system
-        positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
+        positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equil_positions_A
         positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1, :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
 
         # 9. Create the alchemical system
@@ -1484,8 +1498,8 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             alchemical_system,
             omm_topology_A,
             omm_topology_B,
-            equ_positions_A,
-            equ_positions_B,
+            equil_positions_A,
+            equil_positions_B,
             alchem_comps["stateA"][0].to_rdkit(),
             alchem_comps["stateB"][0].to_rdkit(),
             atom_indices_AB_A,
@@ -1495,15 +1509,24 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
             settings,
         )
 
-        equ_positions_AB, box_AB = self._pre_equilibrate(
-            system, omm_topology_AB, positions_AB, settings, 'AB', dry
+        equil_positions_AB, box_AB = _pre_equilibrate(
+            system,
+            omm_topology_AB,
+            positions_AB,
+            settings,
+            'AB',
+            dry,
+            self.shared_basepath,
+            self.verbose,
+            self.logger,
         )
 
         topology_file = self.shared_basepath / 'topology.pdb'
-        simtk.openmm.app.pdbfile.PDBFile.writeFile(omm_topology_AB,
-                                                   equ_positions_AB,
-                                                   open(topology_file,
-                                                        'w'))
+        openmm.app.pdbfile.PDBFile.writeFile(
+            omm_topology_AB,
+            equil_positions_AB,
+            open(topology_file, 'w'),
+        )
 
         # ToDo: also apply REST
 
@@ -1630,7 +1653,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
     def _update_positions(
         rdmol_A,
         rdmol_B,
-    ) -> simtk.unit.Quantity:
+    ) -> openmm.unit.Quantity:
 
         # Offset ligand B from ligand A in the solvent
         pos_ligandA = rdmol_A.GetConformers()[0].GetPositions()
