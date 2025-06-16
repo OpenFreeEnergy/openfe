@@ -266,7 +266,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         return (complex_ddG + complex_corr_A + complex_corr_B) - (solv_ddG + solv_corr)
 
-    def get_uncertainty(self):
+    def get_uncertainty(self) -> unit.Quantity:
         """Get the relative free energy error for this calculation.
 
         Returns
