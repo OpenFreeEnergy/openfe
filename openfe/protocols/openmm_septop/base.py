@@ -1026,8 +1026,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         integrator = openmmtools.mcmc.LangevinDynamicsMove(
             timestep=to_openmm(integrator_settings.timestep),
-            collision_rate=to_openmm(
-                integrator_settings.langevin_collision_rate),
+            collision_rate=to_openmm(integrator_settings.langevin_collision_rate),
             n_steps=steps_per_iteration,
             reassign_velocities=integrator_settings.reassign_velocities,
             n_restart_attempts=integrator_settings.n_restart_attempts,
