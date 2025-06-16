@@ -1468,8 +1468,7 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         # Update positions from AB system
         positions_AB[all_atom_ids_A[0]:all_atom_ids_A[-1] + 1, :] = equ_positions_A
-        positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1,
-                     :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
+        positions_AB[atom_indices_AB_B[0]:atom_indices_AB_B[-1] + 1, :] = updated_positions_B[atom_indices_B[0]:atom_indices_B[-1] + 1]
 
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
