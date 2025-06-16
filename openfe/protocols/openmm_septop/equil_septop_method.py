@@ -1671,7 +1671,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ----------
         system: openmm.System
           The OpenMM system where the restraints will be applied to.
-        positions: simtk.unit.Quantity
+        positions: openmm.unit.Quantity
           The positions of the OpenMM system
         topology: openmm.app.Topology
           The OpenMM topology of the system
