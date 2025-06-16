@@ -1353,7 +1353,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         positions = pdb.getPositions(asNumpy=True)
 
         # Check that the restraints are correctly applied by running a short equilibration
-        equ_positions, box_AB = self._pre_equilibrate(
+        equil_positions, box_AB = self._pre_equilibrate(
             system, pdb.topology, positions, settings, dry
         )
         lambdas = self._get_lambda_schedule(settings)
