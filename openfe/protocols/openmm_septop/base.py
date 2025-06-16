@@ -374,9 +374,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
     def _get_components(self) -> tuple[dict[str, list[Component]],
                                        Optional[gufe.SolventComponent],
                                        Optional[gufe.ProteinComponent],
-                                       dict[
-                                           SmallMoleculeComponent,
-                                           OFFMolecule]]:
+                                       dict[SmallMoleculeComponent, OFFMolecule]]:
         """
         Get the relevant components to create the alchemical system with.
 
