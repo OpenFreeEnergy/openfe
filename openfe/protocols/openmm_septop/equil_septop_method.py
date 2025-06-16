@@ -168,8 +168,6 @@ def _check_alchemical_charge_difference(
             "currently does not support net charge changes.")
         raise ValueError(errmsg)
 
-    return
-
 
 class SepTopProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a SepTopProtocol"""
