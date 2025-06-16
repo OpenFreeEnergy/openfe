@@ -225,8 +225,7 @@ def _pre_equilibrate(
         simulation_settings=settings['equil_simulation_settings'],
         output_settings=unfrozen_outsettings,
         temperature=settings['thermo_settings'].temperature,
-        barostat_frequency=settings[
-            'integrator_settings'].barostat_frequency,
+        barostat_frequency=settings['integrator_settings'].barostat_frequency,
         timestep=settings['integrator_settings'].timestep,
         equil_steps_nvt=equil_steps_nvt,
         equil_steps_npt=equil_steps_npt,
