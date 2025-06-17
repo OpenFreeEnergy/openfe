@@ -598,7 +598,6 @@ class TestNetworkFromIndices:
 
         requested = [(0, 1), (2, 3)]
 
-        # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
         network = openfe.setup.ligand_network_planning.generate_network_from_indices(
             ligands=ligands,
             indices=requested,
