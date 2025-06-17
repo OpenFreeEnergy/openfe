@@ -6,6 +6,7 @@ import pytest
 from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from openff.toolkit import Molecule
 from openff.units import unit
 import urllib.request
 
@@ -209,6 +210,19 @@ def benzene_modifications():
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
             files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope='session')
+def charged_benzene_modifications():
+    files = {}
+    with importlib.resources.files('openfe.tests.data') as d:
+        fn = str(d / 'benzene_modifications.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            offmol = Molecule.from_rdkit(rdmol)
+            offmol.assign_partial_charges(partial_charge_method='gasteiger')
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent.from_openff(offmol)
     return files
 
 

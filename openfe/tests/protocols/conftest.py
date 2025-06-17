@@ -148,10 +148,10 @@ def aniline_to_benzoic_mapping(benzene_charges):
 
 
 @pytest.fixture
-def benzene_many_solv_system(benzene_modifications):
+def benzene_many_solv_system(charged_benzene, charged_benzene_modifications):
 
-    rdmol_phenol = benzene_modifications['phenol'].to_rdkit()
-    rdmol_benzo = benzene_modifications['benzonitrile'].to_rdkit()
+    rdmol_phenol = charged_benzene_modifications['phenol'].to_rdkit()
+    rdmol_benzo = charged_benzene_modifications['benzonitrile'].to_rdkit()
 
     conf_phenol = rdmol_phenol.GetConformer()
     conf_benzo = rdmol_benzo.GetConformer()
@@ -173,7 +173,7 @@ def benzene_many_solv_system(benzene_modifications):
     )
 
     return openfe.ChemicalSystem(
-        {'whatligand': benzene_modifications['benzene'],
+        {'whatligand': charged_benzene,
          "foo": phenol,
          "bar": benzo,
          "solvent": openfe.SolventComponent()},
@@ -181,10 +181,10 @@ def benzene_many_solv_system(benzene_modifications):
 
 
 @pytest.fixture
-def toluene_many_solv_system(benzene_modifications):
+def toluene_many_solv_system(charged_toluene, charged_benzene_modifications):
 
-    rdmol_phenol = benzene_modifications['phenol'].to_rdkit()
-    rdmol_benzo = benzene_modifications['benzonitrile'].to_rdkit()
+    rdmol_phenol = charged_benzene_modifications['phenol'].to_rdkit()
+    rdmol_benzo = charged_benzene_modifications['benzonitrile'].to_rdkit()
 
     conf_phenol = rdmol_phenol.GetConformer()
     conf_benzo = rdmol_benzo.GetConformer()
@@ -205,7 +205,7 @@ def toluene_many_solv_system(benzene_modifications):
         rdmol_benzo, name='benzonitrile'
     )
     return openfe.ChemicalSystem(
-        {'whatligand': benzene_modifications['toluene'],
+        {'whatligand': charged_toluene,
          "foo": phenol,
          "bar": benzo,
          "solvent": openfe.SolventComponent()},
