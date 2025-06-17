@@ -2099,10 +2099,8 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
             'lambda_settings': prot_settings.solvent_lambda_settings,
             'engine_settings': prot_settings.engine_settings,
             'integrator_settings': prot_settings.integrator_settings,
-            'equil_simulation_settings':
-                prot_settings.solvent_equil_simulation_settings,
-            'equil_output_settings':
-                prot_settings.solvent_equil_output_settings,
+            'equil_simulation_settings': prot_settings.solvent_equil_simulation_settings,
+            'equil_output_settings': prot_settings.solvent_equil_output_settings,
             'simulation_settings': prot_settings.solvent_simulation_settings,
             'output_settings': prot_settings.solvent_output_settings,
             'restraint_settings': prot_settings.solvent_restraint_settings}
