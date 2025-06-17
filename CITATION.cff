@@ -28,9 +28,18 @@ authors:
 - given-names: "David"
   family-names: "Dotson"
   orcid: "https://orcid.org/0000-0001-5879-2942"
+- given-names: Joshua T.
+  family-names: Horton
+  orcid: 'https://orcid.org/0000-0001-8694-7200'
+- given-names: Matthew
+  family-names: Thompson
+  orcid: 'https://orcid.org/0000-0002-1460-3983'
+- given-names: Alyssa
+  family-names: Travitz
+  orcid: 'https://orcid.org/0000-0001-5953-8807'
 title: "The Open Free Energy library"
-version: 1.0
-date-released: 2024-04-19
+version: 1.4.0
+date-released: 2025-04-25
 url: "https://openfree.energy/"
 repository-code: "https://github.com/openfreeEnergy/openfe"
 doi: 10.5281/zenodo.8344247

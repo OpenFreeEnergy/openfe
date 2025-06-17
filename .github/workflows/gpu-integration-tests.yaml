@@ -1,4 +1,4 @@
-name: Test Self-Hosted Runner
+name: GPU Integration Tests (manual dispatch)
 on:
   workflow_dispatch:
 
@@ -18,14 +18,12 @@ jobs:
           aws-region: us-east-2
       - name: Create cloud runner
         id: aws-start
-        uses: omsf-eco-infra/gha-runner@v0.2.0
+        uses: omsf/start-aws-gha-runner@v1.0.0
         with:
-          provider: "aws"
-          action: "start"
           aws_image_id: ami-0b7f661c228e6a4bb
           aws_instance_type: g4dn.xlarge
-          aws_region_name: us-east-2
           aws_home_dir: /home/ubuntu
+          aws_root_device_size: 125
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
@@ -53,7 +51,7 @@ jobs:
         run: "nvidia-smi"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: environment.yml
           environment-name: openfe_env
@@ -67,9 +65,6 @@ jobs:
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
-
-      - name: "Install GUFE from main@HEAD"
-        run: python -m pip install --no-deps git+https://github.com/OpenFreeEnergy/gufe@main
 
       - name: "Install"
         run: python -m pip install --no-deps -e .
@@ -99,7 +94,7 @@ jobs:
           DUECREDIT_ENABLE: 'yes'
           OFE_INTEGRATION_TESTS: TRUE
         run: |
-          pytest -n 4 -v --durations=10
+          pytest -n logical -vv --durations=10
 
   stop-aws-runner:
     runs-on: ubuntu-latest
@@ -117,11 +112,8 @@ jobs:
           role-to-assume: arn:aws:iam::010438489691:role/GHARunnerAWS
           aws-region: us-east-2
       - name: Stop instances
-        uses: omsf-eco-infra/gha-runner@v0.2.0
+        uses: omsf/stop-aws-gha-runner@v1.0.0
         with:
-          provider: "aws"
-          action: "stop"
           instance_mapping: ${{ needs.start-aws-runner.outputs.mapping }}
-          aws_region_name: us-east-2
         env:
           GH_PAT: ${{ secrets.GH_PAT }}

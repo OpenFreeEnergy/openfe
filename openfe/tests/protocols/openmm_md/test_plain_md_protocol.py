@@ -176,7 +176,8 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
         mapping=None,
     )
     unit = list(dag.protocol_units)[0]
-    system = unit.run(dry=True)["debug"]["system"]
+    with tmpdir.as_cwd():
+        system = unit.run(dry=True)["debug"]["system"]
 
 
 @pytest.mark.parametrize('method, backend, ref_key', [
@@ -433,8 +434,13 @@ def solvent_protocol_dag(benzene_system):
 def test_unit_tagging(solvent_protocol_dag, tmpdir):
     # test that executing the Units includes correct generation and repeat info
     dag_units = solvent_protocol_dag.protocol_units
-    with mock.patch('openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run',
-                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
+    with mock.patch(
+        'openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run',
+        return_value={
+            'nc': 'simulation.xtc',
+            'last_checkpoint': 'checkpoint.chk'
+        }
+    ):
         results = []
         for u in dag_units:
             ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
@@ -451,8 +457,13 @@ def test_unit_tagging(solvent_protocol_dag, tmpdir):
 
 def test_gather(solvent_protocol_dag, tmpdir):
     # check .gather behaves as expected
-    with mock.patch('openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run',
-                    return_value={'nc': 'file.nc', 'last_checkpoint': 'chk.nc'}):
+    with mock.patch(
+        'openfe.protocols.openmm_md.plain_md_methods.PlainMDProtocolUnit.run',
+        return_value={
+            'nc': 'simulation.xtc',
+            'last_checkpoint': 'checkpoint.chk'
+        }
+    ):
         dagres = gufe.protocols.execute_DAG(solvent_protocol_dag,
                                             shared_basedir=tmpdir,
                                             scratch_basedir=tmpdir,

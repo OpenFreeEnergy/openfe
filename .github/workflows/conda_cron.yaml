@@ -20,20 +20,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'macos-latest', 'macos-12']
+        os: ['ubuntu-latest', 'macos-latest']
         python-version:
-          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
-        exclude:
-          - os: 'macos-latest'
-            python-version: '3.9'
 
     steps:
       - name: Setup Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
+          micromamba-version: '1.5.6-0'
           micromamba-binary-path: ~/.local/bin/micromamba
           environment-name: openfe
           create-args: >-

@@ -1,46 +1,27 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import numpy as np
-from numpy.testing import assert_equal
+from numpy.testing import assert_allclose
 from gufe.protocols import execute_DAG
 import pytest
 from openff.units import unit
-from openmm import Platform
-import os
 import pathlib
 
 import openfe
 from openfe.protocols import openmm_rfe
 
 
-@pytest.fixture
-def available_platforms() -> set[str]:
-    return {Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())}
-
-
-@pytest.fixture
-def set_openmm_threads_1():
-    # for vacuum sims, we want to limit threads to one
-    # this fixture sets OPENMM_CPU_THREADS='1' for a single test, then reverts to previously held value
-    previous: str | None = os.environ.get('OPENMM_CPU_THREADS')
-
-    try:
-        os.environ['OPENMM_CPU_THREADS'] = '1'
-        yield
-    finally:
-        if previous is None:
-            del os.environ['OPENMM_CPU_THREADS']
-        else:
-            os.environ['OPENMM_CPU_THREADS'] = previous
-
-
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
+@pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimization
 @pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
-def test_openmm_run_engine(benzene_vacuum_system, platform,
-                           available_platforms, benzene_modifications,
-                           set_openmm_threads_1, tmpdir):
-    if platform not in available_platforms:
+def test_openmm_run_engine(
+    benzene_vacuum_system,
+    platform,
+    get_available_openmm_platforms,
+    benzene_modifications,
+    tmpdir
+):
+    if platform not in get_available_openmm_platforms:
         pytest.skip(f"OpenMM Platform: {platform} not available")
     # this test actually runs MD
     # these settings are a small self to self sim, that has enough eq that
@@ -53,6 +34,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
     s.protocol_repeats = 1
     s.engine_settings.compute_platform = platform
     s.output_settings.checkpoint_interval = 20 * unit.femtosecond
+    s.output_settings.positions_write_frequency = 20 * unit.femtosecond
 
     p = openmm_rfe.RelativeHybridTopologyProtocol(s)
 
@@ -111,9 +93,7 @@ def test_openmm_run_engine(benzene_vacuum_system, platform,
             assert key in structural_data.keys()
 
         # 6 frames being written to file
-        # Note: the values of this next test are wrong, but in an expected way
-        # See: https://github.com/OpenFreeEnergy/openfe_analysis/issues/33
-        assert_equal(structural_data['time_ps'], [0, 50, 100, 150, 200, 250])
+        assert_allclose(structural_data['time_ps'], [0.0, 0.02, 0.04, 0.06, 0.08, 0.1])
         assert structural_data['ligand_RMSD'].shape == (11, 6)
         assert structural_data['ligand_COM_drift'].shape == (11, 6)
         # No protein so should be empty

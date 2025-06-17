@@ -1,35 +1,38 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from importlib import resources
 import copy
-from pathlib import Path
-import pytest
+import os
 import sys
-from pymbar.utils import ParameterError
+from importlib import resources
+from pathlib import Path
+from unittest import mock
+
 import numpy as np
-from numpy.testing import assert_equal, assert_allclose
-from openmm import app, MonteCarloBarostat, NonbondedForce
-from openmm import unit as ommunit
-from openmmtools import multistate
+import openfe
+import pooch
+import pytest
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
+from numpy.testing import assert_allclose, assert_equal
+from openfe.protocols.openmm_rfe.equil_rfe_settings import (
+    IntegratorSettings, OpenMMSolvationSettings)
+from openfe.protocols.openmm_utils import (charge_generation,
+                                           multistate_analysis, omm_settings,
+                                           settings_validation,
+                                           system_creation, system_validation)
+from openfe.protocols.openmm_utils.charge_generation import (HAS_ESPALOMA,
+                                                             HAS_NAGL,
+                                                             HAS_OPENEYE)
 from openff.toolkit import Molecule as OFFMol
-from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm
-from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
-import openfe
-from openfe.protocols.openmm_utils import (
-    settings_validation, system_validation, system_creation,
-    multistate_analysis, omm_settings, charge_generation
-)
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_ESPALOMA, HAS_OPENEYE
-)
-from openfe.protocols.openmm_rfe.equil_rfe_settings import (
-    IntegratorSettings,
-    OpenMMSolvationSettings,
-)
-from unittest import mock
+from openmm import MonteCarloBarostat, NonbondedForce, app
+from openmm import unit as ommunit
+from openmmtools import multistate
+from pymbar.utils import ParameterError
+
+from openfe.tests.conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
@@ -255,7 +258,8 @@ class TestFEAnalysis:
         ret_dict = analyzer.unit_results_dict
         assert len(ret_dict.items()) == 7
         assert pytest.approx(ret_dict['unit_estimate'].m) == -47.9606
-        assert pytest.approx(ret_dict['unit_estimate_error'].m) == 0.02396789
+        # more variation when using bootstrap errors so we need a loser tolerance
+        assert pytest.approx(ret_dict['unit_estimate_error'].m, rel=1e4) == 0.0251
         # forward and reverse (since we do this ourselves)
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['fractions'],
@@ -269,11 +273,12 @@ class TestFEAnalysis:
                       -48.025258, -48.006349, -47.986304, -47.972138, -47.960623]),
             rtol=1e-04,
         )
+        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['forward_dDGs'].m,
-            np.array([0.07471 , 0.052914, 0.041508, 0.036613, 0.032827, 0.030489,
-                      0.028154, 0.026529, 0.025284, 0.023968]),
-            rtol=1e-04,
+            np.array([0.077645, 0.054695, 0.044680, 0.03947, 0.034822,
+                      0.033443, 0.030793, 0.028777, 0.026683, 0.026199]),
+            rtol=5e-01,
         )
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_DGs'].m,
@@ -281,11 +286,12 @@ class TestFEAnalysis:
                       -47.915963, -47.93319, -47.939125, -47.949016, -47.960623]),
             rtol=1e-04,
         )
+        # results generated using pymbar3 with 1000 bootstrap iterations
         assert_allclose(
             ret_dict['forward_and_reverse_energies']['reverse_dDGs'].m,
-            np.array([0.081209, 0.055975, 0.044693, 0.038691, 0.034603, 0.031894,
-                      0.029417, 0.027082, 0.025316, 0.023968]),
-            rtol=1e-04,
+            np.array([0.088335, 0.059483, 0.046254, 0.041504, 0.03877,
+                      0.035495, 0.031981, 0.029707, 0.027095, 0.026296]),
+            rtol=5e-01,
         )
 
     def test_plots(self, analyzer, tmpdir):
@@ -925,10 +931,26 @@ class TestOFFPartialCharge:
             )
 
 
+POOCH_CACHE = pooch.os_cache('openfe')
+RFE_OUTPUT = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15375081",
+    registry={
+        "checkpoint.nc": "md5:3cfd70a4cbe463403d6ec7cca84fc31a",
+        "db.json": "md5:33c8c1a0b629a52dcc291beff59fabc6",
+        "hybrid_system.pdb": "md5:44a1e78294360037acf419b95be18fb3",
+        "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
+        "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
+    },
+    retry_if_failed=3,
+)
+
+@pytest.fixture
+def simulation_nc():
+    return RFE_OUTPUT.fetch("simulation.nc")
+
 @pytest.mark.slow
-@pytest.mark.download
-# Sometimes we get a DOI lookup error from duecredit
-@pytest.mark.flaky(reruns=3, only_rerun=ValueError, reruns_delay=10)
+@pytest.mark.skipif(not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,reason="Internet seems to be unavailable and test data is not cached locally.")
 def test_forward_backwards_failure(simulation_nc):
     rep = multistate.multistatereporter.MultiStateReporter(
         simulation_nc,

@@ -1,10 +1,10 @@
 **Added:**
 
-* <news item>
+* Added compatibility for Numpy 2
 
 **Changed:**
 
-* The `PersesAtomMapper` now uses openff.units inline with the rest of the package.
+* <news item>
 
 **Deprecated:**
 

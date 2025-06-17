@@ -61,7 +61,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 from ..openmm_utils import (
     system_validation, settings_validation, system_creation,
-    multistate_analysis, charge_generation
+    multistate_analysis, charge_generation, omm_compute,
 )
 from . import _rfe_utils
 from ...utils import without_oechem_backend, log_system_probe
@@ -256,6 +256,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         if any(len(pur_list) > 2 for pur_list in self.data.values()):
             raise NotImplementedError("Can't stitch together results yet")
 
+    @staticmethod
+    def compute_mean_estimate(dGs:list[unit.Quantity]):
+        u = dGs[0].u
+        # convert all values to units of the first value, then take average of magnitude
+        # this would avoid a screwy case where each value was in different units
+        vals = [dG.to(u).m for dG in dGs]
+
+        return np.average(vals) * u
+
     def get_estimate(self) -> unit.Quantity:
         """Average free energy difference of this transformation
 
@@ -267,24 +276,25 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         """
         # TODO: Check this holds up completely for SAMS.
         dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
-        u = dGs[0].u
-        # convert all values to units of the first value, then take average of magnitude
-        # this would avoid a screwy case where each value was in different units
-        vals = [dG.to(u).m for dG in dGs]
+        return self.compute_mean_estimate(dGs)
 
-        return np.average(vals) * u
-
-    def get_uncertainty(self) -> unit.Quantity:
-        """The uncertainty/error in the dG value: The std of the estimates of
-        each independent repeat
-        """
-        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+    @staticmethod
+    def compute_uncertainty(dGs:list[unit.Quantity]):
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
         vals = [dG.to(u).m for dG in dGs]
 
         return np.std(vals) * u
+
+    def get_uncertainty(self) -> unit.Quantity:
+        """The uncertainty/error in the dG value: The std of the estimates of
+        each independent repeat
+        """
+
+        dGs = [pus[0].outputs['unit_estimate'] for pus in self.data.values()]
+        return self.compute_uncertainty(dGs)
+
 
     def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
         """Return a list of tuples containing the individual free energy
@@ -469,6 +479,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit`
     """
     result_cls = RelativeHybridTopologyProtocolResult
+    _settings_cls = RelativeHybridTopologyProtocolSettings
     _settings: RelativeHybridTopologyProtocolSettings
 
     @classmethod
@@ -910,11 +921,34 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
 
         nc = shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
+
+        if output_settings.positions_write_frequency is not None:
+            pos_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.positions_write_frequency,
+                denominator=sampler_settings.time_per_iteration,
+                numerator_name="output settings' position_write_frequency",
+                denominator_name="sampler settings' time_per_iteration"
+            )
+        else:
+            pos_interval = 0
+
+        if output_settings.velocities_write_frequency is not None:
+            vel_interval = settings_validation.divmod_time_and_check(
+                numerator=output_settings.velocities_write_frequency,
+                denominator=sampler_settings.time_per_iteration,
+                numerator_name="output settings' velocity_write_frequency",
+                denominator_name="sampler settings' time_per_iteration"
+            )
+        else:
+            vel_interval = 0
+
         reporter = multistate.MultiStateReporter(
             storage=nc,
             analysis_particle_indices=selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
+            position_interval=pos_interval,
+            velocity_interval=vel_interval,
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
@@ -933,9 +967,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 bfactors=bfactors,
             )
 
-        # 10. Get platform
-        platform = _rfe_utils.compute.get_openmm_platform(
-            protocol_settings.engine_settings.compute_platform
+        # 10. Get compute platform
+        # restrict to a single CPU if running vacuum
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=protocol_settings.engine_settings.compute_platform,
+            gpu_device_index=protocol_settings.engine_settings.gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         # 11. Set the integrator
@@ -1145,7 +1183,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 data["protein_2D_RMSD"], dtype=np.float32
             ),
             time_ps=np.asarray(
-                data["time(ps)"], dtype=np.int32
+                data["time(ps)"], dtype=np.float32
             ),
         )
 

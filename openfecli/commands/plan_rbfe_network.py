@@ -5,10 +5,8 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS,
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
 )
-from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
 
 def plan_rbfe_network_main(
     mapper,
@@ -18,6 +16,10 @@ def plan_rbfe_network_main(
     solvent,
     protein,
     cofactors,
+    n_protocol_repeats,
+    partial_charge_settings,
+    processors,
+    overwrite_charges
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -36,7 +38,17 @@ def plan_rbfe_network_main(
     protein : ProteinComponent
         protein component for complex simulations, to which the ligands are bound
     cofactors : Iterable[SmallMoleculeComponent]
-        any cofactors alongisde the protein, can be empty list
+        any cofactors alongside the protein, can be empty list
+    n_protocol_repeats: int
+        number of completely independent repeats of the entire sampling process
+        any cofactors alongside the protein, can be empty list
+    partial_charge_settings : OpenFFPartialChargeSettings
+        how to assign partial charges to the input ligands
+        (if they don't already have partial charges).
+    processors: int
+        The number of processors that should be used when generating the charges
+    overwrite_charges: bool
+        If any partial charges already present on the small molecules should be overwritten
 
     Returns
     -------
@@ -48,14 +60,46 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
+
+    protocol_settings = RelativeHybridTopologyProtocol.default_settings()
+    protocol_settings.protocol_repeats = n_protocol_repeats
+    protocol = RelativeHybridTopologyProtocol(protocol_settings)
+
+    write("assigning ligand partial charges -- this may be slow")
+
+    charged_small_molecules = bulk_assign_partial_charges(
+        molecules=small_molecules,
+        overwrite=overwrite_charges,
+        method=partial_charge_settings.partial_charge_method,
+        toolkit_backend=partial_charge_settings.off_toolkit_backend,
+        generate_n_conformers=partial_charge_settings.number_of_conformers,
+        nagl_model=partial_charge_settings.nagl_model,
+        processors=processors
+    )
+
+    if cofactors:
+        write("assigning cofactor partial charges -- this may be slow")
+
+        cofactors = bulk_assign_partial_charges(
+            molecules=cofactors,
+            overwrite=overwrite_charges,
+            method=partial_charge_settings.partial_charge_method,
+            toolkit_backend=partial_charge_settings.off_toolkit_backend,
+            generate_n_conformers=partial_charge_settings.number_of_conformers,
+            nagl_model=partial_charge_settings.nagl_model,
+            processors=processors
+        )
 
     network_planner = RBFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
+        protocol=protocol
     )
     alchemical_network = network_planner(
-        ligands=small_molecules, solvent=solvent, protein=protein,
+        ligands=charged_small_molecules, solvent=solvent, protein=protein,
         cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
@@ -85,14 +129,27 @@ def plan_rbfe_network_main(
     help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
     default="alchemicalNetwork",
 )
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
+@NCORES.parameter(
+    help=NCORES.kwargs["help"],
+    default=1,
+)
+@OVERWRITE.parameter(
+    help=OVERWRITE.kwargs["help"],
+    default=OVERWRITE.kwargs["default"],
+    is_flag=True
+)
 @print_duration
 def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
         yaml_settings: str,
         output_dir: str,
+        n_protocol_repeats: int,
+        n_cores: int,
+        overwrite_charges: bool
 ):
     """
-    Plan a relative binding free energy network, saved as JSON files for
+    Plan a relative binding free energy network, saved as JSON files for use by
     the quickrun command.
 
     This tool is an easy way to set up a RBFE calculation campaign.
@@ -100,6 +157,13 @@ def plan_rbfe_network(
     openfe.
     The generated Network will be stored in a folder containing for each
     transformation a JSON file, that can be run with quickrun.
+
+    .. note::
+
+       To ensure a consistent set of partial charges are used for each molecule across different transformations, this
+       tool will automatically generate charges ahead of planning the network. ``am1bcc`` charges will be generated via
+       ``ambertools``, this can also be customized using the settings yaml file.
+
 
     By default, this tool makes the following choices:
 
@@ -119,6 +183,8 @@ def plan_rbfe_network(
     write("RBFE-NETWORK PLANNER")
     write("______________________")
     write("")
+
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
 
@@ -145,6 +211,7 @@ def plan_rbfe_network(
     mapping_scorer = yaml_options.scorer
     ligand_network_planner = yaml_options.ligand_network_planner
     solvent = yaml_options.solvent
+    partial_charge = yaml_options.partial_charge
 
     write("\t\tSolvent: " + str(solvent))
     write("")
@@ -156,8 +223,13 @@ def plan_rbfe_network(
     write("\tMapping Scorer: " + str(mapping_scorer))
 
     # TODO:  write nice parameter
-    write("\tNetworker: " + str(ligand_network_planner))
+    write("\tNetwork Generation: " + str(ligand_network_planner))
+
+    write("\tPartial Charge Generation: " + str(partial_charge.partial_charge_method))
+    if overwrite_charges:
+        write("\tOverwriting partial charges")
     write("")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")
 
     # DO
     write("Planning RBFE-Campaign:")
@@ -169,6 +241,10 @@ def plan_rbfe_network(
         solvent=solvent,
         protein=protein,
         cofactors=cofactors,
+        n_protocol_repeats=n_protocol_repeats,
+        partial_charge_settings=partial_charge,
+        processors=n_cores,
+        overwrite_charges=overwrite_charges
     )
     write("\tDone")
     write("")

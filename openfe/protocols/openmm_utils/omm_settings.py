@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from openff.models.types import FloatQuantity, ArrayQuantity
+from gufe.vendor.openff.models.types import FloatQuantity, ArrayQuantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
@@ -311,6 +311,18 @@ class OpenMMEngineSettings(SettingsBaseModel):
     OpenMM compute platform to perform MD integration with. If ``None``, will
     choose fastest available platform. Default ``None``.
     """
+    gpu_device_index: Optional[list[int]] = None
+    """
+    List of integer indices for the GPU device to select when
+    ``compute_platform`` is either set to ``CUDA`` or ``OpenCL``.
+
+    If ``None``, the default OpenMM GPU selection behaviour is used.
+
+    See the `OpenMM platform properties documentation <http://docs.openmm.org/latest/userguide/library/04_platform_specifics.html>`_
+    for more details.
+
+    Default ``None``.
+    """
 
 
 class IntegratorSettings(SettingsBaseModel):
@@ -326,8 +338,8 @@ class IntegratorSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    timestep: FloatQuantity['femtosecond'] = 4 * unit.femtosecond
-    """Size of the simulation timestep. Default 4 * unit.femtosecond."""
+    timestep: FloatQuantity['femtosecond'] = 4.0 * unit.femtosecond
+    """Size of the simulation timestep. Default 4.0 * unit.femtosecond."""
     langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
     reassign_velocities = False
@@ -342,7 +354,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency: FloatQuantity['timestep'] = 25 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: FloatQuantity['timestep'] = 25.0 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
@@ -399,9 +411,9 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 250 * unit.picosecond
+    checkpoint_interval: FloatQuantity['nanosecond'] = 1.0 * unit.nanosecond
     """
-    Frequency to write the checkpoint file. Default 1 * unit.picosecond.
+    Frequency to write the checkpoint file. Default 1 * unit.nanosecond.
     """
     checkpoint_storage_filename = 'checkpoint.chk'
     """
@@ -439,6 +451,35 @@ class MultiStateOutputSettings(OutputSettings):
     to visualise and further manipulate the system.
     Default 'hybrid_system.pdb'.
     """
+    positions_write_frequency: Optional[FloatQuantity['picosecond']] = 100.0 * unit.picosecond
+    """
+    Frequency at which positions are written to the simulation trajectory
+    storage file (defined by ``output_filename``).
+
+    If ``None``, no positions will be written to the trajectory.
+
+    Unless set to ``None``, must be divisible by
+    ``MultiStateSimulationSettings.time_per_iteration``.
+    """
+    velocities_write_frequency: Optional[FloatQuantity['picosecond']] = None
+    """
+    Frequency at which velocities are written to the simulation
+    trajectory storage file (defined by ``output_filename``).
+
+    If ``None`` (default), no velocities will be written to the trajectory.
+
+    Unless set to ``None``, must be divisible by
+    ``MultiStateSimulationSettings.time_per_iteration``.
+    """
+
+
+    @validator('positions_write_frequency', 'velocities_write_frequency')
+    def must_be_positive(cls, v):
+        if v is not None and v < 0:
+            errmsg = ("Position_write_frequency and velocities_write_frequency"
+                      f" must be positive (or None), got {v}.")
+            raise ValueError(errmsg)
+        return v
 
 
 class SimulationSettings(SettingsBaseModel):
@@ -507,12 +548,12 @@ class MultiStateSimulationSettings(SimulationSettings):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    time_per_iteration: FloatQuantity['picosecond'] = 1 * unit.picosecond
+    time_per_iteration: FloatQuantity['picosecond'] = 1.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
-    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250 * unit.picosecond
+    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
@@ -527,28 +568,26 @@ class MultiStateSimulationSettings(SimulationSettings):
     If ``None``, no real time analysis will be performed and the yaml
     file will not be written.
 
-    Must be a multiple of ``OutputSettings.checkpoint_interval``
-
     Default `250`.
-    
+
     """
-    early_termination_target_error: Optional[FloatQuantity['kcal/mol']] = 0.0 * unit.kilocalorie_per_mole
+    early_termination_target_error: Optional[FloatQuantity['kilocalorie_per_mole']] = 0.0 * unit.kilocalorie_per_mole
     # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
     #  (later would give an example of unit).
     """
-    Target error for the real time analysis measured in kcal/mol. Once the MBAR 
-    error of the free energy is at or below this value, the simulation will be 
-    considered complete. 
+    Target error for the real time analysis measured in kcal/mol. Once the MBAR
+    error of the free energy is at or below this value, the simulation will be
+    considered complete.
     A suggested value of 0.12 * `unit.kilocalorie_per_mole` has
     shown to be effective in both hydration and binding free energy benchmarks.
     Default ``None``, i.e. no early termination will occur.
     """
-    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500 * unit.picosecond
+    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
-    carried out. 
-    
+    carried out.
+
     Default 500 * unit.picosecond.
     """
 
@@ -612,7 +651,7 @@ class MDSimulationSettings(SimulationSettings):
 
     equilibration_length_nvt: Optional[FloatQuantity['nanosecond']]
     """
-    Length of the equilibration phase in the NVT ensemble in units of time. 
+    Length of the equilibration phase in the NVT ensemble in units of time.
     The total number of steps from this equilibration length
     (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
     If None, no NVT equilibration will be performed.
@@ -625,25 +664,25 @@ class MDOutputSettings(OutputSettings):
         arbitrary_types_allowed = True
 
     # reporter settings
-    production_trajectory_filename = 'simulation.xtc'
+    production_trajectory_filename: Optional[str] = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
-    trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
+    trajectory_write_interval: FloatQuantity['picosecond'] = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
-    preminimized_structure = 'system.pdb'
-    """Path to the pdb file of the full pre-minimized system. 
+    preminimized_structure: Optional[str] = 'system.pdb'
+    """Path to the pdb file of the full pre-minimized system.
     Default 'system.pdb'."""
-    minimized_structure = 'minimized.pdb'
-    """Path to the pdb file of the system after minimization. 
+    minimized_structure: Optional[str] = 'minimized.pdb'
+    """Path to the pdb file of the system after minimization.
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
     equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
-    """Path to the pdb file of the system after NVT equilibration. 
+    """Path to the pdb file of the system after NVT equilibration.
     Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
     equil_npt_structure: Optional[str] = 'equil_npt.pdb'
-    """Path to the pdb file of the system after NPT equilibration. 
+    """Path to the pdb file of the system after NPT equilibration.
     Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
-    log_output = 'simulation.log'
+    log_output: Optional[str] = 'simulation.log'
     """
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.

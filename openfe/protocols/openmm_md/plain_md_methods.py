@@ -19,18 +19,17 @@ from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
 import openmm.unit as omm_unit
 from typing import Optional
-from openmm import app
 import pathlib
 from typing import Any, Iterable
 import uuid
 import time
-import numpy as np
 import mdtraj
 from mdtraj.reporters import XTCReporter
 from openfe.utils import without_oechem_backend, log_system_probe
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
-    ProteinComponent, SolventComponent
+    settings,
+    ChemicalSystem,
+    SmallMoleculeComponent,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
@@ -43,10 +42,9 @@ from openfe.protocols.openmm_md.plain_md_settings import (
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
 
-from openfe.protocols.openmm_rfe._rfe_utils import compute
 from openfe.protocols.openmm_utils import (
     system_validation, settings_validation, system_creation,
-    charge_generation,
+    charge_generation, omm_compute
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +117,7 @@ class PlainMDProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_md.PlainMDProtocolResult`
     """
     result_cls = PlainMDProtocolResult
+    _settings_cls = PlainMDProtocolSettings
     _settings: PlainMDProtocolSettings
 
     @classmethod
@@ -342,9 +341,10 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mdtraj_top.subset(selection_indices),
         )
 
-        traj.save_pdb(
-            shared_basepath / output_settings.minimized_structure
-        )
+        if output_settings.minimized_structure:
+            traj.save_pdb(
+                shared_basepath / output_settings.minimized_structure
+            )
         # equilibrate
         # NVT equilibration
         if equil_steps_nvt:
@@ -432,26 +432,33 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             mc_steps=1,
         )
 
-        simulation.reporters.append(XTCReporter(
-            file=str(shared_basepath / output_settings.production_trajectory_filename),
-            reportInterval=write_interval,
-            atomSubset=selection_indices))
-        simulation.reporters.append(openmm.app.CheckpointReporter(
-            file=str(shared_basepath / output_settings.checkpoint_storage_filename),
-            reportInterval=checkpoint_interval))
-        simulation.reporters.append(openmm.app.StateDataReporter(
-            str(shared_basepath / output_settings.log_output),
-            checkpoint_interval,
-            step=True,
-            time=True,
-            potentialEnergy=True,
-            kineticEnergy=True,
-            totalEnergy=True,
-            temperature=True,
-            volume=True,
-            density=True,
-            speed=True,
-        ))
+        if output_settings.production_trajectory_filename:
+            simulation.reporters.append(XTCReporter(
+                file=str(
+                    shared_basepath /
+                    output_settings.production_trajectory_filename),
+                reportInterval=write_interval,
+                atomSubset=selection_indices))
+        if output_settings.checkpoint_storage_filename:
+            simulation.reporters.append(openmm.app.CheckpointReporter(
+                file=str(
+                    shared_basepath /
+                    output_settings.checkpoint_storage_filename),
+                reportInterval=checkpoint_interval))
+        if output_settings.log_output:
+            simulation.reporters.append(openmm.app.StateDataReporter(
+                str(shared_basepath / output_settings.log_output),
+                checkpoint_interval,
+                step=True,
+                time=True,
+                potentialEnergy=True,
+                kineticEnergy=True,
+                totalEnergy=True,
+                temperature=True,
+                volume=True,
+                density=True,
+                speed=True,
+            ))
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
@@ -617,14 +624,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
             )
 
         # f. Save pdb of entire system
-        with open(shared_basepath / output_settings.preminimized_structure, "w") as f:
-            openmm.app.PDBFile.writeFile(
-                stateA_topology, stateA_positions, file=f, keepIds=True
-            )
+        if output_settings.preminimized_structure:
+            with open(
+                    shared_basepath /
+                    output_settings.preminimized_structure, "w") as f:
+                openmm.app.PDBFile.writeFile(
+                    stateA_topology, stateA_positions, file=f, keepIds=True
+                )
 
         # 10. Get platform
-        platform = compute.get_openmm_platform(
-            protocol_settings.engine_settings.compute_platform
+        restrict_cpu = forcefield_settings.nonbonded_method.lower() == 'nocutoff'
+        platform = omm_compute.get_openmm_platform(
+            platform_name=protocol_settings.engine_settings.compute_platform,
+            gpu_device_index=protocol_settings.engine_settings.gpu_device_index,
+            restrict_cpu_count=restrict_cpu
         )
 
         # 11. Set the integrator
@@ -670,8 +683,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 'nc': shared_basepath / output_settings.production_trajectory_filename,
                 'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
-            if output_settings.equil_nvt_structure:
+            # The checkpoint file can not exist if frequency > sim length
+            if not output['last_checkpoint'].exists():
+                output['last_checkpoint'] = None
+
+            # The NVT PDB can be ommitted if we don't run the simulation
+            # Note: we could also just check the file exist
+            if (
+                output_settings.equil_nvt_structure
+                and sim_settings.equilibration_length_nvt is not None
+            ):
                 output['nvt_equil_pdb'] = shared_basepath / output_settings.equil_nvt_structure
+            else:
+                output['nvt_equil_pdb'] = None
+
             if output_settings.equil_npt_structure:
                 output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
 

@@ -2,6 +2,7 @@ User Guide
 ==========
 
 .. toctree::
+    :maxdepth: 2
 
     introduction
     setup/index
@@ -9,4 +10,5 @@ User Guide
     results/index
     cli/index
     protocols/index
+    under_the_hood
     troubleshooting
