@@ -312,7 +312,6 @@ def test_generate_maximal_network(
     lomap_old_mapper,
     simple_scorer,
 ):
-    """TODO: add test for throwing an error if there is no scorer but multiple mappings"""
     toluene, others = toluene_vs_others
 
     if extra_mapper:
@@ -549,7 +548,7 @@ class TestGenerateNetworkFromNames:
             names=requested_names,
             mapper=lomap_old_mapper,
         )
-        # TODO: konnektor only constructs based on edges, doesn't allow for disconnected networks
+
         assert len(network.nodes) == len(ligands)
         assert len(network.edges) == 2
 
