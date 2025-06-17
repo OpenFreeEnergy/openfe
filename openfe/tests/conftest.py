@@ -3,6 +3,7 @@
 import os
 import importlib
 import pathlib
+import gzip
 import pytest
 from importlib import resources
 from rdkit import Chem
@@ -225,17 +226,6 @@ def charged_benzene_modifications():
 
 
 @pytest.fixture(scope='session')
-def bace_ligands():
-    files = {}
-    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
-        fn = str(d / 'bace1.sdf')
-        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
-        for rdmol in supp:
-            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
-    return files
-
-
-@pytest.fixture(scope='session')
 def T4L_reference_xml():
     with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
         f = str(d / 'system.xml.bz2')
@@ -269,14 +259,6 @@ def T4_protein_component():
     with resources.files('openfe.tests.data') as d:
         fn = str(d / '181l_only.pdb')
         comp = gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
-
-    return comp
-
-@pytest.fixture(scope='session')
-def bace_protein_component():
-    with resources.files('openfe.tests.data.openmm_septop') as d:
-        fn = str(d / 'bace.pdb')
-        comp = gufe.ProteinComponent.from_pdb_file(fn, name="BACE")
 
     return comp
 

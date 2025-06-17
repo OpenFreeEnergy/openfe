@@ -93,7 +93,7 @@ def compare_energies(alchemical_system, positions):
 
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 def test_lambda_energies(
-    bace_ligands,  bace_protein_component, tmpdir, default_settings,
+    eg5_ligands, eg5_protein, eg5_cofactor, tmpdir, default_settings,
 ):
     # check system parametrisation works even if confgen fails
     default_settings.protocol_repeats = 1
@@ -109,14 +109,16 @@ def test_lambda_energies(
     )
 
     stateA = ChemicalSystem({
-        'lig_02': bace_ligands['lig_02'],
-        'protein': bace_protein_component,
+        'lig_02': eg5_ligands[0],
+        'protein': eg5_protein,
+        'cofactor': eg5_cofactor,
         'solvent': SolventComponent(),
     })
 
     stateB = ChemicalSystem({
-        'lig_03': bace_ligands['lig_03'],
-        'protein': bace_protein_component,
+        'lig_03': eg5_ligands[1],
+        'protein': eg5_protein,
+        'cofactor': eg5_cofactor,
         'solvent': SolventComponent(),
     })
 
