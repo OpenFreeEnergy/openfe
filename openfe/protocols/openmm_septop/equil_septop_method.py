@@ -31,6 +31,7 @@ from __future__ import annotations
 import pathlib
 import logging
 import warnings
+import copy
 from collections import defaultdict
 import gufe
 import openmm
@@ -80,6 +81,7 @@ from ..restraint_utils.settings import (
 )
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint,
+    add_force_in_separate_group,
 )
 from openfe.protocols.restraint_utils.geometry.boresch import (
     BoreschRestraintGeometry,
@@ -1095,6 +1097,94 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
 
         return settings
 
+    def get_system_AB(
+        self,
+        solv_comp: SolventComponent,
+        system_modeller_A: openmm.app.Modeller,
+        smc_comps_AB: dict[SmallMoleculeComponent, OFFMolecule],
+        smc_off_B: dict[SmallMoleculeComponent, OFFMolecule],
+        settings: dict[str, SettingsBaseModel],
+    ):
+        """
+        Creates an OpenMM system, topology, positions, and modeller for a
+        complex system that contains a protein and two ligands. This takes
+        the modeller of complex A (solvated protein-ligand A complex) and
+        inserts ligand B into that complex.
+
+        Parameters
+        ----------
+        solv_comp: SolventComponent
+          The SolventComponent
+        system_modeller_A: openmm.app.Modeller
+        smc_comps_AB: dict[SmallMoleculeComponent,OFFMolecule]
+          The dictionary of all SmallMoleculeComponents in the system.
+        smc_off_B: dict[SmallMoleculeComponent,OFFMolecule]
+          The dictionary of the SmallMoleculeComponent and OFF Molecule of
+          ligand B
+        settings: dict[str, SettingsBaseModel]
+          A dictionary of settings objects for the unit.
+
+        Returns
+        -------
+        omm_system_AB: openmm.System
+        omm_topology_AB: openmm.app.Topology
+        positions_AB: openmm.unit.Quantity
+        system_modeller_AB: openmm.app.Modeller
+        """
+        # Get system generator
+        system_generator = self._get_system_generator(settings, solv_comp)
+
+        # Get modeller B only ligand B
+        modeller_ligandB, comp_resids_ligB = self._get_modeller(
+            None, None, smc_off_B,
+            system_generator, settings['solvation_settings'],
+        )
+
+        # Take the modeller from system A --> every water/ion should be in
+        # the same location
+        system_modeller_AB = copy.copy(system_modeller_A)
+        system_modeller_AB.add(modeller_ligandB.topology,
+                               modeller_ligandB.positions)
+
+        omm_topology_AB, omm_system_AB, positions_AB = self._get_omm_objects(
+            system_modeller_AB, system_generator, list(smc_comps_AB.values())
+        )
+
+        return omm_system_AB, omm_topology_AB, positions_AB, system_modeller_AB
+
+    @staticmethod
+    def _get_selection_atom_indices(
+        traj: md.Trajectory,
+        selection: str = 'backbone',
+    ):
+        """
+        Get the atom indices of a Mdtraj object, given a selection string.
+        Parameters
+        ----------
+        traj: md.Trajectory
+          The Mdtraj trajectory for which to get the atom indices.
+        selection: str
+          The selection string. Default: 'backbone'
+
+        Returns
+        -------
+        indices: list
+          The list of atom indices that satisfy the selection string.
+
+        Raises
+        ------
+        ValueError
+          If less than three atom indices are found for the selection string.
+        """
+        indices = traj.topology.select(selection)
+        if len(indices) < 3:
+            errmsg = (
+                f"Less than 3 ({len(indices)} backbone atoms were found For "
+                "complex A. No alignment of structures is possible."
+                "Currently only proteins are supported as hosts.")
+            raise ValueError(errmsg)
+        return indices
+
     @staticmethod
     def _update_positions(
         omm_topology_A: openmm.app.Topology,
@@ -1124,9 +1214,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         """
         mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
         mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
+        alignment_indices = SepTopComplexSetupUnit._get_selection_atom_indices(mdtraj_complex_A)
         mdtraj_complex_B.superpose(
             mdtraj_complex_A,
-            atom_indices=mdtraj_complex_A.topology.select('backbone'),
+            atom_indices=alignment_indices,
         )
         # Extract updated system positions.
         updated_positions_B = mdtraj_complex_B.openmm_positions(-1)
@@ -1729,7 +1820,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ligand_1_inxs: list[int],
         ligand_2_inxs: list[int],
         settings: dict[str, SettingsBaseModel],
-        positions_AB: np.ndarray,
+        positions_AB: openmm.unit.Quantity,
     ) -> tuple[
         unit.Quantity,
         openmm.System:
@@ -1794,9 +1885,8 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             k_distance,
         )
         force.setName("alignment_restraint")
-        force.setForceGroup(6)
-
-        system.addForce(force)
+        # Add force to a separate force group
+        add_force_in_separate_group(system, force)
 
         # Get the standard state correction. This assumes that the contribution
         # of the harmonic bond correction itself cancels out.
@@ -1840,29 +1930,29 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
             alchem_comps, smc_comps)
 
-        # 3. Get settings
+        # 2. Get settings
         settings = self._handle_settings()
 
-        # 4. Assign partial charges
+        # 3. Assign partial charges
         self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
 
-        # 5. Update the positions of ligand B:
+        # 4. Update the positions of ligand B:
         #    - solvent: Offset ligand B with respect to ligand A
         smc_B = self._update_positions(
             alchem_comps['stateA'][0],
             alchem_comps['stateB'][0],
             )
-        smc_comps_B = {smc_B: smc_B.to_openff()}
+        smc_off_B = {smc_B: smc_B.to_openff()}
 
         # 5. Get the OpenMM systems
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB, comp_resids_AB = self.get_system(
             solv_comp,
             prot_comp,
-            smc_comps_A | smc_comps_B,
+            smc_comps_A | smc_off_B,
             settings,
         )
 
-        # Get atom indices for ligand A and ligand B and the solvent in the
+        # 6. Get atom indices for ligand A and ligand B and the solvent in the
         # system AB
         comp_atomids_AB = self._get_atom_indices(omm_topology_AB,
                                                  comp_resids_AB)
@@ -1870,7 +1960,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         atom_indices_AB_B = comp_atomids_AB[smc_B]
 
 
-        # 9. Create the alchemical system
+        # 7. Create the alchemical system
         self.logger.info(
             "Creating the alchemical system and applying restraints")
 
@@ -1880,7 +1970,7 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
             atom_indices_AB_B,
         )
 
-        # 10. Apply Restraints
+        # 8. Apply Restraints
         rdmol_A = alchem_comps['stateA'][0].to_rdkit()
         rdmol_B = smc_B.to_rdkit()
         Chem.SanitizeMol(rdmol_A)

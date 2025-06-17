@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import abc
 import os
-import copy
 import logging
 import itertools
 import gufe
@@ -616,9 +615,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
                dict[SmallMoleculeComponent, OFFMolecule],
                dict[SmallMoleculeComponent, OFFMolecule],
                dict[SmallMoleculeComponent, OFFMolecule]]:
-        # 6. Get smcs for the different states and the common smcs
+        # Get smcs for the different states and the common smcs
         smc_off_A = {m: m.to_openff() for m in alchem_comps['stateA']}
         smc_off_B = {m: m.to_openff() for m in alchem_comps['stateB']}
+        # Common smcs could e.g. be cofactors
         smc_off_both = {m: m.to_openff() for m in smc_comps
                         if (m not in alchem_comps["stateA"] and m not in
                             alchem_comps["stateB"])}
@@ -671,54 +671,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         )
 
         return omm_system, omm_topology, positions, system_modeller, comp_resids
-
-    def get_system_AB(
-        self,
-        solv_comp: SolventComponent,
-        system_modeller_A: openmm.app.Modeller,
-        smc_comps_AB: dict[SmallMoleculeComponent, OFFMolecule],
-        smc_off_B: dict[SmallMoleculeComponent, OFFMolecule],
-        settings: dict[str, SettingsBaseModel],
-    ):
-        """
-        Creates an OpenMM system, topology, positions, and modeller.
-
-        Parameters
-        ----------
-        solv_comp: SolventComponent
-        system_modeller_A: app.Modeller
-        smc_comps_AB: dict[SmallMoleculeComponent,OFFMolecule]
-        smc_off_B: dict[SmallMoleculeComponent,OFFMolecule]
-        settings: dict[str, SettingsBaseModel]
-          A dictionary of settings object for the unit.
-
-        Returns
-        -------
-        omm_system_AB: openmm.System
-        omm_topology_AB: openmm.app.Topology
-        positions_AB: openmm.unit.Quantity
-        system_modeller_AB: openmm.app.Modeller
-        """
-        # 5. Get system generator
-        system_generator = self._get_system_generator(settings, solv_comp)
-
-        # Get modeller B only ligand B
-        modeller_ligandB, comp_resids_ligB = self._get_modeller(
-            None, None, smc_off_B,
-            system_generator, settings['solvation_settings'],
-        )
-
-        # Take the modeller from system A --> every water/ion should be in
-        # the same location
-        system_modeller_AB = copy.copy(system_modeller_A)
-        system_modeller_AB.add(modeller_ligandB.topology,
-                               modeller_ligandB.positions)
-
-        omm_topology_AB, omm_system_AB, positions_AB = self._get_omm_objects(
-            system_modeller_AB, system_generator, list(smc_comps_AB.values())
-        )
-
-        return omm_system_AB, omm_topology_AB, positions_AB, system_modeller_AB
 
 
 class BaseSepTopRunUnit(gufe.ProtocolUnit):

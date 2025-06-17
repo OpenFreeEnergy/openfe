@@ -4,6 +4,7 @@ import gzip
 import pytest
 import pooch
 from importlib import resources
+from typing import Optional
 from rdkit import Chem
 from rdkit.Geometry import Point3D
 import openmm
@@ -309,8 +310,8 @@ def get_available_openmm_platforms() -> set[str]:
 def compute_energy(
     system: openmm.System,
     positions: openmm.unit.Quantity,
-    box_vectors: openmm.unit.Quantity | None,
-    context_params: dict[str, float] | None = None,
+    box_vectors: Optional[openmm.unit.Quantity],
+    context_params: Optional[dict[str, float]] = None,
     platform=None,
 ) -> unit.Quantity:
     """
@@ -322,9 +323,9 @@ def compute_energy(
       The system to compute the energy of.
     positions: openmm.unit.Quantity
       The positions to compute the energy at.
-    box_vectors: openmm.unit.Quantity
+    box_vectors: Optional[openmm.unit.Quantity]
       The box vectors to use if any.
-    context_params: dict[str, float]
+    context_params: Optional[dict[str, float]]
       Any global context parameters to set.
     platform: str
       The platform to use.
