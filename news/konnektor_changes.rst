@@ -1,7 +1,8 @@
 **Added:**
 
-* Added optional ``progress`` (whether to show a progress bar) and ``n_processes`` (number of parallel processes to use when generating the network) arguments for network planners.
-
+* Added optional ``n_processes`` (number of parallel processes to use when generating the network) arguments for network planners.
+* Added optional ``progress`` (whether to show progress bar) for ``openfe.setup.ligand_network_planning.generate_radial_network`` (default=``False``, such that there is no default behavior change).
+  
 **Changed:**
 
 * `konnektor <https://konnektor.openfree.energy/en/latest/>_` is now used as the backend for all network generation.
