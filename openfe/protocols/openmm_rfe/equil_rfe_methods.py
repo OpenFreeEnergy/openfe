@@ -479,6 +479,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
     :class:`openfe.protocols.openmm_rfe.RelativeHybridTopologyProtocolUnit`
     """
     result_cls = RelativeHybridTopologyProtocolResult
+    _settings_cls = RelativeHybridTopologyProtocolSettings
     _settings: RelativeHybridTopologyProtocolSettings
 
     @classmethod

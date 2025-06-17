@@ -1,4 +1,4 @@
-name: Make single-file installers
+name: Make single-file installers (manual dispatch)
 
 on:
   workflow_dispatch:
@@ -35,13 +35,13 @@ jobs:
       run: echo ${{ steps.latest-version.outputs.VERSION }}
 
     - name: Install constructor environment with Micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         micromamba-version: '1.5.6-0'
         micromamba-binary-path: ~/.local/bin/micromamba
         environment-name: installer
         create-args: >-
-          python=3.10
+          python=3.11
           jinja2
           constructor
         init-shell: bash

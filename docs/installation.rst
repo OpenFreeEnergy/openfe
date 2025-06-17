@@ -139,12 +139,58 @@ If you already have a `Mamba <https://mamba.readthedocs.io/en/latest/installatio
 
 Note that you must run the latter line in each shell session where you want to use ``openfe``. OpenFE recommends the Mamba package manager for most users as it is orders of magnitude faster than the default Conda package manager. Mamba is a drop in replacement for Conda.
 
+Reproducible builds with a ``conda-lock`` file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
+
+A `conda-lock`_ file is a cross-platform way of specifying a conda environment to build packages in a reproducible way.
+Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
+We recommend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
+
+
 .. note::
-   If you plan on using GAFF to parametrize your system, you **must** install ``openmmforcefields`` version ``0.12.0``.
-   This will create an environment with python 3.10 and the correct version of Ambertools.
 
-   ``mamba create -c conda-forge -n openfe_env openfe=1 openmmforcefields=0.12.0``
+   You will likely need to install ``conda-lock``.
+   We strongly recommend installing ``conda-lock`` in a new virtual environment.
+   This will reduce the chance of dependency conflicts ::
 
+       $ # Install conda lock into a virtual environment
+       $ conda create -n conda-lock -c conda-lock
+       $ # Activate the environment to use the conda-lock command
+       $ conda activate conda-lock
+
+See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
+
+The latest version of the `conda-lock` file we provide can be downloaded with ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml
+
+If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
+
+  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
+
+Create a conda environment from the lock file and activate it::
+
+  $ conda-lock install -n openfe openfe-conda-lock.yml
+  $ conda activate openfe
+
+.. note::
+
+   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
+
+       $ micromamba create -n openfe --file openfe-conda-lock.yml
+       $ micromamba activate openfe
+
+To make sure everything is working, run the tests ::
+
+  $ pytest --pyargs openfe openfecli
+
+The test suite contains several hundred individual tests. This will take a
+few minutes, and all tests should complete with status either passed,
+skipped, or xfailed (expected fail).
+
+With that, you should be ready to use ``openfe``!
 
 Single file installer
 ---------------------
@@ -161,13 +207,11 @@ For example, the Linux installer can be downloaded with ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-Linux-x86_64.sh
 
-And the MacOS (x86_64) installer ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-x86_64.sh
-
 And the MacOS (arm64) installer ::
 
   $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/OpenFEforge-MacOSX-arm64.sh
+
+MacOS x86_64 is no longer supported.
 
 The single file installer contains all of the dependencies required for ``openfe`` and does not require internet access to use.
 
@@ -334,17 +378,24 @@ Now the CLI tool should work as well ::
      --log PATH  logging configuration file
      -h, --help  Show this message and exit.
 
-   Setup Commands:
-     atommapping        Check the atom mapping of a given pair of ligands
-     plan-rhfe-network  Plan a relative hydration free energy network, saved in a
-                        dir with multiple JSON files
-     plan-rbfe-network  Plan a relative binding free energy network, saved in a
-                        dir with multiple JSON files.
+   Network Planning Commands:
+     plan-rhfe-network    Plan a relative hydration free energy network, saved as
+                          JSON files for the quickrun command.
+     plan-rbfe-network    Plan a relative binding free energy network, saved as
+                          JSON files for the quickrun command.
+     view-ligand-network  Visualize a ligand network
 
-   Simulation Commands:
-     gather    Gather DAG result jsons for network of RFE results into single TSV
-               file
+   Quickrun Executor Commands:
+     gather    Gather result jsons for network of RFE results into a TSV file
      quickrun  Run a given transformation, saved as a JSON file
+
+   Miscellaneous Commands:
+     fetch             Fetch tutorial or other resource.
+     charge-molecules  Generate partial charges for a set of molecules.
+     test              Run the OpenFE test suite
+
+
+
 
 To make sure everything is working, run the tests ::
 
@@ -418,6 +469,11 @@ skipped, or xfailed (expected fail).
 
 With that, you should be ready to use ``openfe``!
 
+.. note::
+
+   If building a custom docker image, you may need to need to add ``--ulimit nofile=262144:262144`` to the ``docker build`` command.
+   See this `issue <https://github.com/OpenFreeEnergy/openfe/issues/1269>`_ for details. 
+
 HPC Environments
 ----------------
 
@@ -430,7 +486,7 @@ See our guide on :ref:`containers <installation:containers>` for how to get star
 .. _installation:mamba_hpc:
 
 ``mamba`` in HPC Environments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _virtual packages: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-virtual.html#managing-virtual-packages
 
@@ -544,59 +600,6 @@ For example, to install a version of ``openfe`` which is compatible with ``cudat
 
   $ CONDA_OVERRIDE_CUDA=11.7 mamba create -n openfe_env openfe=\ |version|
 
-Reproducible builds with a ``conda-lock`` file
-----------------------------------------------
-
-.. _conda-lock: https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock
-
-A `conda-lock`_ file is a cross-platform way of specifying a conda environment to build packages in a reproducible way.
-Unlike the single file installer, an internet connection is required to install from a ``conda-lock`` file.
-We recommend the use of a ``conda-lock`` file when the same conda environment is required across different systems.
-
-
-.. note::
-
-   You will likely need to install ``conda-lock``.
-   We strongly recommend installing ``conda-lock`` in a new virtual environment.
-   This will reduce the chance of dependency conflicts ::
-
-       $ # Install conda lock into a virtual environment
-       $ conda create -n conda-lock -c conda-lock
-       $ # Activate the environment to use the conda-lock command
-       $ conda activate conda-lock
-
-See https://github.com/conda/conda-lock?tab=readme-ov-file#conda-lock for more information on ``conda-lock``.
-
-The latest version of the `conda-lock` file we provide can be downloaded with ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/latest/download/openfe-conda-lock.yml
-
-If a particular version is required, the URL will look like this (using the ``openfe 1.0.1`` release as an example) ::
-
-  $ curl -LOJ https://github.com/OpenFreeEnergy/openfe/releases/download/v1.0.1/openfe-1.0.1-conda-lock.yml
-
-Create a conda environment from the lock file and activate it::
-
-  $ conda-lock install -n openfe openfe-conda-lock.yml
-  $ conda activate openfe
-
-.. note::
-
-   micromamba also supports ``conda-lock`` files and can be used to create a virtual environment ::
-
-       $ micromamba create -n openfe --file openfe-conda-lock.yml
-       $ micromamba activate openfe
-
-To make sure everything is working, run the tests ::
-
-  $ pytest --pyargs openfe openfecli
-
-The test suite contains several hundred individual tests. This will take a
-few minutes, and all tests should complete with status either passed,
-skipped, or xfailed (expected fail).
-
-With that, you should be ready to use ``openfe``!
-
 Developer install
 -----------------
 
@@ -679,7 +682,6 @@ Supported Hardware
 We currently support the following CPU architectures:
 
 * ``linux-64``
-* ``osx-64``
 * ``osx-arm64``
 
 For simulation preparation, any supported platform is suitable.

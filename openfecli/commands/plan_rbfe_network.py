@@ -149,7 +149,7 @@ def plan_rbfe_network(
         overwrite_charges: bool
 ):
     """
-    Plan a relative binding free energy network, saved as JSON files for
+    Plan a relative binding free energy network, saved as JSON files for use by
     the quickrun command.
 
     This tool is an easy way to set up a RBFE calculation campaign.
@@ -180,11 +180,11 @@ def plan_rbfe_network(
     which is detailed in the Options section.
     For more advanced setups, please consider using the Python layer of openfe.
     """
-    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
-
     write("RBFE-NETWORK PLANNER")
     write("______________________")
     write("")
+
+    from openfecli.plan_alchemical_networks_utils import plan_alchemical_network_output
 
     write("Parsing in Files: ")
 
