@@ -985,6 +985,10 @@ def test_high_timestep(
 def T4L_xml(
     benzene_complex_system, toluene_complex_system, tmp_path_factory, default_settings,
 ):
+    # Fixing the number of solvent molecules in the solvent settings
+    # to test against reference xml
+    default_settings.solvent_solvation_settings.solvent_padding = None
+    default_settings.solvent_solvation_settings.number_of_solvent_molecules = 364
     protocol = SepTopProtocol(settings=default_settings)
 
     dag = protocol.create(

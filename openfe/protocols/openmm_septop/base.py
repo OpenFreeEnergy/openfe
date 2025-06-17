@@ -61,7 +61,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     BaseSolvationSettings,
     MultiStateSimulationSettings, OpenMMEngineSettings,
     IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
-    ThermoSettings, OpenFFPartialChargeSettings,
+    ThermoSettings, OpenFFPartialChargeSettings, OpenMMSystemGeneratorFFSettings,
 )
 from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
 from openfe.protocols.openmm_utils import omm_compute
@@ -94,7 +94,7 @@ def _pre_equilibrate(
     dry: bool,
     shared_basepath: pathlib.Path,
     verbose: bool,
-    logger: logging.getLogger,
+    logger,
 
 ) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
     """

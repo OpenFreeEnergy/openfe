@@ -96,6 +96,11 @@ from openmmtools.alchemy import (
 )
 from .utils import serialize
 
+due.cite(Doi("10.1021/acs.jctc.3c00282"),
+         description="Separated Topologies method",
+         path="openfe.protocols.openmm_septop.equil_septop_method",
+         cite_module=True)
+
 due.cite(Doi("10.5281/zenodo.596622"),
          description="OpenMMTools",
          path="openfe.protocols.openmm_septop.equil_septop_method",
@@ -543,8 +548,8 @@ class SepTopProtocol(gufe.Protocol):
     :mod:`openfe.protocols`
     :class:`openfe.protocols.openmm_septop.SepTopSettings`
     :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
-    :class:`openfe.protocols.openmm_septop.SepTopComplexUnit`
-    :class:`openfe.protocols.openmm_septop.SepTopSolventUnit`
+    :class:`openfe.protocols.openmm_septop.SepTopComplexRunUnit`
+    :class:`openfe.protocols.openmm_septop.SepTopSolventRunUnit`
     """
     result_cls = SepTopProtocolResult
     _settings_cls = SepTopSettings
@@ -1815,15 +1820,15 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
     def _add_restraints(
         self,
         system: openmm.System,
-        ligand_1: rdkit.Chem.rdchem.Mol,
-        ligand_2: rdkit.Chem.rdchem.Mol,
+        ligand_1: Chem.rdchem.Mol,
+        ligand_2: Chem.rdchem.Mol,
         ligand_1_inxs: list[int],
         ligand_2_inxs: list[int],
         settings: dict[str, SettingsBaseModel],
         positions_AB: openmm.unit.Quantity,
     ) -> tuple[
         unit.Quantity,
-        openmm.System:
+        openmm.System,
     ]:
         """
         Apply the distance restraint between the ligands.
@@ -1832,9 +1837,9 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         ----------
         system: openmm.System
           The OpenMM system where the restraints will be applied to.
-        ligand_1: rdkit.Chem.rdchem.Mol
+        ligand_1: Chem.rdchem.Mol
           The RDKit Molecule of ligand A
-        ligand_2: rdkit.Chem.rdchem.Mol
+        ligand_2: Chem.rdchem.Mol
           The RDKit Molecule of ligand B
         ligand_1_idxs: list[int]
           Atom indices from the ligand A in the system.
