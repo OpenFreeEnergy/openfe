@@ -569,10 +569,8 @@ class SepTopProtocol(gufe.Protocol):
           a set of default settings
         """
         return SepTopSettings(
-            protocol_repeats=1,
-            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
-                nonbonded_cutoff=0.9 * unit.nanometer
-            ),
+            protocol_repeats=3,
+            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
@@ -630,14 +628,8 @@ class SepTopProtocol(gufe.Protocol):
             ),
             complex_lambda_settings=LambdaSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
-            solvent_solvation_settings=OpenMMSolvationSettings(
-                box_shape='dodecahedron',
-                solvent_padding=1.3 * unit.nanometer
-            ),
-            complex_solvation_settings=OpenMMSolvationSettings(
-                box_shape='dodecahedron',
-                solvent_padding=1 * unit.nanometer
-            ),
+            solvent_solvation_settings=OpenMMSolvationSettings(),
+            complex_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(

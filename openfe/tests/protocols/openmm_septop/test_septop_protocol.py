@@ -625,6 +625,7 @@ class TestNonbondedInteractions:
 def benzene_toluene_dag(
     benzene_complex_system, toluene_complex_system, default_settings,
 ):
+    default_settings.protocol_repeats = 1
     protocol = SepTopProtocol(settings=default_settings)
 
     return protocol.create(
@@ -656,7 +657,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         pdb = md.load_pdb('topology.pdb')
-        assert pdb.n_atoms == 1115
+        assert pdb.n_atoms == 1346
         central_atoms = np.array([[2, 19]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
         assert np.isclose(distance, 0.8661)
@@ -687,7 +688,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
                    1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb('alchemical_system.pdb')
-        assert pdb.n_atoms == 2687
+        assert pdb.n_atoms == 2713
 
 
 @pytest.mark.parametrize('pressure',
@@ -1087,7 +1088,6 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
         else:
             solv_repeats.add(ret.outputs['repeat_id'])
     # Repeat ids are random ints so just check their lengths
-    # Length is two, one for Setup, one for the Run Unit
     assert len(complex_repeats) == len(solv_repeats) == 2
 
 
@@ -1126,7 +1126,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                                             shared_basedir=tmpdir,
                                             scratch_basedir=tmpdir,
                                             keep_shared=True)
-
+    
     protocol = SepTopProtocol(
         settings=SepTopProtocol.default_settings(),
     )

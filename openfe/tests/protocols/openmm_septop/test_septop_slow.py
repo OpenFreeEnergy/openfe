@@ -242,7 +242,7 @@ def test_openmm_run_engine(
     default_settings.solvent_output_settings.checkpoint_interval = 20 * unit.femtosecond
 
     protocol = SepTopProtocol(
-            settings=default_settings,
+        settings=default_settings,
     )
 
     stateA = openfe.ChemicalSystem({
@@ -311,7 +311,7 @@ def test_restraints_solvent(
     default_settings.engine_settings.compute_platform = platform
 
     protocol = SepTopProtocol(
-            settings=default_settings,
+        settings=default_settings,
     )
 
     # Create DAG from protocol, get the vacuum and solvent units
@@ -326,7 +326,7 @@ def test_restraints_solvent(
                        if isinstance(u, SepTopSolventSetupUnit)]
     solv_setup_output = solv_setup_unit[0].run()
     pdb = md.load_pdb('topology.pdb')
-    assert pdb.n_atoms == 1115
+    assert pdb.n_atoms == 1346
     central_atoms = np.array([[2, 19]], dtype=np.int32)
     distance = md.compute_distances(pdb, central_atoms)[0][0]
     # For right now just checking that ligands at least somewhat apart
