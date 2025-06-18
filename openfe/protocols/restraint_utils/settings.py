@@ -148,12 +148,12 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     The cutoff value for filtering atoms by their root mean square fluctuation. Atoms with values above this cutoff will be disregarded.
     """
-    host_min_distance: Optional[FloatQuantity['nanometer']] = 1 * unit.nanometer
+    host_min_distance: Optional[FloatQuantity['nanometer']] = 1.0 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The minimum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
     """
-    host_max_distance: Optional[FloatQuantity['nanometer']] = 3 * unit.nanometer
+    host_max_distance: Optional[FloatQuantity['nanometer']] = 3.0 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The maximum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
