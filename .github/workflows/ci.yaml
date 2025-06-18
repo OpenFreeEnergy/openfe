@@ -43,7 +43,7 @@ jobs:
         openeye: ["no"]
         include:
           - os: "macos-latest"
-            python-version: "3.12"
+            python-version: "3.13"
             pydantic-version: ">1"
           - os: "ubuntu-latest"
             python-version: "3.11"
@@ -53,7 +53,7 @@ jobs:
             pydantic-version: ">1"
             openeye: "yes"
           - os: "macos-latest"
-            python-version: "3.12"
+            python-version: "3.13"
             pydantic-version: ">1"
             omff-version: ">0.13"
             openeye: ["no"]
