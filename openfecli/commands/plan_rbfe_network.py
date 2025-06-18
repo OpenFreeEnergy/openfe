@@ -168,7 +168,7 @@ def plan_rbfe_network(
     By default, this tool makes the following choices:
 
     * Atom mappings performed by LOMAP, with settings max3d=1.0 and
-      element_change=False
+      element_change=True
     * Minimal spanning network as the network planner, with LOMAP default
       score as the weight function
     * Water as solvent, with NaCl counter ions at 0.15 M concentration.
