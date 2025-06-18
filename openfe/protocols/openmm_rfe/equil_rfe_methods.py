@@ -31,7 +31,7 @@ from itertools import chain
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
@@ -257,7 +257,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
             raise NotImplementedError("Can't stitch together results yet")
 
     @staticmethod
-    def compute_mean_estimate(dGs:list[unit.Quantity]):
+    def compute_mean_estimate(dGs:list[Quantity]):
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
@@ -265,12 +265,12 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.average(vals) * u
 
-    def get_estimate(self) -> unit.Quantity:
+    def get_estimate(self) -> Quantity:
         """Average free energy difference of this transformation
 
         Returns
         -------
-        dG : unit.Quantity
+        dG : openff.units.Quantity
           The free energy difference between the first and last states. This is
           a Quantity defined with units.
         """
@@ -279,7 +279,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return self.compute_mean_estimate(dGs)
 
     @staticmethod
-    def compute_uncertainty(dGs:list[unit.Quantity]):
+    def compute_uncertainty(dGs:list[Quantity]):
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
@@ -287,7 +287,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         return np.std(vals) * u
 
-    def get_uncertainty(self) -> unit.Quantity:
+    def get_uncertainty(self) -> Quantity:
         """The uncertainty/error in the dG value: The std of the estimates of
         each independent repeat
         """
@@ -296,13 +296,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return self.compute_uncertainty(dGs)
 
 
-    def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+    def get_individual_estimates(self) -> list[tuple[Quantity, Quantity]]:
         """Return a list of tuples containing the individual free energy
         estimates and associated MBAR errors for each repeat.
 
         Returns
         -------
-        dGs : list[tuple[unit.Quantity]]
+        dGs : list[tuple[openff.units.Quantity]]
           n_replicate simulation list of tuples containing the free energy
           estimates (first entry) and associated MBAR estimate errors
           (second entry).
@@ -312,7 +312,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
                for pus in self.data.values()]
         return dGs
 
-    def get_forward_and_reverse_energy_analysis(self) -> list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]:
         """
         Get a list of forward and reverse analysis of the free energies
         for each repeat using uncorrelated production samples.
@@ -333,7 +333,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         Returns
         -------
-        forward_reverse : list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        forward_reverse : list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]
 
 
         Raises

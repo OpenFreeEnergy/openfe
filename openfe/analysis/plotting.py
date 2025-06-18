@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit
+from openff.units import unit, Quantity
 from typing import Optional, Union
 import warnings
 
@@ -129,8 +129,8 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
 
 
 def plot_convergence(
-    forward_and_reverse: dict[str, Union[npt.NDArray, unit.Quantity]],
-    units: unit.Quantity
+    forward_and_reverse: dict[str, Union[npt.NDArray, Quantity]],
+    units: Quantity
 ) -> Axes:
     """
     Plot a Reverse and Forward convergence analysis of the
@@ -142,7 +142,7 @@ def plot_convergence(
       A dictionary containing the reverse and forward
       values of the free energies sampled along a given fraction
       of the sample size.
-    units : unit.Quantity
+    units : openff.units.Quantity
       The units the free energies are provided in.
 
     Returns
