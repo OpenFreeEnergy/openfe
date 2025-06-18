@@ -16,7 +16,7 @@ import numpy as np
 import numpy.typing as npt
 from openmm import app, System, NonbondedForce
 from openmm import unit as omm_unit
-from openff.units import unit
+from openff.units import unit, Quantity
 from openfe import SolventComponent
 
 
@@ -223,7 +223,7 @@ def get_alchemical_waters(
     topology: app.Topology,
     positions: npt.NDArray,
     charge_difference: int,
-    distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
+    distance_cutoff: Quantity = 0.8 * unit.nanometer,
 ) -> list[int]:
     """
     Pick a list of waters to be used for alchemical charge correction.
@@ -237,7 +237,7 @@ def get_alchemical_waters(
     charge_difference : int
       The charge difference between the two end states
       calculated as stateA_formal_charge - stateB_formal_charge.
-    distance_cutoff : unit.Quantity
+    distance_cutoff : openff.units.Quantity
       The minimum distance away from the solutes from which an alchemical
       water can be chosen.
 

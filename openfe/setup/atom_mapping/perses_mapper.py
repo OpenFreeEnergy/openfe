@@ -8,7 +8,7 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 from openfe.utils import requires_package
 from gufe.vendor.openff.models.types import FloatQuantity
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import to_openmm
 
 from ...utils.silence_root_logging import silence_root_logging
@@ -56,7 +56,7 @@ class PersesAtomMapper(LigandAtomMapper):
     def __init__(self, allow_ring_breaking: bool = True,
                  preserve_chirality: bool = True,
                  use_positions: bool = True,
-                 coordinate_tolerance: unit.Quantity = 0.25 * unit.angstrom):
+                 coordinate_tolerance: Quantity = 0.25 * unit.angstrom):
         """
         Suggest atom mappings with the Perses atom mapper.
 
