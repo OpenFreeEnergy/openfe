@@ -142,7 +142,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the 
     respective endstates. Default 'simulation'.
     """
-    trajectory_write_interval: FloatQuantity['picosecond'] = 20 * unit.picosecond
+    trajectory_write_interval: FloatQuantity['picosecond'] = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 20 * unit.picosecond.
     """
