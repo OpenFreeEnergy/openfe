@@ -154,14 +154,21 @@ def _get_alchemical_charge_difference(
                           "correction has been requested. Unfortunately "
                           "only absolute differences of 1 are supported.")
                 raise ValueError(errmsg)
-
-            ion = {-1: solvent_component.positive_ion,
-                   1: solvent_component.negative_ion}[difference]
-            wmsg = (f"A charge difference of {difference} is observed "
-                    "between the end states. This will be addressed by "
-                    f"transforming a water into a {ion} ion")
-            logger.warning(wmsg)
-            warnings.warn(wmsg)
+            if solvent_component:
+                ion = {-1: solvent_component.positive_ion,
+                       1: solvent_component.negative_ion}[difference]
+                wmsg = (f"A charge difference of {difference} is observed "
+                        "between the end states. This will be addressed by "
+                        f"transforming a water into a {ion} ion")
+                logger.warning(wmsg)
+                warnings.warn(wmsg)
+            else:
+                errmsg = (f"A charge difference of {difference} is observed "
+                          "between the end states. This would be addressed by "
+                          f"transforming a water into an ion. However, "
+                          "No solvent component was specified when trying to"
+                          "apply the charge correction.")
+                raise ValueError(errmsg)
         else:
             wmsg = (f"A charge difference of {difference} is observed "
                     "between the end states. No charge correction has "

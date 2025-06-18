@@ -5,7 +5,6 @@ Reusable utility methods to validate input systems to OpenMM-based alchemical
 Protocols.
 """
 from typing import Optional, Tuple
-from openff.toolkit import Molecule as OFFMol
 from gufe import (
     Component, ChemicalSystem, SolventComponent, ProteinComponent,
     SmallMoleculeComponent
