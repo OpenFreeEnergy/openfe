@@ -60,45 +60,61 @@ class LambdaSettings(SettingsBaseModel):
       the same length, defining all the windows of the transformation.
 
     """
-    lambda_elec_A: list[float] = [0.0] * 8 + [0.25, 0.5, 0.75] + [1.0] * 8
+    lambda_elec_A: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.25, 0.5, 0.75,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]
     """
     List of floats of the lambda values for the electrostatics of ligand A. 
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
-    lambda_elec_B: list[float] = [1.0] * 8 + [0.75, 0.5, 0.25] + [0.0] * 8
+    lambda_elec_B: list[float] = [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.75, 0.5, 0.25,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ]
     """
     List of floats of the lambda values for the electrostatics of ligand B. 
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and 
     lambda_restraints.
     """
-    lambda_vdw_A: list[float] = [0.0] * 8 + [
-        0.00, 0.0, 0.00] + np.linspace(0.0, 1.0, 8).tolist()
+    lambda_vdw_A: list[float] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855,
+        0.5714285714285714, 0.7142857142857142, 0.8571428571428571, 1.0,
+    ]
     """
     List of floats of lambda values for the van der Waals of ligand A.
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_elec and 
     lambda_restraints.
     """
-    lambda_vdw_B: list[float] = np.linspace(1.0, 0.0, 8).tolist() + [
-        0.0, 0.0, 0.0] + [0.0] * 8
+    lambda_vdw_B: list[float] = [
+        1.0, 0.8571428571428572, 0.7142857142857143, 0.5714285714285714,
+        0.4285714285714286, 0.2857142857142858, 0.1428571428571429, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ]
     """
     List of floats of lambda values for the van der Waals of ligand B.
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
     lambda_restraints_A: list[float] = [
-                                                 0.0, 0.05, 0.1, 0.3, 0.5,
-                                                 0.75, 1.0, 1.0] + [
-                                                 1.0] * 3 + [1.0] * 8
+        0.0, 0.05, 0.1, 0.3, 0.5,0.75, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ]
     """
     List of floats of lambda values for the restraints of ligand A.
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
-    lambda_restraints_B: list[float] = [1.0] * 8 + [1.0] * 3 + [
-        1.0, 0.95, 0.9, 0.7, 0.5, 0.25, 0.0, 0.0]
+    lambda_restraints_B: list[float] = [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 0.75, 0.5, 0.3, 0.1, 0.05, 0.0,
+    ]
     """
     List of floats of lambda values for the restraints of ligand B.
     Zero means fully interacting and 1 means fully decoupled.

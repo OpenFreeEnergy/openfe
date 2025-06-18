@@ -55,7 +55,7 @@ For the transformation of ligand A to ligand B in the binding site, the followin
 5. Release the restraints of the now dummy ligand A analytically and transfer the ligand into the solvent.
 
 The lambda schedule in the solvent phase is similar to the one in the complex, except that a single harmonic distance restraint is
-applied between central atoms in the two ligands.
+applied between the respective central atom in the two ligands to keep the ligands apart while doing the alchemical transformation.
 A soft-core potential from Beutler et al. [3]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_A``, ``lambda_elec_B``,  ``lambda_vdw_A``, ``lambda_vdw_B``,
 ``lambda_restraints_A``, and ``lambda_restraints_B``.
@@ -65,7 +65,7 @@ Simulation overview
 
 The :class:`.ProtocolDAG` of the :class:`SepTopProtocol <.SepTopProtocol>` contains :class:`.ProtocolUnit`\ s from both the complex and solvent transformations.
 This means that both legs of the thermodynamic cycle are constructed and run sequentially in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
-If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=1``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both complex and solvent transformations.
+If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both complex and solvent transformations.
 
 Simulation steps
 """"""""""""""""

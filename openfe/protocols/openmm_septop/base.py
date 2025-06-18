@@ -551,7 +551,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
           OpenMM Modeller object representing the system to be
           parametrized.
         system_generator : SystemGenerator
-          SystemGenerator object to create a System with.
+          The SystemGenerator object to create a System with.
         smc_components : list[openff.toolkit.Molecule]
           A list of openff Molecules to add to the system.
 

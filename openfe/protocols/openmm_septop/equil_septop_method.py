@@ -577,54 +577,36 @@ class SepTopProtocol(gufe.Protocol):
             ),
             alchemical_settings=AlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
-                lambda_elec_A=9 * [0.0] + [
-                    0.0,
-                    0.125,
-                    0.25,
-                    0.375,
-                    0.5,
-                    0.625,
-                    0.75,
-                    0.875,
-                    1.0,
-                ] + 9 * [1.0],
-                lambda_elec_B=9 * [1.0] + [
-                    1.0,
-                    0.875,
-                    0.75,
-                    0.625,
-                    0.5,
-                    0.375,
-                    0.25,
-                    0.125,
-                    0.0,
-                ] + 9 * [0.0],
-                lambda_vdw_A=[0.0] * 17 + [
-                    0.00,
-                    0.15,
-                    0.23,
-                    0.3,
-                    0.4,
-                    0.52,
-                    0.64,
-                    0.76,
-                    0.88,
-                    1.00
+                lambda_elec_A=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.125,
+                    0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                ],
+                lambda_elec_B=[
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.875,
+                    0.75, 0.625, 0.5, 0.375, 0.25, 0.125, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
+                lambda_vdw_A=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.15, 0.23,
+                    0.3, 0.4, 0.52, 0.64, 0.76, 0.88, 1.0,
                 ],
                 lambda_vdw_B=[
-                                 1.00,
-                                 0.85,
-                                 0.77,
-                                 0.7,
-                                 0.6,
-                                 0.48,
-                                 0.36,
-                                 0.24,
-                                 0.12,
-                                 0.00
-                             ] + [0.0] * 17,
-                lambda_restraints_A=27 * [0],
-                lambda_restraints_B=27 * [0],
+                    1.0, 0.85, 0.77, 0.7, 0.6, 0.48, 0.36, 0.24, 0.12,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
+                lambda_restraints_A=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
+                lambda_restraints_B=[
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
             ),
             complex_lambda_settings=LambdaSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
@@ -678,10 +660,10 @@ class SepTopProtocol(gufe.Protocol):
                 checkpoint_storage_filename='complex_checkpoint.nc'
             ),
             solvent_restraint_settings=DistanceRestraintSettings(
-                spring_constant=1000 * unit.kilojoule_per_mole / unit.nanometer**2,
+                spring_constant=1000.0 * unit.kilojoule_per_mole / unit.nanometer ** 2,
             ),
             complex_restraint_settings=BoreschRestraintSettings(
-                K_thetaA=1000 * unit.kilojoule_per_mole / unit.radian ** 2
+                K_thetaA=1000.0 * unit.kilojoule_per_mole / unit.radian ** 2,
             ),
         )
 
