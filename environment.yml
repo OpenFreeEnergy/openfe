@@ -2,7 +2,7 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
-  - cinnabar ~=0.4.0
+  - cinnabar ~=0.5.0
   - click >=8.2.0
   - coverage
   - duecredit<0.10
@@ -29,7 +29,7 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >=1.10.17
+  - pydantic >=2.0
   - pygraphviz
   - pytest
   - pytest-xdist
