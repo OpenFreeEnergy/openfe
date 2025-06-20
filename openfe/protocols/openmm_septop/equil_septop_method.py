@@ -548,7 +548,9 @@ class SepTopProtocol(gufe.Protocol):
     :mod:`openfe.protocols`
     :class:`openfe.protocols.openmm_septop.SepTopSettings`
     :class:`openfe.protocols.openmm_septop.SepTopProtocolResult`
+    :class:`openfe.protocols.openmm_septop.SepTopComplexSetupUnit`
     :class:`openfe.protocols.openmm_septop.SepTopComplexRunUnit`
+    :class:`openfe.protocols.openmm_septop.SepTopSolventSetupUnit
     :class:`openfe.protocols.openmm_septop.SepTopSolventRunUnit`
     """
     result_cls = SepTopProtocolResult

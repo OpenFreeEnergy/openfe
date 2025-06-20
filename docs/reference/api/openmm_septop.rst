@@ -9,7 +9,7 @@ implemented in OpenFE.
 Protocol API specification
 --------------------------
 
-.. module:: openfe.protocols.openmm_septop
+.. module:: openfe.protocols.openmm_septop.equil_septop_method
 
 .. autosummary::
    :nosignatures:
