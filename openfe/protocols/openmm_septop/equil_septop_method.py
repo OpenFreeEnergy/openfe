@@ -179,6 +179,173 @@ def _check_alchemical_charge_difference(
         raise ValueError(errmsg)
 
 
+class SepTopComplexMixin:
+    """
+    A mixin to get the components and the settings for the Complex Units.
+    """
+    def _get_components(self):
+        """
+        Get the relevant components for a complex transformation.
+
+        Returns
+        -------
+        alchem_comps : dict[str, Component]
+          A list of alchemical components
+        solv_comp : SolventComponent
+          The SolventComponent of the system
+        prot_comp : Optional[ProteinComponent]
+          The protein component of the system, if it exists.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
+        """
+        stateA = self._inputs['stateA']
+        alchem_comps = self._inputs['alchemical_components']
+
+        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
+        small_mols = {m: m.to_openff() for m in small_mols}
+        # Also get alchemical smc from state B
+        small_mols_B = {m: m.to_openff()
+                        for m in alchem_comps['stateB']}
+        small_mols = small_mols | small_mols_B
+
+        return alchem_comps, solv_comp, prot_comp, small_mols
+
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Extract the relevant settings for a complex transformation.
+
+        Returns
+        -------
+        settings : dict[str, SettingsBaseModel]
+          A dictionary with the following entries:
+            * forcefield_settings : OpenMMSystemGeneratorFFSettings
+            * thermo_settings : ThermoSettings
+            * charge_settings : OpenFFPartialChargeSettings
+            * solvation_settings : OpenMMSolvationSettings
+            * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
+            * engine_settings : OpenMMEngineSettings
+            * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : SepTopEquilOutputSettings
+            * simulation_settings : SimulationSettings
+            * output_settings: MultiStateOutputSettings
+            * restraint_settings: ComplexRestraintsSettings
+        """
+        prot_settings = self._inputs['protocol'].settings
+
+        settings = {
+            'forcefield_settings': prot_settings.forcefield_settings,
+            'thermo_settings': prot_settings.thermo_settings,
+            'charge_settings': prot_settings.partial_charge_settings,
+            'solvation_settings': prot_settings.complex_solvation_settings,
+            'alchemical_settings': prot_settings.alchemical_settings,
+            'lambda_settings': prot_settings.complex_lambda_settings,
+            'engine_settings': prot_settings.engine_settings,
+            'integrator_settings': prot_settings.integrator_settings,
+            'equil_simulation_settings': prot_settings.complex_equil_simulation_settings,
+            'equil_output_settings': prot_settings.complex_equil_output_settings,
+            'simulation_settings': prot_settings.complex_simulation_settings,
+            'output_settings': prot_settings.complex_output_settings,
+            'restraint_settings': prot_settings.complex_restraint_settings,
+        }
+
+        settings_validation.validate_timestep(
+            settings['forcefield_settings'].hydrogen_mass,
+            settings['integrator_settings'].timestep,
+        )
+
+        return settings
+
+
+class SepTopSolventMixin:
+    """
+    A mixin to get the components and the settings for the Solvent Units.
+    """
+    def _get_components(self):
+        """
+        Get the relevant components for a solvent transformation.
+
+        Note
+        -----
+        The solvent portion of the transformation is the transformation of one
+        ligand into the other in the solvent. The only thing that
+        should be present is the alchemical species in state A and state B
+        and the SolventComponent.
+
+        Returns
+        -------
+        alchem_comps : dict[str, Component]
+          A list of alchemical components
+        solv_comp : SolventComponent
+          The SolventComponent of the system
+        prot_comp : Optional[ProteinComponent]
+          The protein component of the system, if it exists.
+        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
+          SmallMoleculeComponents to add to the system.
+        """
+        stateA = self._inputs['stateA']
+        alchem_comps = self._inputs['alchemical_components']
+
+        small_mols_A = {m: m.to_openff()
+                        for m in alchem_comps['stateA']}
+        small_mols_B = {m: m.to_openff()
+                        for m in alchem_comps['stateB']}
+        small_mols = small_mols_A | small_mols_B
+
+        solv_comp, _, _ = system_validation.get_components(stateA)
+
+        return alchem_comps, solv_comp, None, small_mols
+
+    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
+        """
+        Extract the relevant settings for a complex transformation.
+
+        Returns
+        -------
+        settings : dict[str, SettingsBaseModel]
+          A dictionary with the following entries:
+            * forcefield_settings : OpenMMSystemGeneratorFFSettings
+            * thermo_settings : ThermoSettings
+            * charge_settings : OpenFFPartialChargeSettings
+            * solvation_settings : OpenMMSolvationSettings
+            * alchemical_settings : AlchemicalSettings
+            * lambda_settings : LambdaSettings
+            * engine_settings : OpenMMEngineSettings
+            * integrator_settings : IntegratorSettings
+            * equil_simulation_settings : MDSimulationSettings
+            * equil_output_settings : SepTopEquilOutputSettings
+            * simulation_settings : MultiStateSimulationSettings
+            * output_settings: MultiStateOutputSettings
+            * restraint_settings: BaseRestraintsSettings
+        """
+        prot_settings = self._inputs['protocol'].settings
+
+        settings = {
+            'forcefield_settings': prot_settings.forcefield_settings,
+            'thermo_settings': prot_settings.thermo_settings,
+            'charge_settings': prot_settings.partial_charge_settings,
+            'solvation_settings': prot_settings.solvent_solvation_settings,
+            'alchemical_settings': prot_settings.alchemical_settings,
+            'lambda_settings': prot_settings.solvent_lambda_settings,
+            'engine_settings': prot_settings.engine_settings,
+            'integrator_settings': prot_settings.integrator_settings,
+            'equil_simulation_settings':
+                prot_settings.solvent_equil_simulation_settings,
+            'equil_output_settings':
+                prot_settings.solvent_equil_output_settings,
+            'simulation_settings': prot_settings.solvent_simulation_settings,
+            'output_settings': prot_settings.solvent_output_settings,
+            'restraint_settings': prot_settings.solvent_restraint_settings}
+
+        settings_validation.validate_timestep(
+            settings['forcefield_settings'].hydrogen_mass,
+            settings['integrator_settings'].timestep
+        )
+
+        return settings
+
+
 class SepTopProtocolResult(gufe.ProtocolResult):
     """Dict-like container for the output of a SepTopProtocol"""
     def __init__(self, **data):
@@ -1000,83 +1167,10 @@ class SepTopProtocol(gufe.Protocol):
         return repeats
 
 
-class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
+class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
     """
     Protocol Unit for the complex phase of a SepTop free energy calculation
     """
-    def _get_components(self):
-        """
-        Get the relevant components for a complex transformation.
-
-        Returns
-        -------
-        alchem_comps : dict[str, Component]
-          A list of alchemical components
-        solv_comp : SolventComponent
-          The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
-          The protein component of the system, if it exists.
-        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
-          SmallMoleculeComponents to add to the system.
-        """
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
-
-        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        small_mols = {m: m.to_openff() for m in small_mols}
-        # Also get alchemical smc from state B
-        small_mols_B = {m: m.to_openff()
-                        for m in alchem_comps['stateB']}
-        small_mols = small_mols | small_mols_B
-
-        return alchem_comps, solv_comp, prot_comp, small_mols
-
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
-        """
-        Extract the relevant settings for a complex transformation.
-
-        Returns
-        -------
-        settings : dict[str, SettingsBaseModel]
-          A dictionary with the following entries:
-            * forcefield_settings : OpenMMSystemGeneratorFFSettings
-            * thermo_settings : ThermoSettings
-            * charge_settings : OpenFFPartialChargeSettings
-            * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
-            * lambda_settings : LambdaSettings
-            * engine_settings : OpenMMEngineSettings
-            * integrator_settings : IntegratorSettings
-            * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : SepTopEquilOutputSettings
-            * simulation_settings : SimulationSettings
-            * output_settings: MultiStateOutputSettings
-            * restraint_settings: ComplexRestraintsSettings
-        """
-        prot_settings = self._inputs['protocol'].settings
-
-        settings = {
-            'forcefield_settings': prot_settings.forcefield_settings,
-            'thermo_settings': prot_settings.thermo_settings,
-            'charge_settings': prot_settings.partial_charge_settings,
-            'solvation_settings': prot_settings.complex_solvation_settings,
-            'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.complex_lambda_settings,
-            'engine_settings': prot_settings.engine_settings,
-            'integrator_settings': prot_settings.integrator_settings,
-            'equil_simulation_settings': prot_settings.complex_equil_simulation_settings,
-            'equil_output_settings': prot_settings.complex_equil_output_settings,
-            'simulation_settings': prot_settings.complex_simulation_settings,
-            'output_settings': prot_settings.complex_output_settings,
-            'restraint_settings': prot_settings.complex_restraint_settings,
-        }
-
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep,
-        )
-
-        return settings
 
     def get_system_AB(
         self,
@@ -1656,93 +1750,10 @@ class SepTopComplexSetupUnit(BaseSepTopSetupUnit):
         }
 
 
-class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
+class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
-
-    def _get_components(self):
-        """
-        Get the relevant components for a solvent transformation.
-
-        Note
-        -----
-        The solvent portion of the transformation is the transformation of one
-        ligand into the other in the solvent. The only thing that
-        should be present is the alchemical species in state A and state B
-        and the SolventComponent.
-
-        Returns
-        -------
-        alchem_comps : dict[str, Component]
-          A list of alchemical components
-        solv_comp : SolventComponent
-          The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
-          The protein component of the system, if it exists.
-        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
-          SmallMoleculeComponents to add to the system.
-        """
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
-
-        small_mols_A = {m: m.to_openff()
-                        for m in alchem_comps['stateA']}
-        small_mols_B = {m: m.to_openff()
-                        for m in alchem_comps['stateB']}
-        small_mols = small_mols_A | small_mols_B
-
-        solv_comp, _, _ = system_validation.get_components(stateA)
-
-        return alchem_comps, solv_comp, None, small_mols
-
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
-        """
-        Extract the relevant settings for a complex transformation.
-
-        Returns
-        -------
-        settings : dict[str, SettingsBaseModel]
-          A dictionary with the following entries:
-            * forcefield_settings : OpenMMSystemGeneratorFFSettings
-            * thermo_settings : ThermoSettings
-            * charge_settings : OpenFFPartialChargeSettings
-            * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
-            * lambda_settings : LambdaSettings
-            * engine_settings : OpenMMEngineSettings
-            * integrator_settings : IntegratorSettings
-            * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : SepTopEquilOutputSettings
-            * simulation_settings : MultiStateSimulationSettings
-            * output_settings: MultiStateOutputSettings
-            * restraint_settings: BaseRestraintsSettings
-        """
-        prot_settings = self._inputs['protocol'].settings
-
-        settings = {
-            'forcefield_settings': prot_settings.forcefield_settings,
-            'thermo_settings': prot_settings.thermo_settings,
-            'charge_settings': prot_settings.partial_charge_settings,
-            'solvation_settings': prot_settings.solvent_solvation_settings,
-            'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.solvent_lambda_settings,
-            'engine_settings': prot_settings.engine_settings,
-            'integrator_settings': prot_settings.integrator_settings,
-            'equil_simulation_settings':
-                prot_settings.solvent_equil_simulation_settings,
-            'equil_output_settings':
-                prot_settings.solvent_equil_output_settings,
-            'simulation_settings': prot_settings.solvent_simulation_settings,
-            'output_settings': prot_settings.solvent_output_settings,
-            'restraint_settings': prot_settings.solvent_restraint_settings}
-
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
-
-        return settings
 
     @staticmethod
     def _update_positions(
@@ -1908,11 +1919,13 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
+        print('test', alchem_comps, smc_comps, prot_comp, solv_comp)
         smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
             alchem_comps, smc_comps)
 
         # 2. Get settings
         settings = self._handle_settings()
+        print(settings)
 
         # 3. Assign partial charges
         self._assign_partial_charges(settings['charge_settings'], smc_comps_AB)
@@ -2003,95 +2016,10 @@ class SepTopSolventSetupUnit(BaseSepTopSetupUnit):
         }
 
 
-class SepTopSolventRunUnit(BaseSepTopRunUnit):
+class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
-    def _get_components(self):
-        """
-        Get the relevant components for a solvent transformation.
-
-        Note
-        -----
-        The solvent portion of the transformation is the transformation of one
-        ligand into the other in the solvent. The only thing that
-        should be present is the alchemical species in state A and state B
-        and the SolventComponent.
-
-        Returns
-        -------
-        alchem_comps : dict[str, Component]
-          A list of alchemical components
-        solv_comp : SolventComponent
-          The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
-          The protein component of the system, if it exists.
-        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
-          SmallMoleculeComponents to add to the system.
-        """
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
-
-        small_mols_A = {m: m.to_openff()
-                        for m in alchem_comps['stateA']}
-        small_mols_B = {m: m.to_openff()
-                        for m in alchem_comps['stateB']}
-        small_mols = small_mols_A | small_mols_B
-
-        solv_comp, _, _ = system_validation.get_components(stateA)
-
-        # 1. We don't need to check that solv_comp is not None, otherwise
-        # an error will have been raised when calling `validate_solvent`
-        # in the Protocol's `_create`.
-        # 2. ProteinComps can't be alchem_comps (for now), so will
-        # be returned as None
-        return alchem_comps, solv_comp, None, small_mols
-
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
-        """
-        Extract the relevant settings for a complex transformation.
-
-        Returns
-        -------
-        settings : dict[str, SettingsBaseModel]
-          A dictionary with the following entries:
-            * forcefield_settings : OpenMMSystemGeneratorFFSettings
-            * thermo_settings : ThermoSettings
-            * charge_settings : OpenFFPartialChargeSettings
-            * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
-            * lambda_settings : LambdaSettings
-            * engine_settings : OpenMMEngineSettings
-            * integrator_settings : IntegratorSettings
-            * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : SepTopEquilOutputSettings
-            * simulation_settings : MultiStateSimulationSettings
-            * output_settings: MultiStateOutputSettings
-            * restraint_settings: BaseRestraintsSettings
-        """
-        prot_settings = self._inputs['protocol'].settings
-
-        settings = {
-            'forcefield_settings': prot_settings.forcefield_settings,
-            'thermo_settings': prot_settings.thermo_settings,
-            'charge_settings': prot_settings.partial_charge_settings,
-            'solvation_settings': prot_settings.solvent_solvation_settings,
-            'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.solvent_lambda_settings,
-            'engine_settings': prot_settings.engine_settings,
-            'integrator_settings': prot_settings.integrator_settings,
-            'equil_simulation_settings': prot_settings.solvent_equil_simulation_settings,
-            'equil_output_settings': prot_settings.solvent_equil_output_settings,
-            'simulation_settings': prot_settings.solvent_simulation_settings,
-            'output_settings': prot_settings.solvent_output_settings,
-            'restraint_settings': prot_settings.solvent_restraint_settings}
-
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
-
-        return settings
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
@@ -2142,85 +2070,10 @@ class SepTopSolventRunUnit(BaseSepTopRunUnit):
         }
 
 
-class SepTopComplexRunUnit(BaseSepTopRunUnit):
+class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
     Protocol Unit for the solvent phase of an relative SepTop free energy
     """
-    def _get_components(self):
-        """
-        Get the relevant components for a complex transformation.
-
-        Returns
-        -------
-        alchem_comps : dict[str, Component]
-          A list of alchemical components
-        solv_comp : SolventComponent
-          The SolventComponent of the system
-        prot_comp : Optional[ProteinComponent]
-          The protein component of the system, if it exists.
-        small_mols : dict[SmallMoleculeComponent: OFFMolecule]
-          SmallMoleculeComponents to add to the system.
-        """
-        stateA = self._inputs['stateA']
-        alchem_comps = self._inputs['alchemical_components']
-
-        solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        small_mols = {m: m.to_openff() for m in small_mols}
-        # Also get alchemical smc from state B
-        small_mols_B = {m: m.to_openff()
-                        for m in alchem_comps['stateB']}
-        small_mols = small_mols | small_mols_B
-
-        return alchem_comps, solv_comp, prot_comp, small_mols
-
-    def _handle_settings(self) -> dict[str, SettingsBaseModel]:
-        """
-        Extract the relevant settings for a complex transformation.
-
-        Returns
-        -------
-        settings : dict[str, SettingsBaseModel]
-          A dictionary with the following entries:
-            * forcefield_settings : OpenMMSystemGeneratorFFSettings
-            * thermo_settings : ThermoSettings
-            * charge_settings : OpenFFPartialChargeSettings
-            * solvation_settings : OpenMMSolvationSettings
-            * alchemical_settings : AlchemicalSettings
-            * lambda_settings : LambdaSettings
-            * engine_settings : OpenMMEngineSettings
-            * integrator_settings : IntegratorSettings
-            * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : SepTopEquilOutputSettings
-            * simulation_settings : SimulationSettings
-            * output_settings: MultiStateOutputSettings
-            * restraint_settings: ComplexRestraintsSettings
-        """
-        prot_settings = self._inputs['protocol'].settings
-
-        settings = {
-            'forcefield_settings': prot_settings.forcefield_settings,
-            'thermo_settings': prot_settings.thermo_settings,
-            'charge_settings': prot_settings.partial_charge_settings,
-            'solvation_settings': prot_settings.complex_solvation_settings,
-            'alchemical_settings': prot_settings.alchemical_settings,
-            'lambda_settings': prot_settings.complex_lambda_settings,
-            'engine_settings': prot_settings.engine_settings,
-            'integrator_settings': prot_settings.integrator_settings,
-            'equil_simulation_settings':
-                prot_settings.complex_equil_simulation_settings,
-            'equil_output_settings':
-                prot_settings.complex_equil_output_settings,
-            'simulation_settings': prot_settings.complex_simulation_settings,
-            'output_settings': prot_settings.complex_output_settings,
-            'restraint_settings': prot_settings.complex_restraint_settings}
-
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
-
-        return settings
-
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, npt.NDArray]:
