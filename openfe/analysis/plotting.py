@@ -192,7 +192,7 @@ def plot_convergence(
     ax.errorbar(
         forward_and_reverse['fractions'],  # type: ignore
         [val.m
-         for val in forward_and_reverse['forward_DGs']],
+         for val in forward_and_reverse['forward_DGs']],  # type: ignore
         yerr=[err.m
               for err in forward_and_reverse['forward_dDGs']],  # type: ignore
         color="#736AFF", lw=3, zorder=2,

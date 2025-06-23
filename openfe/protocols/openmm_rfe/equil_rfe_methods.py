@@ -263,7 +263,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         # this would avoid a screwy case where each value was in different units
         vals = [dG.to(u).m for dG in dGs]
 
-        return np.average(vals) * u
+        return np.average(vals) * u  # type: ignore
 
     def get_estimate(self) -> Quantity:
         """Average free energy difference of this transformation
@@ -285,7 +285,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         # this would avoid a screwy case where each value was in different units
         vals = [dG.to(u).m for dG in dGs]
 
-        return np.std(vals) * u
+        return np.std(vals) * u  # type: ignore
 
     def get_uncertainty(self) -> Quantity:
         """The uncertainty/error in the dG value: The std of the estimates of
