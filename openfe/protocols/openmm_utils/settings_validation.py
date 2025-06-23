@@ -89,8 +89,8 @@ def get_simsteps(sim_length: Quantity,
       The number of simulation timesteps.
     """
 
-    sim_time = round(sim_length.to('attosecond').m)
-    ts = round(timestep.to('attosecond').m)
+    sim_time = round(sim_length.to('attosecond').m)  # type: ignore
+    ts = round(timestep.to('attosecond').m)  # type: ignore
 
     sim_steps, mod = divmod(sim_time, ts)
     if mod != 0:
@@ -126,8 +126,8 @@ def divmod_time(
     remainder : int
       The remainder of the input time and time_per_iteration division.
     """
-    time_ats = round(time.to(unit.attosecond).m)
-    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)
+    time_ats = round(time.to(unit.attosecond).m)  # type: ignore
+    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)  # type: ignore
 
     iterations, remainder = divmod(time_ats, tpi_ats)
 
