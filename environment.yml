@@ -2,11 +2,12 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
-  - cinnabar ~=0.4.0
-  - click
+  - cinnabar ~=0.5.0
+  - click >=8.2.0
   - coverage
   - duecredit<0.10
   - kartograf>=1.0.0
+  - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
   - numpy<2.0.0
@@ -17,9 +18,9 @@ dependencies:
   - openff-nagl-models>=0.1.2
   - openff-toolkit>=0.16.2
   - openff-units==0.2.0
-  - openmm >=8.0.0,!=8.1.0,<8.2.0
+  - openmm >=8.2.0
   - openmmforcefields
-  - openmmtools >=0.24.1
+  - openmmtools >=0.25.0
   - packaging
   - pandas
   - perses>=0.10.3
@@ -28,14 +29,13 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >=1.10.17
+  - pydantic >=2.0
   - pygraphviz
   - pytest
   - pytest-xdist
   - pytest-cov
   - pytest-regressions
   - pytest-rerunfailures
-  - pydantic >=1.10.17
   - pyyaml
   - rdkit
   - rich
