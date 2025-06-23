@@ -33,9 +33,7 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
         solvent=SolventComponent(),
         protein=T4_protein_component,
     )
-
     assert isinstance(alchem_network, AlchemicalNetwork)
-
     edges = alchem_network.edges
 
     assert len(edges) == 14 # we build 2envs * (8 ligands - 1) = 14 relative edges.
