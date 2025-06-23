@@ -253,7 +253,7 @@ class MultistateEquilFEAnalysis:
         dDG = dDF_ij[0, -1] * analyzer.kT
 
         return (from_openmm(DG).to(return_units),
-                from_openmm(dDG, 'openff').to(return_units))
+                from_openmm(dDG).to(return_units))
 
     def get_equil_free_energy(self) -> tuple[Quantity, Quantity]:
         """
