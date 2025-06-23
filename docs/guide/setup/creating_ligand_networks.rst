@@ -5,7 +5,7 @@ Defining the Ligand Network
 A :class:`.LigandNetwork` is a network where nodes are :class:`.SmallMoleculeComponent`\ s and edges are :class:`.LigandAtomMapping`\ s.
 For example, a :class:`.LigandNetwork` with drug candidates as nodes can be used to efficiently conduct a free energy campaign and compute ligand rankings.
 
-Because a ``LigandNetwork``'s edges are atom mappings, each edge can be assigned a score that indicates the mapping's quality.
+Because each edge in a :class:`.LigandNetwork` is a :class:`.LigandAtomMapping`, each edge can be assigned a score that indicates the mapping's quality.
 Some network generators use these scores to construct more efficient network topologies.
 
 See openfe's `konnektor <https://github.com/OpenFreeEnergy/konnektor>`_ package for more information on network generators.
