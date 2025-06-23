@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openmmtools import multistate
-from openff.units import unit, ensure_quantity, Quantity
+from openff.units import unit, Quantity
+from openff.units.openmm import from_openmm
 from pymbar import MBAR
 from pymbar.utils import ParameterError
 from openfe.analysis import plotting
@@ -251,8 +252,8 @@ class MultistateEquilFEAnalysis:
         DG = DF_ij[0, -1] * analyzer.kT
         dDG = dDF_ij[0, -1] * analyzer.kT
 
-        return (ensure_quantity(DG, 'openff').to(return_units),
-                ensure_quantity(dDG, 'openff').to(return_units))
+        return (from_openmm(DG).to(return_units),
+                from_openmm(dDG, 'openff').to(return_units))
 
     def get_equil_free_energy(self) -> tuple[Quantity, Quantity]:
         """
