@@ -6,7 +6,7 @@ A :class:`.LigandNetwork` is a network where nodes are :class:`.SmallMoleculeCom
 For example, a :class:`.LigandNetwork` with drug candidates as nodes can be used to conduct a free energy campaign and compute ligand rankings.
 
 **openfe** includes an interface to common :any:`Ligand Network Planners`, which are implemented in OpenFE's `konnektor <https://github.com/OpenFreeEnergy/konnektor>`_ package.
-(See `konnektor's documentation <hhttps://konnektor.openfree.energy/en/latest/>`_ for more information on network generators.)
+(See `konnektor's documentation <https://konnektor.openfree.energy/en/latest/>`_ for more information on network generators.)
 
 Because each edge in a :class:`.LigandNetwork` is a :class:`.LigandAtomMapping`, each edge can be assigned a score that indicates the mapping's quality.
 Some network generators use these scores to construct more efficient network topologies.
