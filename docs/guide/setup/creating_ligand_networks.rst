@@ -3,12 +3,14 @@
 Defining the Ligand Network
 ===========================
 A :class:`.LigandNetwork` is a network where nodes are :class:`.SmallMoleculeComponent`\ s and edges are :class:`.LigandAtomMapping`\ s.
-For example, a :class:`.LigandNetwork` with drug candidates as nodes can be used to efficiently conduct a free energy campaign and compute ligand rankings.
+For example, a :class:`.LigandNetwork` with drug candidates as nodes can be used to conduct a free energy campaign and compute ligand rankings.
+
+**openfe** includes an interface to common :any:`Ligand Network Planners`, which are implemented in OpenFE's `konnektor <https://github.com/OpenFreeEnergy/konnektor>`_ package.
+(See `konnektor's documentation <hhttps://konnektor.openfree.energy/en/latest/>`_ for more information on network generators.)
 
 Because each edge in a :class:`.LigandNetwork` is a :class:`.LigandAtomMapping`, each edge can be assigned a score that indicates the mapping's quality.
 Some network generators use these scores to construct more efficient network topologies.
 
-See openfe's `konnektor <https://github.com/OpenFreeEnergy/konnektor>`_ package for more information on network generators.
 
 Below is an example of a ``LigandNetwork`` with scores assigned to each atom mapping:
 
