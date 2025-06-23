@@ -364,10 +364,10 @@ class MultistateEquilFEAnalysis:
 
         forward_reverse = {
             'fractions': np.array(fractions),
-            'forward_DGs': Quantity.from_list(forward_DGs),
-            'forward_dDGs': Quantity.from_list(forward_dDGs),
-            'reverse_DGs': Quantity.from_list(reverse_DGs),
-            'reverse_dDGs': Quantity.from_list(reverse_dDGs)
+            'forward_DGs': Quantity.from_list(forward_DGs),  # type: ignore
+            'forward_dDGs': Quantity.from_list(forward_dDGs),  # type: ignore
+            'reverse_DGs': Quantity.from_list(reverse_DGs),  # type: ignore
+            'reverse_dDGs': Quantity.from_list(reverse_dDGs)  # type: ignore
         }
         return forward_reverse
 
