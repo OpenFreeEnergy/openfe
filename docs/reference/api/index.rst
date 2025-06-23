@@ -21,4 +21,4 @@ OpenFE API Reference
     openmm_md
     openmm_protocol_settings
 
-.. _gufe: https://gufe.readthedocs.io/en/latest/api.html
+.. _gufe: https://gufe.openfree.energy/en/stable/api.html
