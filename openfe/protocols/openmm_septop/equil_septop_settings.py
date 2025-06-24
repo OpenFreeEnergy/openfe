@@ -66,7 +66,7 @@ class LambdaSettings(SettingsBaseModel):
         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
     ]
     """
-    List of floats of the lambda values for the electrostatics of ligand A. 
+    List of floats of the lambda values for the electrostatics of ligand A.
     Zero means fully interacting and 1 means fully decoupled.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
@@ -76,9 +76,9 @@ class LambdaSettings(SettingsBaseModel):
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     ]
     """
-    List of floats of the lambda values for the electrostatics of ligand B. 
+    List of floats of the lambda values for the electrostatics of ligand B.
     Zero means fully interacting and 1 means fully decoupled.
-    Length of this list needs to match length of lambda_vdw and 
+    Length of this list needs to match length of lambda_vdw and
     lambda_restraints.
     """
     lambda_vdw_A: list[float] = [
@@ -89,7 +89,7 @@ class LambdaSettings(SettingsBaseModel):
     """
     List of floats of lambda values for the van der Waals of ligand A.
     Zero means fully interacting and 1 means fully decoupled.
-    Length of this list needs to match length of lambda_elec and 
+    Length of this list needs to match length of lambda_elec and
     lambda_restraints.
     """
     lambda_vdw_B: list[float] = [
@@ -155,7 +155,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     production_trajectory_filename: Optional[str] = 'simulation'
     """
     Basename for the path to the storage file for analysis. The protocol will
-    append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the 
+    append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the
     respective endstates. Default 'simulation'.
     """
     trajectory_write_interval: FloatQuantity['picosecond'] = 20.0 * unit.picosecond
@@ -164,34 +164,34 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     """
     preminimized_structure: Optional[str] = 'system'
     """
-    Basename for the path to the pdb file of the full pre-minimized systems. 
+    Basename for the path to the pdb file of the full pre-minimized systems.
     The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
-     files of the respective endstates. Default 'system'.
+    files of the respective endstates. Default 'system'.
     """
     minimized_structure: Optional[str] = 'minimized'
     """
-    Basename for the path to the pdb file of the systems after minimization. 
+    Basename for the path to the pdb file of the systems after minimization.
     The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
-     files of the respective endstates. Default 'minimized'.
+    files of the respective endstates. Default 'minimized'.
     """
     equil_nvt_structure: Optional[str] = 'equil_nvt'
     """
-    Basename for the path to the pdb file of the systems after NVT equilibration. 
-    The protocol will append a '_stateA' and a '_stateB' for the output files 
+    Basename for the path to the pdb file of the systems after NVT equilibration.
+    The protocol will append a '_stateA' and a '_stateB' for the output files
     of the respective endstates. Default 'equil_nvt.pdb'.
     """
     equil_npt_structure: Optional[str] = 'equil_npt'
     """
-    Basename for the path to the pdb file of the systems after NPT equilibration. 
+    Basename for the path to the pdb file of the systems after NPT equilibration.
     The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
-     files of the respective endstates. Default 'equil_npt'.
+    files of the respective endstates. Default 'equil_npt'.
     """
     log_output: Optional[str] = 'simulation'
     """
-    Basename for the filename for writing the log of the MD simulation, 
-    including timesteps, energies, density, etc. 
+    Basename for the filename for writing the log of the MD simulation,
+    including timesteps, energies, density, etc.
     The protocol will append a '_stateA.pdb' and a '_stateB.pdb' for the output
-     files of the respective endstates. Default 'simulation'.
+    files of the respective endstates. Default 'simulation'.
     """
 
 
@@ -205,9 +205,9 @@ class SepTopSettings(SettingsBaseModel):
     """
     protocol_repeats: int
     """
-    The number of completely independent repeats of the entire sampling 
-    process. The mean of the repeats defines the final estimate of FE 
-    difference, while the variance between repeats is used as the uncertainty.  
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
     """
 
     @validator('protocol_repeats')
@@ -236,12 +236,12 @@ class SepTopSettings(SettingsBaseModel):
     """
     solvent_lambda_settings: LambdaSettings
     """
-    Settings for controlling the lambda schedule for the different components 
+    Settings for controlling the lambda schedule for the different components
     (vdw, elec, restraints) in the solvent.
     """
     complex_lambda_settings: LambdaSettings
     """
-    Settings for controlling the lambda schedule for the different components 
+    Settings for controlling the lambda schedule for the different components
     (vdw, elec, restraints) in the complex.
     """
 

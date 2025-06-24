@@ -1,7 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 """OpenMM Equilibrium SepTop RBFE Protocol --- :mod:`openfe.protocols.openmm_septop.equil_septop_method`
-=========================================================================================================
+========================================================================================================
 
 This module implements the necessary methodology tooling to run a
 Separated Topologies RBFE calculation using OpenMM tools and one of the
@@ -25,6 +25,7 @@ This Protocol is based on, and leverages components originating from
 the SepTop implementation from the Mobleylab
 (https://github.com/MobleyLab/SeparatedTopologies) as well as
 femto (https://github.com/Psivant/femto).
+
 """
 from __future__ import annotations
 
