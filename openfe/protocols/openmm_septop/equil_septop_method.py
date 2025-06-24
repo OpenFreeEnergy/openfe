@@ -1880,11 +1880,11 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # Add force to a separate force group
         add_force_in_separate_group(system, force)
 
-        # Get the standard state correction. This assumes that the contribution
-        # of the harmonic bond correction itself cancels out.
+
+        # No correction necessary as only a single harmonic bond is applied between the ligands
         correction = from_openmm(
             openmm.unit.MOLAR_GAS_CONSTANT_R * to_openmm(settings['thermo_settings'].temperature)
-        )
+        ) * 0.0
 
         return correction, system
 
