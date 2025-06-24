@@ -8,9 +8,8 @@ For example, a :class:`.LigandNetwork` with drug candidates as nodes can be used
 **openfe** includes an interface to common :any:`Ligand Network Planners`, which are implemented in OpenFE's `konnektor <https://github.com/OpenFreeEnergy/konnektor>`_ package.
 (See `konnektor's documentation <https://konnektor.openfree.energy/en/latest/>`_ for more information on network generators.)
 
-Because each edge in a :class:`.LigandNetwork` is a :class:`.LigandAtomMapping`, each edge can be assigned a score that indicates the mapping's quality.
-Some network generators use these scores to construct more efficient network topologies.
-
+A :class:`.LigandNetwork` is constructed from :class:`.LigandAtomMapping`, which represent the edges of the network.
+A :class:`.LigandAtomMapping` can have a :ref:`score associated with the mapping <Scoring Atom Mappings>` which can be used by some network generators to construct more efficient network topologies.
 
 Below is an example of a ``LigandNetwork`` with scores assigned to each atom mapping:
 
