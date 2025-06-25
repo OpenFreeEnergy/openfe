@@ -17,7 +17,7 @@ dependencies:
   - openff-nagl-models>=0.1.2
   - openff-toolkit>=0.16.2
   - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
-  - openmm >=8.1.1, <8.3.0
+  - openmm ~=8.2.0  # 8.2 is qualified, but 8.3 is not yet.
   - openmmforcefields
   - openmmtools >=0.25.0
   - packaging
