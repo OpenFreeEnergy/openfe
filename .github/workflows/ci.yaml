@@ -30,23 +30,33 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} oechem: ${{ matrix.openeye }}"
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "macos-latest"]
+        os: ["ubuntu-latest"]
+        pydantic-version: [">1"]
         python-version:
           - "3.10"
           - "3.11"
           - "3.12"
         openeye: ["no"]
         include:
+          - os: "macos-latest"
+            python-version: "3.12"
+            pydantic-version: ">1"
           - os: "ubuntu-latest"
             python-version: "3.11"
+            pydantic-version: "<2"
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            pydantic-version: ">1"
             openeye: "yes"
           - os: "macos-latest"
             python-version: "3.12"
-            openeye: "yes"
+            pydantic-version: ">1"
+            omff-version: ">0.13"
+            openeye: ["no"]
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt

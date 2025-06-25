@@ -29,7 +29,7 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >=2.0
+  - pydantic >=1.10.17
   - pygraphviz
   - pytest
   - pytest-xdist
