@@ -20,7 +20,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.12"
+        python-version: "3.13"
 
     - name: Check for API breaks
       continue-on-error: true
