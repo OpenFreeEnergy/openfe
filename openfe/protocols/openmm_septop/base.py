@@ -117,7 +117,7 @@ def _pre_equilibrate(
       * `equil_simulation_settings`
       * `equil_output_settings`
     endstate: str
-      The endstate that is pre_equilibrates, either 'A' or 'B'.
+      The endstate that is pre-equilibrated,can be 'A', 'B' or 'AB'.
     dry: bool
       Whether or not this is a dry run.
     shared_basepath: pathlib.Path
