@@ -257,13 +257,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
             raise NotImplementedError("Can't stitch together results yet")
 
     @staticmethod
-    def compute_mean_estimate(dGs:list[Quantity]):
-        u = dGs[0].u  # type: ignore
+    def compute_mean_estimate(dGs:list[Quantity]) -> Quantity:
+        u = dGs[0].u 
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
-        vals = [dG.to(u).m for dG in dGs]
+        vals = np.asarray([dG.to(u).m for dG in dGs])
 
-        return np.average(vals) * u  # type: ignore
+        return np.average(vals) * u
 
     def get_estimate(self) -> Quantity:
         """Average free energy difference of this transformation
@@ -279,13 +279,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return self.compute_mean_estimate(dGs)
 
     @staticmethod
-    def compute_uncertainty(dGs:list[Quantity]):
-        u = dGs[0].u  # type: ignore
+    def compute_uncertainty(dGs:list[Quantity]) -> Quantity:
+        u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
-        vals = [dG.to(u).m for dG in dGs]
+        vals = np.asarray([dG.to(u).m for dG in dGs])
 
-        return np.std(vals) * u  # type: ignore
+        return np.std(vals) * u
 
     def get_uncertainty(self) -> Quantity:
         """The uncertainty/error in the dG value: The std of the estimates of
