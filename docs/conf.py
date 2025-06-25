@@ -174,7 +174,8 @@ try:
         repo.remote('origin').pull()
     else:
         repo = Repo.clone_from(
-            "https://github.com/OpenFreeEnergy/ExampleNotebooks.git/releases/tag/june-2025",
+            "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+            branch='june-2025'
             to_path=example_notebooks_path,
         )
 except Exception as e:
