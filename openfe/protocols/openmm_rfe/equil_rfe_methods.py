@@ -258,7 +258,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
     @staticmethod
     def compute_mean_estimate(dGs:list[Quantity]) -> Quantity:
-        u = dGs[0].u 
+        u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
         vals = np.asarray([dG.to(u).m for dG in dGs])
