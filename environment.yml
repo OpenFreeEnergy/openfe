@@ -17,7 +17,7 @@ dependencies:
   - openff-nagl-models>=0.1.2
   - openff-toolkit>=0.16.2
   - openff-units==0.3.1
-  - openmm !=8.1.0, <8.3.0
+  - openmm >=8.1.1, <8.3.0
   - openmmforcefields
   - openmmtools >=0.25.0
   - packaging
