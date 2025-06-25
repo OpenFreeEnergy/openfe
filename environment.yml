@@ -28,7 +28,7 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >=2.0
+  - pydantic >=2.0  # https://github.com/OpenFreeEnergy/openfe/pull/1379
   - pygraphviz
   - pytest
   - pytest-xdist
