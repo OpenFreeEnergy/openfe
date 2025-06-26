@@ -17,33 +17,27 @@ TODO
 from __future__ import annotations
 
 import abc
-import copy
-import itertools
 import logging
 import pathlib
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
 import gufe
 import mdtraj as mdt
-import numpy as np
 import numpy.typing as npt
 import openmm
 import openmmtools
-import simtk
-import simtk.unit as omm_units
 from gufe import (ChemicalSystem, ProteinComponent, SmallMoleculeComponent,
                   SolventComponent)
 from gufe.components import Component
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    BaseSolvationSettings, IntegratorSettings, LambdaSettings,
+    BaseSolvationSettings, IntegratorSettings,
     MultiStateOutputSettings, MultiStateSimulationSettings,
     OpenFFPartialChargeSettings, OpenMMEngineSettings,
     OpenMMSystemGeneratorFFSettings, ThermoSettings)
-from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
 from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_utils.omm_settings import (
-    BasePartialChargeSettings, SettingsBaseModel)
-from openfe.utils import log_system_probe, without_oechem_backend
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
+from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
+from openfe.utils import without_oechem_backend
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -57,7 +51,7 @@ from openmmtools.states import (SamplerState, ThermodynamicState,
 
 from ..openmm_utils import (charge_generation, multistate_analysis,
                             settings_validation, system_creation)
-from .utils import SepTopParameterState, deserialize, serialize
+from .utils import SepTopParameterState, deserialize
 
 logger = logging.getLogger(__name__)
 

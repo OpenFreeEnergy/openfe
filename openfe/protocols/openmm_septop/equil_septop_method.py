@@ -42,7 +42,6 @@ import MDAnalysis as mda
 import mdtraj as md
 import numpy as np
 import numpy.typing as npt
-import openfe.protocols.restraint_utils
 import openmm
 import openmm.unit
 import openmm.unit as omm_units
@@ -57,10 +56,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     OpenMMEngineSettings, OpenMMSolvationSettings, SepTopEquilOutputSettings,
     SepTopSettings, SettingsBaseModel)
 from openfe.protocols.restraint_utils import geometry
-from openfe.protocols.restraint_utils.geometry.boresch import (
-    BoreschRestraintGeometry, find_boresch_restraint,
-    find_guest_atom_candidates)
-from openfe.protocols.restraint_utils.geometry.utils import get_central_atom_idx
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     BoreschRestraint, add_force_in_separate_group)
@@ -69,9 +65,7 @@ from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit
 from openff.units.openmm import from_openmm, to_openmm
 from openmmtools import multistate
-from openmmtools.alchemy import (AbsoluteAlchemicalFactory, AlchemicalRegion,
-                                 AlchemicalState)
-from openmmtools.states import GlobalParameterState, ThermodynamicState
+from openmmtools.states import ThermodynamicState
 from rdkit import Chem
 
 from ..openmm_utils import settings_validation, system_validation
@@ -956,7 +950,7 @@ class SepTopProtocol(gufe.Protocol):
         lambda_components = [lambda_vdw_A, lambda_vdw_B,
                              lambda_elec_A, lambda_elec_B,
                              lambda_restraints_A, lambda_restraints_B]
-        lengths = {len(l) for l in lambda_components}
+        lengths = {len(lam) for lam in lambda_components}
         if len(lengths) != 1:
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"

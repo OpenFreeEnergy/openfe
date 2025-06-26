@@ -4,7 +4,6 @@ import itertools
 import json
 import math
 import pathlib
-from importlib import resources
 from unittest import mock
 
 import gufe
@@ -27,12 +26,10 @@ from openfe.protocols.openmm_septop.equil_septop_method import \
     _check_alchemical_charge_difference
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
-from openfe.tests.protocols.conftest import compute_energy, benzene_system, \
-    benzene_complex_system
+from openfe.tests.protocols.conftest import compute_energy
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import (CustomNonbondedForce, MonteCarloBarostat, NonbondedForce,
-                    XmlSerializer, app)
+from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 

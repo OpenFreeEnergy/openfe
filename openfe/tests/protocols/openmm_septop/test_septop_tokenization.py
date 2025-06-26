@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import json
-import openfe
 from openfe.protocols import openmm_septop
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin

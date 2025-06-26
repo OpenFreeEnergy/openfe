@@ -19,9 +19,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings, MDOutputSettings, MDSimulationSettings,
     MultiStateOutputSettings, MultiStateSimulationSettings,
     OpenFFPartialChargeSettings, OpenMMEngineSettings, OpenMMSolvationSettings)
-from openfe.protocols.restraint_utils.settings import (
-    BaseRestraintSettings, BoreschRestraintSettings, DistanceRestraintSettings,
-    FlatBottomRestraintSettings)
+from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
 from openff.models.types import FloatQuantity
 from openff.units import unit
 from pydantic.v1 import validator
