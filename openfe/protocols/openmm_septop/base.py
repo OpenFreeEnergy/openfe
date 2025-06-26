@@ -20,7 +20,6 @@ import abc
 import copy
 import itertools
 import logging
-import os
 import pathlib
 from typing import Any, Optional
 
@@ -35,13 +34,11 @@ import simtk.unit as omm_units
 from gufe import (ChemicalSystem, ProteinComponent, SmallMoleculeComponent,
                   SolventComponent)
 from gufe.components import Component
-
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    BaseSolvationSettings,
-    MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, LambdaSettings, MultiStateOutputSettings,
-    ThermoSettings, OpenFFPartialChargeSettings, OpenMMSystemGeneratorFFSettings,
-)
+    BaseSolvationSettings, IntegratorSettings, LambdaSettings,
+    MultiStateOutputSettings, MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings, OpenMMEngineSettings,
+    OpenMMSystemGeneratorFFSettings, ThermoSettings)
 from openfe.protocols.openmm_septop.equil_septop_settings import SepTopSettings
 from openfe.protocols.openmm_utils import omm_compute
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -60,7 +57,6 @@ from openmmtools.states import (SamplerState, ThermodynamicState,
 
 from ..openmm_utils import (charge_generation, multistate_analysis,
                             settings_validation, system_creation)
-from .femto_restraints import select_ligand_idxs
 from .utils import SepTopParameterState, deserialize, serialize
 
 logger = logging.getLogger(__name__)
@@ -102,166 +98,6 @@ def _pre_equilibrate(
       Whether or not this is a dry run.
     shared_basepath: pathlib.Path
       The Path to the shared storage.
-    verbose: bool
-      Whether to print extra information
-    logger: logging.getLogger
-      Name of the logger
-
-    Returns
-    -------
-    equilibrated_positions : npt.NDArray
-      Equilibrated system positions
-    box : openmm.unit.Quantity
-      Box vectors of the equilibrated system.
-    """
-    # Prep the simulation object
-    # Restrict CPU count if no cutoff
-    restrict_cpu = settings['forcefield_settings'].nonbonded_method.lower() == 'nocutoff'
-    platform = omm_compute.get_openmm_platform(
-        platform_name=settings['engine_settings'].compute_platform,
-        gpu_device_index=settings['engine_settings'].gpu_device_index,
-        restrict_cpu_count=restrict_cpu
-    )
-
-    integrator = openmm.LangevinMiddleIntegrator(
-        to_openmm(settings['thermo_settings'].temperature),
-        to_openmm(settings['integrator_settings'].langevin_collision_rate),
-        to_openmm(settings['integrator_settings'].timestep),
-    )
-
-    simulation = openmm.app.Simulation(
-        topology=topology,
-        system=system,
-        integrator=integrator,
-        platform=platform,
-    )
-
-    # Get the necessary number of steps
-    if settings[
-        'equil_simulation_settings'].equilibration_length_nvt is not None:
-        equil_steps_nvt = settings_validation.get_simsteps(
-            sim_length=settings[
-                'equil_simulation_settings'].equilibration_length_nvt,
-            timestep=settings['integrator_settings'].timestep,
-            mc_steps=1,
-        )
-    else:
-        equil_steps_nvt = None
-
-    equil_steps_npt = settings_validation.get_simsteps(
-        sim_length=settings[
-            'equil_simulation_settings'].equilibration_length,
-        timestep=settings['integrator_settings'].timestep,
-        mc_steps=1,
-    )
-
-    prod_steps_npt = settings_validation.get_simsteps(
-        sim_length=settings['equil_simulation_settings'].production_length,
-        timestep=settings['integrator_settings'].timestep,
-        mc_steps=1,
-    )
-
-    if verbose:
-        logger.info("running non-alchemical equilibration MD")
-
-    # Don't do anything if we're doing a dry run
-    if dry:
-        return positions, system.getDefaultPeriodicBoxVectors()
-
-    # TODO: Refactor this part to live outside the method call
-    # We have to modify the output settings to have different output
-    # names for the files from the two end states
-    unfrozen_outsettings = settings['equil_output_settings'].unfrozen_copy()
-
-    if endstate == 'A' or endstate == 'B' or endstate == 'AB':
-        if unfrozen_outsettings.production_trajectory_filename:
-            unfrozen_outsettings.production_trajectory_filename = (
-                    unfrozen_outsettings.production_trajectory_filename + f'_state{endstate}.xtc')
-        if unfrozen_outsettings.preminimized_structure:
-            unfrozen_outsettings.preminimized_structure = (
-                    unfrozen_outsettings.preminimized_structure + f'_state{endstate}.pdb')
-        if unfrozen_outsettings.minimized_structure:
-            unfrozen_outsettings.minimized_structure = (
-                    unfrozen_outsettings.minimized_structure + f'_state{endstate}.pdb')
-        if unfrozen_outsettings.equil_nvt_structure:
-            unfrozen_outsettings.equil_nvt_structure = (
-                    unfrozen_outsettings.equil_nvt_structure + f'_state{endstate}.pdb')
-        if unfrozen_outsettings.equil_npt_structure:
-            unfrozen_outsettings.equil_npt_structure = (
-                    unfrozen_outsettings.equil_npt_structure + f'_state{endstate}.pdb')
-        if unfrozen_outsettings.log_output:
-            unfrozen_outsettings.log_output = (
-                    unfrozen_outsettings.log_output + f'_state{endstate}.log')
-    else:
-        errmsg = f"Only 'A', 'B', and 'AB' are accepted as endstates. Got {endstate}"
-        raise ValueError(errmsg)
-
-    # Use the _run_MD method from the PlainMDProtocolUnit
-    # Should in-place modify the simulation
-    PlainMDProtocolUnit._run_MD(
-        simulation=simulation,
-        positions=positions,
-        simulation_settings=settings['equil_simulation_settings'],
-        output_settings=unfrozen_outsettings,
-        temperature=settings['thermo_settings'].temperature,
-        barostat_frequency=settings['integrator_settings'].barostat_frequency,
-        timestep=settings['integrator_settings'].timestep,
-        equil_steps_nvt=equil_steps_nvt,
-        equil_steps_npt=equil_steps_npt,
-        prod_steps=prod_steps_npt,
-        verbose=verbose,
-        shared_basepath=shared_basepath,
-    )
-    state = simulation.context.getState(
-        getPositions=True,
-        enforcePeriodicBox=True,
-    )
-    equilibrated_positions = state.getPositions(asNumpy=True)
-    box = state.getPeriodicBoxVectors()
-
-    # cautiously delete out contexts & integrator
-    del simulation.context, integrator
-
-    return equilibrated_positions, box
-
-
-def _pre_equilibrate(
-    system: openmm.System,
-    topology: openmm.app.Topology,
-    positions: omm_unit.Quantity,
-    settings: dict[str, SettingsBaseModel],
-    endstate: str,
-    dry: bool,
-    shared_basepath: pathlib.Path,
-    verbose: bool,
-    logger,
-
-) -> tuple[omm_unit.Quantity, omm_unit.Quantity]:
-    """
-    Run a non-alchemical equilibration to get a stable system.
-
-    Parameters
-    ----------
-    system : openmm.System
-      An OpenMM System to equilibrate.
-    topology : openmm.app.Topology
-      OpenMM Topology of the System.
-    positions : openmm.unit.Quantity
-      Initial positions for the system.
-    settings : dict[str, SettingsBaseModel]
-      A dictionary of settings objects. Expects the
-      following entries:
-      * `engine_settings`
-      * `thermo_settings`
-      * `integrator_settings`
-      * `equil_simulation_settings`
-      * `equil_output_settings`
-    endstate: str
-      The endstate that is pre_equilibrates, either 'A' or 'B'.
-    dry: bool
-      Whether or not this is a dry run.
-    shared_basepath: pathlib.Path
-      Path to the shared storage.
     verbose: bool
       Whether to print extra information
     logger: logging.getLogger
@@ -438,36 +274,45 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         alchem_indices_B: list[int],
     ) -> tuple[AbsoluteAlchemicalFactory, openmm.System]:
         """
-        Get a list of atom indices for all the alchemical species
+        Get an alchemically modified system and its associated factory
 
         Parameters
         ----------
-        omm_top : openmm.app.Topology
-          Topology of OpenMM System.
-        comp_resids : dict[Component, npt.NDArray]
-          A dictionary of residues for each component in the System.
-        alchem_comps : dict[str, list[Component]]
-          A dictionary of alchemical components for each end state.
+        system : openmm.System
+          System to alchemically modify.
+        alchem_indices_A: list[int]
+          A list of atom indices for the alchemically modified
+          ligand A in the system.
+        alchem_indices_B: list[int]
+          A list of atom indices for the alchemically modified
+          ligand B in the system.
 
-        Return
-        ------
-        atom_ids : list[int]
-          A list of atom indices for the alchemical species
+        Returns
+        -------
+        alchemical_factory : AbsoluteAlchemicalFactory
+          Factory for creating an alchemically modified system.
+        alchemical_system : openmm.System
+          Alchemically modified system
         """
 
-        # concatenate a list of residue indexes for all alchemical components
-        residxs = np.concatenate(
-            [comp_resids[key] for key in alchem_comps['stateA']]
+        alchemical_factory = AbsoluteAlchemicalFactory(
+            consistent_exceptions=False,
+            switch_width=1.0 * unit.angstroms,
+            alchemical_pme_treatment='exact',
+            alchemical_rf_treatment='switched',
+            disable_alchemical_dispersion_correction=False,
+            split_alchemical_forces=True,
         )
+        # Alchemical Region for ligand A
+        alchemical_region_A = AlchemicalRegion(
+            alchemical_atoms=alchem_indices_A, name='A')
+        # Alchemical Region for ligand B
+        alchemical_region_B = AlchemicalRegion(
+            alchemical_atoms=alchem_indices_B, name='B')
+        alchemical_system = alchemical_factory.create_alchemical_system(
+            system, [alchemical_region_A, alchemical_region_B])
 
-        # get the alchemicical atom ids
-        atom_ids = []
-
-        for r in omm_top.residues():
-            if r.index in residxs:
-                atom_ids.extend([at.index for at in r.atoms()])
-
-        return atom_ids
+        return alchemical_factory, alchemical_system
 
     def _prepare(
         self, verbose: bool,
@@ -583,7 +428,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
-        Assign partial charges to SMCs.
+        Assign partial charges to OFFMolecules inplace.
 
         Parameters
         ----------
@@ -1289,7 +1134,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                    self.shared_basepath / settings[
                        'output_settings'].checkpoint_storage_filename]
             for fn in fns:
-                os.remove(fn)
+                fn.unlink()
 
             return None
 
@@ -1338,7 +1183,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         pdb = openmm.app.pdbfile.PDBFile(str(serialized_topology))
         positions = pdb.getPositions(asNumpy=True)
 
-        # Check that the restraints are correctly applied by running a short equilibration
+        # 2. Check that the restraints are correctly applied by running a short equilibration
         equil_positions, box_AB = _pre_equilibrate(
             system,
             pdb.topology,
@@ -1352,7 +1197,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         )
         lambdas = self._get_lambda_schedule(settings)
 
-        # 10. Get compound and sampler states
+        # 3. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
             system,
             equil_positions,
@@ -1362,7 +1207,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             solv_comp,
         )
 
-        # 11. Create the multistate reporter & create PDB
+        # 4. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             pdb.topology, equil_positions,
             settings['simulation_settings'],
@@ -1371,19 +1216,19 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         # Wrap in try/finally to avoid memory leak issues
         try:
-            # 12. Get context caches
+            # 5. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
                 settings['forcefield_settings'],
                 settings['engine_settings']
             )
 
-            # 13. Get integrator
+            # 6. Get integrator
             integrator = self._get_integrator(
                 settings['integrator_settings'],
                 settings['simulation_settings'],
             )
 
-            # 14. Get sampler
+            # 7. Get sampler
             sampler = self._get_sampler(
                 integrator, reporter, settings['simulation_settings'],
                 settings['thermo_settings'],
@@ -1391,7 +1236,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 energy_ctx_cache, sampler_ctx_cache
             )
 
-            # 15. Run simulation
+            # 8. Run simulation
             unit_result_dict = self._run_simulation(
                 sampler, reporter, settings, dry,
             )
