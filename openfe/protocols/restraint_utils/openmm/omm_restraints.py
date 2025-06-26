@@ -284,7 +284,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry,
         controlling_parameter_name: str
     ):
         raise NotImplementedError("only implemented in child classes")
@@ -357,7 +357,7 @@ class FlatBottomBondRestraint(
 
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
+        geometry: FlatBottomDistanceGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -406,7 +406,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,  # type: ignore[override]
+        geometry: DistanceRestraintGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -451,7 +451,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
+        geometry: FlatBottomDistanceGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
