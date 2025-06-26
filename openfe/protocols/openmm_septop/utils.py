@@ -1,10 +1,6 @@
 import os
 import pathlib
 from openmmtools import states
-from openmmtools.alchemy import (
-    AlchemicalStateError, AlchemicalRegion,
-    AlchemicalFunction, AbsoluteAlchemicalFactory,
-)
 from openmmtools.states import GlobalParameterState
 
 def serialize(item, filename: pathlib.Path):
