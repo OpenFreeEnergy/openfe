@@ -10,7 +10,7 @@ TODO
 from typing import Optional
 import numpy as np
 from openff.units import unit, Quantity
-from openff.models.types import FloatQuantity
+from gufe.vendor.openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds

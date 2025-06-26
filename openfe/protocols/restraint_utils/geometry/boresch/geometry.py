@@ -12,7 +12,7 @@ from typing import Optional
 from rdkit import Chem
 
 from openff.units import unit, Quantity
-from openff.models.types import FloatQuantity
+from gufe.vendor.openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
 
