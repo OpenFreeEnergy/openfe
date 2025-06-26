@@ -80,7 +80,7 @@ class RestraintParameterState(GlobalParameterState):
     )
 
     @lambda_restraints.validator  # type: ignore
-    def lambda_restraints(self, instance, new_value):  # type: ignore
+    def lambda_restraints(self, instance, new_value):
         if new_value is not None and not (0.0 <= new_value <= 1.0):
             errmsg = (
                 "lambda_restraints must be between 0.0 and 1.0 "
@@ -206,7 +206,7 @@ class SingleBondMixin:
                 f"{len(geometry.guest_atoms)} respectively."
             )
             raise ValueError(errmsg)
-        super(SingleBondMixin, self)._verify_geometry(geometry)  # type: ignore
+        super(SingleBondMixin, self)._verify_geometry(geometry)  # type: ignore[misc]
 
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
@@ -217,7 +217,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     Must be subclassed.
     """
     _settings_cls = DistanceRestraintSettings
-    _geometry_cls = DistanceRestraintGeometry
+    _geometry_cls = DistanceRestraintGeometry  # type: ignore[assignment]
 
     def add_force(
         self,
@@ -355,7 +355,7 @@ class FlatBottomBondRestraint(  # type: ignore[misc]
       Force in units compatible with kilojoule/mole/nm**2.
     """
     _settings_cls = FlatBottomRestraintSettings
-    _geometry_cls = FlatBottomDistanceGeometry
+    _geometry_cls = FlatBottomDistanceGeometry  # type: ignore[assignment]
 
     def _get_force(
         self,
@@ -548,7 +548,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
     * Settings must define the ``K_r`` (d)
     """
     _settings_cls = BoreschRestraintSettings
-    _geometry_cls = BoreschRestraintGeometry
+    _geometry_cls = BoreschRestraintGeometry  # type: ignore[assignment]
 
     def add_force(
         self,
