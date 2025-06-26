@@ -9,7 +9,7 @@ TODO
 * Add all the restraint settings entries.
 """
 from typing import Optional
-from openff.models.types import FloatQuantity
+from gufe.vendor.openff.models.types import FloatQuantity
 from openff.units import unit
 from pydantic.v1 import validator
 from gufe.settings import (
