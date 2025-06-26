@@ -15,7 +15,7 @@ import logging
 from collections import defaultdict
 import gufe
 import openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import from_openmm, to_openmm
 import openmm.unit as omm_unit
 from typing import Optional
@@ -272,9 +272,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 positions: omm_unit.Quantity,
                 simulation_settings: MDSimulationSettings,
                 output_settings: MDOutputSettings,
-                temperature: unit.Quantity,
-                barostat_frequency: unit.Quantity,
-                timestep: unit.Quantity,
+                temperature: Quantity,
+                barostat_frequency: Quantity,
+                timestep: Quantity,
                 equil_steps_nvt: Optional[int],
                 equil_steps_npt: int,
                 prod_steps: int,
@@ -297,7 +297,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Settings for output of MD simulation
         temperature: FloatQuantity["kelvin"]
           temperature setting
-        barostat_frequency: unit.Quantity
+        barostat_frequency: openff.units.Quantity
           Frequency for the barostat
         timestep: FloatQuantity["femtosecond"]
           Simulation integration timestep
