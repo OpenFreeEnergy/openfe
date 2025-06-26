@@ -452,7 +452,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
     ) -> None:
         """
-        Assign partial charges to SMCs.
+        Assign partial charges to OFFMolecules inplace
 
         Parameters
         ----------
