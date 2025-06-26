@@ -3,6 +3,7 @@ import pathlib
 from openmmtools import states
 from openmmtools.states import GlobalParameterState
 
+
 def serialize(item, filename: pathlib.Path):
     """
     Serialize an OpenMM System, State, or Integrator.
@@ -130,33 +131,35 @@ class SepTopParameterState(GlobalParameterState):
         value 1."""
 
         def __init__(self, parameter_name):
-            super().__init__(parameter_name, standard_value=1.0,
-                             validator=self.lambda_validator)
+            super().__init__(
+                parameter_name, standard_value=1.0, validator=self.lambda_validator
+            )
 
         @staticmethod
         def lambda_validator(self, instance, parameter_value):
             if parameter_value is None:
                 return parameter_value
             if not (0.0 <= parameter_value <= 1.0):
-                raise ValueError('{} must be between 0 and 1.'.format(
-                self.parameter_name))
+                raise ValueError(
+                    "{} must be between 0 and 1.".format(self.parameter_name)
+                )
             return float(parameter_value)
 
     # Lambda parameters for ligand A
-    lambda_sterics_A = _LambdaParameter('lambda_sterics_A')
-    lambda_electrostatics_A = _LambdaParameter('lambda_electrostatics_A')
-    lambda_restraints_A = _LambdaParameter('lambda_restraints_A')
-    lambda_bonds_A = _LambdaParameter('lambda_bonds_A')
-    lambda_angles_A = _LambdaParameter('lambda_angles_A')
-    lambda_torsions_A = _LambdaParameter('lambda_torsions_A')
+    lambda_sterics_A = _LambdaParameter("lambda_sterics_A")
+    lambda_electrostatics_A = _LambdaParameter("lambda_electrostatics_A")
+    lambda_restraints_A = _LambdaParameter("lambda_restraints_A")
+    lambda_bonds_A = _LambdaParameter("lambda_bonds_A")
+    lambda_angles_A = _LambdaParameter("lambda_angles_A")
+    lambda_torsions_A = _LambdaParameter("lambda_torsions_A")
 
     # Lambda parameters for ligand B
-    lambda_sterics_B = _LambdaParameter('lambda_sterics_B')
-    lambda_electrostatics_B = _LambdaParameter('lambda_electrostatics_B')
-    lambda_restraints_B = _LambdaParameter('lambda_restraints_B')
-    lambda_bonds_B = _LambdaParameter('lambda_bonds_B')
-    lambda_angles_B = _LambdaParameter('lambda_angles_B')
-    lambda_torsions_B = _LambdaParameter('lambda_torsions_B')
+    lambda_sterics_B = _LambdaParameter("lambda_sterics_B")
+    lambda_electrostatics_B = _LambdaParameter("lambda_electrostatics_B")
+    lambda_restraints_B = _LambdaParameter("lambda_restraints_B")
+    lambda_bonds_B = _LambdaParameter("lambda_bonds_B")
+    lambda_angles_B = _LambdaParameter("lambda_angles_B")
+    lambda_torsions_B = _LambdaParameter("lambda_torsions_B")
 
     # # Restraints solvent
     # lambda_restraints = _LambdaParameter('lambda_restraints')
