@@ -9,28 +9,28 @@ v1.5.0
 
 **Added:**
 
-* Added support for openmm 8.2
-* Added optional ``n_processes`` (number of parallel processes to use when generating the network) arguments for network planners.
-* Added optional ``progress`` (whether to show progress bar) for ``openfe.setup.ligand_network_planning.generate_radial_network`` (default=``False``, such that there is no default behavior change).
-* Added compatibility for Numpy 2
+* Added support for openmm 8.2 (`PR #1366 <https://github.com/OpenFreeEnergy/openfe/pull/1366>`_)
+* Added optional ``n_processes`` (number of parallel processes to use when generating the network) arguments for network planners (`PR #927 <https://github.com/OpenFreeEnergy/openfe/pull/927>`_).
+* Added optional ``progress`` (whether to show progress bar) for ``openfe.setup.ligand_network_planning.generate_radial_network`` (default=``False``, such that there is no default behavior change)(`PR #927 <https://github.com/OpenFreeEnergy/openfe/pull/927>`_).
+* Added compatibility for numpy v2 (`PR #1260 <https://github.com/OpenFreeEnergy/openfe/pull/1260>`_).
 
 **Changed:**
 
 * The checkpoint interval default frequency has been increased to every
-  nanosecond. `real_time_analysis_interval` no longer needs to be divisible
-  by the checkpoint interval, allowing users of the HybridTopologyProtocol
-  and AbsoluteSolvationProtocol to write checkpoints less frequently and
+  nanosecond. ``real_time_analysis_interval`` no longer needs to be divisible
+  by the checkpoint interval, allowing users of the ``HybridTopologyProtocol``
+  and ``AbsoluteSolvationProtocol`` to write checkpoints less frequently and
   yielding smaller file sizes.
-* `konnektor <https://konnektor.openfree.energy/en/latest/>_` is now used as the backend for all network generation.
-* ``openfe.setup.ligand_network_planning.generate_maximal_network`` now returns the *best* mapping for each edge, rather than *all possible* mappings for each edge. If multiple mappers are passed but no scorer, the first mapper passed will be used, and a warning will be raised.
+* `konnektor <https://konnektor.openfree.energy/en/latest/>_` is now used as the backend for all network generation (`PR #927 <https://github.com/OpenFreeEnergy/openfe/pull/927>`_).
+* ``openfe.setup.ligand_network_planning.generate_maximal_network`` now returns the *best* mapping for each edge, rather than *all possible* mappings for each edge. If multiple mappers are passed but no scorer, the first mapper passed will be used, and a warning will be raised (`PR #927 <https://github.com/OpenFreeEnergy/openfe/pull/927>`_).
 
 **Fixed:**
 
-* Absolute free energy calculations (e.g. AbsoluteSolvationProtocol) now
+* Absolute free energy calculations (e.g. ``AbsoluteSolvationProtocol``) now
   correctly pass the equilibrated box vectors to the alchemical simulation.
   In the past default vectors were used, which in some cases led to random
   crashes due to an abrupt volume change. We do not believe that this
-  significantly affected free energy results.
+  significantly affected free energy results (`PR #1275 <https://github.com/OpenFreeEnergy/openfe/pull/1275>`_).
 
 
 
