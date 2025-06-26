@@ -27,7 +27,8 @@ from openfe.protocols.openmm_septop.equil_septop_method import \
     _check_alchemical_charge_difference
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
-from openfe.tests.protocols.conftest import compute_energy
+from openfe.tests.protocols.conftest import compute_energy, benzene_system, \
+    benzene_complex_system
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
 from openmm import (CustomNonbondedForce, MonteCarloBarostat, NonbondedForce,
@@ -58,7 +59,8 @@ def test_create_default_settings():
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, -1], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
-    {'elec': [0.0, 1.5], 'vdw': [0.0, 1.5], 'restraints': [-0.1, 1.0]}
+    {'elec': [0.0, 1], 'vdw': [0.0, 1.5], 'restraints': [0.0, 1.0]},
+    {'elec': [0.0, 1], 'vdw': [0.0, 1], 'restraints': [-0.1, 1.0]}
 ])
 def test_incorrect_window_settings(val, default_settings):
     errmsg = "Lambda windows must be between 0 and 1."
@@ -71,6 +73,8 @@ def test_incorrect_window_settings(val, default_settings):
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, 0.1, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 1.0]},
+    {'elec': [0.0, 0.0, 0.0], 'vdw': [0.0, 1.0, 0.0], 'restraints': [0.0, 1.0, 1.0]},
+    {'elec': [0.0, 0.0, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 0.0]},
 ])
 def test_monotonic_lambda_windows(val, default_settings):
     errmsg = "The lambda schedule is not monotonic."
@@ -160,6 +164,7 @@ def test_create_default_protocol(default_settings):
         settings=default_settings,
     )
     assert protocol
+    assert protocol.settings == default_settings
 
 
 def test_serialize_protocol(default_settings):
@@ -216,10 +221,6 @@ def test_check_alchem_charge_diff(charged_benzene_modifications):
 def test_charge_error_create(
     charged_benzene_modifications, T4_protein_component, default_settings
 ):
-    # if we create two dags each with 3 repeats, they should give 6 repeat_ids
-    # this allows multiple DAGs in flight for one Transformation that don't clash on gather
-    # Default protocol is 1 repeat, change to 3 repeats
-    default_settings.protocol_repeats = 3
     protocol = SepTopProtocol(
             settings=default_settings,
     )
@@ -243,119 +244,65 @@ def test_charge_error_create(
         )
 
 
-def test_validate_complex_endstates_protcomp_stateA(
-    benzene_modifications, T4_protein_component,
+@pytest.mark.parametrize("fail_endstate, system_A, system_B", [
+    ("stateA", "benzene_system", "benzene_complex_system"),
+    ("stateB", "benzene_complex_system", "benzene_system"),
+])
+def test_validate_complex_endstates_protcomp(
+    request, system_A, system_B, fail_endstate
 ):
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
 
-    stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    with pytest.raises(ValueError, match="No ProteinComponent found in stateA"):
-        SepTopProtocol._validate_complex_endstates(stateA, stateB)
+    with pytest.raises(ValueError, match=f"No ProteinComponent found in {fail_endstate}"):
+        SepTopProtocol._validate_complex_endstates(
+            request.getfixturevalue(system_A),
+            request.getfixturevalue(system_B),
+        )
 
 
-def test_validate_complex_endstates_protcomp_stateB(
-    benzene_modifications, T4_protein_component,
+@pytest.fixture
+def T4L_benzene_vacuum(benzene_modifications, T4_protein_component):
+    return openfe.ChemicalSystem(
+        {'benzene': benzene_modifications['benzene'],
+         'protein': T4_protein_component,}
+    )
+@pytest.mark.parametrize("fail_endstate, system_A, system_B", [
+    ("stateA", "T4L_benzene_vacuum", "benzene_complex_system"),
+    ("stateB", "benzene_complex_system", "T4L_benzene_vacuum"),
+])
+def test_validate_complex_endstates_nosolvcomp(
+    request, system_A, system_B, fail_endstate,
 ):
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent(),
-    })
-
-    with pytest.raises(ValueError, match="No ProteinComponent found in stateB"):
-        SepTopProtocol._validate_complex_endstates(stateA, stateB)
-
-
-def test_validate_complex_endstates_nosolvcomp_stateA(
-    benzene_modifications, T4_protein_component,
-):
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-    })
-
-    stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
 
     with pytest.raises(
-        ValueError, match="No SolventComponent found in stateA"
+        ValueError, match=f"No SolventComponent found in {fail_endstate}"
     ):
-        SepTopProtocol._validate_complex_endstates(stateA, stateB)
+        SepTopProtocol._validate_complex_endstates(
+            request.getfixturevalue(system_A),
+            request.getfixturevalue(system_B),
+        )
 
 
-def test_validate_complex_endstates_nosolvcomp_stateB(
-    benzene_modifications, T4_protein_component,
+@pytest.fixture
+def T4L_system(T4_protein_component):
+    return openfe.ChemicalSystem(
+        {'solvent': openfe.SolventComponent(),
+         'protein': T4_protein_component,}
+    )
+@pytest.mark.parametrize("fail_endstate, system_A, system_B", [
+    ("stateA", "T4L_system", "benzene_complex_system"),
+    ("stateB", "benzene_complex_system", "T4L_system"),
+])
+def test_validate_alchem_comps_missing(
+    request, system_A, system_B, fail_endstate,
 ):
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
 
-    stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-    })
+    alchem_comps = system_validation.get_alchemical_components(
+        request.getfixturevalue(system_A),
+        request.getfixturevalue(system_B),
+    )
 
-    with pytest.raises(
-        ValueError, match="No SolventComponent found in stateB"
-    ):
-        SepTopProtocol._validate_complex_endstates(stateA, stateB)
-
-
-def test_validate_alchem_comps_missingA(
-    benzene_modifications, T4_protein_component,
-):
-    stateA = ChemicalSystem({
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
-    with pytest.raises(ValueError, match='one alchemical component must be present in stateA.'):
-        SepTopProtocol._validate_alchemical_components(alchem_comps)
-
-
-def test_validate_alchem_comps_missingB(
-    benzene_modifications, T4_protein_component,
-):
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    stateB = ChemicalSystem({
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
-
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
-    with pytest.raises(ValueError, match='one alchemical component must be present in stateB.'):
+    with pytest.raises(ValueError, match='one alchemical component must be '
+                                         f'present in {fail_endstate}.'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
@@ -774,7 +721,7 @@ def test_dry_run_benzene_toluene_tip4p(
 
     protocol = SepTopProtocol(settings=default_settings)
 
-    # Create DAG from protocol, get the vacuum and solvent units
+    # Create DAG from protocol, get the solvent units
     # and eventually dry run the first solvent unit
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -1119,7 +1066,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
                                             shared_basedir=tmpdir,
                                             scratch_basedir=tmpdir,
                                             keep_shared=True)
-    
+
     protocol = SepTopProtocol(
         settings=SepTopProtocol.default_settings(),
     )
