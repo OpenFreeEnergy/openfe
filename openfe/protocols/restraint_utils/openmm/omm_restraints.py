@@ -27,7 +27,7 @@ from openmmtools.forces import (
 )
 from openmmtools.states import GlobalParameterState, ThermodynamicState
 from openff.units.openmm import to_openmm, from_openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 
 from gufe.settings.models import SettingsBaseModel
 
@@ -159,7 +159,7 @@ class BaseHostGuestRestraints(abc.ABC):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry,
-    ) -> unit.Quantity:
+    ) -> Quantity:
         """
         Get the standard state correction for the Force when
         applied to the input ThermodynamicState.
@@ -174,7 +174,7 @@ class BaseHostGuestRestraints(abc.ABC):
 
         Returns
         -------
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction free energy in units compatible
           with kilojoule per mole.
         """
@@ -253,7 +253,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry: DistanceRestraintGeometry,
-    ) -> unit.Quantity:
+    ) -> Quantity:
         """
         Get the standard state correction for the Force when
         applied to the input ThermodynamicState.
@@ -268,7 +268,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
         Returns
         -------
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction free energy in units compatible
           with kilojoule per mole.
         """
@@ -649,7 +649,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry: BoreschRestraintGeometry
-    ) -> unit.Quantity:
+    ) -> Quantity:
         """
         Get the standard state correction for the Boresch-like
         restraint when applied to the input ThermodynamicState.
@@ -667,7 +667,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
 
         Returns
         -------
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction free energy in units compatible
           with kilojoule per mole.
 

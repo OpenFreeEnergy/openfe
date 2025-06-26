@@ -11,7 +11,7 @@ from typing import Optional
 
 from rdkit import Chem
 
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
@@ -67,7 +67,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
 
 def _get_restraint_distances(
     atomgroup: mda.AtomGroup
-) -> tuple[unit.Quantity, unit.Quantity, unit.Quantity, unit.Quantity, unit.Quantity, unit.Quantity]:
+) -> tuple[Quantity, Quantity, Quantity, Quantity, Quantity, Quantity]:
     """
     Get the bond, angle, and dihedral distances for an input atomgroup
     defining the six atoms for a Boresch-like restraint.
@@ -81,17 +81,17 @@ def _get_restraint_distances(
 
     Returns
     -------
-    bond : unit.Quantity
+    bond : openff.units.Quantity
       The H0-G0 bond value.
-    angle1 : unit.Quantity
+    angle1 : openff.units.Quantity
       The H1-H0-G0 angle value.
-    angle2 : unit.Quantity
+    angle2 : openff.units.Quantity
       The H0-G0-G1 angle value.
-    dihed1 : unit.Quantity
+    dihed1 : openff.units.Quantity
       The H2-H1-H0-G0 dihedral value.
-    dihed2 : unit.Quantity
+    dihed2 : openff.units.Quantity
       The H1-H0-G0-G1 dihedral value.
-    dihed3 : unit.Quantity
+    dihed3 : openff.units.Quantity
       The H0-G0-G1-G2 dihedral value.
     """
     bond = calc_bonds(
@@ -133,13 +133,13 @@ def find_boresch_restraint(
     host_restraint_atoms_idxs: Optional[list[int]] = None,
     host_selection: str = "all",
     dssp_filter: bool = False,
-    rmsf_cutoff: unit.Quantity = 0.1 * unit.nanometer,
-    host_min_distance: unit.Quantity = 1 * unit.nanometer,
-    host_max_distance: unit.Quantity = 3 * unit.nanometer,
-    angle_force_constant: unit.Quantity = (
+    rmsf_cutoff: Quantity = 0.1 * unit.nanometer,
+    host_min_distance: Quantity = 1 * unit.nanometer,
+    host_max_distance: Quantity = 3 * unit.nanometer,
+    angle_force_constant: Quantity = (
         83.68 * unit.kilojoule_per_mole / unit.radians**2
     ),
-    temperature: unit.Quantity = 298.15 * unit.kelvin,
+    temperature: Quantity = 298.15 * unit.kelvin,
 ) -> BoreschRestraintGeometry:
     """
     Find suitable Boresch-style restraints between a host and guest entity
@@ -169,20 +169,20 @@ def find_boresch_restraint(
       An MDAnalysis selection string to sub-select the host atoms.
     dssp_filter : bool
       Whether or not to filter the host atoms by their secondary structure.
-    rmsf_cutoff : unit.Quantity
+    rmsf_cutoff : openff.units.Quantity
       The cutoff value for atom root mean square fluctuation. Atoms with RMSF
       values above this cutoff will be disregarded.
       Must be in units compatible with nanometer.
-    host_min_distance : unit.Quantity
+    host_min_distance : openff.units.Quantity
       The minimum distance between any host atom and the guest G0 atom.
       Must be in units compatible with nanometer.
-    host_max_distance : unit.Quantity
+    host_max_distance : openff.units.Quantity
       The maximum distance between any host atom and the guest G0 atom.
       Must be in units compatible with nanometer.
-    angle_force_constant : unit.Quantity
+    angle_force_constant : openff.units.Quantity
       The force constant for the G1-G0-H0 and G0-H0-H1 angles. Must be
       in units compatible with kilojoule / mole / radians ** 2.
-    temperature : unit.Quantity
+    temperature : openff.units.Quantity
       The system temperature in units compatible with Kelvin.
 
     Returns

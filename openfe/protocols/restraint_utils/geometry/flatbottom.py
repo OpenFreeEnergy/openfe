@@ -9,7 +9,7 @@ TODO
 """
 from typing import Optional
 import numpy as np
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.models.types import FloatQuantity
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
@@ -70,7 +70,7 @@ def get_flatbottom_distance_restraint(
     guest_atoms: Optional[list[int]] = None,
     host_selection: Optional[str] = None,
     guest_selection: Optional[str] = None,
-    padding: unit.Quantity = 0.5 * unit.nanometer,
+    padding: Quantity = 0.5 * unit.nanometer,
 ) -> FlatBottomDistanceGeometry:
     """
     Get a FlatBottomDistanceGeometry by analyzing the COM distance
@@ -95,7 +95,7 @@ def get_flatbottom_distance_restraint(
     guest_selection : Optional[str]
       An MDAnalysis selection string to define the guest atoms.
       Either ``guest_atoms`` or ``guest_selection`` must be defined.
-    padding : unit.Quantity
+    padding : openff.units.Quantity
       A padding value to add to the ``well_radius`` definition.
       Must be in units compatible with nanometers.
 
