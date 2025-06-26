@@ -104,8 +104,8 @@ class BaseHostGuestRestraints(abc.ABC):
     Add some developer examples here.
     """
 
-    _settings_cls: SettingsBaseModel
-    _geometry_cls: BaseRestraintGeometry
+    _settings_cls: type[SettingsBaseModel]
+    _geometry_cls: type[BaseRestraintGeometry]
 
     def __init__(
         self,
@@ -217,7 +217,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
     Must be subclassed.
     """
     _settings_cls = DistanceRestraintSettings
-    _geometry_cls = DistanceRestraintGeometry  # type: ignore[assignment]
+    _geometry_cls = DistanceRestraintGeometry
 
     def add_force(
         self,
@@ -353,7 +353,7 @@ class FlatBottomBondRestraint(
       Force in units compatible with kilojoule/mole/nm**2.
     """
     _settings_cls = FlatBottomRestraintSettings
-    _geometry_cls = FlatBottomDistanceGeometry  # type: ignore[assignment]
+    _geometry_cls: type[FlatBottomDistanceGeometry] = FlatBottomDistanceGeometry
 
     def _get_force(
         self,
@@ -546,7 +546,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
     * Settings must define the ``K_r`` (d)
     """
     _settings_cls = BoreschRestraintSettings
-    _geometry_cls = BoreschRestraintGeometry  # type: ignore[assignment]
+    _geometry_cls = BoreschRestraintGeometry
 
     def add_force(
         self,
