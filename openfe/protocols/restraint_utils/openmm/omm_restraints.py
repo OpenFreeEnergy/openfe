@@ -290,8 +290,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         raise NotImplementedError("only implemented in child classes")
 
 
-#  Note: we type ignore this class due to mypy issues with the mixin method
-class HarmonicBondRestraint(  # type: ignore[misc]
+class HarmonicBondRestraint(
     SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
@@ -338,8 +337,7 @@ class HarmonicBondRestraint(  # type: ignore[misc]
         )
 
 
-#  Note: we type ignore this class due to mypy issues with the mixin method
-class FlatBottomBondRestraint(  # type: ignore[misc]
+class FlatBottomBondRestraint(
     SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
