@@ -10,32 +10,21 @@ See Also
 --------
 openfe.protocols.openmm_septop.SepTopProtocol
 """
-from gufe.settings import (
-    SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
-)
-from openfe.protocols.openmm_utils.omm_settings import (
-    MultiStateSimulationSettings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
-    IntegratorSettings,
-    OpenFFPartialChargeSettings,
-    MultiStateOutputSettings,
-    MDSimulationSettings,
-    MDOutputSettings,
-)
-from openfe.protocols.restraint_utils.settings import (
-    BaseRestraintSettings,
-    DistanceRestraintSettings,
-    FlatBottomRestraintSettings,
-    BoreschRestraintSettings,
-)
-from openff.units import unit
-from openff.models.types import FloatQuantity
-import numpy as np
-from pydantic.v1 import validator
 from typing import Optional
+
+import numpy as np
+from gufe.settings import (OpenMMSystemGeneratorFFSettings, SettingsBaseModel,
+                           ThermoSettings)
+from openfe.protocols.openmm_utils.omm_settings import (
+    IntegratorSettings, MDOutputSettings, MDSimulationSettings,
+    MultiStateOutputSettings, MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings, OpenMMEngineSettings, OpenMMSolvationSettings)
+from openfe.protocols.restraint_utils.settings import (
+    BaseRestraintSettings, BoreschRestraintSettings, DistanceRestraintSettings,
+    FlatBottomRestraintSettings)
+from openff.models.types import FloatQuantity
+from openff.units import unit
+from pydantic.v1 import validator
 
 
 class AlchemicalSettings(SettingsBaseModel):

@@ -28,72 +28,56 @@ femto (https://github.com/Psivant/femto).
 """
 from __future__ import annotations
 
-import pathlib
-import logging
-import warnings
 import copy
+import itertools
+import logging
+import pathlib
+import uuid
+import warnings
 from collections import defaultdict
+from typing import Any, Iterable, Optional, Union
+
 import gufe
+import MDAnalysis as mda
+import mdtraj as md
+import numpy as np
+import numpy.typing as npt
+import openfe.protocols.restraint_utils
 import openmm
 import openmm.unit
 import openmm.unit as omm_units
+from gufe import (ChemicalSystem, ProteinComponent, SmallMoleculeComponent,
+                  SolventComponent, settings)
 from gufe.components import Component
-import itertools
-import numpy as np
-import numpy.typing as npt
-from openff.units import unit
-from openff.units.openmm import from_openmm
-from openff.toolkit.topology import Molecule as OFFMolecule
-from openmmtools import multistate
-import mdtraj as md
-from typing import Optional, Union
-from typing import Any, Iterable
-import uuid
-
-from gufe import (
-    settings,
-    ChemicalSystem, SmallMoleculeComponent,
-    ProteinComponent, SolventComponent
-)
+from openfe.due import Doi, due
 from openfe.protocols.openmm_septop.equil_septop_settings import (
-    SepTopSettings,
-    OpenMMSolvationSettings, AlchemicalSettings, LambdaSettings,
-    MDSimulationSettings, SepTopEquilOutputSettings,
-    MultiStateSimulationSettings, OpenMMEngineSettings,
-    IntegratorSettings, MultiStateOutputSettings,
-    OpenFFPartialChargeSettings,
-    SettingsBaseModel,
-)
-from ..openmm_utils import system_validation, settings_validation
-from .base import BaseSepTopSetupUnit, BaseSepTopRunUnit, _pre_equilibrate
-from openfe.utils import log_system_probe
-from openfe.due import due, Doi
-from openff.units.openmm import to_openmm
-from rdkit import Chem
-import MDAnalysis as mda
-from openfe.protocols.restraint_utils.geometry.boresch import (
-    find_boresch_restraint, find_guest_atom_candidates)
-import openfe.protocols.restraint_utils
-from openfe.protocols.restraint_utils.geometry.utils import get_central_atom_idx
-from ..restraint_utils.settings import (
-    DistanceRestraintSettings,
-    BoreschRestraintSettings,
-)
-from openfe.protocols.restraint_utils.openmm.omm_restraints import (
-    BoreschRestraint,
-    add_force_in_separate_group,
-)
-from openfe.protocols.restraint_utils.geometry.boresch import (
-    BoreschRestraintGeometry,
-)
+    AlchemicalSettings, IntegratorSettings, LambdaSettings,
+    MDSimulationSettings, MultiStateOutputSettings,
+    MultiStateSimulationSettings, OpenFFPartialChargeSettings,
+    OpenMMEngineSettings, OpenMMSolvationSettings, SepTopEquilOutputSettings,
+    SepTopSettings, SettingsBaseModel)
 from openfe.protocols.restraint_utils import geometry
+from openfe.protocols.restraint_utils.geometry.boresch import (
+    BoreschRestraintGeometry, find_boresch_restraint,
+    find_guest_atom_candidates)
+from openfe.protocols.restraint_utils.geometry.utils import get_central_atom_idx
 from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openmmtools.states import ThermodynamicState, GlobalParameterState
-from openmmtools.alchemy import (
-    AbsoluteAlchemicalFactory,
-    AlchemicalRegion,
-    AlchemicalState,
-)
+from openfe.protocols.restraint_utils.openmm.omm_restraints import (
+    BoreschRestraint, add_force_in_separate_group)
+from openfe.utils import log_system_probe
+from openff.toolkit.topology import Molecule as OFFMolecule
+from openff.units import unit
+from openff.units.openmm import from_openmm, to_openmm
+from openmmtools import multistate
+from openmmtools.alchemy import (AbsoluteAlchemicalFactory, AlchemicalRegion,
+                                 AlchemicalState)
+from openmmtools.states import GlobalParameterState, ThermodynamicState
+from rdkit import Chem
+
+from ..openmm_utils import settings_validation, system_validation
+from ..restraint_utils.settings import (BoreschRestraintSettings,
+                                        DistanceRestraintSettings)
+from .base import BaseSepTopRunUnit, BaseSepTopSetupUnit, _pre_equilibrate
 from .utils import serialize
 
 due.cite(Doi("10.1021/acs.jctc.3c00282"),
@@ -916,27 +900,20 @@ class SepTopProtocol(gufe.Protocol):
 
         # Crash out if there are less or more than one alchemical components
         # in state A and B
-        if len(alchemical_components['stateA']) != 1:
-            errmsg = ("Exactly one alchemical components must be present in stateA. "
-                      f"Found {len(alchemical_components['stateA'])} "
-                      "alchemical components in stateA")
-            raise ValueError(errmsg)
-
-        if len(alchemical_components['stateB']) != 1:
-            errmsg = ("Exactly one alchemical components must be present in stateB. "
-                      f"Found {len(alchemical_components['stateB'])} "
-                      "alchemical components in stateB")
-            raise ValueError(errmsg)
+        for state in ["stateA", "stateB"]:
+            n = len(alchemical_components[state])
+            if n != 1:
+                raise ValueError(
+                    "Exactly one alchemical component must be present in "
+                    f"{state}. Found {n} alchemical components.")
 
         # Crash out if any of the alchemical components are not
         # SmallMoleculeComponent
-        alchem_components_states = [alchemical_components['stateA'], alchemical_components['stateB']]
-        for state in alchem_components_states:
-            for comp in state:
+        for state in ["stateA", "stateB"]:
+            for comp in alchemical_components[state]:
                 if not isinstance(comp, SmallMoleculeComponent):
-                    errmsg = ("Non SmallMoleculeComponent alchemical species "
-                              "are not currently supported")
-                    raise ValueError(errmsg)
+                    raise ValueError(
+                        "Only SmallMoleculeComponent alchemical species are supported.")
 
         # Raise an error if there is a change in netcharge
         _check_alchemical_charge_difference(
@@ -979,9 +956,8 @@ class SepTopProtocol(gufe.Protocol):
         lambda_components = [lambda_vdw_A, lambda_vdw_B,
                              lambda_elec_A, lambda_elec_B,
                              lambda_restraints_A, lambda_restraints_B]
-        it = iter(lambda_components)
-        the_len = len(next(it))
-        if not all(len(l) == the_len for l in it):
+        lengths = {len(l) for l in lambda_components}
+        if len(lengths) != 1:
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"
                 f" of lambda windows. Got {len(lambda_elec_A)} and "
@@ -999,21 +975,17 @@ class SepTopProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         # Check if there are lambda windows with naked charges
-        for inx, lam in enumerate(lambda_elec_A):
-            if lam < 1 and lambda_vdw_A[inx] == 1:
-                errmsg = (
-                    "There are states along this lambda schedule "
-                    "where there are atoms with charges but no LJ "
-                    f"interactions: Ligand A: lambda {inx}: "
-                    f"elec {lam} vdW {lambda_vdw_A[inx]}")
-                raise ValueError(errmsg)
-            if lambda_elec_B[inx] < 1 and lambda_vdw_B[inx] == 1:
-                errmsg = (
-                    "There are states along this lambda schedule "
-                    "where there are atoms with charges but no LJ interactions"
-                    f": Ligand B: lambda {inx}: elec {lambda_elec_B[inx]}"
-                    f" vdW {lambda_vdw_B[inx]}")
-                raise ValueError(errmsg)
+        for state, elec, vdw in (
+                ('A', lambda_elec_A, lambda_vdw_A),
+                ('B', lambda_elec_B, lambda_vdw_B),
+        ):
+            for idx, (e, v) in enumerate(zip(elec, vdw)):
+                if e < 1 and v == 1:
+                    raise ValueError(
+                        "There are states along this lambda schedule where "
+                        "there are atoms with charges but no LJ interactions: "
+                        f"State {state}: lambda {idx}: elec {e} vdW {v}"
+                    )
 
     def _create(
         self,

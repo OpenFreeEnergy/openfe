@@ -1,46 +1,39 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import pathlib
-import pytest
+import itertools
+import json
 import math
+import pathlib
+from importlib import resources
+from unittest import mock
 
-import openfe.protocols.openmm_septop
-from openfe import ChemicalSystem, SolventComponent
-from openfe.protocols.openmm_septop import (
-    SepTopProtocol,
-    SepTopComplexSetupUnit,
-    SepTopComplexRunUnit,
-    SepTopSolventSetupUnit,
-    SepTopSolventRunUnit,
-    SepTopProtocolResult,
-)
-from openfe.protocols.openmm_septop.equil_septop_method import _check_alchemical_charge_difference
-from openfe.protocols.openmm_utils import system_validation
-from openfe.protocols.openmm_septop.utils import deserialize
-from openfe.tests.protocols.conftest import compute_energy
-
+import gufe
+import mdtraj as md
 import numpy as np
-from numpy.testing import assert_allclose
-from math import sqrt
-
+import openfe.protocols.openmm_septop
 import openmm
 import openmm.app
 import openmm.unit
-from openmmtools.multistate.multistatesampler import MultiStateSampler
+import pytest
+from numpy.testing import assert_allclose
+from openfe import ChemicalSystem, SolventComponent
+from openfe.protocols.openmm_septop import (SepTopComplexRunUnit,
+                                            SepTopComplexSetupUnit,
+                                            SepTopProtocol,
+                                            SepTopProtocolResult,
+                                            SepTopSolventRunUnit,
+                                            SepTopSolventSetupUnit)
+from openfe.protocols.openmm_septop.equil_septop_method import \
+    _check_alchemical_charge_difference
+from openfe.protocols.openmm_septop.utils import deserialize
+from openfe.protocols.openmm_utils import system_validation
+from openfe.tests.protocols.conftest import compute_energy
 from openff.units import unit as offunit
-import gufe
-from unittest import mock
-import json
-import mdtraj as md
-import itertools
-
-from openmmtools.alchemy import AlchemicalRegion, AbsoluteAlchemicalFactory
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import (
-    app, XmlSerializer, MonteCarloBarostat,
-    NonbondedForce, CustomNonbondedForce
-)
-from importlib import resources
+from openmm import (CustomNonbondedForce, MonteCarloBarostat, NonbondedForce,
+                    XmlSerializer, app)
+from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
+from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -148,7 +141,7 @@ def test_validate_lambda_schedule_nakedcharge(val, default_settings):
     errmsg = (
         "There are states along this lambda schedule "
         "where there are atoms with charges but no LJ "
-        "interactions: Ligand A: l")
+        "interactions: State A: l")
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
             default_settings.complex_lambda_settings,
@@ -342,7 +335,7 @@ def test_validate_alchem_comps_missingA(
 
     alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
 
-    with pytest.raises(ValueError, match='one alchemical components must be present in stateA.'):
+    with pytest.raises(ValueError, match='one alchemical component must be present in stateA.'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
@@ -362,7 +355,7 @@ def test_validate_alchem_comps_missingB(
 
     alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
 
-    with pytest.raises(ValueError, match='one alchemical components must be present in stateB.'):
+    with pytest.raises(ValueError, match='one alchemical component must be present in stateB.'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
@@ -388,7 +381,7 @@ def test_validate_alchem_comps_toomanyA(
 
     assert len(alchem_comps['stateB']) == 1
 
-    with pytest.raises(ValueError, match='Found 2 alchemical components in stateA'):
+    with pytest.raises(ValueError, match='present in stateA. Found 2 alchemical components.'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
@@ -407,7 +400,7 @@ def test_validate_alchem_nonsmc(
 
     alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
 
-    with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
+    with pytest.raises(ValueError, match='Only SmallMoleculeComponent alchemical'):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
@@ -850,7 +843,7 @@ def test_dry_run_benzene_toluene_noncubic(
                                [width, 0, 0],
                                [0, width, 0],
                                [0.5 * width, 0.5 * width,
-                                0.5 * sqrt(2) * width],
+                                0.5 * math.sqrt(2) * width],
                            ] * offunit.nanometer
         assert_allclose(
             expected_vectors,
