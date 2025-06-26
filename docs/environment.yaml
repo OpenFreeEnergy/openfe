@@ -12,7 +12,6 @@ dependencies:
 - myst-parser
 - nbsphinx
 - nbsphinx-link
-- openff-models >=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
 - openmm
