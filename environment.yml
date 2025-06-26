@@ -12,24 +12,23 @@ dependencies:
   - networkx
   - numpy<2.0.0
   - openfe-analysis>=0.3.1
-  - openff-interchange
-  - openff-models>=0.0.5
+  - openff-interchange-base
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
   - openff-toolkit>=0.16.2
-  - openff-units==0.2.0
-  - openmm >=8.2.0
+  - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
+  - openmm ~=8.2.0  # 8.2 is qualified, but 8.3 is not yet.
   - openmmforcefields
   - openmmtools >=0.25.0
   - packaging
   - pandas
   - perses>=0.10.3
   - plugcli
-  - pint<0.22
+  - pint>=0.24.0
   - pip
   - pooch
   - py3dmol
-  - pydantic >=2.0
+  - pydantic >=2.0  # https://github.com/OpenFreeEnergy/openfe/pull/1379
   - pygraphviz
   - pytest
   - pytest-xdist
