@@ -1026,65 +1026,51 @@ class SepTopProtocol(gufe.Protocol):
         # Validate protein component
         system_validation.validate_protein(stateA)
 
-        # Get the name of the alchemical species
+        # Create list units for complex and solvent transforms
+        def create_setup_units(unit_cls, leg):
+            return [
+                unit_cls(
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    generation=0,
+                    repeat_id=int(uuid.uuid4()),
+                    name=(
+                        f"SepTop RBFE Setup, transformation {alchname_A} to "
+                        f"{alchname_B}, {leg} leg: repeat {i} generation 0"
+                    ),
+                )
+                for i in range(self.settings.protocol_repeats)
+            ]
+
+        def create_run_units(unit_cls, leg, setup):
+            return [
+                unit_cls(
+                    protocol=self,
+                    stateA=stateA,
+                    stateB=stateB,
+                    alchemical_components=alchem_comps,
+                    setup=setup[i],
+                    generation=0,
+                    repeat_id=int(uuid.uuid4()),
+                    name=(
+                        f"SepTop RBFE Run, transformation {alchname_A} to "
+                        f"{alchname_B}, {leg} leg: repeat {i} generation 0"
+                    ),
+                )
+                for i in range(self.settings.protocol_repeats)
+            ]
+
         alchname_A = alchem_comps['stateA'][0].name
         alchname_B = alchem_comps['stateB'][0].name
 
-        # Create list units for complex and solvent transforms
-
-        solvent_setup = [
-            SepTopSolventSetupUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE Setup, transformation {alchname_A} to "
-                      f"{alchname_B}, solvent leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
-
-        solvent_run = [
-            SepTopSolventRunUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                setup=solvent_setup[i],
-                generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE Run, transformation {alchname_A} to "
-                      f"{alchname_B}, solvent leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
-
-        complex_setup = [
-            SepTopComplexSetupUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE Setup, transformation {alchname_A} to "
-                      f"{alchname_B}, complex leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
-
-        complex_run = [
-            SepTopComplexRunUnit(
-                protocol=self,
-                stateA=stateA,
-                stateB=stateB,
-                alchemical_components=alchem_comps,
-                setup=complex_setup[i],
-                generation=0, repeat_id=int(uuid.uuid4()),
-                name=(f"SepTop RBFE Run, transformation {alchname_A} to "
-                      f"{alchname_B}, complex leg: repeat {i} generation 0"),
-            )
-            for i in range(self.settings.protocol_repeats)
-        ]
+        solvent_setup = create_setup_units(SepTopSolventSetupUnit, "solvent")
+        solvent_run = create_run_units(SepTopSolventRunUnit, "solvent",
+                                   setup=solvent_setup)
+        complex_setup = create_setup_units(SepTopComplexSetupUnit, "complex")
+        complex_run = create_run_units(SepTopComplexRunUnit, "complex",
+                                   setup=complex_setup)
 
         return solvent_setup + solvent_run + complex_setup + complex_run
 
