@@ -10,7 +10,7 @@ TODO
 """
 from typing import Optional
 from gufe.vendor.openff.models.types import FloatQuantity
-from openff.units import unit, Quantity
+from openff.units import unit
 from pydantic.v1 import validator
 from gufe.settings import (
     SettingsBaseModel,
@@ -144,7 +144,7 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     Whether or not to try to do a DSSP filter on the host atoms.
     """
-    rmsf_cutoff: Optional[Quantity['nanometer']] = 0.1 * unit.nanometer
+    rmsf_cutoff: Optional[FloatQuantity['nanometer']] = 0.1 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The cutoff value for filtering atoms by their root mean square fluctuation. Atoms with values above this cutoff will be disregarded.
