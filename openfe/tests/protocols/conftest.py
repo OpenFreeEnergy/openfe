@@ -11,7 +11,7 @@ import openmm
 from openmm import Platform
 import openfe
 from openff.units.openmm import from_openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 
 
 @pytest.fixture
@@ -313,7 +313,7 @@ def compute_energy(
     box_vectors: Optional[openmm.unit.Quantity],
     context_params: Optional[dict[str, float]] = None,
     platform=None,
-) -> unit.Quantity:
+) -> Quantity:
     """
     Computes the potential energy of a system at a given set of positions.
 
@@ -332,7 +332,7 @@ def compute_energy(
 
     Returns
     -------
-    potential : openmm.unit.Quantity
+    potential : openff.units.Quantity
         The computed potential energy in openff unit.
     """
     context_params = context_params if context_params is not None else {}
