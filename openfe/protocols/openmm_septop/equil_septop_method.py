@@ -230,7 +230,7 @@ class SepTopComplexMixin:
             * output_settings: MultiStateOutputSettings
             * restraint_settings: ComplexRestraintsSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings # type: ignore
 
         settings = {
             "forcefield_settings": prot_settings.forcefield_settings,
@@ -316,7 +316,7 @@ class SepTopSolventMixin:
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintsSettings
         """
-        prot_settings = self._inputs["protocol"].settings
+        prot_settings = self._inputs["protocol"].settings # type: ignore
 
         settings = {
             "forcefield_settings": prot_settings.forcefield_settings,
