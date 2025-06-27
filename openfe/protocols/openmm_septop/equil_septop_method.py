@@ -363,7 +363,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         Returns
         -------
         dGs : dict[str, list[tuple[unit.Quantity, unit.Quantity]]]
-          A dictionary, keyed `solvent` and `complex for each leg
+          A dictionary, keyed ``solvent`` and ``complex`` for each leg
           of the thermodynamic cycle, with lists of tuples containing
           the individual free energy estimates and associated MBAR
           uncertainties for each repeat of that simulation type.
