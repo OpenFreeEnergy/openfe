@@ -11,7 +11,8 @@ from typing import Optional, Iterable
 
 from rdkit import Chem
 
-from openff.units import unit
+from gufe.vendor.openff.models.types import ArrayQuantity
+from openff.units import unit, Quantity
 import MDAnalysis as mda
 import numpy.typing as npt
 
@@ -125,8 +126,8 @@ def _bonded_angles_from_pool(
 
 def _get_guest_atom_pool(
     rdmol: Chem.Mol,
-    rmsf: npt.NDArray,
-    rmsf_cutoff: unit.Quantity
+    rmsf: ArrayQuantity,
+    rmsf_cutoff: Quantity
 ) -> tuple[Optional[set[int]], bool]:
     """
     Filter atoms based on rmsf & rings, defaulting to heavy atoms if
@@ -136,9 +137,9 @@ def _get_guest_atom_pool(
     ----------
     rdmol : Chem.Mol
       The RDKit Molecule to search through
-    rmsf : npt.NDArray
-      A 1-D array of RMSF values for each atom.
-    rmsf_cutoff : unit.Quantity
+    rmsf : Quantity
+      A 1-D Quantity array of RMSF values for each atom.
+    rmsf_cutoff : openff.units.Quantity
       The rmsf cutoff value for selecting atoms in units compatible with
       nanometer.
 
@@ -178,7 +179,7 @@ def find_guest_atom_candidates(
     universe: mda.Universe,
     rdmol: Chem.Mol,
     guest_idxs: list[int],
-    rmsf_cutoff: unit.Quantity = 1 * unit.nanometer,
+    rmsf_cutoff: Quantity = 1 * unit.nanometer,
 ) -> list[tuple[int, int, int]]:
     """
     Get a list of potential ligand atom choices for a Boresch restraint
@@ -193,7 +194,7 @@ def find_guest_atom_candidates(
       the same way as it is listed in the topology.
     guest_idxs : list[int]
       The ligand indices in the topology.
-    rmsf_cutoff : unit.Quantity
+    rmsf_cutoff : openff.units.Quantity
       The RMSF filter cut-off.
 
     Returns

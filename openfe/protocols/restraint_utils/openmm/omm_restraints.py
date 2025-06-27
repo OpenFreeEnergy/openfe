@@ -27,7 +27,7 @@ from openmmtools.forces import (
 )
 from openmmtools.states import GlobalParameterState, ThermodynamicState
 from openff.units.openmm import to_openmm, from_openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 
 from gufe.settings.models import SettingsBaseModel
 
@@ -80,7 +80,7 @@ class RestraintParameterState(GlobalParameterState):
     )
 
     @lambda_restraints.validator  # type: ignore
-    def lambda_restraints(self, instance, new_value):  # type: ignore
+    def lambda_restraints(self, instance, new_value):
         if new_value is not None and not (0.0 <= new_value <= 1.0):
             errmsg = (
                 "lambda_restraints must be between 0.0 and 1.0 "
@@ -104,8 +104,8 @@ class BaseHostGuestRestraints(abc.ABC):
     Add some developer examples here.
     """
 
-    _settings_cls: SettingsBaseModel
-    _geometry_cls: BaseRestraintGeometry
+    _settings_cls: type[SettingsBaseModel]
+    _geometry_cls: type[BaseRestraintGeometry]
 
     def __init__(
         self,
@@ -159,7 +159,7 @@ class BaseHostGuestRestraints(abc.ABC):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry,
-    ) -> unit.Quantity:
+    ) -> Quantity:
         """
         Get the standard state correction for the Force when
         applied to the input ThermodynamicState.
@@ -174,7 +174,7 @@ class BaseHostGuestRestraints(abc.ABC):
 
         Returns
         -------
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction free energy in units compatible
           with kilojoule per mole.
         """
@@ -206,7 +206,7 @@ class SingleBondMixin:
                 f"{len(geometry.guest_atoms)} respectively."
             )
             raise ValueError(errmsg)
-        super(SingleBondMixin, self)._verify_geometry(geometry)  # type: ignore
+        super(SingleBondMixin, self)._verify_geometry(geometry)  # type: ignore[misc]
 
 
 class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
@@ -253,7 +253,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry: DistanceRestraintGeometry,
-    ) -> unit.Quantity:
+    ) -> Quantity:
         """
         Get the standard state correction for the Force when
         applied to the input ThermodynamicState.
@@ -268,7 +268,7 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
         Returns
         -------
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction free energy in units compatible
           with kilojoule per mole.
         """
@@ -284,14 +284,13 @@ class BaseRadiallySymmetricRestraintForce(BaseHostGuestRestraints):
 
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,
+        geometry,
         controlling_parameter_name: str
     ):
         raise NotImplementedError("only implemented in child classes")
 
 
-#  Note: we type ignore this class due to mypy issues with the mixin method
-class HarmonicBondRestraint(  # type: ignore[misc]
+class HarmonicBondRestraint(
     SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
@@ -338,8 +337,7 @@ class HarmonicBondRestraint(  # type: ignore[misc]
         )
 
 
-#  Note: we type ignore this class due to mypy issues with the mixin method
-class FlatBottomBondRestraint(  # type: ignore[misc]
+class FlatBottomBondRestraint(
     SingleBondMixin, BaseRadiallySymmetricRestraintForce
 ):
     """
@@ -355,11 +353,11 @@ class FlatBottomBondRestraint(  # type: ignore[misc]
       Force in units compatible with kilojoule/mole/nm**2.
     """
     _settings_cls = FlatBottomRestraintSettings
-    _geometry_cls = FlatBottomDistanceGeometry
+    _geometry_cls: type[FlatBottomDistanceGeometry] = FlatBottomDistanceGeometry
 
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
+        geometry: FlatBottomDistanceGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -408,7 +406,7 @@ class CentroidHarmonicRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: DistanceRestraintGeometry,  # type: ignore[override]
+        geometry: DistanceRestraintGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -453,7 +451,7 @@ class CentroidFlatBottomRestraint(BaseRadiallySymmetricRestraintForce):
     """
     def _get_force(
         self,
-        geometry: FlatBottomDistanceGeometry,  # type: ignore[override]
+        geometry: FlatBottomDistanceGeometry,
         controlling_parameter_name: str,
     ) -> openmm.Force:
         """
@@ -649,7 +647,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
         self,
         thermodynamic_state: ThermodynamicState,
         geometry: BoreschRestraintGeometry
-    ) -> unit.Quantity:
+    ) -> Quantity:
         """
         Get the standard state correction for the Boresch-like
         restraint when applied to the input ThermodynamicState.
@@ -667,7 +665,7 @@ class BoreschRestraint(BaseHostGuestRestraints):
 
         Returns
         -------
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction free energy in units compatible
           with kilojoule per mole.
 
