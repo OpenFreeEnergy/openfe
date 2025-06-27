@@ -77,7 +77,7 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
 )
 from openfe.utils import log_system_probe
 from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import from_openmm, to_openmm
 from openmmtools import multistate
 from openmmtools.states import ThermodynamicState
@@ -358,13 +358,13 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
     def get_individual_estimates(
         self,
-    ) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
+    ) -> dict[str, list[tuple[Quantity, Quantity]]]:
         """
         Get the individual estimate of the free energies.
 
         Returns
         -------
-        dGs : dict[str, list[tuple[unit.Quantity, unit.Quantity]]]
+        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
           A dictionary, keyed `solvent` and `complex for each leg
           of the thermodynamic cycle, with lists of tuples containing
           the individual free energy estimates and associated MBAR
@@ -416,12 +416,12 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             "standard_state_solvent": solv_correction_dGs,
         }
 
-    def get_estimate(self) -> unit.Quantity:
+    def get_estimate(self) -> Quantity:
         """Get the difference in binding free energy estimate for this calculation.
 
         Returns
         -------
-        ddG : unit.Quantity
+        ddG : openff.units.Quantity
           The difference in binding free energy.
           This is a Quantity defined with units.
         """
@@ -444,7 +444,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         return (complex_ddG + complex_corr_A + complex_corr_B) - (solv_ddG + solv_corr)
 
-    def get_uncertainty(self) -> unit.Quantity:
+    def get_uncertainty(self) -> Quantity:
         """Get the relative free energy error for this calculation.
 
         Returns
@@ -472,7 +472,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
     def get_forward_and_reverse_energy_analysis(
         self,
-    ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
+    ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
@@ -506,7 +506,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         """
 
         forward_reverse: dict[
-            str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+            str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]
         ] = {}
 
         for key in ["complex", "solvent"]:
@@ -1511,7 +1511,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         guest_rdmol: Chem.Mol,
         guest_atom_ids: list[int],
         host_atom_ids: list[int],
-        temperature: unit.Quantity,
+        temperature: Quantity,
         settings: BoreschRestraintSettings,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
@@ -1574,8 +1574,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         protein_inxs: list[int],  # type: ignore[override]
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
-        unit.Quantity,
-        unit.Quantity,
+        Quantity,
+        Quantity,
         openmm.System,
         geometry.HostGuestRestraintGeometry,
         geometry.HostGuestRestraintGeometry,
@@ -1998,7 +1998,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         settings: dict[str, SettingsBaseModel],
         positions_AB: openmm.unit.Quantity,
     ) -> tuple[
-        unit.Quantity,
+        Quantity,
         openmm.System,
     ]:
         """
