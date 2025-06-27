@@ -396,7 +396,7 @@ def find_host_anchor(
     h0_eval = EvaluateHostAtoms1(
         guest_atoms,
         host_atom_pool,
-        minimum_distance,
+        minimum_distance,  # TODO: double check this actually makes sense
         angle_force_constant,
         temperature,
     )
