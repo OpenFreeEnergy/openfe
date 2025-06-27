@@ -1709,7 +1709,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
         # Multiply the correction for ligand B by -1 as for this ligands,
         # Boresch restraint has to be turned on in the analytical corr.
-        correction_B = correction_B * -1
+        correction_B = correction_B * -1 # type: ignore[operator]
 
         return (
             correction_A,
