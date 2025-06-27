@@ -1,6 +1,6 @@
 **Added:**
 
-* Added compatibility for Numpy 2
+* Adds a new internal API for defining alchemical restraints (PR #1043).
 
 **Changed:**
 

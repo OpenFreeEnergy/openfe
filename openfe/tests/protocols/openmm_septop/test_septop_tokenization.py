@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import json
-import openfe
 from openfe.protocols import openmm_septop
 import gufe
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
@@ -10,9 +9,7 @@ import pytest
 
 @pytest.fixture
 def protocol():
-    return openmm_septop.SepTopProtocol(
-               openmm_septop.SepTopProtocol.default_settings()
-           )
+    return openmm_septop.SepTopProtocol(openmm_septop.SepTopProtocol.default_settings())
 
 
 @pytest.fixture
@@ -59,7 +56,7 @@ def protocol_result(septop_json):
         septop_json,
         cls=gufe.tokenization.JSON_HANDLER.decoder,
     )
-    pr = openmm_septop.SepTopProtocolResult.from_dict(d['protocol_result'])
+    pr = openmm_septop.SepTopProtocolResult.from_dict(d["protocol_result"])
     return pr
 
 
@@ -82,8 +79,10 @@ class TestSepTopProtocol(GufeTokenizableTestsMixin):
 
 class TestSepTopSolventSetupUnit(GufeTokenizableTestsMixin):
     cls = openmm_septop.SepTopSolventSetupUnit
-    repr = ("SepTopSolventSetupUnit(SepTop RBFE Setup, transformation benzene"
-            " to toluene, solvent leg")
+    repr = (
+        "SepTopSolventSetupUnit(SepTop RBFE Setup, transformation benzene"
+        " to toluene, solvent leg"
+    )
     key = None
 
     @pytest.fixture()
@@ -100,8 +99,10 @@ class TestSepTopSolventSetupUnit(GufeTokenizableTestsMixin):
 
 class TestSepTopSolventRunUnit(GufeTokenizableTestsMixin):
     cls = openmm_septop.SepTopSolventRunUnit
-    repr = ("SepTopSolventRunUnit(SepTop RBFE Run, transformation benzene"
-            " to toluene, solvent leg")
+    repr = (
+        "SepTopSolventRunUnit(SepTop RBFE Run, transformation benzene"
+        " to toluene, solvent leg"
+    )
     key = None
 
     @pytest.fixture()
@@ -118,8 +119,10 @@ class TestSepTopSolventRunUnit(GufeTokenizableTestsMixin):
 
 class TestSepTopComplexSetupUnit(GufeTokenizableTestsMixin):
     cls = openmm_septop.SepTopComplexSetupUnit
-    repr = ("SepTopComplexSetupUnit(SepTop RBFE Setup, transformation benzene"
-            " to toluene, complex leg")
+    repr = (
+        "SepTopComplexSetupUnit(SepTop RBFE Setup, transformation benzene"
+        " to toluene, complex leg"
+    )
     key = None
 
     @pytest.fixture()
@@ -136,8 +139,10 @@ class TestSepTopComplexSetupUnit(GufeTokenizableTestsMixin):
 
 class TestSepTopComplexRunUnit(GufeTokenizableTestsMixin):
     cls = openmm_septop.SepTopComplexRunUnit
-    repr = ("SepTopComplexRunUnit(SepTop RBFE Run, transformation benzene"
-            " to toluene, complex leg")
+    repr = (
+        "SepTopComplexRunUnit(SepTop RBFE Run, transformation benzene"
+        " to toluene, complex leg"
+    )
     key = None
 
     @pytest.fixture()

@@ -4,7 +4,7 @@
 Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
-from openff.units import unit
+from openff.units import unit, Quantity
 from typing import Optional
 from .omm_settings import (
     IntegratorSettings,
@@ -44,7 +44,7 @@ def validate_openmm_solvation_settings(
             raise ValueError(errmsg)
 
 
-def validate_timestep(hmass: float, timestep: unit.Quantity):
+def validate_timestep(hmass: float, timestep: Quantity):
     """
     Check that the input timestep is suitable for the given hydrogen
     mass.
@@ -53,7 +53,7 @@ def validate_timestep(hmass: float, timestep: unit.Quantity):
     ----------
     hmass : float
       The target hydrogen mass (assumed units of amu).
-    timestep : unit.Quantity
+    timestep : openff.units.Quantity
       The integration time step.
 
 
@@ -69,16 +69,16 @@ def validate_timestep(hmass: float, timestep: unit.Quantity):
             raise ValueError(errmsg)
 
 
-def get_simsteps(sim_length: unit.Quantity,
-                 timestep: unit.Quantity, mc_steps: int) -> int:
+def get_simsteps(sim_length: Quantity,
+                 timestep: Quantity, mc_steps: int) -> int:
     """
     Gets and validates the number of simulation steps.
 
     Parameters
     ----------
-    sim_length : unit.Quantity
+    sim_length : openff.units.Quantity
       Simulation length.
-    timestep : unit.Quantity
+    timestep : openff.units.Quantity
       Integration timestep.
     mc_steps : int
       Number of integration timesteps between MCMC moves.
@@ -89,8 +89,8 @@ def get_simsteps(sim_length: unit.Quantity,
       The number of simulation timesteps.
     """
 
-    sim_time = round(sim_length.to('attosecond').m)
-    ts = round(timestep.to('attosecond').m)
+    sim_time = round(sim_length.to('attosecond').m)  # type: ignore
+    ts = round(timestep.to('attosecond').m)  # type: ignore
 
     sim_steps, mod = divmod(sim_time, ts)
     if mod != 0:
@@ -106,17 +106,17 @@ def get_simsteps(sim_length: unit.Quantity,
 
 
 def divmod_time(
-    time: unit.Quantity,
-    time_per_iteration: unit.Quantity,
+    time: Quantity,
+    time_per_iteration: Quantity,
 ) -> tuple[int, int]:
     """
     Convert a set amount of time to a number of iterations.
 
     Parameters
     ---------
-    time: unit.Quantity
+    time: openff.units.Quantity
       The time to convert.
-    time_per_iteration : unit.Quantity
+    time_per_iteration : openff.units.Quantity
       The amount of time which each iteration takes.
 
     Returns
@@ -126,15 +126,15 @@ def divmod_time(
     remainder : int
       The remainder of the input time and time_per_iteration division.
     """
-    time_ats = round(time.to(unit.attosecond).m)
-    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)
+    time_ats = round(time.to(unit.attosecond).m)  # type: ignore
+    tpi_ats = round(time_per_iteration.to(unit.attosecond).m)  # type: ignore
 
     iterations, remainder = divmod(time_ats, tpi_ats)
 
     return iterations, remainder
 
 
-def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
+def divmod_time_and_check(numerator: Quantity, denominator: Quantity,
                           numerator_name: str, denominator_name: str) -> int:
     """Perform a division of time, failing if there is a remainder
 
@@ -142,7 +142,7 @@ def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
 
     Parameters
     ----------
-    numerator, denominator : unit.Quantity
+    numerator, denominator : openff.units.Quantity
       the division to perform
     numerator_name, denominator_name : str
       used for the error generated if there is any remainder
@@ -170,8 +170,8 @@ def divmod_time_and_check(numerator: unit.Quantity, denominator: unit.Quantity,
 
 
 def convert_checkpoint_interval_to_iterations(
-    checkpoint_interval: unit.Quantity,
-    time_per_iteration: unit.Quantity,
+    checkpoint_interval: Quantity,
+    time_per_iteration: Quantity,
 ) -> int:
     """
     Get the number of iterations per checkpoint interval.
@@ -182,9 +182,9 @@ def convert_checkpoint_interval_to_iterations(
 
     Parameters
     ----------
-    checkpoint_interval : unit.Quantity
+    checkpoint_interval : openff.units.Quantity
       The amount of time per checkpoints written.
-    time_per_iteration : unit.Quantity
+    time_per_iteration : openff.units.Quantity
       The amount of time each MC iteration takes.
 
     Returns
@@ -280,9 +280,9 @@ def convert_target_error_from_kcal_per_mole_to_kT(
 
     Parameters
     ----------
-    temperature : unit.Quantity
+    temperature : openff.units.Quantity
       temperature in K
-    target_error : unit.Quantity
+    target_error : openff.units.Quantity
       error in kcal/mol
 
     Returns

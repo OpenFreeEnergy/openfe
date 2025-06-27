@@ -37,7 +37,7 @@ from gufe.components import Component
 import itertools
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit
+from openff.units import unit, Quantity
 from openmmtools import multistate
 from typing import Optional, Union
 from typing import Any, Iterable
@@ -97,13 +97,13 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
                in itertools.chain(self.data['solvent'].values(), self.data['vacuum'].values())):
             raise NotImplementedError("Can't stitch together results yet")
 
-    def get_individual_estimates(self) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
+    def get_individual_estimates(self) -> dict[str, list[tuple[Quantity, Quantity]]]:
         """
         Get the individual estimate of the free energies.
 
         Returns
         -------
-        dGs : dict[str, list[tuple[unit.Quantity, unit.Quantity]]]
+        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
           A dictionary, keyed `solvent` and `vacuum` for each leg
           of the thermodynamic cycle, with lists of tuples containing
           the individual free energy estimates and associated MBAR
@@ -131,7 +131,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         Returns
         -------
-        dG : unit.Quantity
+        dG : openff.units.Quantity
           The solvation free energy. This is a Quantity defined with units.
         """
         def _get_average(estimates):
@@ -154,7 +154,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
 
         Returns
         -------
-        err : unit.Quantity
+        err : openff.units.Quantity
           The standard deviation between estimates of the solvation free
           energy. This is a Quantity defined with units.
         """
@@ -174,13 +174,13 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
         # return the combined error
         return np.sqrt(vac_err**2 + solv_err**2)
 
-    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
         Returns
         -------
-        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
+        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]]
             A dictionary, keyed `solvent` and `vacuum` for each leg of the
             thermodynamic cycle which each contain a list of dictionaries
             containing the forward and reverse analysis of each repeat
@@ -189,9 +189,9 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
             The forward and reverse analysis dictionaries contain:
               - `fractions`: npt.NDArray
                   The fractions of data used for the estimates
-              - `forward_DGs`, `reverse_DGs`: unit.Quantity
+              - `forward_DGs`, `reverse_DGs`: openff.units.Quantity
                   The forward and reverse estimates for each fraction of data
-              - `forward_dDGs`, `reverse_dDGs`: unit.Quantity
+              - `forward_dDGs`, `reverse_dDGs`: openff.units.Quantity
                   The forward and reverse estimate uncertainty for each
                   fraction of data.
 
@@ -207,7 +207,7 @@ class AbsoluteSolvationProtocolResult(gufe.ProtocolResult):
             given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]] = {}
+        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]] = {}
 
         for key in ['solvent', 'vacuum']:
             forward_reverse[key] = [
