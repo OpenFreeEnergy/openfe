@@ -21,8 +21,6 @@ import os
 import pathlib
 import mdtraj as md
 
-from openfecli.tests.commands.test_atommapping import print_test
-
 
 @pytest.fixture()
 def default_settings():
