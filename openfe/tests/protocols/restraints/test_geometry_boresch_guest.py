@@ -78,7 +78,7 @@ def test_get_guest_atom_pool_all_heavy(eg5_ligands):
         rmsf=rmsf,
         rmsf_cutoff=0.1 * unit.nanometer
     )
-    # make sure only rings were found
+    # make sure no rings were found
     assert not rings
     # make sure we get heavy atoms with no rings
     heavy_atoms = get_heavy_atom_idxs(rd_mol)
@@ -93,7 +93,7 @@ def test_get_guest_atom_pool_no_atoms(eg5_ligands):
         rmsf=rmsf,
         rmsf_cutoff=0.1 * unit.nanometer
     )
-    # make sure only rings were found
+    # make sure no rings were found
     assert not rings
     # make sure no atoms are returned
     assert pool_atoms is None

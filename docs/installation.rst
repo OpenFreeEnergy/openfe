@@ -6,7 +6,7 @@ Installation
 We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
 
 - Python 3.10, 3.11, 3.12 - **we do not yet support Python 3.13**
-- OpenMM 8.0, 8.1.1, 8.1.2 - **we do not yet support OpenMM v8.2.0**
+- OpenMM 8.0, 8.1.1, 8.1.2, 8.2.0 - **we do not yet support OpenMM v8.3.0**
 
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI).
@@ -468,6 +468,11 @@ few minutes, and all tests should complete with status either passed,
 skipped, or xfailed (expected fail).
 
 With that, you should be ready to use ``openfe``!
+
+.. note::
+
+   If building a custom docker image, you may need to need to add ``--ulimit nofile=262144:262144`` to the ``docker build`` command.
+   See this `issue <https://github.com/OpenFreeEnergy/openfe/issues/1269>`_ for details. 
 
 HPC Environments
 ----------------

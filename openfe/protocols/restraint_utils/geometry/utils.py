@@ -15,7 +15,8 @@ from scipy.stats import circvar
 import warnings
 
 from openff.toolkit import Molecule as OFFMol
-from openff.units import unit
+from openff.units import unit, Quantity
+from gufe.vendor.openff.models.types import ArrayQuantity
 import networkx as nx
 from rdkit import Chem
 import MDAnalysis as mda
@@ -178,9 +179,11 @@ def get_central_atom_idx(rdmol: Chem.Mol) -> int:
         raise ValueError(errmsg)
 
     # Get a list of all shortest paths
+    # Note: we call dict on shortest_path to support py3.10 which doesn't
+    # support networkx 3.5
     shortest_paths = [
         path
-        for node_paths in nx.shortest_path(nx_mol).values()
+        for node_paths in dict(nx.shortest_path(nx_mol)).values()
         for path in node_paths.values()
     ]
 
@@ -253,18 +256,18 @@ def is_collinear(
     return result
 
 
-def _wrap_angle(angle: unit.Quantity) -> unit.Quantity:
+def _wrap_angle(angle: Quantity) -> Quantity:
     """
     Wrap an angle to -pi to pi radians.
 
     Parameters
     ----------
-    angle : unit.Quantity
+    angle : openff.units.Quantity
       An angle in radians compatible units.
 
     Returns
     -------
-    unit.Quantity
+    openff.units.Quantity
       The angle in units of radians wrapped.
 
     Notes
@@ -272,25 +275,25 @@ def _wrap_angle(angle: unit.Quantity) -> unit.Quantity:
     Pint automatically converts the angle to radians
     as it passes it through arctan2.
     """
-    return np.arctan2(np.sin(angle), np.cos(angle))
+    return np.arctan2(np.sin(angle), np.cos(angle))  # type: ignore
 
 
 def check_angle_not_flat(
-    angle: unit.Quantity,
-    force_constant: unit.Quantity = DEFAULT_ANGLE_FRC_CONSTANT,
-    temperature: unit.Quantity = 298.15 * unit.kelvin,
+    angle: Quantity,
+    force_constant: Quantity = DEFAULT_ANGLE_FRC_CONSTANT,
+    temperature: Quantity = 298.15 * unit.kelvin,
 ) -> bool:
     """
     Check whether the chosen angle is less than 10 kT from 0 or pi radians
 
     Parameters
     ----------
-    angle : unit.Quantity
+    angle : openff.units.Quantity
       The angle to check in units compatible with radians.
-    force_constant : unit.Quantity
+    force_constant : openff.units.Quantity
       Force constant of the angle in units compatible with
       kilojoule_per_mole / radians ** 2.
-    temperature : unit.Quantity
+    temperature : openff.units.Quantity
       The system temperature in units compatible with Kelvin.
 
     Returns
@@ -310,11 +313,11 @@ def check_angle_not_flat(
     angle_rads = _wrap_angle(angle)
     frc_const = force_constant.to("unit.kilojoule_per_mole / unit.radians**2")
     temp_kelvin = temperature.to("kelvin")
-    RT = 8.31445985 * 0.001 * temp_kelvin
+    RT = 8.31445985 * 0.001 * temp_kelvin  # type: ignore[operator]
 
     # check if angle is <10kT from 0 or 180
-    check1 = 0.5 * frc_const * np.power((angle_rads - 0.0), 2)
-    check2 = 0.5 * frc_const * np.power((angle_rads - np.pi), 2)
+    check1 = 0.5 * frc_const * np.power((angle_rads - 0.0), 2)  # type: ignore[operator]
+    check2 = 0.5 * frc_const * np.power((angle_rads - np.pi), 2)  # type: ignore[operator]
     ang_check_1 = check1 / RT
     ang_check_2 = check2 / RT
     if ang_check_1.m < 10.0 or ang_check_2.m < 10.0:
@@ -323,9 +326,9 @@ def check_angle_not_flat(
 
 
 def check_dihedral_bounds(
-    dihedral: unit.Quantity,
-    lower_cutoff: unit.Quantity = -2.618 * unit.radians,
-    upper_cutoff: unit.Quantity = 2.618 * unit.radians,
+    dihedral: Quantity,
+    lower_cutoff: Quantity = -2.618 * unit.radians,
+    upper_cutoff: Quantity = 2.618 * unit.radians,
 ) -> bool:
     """
     Check that a dihedral does not exceed the bounds set by
@@ -336,11 +339,11 @@ def check_dihedral_bounds(
 
     Parameters
     ----------
-    dihedral : unit.Quantity
+    dihedral : openff.units.Quantity
       Dihedral in units compatible with radians.
-    lower_cutoff : unit.Quantity
+    lower_cutoff : openff.units.Quantity
       Dihedral lower cutoff in units compatible with radians.
-    upper_cutoff : unit.Quantity
+    upper_cutoff : openff.units.Quantity
       Dihedral upper cutoff in units compatible with radians.
 
     Returns
@@ -352,16 +355,16 @@ def check_dihedral_bounds(
     dihed = _wrap_angle(dihedral)
     lower = _wrap_angle(lower_cutoff)
     upper = _wrap_angle(upper_cutoff)
-    if (dihed < lower) or (dihed > upper):
+    if (dihed < lower) or (dihed > upper):  # type: ignore[operator]
         return False
     return True
 
 
 def check_angular_variance(
-    angles: unit.Quantity,
-    upper_bound: unit.Quantity,
-    lower_bound: unit.Quantity,
-    width: unit.Quantity,
+    angles: Quantity,
+    upper_bound: Quantity,
+    lower_bound: Quantity,
+    width: Quantity,
 ) -> bool:
     """
     Check that the variance of a list of ``angles`` does not exceed
@@ -369,13 +372,13 @@ def check_angular_variance(
 
     Parameters
     ----------
-    angles : ArrayLike unit.Quantity
+    angles : ArrayLike openff.units.Quantity
       An array of angles in units compatible with radians.
-    upper_bound: unit.Quantity
+    upper_bound: openff.units.Quantity
       The upper bound in the angle range in radians compatible units.
-    lower_bound: unit.Quantity
+    lower_bound: openff.units.Quantity
       The lower bound in the angle range in radians compatible units.
-    width : unit.Quantity
+    width : openff.units.Quantity
       The width to check the variance against, in units compatible with
       radians.
 
@@ -468,9 +471,9 @@ class FindHostAtoms(AnalysisBase):
       Initial selection of host atoms to filter from.
     guest_atoms : MDAnalysis.AtomGroup
       Selection of guest atoms to search around.
-    min_search_distance: unit.Quantity
+    min_search_distance: openff.units.Quantity
       Minimum distance to filter atoms within.
-    max_search_distance: unit.Quantity
+    max_search_distance: openff.units.Quantity
       Maximum distance to filter atoms within.
 
     Attributes
@@ -525,7 +528,7 @@ class FindHostAtoms(AnalysisBase):
         self.results.host_idxs = np.array(list(self.results.host_idxs))
 
 
-def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
+def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
     """
     Get the RMSF of an AtomGroup when aligned upon itself.
 
@@ -535,7 +538,7 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> unit.Quantity:
 
     Return
     ------
-    rmsf
+    rmsf : openff.units.Quantity
       ArrayQuantity of RMSF values.
     """
     # The no trajectory case
