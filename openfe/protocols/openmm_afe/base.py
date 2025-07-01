@@ -1136,7 +1136,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             lambdas,
             solv_comp,
             restraint_parameter_state,
-            solv_comp
         )
 
         # 9. Create the multistate reporter & create PDB

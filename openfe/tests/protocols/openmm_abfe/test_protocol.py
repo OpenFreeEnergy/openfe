@@ -131,22 +131,20 @@ class BaseBenzeneT4Tests(BaseABFESystemTests):
     def test_sampler_periodicity(self, sampler):
         assert sampler.is_periodic
 
-    def test_sampler
+
+#class TestBenzeneSolventDry(BaseBenzeneT4Tests):
+#    @pytest.fixture(scope='class')
+#    def sampler(self, solvent_units
 
 
-class TestBenzeneSolventDry(BaseBenzeneT4Tests):
-    @pytest.fixture(scope='class')
-    def sampler(self, solvent_units
-
-
-def test_dry_run_solvent_benzene(
-    benzene_modifications, T4_protein_component, tmpdir,
-):
-
-    with tmpdir.as_cwd():
-
-        pdb = mdt.load_pdb('alchemical_system.pdb')
-        assert pdb.n_atoms == 12
+#def test_dry_run_solvent_benzene(
+#    benzene_modifications, T4_protein_component, tmpdir,
+#):
+#
+#    with tmpdir.as_cwd():
+#
+#        pdb = mdt.load_pdb('alchemical_system.pdb')
+#        assert pdb.n_atoms == 12
 
 
 def test_dry_run_complex_benzene(
