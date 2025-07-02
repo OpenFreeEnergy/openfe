@@ -4,11 +4,14 @@ import gzip
 import pytest
 import pooch
 from importlib import resources
+from typing import Optional
 from rdkit import Chem
 from rdkit.Geometry import Point3D
+import openmm
 from openmm import Platform
 import openfe
-from openff.units import unit
+from openff.units.openmm import from_openmm
+from openff.units import unit, Quantity
 
 
 @pytest.fixture
@@ -315,3 +318,53 @@ def get_available_openmm_platforms() -> set[str]:
 
 
     return working_platforms
+
+
+def compute_energy(
+    system: openmm.System,
+    positions: openmm.unit.Quantity,
+    box_vectors: Optional[openmm.unit.Quantity],
+    context_params: Optional[dict[str, float]] = None,
+    platform=None,
+) -> Quantity:
+    """
+    Computes the potential energy of a system at a given set of positions.
+
+    Parameters
+    ----------
+    system: openmm.System
+      The system to compute the energy of.
+    positions: openmm.unit.Quantity
+      The positions to compute the energy at.
+    box_vectors: Optional[openmm.unit.Quantity]
+      The box vectors to use if any.
+    context_params: Optional[dict[str, float]]
+      Any global context parameters to set.
+    platform: str
+      The platform to use.
+
+    Returns
+    -------
+    potential : openff.units.Quantity
+        The computed potential energy in openff unit.
+    """
+    context_params = context_params if context_params is not None else {}
+
+    integrator = openmm.VerletIntegrator(0.0001 * openmm.unit.femtoseconds)
+
+    if platform is None:
+        context = openmm.Context(system, integrator)
+    if platform is not None:
+        context = openmm.Context(system, integrator, platform)
+
+    for key, value in context_params.items():
+        context.setParameter(key, value)
+
+    if box_vectors is not None:
+        context.setPeriodicBoxVectors(*box_vectors)
+    context.setPositions(positions)
+
+    state = context.getState(getEnergy=True)
+    potential = state.getPotentialEnergy()
+    del context, integrator, state
+    return from_openmm(potential)
