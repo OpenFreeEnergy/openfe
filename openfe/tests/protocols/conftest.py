@@ -238,7 +238,7 @@ def abfe_transformation_json_path() -> str:
     d = resources.files('openfe.tests.data.openmm_afe')
     fname = "ABFEProtocol_json_results.json.gz"
 
-    return d / fname
+    return str(d / fname)
 
 
 @pytest.fixture

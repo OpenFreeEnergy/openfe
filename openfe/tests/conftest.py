@@ -237,7 +237,7 @@ def benzene_transforms():
 @pytest.fixture(scope='session')
 def T4_protein_component():
     with resources.files('openfe.tests.data') as d:
-        fn = str(d / '181l_only.pdb')  # type: ignore[return-value]
+        fn = str(d / '181l_only.pdb')
 
     return gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
