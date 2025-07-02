@@ -40,25 +40,37 @@ import gufe
 import MDAnalysis as mda
 import numpy as np
 import numpy.typing as npt
-from gufe import (ChemicalSystem, ProteinComponent, SmallMoleculeComponent,
-                  SolventComponent, settings)
+from gufe import (
+    ChemicalSystem,
+    ProteinComponent,
+    SmallMoleculeComponent,
+    SolventComponent,
+    settings,
+)
 from gufe.components import Component
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
-    AbsoluteBindingSettings, AlchemicalSettings, BoreschRestraintSettings,
-    DistanceRestraintSettings, FlatBottomRestraintSettings, IntegratorSettings,
-    LambdaSettings, MDOutputSettings, MDSimulationSettings,
-    MultiStateOutputSettings, MultiStateSimulationSettings,
-    OpenFFPartialChargeSettings, OpenMMEngineSettings, OpenMMSolvationSettings,
-    SettingsBaseModel)
-from openfe.protocols.openmm_utils import (settings_validation,
-                                           system_validation)
+    AbsoluteBindingSettings,
+    AlchemicalSettings,
+    BoreschRestraintSettings,
+    DistanceRestraintSettings,
+    FlatBottomRestraintSettings,
+    IntegratorSettings,
+    LambdaSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
+    MultiStateOutputSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    SettingsBaseModel,
+)
+from openfe.protocols.openmm_utils import settings_validation, system_validation
 from openfe.protocols.restraint_utils import geometry
-from openfe.protocols.restraint_utils.geometry.boresch import \
-    BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openfe.protocols.restraint_utils.openmm.omm_restraints import \
-    BoreschRestraint
+from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 from openfe.utils import log_system_probe
 from openff.units import Quantity, unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
