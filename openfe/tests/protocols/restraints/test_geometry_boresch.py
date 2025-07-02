@@ -116,7 +116,7 @@ def test_boresch_no_guest_atoms_found_ethane(eg5_protein_pdb):
 
 def test_boresch_no_guest_atoms_found_collinear(eg5_protein_pdb):
     protein = mda.Universe(eg5_protein_pdb)
-    # generate ethane with a single conformation
+    # generate carbondioxide with a single conformation
     lig = mda.Universe.from_smiles("O=C=O")
     lig.add_TopologyAttr("resname", ["LIG"])
     universe = mda.Merge(protein.atoms, lig.atoms)

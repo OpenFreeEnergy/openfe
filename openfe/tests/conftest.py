@@ -12,7 +12,7 @@ import urllib.request
 
 import gufe
 import openfe
-from gufe import SmallMoleculeComponent, LigandAtomMapping
+from gufe import AtomMapper, SmallMoleculeComponent, LigandAtomMapping
 from openfe.protocols.openmm_septop.utils import deserialize
 
 
@@ -184,6 +184,24 @@ def atom_mapping_basic_test_files():
     return files
 
 
+@pytest.fixture()
+def lomap_old_mapper() -> AtomMapper:
+    """
+    LomapAtomMapper with the old default settings.
+
+    This is necessary as atom_mapping_basic_test_files are not all fully aligned
+    and need both shift and a large max3d value.
+    """
+    return openfe.setup.atom_mapping.LomapAtomMapper(
+        time=20,
+        threed=True,
+        max3d=1000.0,
+        element_change=True,
+        seed="",
+        shift=True,
+    )
+
+
 @pytest.fixture(scope='session')
 def benzene_modifications():
     files = {}
@@ -250,9 +268,8 @@ def benzene_transforms():
 def T4_protein_component():
     with resources.files('openfe.tests.data') as d:
         fn = str(d / '181l_only.pdb')
-        comp = gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
-    return comp
+    return gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
 @pytest.fixture(scope='session')
 def bace_protein_component():

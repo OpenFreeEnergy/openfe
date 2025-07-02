@@ -1,16 +1,10 @@
 name: "Package Install Tests"
 on:
-  pull_request:
-    branches:
-      - main
-   # Skip CI if changed files only affect the following folders
-   # - docs: documentation changes don't need code validation
-   # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
-    paths-ignore:
-      - "docs/*"
   push:
     branches:
       - main
+    paths-ignore:
+      - "docs/*"
 
   workflow_dispatch:
   schedule:
@@ -37,7 +31,7 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: '1.5.6-0'
           environment-file: environment.yml

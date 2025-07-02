@@ -1,22 +1,27 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import math
+
 from pathlib import Path
 from typing import Iterable, Callable, Optional, Union
-import itertools
-from collections import Counter
-import functools
-import warnings
 
 import networkx as nx
-from tqdm.auto import tqdm
 
 from gufe import SmallMoleculeComponent, AtomMapper
 from openfe.setup import LigandNetwork
 from openfe.setup.atom_mapping import LigandAtomMapping
 
-from lomap import generate_lomap_network, LomapAtomMapper
+# import to expose generate_lomap_network in openfe
+from lomap import generate_lomap_network as generate_lomap_network
+from lomap import LomapAtomMapper
 from lomap.dbmol import _find_common_core
+from konnektor.network_planners import (
+    StarNetworkGenerator,
+    MaximalNetworkGenerator,
+    RedundantMinimalSpanningTreeNetworkGenerator,
+    MinimalSpanningTreeNetworkGenerator,
+    ExplicitNetworkGenerator,
+)
+from konnektor import network_analysis, network_planners, network_tools
 
 
 def _hasten_lomap(mapper, ligands):
@@ -31,9 +36,12 @@ def _hasten_lomap(mapper, ligands):
         core = ""
 
     return LomapAtomMapper(
-        time=mapper.time, threed=mapper.threed, max3d=mapper.max3d,
-        element_change=mapper.element_change, seed=core,
-        shift=mapper.shift
+        time=mapper.time,
+        threed=mapper.threed,
+        max3d=mapper.max3d,
+        element_change=mapper.element_change,
+        seed=core,
+        shift=mapper.shift,
     )
 
 
@@ -42,6 +50,8 @@ def generate_radial_network(
     central_ligand: Union[SmallMoleculeComponent, str, int],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
+    progress: bool = False,
+    n_processes: int = 1,
 ) -> LigandNetwork:
     """
     Plan a radial network with all ligands connected to a central node.
@@ -64,6 +74,10 @@ def generate_radial_network(
       a callable which returns a float for any LigandAtomMapping.  Used to
       assign scores to potential mappings; higher scores indicate better
       mappings.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
+    n_processes: int
+        number of cpu processes to use if parallelizing network generation.
 
     Raises
     ------
@@ -85,64 +99,61 @@ def generate_radial_network(
     mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
                else m for m in mappers]
 
+    ligands = list(ligands)
+
     # handle central_ligand arg possibilities
     # after this, central_ligand is resolved to a SmallMoleculeComponent
     if isinstance(central_ligand, int):
-        ligands = list(ligands)
         try:
             central_ligand = ligands[central_ligand]
+            ligands.remove(central_ligand)
         except IndexError:
             raise ValueError(f"index '{central_ligand}' out of bounds, there are "
                              f"{len(ligands)} ligands")
     elif isinstance(central_ligand, str):
-        ligands = list(ligands)
-        possibles = [l for l in ligands if l.name == central_ligand]
+        possibles = [lig for lig in ligands if lig.name == central_ligand]
         if not possibles:
             raise ValueError(f"No ligand called '{central_ligand}' "
-                             f"available: {', '.join(l.name for l in ligands)}")
+                f"available: {', '.join(lig.name for lig in ligands)}")
         if len(possibles) > 1:
             raise ValueError(f"Multiple ligands called '{central_ligand}'")
         central_ligand = possibles[0]
+        ligands.remove(central_ligand)
 
-    edges = []
+    # Construct network
+    network_planner = StarNetworkGenerator(
+        mappers=mappers,
+        scorer=scorer,
+        progress=progress,
+        n_processes=n_processes,
+    )
 
-    for ligand in ligands:
-        if ligand == central_ligand:
-            wmsg = (f"The central_ligand {ligand.name} was also found in "
-                    "the list of ligands to arrange around the "
-                    "central_ligand this will be ignored.")
-            warnings.warn(wmsg)
-            continue
-        best_score = 0.0
-        best_mapping = None
+    network = network_planner.generate_ligand_network(
+        components=ligands, central_component=central_ligand
+    )
 
-        for mapping in itertools.chain.from_iterable(
-            mapper.suggest_mappings(central_ligand, ligand)
-            for mapper in mappers
-        ):
-            if not scorer:
-                best_mapping = mapping
-                break
+    if network.is_connected():
+        connected_nodes = network.nodes
+    else:
+        connected_nodes = max(nx.weakly_connected_components(network.graph), key=len)
 
-            score = scorer(mapping)
-            mapping = mapping.with_annotations({"score": score})
+    # check for disconnected nodes
+    missing_nodes = set(ligands + [central_ligand]) - set(connected_nodes)
+    missing_node_names = [node.name for node in missing_nodes]
+    if missing_nodes:
+        raise RuntimeError(
+            f"ERROR: No mapping found between the central ligand ('{central_ligand.name}') and the following node(s): {missing_node_names}"
+        )
 
-            if score > best_score:
-                best_mapping = mapping
-                best_score = score
-
-        if best_mapping is None:
-            raise ValueError(f"No mapping found for {ligand}")
-        edges.append(best_mapping)
-
-    return LigandNetwork(edges)
+    return network
 
 
 def generate_maximal_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Optional[Callable[[LigandAtomMapping], float]] = None,
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    progress: bool = True,
+    n_processes: int = 1,
 ) -> LigandNetwork:
     """
     Plan a network with all possible proposed mappings.
@@ -165,46 +176,37 @@ def generate_maximal_network(
       but many can be given.
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
+    n_processes: int
+      number of cpu processes to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
     mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
                else m for m in mappers]
-
     nodes = list(ligands)
 
-    if progress is True:
-        # default is a tqdm progress bar
-        total = len(nodes) * (len(nodes) - 1) // 2
-        progress = functools.partial(tqdm, total=total, delay=1.5)
-    elif progress is False:
-        def progress(x): return x
-    # otherwise, it should be a user-defined callable
-
-    mapping_generator = itertools.chain.from_iterable(
-        mapper.suggest_mappings(molA, molB)
-        for molA, molB in progress(itertools.combinations(nodes, 2))
-        for mapper in mappers
+    # Construct network
+    network_planner = MaximalNetworkGenerator(
+        mappers=mappers,
+        scorer=scorer,
+        progress=progress,
+        n_processes=n_processes,
     )
-    if scorer:
-        mappings = [mapping.with_annotations({'score': scorer(mapping)})
-                    for mapping in mapping_generator]
-    else:
-        mappings = list(mapping_generator)
 
-    network = LigandNetwork(mappings, nodes=nodes)
+    network = network_planner.generate_ligand_network(nodes)
+
     return network
 
 
 def generate_minimal_spanning_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
+    # TODO: scorer is currently required, but not actually necessary.
     scorer: Callable[[LigandAtomMapping], float],
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    progress: bool = True,
+    n_processes: int = 1,
 ) -> LigandNetwork:
     """
     Plan a network with as few edges as possible with maximum total score
@@ -219,44 +221,37 @@ def generate_minimal_spanning_network(
       highest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
+    n_processes: int
+        number of cpu processes to use if parallelizing network generation.
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
     mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
                else m for m in mappers]
+    nodes = list(ligands)
 
-    # First create a network with all the proposed mappings (scored)
-    network = generate_maximal_network(ligands, mappers, scorer, progress)
+    # Construct network
+    network_planner = MinimalSpanningTreeNetworkGenerator(
+        mappers=mappers,
+        scorer=scorer,
+        progress=progress,
+        n_processes=n_processes,
+    )
 
-    # Flip network scores so we can use minimal algorithm
-    g2 = nx.MultiGraph()
-    for e1, e2, d in network.graph.edges(data=True):
-        g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
+    network = network_planner.generate_ligand_network(nodes)
 
-    # Next analyze that network to create minimal spanning network. Because
-    # we carry the original (directed) LigandAtomMapping, we don't lose
-    # direction information when converting to an undirected graph.
-    min_edges = nx.minimum_spanning_edges(g2)
-    min_mappings = [edge_data['object'] for _, _, _, edge_data in min_edges]
-    min_network = LigandNetwork(min_mappings)
-    missing_nodes = set(network.nodes) - set(min_network.nodes)
-    if missing_nodes:
-        raise RuntimeError("Unable to create edges to some nodes: "
-                           f"{list(missing_nodes)}")
-
-    return min_network
+    return network
 
 
 def generate_minimal_redundant_network(
     ligands: Iterable[SmallMoleculeComponent],
     mappers: Union[AtomMapper, Iterable[AtomMapper]],
     scorer: Callable[[LigandAtomMapping], float],
-    progress: Union[bool, Callable[[Iterable], Iterable]] = True,
+    progress: bool = True,
     mst_num: int = 2,
+    n_processes: int = 1,
 ) -> LigandNetwork:
     """
     Plan a network with a specified amount of redundancy for each node
@@ -275,54 +270,40 @@ def generate_minimal_redundant_network(
       highest score edges
     scorer : Scoring function
       any callable which takes a LigandAtomMapping and returns a float
-    progress : Union[bool, Callable[Iterable], Iterable]
-      progress bar: if False, no progress bar will be shown. If True, use a
-      tqdm progress bar that only appears after 1.5 seconds. You can also
-      provide a custom progress bar wrapper as a callable.
-    mst_num: int
+    progress : bool
+      If True, show a tqdm progress bar. (default=True)
+    mst_num : int
       Minimum Spanning Tree number: the number of minimum spanning trees to
       generate. If two, the second-best edges are included in the returned
       network. If three, the third-best edges are also included, etc.
+    n_processes: int
+        number of threads to use if parallelizing network generation
+
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
     mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
                else m for m in mappers]
+    nodes = list(ligands)
 
-    # First create a network with all the proposed mappings (scored)
-    network = generate_maximal_network(ligands, mappers, scorer, progress)
+    # Construct network
+    network_planner = RedundantMinimalSpanningTreeNetworkGenerator(
+        mappers=mappers,
+        scorer=scorer,
+        progress=progress,
+        n_redundancy=mst_num,
+        n_processes=n_processes,
+    )
 
-    # Flip network scores so we can use minimal algorithm
-    g2 = nx.MultiGraph()
-    for e1, e2, d in network.graph.edges(data=True):
-        g2.add_edge(e1, e2, weight=-d['score'], object=d['object'])
+    network = network_planner.generate_ligand_network(nodes)
 
-    # As in .generate_minimal_spanning_network(), use nx to get the minimal
-    # network. But now also remove those edges from the fully-connected
-    # network, then get the minimal network again. Add mappings from all
-    # minimal networks together.
-    mappings = []
-    for _ in range(mst_num):  # can increase range here for more redundancy
-        # get list from generator so that we don't adjust network by calling it:
-        current_best_edges = list(nx.minimum_spanning_edges(g2))
-
-        g2.remove_edges_from(current_best_edges)
-        for _, _, _, edge_data in current_best_edges:
-            mappings.append(edge_data['object'])
-
-    redund_network = LigandNetwork(mappings)
-    missing_nodes = set(network.nodes) - set(redund_network.nodes)
-    if missing_nodes:
-        raise RuntimeError("Unable to create edges to some nodes: "
-                           f"{list(missing_nodes)}")
-
-    return redund_network
+    return network
 
 
 def generate_network_from_names(
-        ligands: list[SmallMoleculeComponent],
-        mapper: AtomMapper,
-        names: list[tuple[str, str]],
+    ligands: list[SmallMoleculeComponent],
+    mapper: AtomMapper,
+    names: list[tuple[str, str]],
 ) -> LigandNetwork:
     """
     Generate a :class:`.LigandNetwork` by specifying edges as tuples of names.
@@ -350,29 +331,21 @@ def generate_network_from_names(
       if multiple molecules have the same name (this would otherwise be
       problematic)
     """
-    nm2idx = {l.name: i for i, l in enumerate(ligands)}
+    nodes = list(ligands)
 
-    if len(nm2idx) < len(ligands):
-        dupes = Counter((l.name for l in ligands))
-        dupe_names = [k for k, v in dupes.items() if v > 1]
-        raise ValueError(f"Duplicate names: {dupe_names}")
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
 
-    try:
-        ids = [(nm2idx[nm1], nm2idx[nm2]) for nm1, nm2 in names]
-    except KeyError:
-        badnames = [nm for nm in itertools.chain.from_iterable(names)
-                    if nm not in nm2idx]
-        available = [ligand.name for ligand in ligands]
-        raise KeyError(f"Invalid name(s) requested {badnames}.  "
-                       f"Available: {available}")
+    network = network_planner.generate_network_from_names(
+        components=nodes, names=names
+    )
 
-    return generate_network_from_indices(ligands, mapper, ids)
+    return network
 
 
 def generate_network_from_indices(
-        ligands: list[SmallMoleculeComponent],
-        mapper: AtomMapper,
-        indices: list[tuple[int, int]],
+    ligands: list[SmallMoleculeComponent],
+    mapper: AtomMapper,
+    indices: list[tuple[int, int]],
 ) -> LigandNetwork:
     """
     Generate a :class:`.LigandNetwork` by specifying edges as tuples of indices.
@@ -397,31 +370,19 @@ def generate_network_from_indices(
     IndexError
       if an invalid ligand index is requested
     """
-    edges = []
+    nodes = list(ligands)
 
-    for i, j in indices:
-        try:
-            m1, m2 = ligands[i], ligands[j]
-        except IndexError:
-            raise IndexError(f"Invalid ligand id, requested {i} {j} "
-                             f"with {len(ligands)} available")
-
-        mapping = next(mapper.suggest_mappings(m1, m2))
-
-        edges.append(mapping)
-
-    network = LigandNetwork(edges=edges, nodes=ligands)
-
-    if not network.is_connected():
-        warnings.warn("Generated network is not fully connected")
-
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
+    network = network_planner.generate_network_from_indices(
+        components=nodes, indices=indices
+    )
     return network
 
 
 def load_orion_network(
-        ligands: list[SmallMoleculeComponent],
-        mapper: AtomMapper,
-        network_file: Union[str, Path],
+    ligands: list[SmallMoleculeComponent],
+    mapper: AtomMapper,
+    network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an Orion NES network file.
 
@@ -457,13 +418,16 @@ def load_orion_network(
 
         names.append((entry[0], entry[2]))
 
-    return generate_network_from_names(ligands, mapper, names)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
+    network = network_planner.generate_network_from_names(components=ligands, names=names)
+
+    return network
 
 
 def load_fepplus_network(
-        ligands: list[SmallMoleculeComponent],
-        mapper: AtomMapper,
-        network_file: Union[str, Path],
+    ligands: list[SmallMoleculeComponent],
+    mapper: AtomMapper,
+    network_file: Union[str, Path],
 ) -> LigandNetwork:
     """Load a :class:`.LigandNetwork` from an FEP+ edges network file.
 
@@ -493,10 +457,13 @@ def load_fepplus_network(
     for entry in network_lines:
         if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
             errmsg = ("line does not match expected format "
-                      f"hash:hash # name -> name\n"
-                      "line format: {entry}")
+                      "hash:hash # name -> name\n"
+                      f"line format: {entry}")
             raise KeyError(errmsg)
 
         names.append((entry[2], entry[4]))
 
-    return generate_network_from_names(ligands, mapper, names)
+    network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
+    network = network_planner.generate_network_from_names(components=ligands, names=names)
+
+    return network

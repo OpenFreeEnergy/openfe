@@ -151,8 +151,10 @@ def generate_abfe_settings():
     settings.complex_simulation_settings.production_length = 500 * unit.picosecond
     settings.complex_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
     settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
-    settings.solvation_settings.box_shape = 'dodecahedron'
-    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.solvent_solvation_settings.box_shape = 'dodecahedron'
+    settings.complex_solvation_settings.box_shape = 'dodecahedron'
+    settings.solvent_solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.complex_solvation_settings.solvent_padding = 1.0 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.8 * unit.nanometer
     settings.protocol_repeats = 3
     settings.engine_settings.compute_platform = 'CUDA'

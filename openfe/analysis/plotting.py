@@ -1,11 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from itertools import chain
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit
+from openff.units import Quantity
 from typing import Optional, Union
 import warnings
 
@@ -129,8 +128,8 @@ def plot_lambda_transition_matrix(matrix: npt.NDArray) -> Axes:
 
 
 def plot_convergence(
-    forward_and_reverse: dict[str, Union[npt.NDArray, unit.Quantity]],
-    units: unit.Quantity
+    forward_and_reverse: dict[str, Union[npt.NDArray, Quantity]],
+    units: Quantity
 ) -> Axes:
     """
     Plot a Reverse and Forward convergence analysis of the
@@ -142,7 +141,7 @@ def plot_convergence(
       A dictionary containing the reverse and forward
       values of the free energies sampled along a given fraction
       of the sample size.
-    units : unit.Quantity
+    units : openff.units.Quantity
       The units the free energies are provided in.
 
     Returns
@@ -182,30 +181,30 @@ def plot_convergence(
     ax.yaxis.set_ticks_position("left")
 
     # Set the overall error bar to the final error for the reverse results
-    overall_error = forward_and_reverse['reverse_dDGs'][-1].m
-    final_value = forward_and_reverse['reverse_DGs'][-1].m
+    overall_error = forward_and_reverse['reverse_dDGs'][-1].m  # type: ignore
+    final_value = forward_and_reverse['reverse_DGs'][-1].m  # type: ignore
     ax.fill_between([0, 1],
                     final_value - overall_error,
                     final_value + overall_error,
                     color='#D2B9D3', zorder=1)
 
     ax.errorbar(
-        forward_and_reverse['fractions'],
+        forward_and_reverse['fractions'],  # type: ignore
         [val.m
-         for val in forward_and_reverse['forward_DGs']],
+         for val in forward_and_reverse['forward_DGs']],  # type: ignore
         yerr=[err.m
-              for err in forward_and_reverse['forward_dDGs']],
+              for err in forward_and_reverse['forward_dDGs']],  # type: ignore
         color="#736AFF", lw=3, zorder=2,
         marker="o", mfc="w", mew=2.5,
         mec="#736AFF", ms=8, label='Forward'
     )
 
     ax.errorbar(
-        forward_and_reverse['fractions'],
+        forward_and_reverse['fractions'],  # type: ignore
         [val.m
-         for val in forward_and_reverse['reverse_DGs']],
+         for val in forward_and_reverse['reverse_DGs']],  # type: ignore
         yerr=[err.m
-              for err in forward_and_reverse['reverse_dDGs']],
+              for err in forward_and_reverse['reverse_dDGs']],  # type: ignore
         color="#C11B17", lw=3, zorder=2,
         marker="o", mfc="w", mew=2.5,
         mec="#C11B17", ms=8, label='Reverse',

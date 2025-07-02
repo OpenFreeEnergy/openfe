@@ -335,4 +335,4 @@ def test_get_boresch_state_correction(tyk2_protein_ligand_system, tyk2_rdkit_lig
         thermodynamic_state=state,
         geometry=geometry
     )
-    assert pytest.approx(correction.to(unit.kilocalorie_per_mole).m) == -6.051980241975009
+    assert pytest.approx(correction.to(unit.kilocalorie_per_mole).m) == -7.424692312779209

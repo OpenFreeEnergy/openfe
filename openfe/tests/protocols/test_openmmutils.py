@@ -32,7 +32,7 @@ from openmm import unit as ommunit
 from openmmtools import multistate
 from pymbar.utils import ParameterError
 
-from ..conftest import HAS_INTERNET
+from openfe.tests.conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
@@ -934,13 +934,13 @@ class TestOFFPartialCharge:
 POOCH_CACHE = pooch.os_cache('openfe')
 RFE_OUTPUT = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.6084/m9.figshare.24101655",
+    base_url="doi:10.5281/zenodo.15375081",
     registry={
-        "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
-        "db.json": "b671f9eb4daf9853f3e1645f9fd7c18150fd2a9bf17c18f23c5cf0c9fd5ca5b3",
-        "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
-        "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
-        "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
+        "checkpoint.nc": "md5:3cfd70a4cbe463403d6ec7cca84fc31a",
+        "db.json": "md5:33c8c1a0b629a52dcc291beff59fabc6",
+        "hybrid_system.pdb": "md5:44a1e78294360037acf419b95be18fb3",
+        "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
+        "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
     },
     retry_if_failed=3,
 )

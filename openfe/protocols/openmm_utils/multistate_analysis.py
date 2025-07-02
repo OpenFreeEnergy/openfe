@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from openmmtools import multistate
-from openff.units import unit, ensure_quantity
+from openff.units import unit, Quantity
+from openff.units.openmm import from_openmm
 from pymbar import MBAR
 from pymbar.utils import ParameterError
 from openfe.analysis import plotting
@@ -66,14 +67,14 @@ class MultistateEquilFEAnalysis:
     sampling_method : str
       The sampling method. Expected values are `repex`, `sams`,
       and `independent`.
-    result_units : unit.Quantity
+    result_units : openff.units.Quantity
       Units to report results in.
     forward_reverse_samples : int
       The number of samples to use in the forward and reverse analysis
       of the free energies. Default 10.
     """
     def __init__(self, reporter: multistate.MultiStateReporter,
-                 sampling_method: str, result_units: unit.Quantity,
+                 sampling_method: str, result_units: Quantity,
                  forward_reverse_samples: int = 10):
         self.analyzer = multistate.MultiStateSamplerAnalyzer(reporter)
         self.units = result_units
@@ -192,8 +193,8 @@ class MultistateEquilFEAnalysis:
         u_ln: npt.NDArray,
         N_l: npt.NDArray,
         bootstraps: int = 1000,
-        return_units: unit.Quantity = unit.kilocalorie_per_mole,
-    ) -> tuple[unit.Quantity, unit.Quantity]:
+        return_units: Quantity = unit.kilocalorie_per_mole,
+    ) -> tuple[Quantity, Quantity]:
         """
         Helper method to create an MBAR object and extract free energies
         between end states.
@@ -211,14 +212,14 @@ class MultistateEquilFEAnalysis:
         bootstraps : int
           How many bootstrap samples will be computed. If 0, no bootstraps
           will be computed and analytical errors will be returned.
-        return_units : unit.Quantity
+        return_units : openff.units.Quantity
           The return units the results will be provided in.
 
         Returns
         -------
-        DG : unit.Quantity
+        DG : openff.units.Quantity
           The free energy difference between the end states.
-        dDG : unit.Quantity
+        dDG : openff.units.Quantity
           The MBAR bootstrap (1000 iterations) error estimate for the free energy difference.
 
         TODO
@@ -251,19 +252,19 @@ class MultistateEquilFEAnalysis:
         DG = DF_ij[0, -1] * analyzer.kT
         dDG = dDF_ij[0, -1] * analyzer.kT
 
-        return (ensure_quantity(DG, 'openff').to(return_units),
-                ensure_quantity(dDG, 'openff').to(return_units))
+        return (from_openmm(DG).to(return_units),
+                from_openmm(dDG).to(return_units))
 
-    def get_equil_free_energy(self) -> tuple[unit.Quantity, unit.Quantity]:
+    def get_equil_free_energy(self) -> tuple[Quantity, Quantity]:
         """
         Extract unbiased and uncorrelated estimates of the free energy
         and the associated error from a MultiStateSamplerAnalyzer object.
 
         Returns
         -------
-        DG : unit.Quantity
+        DG : openff.units.Quantity
           The free energy difference between the end states.
-        dDG : unit.Quantity
+        dDG : openff.units.Quantity
           The MBAR error for the free energy difference estimate.
         """
         u_ln_decorr = self.analyzer._unbiased_decorrelated_u_ln
@@ -281,7 +282,7 @@ class MultistateEquilFEAnalysis:
 
     def get_forward_and_reverse_analysis(
         self, num_samples: int = 10
-    ) -> Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]:
+    ) -> Optional[dict[str, Union[npt.NDArray, Quantity]]]:
         """
         Calculate free energies with a progressively larger
         fraction of the decorrelated timeseries data in both
@@ -294,7 +295,7 @@ class MultistateEquilFEAnalysis:
 
         Returns
         -------
-        forward_reverse : Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]
+        forward_reverse : Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]
           If this analysis fails, returns None; otherwise returns a dictionary
           containing;
             * ``fractions``: fractions of sample used to calculate free energies
@@ -363,10 +364,10 @@ class MultistateEquilFEAnalysis:
 
         forward_reverse = {
             'fractions': np.array(fractions),
-            'forward_DGs': unit.Quantity.from_list(forward_DGs),
-            'forward_dDGs': unit.Quantity.from_list(forward_dDGs),
-            'reverse_DGs': unit.Quantity.from_list(reverse_DGs),
-            'reverse_dDGs': unit.Quantity.from_list(reverse_dDGs)
+            'forward_DGs': Quantity.from_list(forward_DGs),  # type: ignore
+            'forward_dDGs': Quantity.from_list(forward_dDGs),  # type: ignore
+            'reverse_DGs': Quantity.from_list(reverse_DGs),  # type: ignore
+            'reverse_dDGs': Quantity.from_list(reverse_dDGs)  # type: ignore
         }
         return forward_reverse
 

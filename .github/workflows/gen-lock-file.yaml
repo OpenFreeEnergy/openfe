@@ -1,0 +1,100 @@
+name: Create OpenFE Conda-Lock File
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  create-conda-lock-file-and-test-linux:
+    runs-on: ubuntu-latest
+    
+    steps:  
+    - name: Install conda-lock with Micromamba
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: conda-lock
+        create-args: >-
+          conda-lock
+
+    # This saves me some time since we only need the latest tag
+    - name: Get latest tag
+      id: latest-version
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
+      run: |
+        LATEST_TAG=$(curl -s -H "Authorization: token $GH_TOKEN" \
+          https://api.github.com/repos/$REPO/tags \
+          | jq -r '.[0].name')
+        VERSION=${LATEST_TAG:1}
+        echo $VERSION
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Print Latest Version
+      run: echo ${{ steps.latest-version.outputs.VERSION }}
+    
+    - name: Create environment file to lock
+      run: |
+        cat > environment-to-lock.yaml << 'EOF'
+        name: openfe_env
+        channels:
+          - conda-forge
+        platforms:
+          - linux-64
+          - osx-arm64
+        dependencies:
+          - openfe==${{ steps.latest-version.outputs.VERSION }}
+          - python=3.10
+        EOF
+
+    - name: Generate lock files
+      run: | 
+        conda lock --with-cuda 11.8 -f environment-to-lock.yaml --lockfile openfe-conda-lock.yml 
+        cp openfe-conda-lock.yml openfe-${{ steps.latest-version.outputs.VERSION }}-conda-lock.yml
+
+    - name: Test lock file (linux)
+      run: |
+        conda-lock install -p /home/runner/micromamba/envs/lf-test openfe-conda-lock.yml
+        micromamba activate /home/runner/micromamba/envs/lf-test
+        openfe test
+
+    - name: Upload file as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: conda-lock-files
+        path: "*conda-lock.yml"
+
+  test-osx-lock-file:
+    needs: create-conda-lock-file-and-test-linux
+    runs-on: macos-latest
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: conda-lock-files
+
+    - name: Install conda-lock with Micromamba
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: conda-lock
+        create-args: >-
+          conda-lock
+
+    - name: Test lock file (osx)
+      run: |
+        conda-lock install -p /Users/runner/micromamba/envs/lf-test openfe-conda-lock.yml
+        micromamba activate /Users/runner/micromamba/envs/lf-test
+        openfe test
+
+    - name: Upload lock files to release
+      uses: svenstaro/upload-release-action@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: "*conda-lock.yml"
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true

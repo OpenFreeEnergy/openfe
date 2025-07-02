@@ -24,7 +24,7 @@ RBFE_TUTORIAL = URLFetcher(
         (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_ligands.sdf"),
         (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "tyk2_protein.pdb"),
         (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "cli_tutorial.md"),
-        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "python_tutorial.ipynb"),
+        (_EXAMPLE_NB_BASE + "rbfe_tutorial/", "rbfe_python_tutorial.ipynb"),
     ],
     short_name="rbfe-tutorial",
     short_help="CLI and Python tutorial on relative binding free energies",

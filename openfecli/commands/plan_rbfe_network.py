@@ -149,7 +149,7 @@ def plan_rbfe_network(
         overwrite_charges: bool
 ):
     """
-    Plan a relative binding free energy network, saved as JSON files for
+    Plan a relative binding free energy network, saved as JSON files for use by
     the quickrun command.
 
     This tool is an easy way to set up a RBFE calculation campaign.
@@ -167,8 +167,8 @@ def plan_rbfe_network(
 
     By default, this tool makes the following choices:
 
-    * Atom mappings performed by LOMAP, with settings max3d=1.0 and
-      element_change=False
+    * Atom mappings performed by LOMAP, with settings max3d=1.0, threed=True, shift=False and
+      element_change=True
     * Minimal spanning network as the network planner, with LOMAP default
       score as the weight function
     * Water as solvent, with NaCl counter ions at 0.15 M concentration.

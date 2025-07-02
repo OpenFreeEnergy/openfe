@@ -28,72 +28,60 @@ Acknowledgements
 """
 from __future__ import annotations
 
-import pathlib
+import itertools
 import logging
+import pathlib
+import uuid
 import warnings
 from collections import defaultdict
+from typing import Any, Iterable, Optional, Union
+
 import gufe
-from gufe.components import Component
-import itertools
+import MDAnalysis as mda
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit
-from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
-from openmmtools import multistate
-from openmmtools.states import ThermodynamicState, GlobalParameterState
-from openmm.app import Topology as omm_topology
-from openmm import unit as omm_unit
-from openmm import System
-from rdkit import Chem
-from typing import (
-    Optional,
-    Union,
-    Any,
-    Iterable,
-)
-import uuid
-import MDAnalysis as mda
-
 from gufe import (
-    settings,
     ChemicalSystem,
-    SmallMoleculeComponent,
     ProteinComponent,
+    SmallMoleculeComponent,
     SolventComponent,
+    settings,
 )
+from gufe.components import Component
+from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteBindingSettings,
-    OpenMMSolvationSettings,
     AlchemicalSettings,
-    LambdaSettings,
-    MDSimulationSettings,
-    MDOutputSettings,
-    MultiStateSimulationSettings,
-    OpenMMEngineSettings,
-    IntegratorSettings,
-    MultiStateOutputSettings,
-    OpenFFPartialChargeSettings,
-    SettingsBaseModel,
+    BoreschRestraintSettings,
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
-    BoreschRestraintSettings,
+    IntegratorSettings,
+    LambdaSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
+    MultiStateOutputSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    SettingsBaseModel,
 )
-from openfe.protocols.openmm_utils import (
-    system_validation,
-    settings_validation,
-)
+from openfe.protocols.openmm_utils import settings_validation, system_validation
 from openfe.protocols.restraint_utils import geometry
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
-from openfe.protocols.restraint_utils.openmm.omm_restraints import (
-    BoreschRestraint,
-)
-from openfe.protocols.restraint_utils.geometry.boresch import (
-    BoreschRestraintGeometry,
-)
-from .base import BaseAbsoluteUnit
+from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 from openfe.utils import log_system_probe
-from openfe.due import due, Doi
+from openff.units import Quantity, unit
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmm import System
+from openmm import unit as omm_unit
+from openmm.app import Topology as omm_topology
+from openmmtools import multistate
+from openmmtools.states import GlobalParameterState, ThermodynamicState
+from rdkit import Chem
 
+from .base import BaseAbsoluteUnit
 
 due.cite(
     Doi("10.5281/zenodo.596504"),
@@ -136,13 +124,13 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
     def get_individual_estimates(
         self,
-    ) -> dict[str, list[tuple[unit.Quantity, unit.Quantity]]]:
+    ) -> dict[str, list[tuple[Quantity, Quantity]]]:
         """
         Get the individual estimate of the free energies.
 
         Returns
         -------
-        dGs : dict[str, list[tuple[unit.Quantity, unit.Quantity]]]
+        dGs : dict[str, list[tuple[openff.units.Quantity, openff.units.Quantity]]]
           A dictionary, keyed `solvent`, `complex`, and 'standard_state'
           representing each portion of the thermodynamic cycle,
           with lists of tuples containing the individual free energy
@@ -180,12 +168,12 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             "standard_state": correction_dGs,
         }
 
-    def get_estimate(self):
+    def get_estimate(self) -> Quantity:
         """Get the binding free energy estimate for this calculation.
 
         Returns
         -------
-        dG : unit.Quantity
+        dG : openff.units.Quantity
           The binding free energy. This is a Quantity defined with units.
         """
 
@@ -205,12 +193,12 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
         return -(complex_dG + standard_state_dG) + solv_dG
 
-    def get_uncertainty(self):
+    def get_uncertainty(self) -> Quantity:
         """Get the binding free energy error for this calculation.
 
         Returns
         -------
-        err : unit.Quantity
+        err : openff.units.Quantity
           The standard deviation between estimates of the binding free
           energy. This is a Quantity defined with units.
         """
@@ -234,13 +222,13 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
     def get_forward_and_reverse_energy_analysis(
         self,
-    ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]:
+    ) -> dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]]:
         """
         Get the reverse and forward analysis of the free energies.
 
         Returns
         -------
-        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]]
+        forward_reverse : dict[str, list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]]
             A dictionary, keyed `solvent` and `complex` for each leg of the
             thermodynamic cycle which each contain a list of dictionaries
             containing the forward and reverse analysis of each repeat
@@ -249,9 +237,9 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             The forward and reverse analysis dictionaries contain:
               - `fractions`: npt.NDArray
                   The fractions of data used for the estimates
-              - `forward_DGs`, `reverse_DGs`: unit.Quantity
+              - `forward_DGs`, `reverse_DGs`: openff.units.Quantity
                   The forward and reverse estimates for each fraction of data
-              - `forward_dDGs`, `reverse_dDGs`: unit.Quantity
+              - `forward_dDGs`, `reverse_dDGs`: openff.units.Quantity
                   The forward and reverse estimate uncertainty for each
                   fraction of data.
 
@@ -268,7 +256,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         """
 
         forward_reverse: dict[
-            str, list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+            str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]
         ] = {}
 
         for key in ["solvent", "complex"]:
@@ -466,7 +454,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         """
         geometries = [
             pus[0].outputs["restraint_geometry"]
-            for pus in self.data['complex'].values()
+            for pus in self.data["complex"].values()
         ]
 
         return geometries
@@ -1112,7 +1100,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         guest_rdmol: Chem.Mol,
         guest_atom_ids: list[int],
         host_atom_ids: list[int],
-        temperature: unit.Quantity,
+        temperature: Quantity,
         settings: BoreschRestraintSettings,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
@@ -1129,7 +1117,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
           A list of atom indices defining the guest molecule in the universe.
         host_atom_ids : list[int]
           A list of atom indices defining the host molecules in the universe.
-        temperature : unit.Quantity
+        temperature : openff.units.Quantity
           The temperature of the simulation where the restraint will be added.
         settings : BoreschRestraintSettings
           Settings on how the Boresch-like restraint should be defined.
@@ -1171,7 +1159,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
         GlobalParameterState,
-        unit.Quantity,
+        Quantity,
         System,
         geometry.HostGuestRestraintGeometry,
     ]:
@@ -1207,7 +1195,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         restraint_parameter_state : RestraintParameterState
           A RestraintParameterState object that defines the control
           parameter for the restraint.
-        correction : unit.Quantity
+        correction : openff.units.Quantity
           The standard state correction for the restraint.
         system : openmm.System
           A copy of the System with the restraint added.
@@ -1344,7 +1332,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         alchem_comps = self._inputs["alchemical_components"]
 
         solv_comp, prot_comp, small_mols = system_validation.get_components(stateA)
-        off_comps = {m: m.to_openff() for m in alchem_comps['stateA']}
+        off_comps = {m: m.to_openff() for m in alchem_comps["stateA"]}
 
         # We don't need to check that solv_comp is not None, otherwise
         # an error will have been raised when calling `validate_solvent`

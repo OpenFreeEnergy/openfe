@@ -10,7 +10,7 @@ TODO
 from typing import Optional
 import warnings
 
-from openff.units import unit
+from openff.units import unit, Quantity
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
@@ -36,9 +36,9 @@ def find_host_atom_candidates(
     l1_idx: int,
     host_selection: str,
     dssp_filter: bool = False,
-    rmsf_cutoff: unit.Quantity = 0.1 * unit.nanometer,
-    min_distance: unit.Quantity = 1 * unit.nanometer,
-    max_distance: unit.Quantity = 3 * unit.nanometer,
+    rmsf_cutoff: Quantity = 0.1 * unit.nanometer,
+    min_distance: Quantity = 1 * unit.nanometer,
+    max_distance: Quantity = 3 * unit.nanometer,
 ) -> npt.NDArray:
     """
     Get a list of suitable host atoms.
@@ -55,11 +55,11 @@ def find_host_atom_candidates(
       An MDAnalysis selection string to filter the host by.
     dssp_filter : bool
       Whether or not to apply a DSSP filter on the host selection.
-    rmsf_cutoff : uni.Quantity
+    rmsf_cutoff : openff.units.Quantity
       The maximum RMSF value allowwed for any candidate host atom.
-    min_distance : unit.Quantity
+    min_distance : openff.units.Quantity
       The minimum search distance around l1 for suitable candidate atoms.
-    max_distance : unit.Quantity
+    max_distance : openff.units.Quantity
       The maximum search distance around l1 for suitable candidate atoms.
 
     Return
@@ -108,7 +108,7 @@ def find_host_atom_candidates(
 
     # 1. Get the RMSF & filter to create a new AtomGroup
     rmsf = get_local_rmsf(selected_host_ag)
-    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]
+    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]  # type: ignore[operator]
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
@@ -146,20 +146,20 @@ class EvaluateHostAtoms1(AnalysisBase):
       The reference preceding three atoms.
     host_atom_pool : MDAnalysis.AtomGroup
       The pool of atoms to pick an atom from.
-    minimum_distance : unit.Quantity
+    minimum_distance : openff.units.Quantity
       The minimum distance from the bound reference atom.
-    angle_force_constant : unit.Quantity
+    angle_force_constant : openff.units.Quantity
       The force constant for the angle.
     temperature : unit.Quantity
       The system temperature in Kelvin
     """
     def __init__(
         self,
-        reference,
-        host_atom_pool,
-        minimum_distance,
-        angle_force_constant,
-        temperature,
+        reference : mda.AtomGroup,
+        host_atom_pool : mda.AtomGroup,
+        minimum_distance : Quantity,
+        angle_force_constant : Quantity,
+        temperature : Quantity,
         **kwargs,
     ):
         super().__init__(reference.universe.trajectory, **kwargs)
@@ -367,9 +367,9 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
 def find_host_anchor(
     guest_atoms: mda.AtomGroup,
     host_atom_pool: mda.AtomGroup,
-    minimum_distance: unit.Quantity,
-    angle_force_constant: unit.Quantity,
-    temperature: unit.Quantity
+    minimum_distance: Quantity,
+    angle_force_constant: Quantity,
+    temperature: Quantity
 ) -> Optional[list[int]]:
     """
     Find suitable atoms for the H0-H1-H2 portion of the restraint.
@@ -380,11 +380,11 @@ def find_host_anchor(
       The guest anchor atoms for G0-G1-G2
     host_atom_pool : mda.AtomGroup
       The host atoms to search from.
-    minimum_distance : unit.Quantity
+    minimum_distance : openff.units.Quantity
       The minimum distance to pick host atoms from each other.
-    angle_force_constant : unit.Quantity
+    angle_force_constant : openff.units.Quantity
       The force constant for the G1-G0-H0 and G0-H0-H1 angles.
-    temperature : unit.Quantity
+    temperature : openff.units.Quantity
       The target system temperature.
 
     Returns
@@ -396,7 +396,7 @@ def find_host_anchor(
     h0_eval = EvaluateHostAtoms1(
         guest_atoms,
         host_atom_pool,
-        minimum_distance,
+        minimum_distance,  # TODO: double check this actually makes sense
         angle_force_constant,
         temperature,
     )

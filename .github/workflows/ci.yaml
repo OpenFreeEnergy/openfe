@@ -30,33 +30,23 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} oechem: ${{ matrix.openeye }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        pydantic-version: [">1"]
+        os: ["ubuntu-latest", "macos-latest"]
         python-version:
           - "3.10"
           - "3.11"
           - "3.12"
         openeye: ["no"]
         include:
-          - os: "macos-latest"
-            python-version: "3.12"
-            pydantic-version: ">1"
           - os: "ubuntu-latest"
             python-version: "3.11"
-            pydantic-version: "<2"
-          - os: "ubuntu-latest"
-            python-version: "3.11"
-            pydantic-version: ">1"
             openeye: "yes"
           - os: "macos-latest"
             python-version: "3.12"
-            pydantic-version: ">1"
-            omff-version: ">0.13"
-            openeye: ["no"]
+            openeye: "yes"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -71,7 +61,7 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: '1.5.6-0'
           micromamba-binary-path: ~/.local/bin/micromamba

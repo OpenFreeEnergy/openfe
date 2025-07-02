@@ -66,7 +66,7 @@ intersphinx_mapping = {
     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
     "openff.units": ("https://docs.openforcefield.org/projects/units/en/stable", None),
-    "gufe": ("https://gufe.readthedocs.io/en/latest/", None),
+    "gufe": ("https://gufe.openfree.energy/en/latest/", None),
 }
 
 autoclass_content = "both"
@@ -102,8 +102,10 @@ exclude_patterns = [
 ]
 
 autodoc_mock_imports = [
+    "MDAnalysis",
     "matplotlib",
     "mdtraj",
+    "openfe_analysis",
     "openmmforcefields",
     "openmmtools",
     "pymbar",
@@ -175,6 +177,7 @@ try:
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+            branch='june-2025',
             to_path=example_notebooks_path,
         )
 except Exception as e:
