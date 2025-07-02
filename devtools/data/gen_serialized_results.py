@@ -253,8 +253,8 @@ def generate_rfe_json(smcA, smcB):
 
 if __name__ == "__main__":
     molA = get_molecule(LIGA, "ligandA")
-    molB = get_molecule(LIGB, "ligandB")
-    generate_md_json(molA)
+    #molB = get_molecule(LIGB, "ligandB")
+    #generate_md_json(molA)
     generate_abfe_json()
-    generate_ahfe_json(molA)
-    generate_rfe_json(molA, molB)
+    #generate_ahfe_json(molA)
+    #generate_rfe_json(molA, molB)

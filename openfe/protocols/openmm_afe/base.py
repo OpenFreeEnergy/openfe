@@ -26,7 +26,7 @@ from gufe.components import Component
 import numpy as np
 import numpy.typing as npt
 import openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
@@ -590,10 +590,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel], 
     ) -> tuple[
-        GlobalParameterState,
-        unit.Quantity,
-        openmm.System,
-        geometry.BaseRestraintGeometry
+        Optional[GlobalParameterState],
+        Optional[Quantity],
+        Optional[openmm.System],
+        Optional[geometry.BaseRestraintGeometry],
     ]:
         """
         Placeholder method to add restraints if necessary
@@ -968,7 +968,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
         settings: dict[str, SettingsBaseModel],
-        standard_state_corr: Optional[unit.Quantity],
+        standard_state_corr: Optional[Quantity],
         dry: bool
     ):
         """
@@ -982,7 +982,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           The reporter associated with the sampler.
         settings : dict[str, SettingsBaseModel]
           The dictionary of settings for the protocol.
-        standard_state_corr : Optional[unit.Quantity]
+        standard_state_corr : Optional[openff.units.Quantity]
           The standard state correction, if available.
         dry : bool
           Whether or not to dry run the simulation

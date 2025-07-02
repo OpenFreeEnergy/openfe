@@ -82,6 +82,7 @@ class BaseABFESystemTests:
             if isinstance(u, AbsoluteBindingSolventUnit)
         ]
 
+
 class BaseBenzeneT4Tests(BaseABFESystemTests):
     @pytest.fixture(scope='class')
     def solvent(self):
@@ -119,9 +120,7 @@ class BaseBenzeneT4Tests(BaseABFESystemTests):
     def sampler(self, request):
         phase_unit = request.getfixturevalue(self.phase_unit_name)
         with tmpdir.as_cwd():
-            return phase_unit[0].run(
-                dry=True, verbose=True
-            )['debug']['sampler']
+            return phase_unit[0].run(dry=True, verbose=True)['debug']['sampler']
 
     def test_number_of_units(self, dag, complex_units, solvent_units):
         assert len(list(dag.protocol_units)) == 2
