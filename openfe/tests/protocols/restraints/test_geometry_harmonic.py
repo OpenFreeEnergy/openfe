@@ -1,13 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
+import MDAnalysis as mda
 import pytest
 from openfe.protocols.restraint_utils.geometry.harmonic import (
     DistanceRestraintGeometry,
     get_distance_restraint,
     get_molecule_centers_restraint,
 )
-import MDAnalysis as mda
 
 
 @pytest.fixture()
@@ -32,12 +32,14 @@ def test_get_distance_restraint_selection(eg5_protein_ligand_universe):
     """
     Check that you get a distance restraint using atom selections.
     """
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms(
+        "resname LIG and not name H*"
+    )
     water_atoms = eg5_protein_ligand_universe.select_atoms("resname HOH")
     restraint_geometry = get_distance_restraint(
         universe=eg5_protein_ligand_universe,
         host_selection="backbone and same resid as (around 4 resname LIG) and not resname HOH",
-        guest_selection="resname LIG and not name H*"
+        guest_selection="resname LIG and not name H*",
     )
 
     # make sure the guest atoms cover all heavy atoms in the ligand
@@ -51,14 +53,16 @@ def test_get_distance_restraint_atom_list(eg5_protein_ligand_universe):
     """
     Check that we can get a restraint using a set of host and guest atom lists
     """
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms(
+        "resname LIG and not name H*"
+    )
     host_atoms = [1, 2, 3]
     restraint_geometry = get_distance_restraint(
         universe=eg5_protein_ligand_universe,
         # take the first few protein atoms
         host_atoms=host_atoms,
         # take the first few ligand atoms
-        guest_atoms=[5496, 5497, 5498, 5500]
+        guest_atoms=[5496, 5497, 5498, 5500],
     )
     guest_atoms = [a.ix for a in expected_guest_atoms]
     assert all(i in guest_atoms for i in restraint_geometry.guest_atoms)
