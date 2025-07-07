@@ -7,7 +7,7 @@ import matplotlib.axes
 import matplotlib.backend_bases
 
 try:
-    from typing import TypeAlias  # type: ignore
+    from typing import TypeAlias
 except ImportError:
     from typing_extensions import TypeAlias
 

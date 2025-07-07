@@ -107,7 +107,7 @@ def find_host_atom_candidates(
 
     # 1. Get the RMSF & filter to create a new AtomGroup
     rmsf = get_local_rmsf(selected_host_ag)
-    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]  # type: ignore[operator]
+    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
