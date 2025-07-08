@@ -1,7 +1,4 @@
-from .base import (
-    BaseRestraintGeometry,
-    HostGuestRestraintGeometry,
-)
-from .harmonic import DistanceRestraintGeometry
-from .flatbottom import FlatBottomDistanceGeometry
+from .base import BaseRestraintGeometry, HostGuestRestraintGeometry
 from .boresch import BoreschRestraintGeometry
+from .flatbottom import FlatBottomDistanceGeometry
+from .harmonic import DistanceRestraintGeometry

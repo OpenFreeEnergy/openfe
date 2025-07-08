@@ -703,7 +703,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # Extract relevant settings
         protocol_settings: RelativeHybridTopologyProtocolSettings = self._inputs['protocol'].settings
         stateA = self._inputs['stateA']
-        stateB = self._inputs['stateB']  # TODO: open an issue about this not being used.
+        stateB = self._inputs['stateB']
         mapping = self._inputs['ligandmapping']
 
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = protocol_settings.forcefield_settings

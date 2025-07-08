@@ -9,18 +9,15 @@ TODO
 """
 from typing import Optional
 
+import MDAnalysis as mda
+from gufe.vendor.openff.models.types import FloatQuantity
+from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
+from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
+from openff.units import Quantity, unit
 from rdkit import Chem
 
-from openff.units import unit, Quantity
-from gufe.vendor.openff.models.types import FloatQuantity
-import MDAnalysis as mda
-from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
-
-from openfe.protocols.restraint_utils.geometry.base import (
-    HostGuestRestraintGeometry
-)
 from .guest import find_guest_atom_candidates
-from .host import find_host_atom_candidates, find_host_anchor
+from .host import find_host_anchor, find_host_atom_candidates
 
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
@@ -37,28 +34,29 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     Where HX represents the X index of ``host_atoms`` and GX
     the X index of ``guest_atoms``.
     """
-    r_aA0: FloatQuantity['nanometer']
+
+    r_aA0: FloatQuantity["nanometer"]
     """
     The equilibrium distance between H0 and G0.
     """
-    theta_A0: FloatQuantity['radians']
+    theta_A0: FloatQuantity["radians"]
     """
     The equilibrium angle value between H1, H0, and G0.
     """
-    theta_B0: FloatQuantity['radians']
+    theta_B0: FloatQuantity["radians"]
     """
     The equilibrium angle value between H0, G0, and G1.
     """
-    phi_A0: FloatQuantity['radians']
+    phi_A0: FloatQuantity["radians"]
     """
     The equilibrium dihedral value between H2, H1, H0, and G0.
     """
-    phi_B0: FloatQuantity['radians']
+    phi_B0: FloatQuantity["radians"]
 
     """
     The equilibrium dihedral value between H1, H0, G0, and G1.
     """
-    phi_C0: FloatQuantity['radians']
+    phi_C0: FloatQuantity["radians"]
 
     """
     The equilibrium dihedral value between H0, G0, G1, and G2.
@@ -66,7 +64,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
 
 
 def _get_restraint_distances(
-    atomgroup: mda.AtomGroup
+    atomgroup: mda.AtomGroup,
 ) -> tuple[Quantity, Quantity, Quantity, Quantity, Quantity, Quantity]:
     """
     Get the bond, angle, and dihedral distances for an input atomgroup
@@ -94,11 +92,14 @@ def _get_restraint_distances(
     dihed3 : openff.units.Quantity
       The H0-G0-G1-G2 dihedral value.
     """
-    bond = calc_bonds(
-        atomgroup.atoms[0].position,
-        atomgroup.atoms[3].position,
-        box=atomgroup.dimensions
-    ) * unit.angstroms
+    bond = (
+        calc_bonds(
+            atomgroup.atoms[0].position,
+            atomgroup.atoms[3].position,
+            box=atomgroup.dimensions,
+        )
+        * unit.angstroms
+    )
 
     angles = []
     for idx_set in [[1, 0, 3], [0, 3, 4]]:
@@ -199,20 +200,14 @@ def find_boresch_restraint(
         # In this case assume the picked atoms were intentional /
         # representative of the input and go with it
         guest_ag = universe.atoms[guest_idxs]
-        guest_atoms = [
-            at.ix for at in guest_ag.atoms[guest_restraint_atoms_idxs]
-        ]
+        guest_atoms = [at.ix for at in guest_ag.atoms[guest_restraint_atoms_idxs]]
         host_ag = universe.atoms[host_idxs]
-        host_atoms = [
-            at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]
-        ]
+        host_atoms = [at.ix for at in host_ag.atoms[host_restraint_atoms_idxs]]
 
         # Set the equilibrium values as those of the final frame
         universe.trajectory[-1]
         atomgroup = universe.atoms[host_atoms + guest_atoms]
-        bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
-            atomgroup
-        )
+        bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(atomgroup)
 
         # TODO: add checks to warn if this is a badly picked
         # set of atoms.
@@ -224,7 +219,7 @@ def find_boresch_restraint(
             theta_B0=ang2,
             phi_A0=dih1,
             phi_B0=dih2,
-            phi_C0=dih3
+            phi_C0=dih3,
         )
 
     if (guest_restraint_atoms_idxs is not None) ^ (host_restraint_atoms_idxs is not None):  # fmt: skip
@@ -282,9 +277,7 @@ def find_boresch_restraint(
     # Set the equilibrium values as those of the final frame
     universe.trajectory[-1]
     atomgroup = universe.atoms[list(host_anchor) + list(guest_anchor)]
-    bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(
-        atomgroup
-    )
+    bond, ang1, ang2, dih1, dih2, dih3 = _get_restraint_distances(atomgroup)
 
     return BoreschRestraintGeometry(
         host_atoms=list(host_anchor),
@@ -294,5 +287,5 @@ def find_boresch_restraint(
         theta_B0=ang2,
         phi_A0=dih1,
         phi_B0=dih2,
-        phi_C0=dih3
+        phi_C0=dih3,
     )
