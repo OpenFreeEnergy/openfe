@@ -10,7 +10,7 @@ dependencies:
   - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
-  - numpy<2.0.0
+  - numpy
   - openfe-analysis>=0.3.1
   - openff-interchange-base
   - openff-nagl-base >=0.3.3
