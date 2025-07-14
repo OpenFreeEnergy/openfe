@@ -88,7 +88,7 @@ def get_system_generator(
     }[forcefield_settings.nonbonded_method.lower()]
 
     nonbonded_cutoff = to_openmm(
-        forcefield_settings.nonbonded_cutoff,  # type: ignore
+        forcefield_settings.nonbonded_cutoff,
     )
 
     # create the periodic_kwarg entry

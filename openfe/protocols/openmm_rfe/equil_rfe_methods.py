@@ -531,7 +531,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             stateA, stateB
         )
         _validate_alchemical_components(alchem_comps, mapping)
-        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping  # type: ignore
+        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping
 
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
@@ -553,7 +553,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         units = [RelativeHybridTopologyProtocolUnit(
             protocol=self,
             stateA=stateA, stateB=stateB,
-            ligandmapping=ligandmapping,  # type: ignore
+            ligandmapping=ligandmapping,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -1070,7 +1070,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(
-                    int(equil_steps / steps_per_iteration)  # type: ignore
+                    int(equil_steps / steps_per_iteration)
                 )
 
                 # production
@@ -1078,7 +1078,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running production phase")
 
                 sampler.extend(
-                    int(prod_steps / steps_per_iteration)  # type: ignore
+                    int(prod_steps / steps_per_iteration)
                 )
 
                 self.logger.info("Production phase complete")
