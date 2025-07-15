@@ -27,7 +27,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenFFPartialChargeSettings,
 )
 
-from pydantic.v1 import validator
+from pydantic import validator
 
 
 class LambdaSettings(SettingsBaseModel):
