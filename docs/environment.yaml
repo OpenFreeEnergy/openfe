@@ -1,9 +1,8 @@
 name: openfe-docs
 channels:
-- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
-- https://conda.anaconda.org/conda-forge
+- conda-forge
 dependencies:
-- autodoc-pydantic <2.0
+- autodoc-pydantic
 - gitpython
 - kartograf >=1.0.0
 - konnektor >=0.2.0
