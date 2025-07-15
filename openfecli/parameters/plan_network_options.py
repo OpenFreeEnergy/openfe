@@ -5,11 +5,7 @@
 """
 import click
 from collections import namedtuple
-try:
-    # todo; once we're fully v2, we can use ConfigDict not nested class
-    from pydantic.v1 import BaseModel  # , ConfigDict
-except ImportError:
-    from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from plugcli.params import Option
 from typing import Any, Optional
 import yaml
@@ -29,38 +25,34 @@ PlanNetworkOptions = namedtuple(
 
 
 class MapperSelection(BaseModel):
-    # model_config = ConfigDict(extra='allow', str_to_lower=True)
-    class Config:
-        extra = 'allow'
-        anystr_lower = True
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: Optional[str] = None
     settings: dict[str, Any] = {}
 
 
 class NetworkSelection(BaseModel):
-    # model_config = ConfigDict(extra='allow', str_to_lower=True)
-    class Config:
-        extra = 'allow'
-        anystr_lower = True
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: Optional[str] = None
     settings: dict[str, Any] = {}
 
 
 class PartialChargeSelection(BaseModel):
-    class Config:
-        extra = 'allow'
-        anystr_lower = True
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
+
+    # class Config:
+    #     extra = 'allow'
+    #     anystr_lower = True
 
     method: Optional[str] = 'am1bcc'
     settings: dict[str, Any] = {}
 
 
 class CliYaml(BaseModel):
-    # model_config = ConfigDict(extra='allow')
-    class Config:
-        extra = 'allow'
+    model_config = ConfigDict(extra='allow')
+    # class Config:
+    #     extra = 'allow'
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
