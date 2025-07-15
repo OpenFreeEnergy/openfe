@@ -1,4 +1,1 @@
-from .geometry import (
-    BoreschRestraintGeometry,
-    find_boresch_restraint,
-)
+from .geometry import BoreschRestraintGeometry, find_boresch_restraint

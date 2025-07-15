@@ -1,12 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import MDAnalysis as mda
 import numpy as np
 import pytest
-
 from openfe.protocols.restraint_utils.geometry.boresch.guest import (
     _bonded_angles_from_pool,
-    _sort_by_distance_from_atom,
     _get_guest_atom_pool,
+    _sort_by_distance_from_atom,
     find_guest_atom_candidates,
 )
 from openfe.protocols.restraint_utils.geometry.utils import (
@@ -14,12 +14,19 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     get_heavy_atom_idxs,
 )
 from openff.units import unit
-import MDAnalysis as mda
 
-@pytest.mark.parametrize("aromatic, expected", [
-    pytest.param(True, [(17, 15, 13), (17, 31, 33)], id="Aromatic"),
-    pytest.param(False, [(17, 15, 13), (17, 18, 19), (17, 18, 23), (17, 18, 27), (17, 31, 33)], id="Mixture")
-])
+
+@pytest.mark.parametrize(
+    "aromatic, expected",
+    [
+        pytest.param(True, [(17, 15, 13), (17, 31, 33)], id="Aromatic"),
+        pytest.param(
+            False,
+            [(17, 15, 13), (17, 18, 19), (17, 18, 23), (17, 18, 27), (17, 31, 33)],
+            id="Mixture",
+        ),
+    ],
+)
 def test_get_bond_angle_aromatic(eg5_ligands, aromatic, expected):
     """
     Make sure non-aromatic atoms are correctly filtered when requested
@@ -29,7 +36,7 @@ def test_get_bond_angle_aromatic(eg5_ligands, aromatic, expected):
         rdmol=rd_mol,
         atom_idx=17,
         atom_pool=[a.GetIdx() for a in rd_mol.GetAtoms() if a.GetAtomicNum() > 1],
-        aromatic_only=aromatic
+        aromatic_only=aromatic,
     )
     assert angles == expected
 
@@ -38,9 +45,7 @@ def test_sort_by_distance(eg5_ligands):
 
     rd_mol = eg5_ligands[0].to_rdkit()
     sorted_atoms = _sort_by_distance_from_atom(
-        rdmol=rd_mol,
-        target_idx=33,
-        atom_idxs=[1, 12, 18]
+        rdmol=rd_mol, target_idx=33, atom_idxs=[1, 12, 18]
     )
     assert sorted_atoms == [12, 18, 1]
 
@@ -50,9 +55,7 @@ def test_get_guest_atom_pool(eg5_ligands):
     rd_mol = eg5_ligands[0].to_rdkit()
     rmsf = np.zeros(rd_mol.GetNumAtoms()) * unit.nanometer
     pool_atoms, rings = _get_guest_atom_pool(
-        rdmol=rd_mol,
-        rmsf=rmsf,
-        rmsf_cutoff=0.1 * unit.nanometer
+        rdmol=rd_mol, rmsf=rmsf, rmsf_cutoff=0.1 * unit.nanometer
     )
     # make sure only rings were found
     assert rings
@@ -74,9 +77,7 @@ def test_get_guest_atom_pool_all_heavy(eg5_ligands):
         rmsf[i] = 1 * unit.nanometer
 
     pool_atoms, rings = _get_guest_atom_pool(
-        rdmol=rd_mol,
-        rmsf=rmsf,
-        rmsf_cutoff=0.1 * unit.nanometer
+        rdmol=rd_mol, rmsf=rmsf, rmsf_cutoff=0.1 * unit.nanometer
     )
     # make sure no rings were found
     assert not rings
@@ -89,9 +90,7 @@ def test_get_guest_atom_pool_no_atoms(eg5_ligands):
     rd_mol = eg5_ligands[0].to_rdkit()
     rmsf = np.ones(rd_mol.GetNumAtoms()) * unit.nanometer
     pool_atoms, rings = _get_guest_atom_pool(
-        rdmol=rd_mol,
-        rmsf=rmsf,
-        rmsf_cutoff=0.1 * unit.nanometer
+        rdmol=rd_mol, rmsf=rmsf, rmsf_cutoff=0.1 * unit.nanometer
     )
     # make sure no rings were found
     assert not rings
@@ -112,7 +111,9 @@ def test_find_guest_atoms_normal(eg5_ligands):
 
 
 def test_find_guest_atoms_no_atom_pool():
-    with pytest.raises(ValueError, match="No suitable ligand atoms were found for the restraint"):
+    with pytest.raises(
+        ValueError, match="No suitable ligand atoms were found for the restraint"
+    ):
         lig = mda.Universe.from_smiles("CC")
 
         _ = find_guest_atom_candidates(

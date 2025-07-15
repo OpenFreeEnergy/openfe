@@ -8,6 +8,7 @@ TODO
 * Add relevant duecredit entries.
 """
 import numpy as np
+
 import openmm
 
 
@@ -71,7 +72,8 @@ def get_periodic_boresch_energy_function(
 
 
 def get_custom_compound_bond_force(
-    energy_function: str, n_particles: int = 6,
+    energy_function: str,
+    n_particles: int = 6,
 ):
     """
     Return an OpenMM CustomCompoundForce

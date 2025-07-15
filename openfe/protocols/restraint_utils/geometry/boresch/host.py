@@ -7,27 +7,26 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Optional
 import warnings
+from typing import Optional
 
-from openff.units import unit, Quantity
 import MDAnalysis as mda
-from MDAnalysis.analysis.base import AnalysisBase
-from MDAnalysis.lib.distances import calc_bonds, calc_angles, calc_dihedrals
 import numpy as np
 import numpy.typing as npt
-
+from MDAnalysis.analysis.base import AnalysisBase
+from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 from openfe.protocols.restraint_utils.geometry.utils import (
-    is_collinear,
+    CentroidDistanceSort,
+    FindHostAtoms,
+    check_angle_not_flat,
     check_angular_variance,
     check_dihedral_bounds,
-    check_angle_not_flat,
-    FindHostAtoms,
-    CentroidDistanceSort,
     get_local_rmsf,
-    stable_secondary_structure_selection,
+    is_collinear,
     protein_chain_selection,
+    stable_secondary_structure_selection,
 )
+from openff.units import Quantity, unit
 
 
 def find_host_atom_candidates(
@@ -108,7 +107,7 @@ def find_host_atom_candidates(
 
     # 1. Get the RMSF & filter to create a new AtomGroup
     rmsf = get_local_rmsf(selected_host_ag)
-    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]  # type: ignore[operator]
+    filtered_host_ag = selected_host_ag.atoms[rmsf < rmsf_cutoff]
 
     # 2. Search of atoms within the min/max cutoff
     atom_finder = FindHostAtoms(
@@ -119,10 +118,11 @@ def find_host_atom_candidates(
     )
     atom_finder.run()
 
-
     if not atom_finder.results.host_idxs.any():
-        errmsg = (f"No host atoms found within the search distance "
-                  f"{min_distance}-{max_distance} consider widening the search window.")
+        errmsg = (
+            f"No host atoms found within the search distance "
+            f"{min_distance}-{max_distance} consider widening the search window."
+        )
         raise ValueError(errmsg)
 
     # Now we sort them!
@@ -153,13 +153,14 @@ class EvaluateHostAtoms1(AnalysisBase):
     temperature : unit.Quantity
       The system temperature in Kelvin
     """
+
     def __init__(
         self,
-        reference : mda.AtomGroup,
-        host_atom_pool : mda.AtomGroup,
-        minimum_distance : Quantity,
-        angle_force_constant : Quantity,
-        temperature : Quantity,
+        reference: mda.AtomGroup,
+        host_atom_pool: mda.AtomGroup,
+        minimum_distance: Quantity,
+        angle_force_constant: Quantity,
+        temperature: Quantity,
         **kwargs,
     ):
         super().__init__(reference.universe.trajectory, **kwargs)
@@ -175,15 +176,9 @@ class EvaluateHostAtoms1(AnalysisBase):
         self.temperature = temperature
 
     def _prepare(self):
-        self.results.distances = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
-        self.results.angles = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
-        self.results.dihedrals = np.zeros(
-            (len(self.host_atom_pool), self.n_frames)
-        )
+        self.results.distances = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.angles = np.zeros((len(self.host_atom_pool), self.n_frames))
+        self.results.dihedrals = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.collinear = np.empty(
             (len(self.host_atom_pool), self.n_frames),
             dtype=bool,
@@ -228,15 +223,13 @@ class EvaluateHostAtoms1(AnalysisBase):
     def _conclude(self):
         for i, at in enumerate(self.host_atom_pool):
             # Check distances
-            distance_bounds = all(
-                self.results.distances[i] > self.minimum_distance
-            )
+            distance_bounds = all(self.results.distances[i] > self.minimum_distance)
             # Check angles
             angle_bounds = all(
                 check_angle_not_flat(
                     angle=angle * unit.radians,
                     force_constant=self.angle_force_constant,
-                    temperature=self.temperature
+                    temperature=self.temperature,
                 )
                 for angle in self.results.angles[i]
             )
@@ -289,6 +282,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
     temperature : unit.Quantity
       The system temperature in Kelvin
     """
+
     def _prepare(self):
         self.results.distances1 = np.zeros((len(self.host_atom_pool), self.n_frames))
         self.results.distances2 = np.zeros((len(self.host_atom_pool), self.n_frames))
@@ -335,12 +329,8 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
 
     def _conclude(self):
         for i, at in enumerate(self.host_atom_pool):
-            distance1_bounds = all(
-                self.results.distances1[i] > self.minimum_distance
-            )
-            distance2_bounds = all(
-                self.results.distances2[i] > self.minimum_distance
-            )
+            distance1_bounds = all(self.results.distances1[i] > self.minimum_distance)
+            distance2_bounds = all(self.results.distances2[i] > self.minimum_distance)
             dihed_bounds = all(
                 check_dihedral_bounds(dihed * unit.radians)
                 for dihed in self.results.dihedrals[i]
@@ -369,7 +359,7 @@ def find_host_anchor(
     host_atom_pool: mda.AtomGroup,
     minimum_distance: Quantity,
     angle_force_constant: Quantity,
-    temperature: Quantity
+    temperature: Quantity,
 ) -> Optional[list[int]]:
     """
     Find suitable atoms for the H0-H1-H2 portion of the restraint.
@@ -442,7 +432,8 @@ def find_host_anchor(
 
                         # Now filter by validity as H2 atom
                         h2_dsum_avgs = [
-                            (idx, val) for idx, val in enumerate(dsum_avgs)
+                            (idx, val)
+                            for idx, val in enumerate(dsum_avgs)
                             if h2_eval.results.valid[idx]
                         ]
 

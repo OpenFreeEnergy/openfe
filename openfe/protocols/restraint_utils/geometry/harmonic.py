@@ -8,14 +8,12 @@ TODO
 * Add relevant duecredit entries.
 """
 from typing import Optional
+
 import MDAnalysis as mda
 from rdkit import Chem
 
 from .base import HostGuestRestraintGeometry
-from .utils import (
-    get_central_atom_idx,
-    _get_mda_selection,
-)
+from .utils import _get_mda_selection, get_central_atom_idx
 
 
 class DistanceRestraintGeometry(HostGuestRestraintGeometry):
@@ -64,9 +62,7 @@ def get_distance_restraint(
     host_ag = _get_mda_selection(universe, host_atoms, host_selection)
     host_atoms = [a.ix for a in host_ag]
 
-    return DistanceRestraintGeometry(
-        guest_atoms=guest_atoms, host_atoms=host_atoms
-    )
+    return DistanceRestraintGeometry(guest_atoms=guest_atoms, host_atoms=host_atoms)
 
 
 def get_molecule_centers_restraint(
@@ -101,6 +97,4 @@ def get_molecule_centers_restraint(
     centerA = molA_idxs[get_central_atom_idx(molA_rdmol)]
     centerB = molB_idxs[get_central_atom_idx(molB_rdmol)]
 
-    return DistanceRestraintGeometry(
-        guest_atoms=[centerA], host_atoms=[centerB]
-    )
+    return DistanceRestraintGeometry(guest_atoms=[centerA], host_atoms=[centerB])
