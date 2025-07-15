@@ -1454,7 +1454,7 @@ class TestConstraintRemoval:
 
 @pytest.fixture(scope='session')
 def tyk2_xml(tmp_path_factory):
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         fn1 = str(d / 'ligand_23.sdf')
         fn2 = str(d / 'ligand_55.sdf')
     lig23 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
@@ -1496,7 +1496,7 @@ def tyk2_xml(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def tyk2_reference_xml():
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         f = d / 'reference.xml'
         with open(f, 'r') as i:
             xmldata = i.read()

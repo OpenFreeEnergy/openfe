@@ -225,7 +225,7 @@ def serialization_template():
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.files('openfe.tests.data') as d:
+    with resources.as_file(resources.files('openfe.tests.data')) as d:
         fn = str(d / 'benzene_modifications.sdf')
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
@@ -244,19 +244,19 @@ def T4_protein_component():
 
 @pytest.fixture(scope='session')
 def eg5_protein_pdb():
-    with resources.files('openfe.tests.data.eg5') as d:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_protein.pdb')
 
 
 @pytest.fixture()
 def eg5_ligands_sdf():
-    with resources.files('openfe.tests.data.eg5') as d:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_ligands.sdf')
 
 
 @pytest.fixture()
 def eg5_cofactor_sdf():
-    with resources.files('openfe.tests.data.eg5') as d:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_cofactor.sdf')
 
 
@@ -278,13 +278,13 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 @pytest.fixture()
 def orion_network():
-    with resources.files('openfe.tests.data.external_formats') as d:
+    with resources.as_file(resources.files('openfe.tests.data.external_formats')) as d:
         yield str(d / 'somebenzenes_nes.dat')
 
 
 @pytest.fixture()
 def fepplus_network():
-    with resources.files('openfe.tests.data.external_formats') as d:
+    with resources.as_file(resources.files('openfe.tests.data.external_formats')) as d:
         yield str(d / 'somebenzenes_edges.edge')
 
 
