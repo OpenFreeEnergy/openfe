@@ -233,10 +233,10 @@ class TestFEAnalysis:
     # Note: class scope _will_ cause this to segfault - the reporter has to close
     @pytest.fixture(scope='function')
     def reporter(self):
-        with resources.files('openfe.tests.data.openmm_rfe') as d:
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             ncfile = str(d / 'vacuum_nocoord.nc')
 
-        with resources.files('openfe.tests.data.openmm_rfe') as d:
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             chkfile = str(d / 'vacuum_nocoord_checkpoint.nc')
 
         r = multistate.MultiStateReporter(
