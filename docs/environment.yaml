@@ -6,12 +6,12 @@ dependencies:
 - autodoc-pydantic <2.0
 - gitpython
 - kartograf >=1.0.0
+- konnektor >=0.2.0
 - libsass
 - lomap2 >=3.0.0
 - myst-parser
 - nbsphinx
 - nbsphinx-link
-- openff-models >=0.0.5
 - openff-toolkit >=0.13.0
 - openff-units
 - openmm

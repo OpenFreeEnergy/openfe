@@ -200,7 +200,7 @@ class TestRadialNetworkGenerator:
         ligands = [toluene] + others
 
         with pytest.raises(ValueError, match="index '2077' out of bounds, there are 8 ligands"):
-            openfe.setup.ligand_network_planning.generate_radial_network(
+            _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligands,
                 central_ligand=2077,
                 mappers=lomap_old_mapper,
@@ -214,7 +214,7 @@ class TestRadialNetworkGenerator:
         toluene, others = toluene_vs_others
         ligands = [toluene] + others
 
-        with pytest.warns(UserWarning, match="The central_ligand toluene was also found in the list of ligands"):
+        with pytest.warns(UserWarning, match="The central component 'toluene' is present in the list of components"):
             network = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=ligands,
                 central_ligand=toluene,
@@ -233,6 +233,7 @@ class TestRadialNetworkGenerator:
     def test_radial_network_with_scorer(self, toluene_vs_others, lomap_old_mapper, simple_scorer):
         """Test that the scorer chooses the mapper with the best score (in this case, the LOMAP mapper)."""
         toluene, others = toluene_vs_others
+
         mappers = [BadMapper(), lomap_old_mapper]
         scorer = simple_scorer
 
@@ -290,7 +291,8 @@ class TestRadialNetworkGenerator:
         # lomap cannot make a mapping to nimrod, and will return nothing for the (toluene, nimrod) pair
         nimrod = openfe.SmallMoleculeComponent(mol_from_smiles('N'), name='nimrod')
 
-        with pytest.raises(ValueError, match=r'No mapping found for SmallMoleculeComponent\(name=nimrod\)'):
+        err_str = r"No mapping found between the central ligand \('toluene'\) and the following node\(s\): \['nimrod'\]"
+        with pytest.raises(RuntimeError, match=err_str):
             _ = openfe.setup.ligand_network_planning.generate_radial_network(
                 ligands=others + [nimrod],
                 central_ligand=toluene,
@@ -334,12 +336,7 @@ def test_generate_maximal_network(
     ligands_in_network = {mol.name for mol in network.nodes}
     assert ligands_in_network == expected_names
 
-    if extra_mapper:
-        # two edges per pair of nodes, one for each mapper
-        edge_count = len(expected_names) * (len(expected_names) - 1)
-    else:
-        # one edge per pair of nodes
-        edge_count = (len(expected_names) * (len(expected_names) - 1)) / 2
+    edge_count = len(others) * (len(others) + 1) / 2
 
     assert len(network.edges) == edge_count
 
@@ -350,7 +347,7 @@ def test_generate_maximal_network(
     else:
         for edge in network.edges:
             assert "score" not in edge.annotations
-
+            assert 'score' not in edge.annotations
 
 class TestMinimalSpanningNetworkGenerator:
     @pytest.mark.parametrize("multi_mappers", [False, True])
@@ -433,7 +430,7 @@ class TestMinimalSpanningNetworkGenerator:
 
         scorer = simple_scorer
 
-        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
+        with pytest.raises(RuntimeError, match=r"Unable to create edges for the following nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
             _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
@@ -529,8 +526,9 @@ class TestMinimalRedundantNetworkGenerator:
 
         scorer = simple_scorer
 
-        with pytest.raises(RuntimeError, match=r"Unable to create edges to some nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"):
-            _ = openfe.setup.ligand_network_planning.generate_minimal_redundant_network(
+        err_str = r"ERROR: Unable to create edges for the following nodes: \[SmallMoleculeComponent\(name=nimrod\)\]"
+        with pytest.raises(RuntimeError, match=err_str):
+            _ = openfe.setup.ligand_network_planning.generate_minimal_spanning_network(
                 ligands=others + [toluene, nimrod],
                 mappers=[lomap_old_mapper],
                 scorer=scorer
@@ -540,26 +538,27 @@ class TestGenerateNetworkFromNames:
     def test_generate_network_from_names(self, atom_mapping_basic_test_files, lomap_old_mapper):
         ligands = list(atom_mapping_basic_test_files.values())
 
-        requested = [
+        requested_names = [
             ('toluene', '2-naftanol'),
             ('2-methylnaphthalene', '2-naftanol'),
         ]
 
         network = openfe.setup.ligand_network_planning.generate_network_from_names(
             ligands=ligands,
-            names=requested,
+            names=requested_names,
             mapper=lomap_old_mapper,
         )
+
+        assert len(network.nodes) == len(ligands)
+        assert len(network.edges) == 2
 
         expected_node_names = {c.name for c in ligands}
         actual_node_names = {n.name for n in network.nodes}
 
-        assert len(network.nodes) == len(ligands)
         assert actual_node_names == expected_node_names
 
-        assert len(network.edges) == 2
         actual_edges = {(e.componentA.name, e.componentB.name) for e in network.edges}
-        assert set(requested) == actual_edges
+        assert set(requested_names) == actual_edges
 
     def test_generate_network_from_names_bad_name_error(self, atom_mapping_basic_test_files, lomap_old_mapper):
         ligands = list(atom_mapping_basic_test_files.values())
@@ -622,7 +621,7 @@ class TestNetworkFromIndices:
 
         requested = [(20, 1), (2, 3)]
 
-        with pytest.raises(IndexError, match="Invalid ligand id"):
+        with pytest.raises(IndexError, match="Invalid ligand index"):
             _ = openfe.setup.ligand_network_planning.generate_network_from_indices(
                 ligands=ligands,
                 indices=requested,
