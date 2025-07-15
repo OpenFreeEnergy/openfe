@@ -40,12 +40,12 @@ jobs:
           - "3.12"
           - "3.13"
         openeye: ["no"]
-        include:
+        include: # NOTE: openeye does not yet support 3.13.
           - os: "ubuntu-latest"
             python-version: "3.11"
             openeye: "yes"
           - os: "macos-latest"
-            python-version: "3.13"
+            python-version: "3.12"
             openeye: "yes"
 
     env:
