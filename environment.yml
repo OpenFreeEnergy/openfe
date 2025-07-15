@@ -28,7 +28,7 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >=1.10.17  # practically, this almost always means pydantic v2 because of our other dependencies.
+  - pydantic >= 2.0.0
   - pygraphviz
   - pytest
   - pytest-xdist
