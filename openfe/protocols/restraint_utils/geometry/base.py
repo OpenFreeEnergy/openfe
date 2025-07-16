@@ -9,7 +9,7 @@ TODO
 """
 import abc
 
-from pydantic.v1 import BaseModel, validator
+from pydantic import BaseModel, validator
 
 
 class BaseRestraintGeometry(BaseModel, abc.ABC):

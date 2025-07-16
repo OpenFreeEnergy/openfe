@@ -22,7 +22,7 @@ from gufe.settings import (
 )
 
 
-from pydantic.v1 import validator
+from pydantic import validator
 
 
 class BaseSolvationSettings(SettingsBaseModel):
@@ -342,17 +342,17 @@ class IntegratorSettings(SettingsBaseModel):
     """Size of the simulation timestep. Default 4.0 * unit.femtosecond."""
     langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
-    reassign_velocities = False
+    reassign_velocities: bool = False
     """
     If ``True``, velocities are reassigned from the Maxwell-Boltzmann
     distribution at the beginning of each MC move. Default ``False``.
     """
-    n_restart_attempts = 20
+    n_restart_attempts: int = 20
     """
     Number of attempts to restart from Context if there are NaNs in the
     energies after integration. Default 20.
     """
-    constraint_tolerance = 1e-06
+    constraint_tolerance: float = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
     barostat_frequency: FloatQuantity['timestep'] = 25.0 * unit.timestep  # todo: IntQuantity
     """
@@ -406,7 +406,7 @@ class OutputSettings(SettingsBaseModel):
         arbitrary_types_allowed = True
 
     # reporter settings
-    output_indices = 'not water'
+    output_indices: str = 'not water'  # TODO: add Literal here?
     """
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
@@ -415,7 +415,7 @@ class OutputSettings(SettingsBaseModel):
     """
     Frequency to write the checkpoint file. Default 1 * unit.nanosecond.
     """
-    checkpoint_storage_filename = 'checkpoint.chk'
+    checkpoint_storage_filename: str = 'checkpoint.chk'
     """
     Separate filename for the checkpoint file. Note, this should
     not be a full path, just a filename. Default 'checkpoint.chk'.
@@ -443,9 +443,9 @@ class MultiStateOutputSettings(OutputSettings):
         arbitrary_types_allowed = True
 
     # reporter settings
-    output_filename = 'simulation.nc'
+    output_filename: str = 'simulation.nc'
     """Path to the trajectory storage file. Default 'simulation.nc'."""
-    output_structure = 'hybrid_system.pdb'
+    output_structure: str = 'hybrid_system.pdb'
     """
     Path of the output hybrid topology structure file. This is used
     to visualise and further manipulate the system.
@@ -489,7 +489,7 @@ class SimulationSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    minimization_steps = 5000
+    minimization_steps: int = 5000
     """Number of minimization steps to perform. Default 5000."""
     equilibration_length: FloatQuantity['nanosecond']
     """
@@ -540,7 +540,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     class Config:
         arbitrary_types_allowed = True
 
-    sampler_method = "repex"
+    sampler_method: str = "repex"
     """
     Alchemical sampling method, must be one of;
     `repex` (Hamiltonian Replica Exchange),
@@ -591,16 +591,16 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default 500 * unit.picosecond.
     """
 
-    sams_flatness_criteria = 'logZ-flatness'
+    sams_flatness_criteria: str = 'logZ-flatness'
     """
     SAMS only. Method for assessing when to switch to asymptomatically
     optimal scheme.
     One of ['logZ-flatness', 'minimum-visits', 'histogram-flatness'].
     Default 'logZ-flatness'.
     """
-    sams_gamma0 = 1.0
+    sams_gamma0: float = 1.0
     """SAMS only. Initial weight adaptation rate. Default 1.0."""
-    n_replicas = 11
+    n_replicas: int = 11
     """Number of replicas to use. Default 11."""
 
     @validator('sams_flatness_criteria')
