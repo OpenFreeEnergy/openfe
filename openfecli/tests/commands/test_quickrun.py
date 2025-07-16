@@ -11,7 +11,7 @@ from gufe.tokenization import JSON_HANDLER
 
 @pytest.fixture
 def json_file():
-    with resources.files('openfecli.tests.data') as d:
+    with resources.as_file(resources.files('openfecli.tests.data')) as d:
         json_file = str(d / 'transformation.json')
 
     return json_file
@@ -74,7 +74,7 @@ def test_quickrun_dir_created_at_runtime(json_file):
         assert result.exit_code == 0
 
 def test_quickrun_unit_error():
-    with resources.files('openfecli.tests.data') as d:
+    with resources.as_file(resources.files('openfecli.tests.data')) as d:
         json_file = str(d / 'bad_transformation.json')
 
     runner = CliRunner()

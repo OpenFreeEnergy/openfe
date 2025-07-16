@@ -6,7 +6,7 @@ from openfecli.parameters.protein import get_molecule
 
 
 def test_get_protein_pdb():
-    with resources.files("gufe.tests.data") as d:
+    with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.pdb")
         protein_comp = get_molecule(filename)
 
@@ -15,7 +15,7 @@ def test_get_protein_pdb():
 
 
 def test_get_protein_pdbx():
-    with resources.files("gufe.tests.data") as d:
+    with resources.as_file(resources.files("gufe.tests.data")) as d:
         filename = str(d / "181l.cif")
         protein_comp = get_molecule(filename)
 
