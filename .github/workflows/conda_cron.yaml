@@ -41,7 +41,7 @@ jobs:
           environment-name: openfe
           create-args: >-
             python=${{ matrix.python-version }}
-            openfe=${{ steps.latest-version.outputs.VERSION }
+            openfe=${{ steps.latest-version.outputs.VERSION }}
             pytest
             pytest-xdist
           condarc: |
