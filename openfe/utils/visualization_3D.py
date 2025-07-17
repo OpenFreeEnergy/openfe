@@ -38,7 +38,8 @@ def _get_max_dist_in_x(atom_mapping: AtomMapping) -> float:
                 d[i, j] = (pB - pA)[0]
 
         max_d.append(np.max(d))
-    estm = float(np.round(max(max_d), 1))
+    # TODO: check the validity of this when refactoring this code.
+    estm = float(np.round(max(max_d), 1))  # type: ignore
     return estm if (estm > 5) else 5
 
 
