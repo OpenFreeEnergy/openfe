@@ -37,7 +37,7 @@ jobs:
           create-args: >-
             python=3.12
             rdkit=2023.09.5
-            mypy<1.16.0
+            mypy>=1.17.0
             types-setuptools
 
           init-shell: bash
