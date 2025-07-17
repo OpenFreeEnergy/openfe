@@ -2,9 +2,9 @@ name: "conda_cron"
 on:
   workflow_dispatch:
   schedule:
-    # At 07:00 UTC every day
-    - cron: "0 7 * * *"
-  
+    # At 05:00 UTC every day
+    - cron: "0 5 * * *"
+
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
@@ -27,29 +27,31 @@ jobs:
           - "3.13"
 
     steps:
-      - name: Setup Micromamba
+      - name: Get latest openfe version on conda-forge
+        run: |
+          # get latest version from conda-forge
+          LATEST_VERSION=$(micromamba search --json openfe | jq '.result.pkgs[0].version')
+          # Removing the quotes from the version number
+          # https://mywiki.wooledge.org/BashGuide/Parameters#Parameter_Expansion
+          LATEST_VERSION=${LATEST_VERSION//\"}
+          echo "LATEST_VERSION: $LATEST_VERSION"
+          echo "LATEST_VERSION=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup micromamba and install openfe from conda-forge
         uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: openfe
           create-args: >-
             python=${{ matrix.python-version }}
-            pip
+            openfe=${{ steps.latest-version.outputs.VERSION }}
             jq
+            pytest
+            pytest-xdist
           condarc: |
             channels:
               - jaimergp/label/unsupported-cudatoolkit-shim
               - conda-forge
           init-shell: bash
-
-      - name: "Install openfe + optional deps"
-        run: |
-          # get latest version from conda-forge
-          LATEST_VERSION=$(micromamba search --json openfe | jq '.result.pkgs[0].version')
-          echo "LATEST_VERSION: $LATEST_VERSION"
-          # Removing the quotes from the vesrion number 
-          # https://mywiki.wooledge.org/BashGuide/Parameters#Parameter_Expansion
-          micromamba install openfe=${LATEST_VERSION//\"} pytest -c conda-forge
-          python -m pip install pytest-xdist
 
       - name: "env info"
         run: |
