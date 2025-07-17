@@ -37,7 +37,6 @@ jobs:
             pytest-xdist
           condarc: |
             channels:
-              - jaimergp/label/unsupported-cudatoolkit-shim
               - conda-forge
           init-shell: bash
 
