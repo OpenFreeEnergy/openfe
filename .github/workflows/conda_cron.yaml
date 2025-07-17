@@ -46,7 +46,7 @@ jobs:
           LATEST_VERSION=$(micromamba search openfe | awk '/openfe/ {print $2;exit;}')
           echo "LATEST_VERSION: $LATEST_VERSION"
           micromamba install openfe=${LATEST_VERSION} pytest -c conda-forge
-          python -m pip install 
+          python -m pip install pytest-xdist
 
       - name: "env info"
         run: |
