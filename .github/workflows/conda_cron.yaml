@@ -34,7 +34,6 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             pip
-            jq
           condarc: |
             channels:
               - jaimergp/label/unsupported-cudatoolkit-shim
@@ -44,12 +43,10 @@ jobs:
       - name: "Install openfe + optional deps"
         run: |
           # get latest version from conda-forge
-          LATEST_VERSION=$(micromamba search --json openfe | jq '.result.pkgs[0].version')
+          LATEST_VERSION=$(micromamba search openfe | awk '/openfe/ {print $2;exit;}')
           echo "LATEST_VERSION: $LATEST_VERSION"
-          # Removing the quotes from the vesrion number 
-          # https://mywiki.wooledge.org/BashGuide/Parameters#Parameter_Expansion
-          micromamba install openfe=${LATEST_VERSION//\"} pytest -c conda-forge
-          python -m pip install pytest-xdist
+          micromamba install openfe=${LATEST_VERSION} pytest -c conda-forge
+          python -m pip install 
 
       - name: "env info"
         run: |
