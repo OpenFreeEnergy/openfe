@@ -467,40 +467,53 @@ def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet seems to be unavailable and test data is not cached locally.",
 )
-def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
+class TestStableSelection:
+    def test_stable_ss_selection(self, t4_lysozyme_trajectory_universe):
 
-    ligand = t4_lysozyme_trajectory_universe.select_atoms("resname LIG")
+        ligand = t4_lysozyme_trajectory_universe.select_atoms("resname LIG")
 
-    # Topology is PDB so bonds will be missing
-    with pytest.warns(
-        match="No bonds found in input Universe, will attempt to guess them."
-    ):
+        # Topology is PDB so bonds will be missing
+        with pytest.warns(
+            match="No bonds found in input Universe, will attempt to guess them."
+        ):
+            stable_protein = stable_secondary_structure_selection(
+                # DDSP should filter by protein we will check at the end
+                atomgroup=t4_lysozyme_trajectory_universe.atoms,
+            )
+            # make sure the ligand is not in this selection
+            overlapping_ligand = stable_protein.intersection(ligand.atoms)
+            assert overlapping_ligand.n_atoms == 0
+            # make sure we get the expected number of atoms
+            assert stable_protein.n_atoms == 780
+
+    def test_small_chain(self, t4_lysozyme_trajectory_universe):
+        """
+        Artifically set min_structure_size so large that no chains are recognised.
+        """
         stable_protein = stable_secondary_structure_selection(
-            # DDSP should filter by protein we will check at the end
             atomgroup=t4_lysozyme_trajectory_universe.atoms,
+            min_structure_size=999,
         )
-        # make sure the ligand is not in this selection
-        overlapping_ligand = stable_protein.intersection(ligand.atoms)
-        assert overlapping_ligand.n_atoms == 0
-        # make sure we get the expected number of atoms
-        assert stable_protein.n_atoms == 780
+    
+        # Should have an empty atomgroup
+        assert len(stable_protein) == 0
 
+    def test_bad_dssp(self, t4_lysozyme_trajectory_universe):
+        """
+        Cause DSSP to fail to yield an empty atomgroup.
+        """
+        u_copy = t4_lysozyme_trajectory_universe.copy()
 
-@pytest.mark.skipif(
-    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
-    reason="Internet seems to be unavailable and test data is not cached locally.",
-)
-def test_stable_ss_small_chain(t4_lysozyme_trajectory_universe):
-    """
-    Artifically set min_structure_size so large that no chains are recognised.
-    """
-    stable_protein = stable_secondary_structure_selection(
-        atomgroup=t4_lysozyme_trajectory_universe.atoms,
-        min_structure_size=999,
-    )
+        # rename all CA atoms to LA to make things break
+        for at in u_copy.atoms:
+            at.name = 'LA'
 
-    # Should have an empty atomgroup
-    assert len(stable_protein) == 0
+        stable_protein = stable_secondary_structure_selection(
+            atomgroup=u_copy.atoms,
+        )
+
+        # Should have an empty atomgroup
+        assert len(stable_protein) == 0
 
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
