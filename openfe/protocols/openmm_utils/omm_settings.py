@@ -22,7 +22,7 @@ from gufe.settings import (
 )
 
 
-from pydantic.v1 import validator
+from pydantic import validator
 
 
 class BaseSolvationSettings(SettingsBaseModel):
