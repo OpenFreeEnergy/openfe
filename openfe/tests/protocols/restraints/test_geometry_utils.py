@@ -57,6 +57,14 @@ zenodo_restraint_data = pooch.create(
     },
     retry_if_failed=3,
 )
+pdb_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="https://files.rcsb.org/download/",
+    registry={
+        "6CZJ.pdb": "sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622"
+    },
+    retry_if_failed=3,
+)
 
 
 @pytest.fixture
@@ -75,11 +83,8 @@ def t4_lysozyme_trajectory_universe():
 
 @pytest.fixture
 def beta_barrel_universe():
-    file_path = pooch.retrieve(
-        url="https://files.rcsb.org/download/6CZJ.pdb",
-        path=POOCH_CACHE,
-        known_hash="sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622",
-    )
+    pdb_data.fetch("6CZJ.pdb")
+    file_path = pathlib.Path(pooch.os_cache("openfe") / "6CZJ.pdb")
     return mda.Universe(file_path)
 
 
