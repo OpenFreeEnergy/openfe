@@ -738,7 +738,7 @@ def protein_chain_selection(
     atomgroup : mda.AtomgGroup
       The AtomGroup to select atoms from.
     min_chain_length : int
-      The minimum number of residues in a protein chain. Default 30.
+      The minimum number of residues to be considered a protein chain. Default 30.
     trim_chain_start : int
       The number of residues to trim from the start of each
       protein chain. Default 10.

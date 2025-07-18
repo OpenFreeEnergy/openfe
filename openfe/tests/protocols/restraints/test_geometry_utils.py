@@ -501,7 +501,7 @@ def test_protein_chain_selection_subchain(eg5_pdb_universe):
     )
 
     assert len(sele.residues) == 18
-    assert len(sele) == len(eg5_pdb_universe.residues[10:28].atoms)
+    assert len(sele) == 282
 
 
 def test_protein_chain_selection_nochains(eg5_pdb_universe):
