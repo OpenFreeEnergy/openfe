@@ -554,7 +554,7 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
 
 def _atomgroup_has_bonds(atomgroup: Union[mda.AtomGroup, mda.Universe]) -> bool:
     """
-    Check if all residues in an AtomGroup or Universe has bonds.
+    Check if all residues in an AtomGroup or Universe have bonds.
 
     Parameters
     ----------
