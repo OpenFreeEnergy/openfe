@@ -73,6 +73,16 @@ def t4_lysozyme_trajectory_universe():
     return universe
 
 
+@pytest.fixture
+def beta_barrel_universe():
+    file_path = pooch.retrieve(
+        url="https://files.rcsb.org/download/6CZJ.pdb",
+        path=POOCH_CACHE,
+        known_hash=None,
+    )
+    return mda.Universe(file_path)
+
+
 def test_mda_selection_none_error(eg5_pdb_universe):
     with pytest.raises(ValueError, match="one of either"):
         _ = _get_mda_selection(eg5_pdb_universe)
@@ -516,15 +526,12 @@ class TestStableSelection:
         # Should have an empty atomgroup
         assert len(stable_protein) == 0
 
-    def test_beta_dssp(self):
+    def test_beta_dssp(self, beta_barrel_universe):
         """
         6CZJ is a straight up beta-barrel
         """
-        pdb = resources.files('openfe.tests.data.pdbs') / '6CZJ.pdb.gz'
-        u = mda.Universe(pdb)
-
         stable_protein = stable_secondary_structure_selection(
-            atomgroup=u.atoms,
+            atomgroup=beta_barrel_universe.atoms,
         )
 
         assert len(stable_protein.residues) == 59
