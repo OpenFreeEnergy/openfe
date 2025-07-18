@@ -450,18 +450,15 @@ def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
 )
 def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
 
-    # use a copy as we need to remove the bonds first
-    universe_copy = t4_lysozyme_trajectory_universe.copy()
-    universe_copy.del_TopologyAttr("bonds")
-
-    ligand = universe_copy.select_atoms("resname LIG")
+    universe = t4_lysozyme_trajectory_universe
+    ligand = universe.select_atoms("resname LIG")
 
     with pytest.warns(
         match="No bonds found in input Universe, will attempt to guess them."
     ):
         stable_protein = stable_secondary_structure_selection(
             # DDSP should filter by protein we will check at the end
-            atomgroup=universe_copy.atoms,
+            atomgroup=universe.atoms,
         )
         # make sure the ligand is not in this selection
         overlapping_ligand = stable_protein.intersection(ligand.atoms)
@@ -472,18 +469,15 @@ def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
 
-    # use a copy as we need to remove the bonds first
-    universe_copy = eg5_protein_ligand_universe.copy()
-    universe_copy.del_TopologyAttr("bonds")
-
-    ligand = universe_copy.select_atoms("resname LIG")
+    universe = eg5_protein_ligand_universe
+    ligand = universe.select_atoms("resname LIG")
 
     with pytest.warns(
         match="No bonds found in input Universe, will attempt to guess them."
     ):
         chain_selection = protein_chain_selection(
             # the selection should filter for the protein we will check at the end
-            atomgroup=universe_copy.atoms,
+            atomgroup=universe.atoms,
         )
         overlapping_ligand = chain_selection.intersection(ligand.atoms)
         assert overlapping_ligand.n_atoms == 0
