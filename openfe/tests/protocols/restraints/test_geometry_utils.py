@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
+from importlib import resources
 import os
 import pathlib
 
@@ -514,6 +515,19 @@ class TestStableSelection:
 
         # Should have an empty atomgroup
         assert len(stable_protein) == 0
+
+    def test_beta_dssp(self):
+        """
+        6CZJ is a straight up beta-barrel
+        """
+        pdb = resources.files('openfe.tests.data.pdbs') / '6CZJ.pdb.gz'
+        u = mda.Universe(pdb)
+
+        stable_protein = stable_secondary_structure_selection(
+            atomgroup=u.atoms,
+        )
+
+        assert len(stable_protein.residues) == 59
 
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
