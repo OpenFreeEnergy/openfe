@@ -359,7 +359,7 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
     # Delete the topology attr and everything is false
     u.del_TopologyAttr("bonds")
     assert not _atomgroup_has_bonds(u)
-    assert _atomgroup_has_bonds(u.select_atoms("resname HOH"))
+    assert not _atomgroup_has_bonds(u.select_atoms("resname HOH"))
 
     # Guess some bonds back
     ag = u.atoms[:100]
@@ -484,6 +484,23 @@ def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
         assert overlapping_ligand.n_atoms == 0
         # make sure we get the expected number of atoms
         assert stable_protein.n_atoms == 780
+
+
+@pytest.mark.skipif(
+    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
+    reason="Internet seems to be unavailable and test data is not cached locally.",
+)
+def test_stable_ss_small_chain(t4_lysozyme_trajectory_universe):
+    """
+    Artifically set min_structure_size so large that no chains are recognised.
+    """
+    stable_protein = stable_secondary_structure_selection(
+        atomgroup=t4_lysozyme_trajectory_universe.atoms,
+        min_structure_size=999,
+    )
+
+    # Should have an empty atomgroup
+    assert len(stable_protein) == 0
 
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
