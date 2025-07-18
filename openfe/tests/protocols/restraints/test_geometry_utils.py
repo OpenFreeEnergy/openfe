@@ -78,7 +78,7 @@ def beta_barrel_universe():
     file_path = pooch.retrieve(
         url="https://files.rcsb.org/download/6CZJ.pdb",
         path=POOCH_CACHE,
-        known_hash=None,
+        known_hash="sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622",
     )
     return mda.Universe(file_path)
 
