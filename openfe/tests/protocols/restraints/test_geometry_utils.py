@@ -489,3 +489,30 @@ def test_protein_chain_selection(eg5_protein_ligand_universe):
         assert overlapping_ligand.n_atoms == 0
         # make sure we get the expected number of atoms
         assert chain_selection.n_atoms == 5150
+
+
+def test_protein_chain_selection_subchain(eg5_pdb_universe):
+    """
+    Pass a subset of the residues in a chain
+    """
+
+    sele = protein_chain_selection(
+        atomgroup=eg5_pdb_universe.residues[:28].atoms,
+    )
+
+    assert len(sele.residues) == 18
+    assert len(sele) == len(eg5_pdb_universe.residues[10:28].atoms)
+
+
+def test_protein_chain_selection_nochains(eg5_pdb_universe):
+    """
+    Artificially bump up the minimum number of residues per
+    chain such that we don't have any chains.
+    """
+
+    sele = protein_chain_selection(
+        atomgroup=eg5_pdb_universe.atoms,
+        min_chain_length=99999,
+    )
+
+    assert len(sele) == 0
