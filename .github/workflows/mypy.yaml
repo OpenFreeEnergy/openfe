@@ -36,7 +36,7 @@ jobs:
           cache-downloads-key: downloads-${{ steps.date.outputs.date }}
           create-args: >-
             python=3.12
-            rdkit>=2025.03.4
+            rdkit=2023.09.5
             mypy>=1.17.0
             types-setuptools
 
