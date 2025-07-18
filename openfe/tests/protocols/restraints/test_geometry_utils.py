@@ -516,3 +516,18 @@ def test_protein_chain_selection_nochains(eg5_pdb_universe):
     )
 
     assert len(sele) == 0
+
+def test_protein_chain_selection_trim_too_large(eg5_pdb_universe):
+    """
+    Artificially bump up the minimum number of residues per
+    chain such that we don't have any chains.
+    """
+
+    sele = protein_chain_selection(
+        atomgroup=eg5_pdb_universe.atoms,
+        min_chain_length=30,
+        trim_chain_start=2000,
+        trim_chain_end=8000,
+    )
+
+    assert len(sele) == 0
