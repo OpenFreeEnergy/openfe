@@ -750,7 +750,7 @@ def protein_chain_selection(
     -------
     atomgroup : mda.AtomGroup
       An AtomGroup containing all the atoms from the input AtomGroup
-      which belong to protein chains.
+      which belong to the trimmed protein chains.
     """
     # First let's copy our Universe so we don't overwrite its current state
     copy_u = atomgroup.universe.copy()
