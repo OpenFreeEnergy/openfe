@@ -569,7 +569,12 @@ def _atomgroup_has_bonds(atomgroup: Union[mda.AtomGroup, mda.Universe]) -> bool:
     if not hasattr(atomgroup, "bonds"):
         return False
 
-    if not all(len(r.atoms.bonds) > 0 for r in atomgroup.residues):
+    # Assume that any residue with more than one atom should have a bond
+    if not all(
+        len(r.atoms.bonds) > 0
+        for r in atomgroup.residues
+        if len(r.atoms) > 1
+    ):
         return False
 
     return True
