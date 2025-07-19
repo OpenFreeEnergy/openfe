@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
+from importlib import resources
 import os
 import pathlib
 
@@ -56,6 +57,14 @@ zenodo_restraint_data = pooch.create(
     },
     retry_if_failed=3,
 )
+pdb_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="https://files.rcsb.org/download/",
+    registry={
+        "6CZJ.pdb": "sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622"
+    },
+    retry_if_failed=3,
+)
 
 
 @pytest.fixture
@@ -70,6 +79,13 @@ def t4_lysozyme_trajectory_universe():
         str(cache_dir / "t4_toluene_complex.xtc"),
     )
     return universe
+
+
+@pytest.fixture
+def beta_barrel_universe():
+    pdb_data.fetch("6CZJ.pdb")
+    file_path = pathlib.Path(pooch.os_cache("openfe") / "6CZJ.pdb")
+    return mda.Universe(file_path)
 
 
 def test_mda_selection_none_error(eg5_pdb_universe):
@@ -402,18 +418,37 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
 
     # PDB has water bonds
     assert len(u.bonds) == 14
-    assert _atomgroup_has_bonds(u) is False
-    assert _atomgroup_has_bonds(u.select_atoms("resname HOH")) is True
+    assert not _atomgroup_has_bonds(u)
+    assert _atomgroup_has_bonds(u.select_atoms("resname HOH"))
 
     # Delete the topology attr and everything is false
     u.del_TopologyAttr("bonds")
-    assert _atomgroup_has_bonds(u) is False
-    assert _atomgroup_has_bonds(u.select_atoms("resname HOH")) is False
+    assert not _atomgroup_has_bonds(u)
+    assert not _atomgroup_has_bonds(u.select_atoms("resname HOH"))
 
     # Guess some bonds back
     ag = u.atoms[:100]
     ag.guess_bonds()
-    assert _atomgroup_has_bonds(ag) is True
+    assert _atomgroup_has_bonds(ag)
+
+
+@pytest.mark.skipif(
+    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
+    reason="Internet seems to be unavailable and test data is not cached locally.",
+)
+def test_atomgroup_has_bonds_ions(t4_lysozyme_trajectory_universe):
+
+    # make a copy of the universe so we don't change things
+    u = t4_lysozyme_trajectory_universe.copy()
+
+    # Toluene (16) and cap (5) have bonds
+    assert len(u.bonds) == 21
+    assert not _atomgroup_has_bonds(u)
+    assert _atomgroup_has_bonds(u.select_atoms("resname UNK"))
+
+    # Guess the bonds, ions won't have them but otherwise all residues should
+    u.select_atoms('not resname NA CL').guess_bonds()  # don't guess ions
+    assert _atomgroup_has_bonds(u)
 
 
 def test_centroid_distance_sort(eg5_protein_ligand_universe):
@@ -497,42 +532,76 @@ def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet seems to be unavailable and test data is not cached locally.",
 )
-def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
+class TestStableSelection:
+    def test_stable_ss_selection(self, t4_lysozyme_trajectory_universe):
 
-    # use a copy as we need to remove the bonds first
-    universe_copy = t4_lysozyme_trajectory_universe.copy()
-    universe_copy.del_TopologyAttr("bonds")
+        ligand = t4_lysozyme_trajectory_universe.select_atoms("resname LIG")
 
-    ligand = universe_copy.select_atoms("resname LIG")
+        # Topology is PDB so bonds will be missing
+        with pytest.warns(
+            match="No bonds found in input Universe, will attempt to guess them."
+        ):
+            stable_protein = stable_secondary_structure_selection(
+                # DDSP should filter by protein we will check at the end
+                atomgroup=t4_lysozyme_trajectory_universe.atoms,
+            )
+            # make sure the ligand is not in this selection
+            overlapping_ligand = stable_protein.intersection(ligand.atoms)
+            assert overlapping_ligand.n_atoms == 0
+            # make sure we get the expected number of atoms
+            assert stable_protein.n_atoms == 780
 
-    with pytest.warns(
-        match="No bonds found in input Universe, will attempt to guess them."
-    ):
+    def test_small_chain(self, t4_lysozyme_trajectory_universe):
+        """
+        Artifically set min_structure_size so large that no chains are recognised.
+        """
         stable_protein = stable_secondary_structure_selection(
-            # DDSP should filter by protein we will check at the end
-            atomgroup=universe_copy.atoms,
+            atomgroup=t4_lysozyme_trajectory_universe.atoms,
+            min_structure_size=999,
         )
-        # make sure the ligand is not in this selection
-        overlapping_ligand = stable_protein.intersection(ligand.atoms)
-        assert overlapping_ligand.n_atoms == 0
-        # make sure we get the expected number of atoms
-        assert stable_protein.n_atoms == 780
+    
+        # Should have an empty atomgroup
+        assert len(stable_protein) == 0
+
+    def test_bad_dssp(self, t4_lysozyme_trajectory_universe):
+        """
+        Cause DSSP to fail to yield an empty atomgroup.
+        """
+        u_copy = t4_lysozyme_trajectory_universe.copy()
+
+        # rename all CA atoms to LA to make things break
+        for at in u_copy.atoms:
+            at.name = 'LA'
+
+        stable_protein = stable_secondary_structure_selection(
+            atomgroup=u_copy.atoms,
+        )
+
+        # Should have an empty atomgroup
+        assert len(stable_protein) == 0
+
+    def test_beta_dssp(self, beta_barrel_universe):
+        """
+        6CZJ is a straight up beta-barrel
+        """
+        stable_protein = stable_secondary_structure_selection(
+            atomgroup=beta_barrel_universe.atoms,
+        )
+
+        assert len(stable_protein.residues) == 59
 
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
 
-    # use a copy as we need to remove the bonds first
-    universe_copy = eg5_protein_ligand_universe.copy()
-    universe_copy.del_TopologyAttr("bonds")
+    ligand = eg5_protein_ligand_universe.select_atoms("resname LIG")
 
-    ligand = universe_copy.select_atoms("resname LIG")
-
+    # Topology is PDB so bonds will be missing
     with pytest.warns(
         match="No bonds found in input Universe, will attempt to guess them."
     ):
         chain_selection = protein_chain_selection(
             # the selection should filter for the protein we will check at the end
-            atomgroup=universe_copy.atoms,
+            atomgroup=eg5_protein_ligand_universe.atoms,
         )
         overlapping_ligand = chain_selection.intersection(ligand.atoms)
         assert overlapping_ligand.n_atoms == 0
