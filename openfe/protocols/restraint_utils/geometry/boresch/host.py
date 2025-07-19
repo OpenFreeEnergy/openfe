@@ -129,14 +129,14 @@ def find_host_atom_candidates(
         )
         raise ValueError(errmsg)
 
-    # None host_ixs for condition checking later
-    host_idxs = None
+    # None filtered_host_ixs for condition checking later
+    filtered_host_idxs = None
 
     # If requested, filter the host atoms based on if their residues exist
     # within stable secondary structures.
     if dssp_filter:
         # TODO: allow more user-supplied kwargs here
-        host_idxs = _host_atoms_search(
+        filtered_host_idxs = _host_atoms_search(
             atomgroup=stable_secondary_structure_selection(selected_host_ag),
             guest_anchor_idx=guest_anchor_idx,
             rmsf_cutoff=rmsf_cutoff,
@@ -144,14 +144,13 @@ def find_host_atom_candidates(
             max_search_distance=max_search_distance,
         )
 
-        if len(host_idxs) < 20:
+        if len(filtered_host_idxs) < 20:
             wmsg = (
                 "Restraint generation: DSSP filter found too few host atoms "
                 "will attempt to use all protein chains."
             )
             warnings.warn(wmsg)
-            print(host_idxs)
-            host_idxs = _host_atoms_search(
+            filtered_host_idxs = _host_atoms_search(
                 atomgroup=protein_chain_selection(selected_host_ag),
                 guest_anchor_idx=guest_anchor_idx,
                 rmsf_cutoff=rmsf_cutoff,
@@ -159,17 +158,17 @@ def find_host_atom_candidates(
                 max_search_distance=max_search_distance,
             )
 
-        if len(host_idxs) < 20:
+        if len(filtered_host_idxs) < 20:
             wmsg = (
                 "Restraint generation: protein chain filter found too few "
                 "host atoms. Will attempt to use all host atoms in "
                 f"selection: {host_selection}."
             )
             warnings.warn(wmsg)
-            host_idxs = None
+            filtered_host_idxs = None
 
-    if host_idxs is None:
-        host_idxs = _host_atoms_search(
+    if filtered_host_idxs is None:
+        filtered_host_idxs = _host_atoms_search(
             atomgroup=selected_host_ag,
             guest_anchor_idx=guest_anchor_idx,
             rmsf_cutoff=rmsf_cutoff,
@@ -178,7 +177,7 @@ def find_host_atom_candidates(
         )
 
     # Crash out if no atoms were found
-    if len(host_idxs) == 0:
+    if len(filtered_host_idxs) == 0:
         errmsg = (
             f"No host atoms found within the search distance "
             f"{min_search_distance}-{max_search_distance} consider widening the search window."
@@ -187,7 +186,7 @@ def find_host_atom_candidates(
 
     # Now we sort them from their distance from the guest anchor
     atom_sorter = CentroidDistanceSort(
-        sortable_atoms=universe.atoms[host_idxs],
+        sortable_atoms=universe.atoms[filtered_host_idxs],
         reference_atoms=universe.atoms[guest_anchor_idx],
     )
     atom_sorter.run()
