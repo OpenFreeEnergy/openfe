@@ -237,33 +237,82 @@ def test_collinear_index_match_error_index():
 
 
 @pytest.mark.parametrize(
-    "arr, truth",
+    "arr, thresh, truth",
     [
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], True],
-        [[[0, 1, -1], [1, 0, 0], [2, 0, 2]], False],
-        [[[0, 1, -1], [1, 1, 0], [2, 1, 2]], True],
-        [[[0, 0, -1], [1, 1, 0], [2, 2, 2]], True],
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], True],
-        [[[2, 0, -1], [1, 0, 0], [0, 0, 2]], True],
-        [[[0, 0, 1], [0, 0, 0], [0, 0, 2]], True],
-        [[[1, 1, 1], [0, 0, 0], [2, 2, 2]], True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1]], 0.9, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], 0.9, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], 0.95, False],
+        [[[0, 1, -1], [1, 0, 0], [2, 0, 1]], 0.9, False],
+        [[[0, 1, -1], [1, 1, 0], [2, 1, 1]], 0.9, True],
+        [[[0, 1, -1], [1, 1, 0], [2, 1, 2]], 0.95, False],
+        [[[0, 0, -1], [1, 1, 0], [2, 2, 1]], 0.95, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1]], 0.95, True],
+        [[[2, 0, -1], [1, 0, 0], [0, 0, 1]], 0.95, True],
+        [[[0, 0, 1], [0, 0, 0], [0, 0, 2]], 0.95, True],
+        [[[1, 1, 1], [0, 0, 0], [2, 2, 2]], 0.9, True],
     ],
 )
-def test_is_collinear_three_atoms(arr, truth):
-    assert is_collinear(np.array(arr), [0, 1, 2]) == truth
+def test_is_collinear_three_atoms(arr, thresh, truth):
+    assert (
+        is_collinear(positions=np.array(arr), atoms=[0, 1, 2], threshold=thresh)
+        == truth
+    )
 
 
 @pytest.mark.parametrize(
-    "arr, truth",
+    "arr, truth, dims",
     [
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], True],
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], True],
-        [[[0, 0, 1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], True],
-        [[[0, 1, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], False],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1]], True, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 11]], False, False],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 11]], True, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], False, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 12]], False, False],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 12]], False, True],
     ],
 )
-def test_is_collinear_four_atoms(arr, truth):
-    assert is_collinear(np.array(arr), [0, 1, 2, 3]) == truth
+def test_is_collinear_three_atoms_dimensions(arr, truth, dims):
+    if dims:
+        dimensions = np.array([10.0, 10.0, 10.0, 90.0, 90.0, 90.0], dtype=float)
+    else:
+        dimensions = None
+
+    assert (
+        is_collinear(
+            positions=np.array(arr, dtype=float),
+            atoms=[0, 1, 2],
+            threshold=0.99,
+            dimensions=dimensions,
+        )
+        == truth
+    )
+
+
+@pytest.mark.parametrize(
+    "arr, tresh, truth",
+    [
+        # collinear all
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1], [3, 0, 2]], 0.99, True],
+        # not collinear for all
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], 0.99, False],
+        # not collinear but within threshold
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], 0.9, True],
+        # collinear for v3 and v4
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], 0.99, True],
+        # collinear for v1 and v2
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1], [3, 0, 4]], 0.99, True],
+        # not collinear for all
+        [[[0, 1, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], 0.99, False],
+    ],
+)
+def test_is_collinear_four_atoms(arr, tresh, truth):
+    assert (
+        is_collinear(
+            positions=np.array(arr),
+            atoms=[0, 1, 2, 3],
+            threshold=tresh,
+        )
+        == truth
+    )
 
 
 def test_wrap_angle_degrees():
