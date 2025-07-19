@@ -1,15 +1,9 @@
-name: "Package Install Tests"
+name: "Daily package install tests."
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "docs/*"
-
   workflow_dispatch:
   schedule:
-    # At 07:00 UTC on Monday and Thursday.
-    - cron: "0 7 * * *"
+    # At 03:00 UTC daily
+    - cron: "0 3 * * *"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -22,7 +16,7 @@ defaults:
 jobs:
   package-tests:
     runs-on: ubuntu-latest
-    name: "package install tests"
+    name: "main branch long tests"
     steps:
       - uses: actions/checkout@v4
 
