@@ -3,6 +3,7 @@
 
 import MDAnalysis as mda
 import numpy as np
+from numpy.testing import assert_equal
 import pytest
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateHostAtoms1,
@@ -24,21 +25,41 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
 
 def test_host_atom_candidates_dssp(eg5_protein_ligand_universe):
     """
+    Run DSSP search normally
+    """
+    host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
+
+    idxs = find_host_atom_candidates(
+        universe=eg5_protein_ligand_universe,
+        host_idxs=host_atoms.ix,
+        # hand picked
+        guest_anchor_idx=5508,
+        host_selection="backbone and resnum 15:25",
+        dssp_filter=True,
+    )
+    expected = np.array(
+        [136, 134, 135, 133, 104, 159, 160, 119, 157, 103, 120, 158,  71,
+         118, 102, 101, 117,  70,  87,  86,  85,  69,  68,  88,  51,  50,
+         52,  49,  38,  37,  16,  36,  15,  35,  14,  13]
+    )
+    assert_equal(idxs, expected)
+
+
+def test_host_atom_candidates_dssp_too_few_atoms(eg5_protein_ligand_universe):
+    """
     Make sure both dssp warnings are triggered
     """
 
     host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
     with (
-        pytest.warns(
-            match="Too few atoms found via secondary structure filtering will"
-        ),
-        pytest.warns(match="Too few atoms found in protein residue chains,"),
+        pytest.warns(match="DSSP filter found"),
+        pytest.warns(match="protein chain filter found"),
     ):
         _ = find_host_atom_candidates(
             universe=eg5_protein_ligand_universe,
-            host_idxs=[a.ix for a in host_atoms],
+            host_idxs=host_atoms.ix,
             # hand picked
-            l1_idx=5508,
+            guest_anchor_idx=5508,
             host_selection="backbone and resnum 15:25",
             dssp_filter=True,
         )
@@ -52,12 +73,12 @@ def test_host_atom_candidate_small_search(eg5_protein_ligand_universe):
     ):
         _ = find_host_atom_candidates(
             universe=eg5_protein_ligand_universe,
-            host_idxs=[a.ix for a in host_atoms],
+            host_idxs=host_atoms.ix,
             # hand picked
-            l1_idx=5508,
+            guest_anchor_idx=5508,
             host_selection="backbone",
             dssp_filter=False,
-            max_distance=0.1 * unit.angstrom,
+            max_search_distance=0.1 * unit.angstrom,
         )
 
 
