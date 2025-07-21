@@ -178,6 +178,7 @@ def test_boresch_no_host_anchor(eg5_protein_ligand_universe, eg5_ligands):
         )
 
 
+@pytest.mark.slow
 def test_get_boresch_restraint_single_frame(eg5_protein_ligand_universe, eg5_ligands):
     """
     Make sure we can find a boresh restraint using a single frame
