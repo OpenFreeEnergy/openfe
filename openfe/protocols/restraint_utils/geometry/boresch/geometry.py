@@ -251,12 +251,12 @@ def find_boresch_restraint(
         host_pool = find_host_atom_candidates(
             universe=universe,
             host_idxs=host_idxs,
-            l1_idx=guest_anchor[0],
+            guest_anchor_idx=guest_anchor[0],
             host_selection=host_selection,
             dssp_filter=dssp_filter,
             rmsf_cutoff=rmsf_cutoff,
-            min_distance=host_min_distance,
-            max_distance=host_max_distance,
+            min_search_distance=host_min_distance,
+            max_search_distance=host_max_distance,
         )
 
         host_anchor = find_host_anchor(
