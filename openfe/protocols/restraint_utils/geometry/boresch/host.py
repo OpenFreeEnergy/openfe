@@ -147,7 +147,7 @@ def find_host_atom_candidates(
         if len(filtered_host_idxs) < 20:
             wmsg = (
                 "Restraint generation: DSSP filter found too few host atoms "
-                "will attempt to use all protein chains."
+                f"({len(filtered_host_idxs)} found). Will attempt to use all protein chains."
             )
             warnings.warn(wmsg)
             filtered_host_idxs = _host_atoms_search(
@@ -161,7 +161,7 @@ def find_host_atom_candidates(
         if len(filtered_host_idxs) < 20:
             wmsg = (
                 "Restraint generation: protein chain filter found too few "
-                "host atoms. Will attempt to use all host atoms in "
+               f"host atoms ({len(filtered_host_idxs)} found). Will attempt to use all host atoms in "
                 f"selection: {host_selection}."
             )
             warnings.warn(wmsg)
@@ -180,11 +180,11 @@ def find_host_atom_candidates(
     if len(filtered_host_idxs) == 0:
         errmsg = (
             f"No host atoms found within the search distance "
-            f"{min_search_distance}-{max_search_distance} consider widening the search window."
+            f"{min_search_distance}-{max_search_distance}. Consider widening the search window."
         )
         raise ValueError(errmsg)
 
-    # Now we sort them from their distance from the guest anchor
+    # Now we sort them by their distance from the guest anchor
     atom_sorter = CentroidDistanceSort(
         sortable_atoms=universe.atoms[filtered_host_idxs],
         reference_atoms=universe.atoms[guest_anchor_idx],
