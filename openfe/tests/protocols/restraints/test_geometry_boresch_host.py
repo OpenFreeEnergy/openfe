@@ -248,7 +248,7 @@ class TestFindAnchor:
         assert check_dihedral_bounds(dih2 * unit.radians)
         assert check_dihedral_bounds(dih3 * unit.radians)
 
-
+@pytest.mark.slow
 def test_find_host_anchor_none(eg5_protein_ligand_universe):
 
     host_anchor = find_host_anchor(
