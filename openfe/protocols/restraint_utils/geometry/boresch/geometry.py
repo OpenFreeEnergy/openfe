@@ -262,7 +262,9 @@ def find_boresch_restraint(
         host_anchor = find_host_anchor(
             guest_atoms=universe.atoms[list(guest_anchor)],
             host_atom_pool=universe.atoms[list(host_pool)],
-            minimum_distance=0.5 * unit.nanometer,
+            host_minimum_distance=0.5 * unit.nanometer,
+            # TODO: work out a rename for this, it's confusing
+            guest_minimum_distance=host_min_distance,
             angle_force_constant=angle_force_constant,
             temperature=temperature,
         )
