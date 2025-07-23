@@ -11,7 +11,7 @@ v1.6.0
 
 * Added support for openmm 8.3.0 (benchmarking results at `Issue #1377 <https://github.com/OpenFreeEnergy/openfe/issues/1377>`_.
 * Added support for ``python 3.13`` (we no longer guarantee support for ``python 3.10``).
-* Adds a new internal API for defining alchemical restraints (PR #1043).
+* Adds a new internal API for defining alchemical restraints (`PR #1043 <https://github.com/OpenFreeEnergy/openfe/pull/1043>`_).
 
 
 
