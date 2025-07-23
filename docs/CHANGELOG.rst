@@ -6,6 +6,7 @@ Changelog
 
 v1.6.0
 ====================
+This release adds support for OpenMM 8.3.0 and Python 3.13.
 
 **Added:**
 
