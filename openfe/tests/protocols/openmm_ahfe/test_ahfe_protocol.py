@@ -619,7 +619,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA, reason='needs espaloma charge',
         ),
     ),
 ])

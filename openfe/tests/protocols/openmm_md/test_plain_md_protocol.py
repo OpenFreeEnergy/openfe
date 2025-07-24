@@ -198,7 +198,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA, reason='needs espaloma charge',
         ),
     ),
 ])

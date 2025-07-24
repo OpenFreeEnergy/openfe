@@ -846,13 +846,13 @@ class TestOFFPartialCharge:
         pytest.param(
             'espaloma', 'rdkit', 'espaloma', None,
             marks=pytest.mark.skipif(
-                not HAS_ESPALOMA, reason='needs espaloma',
+                not HAS_ESPALOMA, reason='needs espaloma charge',
             ),
         ),
         pytest.param(
             'espaloma', 'ambertools', 'espaloma', None,
             marks=pytest.mark.skipif(
-                not HAS_ESPALOMA, reason='needs espaloma',
+                not HAS_ESPALOMA, reason='needs espaloma charge',
             ),
         ),
     ])

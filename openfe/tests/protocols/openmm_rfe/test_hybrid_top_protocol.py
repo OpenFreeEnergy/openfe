@@ -610,7 +610,7 @@ def test_dry_run_ligand_system_cutoff(
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA, reason='needs espaloma charge',
         ),
     ),
 ])
