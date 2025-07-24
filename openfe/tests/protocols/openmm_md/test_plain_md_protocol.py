@@ -15,7 +15,7 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
 )
 from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA_CHARGE
 )
 import json
 import openfe
@@ -198,7 +198,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma charge',
+            not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
         ),
     ),
 ])

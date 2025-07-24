@@ -19,7 +19,7 @@ from openfe.protocols.openmm_utils import (charge_generation,
                                            multistate_analysis, omm_settings,
                                            settings_validation,
                                            system_creation, system_validation)
-from openfe.protocols.openmm_utils.charge_generation import (HAS_ESPALOMA,
+from openfe.protocols.openmm_utils.charge_generation import (HAS_ESPALOMA_CHARGE,
                                                              HAS_NAGL,
                                                              HAS_OPENEYE)
 from openff.toolkit import Molecule as OFFMol
@@ -846,13 +846,13 @@ class TestOFFPartialCharge:
         pytest.param(
             'espaloma', 'rdkit', 'espaloma', None,
             marks=pytest.mark.skipif(
-                not HAS_ESPALOMA, reason='needs espaloma charge',
+                not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
             ),
         ),
         pytest.param(
             'espaloma', 'ambertools', 'espaloma', None,
             marks=pytest.mark.skipif(
-                not HAS_ESPALOMA, reason='needs espaloma charge',
+                not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
             ),
         ),
     ])
@@ -899,7 +899,7 @@ class TestOFFPartialCharge:
     def test_espaloma_import_error(self, monkeypatch, uncharged_mol):
         monkeypatch.setattr(
             sys.modules['openfe.protocols.openmm_utils.charge_generation'],
-            'HAS_ESPALOMA',
+            'HAS_ESPALOMA_CHARGE',
             False
         )
 

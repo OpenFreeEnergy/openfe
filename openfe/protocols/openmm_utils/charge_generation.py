@@ -52,9 +52,9 @@ else:
 try:
     from espaloma_charge.openff_wrapper import EspalomaChargeToolkitWrapper
 except ImportError:
-    HAS_ESPALOMA = False
+    HAS_ESPALOMA_CHARGE = False
 else:
-    HAS_ESPALOMA = True
+    HAS_ESPALOMA_CHARGE = True
 
 
 # Dictionary of lists for the various backend options we allow.
@@ -85,7 +85,7 @@ def assign_offmol_espaloma_charges(
       overwriting the global registry during the partial charge
       assignment stage.
     """
-    if not HAS_ESPALOMA:
+    if not HAS_ESPALOMA_CHARGE:
         errmsg = ("The Espaloma ToolkiWrapper is not available, "
                   "please install espaloma_charge")
         raise ImportError(errmsg)
