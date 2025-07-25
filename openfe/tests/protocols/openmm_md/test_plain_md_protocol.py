@@ -15,13 +15,14 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
 )
 from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA, HAS_ESPALOMA_CHARGE
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA_CHARGE
 )
 import json
 import openfe
 from openfe.protocols import openmm_md
 import pathlib
 import logging
+from openfe.tests.conftest import HAS_INTERNET
 
 
 def test_create_default_settings():
