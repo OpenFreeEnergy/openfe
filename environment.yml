@@ -6,6 +6,7 @@ dependencies:
   - click >=8.2.0
   - coverage
   - duecredit<0.10
+  - espaloma==0.4.0
   - kartograf>=1.2.0
   - konnektor~=0.2.0
   - lomap2>=3.2.1
