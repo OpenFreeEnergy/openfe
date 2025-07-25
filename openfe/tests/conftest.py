@@ -330,3 +330,9 @@ except:  # -no-cov-
     HAS_INTERNET = False
 else:
     HAS_INTERNET = True
+
+try:
+    import espaloma
+    HAS_ESPALOMA = True
+except ModuleNotFoundError:
+    HAS_ESPALOMA = False
