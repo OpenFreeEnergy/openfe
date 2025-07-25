@@ -40,7 +40,7 @@ from openfe.protocols.openmm_rfe.equil_rfe_methods import (
 )
 from openfe.protocols.openmm_utils import system_creation, omm_compute
 from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA_CHARGE
 )
 
 
@@ -610,7 +610,7 @@ def test_dry_run_ligand_system_cutoff(
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
         ),
     ),
 ])
