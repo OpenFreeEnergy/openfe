@@ -31,9 +31,6 @@ jobs:
         echo $VERSION
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Print Latest Version
-      run: echo ${{ steps.latest-version.outputs.VERSION }}
-
     - name: Install constructor environment with Micromamba
       uses: mamba-org/setup-micromamba@v2
       with:

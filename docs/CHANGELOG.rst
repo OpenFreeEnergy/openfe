@@ -4,6 +4,18 @@ Changelog
 
 .. current developments
 
+v1.6.0
+====================
+This release adds support for OpenMM 8.3.0 and Python 3.13.
+
+**Added:**
+
+* Added support for openmm 8.3.0 (benchmarking results at `Issue #1377 <https://github.com/OpenFreeEnergy/openfe/issues/1377>`_.
+* Added support for ``python 3.13`` (we no longer guarantee support for ``python 3.10``).
+* Adds a new internal API for defining alchemical restraints (`PR #1043 <https://github.com/OpenFreeEnergy/openfe/pull/1043>`_).
+
+
+
 v1.5.0
 ====================
 This release includes support for openmm 8.2 and numpy v2. Checkpoint interval default frequency has changed, resulting in much smaller file sizes. There are also a few minor changes as a result of migrating to use **konnektor** as the backend for many network generators. 

@@ -554,7 +554,7 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
 
 def _atomgroup_has_bonds(atomgroup: Union[mda.AtomGroup, mda.Universe]) -> bool:
     """
-    Check if all residues in an AtomGroup or Universe has bonds.
+    Check if all residues in an AtomGroup or Universe have bonds.
 
     Parameters
     ----------
@@ -569,7 +569,12 @@ def _atomgroup_has_bonds(atomgroup: Union[mda.AtomGroup, mda.Universe]) -> bool:
     if not hasattr(atomgroup, "bonds"):
         return False
 
-    if not all(len(r.atoms.bonds) > 0 for r in atomgroup.residues):
+    # Assume that any residue with more than one atom should have a bond
+    if not all(
+        len(r.atoms.bonds) > 0
+        for r in atomgroup.residues
+        if len(r.atoms) > 1
+    ):
         return False
 
     return True
@@ -721,6 +726,7 @@ def stable_secondary_structure_selection(
 
 def protein_chain_selection(
     atomgroup: mda.AtomGroup,
+    min_chain_length: int = 30,
     trim_chain_start: int = 10,
     trim_chain_end: int = 10,
 ) -> mda.AtomGroup:
@@ -729,13 +735,16 @@ def protein_chain_selection(
     chains trimmed by ``trim_chain_start`` and ``trim_chain_end``.
 
     Protein chains are defined as any continuously bonded part of system with
-    at least 30 residues which match the ``protein`` selection of MDAnalysis.
+    at least ``min_chain_length`` (default: 30) residues which match the
+    ``protein`` selection of MDAnalysis.
 
     Parameters
     ----------
     atomgroup : mda.AtomgGroup
       The AtomGroup to select atoms from.
-    trim_chain_start: int
+    min_chain_length : int
+      The minimum number of residues to be considered a protein chain. Default 30.
+    trim_chain_start : int
       The number of residues to trim from the start of each
       protein chain. Default 10.
     trim_chain_end : int
@@ -746,7 +755,7 @@ def protein_chain_selection(
     -------
     atomgroup : mda.AtomGroup
       An AtomGroup containing all the atoms from the input AtomGroup
-      which belong to protein chains.
+      which belong to the trimmed protein chains.
     """
     # First let's copy our Universe so we don't overwrite its current state
     copy_u = atomgroup.universe.copy()
@@ -766,12 +775,16 @@ def protein_chain_selection(
 
     # Loop over each continually bonded section (i.e. chain) of the protein
     for frag in copy_protein_ag.fragments:
-        # If this chain is less than 30 residues, it's probably a peptide
-        if len(frag.residues) < 30:
+        # If this chain is less than min_chain_length residues, it's probably a peptide
+        if len(frag.residues) < min_chain_length:
             continue
 
         chain = frag.residues[trim_chain_start:-trim_chain_end].atoms
         copy_chains_ags_list.append(chain)
+
+    # If the list is empty, return an empty atomgroup
+    if not copy_chains_ags_list:
+        return atomgroup.atoms[[]]
 
     # Create a single atomgroup from all chains
     copy_chains_ag = sum(copy_chains_ags_list)
