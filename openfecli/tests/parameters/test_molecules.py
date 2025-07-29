@@ -10,7 +10,7 @@ from openfe import SmallMoleculeComponent
 
 
 def test_get_dir_molecules_sdf():
-    with resources.files("openfe.tests.data.serialization") as dir_path:
+    with resources.as_file(resources.files("openfe.tests.data.serialization")) as dir_path:
         # Note: the template doesn't include a valid version, but it loads
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.
@@ -31,7 +31,7 @@ def test_load_molecules_sdf_file():
 
 
 def test_get_dir_molecules_mol2():
-    with resources.files("openfe.tests.data.lomap_basic") as dir_path:
+    with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as dir_path:
         # Note: the template doesn't include a valid version, but it loads
         # anyway. In the future, we may need to create a temporary file with
         # template substitutions done, but that seemed like overkill now.

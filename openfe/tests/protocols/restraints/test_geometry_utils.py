@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import itertools
+from importlib import resources
 import os
 import pathlib
 
@@ -56,6 +57,14 @@ zenodo_restraint_data = pooch.create(
     },
     retry_if_failed=3,
 )
+pdb_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="https://files.rcsb.org/download/",
+    registry={
+        "6CZJ.pdb": "sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622"
+    },
+    retry_if_failed=3,
+)
 
 
 @pytest.fixture
@@ -70,6 +79,13 @@ def t4_lysozyme_trajectory_universe():
         str(cache_dir / "t4_toluene_complex.xtc"),
     )
     return universe
+
+
+@pytest.fixture
+def beta_barrel_universe():
+    pdb_data.fetch("6CZJ.pdb")
+    file_path = pathlib.Path(pooch.os_cache("openfe") / "6CZJ.pdb")
+    return mda.Universe(file_path)
 
 
 def test_mda_selection_none_error(eg5_pdb_universe):
@@ -221,33 +237,82 @@ def test_collinear_index_match_error_index():
 
 
 @pytest.mark.parametrize(
-    "arr, truth",
+    "arr, thresh, truth",
     [
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], True],
-        [[[0, 1, -1], [1, 0, 0], [2, 0, 2]], False],
-        [[[0, 1, -1], [1, 1, 0], [2, 1, 2]], True],
-        [[[0, 0, -1], [1, 1, 0], [2, 2, 2]], True],
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], True],
-        [[[2, 0, -1], [1, 0, 0], [0, 0, 2]], True],
-        [[[0, 0, 1], [0, 0, 0], [0, 0, 2]], True],
-        [[[1, 1, 1], [0, 0, 0], [2, 2, 2]], True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1]], 0.9, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], 0.9, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], 0.95, False],
+        [[[0, 1, -1], [1, 0, 0], [2, 0, 1]], 0.9, False],
+        [[[0, 1, -1], [1, 1, 0], [2, 1, 1]], 0.9, True],
+        [[[0, 1, -1], [1, 1, 0], [2, 1, 2]], 0.95, False],
+        [[[0, 0, -1], [1, 1, 0], [2, 2, 1]], 0.95, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1]], 0.95, True],
+        [[[2, 0, -1], [1, 0, 0], [0, 0, 1]], 0.95, True],
+        [[[0, 0, 1], [0, 0, 0], [0, 0, 2]], 0.95, True],
+        [[[1, 1, 1], [0, 0, 0], [2, 2, 2]], 0.9, True],
     ],
 )
-def test_is_collinear_three_atoms(arr, truth):
-    assert is_collinear(np.array(arr), [0, 1, 2]) == truth
+def test_is_collinear_three_atoms(arr, thresh, truth):
+    assert (
+        is_collinear(positions=np.array(arr), atoms=[0, 1, 2], threshold=thresh)
+        == truth
+    )
 
 
 @pytest.mark.parametrize(
-    "arr, truth",
+    "arr, truth, dims",
     [
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], True],
-        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], True],
-        [[[0, 0, 1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], True],
-        [[[0, 1, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], False],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1]], True, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 11]], False, False],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 11]], True, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2]], False, True],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 12]], False, False],
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 12]], False, True],
     ],
 )
-def test_is_collinear_four_atoms(arr, truth):
-    assert is_collinear(np.array(arr), [0, 1, 2, 3]) == truth
+def test_is_collinear_three_atoms_dimensions(arr, truth, dims):
+    if dims:
+        dimensions = np.array([10.0, 10.0, 10.0, 90.0, 90.0, 90.0], dtype=float)
+    else:
+        dimensions = None
+
+    assert (
+        is_collinear(
+            positions=np.array(arr, dtype=float),
+            atoms=[0, 1, 2],
+            threshold=0.99,
+            dimensions=dimensions,
+        )
+        == truth
+    )
+
+
+@pytest.mark.parametrize(
+    "arr, tresh, truth",
+    [
+        # collinear all
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1], [3, 0, 2]], 0.99, True],
+        # not collinear for all
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], 0.99, False],
+        # not collinear but within threshold
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], 0.9, True],
+        # collinear for v3 and v4
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 2], [3, 0, 4]], 0.99, True],
+        # collinear for v1 and v2
+        [[[0, 0, -1], [1, 0, 0], [2, 0, 1], [3, 0, 4]], 0.99, True],
+        # not collinear for all
+        [[[0, 1, -1], [1, 0, 0], [2, 0, 2], [3, 0, 2]], 0.99, False],
+    ],
+)
+def test_is_collinear_four_atoms(arr, tresh, truth):
+    assert (
+        is_collinear(
+            positions=np.array(arr),
+            atoms=[0, 1, 2, 3],
+            threshold=tresh,
+        )
+        == truth
+    )
 
 
 def test_wrap_angle_degrees():
@@ -353,18 +418,37 @@ def test_atomgroup_has_bonds(eg5_protein_pdb):
 
     # PDB has water bonds
     assert len(u.bonds) == 14
-    assert _atomgroup_has_bonds(u) is False
-    assert _atomgroup_has_bonds(u.select_atoms("resname HOH")) is True
+    assert not _atomgroup_has_bonds(u)
+    assert _atomgroup_has_bonds(u.select_atoms("resname HOH"))
 
     # Delete the topology attr and everything is false
     u.del_TopologyAttr("bonds")
-    assert _atomgroup_has_bonds(u) is False
-    assert _atomgroup_has_bonds(u.select_atoms("resname HOH")) is False
+    assert not _atomgroup_has_bonds(u)
+    assert not _atomgroup_has_bonds(u.select_atoms("resname HOH"))
 
     # Guess some bonds back
     ag = u.atoms[:100]
     ag.guess_bonds()
-    assert _atomgroup_has_bonds(ag) is True
+    assert _atomgroup_has_bonds(ag)
+
+
+@pytest.mark.skipif(
+    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
+    reason="Internet seems to be unavailable and test data is not cached locally.",
+)
+def test_atomgroup_has_bonds_ions(t4_lysozyme_trajectory_universe):
+
+    # make a copy of the universe so we don't change things
+    u = t4_lysozyme_trajectory_universe.copy()
+
+    # Toluene (16) and cap (5) have bonds
+    assert len(u.bonds) == 21
+    assert not _atomgroup_has_bonds(u)
+    assert _atomgroup_has_bonds(u.select_atoms("resname UNK"))
+
+    # Guess the bonds, ions won't have them but otherwise all residues should
+    u.select_atoms('not resname NA CL').guess_bonds()  # don't guess ions
+    assert _atomgroup_has_bonds(u)
 
 
 def test_centroid_distance_sort(eg5_protein_ligand_universe):
@@ -448,44 +532,119 @@ def test_get_rmsf_trajectory(t4_lysozyme_trajectory_universe):
     not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
     reason="Internet seems to be unavailable and test data is not cached locally.",
 )
-def test_stable_ss_selection(t4_lysozyme_trajectory_universe):
+class TestStableSelection:
+    def test_stable_ss_selection(self, t4_lysozyme_trajectory_universe):
 
-    # use a copy as we need to remove the bonds first
-    universe_copy = t4_lysozyme_trajectory_universe.copy()
-    universe_copy.del_TopologyAttr("bonds")
+        ligand = t4_lysozyme_trajectory_universe.select_atoms("resname LIG")
 
-    ligand = universe_copy.select_atoms("resname LIG")
+        # Topology is PDB so bonds will be missing
+        with pytest.warns(
+            match="No bonds found in input Universe, will attempt to guess them."
+        ):
+            stable_protein = stable_secondary_structure_selection(
+                # DDSP should filter by protein we will check at the end
+                atomgroup=t4_lysozyme_trajectory_universe.atoms,
+            )
+            # make sure the ligand is not in this selection
+            overlapping_ligand = stable_protein.intersection(ligand.atoms)
+            assert overlapping_ligand.n_atoms == 0
+            # make sure we get the expected number of atoms
+            assert stable_protein.n_atoms == 780
 
-    with pytest.warns(
-        match="No bonds found in input Universe, will attempt to guess them."
-    ):
+    def test_small_chain(self, t4_lysozyme_trajectory_universe):
+        """
+        Artifically set min_structure_size so large that no chains are recognised.
+        """
         stable_protein = stable_secondary_structure_selection(
-            # DDSP should filter by protein we will check at the end
-            atomgroup=universe_copy.atoms,
+            atomgroup=t4_lysozyme_trajectory_universe.atoms,
+            min_structure_size=999,
         )
-        # make sure the ligand is not in this selection
-        overlapping_ligand = stable_protein.intersection(ligand.atoms)
-        assert overlapping_ligand.n_atoms == 0
-        # make sure we get the expected number of atoms
-        assert stable_protein.n_atoms == 780
+    
+        # Should have an empty atomgroup
+        assert len(stable_protein) == 0
+
+    def test_bad_dssp(self, t4_lysozyme_trajectory_universe):
+        """
+        Cause DSSP to fail to yield an empty atomgroup.
+        """
+        u_copy = t4_lysozyme_trajectory_universe.copy()
+
+        # rename all CA atoms to LA to make things break
+        for at in u_copy.atoms:
+            at.name = 'LA'
+
+        stable_protein = stable_secondary_structure_selection(
+            atomgroup=u_copy.atoms,
+        )
+
+        # Should have an empty atomgroup
+        assert len(stable_protein) == 0
+
+    def test_beta_dssp(self, beta_barrel_universe):
+        """
+        6CZJ is a straight up beta-barrel
+        """
+        stable_protein = stable_secondary_structure_selection(
+            atomgroup=beta_barrel_universe.atoms,
+        )
+
+        assert len(stable_protein.residues) == 59
 
 
 def test_protein_chain_selection(eg5_protein_ligand_universe):
 
-    # use a copy as we need to remove the bonds first
-    universe_copy = eg5_protein_ligand_universe.copy()
-    universe_copy.del_TopologyAttr("bonds")
+    ligand = eg5_protein_ligand_universe.select_atoms("resname LIG")
 
-    ligand = universe_copy.select_atoms("resname LIG")
-
+    # Topology is PDB so bonds will be missing
     with pytest.warns(
         match="No bonds found in input Universe, will attempt to guess them."
     ):
         chain_selection = protein_chain_selection(
             # the selection should filter for the protein we will check at the end
-            atomgroup=universe_copy.atoms,
+            atomgroup=eg5_protein_ligand_universe.atoms,
         )
         overlapping_ligand = chain_selection.intersection(ligand.atoms)
         assert overlapping_ligand.n_atoms == 0
         # make sure we get the expected number of atoms
         assert chain_selection.n_atoms == 5150
+
+
+def test_protein_chain_selection_subchain(eg5_pdb_universe):
+    """
+    Pass a subset of the residues in a chain
+    """
+
+    sele = protein_chain_selection(
+        atomgroup=eg5_pdb_universe.residues[:28].atoms,
+    )
+
+    assert len(sele.residues) == 18
+    assert len(sele) == 282
+
+
+def test_protein_chain_selection_nochains(eg5_pdb_universe):
+    """
+    Artificially bump up the minimum number of residues per
+    chain such that we don't have any chains.
+    """
+
+    sele = protein_chain_selection(
+        atomgroup=eg5_pdb_universe.atoms,
+        min_chain_length=99999,
+    )
+
+    assert len(sele) == 0
+
+def test_protein_chain_selection_trim_too_large(eg5_pdb_universe):
+    """
+    Use artificially large trim sizes that are greater than the length of the residue.
+    """
+
+    sele = protein_chain_selection(
+        atomgroup=eg5_pdb_universe.atoms,
+        min_chain_length=30,
+        trim_chain_start=5000,
+        trim_chain_end=8000,
+    )
+
+    assert len(sele) == 0

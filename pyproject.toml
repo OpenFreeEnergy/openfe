@@ -43,6 +43,7 @@ openfe = ['"./openfe/tests/data/lomap_basic/toluene.mol2"']
 [tool.mypy]
 files = "openfe"
 ignore_missing_imports = true
+warn_unused_ignores = true
 
 [tool.coverage.run]
 omit = [

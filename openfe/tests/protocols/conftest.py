@@ -93,7 +93,7 @@ def benzene_to_toluene_mapping(benzene_modifications):
 @pytest.fixture
 def benzene_charges():
     files = {}
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         fn = str(d / 'charged_benzenes.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
