@@ -11,14 +11,14 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from gufe.vendor.openff.models.types import FloatQuantity, ArrayQuantity
+from gufe.settings.types import NanometerQuantity, PicosecondQuantity, InversePicosecondQuantity, NanosecondQuantity, FemtosecondQuantity, KCalPerMolQuantity, BoxQuantity,TimestepQuantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
-    Settings,
+    Settings as Settings,
     SettingsBaseModel,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
+    OpenMMSystemGeneratorFFSettings as OpenMMSystemGeneratorFFSettings,
+    ThermoSettings as ThermoSettings,
 )
 
 
@@ -109,7 +109,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
     Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
     """
-    solvent_padding: Optional[FloatQuantity['nanometer']] = 1.2 * unit.nanometer
+    solvent_padding: NanometerQuantity | None = 1.2 * unit.nanometer
     """
     Minimum distance from any solute bounding sphere to the edge of the box.
 
@@ -136,7 +136,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``solvent_padding``, ``box_size``,
       or ``box_vectors``.
     """
-    box_vectors: Optional[ArrayQuantity['nanometer']] = None
+    box_vectors: BoxQuantity | None = None # TODO: check that BoxQuantity does the validation we want.
     """
     `OpenMM reduced form box vectors <http://docs.openmm.org/latest/userguide/theory/05_other_features.html#periodic-boundary-conditions>`.
 
@@ -150,7 +150,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     :mod:`openff.interchange.components.interchange`
     :mod:`openff.interchange.components._packmol`
     """
-    box_size: Optional[ArrayQuantity['nanometer']] = None
+    box_size: BoxQuantity | None = None
     """
     X, Y, and Z lengths of the unit cell for a rectangular box.
 
@@ -338,10 +338,10 @@ class IntegratorSettings(SettingsBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    timestep: FloatQuantity['femtosecond'] = 4.0 * unit.femtosecond
-    """Size of the simulation timestep. Default 4.0 * unit.femtosecond."""
-    langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
-    """Collision frequency. Default 1.0 / unit.pisecond."""
+    timestep: FemtosecondQuantity = 4.0 * unit.femtosecond
+    """Size of the simulation timestep in femtoseconds. Default 4.0 * unit.femtosecond."""
+    langevin_collision_rate: InversePicosecondQuantity = 1.0 / unit.picosecond
+    """Collision frequency in picoseconds. Default 1.0 / unit.picosecond."""
     reassign_velocities: bool = False
     """
     If ``True``, velocities are reassigned from the Maxwell-Boltzmann
@@ -354,7 +354,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance: float = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency: FloatQuantity['timestep'] = 25.0 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: TimestepQuantity = 25.0 * unit.timestep  # todo: IntQuantity
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
@@ -411,7 +411,7 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['nanosecond'] = 1.0 * unit.nanosecond
+    checkpoint_interval: NanosecondQuantity = 1.0 * unit.nanosecond
     """
     Frequency to write the checkpoint file. Default 1 * unit.nanosecond.
     """
@@ -451,7 +451,7 @@ class MultiStateOutputSettings(OutputSettings):
     to visualise and further manipulate the system.
     Default 'hybrid_system.pdb'.
     """
-    positions_write_frequency: Optional[FloatQuantity['picosecond']] = 100.0 * unit.picosecond
+    positions_write_frequency: PicosecondQuantity | None = 100.0 * unit.picosecond
     """
     Frequency at which positions are written to the simulation trajectory
     storage file (defined by ``output_filename``).
@@ -461,7 +461,7 @@ class MultiStateOutputSettings(OutputSettings):
     Unless set to ``None``, must be divisible by
     ``MultiStateSimulationSettings.time_per_iteration``.
     """
-    velocities_write_frequency: Optional[FloatQuantity['picosecond']] = None
+    velocities_write_frequency: PicosecondQuantity | None = None
     """
     Frequency at which velocities are written to the simulation
     trajectory storage file (defined by ``output_filename``).
@@ -491,12 +491,12 @@ class SimulationSettings(SettingsBaseModel):
 
     minimization_steps: int = 5000
     """Number of minimization steps to perform. Default 5000."""
-    equilibration_length: FloatQuantity['nanosecond']
+    equilibration_length: NanosecondQuantity
     """
     Length of the equilibration phase in units of time.
     Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
-    production_length: FloatQuantity['nanosecond']
+    production_length: NanosecondQuantity
     """
     Length of the production phase in units of time.
     Must be divisible by the :class:`IntegratorSettings.timestep`.
@@ -548,12 +548,12 @@ class MultiStateSimulationSettings(SimulationSettings):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    time_per_iteration: FloatQuantity['picosecond'] = 1.0 * unit.picosecond
+    time_per_iteration: PicosecondQuantity = 1.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
-    real_time_analysis_interval: Optional[FloatQuantity['picosecond']] = 250.0 * unit.picosecond
+    real_time_analysis_interval: PicosecondQuantity | None= 250.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
@@ -571,7 +571,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default `250`.
 
     """
-    early_termination_target_error: Optional[FloatQuantity['kilocalorie_per_mole']] = 0.0 * unit.kilocalorie_per_mole
+    early_termination_target_error: KCalPerMolQuantity | None = 0.0 * unit.kilocalorie_per_mole
     # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
     #  (later would give an example of unit).
     """
@@ -582,7 +582,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     shown to be effective in both hydration and binding free energy benchmarks.
     Default ``None``, i.e. no early termination will occur.
     """
-    real_time_analysis_minimum_time: FloatQuantity['picosecond'] = 500.0 * unit.picosecond
+    real_time_analysis_minimum_time: PicosecondQuantity = 500.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
@@ -649,7 +649,7 @@ class MDSimulationSettings(SimulationSettings):
     class Config:
         arbitrary_types_allowed = True
 
-    equilibration_length_nvt: Optional[FloatQuantity['nanosecond']]
+    equilibration_length_nvt: NanosecondQuantity | None
     """
     Length of the equilibration phase in the NVT ensemble in units of time.
     The total number of steps from this equilibration length
@@ -666,7 +666,7 @@ class MDOutputSettings(OutputSettings):
     # reporter settings
     production_trajectory_filename: Optional[str] = 'simulation.xtc'
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
-    trajectory_write_interval: FloatQuantity['picosecond'] = 20.0 * unit.picosecond
+    trajectory_write_interval: PicosecondQuantity = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
