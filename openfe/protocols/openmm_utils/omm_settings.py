@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from gufe.settings.types import NanometerQuantity, PicosecondQuantity, InversePicosecondQuantity, NanosecondQuantity, FemtosecondQuantity, KCalPerMolQuantity, BoxQuantity,TimestepQuantity
+from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity, InversePicosecondQuantity, NanosecondQuantity, FemtosecondQuantity, KCalPerMolQuantity, BoxQuantity,TimestepQuantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
@@ -150,7 +150,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     :mod:`openff.interchange.components.interchange`
     :mod:`openff.interchange.components._packmol`
     """
-    box_size: BoxQuantity | None = None
+    box_size: NanometerArrayQuantity | None = None  # TODO: make this a better check!
     """
     X, Y, and Z lengths of the unit cell for a rectangular box.
 

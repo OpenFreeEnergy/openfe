@@ -92,5 +92,5 @@ class TestOpenMMSolvationSettings:
     def test_box_size_properties_non_1d(self):
         s = omm_settings.OpenMMSolvationSettings()
 
-        with pytest.raises(ValueError, match="is not a box"):
+        with pytest.raises(ValueError, match="must be a 1-D array"):
             s.box_size = np.array([[1, 2, 3], [1, 2, 3]]) * unit.angstrom
