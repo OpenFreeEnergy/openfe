@@ -11,7 +11,7 @@ TODO
 from typing import Literal, Optional
 
 from gufe.settings import SettingsBaseModel
-from gufe.vendor.openff.models.types import FloatQuantity
+from gufe.settings.types import NanometerQuantity, SpringConstantLinearQuantity, SpringConstantAngularQuantity
 from openff.units import unit
 from pydantic import validator
 
@@ -31,7 +31,7 @@ class DistanceRestraintSettings(BaseRestraintSettings):
     two groups of atoms defined as ``host`` and ``guest``.
     """
 
-    spring_constant: FloatQuantity["kilojoule_per_mole / nm ** 2"]
+    spring_constant: SpringConstantLinearQuantity
     """
     The distance restraint potential spring constant.
     """
@@ -68,7 +68,7 @@ class FlatBottomRestraintSettings(DistanceRestraintSettings):
     groups of atoms named ``host`` and ``guest``.
     """
 
-    well_radius: Optional[FloatQuantity["nm"]] = None
+    well_radius: NanometerQuantity | None = None
     """
     The distance at which the harmonic restraint is imposed
     in units of distance.
@@ -113,41 +113,41 @@ class BoreschRestraintSettings(BaseRestraintSettings):
         (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
     """
 
-    K_r: FloatQuantity["kilojoule_per_mole / nm ** 2"] = (
+    K_r: SpringConstantLinearQuantity = (
         4184.0 * unit.kilojoule_per_mole / unit.nm**2
     )
     """
     The bond spring constant between H0 and G0. Default 10 kcal/mol/Å²
     """
-    K_thetaA: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
-        334.72 * unit.kilojoule_per_mole / unit.radians**2
+    K_thetaA: SpringConstantAngularQuantity = (
+        334.72  * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The spring constant for the angle formed by H1-H0-G0. 
     Default 80 kcal/mol/rad²
     """
-    K_thetaB: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
+    K_thetaB: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The spring constant for the angle formed by H0-G0-G1.
     Default 80 kcal/mol/rad²
     """
-    K_phiA: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
+    K_phiA: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
     H2-H1-H0-G0. Default 80 kcal/mol/rad²
     """
-    K_phiB: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
+    K_phiB: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
     H1-H0-G0-G1. Default 80 kcal/mol/rad²
     """
-    K_phiC: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
+    K_phiC: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
@@ -164,17 +164,17 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     Whether or not to try to do a DSSP filter on the host atoms.
     """
-    rmsf_cutoff: FloatQuantity["nanometer"] = 0.1 * unit.nanometer
+    rmsf_cutoff: NanometerQuantity = 0.1 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The cutoff value for filtering atoms by their root mean square fluctuation. Atoms with values above this cutoff will be disregarded.
     """
-    host_min_distance: FloatQuantity["nanometer"] = 0.5 * unit.nanometer
+    host_min_distance: NanometerQuantity = 0.5 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The minimum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
     """
-    host_max_distance: FloatQuantity["nanometer"] = 1.5 * unit.nanometer
+    host_max_distance: NanometerQuantity = 1.5 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The maximum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.

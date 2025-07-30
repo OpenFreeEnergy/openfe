@@ -10,7 +10,7 @@ TODO
 from typing import Literal, Optional
 
 import MDAnalysis as mda
-from gufe.vendor.openff.models.types import FloatQuantity
+from gufe.settings.types import NanometerQuantity, RadiansQuantity
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit
@@ -39,28 +39,28 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     the X index of ``guest_atoms``.
     """
 
-    r_aA0: FloatQuantity["nanometer"]
+    r_aA0: NanometerQuantity
     """
     The equilibrium distance between H0 and G0.
     """
-    theta_A0: FloatQuantity["radians"]
+    theta_A0: RadiansQuantity
     """
     The equilibrium angle value between H1, H0, and G0.
     """
-    theta_B0: FloatQuantity["radians"]
+    theta_B0: RadiansQuantity
     """
     The equilibrium angle value between H0, G0, and G1.
     """
-    phi_A0: FloatQuantity["radians"]
+    phi_A0: RadiansQuantity
     """
     The equilibrium dihedral value between H2, H1, H0, and G0.
     """
-    phi_B0: FloatQuantity["radians"]
+    phi_B0: RadiansQuantity
 
     """
     The equilibrium dihedral value between H1, H0, G0, and G1.
     """
-    phi_C0: FloatQuantity["radians"]
+    phi_C0: RadiansQuantity
 
     """
     The equilibrium dihedral value between H0, G0, G1, and G2.
