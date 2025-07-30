@@ -308,12 +308,12 @@ def test_add_boresch_force(tyk2_protein_ligand_system, tyk2_rdkit_ligand):
     # create the geometry from the saved values in the sdf file
     # TODO: should this require units?
     geometry = BoreschRestraintGeometry(
-        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0"),
-        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0"),
-        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0"),
-        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0"),
-        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0"),
-        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0"),
+        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0") * unit.nanometer,
+        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0") * unit.radians,
+        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0") * unit.radians,
+        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0")* unit.radians,
+        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0")* unit.radians,
+        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0")* unit.radians,
         host_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Host{i}") for i in range(3)],
         guest_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Guest{i}") for i in range(3)],
     )
@@ -352,12 +352,12 @@ def test_get_boresch_state_correction(tyk2_protein_ligand_system, tyk2_rdkit_lig
     restraint = BoreschRestraint(restraint_settings=BoreschRestraintSettings())
     # create the geometry from the saved values in the sdf file
     geometry = BoreschRestraintGeometry(
-        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0"),
-        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0"),
-        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0"),
-        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0"),
-        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0"),
-        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0"),
+        r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0") * unit.nanometer,
+        theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0") * unit.radians,
+        theta_B0=tyk2_rdkit_ligand.GetDoubleProp("theta_B0") * unit.radians,
+        phi_A0=tyk2_rdkit_ligand.GetDoubleProp("phi_A0") * unit.radians,
+        phi_B0=tyk2_rdkit_ligand.GetDoubleProp("phi_B0") * unit.radians,
+        phi_C0=tyk2_rdkit_ligand.GetDoubleProp("phi_C0") * unit.radians,
         host_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Host{i}") for i in range(3)],
         guest_atoms=[tyk2_rdkit_ligand.GetIntProp(f"Guest{i}") for i in range(3)],
     )
