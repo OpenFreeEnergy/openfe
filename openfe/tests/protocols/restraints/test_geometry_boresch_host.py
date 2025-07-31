@@ -192,7 +192,7 @@ class TestFindAnchor:
         assert_equal(host_anchor, [133, 1, 16])
 
     def test_host_guest_bond_distance(self, host_anchor, universe):
-        # check that the l0 g0 distance is >= 2 nm away
+        # check that the l0 g0 distance is at least the `guest_minimum_distance` (2nm)  for the `host_anchor` fixture.
         dist = mda.lib.distances.calc_bonds(
             universe.atoms[host_anchor[0]].position,
             universe.atoms[5528].position,
@@ -200,7 +200,7 @@ class TestFindAnchor:
         )
 
         # distance is just about 2.0 nm
-        assert dist == pytest.approx(20.612924)
+        assert dist == pytest.approx(20.612924, abs=1e-5)
 
     def test_host_distances(self, host_anchor, universe):
         # check the h0-h1, h1-h2, and h0-h2 distances
@@ -210,7 +210,7 @@ class TestFindAnchor:
                 universe.atoms[host_anchor[j]].position,
                 box=universe.dimensions,
             )
-            assert dist == pytest.approx(ref)
+            assert dist == pytest.approx(ref, abs=1e-5)
 
     def test_not_collinear(self, host_anchor, universe):
         # check none of the g2-g1-g0-h0-h1-h2 vectors are not collinear
@@ -276,6 +276,8 @@ def test_find_host_anchor_none(eg5_protein_ligand_universe):
     host_anchor = find_host_anchor(
         guest_atoms=eg5_protein_ligand_universe.atoms[[5528, 5507, 5508]],
         host_atom_pool=eg5_protein_ligand_universe.select_atoms("backbone"),
+        # Setting host and guest minimum distances to a large value so
+        # we find no atoms.
         host_minimum_distance=4.5 * unit.nanometer,
         guest_minimum_distance=4.5 * unit.nanometer,
         angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
