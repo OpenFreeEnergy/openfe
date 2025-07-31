@@ -85,8 +85,8 @@ def find_host_atom_candidates(
     host_selection: str,
     dssp_filter: bool = False,
     rmsf_cutoff: Quantity = 0.1 * unit.nanometer,
-    min_search_distance: Quantity = 1 * unit.nanometer,
-    max_search_distance: Quantity = 3 * unit.nanometer,
+    min_search_distance: Quantity = 0.5 * unit.nanometer,
+    max_search_distance: Quantity = 1.5 * unit.nanometer,
 ) -> npt.NDArray:
     """
     Get a list of suitable host atoms.
