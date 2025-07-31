@@ -7,22 +7,20 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
-from rdkit import Chem
-
-from gufe.vendor.openff.models.types import ArrayQuantity
-from openff.units import unit, Quantity
 import MDAnalysis as mda
 import numpy.typing as npt
-
+from gufe.vendor.openff.models.types import ArrayQuantity
 from openfe.protocols.restraint_utils.geometry.utils import (
     get_aromatic_rings,
-    get_heavy_atom_idxs,
     get_central_atom_idx,
-    is_collinear,
+    get_heavy_atom_idxs,
     get_local_rmsf,
+    is_collinear,
 )
+from openff.units import Quantity, unit
+from rdkit import Chem
 
 
 def _sort_by_distance_from_atom(
@@ -117,7 +115,9 @@ def _bonded_angles_from_pool(
             return False
 
         # build a list of angles to remove
-        angles_to_remove = [angle for angle in angles if not _belongs_to_ring(angle, aromatic_rings)]
+        angles_to_remove = [
+            angle for angle in angles if not _belongs_to_ring(angle, aromatic_rings)
+        ]
         for angle in angles_to_remove:
             angles.remove(angle)
 
@@ -125,9 +125,7 @@ def _bonded_angles_from_pool(
 
 
 def _get_guest_atom_pool(
-    rdmol: Chem.Mol,
-    rmsf: ArrayQuantity,
-    rmsf_cutoff: Quantity
+    rdmol: Chem.Mol, rmsf: ArrayQuantity, rmsf_cutoff: Quantity
 ) -> tuple[Optional[set[int]], bool]:
     """
     Filter atoms based on rmsf & rings, defaulting to heavy atoms if
@@ -165,10 +163,7 @@ def _get_guest_atom_pool(
     if len(atom_pool) < 3:
         ring_atoms_only = False
         heavy_atoms = get_heavy_atom_idxs(rdmol)
-        atom_pool = set(
-            idx for idx in heavy_atoms
-            if rmsf[idx] < rmsf_cutoff
-        )
+        atom_pool = set(idx for idx in heavy_atoms if rmsf[idx] < rmsf_cutoff)
         if len(atom_pool) < 3:
             return None, False
 
@@ -246,11 +241,7 @@ def find_guest_atom_candidates(
             angle_ag = ligand_ag.atoms[list(angle)]
             if not is_collinear(ligand_ag.positions, angle, universe.dimensions):
                 angles_list.append(
-                    (
-                        angle_ag.atoms[0].ix,
-                        angle_ag.atoms[1].ix,
-                        angle_ag.atoms[2].ix
-                    )
+                    (angle_ag.atoms[0].ix, angle_ag.atoms[1].ix, angle_ag.atoms[2].ix)
                 )
 
     return angles_list

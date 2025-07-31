@@ -1,18 +1,18 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import pytest
 import numpy as np
 import openmm
+import pytest
 from openfe.protocols.restraint_utils.openmm.omm_forces import (
-    get_boresch_energy_function,
-    get_periodic_boresch_energy_function,
-    get_custom_compound_bond_force,
     add_force_in_separate_group,
+    get_boresch_energy_function,
+    get_custom_compound_bond_force,
+    get_periodic_boresch_energy_function,
 )
 
 
-@pytest.mark.parametrize('param', ['foo', 'bar'])
+@pytest.mark.parametrize("param", ["foo", "bar"])
 def test_boresch_energy_function(param):
     """
     Base regression test for the energy function
@@ -30,7 +30,7 @@ def test_boresch_energy_function(param):
     )
 
 
-@pytest.mark.parametrize('param', ['foo', 'bar'])
+@pytest.mark.parametrize("param", ["foo", "bar"])
 def test_periodic_boresch_energy_function(param):
     """
     Base regression test for the energy function
@@ -48,9 +48,9 @@ def test_periodic_boresch_energy_function(param):
     )
 
 
-@pytest.mark.parametrize('num_atoms', [6, 20])
+@pytest.mark.parametrize("num_atoms", [6, 20])
 def test_custom_compound_force(num_atoms):
-    fn = get_boresch_energy_function('lambda_restraints')
+    fn = get_boresch_energy_function("lambda_restraints")
     force = get_custom_compound_bond_force(fn, num_atoms)
 
     # Check we have the right object
@@ -63,10 +63,13 @@ def test_custom_compound_force(num_atoms):
     assert force.getNumParticlesPerBond() == num_atoms
 
 
-@pytest.mark.parametrize('groups, expected', [
-    [[0, 1, 2, 3, 4], 5],
-    [[1, 2, 3, 4, 5], 0],
-])
+@pytest.mark.parametrize(
+    "groups, expected",
+    [
+        [[0, 1, 2, 3, 4], 5],
+        [[1, 2, 3, 4, 5], 0],
+    ],
+)
 def test_add_force_in_separate_group(groups, expected):
     # Create an empty system
     system = openmm.System()
@@ -86,7 +89,7 @@ def test_add_force_in_separate_group(groups, expected):
     [system.addForce(force) for force in base_forces]
 
     # Get your CustomCompoundBondForce
-    fn = get_boresch_energy_function('lambda_restraints')
+    fn = get_boresch_energy_function("lambda_restraints")
     new_force = get_custom_compound_bond_force(fn, 6)
     # new_force.setForceGroup(5)
     # system.addForce(new_force)
@@ -110,6 +113,4 @@ def test_add_too_many_force_groups():
 
     # Now try to add another force
     with pytest.raises(ValueError, match="No available force group"):
-        add_force_in_separate_group(
-            system=system, force=openmm.HarmonicBondForce()
-        )
+        add_force_in_separate_group(system=system, force=openmm.HarmonicBondForce())

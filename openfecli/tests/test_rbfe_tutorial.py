@@ -21,13 +21,13 @@ from .utils import assert_click_success
 
 @pytest.fixture
 def tyk2_ligands():
-    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+    with resources.as_file(resources.files('openfecli.tests.data.rbfe_tutorial')) as d:
         yield str(d / 'tyk2_ligands.sdf')
 
 
 @pytest.fixture
 def tyk2_protein():
-    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+    with resources.as_file(resources.files('openfecli.tests.data.rbfe_tutorial')) as d:
         yield str(d / 'tyk2_protein.pdb')
 
 

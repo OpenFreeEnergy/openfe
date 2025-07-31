@@ -8,17 +8,15 @@ TODO
 * Add relevant duecredit entries.
 """
 from typing import Optional
-import numpy as np
-from openff.units import unit, Quantity
-from gufe.vendor.openff.models.types import FloatQuantity
+
 import MDAnalysis as mda
+import numpy as np
+from gufe.vendor.openff.models.types import FloatQuantity
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds
+from openff.units import Quantity, unit
 
-from .harmonic import (
-    DistanceRestraintGeometry,
-)
-
+from .harmonic import DistanceRestraintGeometry
 from .utils import _get_mda_selection
 
 
@@ -27,6 +25,7 @@ class FlatBottomDistanceGeometry(DistanceRestraintGeometry):
     A geometry class for a flat bottom distance restraint between two groups
     of atoms.
     """
+
     well_radius: FloatQuantity["nanometer"]
 
 
@@ -41,6 +40,7 @@ class COMDistanceAnalysis(AnalysisBase):
     group2 : MDAnalysis.AtomGroup
       Atoms defining the second centroid.
     """
+
     _analysis_algorithm_is_parallelizable = False
 
     def __init__(self, group1, group2, **kwargs):

@@ -2,10 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import pytest
-
-from openfe.protocols.restraint_utils.geometry.base import (
-    HostGuestRestraintGeometry
-)
+from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 
 
 def test_hostguest_geometry():

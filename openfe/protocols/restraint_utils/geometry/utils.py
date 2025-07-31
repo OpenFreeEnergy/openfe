@@ -7,31 +7,25 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Union, Optional
+import warnings
 from itertools import combinations, groupby
+from typing import Optional, Union
+
+import MDAnalysis as mda
+import networkx as nx
 import numpy as np
 import numpy.typing as npt
-from scipy.stats import circvar
-import warnings
-
-from openff.toolkit import Molecule as OFFMol
-from openff.units import unit, Quantity
 from gufe.vendor.openff.models.types import ArrayQuantity
-import networkx as nx
-from rdkit import Chem
-import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
-from MDAnalysis.analysis.rms import RMSF
 from MDAnalysis.analysis.dssp import DSSP
-from MDAnalysis.lib.distances import (
-    minimize_vectors,
-    capped_distance,
-    distance_array,
-)
+from MDAnalysis.analysis.rms import RMSF
+from MDAnalysis.lib.distances import capped_distance, distance_array, minimize_vectors
 from MDAnalysis.transformations.nojump import NoJump
-
 from openfe_analysis.transformations import Aligner
-
+from openff.toolkit import Molecule as OFFMol
+from openff.units import Quantity, unit
+from rdkit import Chem
+from scipy.stats import circvar
 
 DEFAULT_ANGLE_FRC_CONSTANT = 83.68 * unit.kilojoule_per_mole / unit.radians**2
 
@@ -74,9 +68,7 @@ def _get_mda_selection(
         ag = universe.select_atoms(selection)
     else:
         if selection is not None:
-            raise ValueError(
-                "both atom_list and selection cannot be defined together"
-            )
+            raise ValueError("both atom_list and selection cannot be defined together")
         ag = universe.atoms[atom_list]
     return ag
 
@@ -198,7 +190,7 @@ def is_collinear(
     positions: npt.NDArray,
     atoms: Union[list[int], tuple[int, ...]],
     dimensions=None,
-    threshold=0.9
+    threshold=0.9,
 ):
     """
     Check whether any sequential vectors in a sequence of atoms are collinear.
@@ -422,6 +414,7 @@ class CentroidDistanceSort(AnalysisBase):
       A copy of ``sortable_atoms`` where the atoms are sorted by
       their distance from the centroid of ``reference_atoms``.
     """
+
     _analysis_algorithm_is_parallelizable = False
 
     def __init__(
@@ -444,9 +437,7 @@ class CentroidDistanceSort(AnalysisBase):
         self.reference_ag = get_atomgroup(reference_atoms)
 
     def _prepare(self):
-        self.results.distances = np.zeros(
-            (self.n_frames, len(self.sortable_ag))
-        )
+        self.results.distances = np.zeros((self.n_frames, len(self.sortable_ag)))
 
     def _single_frame(self):
         self.results.distances[self._frame_index] = distance_array(
@@ -481,6 +472,7 @@ class FindHostAtoms(AnalysisBase):
     results.host_idxs : np.ndarray
       A NumPy array of host indices in the Universe.
     """
+
     _analysis_algorithm_is_parallelizable = False
 
     def __init__(
@@ -520,9 +512,7 @@ class FindHostAtoms(AnalysisBase):
 
         # We do an intersection as we go along to prune atoms that don't pass
         # the distance selection criteria
-        self.results.host_idxs = self.results.host_idxs.intersection(
-            host_idxs
-        )
+        self.results.host_idxs = self.results.host_idxs.intersection(host_idxs)
 
     def _conclude(self):
         self.results.host_idxs = np.array(list(self.results.host_idxs))
@@ -561,11 +551,9 @@ def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
     return rmsf.results.rmsf * unit.angstrom
 
 
-def _atomgroup_has_bonds(
-    atomgroup: Union[mda.AtomGroup, mda.Universe]
-) -> bool:
+def _atomgroup_has_bonds(atomgroup: Union[mda.AtomGroup, mda.Universe]) -> bool:
     """
-    Check if all residues in an AtomGroup or Universe has bonds.
+    Check if all residues in an AtomGroup or Universe have bonds.
 
     Parameters
     ----------
@@ -577,10 +565,15 @@ def _atomgroup_has_bonds(
     bool
       True if all residues contain at least one bond, False otherwise.
     """
-    if not hasattr(atomgroup, 'bonds'):
+    if not hasattr(atomgroup, "bonds"):
         return False
 
-    if not all(len(r.atoms.bonds) > 0 for r in atomgroup.residues):
+    # Assume that any residue with more than one atom should have a bond
+    if not all(
+        len(r.atoms.bonds) > 0
+        for r in atomgroup.residues
+        if len(r.atoms) > 1
+    ):
         return False
 
     return True
@@ -663,7 +656,7 @@ def stable_secondary_structure_selection(
 
     # Create an AtomGroup that contains all the protein residues in the
     # input Universe - we will filter by what matches in the atomgroup later
-    copy_protein_ag = copy_u.select_atoms('protein').atoms
+    copy_protein_ag = copy_u.select_atoms("protein").atoms
 
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
@@ -674,7 +667,7 @@ def stable_secondary_structure_selection(
 
     structures = []  # container for all contiguous secondary structure units
     # Counter for each residue type found
-    structure_residue_counts = {'H': 0, 'E': 0, '-': 0}
+    structure_residue_counts = {"H": 0, "E": 0, "-": 0}
     # THe minimum length any chain must have
     min_chain_length = trim_chain_start + trim_chain_end + min_structure_size
 
@@ -699,25 +692,23 @@ def stable_secondary_structure_selection(
 
         # Tag each residue structure by its resindex
         dssp_results = [
-            (structure, resid) for structure, resid in
-            zip(dssp.results.dssp[0], chain.residues.resindices)
+            (structure, resid)
+            for structure, resid in zip(dssp.results.dssp[0], chain.residues.resindices)
         ]
 
         # Group by contiguous secondary structure
         for _, group_iter in groupby(dssp_results, lambda x: x[0]):
             group = list(group_iter)
             if len(group) >= min_structure_size:
-                structures.append(
-                    group[trim_structure_ends:-trim_structure_ends]
-                )
+                structures.append(group[trim_structure_ends:-trim_structure_ends])
                 num_residues = len(group) - (2 * trim_structure_ends)
                 structure_residue_counts[group[0][0]] += num_residues
 
     # If we have fewer alpha-helix residues than beta-sheet residues
     # then we allow picking from beta-sheets too.
-    allowed_structures = ['H']
-    if structure_residue_counts['H'] < structure_residue_counts['E']:
-        allowed_structures.append('E')
+    allowed_structures = ["H"]
+    if structure_residue_counts["H"] < structure_residue_counts["E"]:
+        allowed_structures.append("E")
 
     allowed_residxs = []
     for structure in structures:
@@ -734,6 +725,7 @@ def stable_secondary_structure_selection(
 
 def protein_chain_selection(
     atomgroup: mda.AtomGroup,
+    min_chain_length: int = 30,
     trim_chain_start: int = 10,
     trim_chain_end: int = 10,
 ) -> mda.AtomGroup:
@@ -742,13 +734,16 @@ def protein_chain_selection(
     chains trimmed by ``trim_chain_start`` and ``trim_chain_end``.
 
     Protein chains are defined as any continuously bonded part of system with
-    at least 30 residues which match the ``protein`` selection of MDAnalysis.
+    at least ``min_chain_length`` (default: 30) residues which match the
+    ``protein`` selection of MDAnalysis.
 
     Parameters
     ----------
     atomgroup : mda.AtomgGroup
       The AtomGroup to select atoms from.
-    trim_chain_start: int
+    min_chain_length : int
+      The minimum number of residues to be considered a protein chain. Default 30.
+    trim_chain_start : int
       The number of residues to trim from the start of each
       protein chain. Default 10.
     trim_chain_end : int
@@ -759,21 +754,19 @@ def protein_chain_selection(
     -------
     atomgroup : mda.AtomGroup
       An AtomGroup containing all the atoms from the input AtomGroup
-      which belong to protein chains.
+      which belong to the trimmed protein chains.
     """
     # First let's copy our Universe so we don't overwrite its current state
     copy_u = atomgroup.universe.copy()
 
     # Create an AtomGroup that contains all the protein residues in the
     # input Universe - we will filter by what matches in the atomgroup later
-    copy_protein_ag = copy_u.select_atoms('protein').atoms
+    copy_protein_ag = copy_u.select_atoms("protein").atoms
 
     # We need to split by fragments to account for multiple chains
     # To do this, we need bonds!
     if not _atomgroup_has_bonds(copy_protein_ag):
-        wmsg = (
-            "No bonds found in input Universe, will attempt to guess them."
-        )
+        wmsg = "No bonds found in input Universe, will attempt to guess them."
         warnings.warn(wmsg)
         copy_protein_ag.guess_bonds()
 
@@ -781,12 +774,16 @@ def protein_chain_selection(
 
     # Loop over each continually bonded section (i.e. chain) of the protein
     for frag in copy_protein_ag.fragments:
-        # If this chain is less than 30 residues, it's probably a peptide
-        if len(frag.residues) < 30:
+        # If this chain is less than min_chain_length residues, it's probably a peptide
+        if len(frag.residues) < min_chain_length:
             continue
 
         chain = frag.residues[trim_chain_start:-trim_chain_end].atoms
         copy_chains_ags_list.append(chain)
+
+    # If the list is empty, return an empty atomgroup
+    if not copy_chains_ags_list:
+        return atomgroup.atoms[[]]
 
     # Create a single atomgroup from all chains
     copy_chains_ag = sum(copy_chains_ags_list)
