@@ -8,7 +8,8 @@ energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
+from annotated_types import Gt
 from openff.units import unit
 
 from gufe.settings.types import NanometerQuantity
@@ -26,9 +27,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
     MultiStateOutputSettings,
     OpenFFPartialChargeSettings,
 )
-
-from pydantic import validator
-
 
 class LambdaSettings(SettingsBaseModel):
     class Config:
@@ -106,20 +104,12 @@ class AlchemicalSettings(SettingsBaseModel):
 
 
 class RelativeHybridTopologyProtocolSettings(Settings):
-    protocol_repeats: int
+    protocol_repeats: Annotated[int, Gt(0)]
     """
     The number of completely independent repeats of the entire sampling
     process. The mean of the repeats defines the final estimate of FE
     difference, while the variance between repeats is used as the uncertainty.
     """
-
-    @validator('protocol_repeats')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v
-
     # Inherited things
 
     forcefield_settings: OpenMMSystemGeneratorFFSettings

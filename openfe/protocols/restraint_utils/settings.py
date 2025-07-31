@@ -13,7 +13,7 @@ from typing import Literal, Optional
 from gufe.settings import SettingsBaseModel
 from gufe.settings.types import NanometerQuantity, SpringConstantLinearQuantity, SpringConstantAngularQuantity
 from openff.units import unit
-from pydantic import validator
+from pydantic import field_validator
 
 
 class BaseRestraintSettings(SettingsBaseModel):
@@ -54,7 +54,7 @@ class DistanceRestraintSettings(BaseRestraintSettings):
     represent small molecules.
     """
 
-    @validator("guest_atoms", "host_atoms")
+    @field_validator("guest_atoms", "host_atoms")
     def positive_idxs(cls, v):
         if v is not None and any([i < 0 for i in v]):
             errmsg = "negative indices passed"
@@ -74,7 +74,7 @@ class FlatBottomRestraintSettings(DistanceRestraintSettings):
     in units of distance.
     """
 
-    @validator("well_radius")
+    @field_validator("well_radius")
     def positive_value(cls, v):
         if v is not None and v.m < 0:
             errmsg = f"well radius cannot be negative {v}"
@@ -198,7 +198,7 @@ class BoreschRestraintSettings(BaseRestraintSettings):
       * `multi-residue`: pick host atoms which can span multiple residues.
     """
 
-    @validator("guest_atoms", "host_atoms")
+    @field_validator("guest_atoms", "host_atoms")
     def positive_idxs_list(cls, v):
         if v is not None and any([i < 0 for i in v]):
             errmsg = "negative indices passed"
