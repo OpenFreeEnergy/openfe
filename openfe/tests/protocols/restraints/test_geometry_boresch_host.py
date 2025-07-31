@@ -30,23 +30,45 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
 
 def test_host_atom_candidates_dssp(eg5_protein_ligand_universe):
     """
+    Run DSSP search normally
+    """
+    host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
+
+    idxs = find_host_atom_candidates(
+        universe=eg5_protein_ligand_universe,
+        host_idxs=host_atoms.ix,
+        # hand picked
+        guest_anchor_idx=5508,
+        host_selection="backbone and resnum 212:221",
+        dssp_filter=True,
+    )
+    expected = np.array(
+        [3144, 3146, 3145, 3143, 3162, 3206, 3200, 3207, 3126, 3201, 3127,
+         3163, 3199, 3202, 3164, 3125, 3165, 3177, 3208, 3179, 3124, 3216,
+         3209, 3109, 3107, 3178, 3110, 3180, 3108, 3248, 3217, 3249, 3226,
+         3218, 3228, 3227, 3250, 3219, 3251, 3229]
+    )
+    assert_equal(idxs, expected)
+
+
+def test_host_atom_candidates_dssp_too_few_atoms(eg5_protein_ligand_universe):
+    """
     Make sure both dssp warnings are triggered
     """
 
     host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
     with (
-        pytest.warns(
-            match="Too few atoms found via secondary structure filtering will"
-        ),
-        pytest.warns(match="Too few atoms found in protein residue chains,"),
+        pytest.warns(match="DSSP filter found"),
+        pytest.warns(match="protein chain filter found"),
     ):
         _ = find_host_atom_candidates(
             universe=eg5_protein_ligand_universe,
-            host_idxs=[a.ix for a in host_atoms],
+            host_idxs=host_atoms.ix,
             # hand picked
-            l1_idx=5508,
+            guest_anchor_idx=5508,
             host_selection="backbone and resnum 15:25",
             dssp_filter=True,
+            max_search_distance=2*unit.nanometer
         )
 
 
@@ -58,12 +80,12 @@ def test_host_atom_candidate_small_search(eg5_protein_ligand_universe):
     ):
         _ = find_host_atom_candidates(
             universe=eg5_protein_ligand_universe,
-            host_idxs=[a.ix for a in host_atoms],
+            host_idxs=host_atoms.ix,
             # hand picked
-            l1_idx=5508,
+            guest_anchor_idx=5508,
             host_selection="backbone",
             dssp_filter=False,
-            max_distance=0.1 * unit.angstrom,
+            max_search_distance=0.1 * unit.angstrom,
         )
 
 
