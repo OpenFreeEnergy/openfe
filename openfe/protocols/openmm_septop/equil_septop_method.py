@@ -1572,7 +1572,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         ligand_A_inxs: list[int],
         ligand_B_inxs: list[int],
         ligand_B_inxs_B: list[int],
-        protein_inxs: list[int],  # type: ignore[override]
+        protein_inxs: list[int],
         settings: dict[str, SettingsBaseModel],
     ) -> tuple[
         Quantity,

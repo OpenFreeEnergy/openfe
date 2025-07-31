@@ -1140,12 +1140,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             if self.verbose:
                 self.logger.info("equilibrating systems")
 
-            sampler.equilibrate(int(equil_steps / mc_steps))  # type: ignore
+            sampler.equilibrate(int(equil_steps / mc_steps))
 
             # production
             if self.verbose:
                 self.logger.info("running production phase")
-            sampler.extend(int(prod_steps / mc_steps))  # type: ignore
+            sampler.extend(int(prod_steps / mc_steps))
 
             if self.verbose:
                 self.logger.info("production phase complete")
