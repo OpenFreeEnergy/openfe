@@ -217,7 +217,7 @@ def benzene_modifications():
 @pytest.fixture(scope='session')
 def charged_benzene_modifications():
     files = {}
-    with importlib.resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         fn = str(d / 'charged_benzenes.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
@@ -227,7 +227,7 @@ def charged_benzene_modifications():
 
 @pytest.fixture(scope='session')
 def T4L_reference_xml():
-    with importlib.resources.files('openfe.tests.data.openmm_septop') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_septop')) as d:
         f = str(d / 'system.xml.bz2')
     return deserialize(pathlib.Path(f))
 
