@@ -15,6 +15,8 @@ TODO
 * Add support for restraints
 
 """
+from typing import Annotated
+from annotated_types import Gt
 from gufe.settings import (
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
@@ -33,7 +35,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 import numpy as np
 
-from pydantic import validator
+from pydantic import field_validator
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -86,7 +88,7 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
-    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    @field_validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
     def must_be_between_0_and_1(cls, v):
         for window in v:
             if not 0 <= window <= 1:
@@ -95,7 +97,7 @@ class LambdaSettings(SettingsBaseModel):
                 raise ValueError(errmsg)
         return v
 
-    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    @field_validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
@@ -117,19 +119,12 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     --------
     openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
     """
-    protocol_repeats: int
+    protocol_repeats: Annotated[int, Gt(0)]
     """
     The number of completely independent repeats of the entire sampling 
     process. The mean of the repeats defines the final estimate of FE 
     difference, while the variance between repeats is used as the uncertainty.  
     """
-
-    @validator('protocol_repeats')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v
 
     # Inherited things
     solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings

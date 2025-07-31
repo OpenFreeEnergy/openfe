@@ -9,7 +9,7 @@ TODO
 """
 import abc
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 
 class BaseRestraintGeometry(BaseModel, abc.ABC):
@@ -42,9 +42,9 @@ class HostGuestRestraintGeometry(BaseRestraintGeometry):
     """
     host_atoms: list[int]
 
-    @validator("guest_atoms", "host_atoms")
+    @field_validator("guest_atoms", "host_atoms")
     def positive_idxs(cls, v):
-        if v is not None and any([i < 0 for i in v]):
+        if v is not None and any([i < 0 for i in v]):  #TODO: when would None be valid here?
             errmsg = "negative indices passed"
             raise ValueError(errmsg)
         return v
