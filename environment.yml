@@ -28,7 +28,7 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >=1.10.17  # practically, this almost always means pydantic v2 because of our other dependencies.
+  - pydantic >= 2.0.0
   - pygraphviz
   - pytest
   - pytest-xdist
@@ -44,11 +44,11 @@ dependencies:
   # Issue #443
   - pymbar>4.0
   # docs
-  - autodoc-pydantic<2.0
+  - autodoc-pydantic>=2.0
   - pydata-sphinx-theme
   - sphinx-click
   - sphinx-toolbox
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/gufe@drop_pydanticv1
