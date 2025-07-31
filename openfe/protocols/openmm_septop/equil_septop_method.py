@@ -2210,7 +2210,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
-    ) -> dict[str, npt.NDArray]:
+    ) -> dict[str, list[float]]:
 
         lambdas = dict()
 
@@ -2269,7 +2269,7 @@ class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
 
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
-    ) -> dict[str, npt.NDArray]:
+    ) -> dict[str, list[float]]:
         lambdas = dict()
 
         lambda_elec_A = settings["lambda_settings"].lambda_elec_A
