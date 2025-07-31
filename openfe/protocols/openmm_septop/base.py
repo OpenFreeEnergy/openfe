@@ -792,7 +792,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         positions: openmm.unit.Quantity,
         box_vectors: Optional[openmm.unit.Quantity],
         settings: dict[str, SettingsBaseModel],
-        lambdas: dict[str, npt.NDArray],
+        lambdas: dict[str, list[float]],
         solvent_comp: Optional[SolventComponent],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
@@ -809,7 +809,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
           Box vectors of the alchemical system.
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings for the protocol unit.
-        lambdas : dict[str, npt.NDArray]
+        lambdas : dict[str, list[float]]
           A dictionary of lambda scales.
         solvent_comp : Optional[SolventComponent]
           The solvent component of the system, if there is one.
