@@ -767,7 +767,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
     @abc.abstractmethod
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
-    ) -> dict[str, npt.NDArray]:
+    ) -> dict[str, list[float]]:
         """
         Create the lambda schedule
 
@@ -778,7 +778,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        lambdas : dict[str, npt.NDArray]
+        lambdas : dict[str, list[float]]
 
         Note
         ----
