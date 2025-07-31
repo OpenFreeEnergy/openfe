@@ -21,17 +21,13 @@ from gufe.settings import (
     ThermoSettings as ThermoSettings,
 )
 
-
-from pydantic import validator
-
+from pydantic import ConfigDict, validator
 
 class BaseSolvationSettings(SettingsBaseModel):
     """
     Base class for SolvationSettings objects.
     """
-    class Config:
-        arbitrary_types_allowed = True
-
+    model_config = ConfigDict(arbitrary_types_allowed = True)
 
 class OpenMMSolvationSettings(BaseSolvationSettings):
     """Settings for controlling how a system is solvated using OpenMM tooling.
@@ -107,7 +103,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     Force field water model to use when solvating and defining the model
     properties (e.g. adding virtual site particles).
 
-    Allowed values are; `tip3p`, `spce`, `tip4pew`, and `tip5p`.
+    Allowed values are: ``tip3p``, ``spce``, ``tip4pew``, and ``tip5p``.
     """
     solvent_padding: NanometerQuantity | None = 1.2 * unit.nanometer
     """
@@ -326,13 +322,13 @@ class OpenMMEngineSettings(SettingsBaseModel):
 
 
 class IntegratorSettings(SettingsBaseModel):
-    """Settings for the LangevinDynamicsMove integrator
+    """Settings for the `LangevinDynamicsMove integrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_.
 
     Note
     ----
     For some Protocols, an MC "move" (e.g. replica exchange swap) is applied
     at a given frequency. In most Protocols the move frequency is defined in
-    `MultiStateSimulationSettings.time_per_iteration`.
+    ``MultiStateSimulationSettings.time_per_iteration``.
     """
 
     class Config:
