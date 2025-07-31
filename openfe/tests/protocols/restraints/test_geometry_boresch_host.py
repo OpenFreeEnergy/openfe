@@ -34,13 +34,14 @@ def test_host_atom_candidates_dssp(eg5_protein_ligand_universe):
         host_idxs=host_atoms.ix,
         # hand picked
         guest_anchor_idx=5508,
-        host_selection="backbone and resnum 15:25",
+        host_selection="backbone and resnum 212:221",
         dssp_filter=True,
     )
     expected = np.array(
-        [136, 134, 135, 133, 104, 159, 160, 119, 157, 103, 120, 158,  71,
-         118, 102, 101, 117,  70,  87,  86,  85,  69,  68,  88,  51,  50,
-         52,  49,  38,  37,  16,  36,  15,  35,  14,  13]
+        [3144, 3146, 3145, 3143, 3162, 3206, 3200, 3207, 3126, 3201, 3127,
+         3163, 3199, 3202, 3164, 3125, 3165, 3177, 3208, 3179, 3124, 3216,
+         3209, 3109, 3107, 3178, 3110, 3180, 3108, 3248, 3217, 3249, 3226,
+         3218, 3228, 3227, 3250, 3219, 3251, 3229]
     )
     assert_equal(idxs, expected)
 
@@ -62,6 +63,7 @@ def test_host_atom_candidates_dssp_too_few_atoms(eg5_protein_ligand_universe):
             guest_anchor_idx=5508,
             host_selection="backbone and resnum 15:25",
             dssp_filter=True,
+            max_search_distance=2*unit.nanometer
         )
 
 
