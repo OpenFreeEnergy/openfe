@@ -12,11 +12,8 @@ from typing import Optional
 
 from gufe.vendor.openff.models.types import FloatQuantity
 from pydantic.v1 import validator
-from gufe.settings import (
-    SettingsBaseModel,
-)
+from gufe.settings import SettingsBaseModel
 from openff.units import unit
-
 
 class BaseRestraintSettings(SettingsBaseModel):
     """

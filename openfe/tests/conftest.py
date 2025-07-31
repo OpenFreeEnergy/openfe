@@ -3,6 +3,7 @@
 import os
 import pathlib
 import gzip
+
 import pytest
 from importlib import resources
 from rdkit import Chem
