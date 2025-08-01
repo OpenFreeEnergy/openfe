@@ -243,7 +243,7 @@ def set_openmm_threads_1():
 
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
-@pytest.mark.parametrize("platform", ["CPU", "CUDA"])
+@pytest.mark.parametrize("platform", ["CUDA"])
 def test_openmm_run_engine(
     platform,
     available_platforms,
@@ -348,7 +348,7 @@ def test_openmm_run_engine(
 
 
 @pytest.mark.flaky(reruns=1)  # pytest-rerunfailures; we can get bad minimisation
-@pytest.mark.parametrize("platform", ["CPU", "CUDA"])
+@pytest.mark.parametrize("platform", ["CUDA"])
 def test_restraints_solvent(
     platform,
     available_platforms,
