@@ -988,9 +988,7 @@ class SepTopProtocol(gufe.Protocol):
             solvent_restraint_settings=DistanceRestraintSettings(
                 spring_constant=1000.0 * unit.kilojoule_per_mole / unit.nanometer**2,
             ),
-            complex_restraint_settings=BoreschRestraintSettings(
-                K_thetaA=1000.0 * unit.kilojoule_per_mole / unit.radian**2,
-            ),
+            complex_restraint_settings=BoreschRestraintSettings(),
         )
 
     @staticmethod

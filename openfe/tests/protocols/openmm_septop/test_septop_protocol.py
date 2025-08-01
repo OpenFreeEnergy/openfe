@@ -1226,7 +1226,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-1.72, abs=0.5)
+        assert est.m == pytest.approx(0.48, abs=0.5)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -1248,37 +1248,35 @@ class TestProtocolResult:
             assert e.is_compatible_with(offunit.kilojoule_per_mole)
             assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
-    # ToDo: Add Results from longer test run that has this analysis
+    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    def test_get_forwards_etc(self, key, protocolresult):
+        far = protocolresult.get_forward_and_reverse_energy_analysis()
 
-    # @pytest.mark.parametrize('key', ['solvent', 'complex'])
-    # def test_get_forwards_etc(self, key, protocolresult):
-    #     far = protocolresult.get_forward_and_reverse_energy_analysis()
-    #
-    #     assert isinstance(far, dict)
-    #     assert isinstance(far[key], list)
-    #     far1 = far[key][0]
-    #     assert isinstance(far1, dict)
-    #
-    #     for k in ['fractions', 'forward_DGs', 'forward_dDGs',
-    #               'reverse_DGs', 'reverse_dDGs']:
-    #         assert k in far1
-    #
-    #         if k == 'fractions':
-    #             assert isinstance(far1[k], np.ndarray)
-    #
-    # @pytest.mark.parametrize('key', ['solvent', 'complex'])
-    # def test_get_frwd_reverse_none_return(self, key, protocolresult):
-    #     # fetch the first result of type key
-    #     data = [i for i in protocolresult.data[key].values()][0][0]
-    #     # set the output to None
-    #     data.outputs['forward_and_reverse_energies'] = None
-    #
-    #     # now fetch the analysis results and expect a warning
-    #     wmsg = ("were found in the forward and reverse dictionaries "
-    #             f"of the repeats of the {key}")
-    #     with pytest.warns(UserWarning, match=wmsg):
-    #         protocolresult.get_forward_and_reverse_energy_analysis()
-    #
+        assert isinstance(far, dict)
+        assert isinstance(far[key], list)
+        far1 = far[key][0]
+        assert isinstance(far1, dict)
+
+        for k in ['fractions', 'forward_DGs', 'forward_dDGs',
+                  'reverse_DGs', 'reverse_dDGs']:
+            assert k in far1
+
+            if k == 'fractions':
+                assert isinstance(far1[k], np.ndarray)
+
+    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    def test_get_frwd_reverse_none_return(self, key, protocolresult):
+        # fetch the first result of type key
+        data = [i for i in protocolresult.data[key].values()][0][0]
+        # set the output to None
+        data.outputs['forward_and_reverse_energies'] = None
+
+        # now fetch the analysis results and expect a warning
+        wmsg = ("were found in the forward and reverse dictionaries "
+                f"of the repeats of the {key}")
+        with pytest.warns(UserWarning, match=wmsg):
+            protocolresult.get_forward_and_reverse_energy_analysis()
+
     @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_overlap_matrices(self, key, protocolresult):
         ovp = protocolresult.get_overlap_matrices()
@@ -1289,20 +1287,28 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1["matrix"], np.ndarray)
-        assert ovp1["matrix"].shape == (19, 19)
+        if key == 'solvent':
+            lambda_nr = 27
+        else:
+            lambda_nr = 19
+        assert ovp1["matrix"].shape == (lambda_nr, lambda_nr)
 
     @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_replica_transition_statistics(self, key, protocolresult):
         rpx = protocolresult.get_replica_transition_statistics()
-
+        if key == 'solvent':
+            lambda_nr = 27
+        else:
+            lambda_nr = 19
         assert isinstance(rpx, dict)
         assert isinstance(rpx[key], list)
         assert len(rpx[key]) == 1
         rpx1 = rpx[key][0]
         assert "eigenvalues" in rpx1
         assert "matrix" in rpx1
-        assert rpx1["eigenvalues"].shape == (19,)
-        assert rpx1["matrix"].shape == (19, 19)
+
+        assert rpx1["eigenvalues"].shape == (lambda_nr,)
+        assert rpx1["matrix"].shape == (lambda_nr, lambda_nr)
 
     @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_equilibration_iterations(self, key, protocolresult):
