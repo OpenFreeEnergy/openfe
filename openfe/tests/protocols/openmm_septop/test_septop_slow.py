@@ -332,12 +332,13 @@ def test_openmm_run_engine(
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
-        checkpoint = pur.outputs["last_checkpoint"]
-        assert checkpoint == f"{pur.outputs['simtype']}_checkpoint.nc"
-        assert (unit_shared / checkpoint).exists()
-        nc = pur.outputs["nc"]
-        assert nc == unit_shared / f"{pur.outputs['simtype']}.nc"
-        assert nc.exists()
+        if "SepTopComplexRunUnit" in pur.source_key.split("-") or "SepTopSolventRunUnit" in pur.source_key.split("-"):
+            checkpoint = pur.outputs["last_checkpoint"]
+            assert checkpoint == f"{pur.outputs['simtype']}_checkpoint.nc"
+            assert (unit_shared / checkpoint).exists()
+            nc = pur.outputs["nc"]
+            assert nc == unit_shared / f"{pur.outputs['simtype']}.nc"
+            assert nc.exists()
 
     # Test results methods that need files present
     results = protocol.gather([r])
