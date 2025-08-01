@@ -344,7 +344,7 @@ def test_openmm_run_engine(
     states = results.get_replica_states()
     assert len(states.items()) == 2
     assert len(states["solvent"]) == 1
-    assert states["solvent"][0].shape[1] == 19
+    assert states["solvent"][0].shape[1] == 27
 
 
 @pytest.mark.flaky(reruns=1)  # pytest-rerunfailures; we can get bad minimisation
