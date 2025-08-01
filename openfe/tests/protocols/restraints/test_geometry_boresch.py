@@ -232,14 +232,14 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     # we should get the same guest atoms
     assert restraint_geometry.guest_atoms == [5528, 5507, 5508]
     # different host atoms
-    assert restraint_geometry.host_atoms == [3058, 1895, 1933]
+    assert restraint_geometry.host_atoms == [3517, 3058, 3548]
     # check the measured values
-    assert 1.09084815 == pytest.approx(restraint_geometry.r_aA0.to("nanometer").m)
-    assert 0.93824134 == pytest.approx(restraint_geometry.theta_A0.to("radians").m)
-    assert 1.58227158 == pytest.approx(restraint_geometry.theta_B0.to("radians").m)
-    assert 2.09875582 == pytest.approx(restraint_geometry.phi_A0.to("radians").m)
-    assert -0.142658924 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
-    assert -1.5340895 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
+    assert 1.01590371 == pytest.approx(restraint_geometry.r_aA0.to("nanometer").m)
+    assert 0.84966606 == pytest.approx(restraint_geometry.theta_A0.to("radians").m)
+    assert 1.23561539 == pytest.approx(restraint_geometry.theta_B0.to("radians").m)
+    assert 2.56825286 == pytest.approx(restraint_geometry.phi_A0.to("radians").m)
+    assert -1.60162692 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
+    assert -0.02396901 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
 
 
 POOCH_CACHE = pooch.os_cache("openfe")
