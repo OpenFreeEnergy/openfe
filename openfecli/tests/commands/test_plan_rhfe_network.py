@@ -19,7 +19,7 @@ from openff.utilities.testing import skip_if_missing
 def mol_dir_args(tmpdir_factory):
     ofe_dir_path = tmpdir_factory.mktemp('moldir')
 
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         for f in ['ligand_23.sdf', 'ligand_55.sdf']:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
@@ -30,7 +30,7 @@ def mol_dir_args(tmpdir_factory):
 def dummy_charge_dir_args(tmpdir_factory):
     ofe_dir_path = tmpdir_factory.mktemp('charge_moldir')
 
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
@@ -65,7 +65,7 @@ def test_plan_rhfe_network_main():
         OpenFFPartialChargeSettings
     )
 
-    with resources.files("openfe.tests.data.openmm_rfe") as d:
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(d / f)
             for f in ['ligand_23.sdf', 'ligand_55.sdf']
