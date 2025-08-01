@@ -416,7 +416,8 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
 def find_host_anchor(
     guest_atoms: mda.AtomGroup,
     host_atom_pool: mda.AtomGroup,
-    minimum_distance: Quantity,
+    host_minimum_distance: Quantity,
+    guest_minimum_distance: Quantity,
     angle_force_constant: Quantity,
     temperature: Quantity,
 ) -> Optional[list[int]]:
@@ -429,8 +430,10 @@ def find_host_anchor(
       The guest anchor atoms for G0-G1-G2
     host_atom_pool : mda.AtomGroup
       The host atoms to search from.
-    minimum_distance : openff.units.Quantity
+    host_minimum_distance : openff.units.Quantity
       The minimum distance to pick host atoms from each other.
+    guest_minimum_distance: openff.units.Quantity
+      The minimum distance between host atoms and the guest anchor.
     angle_force_constant : openff.units.Quantity
       The force constant for the G1-G0-H0 and G0-H0-H1 angles.
     temperature : openff.units.Quantity
@@ -443,11 +446,11 @@ def find_host_anchor(
     """
     # Evaluate the host_atom_pool for suitability as H0 atoms
     h0_eval = EvaluateHostAtoms1(
-        guest_atoms,
-        host_atom_pool,
-        minimum_distance,  # TODO: double check this actually makes sense
-        angle_force_constant,
-        temperature,
+        reference=guest_atoms,
+        host_atom_pool=host_atom_pool,
+        minimum_distance=guest_minimum_distance,
+        angle_force_constant=angle_force_constant,
+        temperature=temperature,
     )
     h0_eval.run()
 
@@ -457,11 +460,11 @@ def find_host_anchor(
         if valid_h0:
             h0g0g1_atoms = host_atom_pool.atoms[i] + guest_atoms.atoms[:2]
             h1_eval = EvaluateHostAtoms1(
-                h0g0g1_atoms,
-                host_atom_pool,
-                minimum_distance,
-                angle_force_constant,
-                temperature,
+                reference=h0g0g1_atoms,
+                host_atom_pool=host_atom_pool,
+                minimum_distance=host_minimum_distance,
+                angle_force_constant=angle_force_constant,
+                temperature=temperature,
             )
             h1_eval.run()
             for j, valid_h1 in enumerate(h1_eval.results.valid):
@@ -470,11 +473,11 @@ def find_host_anchor(
                 if valid_h1:
                     h1h0g0_atoms = host_atom_pool.atoms[j] + h0g0g1_atoms.atoms[:2]
                     h2_eval = EvaluateHostAtoms2(
-                        h1h0g0_atoms,
-                        host_atom_pool,
-                        minimum_distance,
-                        angle_force_constant,
-                        temperature,
+                        reference=h1h0g0_atoms,
+                        host_atom_pool=host_atom_pool,
+                        minimum_distance=host_minimum_distance,
+                        angle_force_constant=angle_force_constant,
+                        temperature=temperature,
                     )
                     h2_eval.run()
 
