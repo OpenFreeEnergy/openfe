@@ -696,6 +696,54 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert pdb.n_atoms == 2713
 
 
+@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
+def test_dry_run_methods(
+    benzene_complex_system,
+    toluene_complex_system,
+    tmpdir,
+    default_settings,
+    method,
+):
+
+    default_settings.solvent_simulation_settings.sampler_method = method
+    default_settings.complex_simulation_settings.sampler_method = method
+    default_settings.protocol_repeats = 1
+    default_settings.complex_output_settings.output_indices = 'resname UNK'
+    default_settings.solvent_output_settings.output_indices = 'resname UNK'
+
+    protocol = SepTopProtocol(
+        settings=default_settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    dag_units = list(dag.protocol_units)
+    # Only check the cutoff for the Solvent SetUp Unit
+    solv_setup_unit = [u for u in dag_units if
+                       isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in dag_units if
+                    isinstance(u, SepTopSolventRunUnit)]
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        serialized_topology = solv_setup_output["topology"]
+        serialized_system = solv_setup_output["system"]
+        solv_sampler = sol_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True
+        )["debug"]["sampler"]
+
+        assert isinstance(solv_sampler, MultiStateSampler)
+        assert solv_sampler.is_periodic
+        assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+
+        # Check we have the right number of atoms in the PDB
+        pdb = md.load_pdb('alchemical_system.pdb')
+        assert pdb.n_atoms == 27
+
+
 @pytest.mark.parametrize(
     "pressure",
     [
