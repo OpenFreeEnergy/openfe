@@ -704,11 +704,8 @@ def stable_secondary_structure_selection(
                 num_residues = len(group) - (2 * trim_structure_ends)
                 structure_residue_counts[group[0][0]] += num_residues
 
-    # If we have fewer alpha-helix residues than beta-sheet residues
-    # then we allow picking from beta-sheets too.
-    allowed_structures = ["H"]
-    if structure_residue_counts["H"] < structure_residue_counts["E"]:
-        allowed_structures.append("E")
+    # Pick atoms in both helices and beta sheets
+    allowed_structures = ["H", "E"]
 
     allowed_residxs = []
     for structure in structures:

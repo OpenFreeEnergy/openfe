@@ -107,46 +107,51 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     ----------
     [1] Baumann, Hannah M., et al. "Broadening the scope of binding free
         energy calculations using a Separated Topologies approach." (2023).
+    [2] Wu, Zhiyi, et al. "Optimizing Absolute Binding Free Energy
+        Calculations for Production Usage."
+        (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
     """
 
     K_r: FloatQuantity["kilojoule_per_mole / nm ** 2"] = (
-        8368.0 * unit.kilojoule_per_mole / unit.nm**2
+        418.4 * unit.kilojoule_per_mole / unit.nm**2
     )
     """
-    The bond spring constant between H0 and G0.
+    The bond spring constant between H0 and G0. Default 1 kcal/mol/Å²
     """
     K_thetaA: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
-        83.68 * unit.kilojoule_per_mole / unit.radians**2
+        334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
-    The spring constant for the angle formed by H1-H0-G0.
+    The spring constant for the angle formed by H1-H0-G0. 
+    Default 80 kcal/mol/rad²
     """
     K_thetaB: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
-        83.68 * unit.kilojoule_per_mole / unit.radians**2
+        334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The spring constant for the angle formed by H0-G0-G1.
+    Default 80 kcal/mol/rad²
     """
     K_phiA: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
-        83.68 * unit.kilojoule_per_mole / unit.radians**2
+        334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
-    H2-H1-H0-G0.
+    H2-H1-H0-G0. Default 80 kcal/mol/rad²
     """
     K_phiB: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
-        83.68 * unit.kilojoule_per_mole / unit.radians**2
+        334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
-    H1-H0-G0-G1.
+    H1-H0-G0-G1. Default 80 kcal/mol/rad²
     """
     K_phiC: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
-        83.68 * unit.kilojoule_per_mole / unit.radians**2
+        334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
-    H0-G0-G1-G2.
+    H0-G0-G1-G2. Default 80 kcal/mol/rad²
     """
     host_selection: str = "backbone"
     """
@@ -163,12 +168,12 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     Boresch-like restraint search parameter.
     The cutoff value for filtering atoms by their root mean square fluctuation. Atoms with values above this cutoff will be disregarded.
     """
-    host_min_distance: FloatQuantity["nanometer"] = 1.0 * unit.nanometer
+    host_min_distance: FloatQuantity["nanometer"] = 0.5 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The minimum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
     """
-    host_max_distance: FloatQuantity["nanometer"] = 3.0 * unit.nanometer
+    host_max_distance: FloatQuantity["nanometer"] = 1.5 * unit.nanometer
     """
     Boresch-like restraint search parameter.
     The maximum distance between any host atom and the guest G0 atom. Must be in units compatible with nanometer.
