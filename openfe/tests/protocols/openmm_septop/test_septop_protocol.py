@@ -1042,6 +1042,45 @@ def test_dry_run_solv_user_charges_benzene_toluene(
             assert pytest.approx(c) == toluene_charge[inx]
 
 
+@pytest.mark.flaky(reruns=1)  # pytest-rerunfailures; we can get bad minimisation
+def test_solvent(
+    benzene_complex_system,
+    toluene_complex_system,
+    tmpdir,
+    default_settings,
+):
+
+    # Run a really short calculation to check everything is going well
+    default_settings.protocol_repeats = 1
+    default_settings.solvent_equil_simulation_settings.minimization_steps = 50
+    default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = (
+        0.1 * offunit.picosecond
+    )
+    default_settings.solvent_equil_simulation_settings.equilibration_length = (
+        0.1 * offunit.picosecond
+    )
+    default_settings.solvent_equil_simulation_settings.production_length = (
+        0.1 * offunit.picosecond
+    )
+
+    protocol = SepTopProtocol(
+        settings=default_settings,
+    )
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
+    solv_setup_output = solv_setup_unit[0].run()
+    pdb = md.load_pdb("topology.pdb")
+    assert pdb.n_atoms == 1346
+
+
 def test_high_timestep(
     benzene_complex_system,
     toluene_complex_system,
