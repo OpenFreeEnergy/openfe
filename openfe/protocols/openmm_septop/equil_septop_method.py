@@ -40,6 +40,9 @@ from typing import Any, Iterable, Optional, Union
 
 import gufe
 import MDAnalysis as mda
+from MDAnalysis.coordinates.memory import MemoryReader
+import MDAnalysis.transformations as trans
+from MDAnalysis.analysis import align
 import mdtraj as md
 import numpy as np
 import numpy.typing as npt
@@ -1415,11 +1418,49 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         return indices
 
     @staticmethod
+    def _center_in_box(
+        topology: openmm.app.Topology,
+        positions: openmm.unit.Quantity,
+        selection: str = 'protein',
+    ) -> mda.Universe:
+        u = mda.Universe(
+            topology,
+            np.array(positions._value) * 10,
+            topology_format="OPENMMTOPOLOGY",
+            trajectory_format=MemoryReader,
+        )
+        box = topology.getPeriodicBoxVectors()
+        x,y,z = [np.array(b._value) * 10 for b in box]
+        lx = np.linalg.norm(x)
+        ly = np.linalg.norm(y)
+        lz = np.linalg.norm(z)
+        # angle between y and z
+        alpha = np.arccos(np.dot(y, z) / (ly * lz))
+        # angle between x and z
+        beta = np.arccos(np.dot(x, z) / (lx * lz))
+        # angle between x and y
+        gamma = np.arccos(np.dot(x, y) / (lx * ly))
+
+        u.dimensions = lx, ly, lz, np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)
+
+        sel = u.select_atoms(selection)
+        not_sel = u.select_atoms(f'not ({selection})')
+        transforms = [trans.unwrap(sel),
+                      trans.center_in_box(sel, wrap=True),
+                      trans.wrap(not_sel)]
+
+        u.trajectory.add_transformations(*transforms)
+        u.trajectory[-1]
+
+        return u
+
     def _update_positions(
+        self,
         omm_topology_A: openmm.app.Topology,
         omm_topology_B: openmm.app.Topology,
         positions_A: openmm.unit.Quantity,
         positions_B: openmm.unit.Quantity,
+        selection: str = 'protein',
     ) -> openmm.unit.Quantity:
         """
         Aligns the protein from complex B onto the protein from complex A and
@@ -1441,17 +1482,24 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         updated_positions_B: openmm.unit.Quantity
           Updated positions of the complex B
         """
-        mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
-        mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
-        alignment_indices = SepTopComplexSetupUnit._get_selection_atom_indices(
-            mdtraj_complex_A
+        u_A = mda.Universe(
+            omm_topology_A,
+            np.array(positions_A._value) * 10, # Convert from nm to Angstrom
+            topology_format="OPENMMTOPOLOGY",
+            trajectory_format=MemoryReader,
         )
-        mdtraj_complex_B.superpose(
-            mdtraj_complex_A,
-            atom_indices=alignment_indices,
+        print(u_A)
+        u_B = self._center_in_box(
+            omm_topology_B, positions_B, selection=selection,
         )
+
+        align.alignto(u_B,  # mobile
+                      u_A,  # reference
+                      select='name CA',  # selection to operate on
+                      match_atoms=True)  # whether to match atoms
+
         # Extract updated system positions.
-        updated_positions_B = mdtraj_complex_B.openmm_positions(-1)
+        updated_positions_B = np.array(u_B.atoms.positions) / 10 * omm_units.nanometers
 
         return updated_positions_B
 
@@ -1483,7 +1531,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         mda.Universe
           An MDAnalysis Universe of the System.
         """
-        from MDAnalysis.coordinates.memory import MemoryReader
 
         # If the trajectory file doesn't exist, then we use positions
         write_int = settings["equil_output_settings"].trajectory_write_interval
@@ -1838,6 +1885,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             omm_topology_B,
             equil_positions_A,
             equil_positions_B,
+            selection='protein',
         )
 
         # Get atom indices for ligand A and ligand B and the solvent in the
