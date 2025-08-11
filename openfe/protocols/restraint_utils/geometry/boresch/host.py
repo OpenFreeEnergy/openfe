@@ -600,6 +600,7 @@ def find_host_anchor_bonded(
                 if restraint_eval.results.valid:
                     # reverse indices to get H0, H1, H2
                     return [i for i in indices[::-1]]
+    return None
 
 
 def find_host_anchor_multi(
