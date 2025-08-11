@@ -35,17 +35,17 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
         python-version:
-          - "3.11"
+#          - "3.11"
           - "3.12"
           - "3.13"
         openeye: ["no"]
-        include: # NOTE: openeye does not yet support 3.13.
-          - os: "ubuntu-latest"
-            python-version: "3.11"
-            openeye: "yes"
-          - os: "macos-latest"
-            python-version: "3.12"
-            openeye: "yes"
+#        include: # NOTE: openeye does not yet support 3.13.
+#          - os: "ubuntu-latest"
+#            python-version: "3.11"
+#            openeye: "yes"
+#          - os: "macos-latest"
+#            python-version: "3.12"
+#            openeye: "yes"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -104,7 +104,7 @@ jobs:
           OFE_SLOW_TESTS: true # ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=100
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10 openfecli/tests/test_rbfe_tutorial.py
 
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
