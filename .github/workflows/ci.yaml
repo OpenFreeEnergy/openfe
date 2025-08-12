@@ -104,7 +104,7 @@ jobs:
           OFE_SLOW_TESTS: true # ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n auto -vv openfecli/tests
+          pytest -n auto -vv openfe/tests/protocols/
 
 
       # - name: codecov-pr
