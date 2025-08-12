@@ -19,7 +19,7 @@ dependencies:
   - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
   - openmm ~=8.3.0
   - openmmforcefields==0.15.0
-  - openmmtools >=0.25.0
+  - openmmtools ==0.25.1
   - packaging
   - pandas
   - perses>=0.10.3
@@ -42,7 +42,7 @@ dependencies:
   - typing-extensions
   - zstandard
   # Issue #443
-  - pymbar>4.0
+  - pymbar==4.1.0
   # docs
   - autodoc-pydantic<2.0
   - pydata-sphinx-theme
