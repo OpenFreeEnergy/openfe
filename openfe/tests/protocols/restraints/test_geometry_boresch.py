@@ -343,6 +343,7 @@ def test_get_boresch_restrain_industry_benchmark_systems(
         guest_idxs=lig_ids,
         host_idxs=host_ids,
         host_selection="backbone",
+        anchor_finding_strategy='multi-residue',
         dssp_filter=False,
         # reduce the search space for CI speed!
         host_max_distance=1.5 * unit.nanometer,

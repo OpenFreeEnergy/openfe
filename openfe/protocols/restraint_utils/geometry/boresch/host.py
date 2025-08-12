@@ -113,7 +113,7 @@ def find_host_atom_candidates(
     Return
     ------
     NDArray
-      Array of host atom indexes
+      Array of host atom indexes sorted by distance from `guest_anchor_idx`
     """
     # Get an AtomGroup for the host based on the input host indices
     host_ag = universe.atoms[host_idxs]
@@ -194,6 +194,126 @@ def find_host_atom_candidates(
     return atom_sorter.results.sorted_atomgroup.ix
 
 
+class EvaluateBoreschAtoms(AnalysisBase):
+    """
+    Class to evaluate the suitability of the atoms in a Boresch
+    restraint.
+
+    Parameters
+    ----------
+    restraint : MDAnalysis.AtomGroup
+      An AtomGroup defining the H2-H1-H0-G0-G1-G2 atoms, in that
+      order.
+    angle_force_constant : openff.units.Quantity
+      The force constant for the angle.
+    temperature : openff.units.Quanity
+      The system temperature in units compatible with Kelvin.
+    """
+    def __init__(
+        self,
+        restraint: mda.AtomGroup,
+        angle_force_constant: Quantity,
+        temperature: Quantity,
+        **kwargs,
+    ):
+        super().__init__(restraint.universe.trajectory, **kwargs)
+
+        if len(restraint) != 6:
+            errmsg = "Incorrect number of restraint atoms passed"
+            raise ValueError(errmsg)
+
+        self.restraint = restraint
+        self.angle_force_constant = angle_force_constant
+        self.temperature = temperature
+
+    def _prepare(self):
+        # Whether or not the restraint is valid
+        self.results.valid = True
+        # Containers
+        self.results.collinear = np.empty(self.n_frames, dtype=bool)
+        self.results.angles = np.zeros((2, self.n_frames))
+        self.results.dihedrals = np.zeros((3, self.n_frames))
+
+    def _single_frame(self):
+
+        self.results.collinear[self._frame_index] = is_collinear(
+            positions=self.restraint.positions,
+            atoms=[0, 1, 2, 3, 4, 5],
+            dimensions=self.restraint.dimensions,
+        )
+
+        # angles
+        for i in range(2):
+            self.results.angles[i, self._frame_index] = calc_angles(
+                self.restraint.atoms[i].position,
+                self.restraint.atoms[i+1].position,
+                self.restraint.atoms[i+2].position,
+                box=self.restraint.dimensions,
+            )
+
+        # dihedrals
+        for i in range(3):
+            self.results.dihedrals[i, self._frame_index] = calc_dihedrals(
+                self.restraint.atoms[i].position,
+                self.restraint.atoms[i+1].position,
+                self.restraint.atoms[i+2].position,
+                self.restraint.atoms[i+3].position,
+                box=self.restraint.dimensions,
+            )
+
+    def _conclude(self):
+        # Check angles
+        angle_bounds = True
+        angle_variance = True
+        for i in range(2):
+            bounds = all(
+                check_angle_not_flat(
+                    angle=angle * unit.radians,
+                    force_constant=self.angle_force_constant,
+                    temperature=self.temperature,
+                )
+                for angle in self.results.angles[i]
+            )
+            variance = check_angular_variance(
+                self.results.angles[i] * unit.radians,
+                upper_bound=np.pi * unit.radians,
+                lower_bound=0 * unit.radians,
+                width=1.745 * unit.radians,
+            )
+            angle_bounds &= bounds
+            angle_variance &= variance
+
+        # Check dihedrals
+        dihed_bounds = True
+        dihed_variance = True
+        for i in range(3):
+            bounds = all(
+                check_dihedral_bounds(dihed * unit.radians)
+                for dihed in self.results.dihedrals[i]
+            )
+            variance = check_angular_variance(
+                self.results.dihedrals[i] * unit.radians,
+                upper_bound=np.pi * unit.radians,
+                lower_bound=-np.pi * unit.radians,
+                width=5.23 * unit.radians,
+            )
+
+            dihed_bounds &= bounds
+            dihed_variance &= variance
+
+        not_collinear = not all(self.results.collinear)
+
+        self.results.valid = all(
+            [
+                angle_bounds,
+                angle_variance,
+                dihed_bounds,
+                dihed_variance,
+                not_collinear,
+            ]
+        )
+
+
 class EvaluateHostAtoms1(AnalysisBase):
     """
     Class to evaluate the suitability of a set of host atoms
@@ -209,8 +329,8 @@ class EvaluateHostAtoms1(AnalysisBase):
       The minimum distance from the bound reference atom.
     angle_force_constant : openff.units.Quantity
       The force constant for the angle.
-    temperature : unit.Quantity
-      The system temperature in Kelvin
+    temperature : openff.units.Quantity
+      The system temperature in units compatible with Kelvin
     """
 
     def __init__(
@@ -413,7 +533,77 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
                 self.results.valid[i] = True
 
 
-def find_host_anchor(
+def find_host_anchor_bonded(
+    guest_atoms: mda.AtomGroup,
+    host_atom_pool: mda.AtomGroup,
+    guest_minimum_distance: Quantity,
+    angle_force_constant: Quantity,
+    temperature: Quantity,
+) -> list[int] | None:
+    """
+    Find suitable atoms for the H0-H1-H2 portion of the restraint
+    where all host atoms are bonded to each other.
+
+    Parameters
+    ----------
+    guest_atoms : mda.AtomGroup
+      The guest anchor atoms for G0-G1-G2
+    host_atom_pool : mda.AtomGroup
+      The host atoms to search from.
+    guest_minimum_distance: openff.units.Quantity
+      The minimum distance between host atoms and the guest anchor.
+    angle_force_constant : openff.units.Quantity
+      The force constant for the G1-G0-H0 and G0-H0-H1 angles.
+    temperature : openff.units.Quantity
+      The target system temperature.
+
+    Returns
+    -------
+    Optional[list[int]]
+      A list of indices for a selected combination of H0, H1, and H2.
+    """
+    if not hasattr(guest_atoms, 'angles'):
+        warnings.warn("no angles found - will attempt to guess")
+        guest_atoms.universe.guess_TopologyAttrs(context='default', to_guess=['angles'])
+
+    # Evaluate the host_atom_pool for suitability as H0 atoms
+    h0_eval = EvaluateHostAtoms1(
+        reference=guest_atoms,
+        host_atom_pool=host_atom_pool,
+        minimum_distance=guest_minimum_distance,
+        angle_force_constant=angle_force_constant,
+        temperature=temperature,
+    ).run()
+
+    for i, valid_h0 in enumerate(h0_eval.results.valid):
+        # If valid H0 atom, get all the angles it's involved in.
+        if valid_h0:
+            # note: i indexes host_atom_pool but not the universe!
+            # from here on, we will switch to using atom.ix instead of i
+            atom = host_atom_pool.atoms[i]
+            angles = atom.angles.atomgroup_intersection(host_atom_pool, strict=True)
+            for indices in angles.indices:
+                if atom.ix == indices[0] or atom.ix == indices[-1]:
+                    if atom.ix == indices[0]:
+                        indices = indices[::-1]
+                else:
+                    continue
+
+                restraint_atoms = host_atom_pool.universe.atoms[indices] + guest_atoms
+
+                restraint_eval = EvaluateBoreschAtoms(
+                    restraint=restraint_atoms,
+                    angle_force_constant=angle_force_constant,
+                    temperature=temperature,
+                ).run()
+
+                if restraint_eval.results.valid:
+                    # reverse indices to get H0, H1, H2
+                    return [i for i in indices[::-1]]
+    return None
+
+
+def find_host_anchor_multi(
     guest_atoms: mda.AtomGroup,
     host_atom_pool: mda.AtomGroup,
     host_minimum_distance: Quantity,
