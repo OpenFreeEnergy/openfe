@@ -1549,6 +1549,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
             host_selection=settings.host_selection,
+            anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
             rmsf_cutoff=settings.rmsf_cutoff,
             host_min_distance=settings.host_min_distance,
