@@ -14,3 +14,9 @@ repos:
   rev: v5.0.0
   hooks:
   - id: check-added-large-files
+
+- repo: https://github.com/tox-dev/pyproject-fmt
+  rev: "v2.6.0"
+  hooks:
+    - id: pyproject-fmt
+

@@ -8,19 +8,36 @@ import pytest
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateHostAtoms1,
     EvaluateHostAtoms2,
-    find_host_anchor,
+    find_host_anchor_multi,
+    find_host_anchor_bonded,
     find_host_atom_candidates,
+)
+from openfe.protocols.restraint_utils.geometry.utils import (
+    is_collinear,
+    check_angle_not_flat,
+    check_dihedral_bounds,
 )
 from openff.units import unit
 
 
-@pytest.fixture()
+@pytest.fixture
 def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
     protein = mda.Universe(eg5_protein_pdb)
     lig = mda.Universe(eg5_ligands[1].to_rdkit())
     # add the residue name of the ligand
     lig.add_TopologyAttr("resname", ["LIG"])
     return mda.Merge(protein.atoms, lig.atoms)
+
+
+@pytest.fixture
+def eg5_protein_ligand_universe_bonded(eg5_protein_pdb, eg5_ligands):
+    protein = mda.Universe(eg5_protein_pdb)
+    lig = mda.Universe(eg5_ligands[1].to_rdkit())
+    # add the residue name of the ligand
+    lig.add_TopologyAttr("resname", ["LIG"])
+    merged_u = mda.Merge(protein.atoms, lig.atoms)
+    merged_u.guess_TopologyAttrs(context='default', to_guess=['bonds', 'angles'])
+    return merged_u
 
 
 def test_host_atom_candidates_dssp(eg5_protein_ligand_universe):
@@ -166,14 +183,186 @@ def test_evaluate_host2_good(eg5_protein_ligand_universe):
 
 
 @pytest.mark.slow
-def test_find_host_anchor_none(eg5_protein_ligand_universe):
+class TestFindAnchorMulti:
+    ref_anchor_indices = [133, 1, 16]
+    ref_h0g0_distance = 20.612924
+    ref_h0h1_distance = 25.805103
+    ref_h0h2_distance = 19.68613
+    ref_h1h2_distance = 7.47768
 
-    host_anchor = find_host_anchor(
+    @pytest.fixture
+    def universe(self, eg5_protein_ligand_universe):
+        return eg5_protein_ligand_universe
+
+    @pytest.fixture
+    def host_anchor(self, universe):
+        return find_host_anchor_multi(
+            guest_atoms=universe.atoms[[5528, 5507, 5508]],
+            host_atom_pool=universe.select_atoms("backbone"),
+            host_minimum_distance=0.5 * unit.nanometer,
+            guest_minimum_distance=2 * unit.nanometer,
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+    def test_anchor_regression(self, host_anchor):
+        # regression test the anchor we find
+        assert_equal(host_anchor, self.ref_anchor_indices)
+
+    def test_host_guest_bond_distance(self, host_anchor, universe):
+        # check that the l0 g0 distance is at least the `guest_minimum_distance` (2nm)  for the `host_anchor` fixture.
+        dist = mda.lib.distances.calc_bonds(
+            universe.atoms[host_anchor[0]].position,
+            universe.atoms[5528].position,
+            box=universe.dimensions,
+        )
+
+        assert dist == pytest.approx(self.ref_h0g0_distance, abs=1e-5)
+
+    def test_host_distances(self, host_anchor, universe):
+        # check the h0-h1, h1-h2, and h0-h2 distances
+        for i, j, ref in [
+            [0, 1, self.ref_h0h1_distance],
+            [1, 2, self.ref_h1h2_distance],
+            [0, 2, self.ref_h0h2_distance]
+        ]:
+            dist = mda.lib.distances.calc_bonds(
+                universe.atoms[host_anchor[i]].position,
+                universe.atoms[host_anchor[j]].position,
+                box=universe.dimensions,
+            )
+            assert dist == pytest.approx(ref, abs=1e-5)
+
+    def test_not_collinear(self, host_anchor, universe):
+        # check none of the g2-g1-g0-h0-h1-h2 vectors are not collinear
+        assert not is_collinear(
+            positions=np.vstack((
+                universe.atoms[[5528, 5507, 5508]].positions,
+                universe.atoms[host_anchor].positions
+            )),
+            atoms=[0, 1, 2, 3, 4, 5],
+            dimensions=universe.dimensions
+        )
+
+    def test_angles(self, host_anchor, universe):
+        # check that the angles aren't flat
+        ag1 = mda.lib.distances.calc_angles(
+            universe.atoms[5507].position,
+            universe.atoms[5528].position,
+            universe.atoms[host_anchor[0]].position,
+            box=universe.dimensions
+        )
+        ag2 = mda.lib.distances.calc_angles(
+            universe.atoms[5528].position,
+            universe.atoms[host_anchor[0]].position,
+            universe.atoms[host_anchor[1]].position,
+            box=universe.dimensions
+        )
+        for angle in [ag1, ag2]:
+            assert check_angle_not_flat(
+                angle=angle * unit.radians,
+                force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+                temperature=298.15 * unit.kelvin,
+            )
+
+    def test_dihedrals(self, host_anchor, universe):
+        dih1 = mda.lib.distances.calc_dihedrals(
+            universe.atoms[5508].position,
+            universe.atoms[5507].position,
+            universe.atoms[5528].position,
+            universe.atoms[host_anchor[0]].position,
+            box=universe.dimensions,
+        )
+        dih2 = mda.lib.distances.calc_dihedrals(
+            universe.atoms[5507].position,
+            universe.atoms[5528].position,
+            universe.atoms[host_anchor[0]].position,
+            universe.atoms[host_anchor[1]].position,
+            box=universe.dimensions,
+        )
+        dih3 = mda.lib.distances.calc_dihedrals(
+            universe.atoms[5528].position,
+            universe.atoms[host_anchor[0]].position,
+            universe.atoms[host_anchor[1]].position,
+            universe.atoms[host_anchor[2]].position,
+            box=universe.dimensions,
+        )
+        assert check_dihedral_bounds(dih1 * unit.radians)
+        assert check_dihedral_bounds(dih2 * unit.radians)
+        assert check_dihedral_bounds(dih3 * unit.radians)
+
+
+class TestFindAnchorBonded(TestFindAnchorMulti):
+    ref_anchor_indices = [133, 119, 118]
+    ref_h0g0_distance = 20.612924
+    ref_h0h1_distance = 1.34244
+    ref_h0h2_distance = 2.44758
+    ref_h1h2_distance = 1.53359
+
+    @pytest.fixture
+    def universe(self, eg5_protein_ligand_universe_bonded):
+        return eg5_protein_ligand_universe_bonded
+
+    @pytest.fixture
+    def host_anchor(self, universe):
+        return find_host_anchor_bonded(
+            guest_atoms=universe.atoms[[5528, 5507, 5508]],
+            host_atom_pool=universe.select_atoms("backbone"),
+            guest_minimum_distance=0.5 * unit.nanometer,
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+
+@pytest.mark.slow
+def test_find_host_anchor_multi_none(eg5_protein_ligand_universe):
+
+    host_anchor = find_host_anchor_multi(
         guest_atoms=eg5_protein_ligand_universe.atoms[[5528, 5507, 5508]],
         host_atom_pool=eg5_protein_ligand_universe.select_atoms("backbone"),
-        minimum_distance=4.5 * unit.nanometer,
+        # Setting host and guest minimum distances to a large value so
+        # we find no atoms.
+        host_minimum_distance=4.5 * unit.nanometer,
+        guest_minimum_distance=4.5 * unit.nanometer,
         angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
         temperature=298.15 * unit.kelvin,
     )
+    # we should get None if no atoms can be found
+    assert host_anchor is None
+
+
+@pytest.mark.slow
+def test_find_host_anchor_bonded_none(eg5_protein_ligand_universe_bonded):
+
+    host_anchor = find_host_anchor_bonded(
+        guest_atoms=eg5_protein_ligand_universe_bonded.atoms[[5528, 5507, 5508]],
+        host_atom_pool=eg5_protein_ligand_universe_bonded.select_atoms("backbone"),
+        # Setting host and guest minimum distances to a large value so
+        # we find no atoms.
+        guest_minimum_distance=4.5 * unit.nanometer,
+        angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+        temperature=298.15 * unit.kelvin,
+    )
+
+    # we should get None if no atoms can be found
+    assert host_anchor is None
+
+
+@pytest.mark.slow
+def test_find_host_anchor_bonded_nobonds_none(eg5_protein_ligand_universe):
+
+    # No angles were found, so it will attempt to find some
+    # It'll fail because there are no bonds available.
+    with pytest.warns(UserWarning, match="no angles found"):
+        host_anchor = find_host_anchor_bonded(
+            guest_atoms=eg5_protein_ligand_universe.atoms[[5528, 5507, 5508]],
+            host_atom_pool=eg5_protein_ligand_universe.select_atoms("backbone"),
+            # Setting host and guest minimum distances to a large value so
+            # we find no atoms.
+            guest_minimum_distance=0.5 * unit.nanometer,
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
     # we should get None if no atoms can be found
     assert host_anchor is None
