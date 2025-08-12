@@ -8,7 +8,7 @@ TODO
 * Rename from host/guest to molA/molB?
 * Add all the restraint settings entries.
 """
-from typing import Optional
+from typing import Literal, Optional
 
 from gufe.vendor.openff.models.types import FloatQuantity
 from pydantic.v1 import validator
@@ -187,6 +187,14 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     """
     The indices of the guest component atoms to restraint.
     If defined, these will override any automatic selection.
+    """
+    anchor_finding_strategy: Literal['multi-residue', 'bonded'] = 'multi-residue'
+    """
+    The Boresch atom picking strategy to use.
+
+    Current options:
+      * `bonded`: pick host atoms that are bonded to each other.
+      * `multi-residue`: pick host atoms which can span multiple residues.
     """
 
     @validator("guest_atoms", "host_atoms")
