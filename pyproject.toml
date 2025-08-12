@@ -12,7 +12,7 @@ description = ""
 readme = "README.md"
 license = { text = "MIT" }
 authors = [ { name = "The OpenFE developers", email = "openfe@omsf.io" } ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 classifiers = [
   "Development Status :: 1 - Planning",
@@ -21,7 +21,6 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
