@@ -35,17 +35,17 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
         python-version:
-#          - "3.11"
+          - "3.11"
           - "3.12"
           - "3.13"
         openeye: ["no"]
-#        include: # NOTE: openeye does not yet support 3.13.
-#          - os: "ubuntu-latest"
-#            python-version: "3.11"
-#            openeye: "yes"
-#          - os: "macos-latest"
-#            python-version: "3.12"
-#            openeye: "yes"
+        include: # NOTE: openeye does not yet support 3.13.
+          - os: "ubuntu-latest"
+            python-version: "3.11"
+            openeye: "yes"
+          - os: "macos-latest"
+            python-version: "3.12"
+            openeye: "yes"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -99,36 +99,34 @@ jobs:
 
       - name: "Run tests"
         env:
-          OMP_NUM_THREADS: 1
           # Set the OFE_SLOW_TESTS to True if running a Cron job
-          OFE_SLOW_TESTS: true # ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
+          OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n auto -v --durations=50
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
+      - name: codecov-pr
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'
+                && github.event_name == 'pull_request' }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          fail_ci_if_error: False
+          verbose: True
+          flags: fast-tests
 
-      # - name: codecov-pr
-      #   if: ${{ github.repository == 'OpenFreeEnergy/openfe'
-      #           && github.event_name == 'pull_request' }}
-      #   uses: codecov/codecov-action@v4
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     file: coverage.xml
-      #     fail_ci_if_error: False
-      #     verbose: True
-      #     flags: fast-tests
-
-      # - name: codecov-merge
-      #   # we only want to upload a slow report if
-      #   # 1) it isn't a schedule run
-      #   # 2) it wasn't from a PR (we don't run slow tests on PRs)
-      #   if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
-      #           && github.event_name != 'schedule'            
-      #           && github.event_name != 'pull_request' }}     
-      #   uses: codecov/codecov-action@v4
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     file: coverage.xml
-      #     fail_ci_if_error: False
-      #     verbose: True
-      #     flags: slow-tests
+      - name: codecov-merge
+        # we only want to upload a slow report if
+        # 1) it isn't a schedule run
+        # 2) it wasn't from a PR (we don't run slow tests on PRs)
+        if: ${{ github.repository == 'OpenFreeEnergy/openfe'  
+                && github.event_name != 'schedule'            
+                && github.event_name != 'pull_request' }}     
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          fail_ci_if_error: False
+          verbose: True
+          flags: slow-tests
