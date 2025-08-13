@@ -216,7 +216,11 @@ class EvaluateBoreschAtoms(AnalysisBase):
         temperature: Quantity,
         **kwargs,
     ):
-        super().__init__(restraint.universe.trajectory, **kwargs)
+        if len(restraints) < 1:
+            errmsg = "Need to have at least one restraint"
+            raise ValueError(errmsg)
+
+        super().__init__(restraints[0].universe.trajectory, **kwargs)
 
         if not all(len(rest) == 6 for rest in restraints):
             errmsg = "Incorrect number of restraint atoms passed"
@@ -238,7 +242,7 @@ class EvaluateBoreschAtoms(AnalysisBase):
 
     def _single_frame(self):
         # Loop through all the restraints and gather bond / angle info.
-        for ridx, restraint in self.restraints:
+        for ridx, restraint in enumerate(self.restraints):
             self.results.collinear[ridx, self._frame_index] = is_collinear(
                 positions=restraint.positions,
                 atoms=[0, 1, 2, 3, 4, 5],
@@ -254,7 +258,7 @@ class EvaluateBoreschAtoms(AnalysisBase):
 
             # angles
             for i in range(1, 3):
-                self.results.angles[ridx, i, self._frame_index] = calc_angles(
+                self.results.angles[ridx, i-1, self._frame_index] = calc_angles(
                     restraint.atoms[i].position,
                     restraint.atoms[i+1].position,
                     restraint.atoms[i+2].position,
@@ -544,6 +548,70 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
                 self.results.valid[i] = True
 
 
+def _get_lowest_variance_restraint_hostanchor(
+    proposed_restraints: list[mda.AtomGroup],
+    angle_force_constant: Quantity,
+    temperature: Quantity
+) -> list[int] | None:
+    """
+    Evaluate a list of proposed restraints and return the lowest variance
+    valid restraint.
+
+    Parameters
+    ----------
+    proposed_restraints : list[MDAnalysis.AtomGroup]
+      A proposed list of AtomGroup defining the H2-H1-H0-G0-G1-G2
+      restraint atoms, in that order.
+    angle_force_constant : openff.units.Quantity
+      The force constant for the angle.
+    temperature : openff.units.Quanity
+      The system temperature in units compatible with Kelvin.
+
+    Returns
+    -------
+    list[int] | None
+      The H0, H1, H2 host atom indices for the picked restraint, or None
+      if no suitable restraints are found.
+    """
+    # Evaluate all the restraints
+    restraints_eval = EvaluateBoreschAtoms(
+        restraints=proposed_restraints,
+        angle_force_constant=angle_force_constant,
+        temperature=temperature,
+    ).run()
+
+    # If there are no valid restraints, we have nothing
+    if not any(restraints_eval.results.valid):
+        return None
+
+    valid_indices = []
+    valid_variances = []
+    for ridx in range(len(proposed_restraints)):     
+        if restraints_eval.results.valid[ridx]:
+            valid_indices.append(ridx)
+
+            dih_variance = sum([
+                circvar(diheds, high=np.pi, low=-np.pi)
+                for diheds in restraints_eval.results.dihedrals[ridx]
+            ])
+
+            ang_variance = sum([
+                circvar(angles, high=np.pi, low=0)
+                for angles in restraints_eval.results.angles[ridx]
+            ])
+
+            bond_variance = np.var(restraints_eval.results.bonds[ridx])
+
+            valid_variances.append(dih_variance + ang_variance + bond_variance)
+
+    # get the restraint with the lowest summed variance
+    restraint_index = valid_indices[np.argmin(valid_variances)]
+    restraint = restraints_eval.restraints[restraint_index]
+    # we reverse the indices to get H0, H1, H2
+    host_indices = [i for i in restraint.atoms.ix[:3][::-1]]
+    return host_indices
+
+
 def find_host_anchor_bonded(
     guest_atoms: mda.AtomGroup,
     host_atom_pool: mda.AtomGroup,
@@ -607,43 +675,18 @@ def find_host_anchor_bonded(
                     host_atom_pool.universe.atoms[indices] + guest_atoms
                 )
 
-    # Evaluate all the restraints
-    restraints_eval = EvaluateBoreschAtoms(
-        restraints=proposed_restraints,
-        angle_force_constant=angle_force_constant,
-        temperature=temperature,
-    ).run()
-
-    # Early return - if there are no valid restraints, we have nothing
-    if not any(restraints_eval.results.valid):
+    # If there are no proposed restraints, return with nothing
+    if len(proposed_restraints) == 0:
         return None
 
-    valid_indices = []
-    valid_variances = []
-    for ridx in range(len(proposed_restraints)):     
-        if restraints_eval.results.valid[ridx]:
-            valid_indices.append(ridx)
-
-            dih_variance = sum([
-                circvar(diheds, high=np.pi, low=-np.pi)
-                for diheds in restraints_eval.results.dihedrals[ridx]
-            ])
-
-            ang_variance = sum([
-                circvar(angles, high=np.pi, low=0)
-                for angles in restraints_eval.results.angles[ridx]
-            ])
-
-            bond_variance = np.var(restraints_eval.results.bonds[ridx])
-
-            valid_variances.append(dih_variance + ang_variance + bond_variance)
-
-    # get the restraint with the lowest summed variance
-    restraint_index = valid_indices[np.argmin(valid_variances)]
-    restraint = restraints_eval.restraints[restraint_index]
-    # we reverse the indices to get H0, H1, H2
-    host_indices = [i for i in restraint.atoms.ix[:3][::-1]]
-    return host_indices
+    # Otherwise, evaluate the restraints, and return the anchor
+    # atoms from the lowest variance restraint, if any valid restraints
+    # are found
+    return _get_lowest_variance_restraint_hostanchor(
+        proposed_restraints=proposed_restraints,
+        angle_force_constant=angle_force_constant,
+        temperature=temperature,
+    )
 
 
 def find_host_anchor_multi(
