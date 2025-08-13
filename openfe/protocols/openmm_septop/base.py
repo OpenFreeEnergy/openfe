@@ -226,7 +226,6 @@ def _pre_equilibrate(
     )
     state = simulation.context.getState(
         getPositions=True,
-        enforcePeriodicBox=True,
     )
     equilibrated_positions = state.getPositions(asNumpy=True)
     box = state.getPeriodicBoxVectors()
