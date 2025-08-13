@@ -1043,6 +1043,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             temperature=to_openmm(thermo_settings.temperature),
             endstates=alchem_settings.endstate_dispersion_correction,
             minimization_platform=platform.getName(),
+            minimization_steps=100 if not dry else 0
         )
 
         try:
