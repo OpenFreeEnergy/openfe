@@ -27,6 +27,7 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     stable_secondary_structure_selection,
 )
 from openff.units import Quantity, unit
+from scipy.stats import circvar
 
 
 def _host_atoms_search(
@@ -196,14 +197,13 @@ def find_host_atom_candidates(
 
 class EvaluateBoreschAtoms(AnalysisBase):
     """
-    Class to evaluate the suitability of the atoms in a Boresch
-    restraint.
+    Class to evaluate the geometric suitability of Boresch restraints.
 
     Parameters
     ----------
-    restraint : MDAnalysis.AtomGroup
-      An AtomGroup defining the H2-H1-H0-G0-G1-G2 atoms, in that
-      order.
+    restraints : list[MDAnalysis.AtomGroup]
+      A list of AtomGroup defining the H2-H1-H0-G0-G1-G2 atoms,
+      in that order.
     angle_force_constant : openff.units.Quantity
       The force constant for the angle.
     temperature : openff.units.Quanity
@@ -211,107 +211,118 @@ class EvaluateBoreschAtoms(AnalysisBase):
     """
     def __init__(
         self,
-        restraint: mda.AtomGroup,
+        restraints: list[mda.AtomGroup],
         angle_force_constant: Quantity,
         temperature: Quantity,
         **kwargs,
     ):
         super().__init__(restraint.universe.trajectory, **kwargs)
 
-        if len(restraint) != 6:
+        if not all(len(rest) == 6 for rest in restraints):
             errmsg = "Incorrect number of restraint atoms passed"
             raise ValueError(errmsg)
 
-        self.restraint = restraint
+        self.restraints = restraints
         self.angle_force_constant = angle_force_constant
         self.temperature = temperature
 
     def _prepare(self):
+        nrests = len(self.restraints)
         # Whether or not the restraint is valid
-        self.results.valid = True
+        self.results.valid = np.ones((nrests), dtype=bool)
         # Containers
-        self.results.collinear = np.empty(self.n_frames, dtype=bool)
-        self.results.angles = np.zeros((2, self.n_frames))
-        self.results.dihedrals = np.zeros((3, self.n_frames))
+        self.results.collinear = np.empty((nrests, self.n_frames), dtype=bool)
+        self.results.bonds = np.zeros((nrests, self.n_frames))
+        self.results.angles = np.zeros((nrests, 2, self.n_frames))
+        self.results.dihedrals = np.zeros((nrests, 3, self.n_frames))
 
     def _single_frame(self):
-
-        self.results.collinear[self._frame_index] = is_collinear(
-            positions=self.restraint.positions,
-            atoms=[0, 1, 2, 3, 4, 5],
-            dimensions=self.restraint.dimensions,
-        )
-
-        # angles
-        for i in range(2):
-            self.results.angles[i, self._frame_index] = calc_angles(
-                self.restraint.atoms[i].position,
-                self.restraint.atoms[i+1].position,
-                self.restraint.atoms[i+2].position,
-                box=self.restraint.dimensions,
+        # Loop through all the restraints and gather bond / angle info.
+        for ridx, restraint in self.restraints:
+            self.results.collinear[ridx, self._frame_index] = is_collinear(
+                positions=restraint.positions,
+                atoms=[0, 1, 2, 3, 4, 5],
+                dimensions=restraint.dimensions,
             )
 
-        # dihedrals
-        for i in range(3):
-            self.results.dihedrals[i, self._frame_index] = calc_dihedrals(
-                self.restraint.atoms[i].position,
-                self.restraint.atoms[i+1].position,
-                self.restraint.atoms[i+2].position,
-                self.restraint.atoms[i+3].position,
-                box=self.restraint.dimensions,
+            # bonds
+            self.results.bonds[ridx, self._frame_index] = calc_bonds(
+                restraint.atoms[2].position,
+                restraint.atoms[3].position,
+                box=restraint.dimensions,
             )
+
+            # angles
+            for i in range(1, 3):
+                self.results.angles[ridx, i, self._frame_index] = calc_angles(
+                    restraint.atoms[i].position,
+                    restraint.atoms[i+1].position,
+                    restraint.atoms[i+2].position,
+                    box=restraint.dimensions,
+                )
+
+            # dihedrals
+            for i in range(3):
+                self.results.dihedrals[ridx, i, self._frame_index] = calc_dihedrals(
+                    restraint.atoms[i].position,
+                    restraint.atoms[i+1].position,
+                    restraint.atoms[i+2].position,
+                    restraint.atoms[i+3].position,
+                    box=restraint.dimensions,
+                )
 
     def _conclude(self):
-        # Check angles
-        angle_bounds = True
-        angle_variance = True
-        for i in range(2):
-            bounds = all(
-                check_angle_not_flat(
-                    angle=angle * unit.radians,
-                    force_constant=self.angle_force_constant,
-                    temperature=self.temperature,
+        for ridx in range(len(self.restraints)):
+            # Check angles
+            angle_bounds = True
+            angle_variance = True
+            for i in range(2):
+                bounds = all(
+                    check_angle_not_flat(
+                        angle=angle * unit.radians,
+                        force_constant=self.angle_force_constant,
+                        temperature=self.temperature,
+                    )
+                    for angle in self.results.angles[ridx, i]
                 )
-                for angle in self.results.angles[i]
-            )
-            variance = check_angular_variance(
-                self.results.angles[i] * unit.radians,
-                upper_bound=np.pi * unit.radians,
-                lower_bound=0 * unit.radians,
-                width=1.745 * unit.radians,
-            )
-            angle_bounds &= bounds
-            angle_variance &= variance
+                variance = check_angular_variance(
+                    self.results.angles[ridx, i] * unit.radians,
+                    upper_bound=np.pi * unit.radians,
+                    lower_bound=0 * unit.radians,
+                    width=1.745 * unit.radians,
+                )
+                angle_bounds &= bounds
+                angle_variance &= variance
 
-        # Check dihedrals
-        dihed_bounds = True
-        dihed_variance = True
-        for i in range(3):
-            bounds = all(
-                check_dihedral_bounds(dihed * unit.radians)
-                for dihed in self.results.dihedrals[i]
+            # Check dihedrals
+            dihed_bounds = True
+            dihed_variance = True
+            for i in range(3):
+                bounds = all(
+                    check_dihedral_bounds(dihed * unit.radians)
+                    for dihed in self.results.dihedrals[ridx, i]
+                )
+                variance = check_angular_variance(
+                    self.results.dihedrals[ridx, i] * unit.radians,
+                    upper_bound=np.pi * unit.radians,
+                    lower_bound=-np.pi * unit.radians,
+                    width=5.23 * unit.radians,
+                )
+
+                dihed_bounds &= bounds
+                dihed_variance &= variance
+
+            not_collinear = not all(self.results.collinear)
+
+            self.results.valid[ridx] = all(
+                [
+                    angle_bounds,
+                    angle_variance,
+                    dihed_bounds,
+                    dihed_variance,
+                    not_collinear,
+                ]
             )
-            variance = check_angular_variance(
-                self.results.dihedrals[i] * unit.radians,
-                upper_bound=np.pi * unit.radians,
-                lower_bound=-np.pi * unit.radians,
-                width=5.23 * unit.radians,
-            )
-
-            dihed_bounds &= bounds
-            dihed_variance &= variance
-
-        not_collinear = not all(self.results.collinear)
-
-        self.results.valid = all(
-            [
-                angle_bounds,
-                angle_variance,
-                dihed_bounds,
-                dihed_variance,
-                not_collinear,
-            ]
-        )
 
 
 class EvaluateHostAtoms1(AnalysisBase):
@@ -575,6 +586,9 @@ def find_host_anchor_bonded(
         temperature=temperature,
     ).run()
 
+    # Get a list of proposed restraints
+    proposed_restraints = []
+
     for i, valid_h0 in enumerate(h0_eval.results.valid):
         # If valid H0 atom, get all the angles it's involved in.
         if valid_h0:
@@ -589,18 +603,47 @@ def find_host_anchor_bonded(
                 else:
                     continue
 
-                restraint_atoms = host_atom_pool.universe.atoms[indices] + guest_atoms
+                proposed_restraints.append(
+                    host_atom_pool.universe.atoms[indices] + guest_atoms
+                )
 
-                restraint_eval = EvaluateBoreschAtoms(
-                    restraint=restraint_atoms,
-                    angle_force_constant=angle_force_constant,
-                    temperature=temperature,
-                ).run()
+    # Evaluate all the restraints
+    restraints_eval = EvaluateBoreschAtoms(
+        restraints=proposed_restraints,
+        angle_force_constant=angle_force_constant,
+        temperature=temperature,
+    ).run()
 
-                if restraint_eval.results.valid:
-                    # reverse indices to get H0, H1, H2
-                    return [i for i in indices[::-1]]
-    return None
+    # Early return - if there are no valid restraints, we have nothing
+    if not any(restraints_eval.results.valid):
+        return None
+
+    valid_indices = []
+    valid_variances = []
+    for ridx in range(len(proposed_restraints)):     
+        if restraints_eval.results.valid[ridx]:
+            valid_indices.append(ridx)
+
+            dih_variance = sum([
+                circvar(diheds, high=np.pi, low=-np.pi)
+                for diheds in restraints_eval.results.dihedrals[ridx]
+            ])
+
+            ang_variance = sum([
+                circvar(angles, high=np.pi, low=0)
+                for angles in restraints_eval.results.angles[ridx]
+            ])
+
+            bond_variance = np.var(restraints_eval.results.bonds[ridx])
+
+            valid_variances.append(dih_variance + ang_variance + bond_variance)
+
+    # get the restraint with the lowest summed variance
+    restraint_index = valid_indices[np.argmin(valid_variances)]
+    restraint = restraints_eval.restraints[restraint_index]
+    # we reverse the indices to get H0, H1, H2
+    host_indices = [i for i in restraint.atoms.ix[:3][::-1]]
+    return host_indices
 
 
 def find_host_anchor_multi(
