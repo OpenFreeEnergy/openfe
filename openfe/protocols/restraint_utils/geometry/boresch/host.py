@@ -316,7 +316,7 @@ class EvaluateBoreschAtoms(AnalysisBase):
                 dihed_bounds &= bounds
                 dihed_variance &= variance
 
-            not_collinear = not all(self.results.collinear)
+            not_collinear = not all(self.results.collinear[ridx])
 
             self.results.valid[ridx] = all(
                 [
