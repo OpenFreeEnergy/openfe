@@ -4,10 +4,14 @@
 import MDAnalysis as mda
 import numpy as np
 from numpy.testing import assert_equal
+import os
+import pathlib
 import pytest
+import pooch
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateHostAtoms1,
     EvaluateHostAtoms2,
+    EvaluateBoreschAtoms,
     find_host_anchor_multi,
     find_host_anchor_bonded,
     find_host_atom_candidates,
@@ -19,6 +23,34 @@ from openfe.protocols.restraint_utils.geometry.utils import (
 )
 from openff.units import unit
 
+from ...conftest import HAS_INTERNET
+
+
+POOCH_CACHE = pooch.os_cache("openfe")
+zenodo_restraint_data = pooch.create(
+    path=POOCH_CACHE,
+    base_url="doi:10.5281/zenodo.15212342",
+    registry={
+        "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
+    },
+    retry_if_failed=3,
+)
+
+
+@pytest.fixture(scope='module')
+def t4_lysozyme_trajectory_universe():
+    zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
+    cache_dir = pathlib.Path(
+        pooch.os_cache("openfe")
+        / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
+    )
+    universe = mda.Universe(
+        str(cache_dir / "t4_toluene_complex.pdb"),
+        str(cache_dir / "t4_toluene_complex.xtc"),
+    )
+    # guess bonds for the protein atoms
+    universe.select_atoms('protein').guess_bonds()
+    return universe
 
 @pytest.fixture
 def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
@@ -184,6 +216,8 @@ def test_evaluate_host2_good(eg5_protein_ligand_universe):
 
 @pytest.mark.slow
 class TestFindAnchorMulti:
+    # G0-G1-G2
+    guest_atoms = [5528, 5507, 5508]
     ref_anchor_indices = [133, 1, 16]
     ref_h0g0_distance = 20.612924
     ref_h0h1_distance = 25.805103
@@ -197,7 +231,7 @@ class TestFindAnchorMulti:
     @pytest.fixture
     def host_anchor(self, universe):
         return find_host_anchor_multi(
-            guest_atoms=universe.atoms[[5528, 5507, 5508]],
+            guest_atoms=universe.atoms[self.guest_atoms],
             host_atom_pool=universe.select_atoms("backbone"),
             host_minimum_distance=0.5 * unit.nanometer,
             guest_minimum_distance=2 * unit.nanometer,
@@ -213,7 +247,7 @@ class TestFindAnchorMulti:
         # check that the l0 g0 distance is at least the `guest_minimum_distance` (2nm)  for the `host_anchor` fixture.
         dist = mda.lib.distances.calc_bonds(
             universe.atoms[host_anchor[0]].position,
-            universe.atoms[5528].position,
+            universe.atoms[self.guest_atoms[0]].position,
             box=universe.dimensions,
         )
 
@@ -237,7 +271,7 @@ class TestFindAnchorMulti:
         # check none of the g2-g1-g0-h0-h1-h2 vectors are not collinear
         assert not is_collinear(
             positions=np.vstack((
-                universe.atoms[[5528, 5507, 5508]].positions,
+                universe.atoms[self.guest_atoms[::-1]].positions,
                 universe.atoms[host_anchor].positions
             )),
             atoms=[0, 1, 2, 3, 4, 5],
@@ -247,13 +281,13 @@ class TestFindAnchorMulti:
     def test_angles(self, host_anchor, universe):
         # check that the angles aren't flat
         ag1 = mda.lib.distances.calc_angles(
-            universe.atoms[5507].position,
-            universe.atoms[5528].position,
+            universe.atoms[self.guest_atoms[1]].position,
+            universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
             box=universe.dimensions
         )
         ag2 = mda.lib.distances.calc_angles(
-            universe.atoms[5528].position,
+            universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
             universe.atoms[host_anchor[1]].position,
             box=universe.dimensions
@@ -267,21 +301,21 @@ class TestFindAnchorMulti:
 
     def test_dihedrals(self, host_anchor, universe):
         dih1 = mda.lib.distances.calc_dihedrals(
-            universe.atoms[5508].position,
-            universe.atoms[5507].position,
-            universe.atoms[5528].position,
+            universe.atoms[self.guest_atoms[2]].position,
+            universe.atoms[self.guest_atoms[1]].position,
+            universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
             box=universe.dimensions,
         )
         dih2 = mda.lib.distances.calc_dihedrals(
-            universe.atoms[5507].position,
-            universe.atoms[5528].position,
+            universe.atoms[self.guest_atoms[1]].position,
+            universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
             universe.atoms[host_anchor[1]].position,
             box=universe.dimensions,
         )
         dih3 = mda.lib.distances.calc_dihedrals(
-            universe.atoms[5528].position,
+            universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
             universe.atoms[host_anchor[1]].position,
             universe.atoms[host_anchor[2]].position,
@@ -292,6 +326,7 @@ class TestFindAnchorMulti:
         assert check_dihedral_bounds(dih3 * unit.radians)
 
 
+@pytest.mark.slow
 class TestFindAnchorBonded(TestFindAnchorMulti):
     ref_anchor_indices = [133, 119, 118]
     ref_h0g0_distance = 20.612924
@@ -306,9 +341,58 @@ class TestFindAnchorBonded(TestFindAnchorMulti):
     @pytest.fixture
     def host_anchor(self, universe):
         return find_host_anchor_bonded(
-            guest_atoms=universe.atoms[[5528, 5507, 5508]],
+            guest_atoms=universe.atoms[self.guest_atoms],
             host_atom_pool=universe.select_atoms("backbone"),
             guest_minimum_distance=0.5 * unit.nanometer,
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not os.path.exists(POOCH_CACHE) and not HAS_INTERNET,
+    reason="Internet seems to be unavailable and test data is not cached locally.",
+)
+class TestFindAnchorBondedTrajectory(TestFindAnchorMulti):
+    guest_atoms = [2611, 2612, 2613]
+    ref_anchor_indices = [1253, 1254, 1255]
+    ref_h0g0_distance = 13.08494
+    ref_h0h1_distance = 1.50217
+    ref_h0h2_distance = 2.61515
+    ref_h1h2_distance = 1.55881
+
+    @pytest.fixture(scope='class')
+    def universe(self, t4_lysozyme_trajectory_universe):
+        return t4_lysozyme_trajectory_universe
+
+    @pytest.fixture(scope='class')
+    def host_anchor(self, universe):
+        return find_host_anchor_bonded(
+            guest_atoms=universe.atoms[self.guest_atoms],
+            host_atom_pool=universe.select_atoms("backbone"),
+            guest_minimum_distance=0.0 * unit.nanometer,
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+
+def test_boresch_evaluation_noatomgroup_error():
+    errmsg = "Need to have at least one restraint"
+    with pytest.raises(ValueError, match=errmsg):
+        EvaluateBoreschAtoms(
+            restraints=[],
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+
+def test_boresch_evaluation_incorrectnumber_error(eg5_protein_ligand_universe):
+    ag = eg5_protein_ligand_universe.atoms[:4]
+    errmsg = "Incorrect number of restraint atoms passed"
+    with pytest.raises(ValueError, match=errmsg):
+        EvaluateBoreschAtoms(
+            restraints=[ag],
             angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
             temperature=298.15 * unit.kelvin,
         )
