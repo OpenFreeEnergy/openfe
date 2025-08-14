@@ -9,16 +9,14 @@ TODO
 """
 import abc
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class BaseRestraintGeometry(BaseModel, abc.ABC):
     """
     A base class for a restraint geometry.
     """
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class HostGuestRestraintGeometry(BaseRestraintGeometry):

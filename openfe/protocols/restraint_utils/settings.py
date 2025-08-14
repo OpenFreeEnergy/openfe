@@ -13,16 +13,15 @@ from typing import Literal, Optional
 from gufe.settings import SettingsBaseModel
 from gufe.settings.types import NanometerQuantity, SpringConstantLinearQuantity, SpringConstantAngularQuantity
 from openff.units import unit
-from pydantic import field_validator
+from pydantic import ConfigDict, field_validator
 
 
 class BaseRestraintSettings(SettingsBaseModel):
     """
     Base class for RestraintSettings objects.
     """
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class DistanceRestraintSettings(BaseRestraintSettings):

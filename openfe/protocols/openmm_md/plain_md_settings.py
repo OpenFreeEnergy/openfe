@@ -9,6 +9,7 @@ This module implements the settings necessary to run MD simulations using
 """
 from typing import Annotated
 from annotated_types import Gt
+from pydantic import ConfigDict
 from openfe.protocols.openmm_utils.omm_settings import (
     Settings,
     OpenMMSolvationSettings,
@@ -23,8 +24,7 @@ from gufe.settings import (
 )
 
 class PlainMDProtocolSettings(Settings):
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     protocol_repeats: Annotated[int, Gt(0)]
     """
