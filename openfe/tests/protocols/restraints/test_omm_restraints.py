@@ -306,7 +306,6 @@ def test_add_boresch_force(tyk2_protein_ligand_system, tyk2_rdkit_ligand):
 
     restraint = BoreschRestraint(restraint_settings=BoreschRestraintSettings())
     # create the geometry from the saved values in the sdf file
-    # TODO: should this require units?
     geometry = BoreschRestraintGeometry(
         r_aA0=tyk2_rdkit_ligand.GetDoubleProp("r_aA0") * unit.nanometer,
         theta_A0=tyk2_rdkit_ligand.GetDoubleProp("theta_A0") * unit.radians,
