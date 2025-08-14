@@ -21,7 +21,7 @@ from gufe.settings import (
     ThermoSettings as ThermoSettings,
 )
 
-from pydantic import ConfigDict, validator
+from pydantic import ConfigDict, field_validator
 FemtosecondQuantity = make_custom_quantity("femtosecond")
 InversePicosecondQuantity = make_custom_quantity("1/picosecond")
 TimestepQuantity = make_custom_quantity("timestep")
@@ -158,7 +158,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
       ``number_of_solvent_molecules``, or ``box_vectors``.
     """
 
-    @validator('box_vectors')
+    @field_validator('box_vectors')
     def supported_vectors(cls, v):
         if v is not None:
             if not _box_vectors_are_in_reduced_form(v):
@@ -166,7 +166,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
                 raise ValueError(errmsg)
         return v
 
-    @validator('solvent_padding')
+    @field_validator('solvent_padding')
     def is_positive_distance(cls, v):
         # these are time units, not simulation steps
         if v is None:
@@ -181,7 +181,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
         return v
 
-    @validator('number_of_solvent_molecules')
+    @field_validator('number_of_solvent_molecules')
     def positive_solvent_number(cls, v):
         if v is None:
             return v
@@ -192,7 +192,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
         return v
 
-    @validator('box_size')
+    @field_validator('box_size')
     def box_size_properties(cls, v):
         if v is None:
             return v
@@ -361,7 +361,7 @@ class IntegratorSettings(SettingsBaseModel):
     Whether or not to remove the center of mass motion. Default ``False``.
     """
 
-    @validator('langevin_collision_rate', 'n_restart_attempts')
+    @field_validator('langevin_collision_rate', 'n_restart_attempts')
     def must_be_positive_or_zero(cls, v):
         if v < 0:
             errmsg = ("langevin_collision_rate, and n_restart_attempts must be"
@@ -369,7 +369,7 @@ class IntegratorSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('timestep', 'constraint_tolerance')
+    @field_validator('timestep', 'constraint_tolerance')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = ("timestep, and constraint_tolerance "
@@ -377,7 +377,7 @@ class IntegratorSettings(SettingsBaseModel):
             raise ValueError(errmsg)
         return v
 
-    @validator('timestep')
+    @field_validator('timestep')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
@@ -385,7 +385,7 @@ class IntegratorSettings(SettingsBaseModel):
                              "(i.e. picoseconds)")
         return v
 
-    @validator('langevin_collision_rate')
+    @field_validator('langevin_collision_rate')
     def must_be_inverse_time(cls, v):
         if not v.is_compatible_with(1 / unit.picosecond):
             raise ValueError("langevin collision_rate must be in inverse time "
@@ -421,7 +421,7 @@ class OutputSettings(SettingsBaseModel):
     later reused.
     """
 
-    @validator('checkpoint_interval')
+    @field_validator('checkpoint_interval')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"Checkpoint intervals must be positive, got {v}."
@@ -467,7 +467,7 @@ class MultiStateOutputSettings(OutputSettings):
     """
 
 
-    @validator('positions_write_frequency', 'velocities_write_frequency')
+    @field_validator('positions_write_frequency', 'velocities_write_frequency')
     def must_be_positive(cls, v):
         if v is not None and v < 0:
             errmsg = ("Position_write_frequency and velocities_write_frequency"
@@ -495,14 +495,14 @@ class SimulationSettings(SettingsBaseModel):
     Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
 
-    @validator('equilibration_length', 'production_length')
+    @field_validator('equilibration_length', 'production_length')
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
             raise ValueError("Durations must be in time units")
         return v
 
-    @validator('minimization_steps', 'equilibration_length',
+    @field_validator('minimization_steps', 'equilibration_length',
                'production_length')
     def must_be_positive(cls, v):
         if v <= 0:
@@ -540,12 +540,12 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default `repex`.
     """
     time_per_iteration: PicosecondQuantity = 1.0 * unit.picosecond
-    # todo: Add validators in the protocol
+    # todo: Add field_validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
     real_time_analysis_interval: PicosecondQuantity | None= 250.0 * unit.picosecond
-    # todo: Add validators in the protocol
+    # todo: Add field_validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
 
@@ -574,7 +574,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default ``None``, i.e. no early termination will occur.
     """
     real_time_analysis_minimum_time: PicosecondQuantity = 500.0 * unit.picosecond
-    # todo: Add validators in the protocol
+    # todo: Add field_validators in the protocol
     """
     Simulation time which must pass before real time analysis is
     carried out.
@@ -594,7 +594,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     n_replicas: int = 11
     """Number of replicas to use. Default 11."""
 
-    @validator('sams_flatness_criteria')
+    @field_validator('sams_flatness_criteria')
     def supported_flatness(cls, v):
         supported = [
             'logz-flatness', 'minimum-visits', 'histogram-flatness'
@@ -605,7 +605,7 @@ class MultiStateSimulationSettings(SimulationSettings):
             raise ValueError(errmsg)
         return v
 
-    @validator('sampler_method')
+    @field_validator('sampler_method')
     def supported_sampler(cls, v):
         supported = ['repex', 'sams', 'independent']
         if v.lower() not in supported:
@@ -614,7 +614,7 @@ class MultiStateSimulationSettings(SimulationSettings):
             raise ValueError(errmsg)
         return v
 
-    @validator('n_replicas', 'time_per_iteration')
+    @field_validator('n_replicas', 'time_per_iteration')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = "n_replicas and steps_per_iteration must be positive " \
@@ -622,7 +622,7 @@ class MultiStateSimulationSettings(SimulationSettings):
             raise ValueError(errmsg)
         return v
 
-    @validator('early_termination_target_error',
+    @field_validator('early_termination_target_error',
                'real_time_analysis_minimum_time', 'sams_gamma0',
                'n_replicas')
     def must_be_zero_or_positive(cls, v):
