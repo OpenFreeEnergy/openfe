@@ -141,11 +141,26 @@ def _get_mdtraj_from_openmm(
     mdtraj_topology = md.Topology.from_openmm(omm_topology)
     positions_in_mdtraj_format = omm_positions.value_in_unit(omm_units.nanometers)
 
-    unit_cell = omm_topology.getPeriodicBoxVectors() / omm_units.nanometers
-    unit_cell_length = np.array([i[inx] for inx, i in enumerate(unit_cell)])
+    box = omm_topology.getPeriodicBoxVectors()
+    x, y, z = [np.array(b._value) for b in box]
+    lx = np.linalg.norm(x)
+    ly = np.linalg.norm(y)
+    lz = np.linalg.norm(z)
+    # angle between y and z
+    alpha = np.arccos(np.dot(y, z) / (ly * lz))
+    # angle between x and z
+    beta = np.arccos(np.dot(x, z) / (lx * lz))
+    # angle between x and y
+    gamma = np.arccos(np.dot(x, y) / (lx * ly))
+
     mdtraj_system = md.Trajectory(
-        positions_in_mdtraj_format, mdtraj_topology, unitcell_lengths=unit_cell_length
+        positions_in_mdtraj_format,
+        mdtraj_topology,
+        unitcell_lengths=np.array([lx, ly, lz]),
+        unitcell_angles=np.array(
+            [np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)]),
     )
+
     return mdtraj_system
 
 
