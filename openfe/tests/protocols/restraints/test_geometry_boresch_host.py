@@ -8,6 +8,7 @@ import pytest
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
     EvaluateHostAtoms1,
     EvaluateHostAtoms2,
+    EvaluateBoreschAtoms,
     find_host_anchor_multi,
     find_host_anchor_bonded,
     find_host_atom_candidates,
@@ -309,6 +310,27 @@ class TestFindAnchorBonded(TestFindAnchorMulti):
             guest_atoms=universe.atoms[[5528, 5507, 5508]],
             host_atom_pool=universe.select_atoms("backbone"),
             guest_minimum_distance=0.5 * unit.nanometer,
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+
+def test_boresch_evaluation_noatomgroup_error():
+    errmsg = "Need to have at least one restraint"
+    with pytest.raises(ValueError, match=errmsg):
+        EvaluateBoreschAtoms(
+            restraints=[],
+            angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
+            temperature=298.15 * unit.kelvin,
+        )
+
+
+def test_boresch_evaluation_incorrectnumber_error(eg5_protein_ligand_universe):
+    ag = eg5_protein_ligand_universe.atoms[:4]
+    errmsg = "Incorrect number of restraint atoms passed"
+    with pytest.raises(ValueError, match=errmsg):
+        EvaluateBoreschAtoms(
+            restraints=[ag],
             angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
             temperature=298.15 * unit.kelvin,
         )
