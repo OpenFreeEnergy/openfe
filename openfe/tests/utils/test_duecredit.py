@@ -24,6 +24,9 @@ class TestDuecredit:
          ["10.5281/zenodo.596622", "10.1063/1.2978177",
           "10.1021/ct0502864", "10.1021/acs.jctc.5b00784",
           "10.5281/zenodo.596220"]],
+        ['openfe.protocols.openmm_septop.equil_septop_method',
+         ['10.1021/acs.jctc.3c00282',
+          '10.5281/zenodo.596622', '10.1371/journal.pcbi.1005659']],
     ])
     def test_duecredit_protocol_collection(self, module, dois):
         importlib.import_module(module)
