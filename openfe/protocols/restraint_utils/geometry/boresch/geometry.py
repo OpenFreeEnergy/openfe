@@ -10,7 +10,7 @@ TODO
 from typing import Literal, Optional
 
 import MDAnalysis as mda
-from gufe.settings.types import NanometerQuantity, RadiansQuantity
+from gufe.settings.types import NanometerQuantity, make_custom_quantity
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit
@@ -23,6 +23,7 @@ from .host import (
     find_host_atom_candidates,
 )
 
+RadiansQuantity = make_custom_quantity("radians")
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
@@ -43,7 +44,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
     The equilibrium distance between H0 and G0.
     """
-    theta_A0: RadiansQuantity
+    theta_A0: RadiansQuantity  # type: ignore
     """
     The equilibrium angle value between H1, H0, and G0.
     """
