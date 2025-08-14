@@ -2067,24 +2067,26 @@ def test_dry_run_complex_alchemwater_totcharge(
     mapping_name, chgA, chgB, correction, core_atoms,
     new_uniq, old_uniq, tmpdir, request, T4_protein_component,
 ):
-
     mapping = request.getfixturevalue(mapping_name)
+    solvent = openfe.SolventComponent()
     stateA_system = openfe.ChemicalSystem(
         {'ligand': mapping.componentA,
-         'solvent': openfe.SolventComponent(),
+         'solvent': solvent,
          'protein': T4_protein_component}
     )
     stateB_system = openfe.ChemicalSystem(
         {'ligand': mapping.componentB,
-         'solvent': openfe.SolventComponent(),
+         'solvent': solvent,
          'protein': T4_protein_component}
     )
 
-    solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    solv_settings.alchemical_settings.explicit_charge_correction = correction
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding="0.9 nm"
+    settings.solvation_settings.box_shape="dodecahedron"
+    settings.alchemical_settings.explicit_charge_correction = correction
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-            settings=solv_settings,
+            settings=settings,
     )
 
     # create DAG from protocol and take first (and only) work unit from within
