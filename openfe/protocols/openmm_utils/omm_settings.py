@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity, InversePicosecondQuantity, NanosecondQuantity, FemtosecondQuantity, KCalPerMolQuantity, BoxQuantity,TimestepQuantity
+from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity,KCalPerMolQuantity, BoxQuantity, NanosecondQuantity, make_custom_quantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
@@ -22,7 +22,9 @@ from gufe.settings import (
 )
 
 from pydantic import ConfigDict, validator
-
+FemtosecondQuantity = make_custom_quantity("femtosecond")
+InversePicosecondQuantity = make_custom_quantity("1/picosecond")
+TimestepQuantity = make_custom_quantity("timestep")
 class BaseSolvationSettings(SettingsBaseModel):
     """
     Base class for SolvationSettings objects.
