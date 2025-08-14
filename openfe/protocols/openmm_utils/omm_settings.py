@@ -207,8 +207,7 @@ class BasePartialChargeSettings(SettingsBaseModel):
     """
     Base class for partial charge assignment.
     """
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
 
 class OpenFFPartialChargeSettings(BasePartialChargeSettings):
@@ -331,8 +330,7 @@ class IntegratorSettings(SettingsBaseModel):
     ``MultiStateSimulationSettings.time_per_iteration``.
     """
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     timestep: FemtosecondQuantity = 4.0 * unit.femtosecond
     """Size of the simulation timestep in femtoseconds. Default 4.0 * unit.femtosecond."""
@@ -398,8 +396,7 @@ class OutputSettings(SettingsBaseModel):
     Settings for simulation output settings,
     writing to disk, etc...
     """
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     # reporter settings
     output_indices: str = 'not water'  # TODO: add Literal here?
@@ -435,8 +432,7 @@ class MultiStateOutputSettings(OutputSettings):
     Settings for MultiState simulation output settings,
     writing to disk, etc...
     """
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     # reporter settings
     output_filename: str = 'simulation.nc'
@@ -482,8 +478,7 @@ class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths, etc...
     """
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     minimization_steps: int = 5000
     """Number of minimization steps to perform. Default 5000."""
@@ -532,9 +527,7 @@ class MultiStateSimulationSettings(SimulationSettings):
       lambda windows, the replica lambda states will be picked at equidistant
       intervals along the lambda schedule.
     """
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     sampler_method: str = "repex"
     """
@@ -642,8 +635,7 @@ class MDSimulationSettings(SimulationSettings):
     """
     Settings for simulation control for plain MD simulations
     """
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     equilibration_length_nvt: NanosecondQuantity | None
     """
@@ -656,8 +648,7 @@ class MDSimulationSettings(SimulationSettings):
 
 class MDOutputSettings(OutputSettings):
     """ Settings for simulation output settings for plain MD simulations."""
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict( arbitrary_types_allowed=True)
 
     # reporter settings
     production_trajectory_filename: Optional[str] = 'simulation.xtc'

@@ -41,18 +41,12 @@ class NetworkSelection(BaseModel):
 class PartialChargeSelection(BaseModel):
     model_config = ConfigDict(extra='allow', str_to_lower=True)
 
-    # class Config:
-    #     extra = 'allow'
-    #     anystr_lower = True
-
     method: Optional[str] = 'am1bcc'
     settings: dict[str, Any] = {}
 
 
 class CliYaml(BaseModel):
     model_config = ConfigDict(extra='allow')
-    # class Config:
-    #     extra = 'allow'
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None

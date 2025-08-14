@@ -19,6 +19,7 @@ from gufe.settings import (
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
+from pydantic import ConfigDict
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,
@@ -29,9 +30,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 
 class LambdaSettings(SettingsBaseModel):
-    class Config:
-        extra = 'ignore'
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
 
     """Lambda schedule settings.
 
@@ -48,9 +47,7 @@ class LambdaSettings(SettingsBaseModel):
 
 
 class AlchemicalSettings(SettingsBaseModel):
-    class Config:
-        extra = 'ignore'
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
 
     """Settings for the alchemical protocol
 
