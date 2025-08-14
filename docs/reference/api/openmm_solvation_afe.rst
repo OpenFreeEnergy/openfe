@@ -45,27 +45,30 @@ Below are the settings which can be tweaked in the protocol. The default setting
 Protocol Specific Settings Classes
 ----------------------------------
 
-Below are Settings classes which are unique to the `AbsoluteSolvationProtocol`.
+Below are Settings classes which are unique to the ``AbsoluteSolvationProtocol``.
+
+.. TODO: add these back in and fix the "more than one target found for cross-reference" warning
+.. .. autopydantic_model:: AlchemicalSettings
+..    :model-show-json: False
+..    :model-show-field-summary: False
+..    :model-show-config-member: False
+..    :model-show-config-summary: False
+..    :model-show-validator-members: False
+..    :model-show-validator-summary: False
+..    :field-list-validators: False
+..    :inherited-members: SettingsBaseModel
+..    :member-order: bysource
+..    :model-signature-prefix: class
 
 
-.. autopydantic_model:: AlchemicalSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
-
-.. autopydantic_model:: LambdaSettings
-   :model-show-json: False
-   :model-show-field-summary: False
-   :model-show-config-member: False
-   :model-show-config-summary: False
-   :model-show-validator-members: False
-   :model-show-validator-summary: False
-   :field-list-validators: False
-   :inherited-members: SettingsBaseModel
-   :member-order: bysource
+.. .. autopydantic_model:: LambdaSettings
+..    :model-show-json: False
+..    :model-show-field-summary: False
+..    :model-show-config-member: False
+..    :model-show-config-summary: False
+..    :model-show-validator-members: False
+..    :model-show-validator-summary: False
+..    :field-list-validators: False
+..    :inherited-members: SettingsBaseModel
+..    :member-order: bysource
+..    :model-signature-prefix: class
