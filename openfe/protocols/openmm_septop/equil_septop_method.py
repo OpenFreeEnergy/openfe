@@ -1449,12 +1449,13 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         alignment_indices = SepTopComplexSetupUnit._get_selection_atom_indices(
             mdtraj_complex_A
         )
-        mdtraj_complex_B.superpose(
+        imaged_complex_B = mdtraj_complex_B.image_molecules()
+        imaged_complex_B.superpose(
             mdtraj_complex_A,
             atom_indices=alignment_indices,
         )
         # Extract updated system positions.
-        updated_positions_B = mdtraj_complex_B.openmm_positions(-1)
+        updated_positions_B = imaged_complex_B.openmm_positions(-1)
 
         return updated_positions_B
 
