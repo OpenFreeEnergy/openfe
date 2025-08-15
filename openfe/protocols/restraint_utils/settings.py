@@ -15,8 +15,8 @@ from gufe.settings.types import NanometerQuantity, make_custom_quantity
 from openff.units import unit
 from pydantic import ConfigDict, field_validator
 
-SpringConstantLinearQuantity = make_custom_quantity("kilojoule_per_mole / nm ** 2")
-SpringConstantAngularQuantity = make_custom_quantity("kilojoule_per_mole / radians ** 2")
+SpringConstantLinearQuantity = make_custom_quantity("kilojoule_per_mole / nm ** 2")  # type: ignore
+SpringConstantAngularQuantity = make_custom_quantity("kilojoule_per_mole / radians ** 2")  # type: ignore
 class BaseRestraintSettings(SettingsBaseModel):
     """
     Base class for RestraintSettings objects.
