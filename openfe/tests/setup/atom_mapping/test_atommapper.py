@@ -1,7 +1,7 @@
 import pytest
 
 from openfe.setup.atom_mapping.ligandatommapper import LigandAtomMapper
-
+from openfe.utils import ligand_utils
 
 class TestAtomMapper:
     def test_abstract_error(self, simple_mapping):
@@ -42,3 +42,8 @@ class TestAtomMapper:
         results = list(mapper.suggest_mappings(molA, molB))
         assert len(results) == 2
         assert results == [simple_mapping, other_mapping]
+
+
+    def test_alchemical_charge_deprecation_warning(self, simple_mapping):
+        with pytest.warns(DeprecationWarning, match="Use gufe\.LigandAtomMapping"):
+            ligand_utils.get_alchemical_charge_difference(simple_mapping)
