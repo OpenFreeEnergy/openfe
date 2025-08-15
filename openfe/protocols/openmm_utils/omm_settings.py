@@ -9,7 +9,7 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional, Literal
+from typing import Optional, Literal, TypeAlias
 from openff.units import unit
 from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity,KCalPerMolQuantity, BoxQuantity, NanosecondQuantity, make_custom_quantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
@@ -22,9 +22,13 @@ from gufe.settings import (
 )
 
 from pydantic import ConfigDict, field_validator
-FemtosecondQuantity = make_custom_quantity("femtosecond")
-InversePicosecondQuantity = make_custom_quantity("1/picosecond")
-TimestepQuantity = make_custom_quantity("timestep")
+# TODO: do we just want to have protocol devs use:
+# PicosecondQuantity: TypeAlias = Annotated[GufeQuantity, AfterValidator(_unit_validator_factory("picosecond"))]
+
+FemtosecondQuantity: TypeAlias = make_custom_quantity("femtosecond")
+InversePicosecondQuantity: TypeAlias = make_custom_quantity("1/picosecond")
+TimestepQuantity: TypeAlias = make_custom_quantity("timestep")
+
 class BaseSolvationSettings(SettingsBaseModel):
     """
     Base class for SolvationSettings objects.
