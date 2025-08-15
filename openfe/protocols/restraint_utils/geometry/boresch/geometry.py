@@ -7,7 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal, Optional, TypeAlias
 
 import MDAnalysis as mda
 from gufe.settings.types import NanometerQuantity, GufeQuantity, specify_quantity_units
@@ -23,7 +23,7 @@ from .host import (
     find_host_atom_candidates,
 )
 
-RadiansQuantity = Annotated[GufeQuantity, specify_quantity_units("radians")]
+RadiansQuantity:TypeAlias = Annotated[GufeQuantity, specify_quantity_units("radians")]
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
@@ -44,7 +44,7 @@ class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
     The equilibrium distance between H0 and G0.
     """
-    theta_A0: RadiansQuantity  # type: ignore
+    theta_A0: RadiansQuantity
     """
     The equilibrium angle value between H1, H0, and G0.
     """
