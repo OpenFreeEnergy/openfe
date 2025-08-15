@@ -1,7 +1,6 @@
-from warnings import deprecated
 from gufe import LigandAtomMapping
+import warnings
 
-@deprecated("Use gufe.LigandAtomMapping.get_alchemical_charge_difference() instead")
 def get_alchemical_charge_difference(mapping: LigandAtomMapping) -> int:
     """
     Return the difference in formal charge between stateA and stateB defined as (formal charge A - formal charge B)
@@ -16,5 +15,5 @@ def get_alchemical_charge_difference(mapping: LigandAtomMapping) -> int:
     int:
         The difference in formal charge between the end states.
     """
-
+    warnings.warn("Use gufe.LigandAtomMapping.get_alchemical_charge_difference() instead.", DeprecationWarning)
     return mapping.get_alchemical_charge_difference()
