@@ -45,5 +45,5 @@ class TestAtomMapper:
 
 
     def test_alchemical_charge_deprecation_warning(self, simple_mapping):
-        with pytest.warns(DeprecationWarning, match="Use gufe\.LigandAtomMapping"):
+        with pytest.warns(DeprecationWarning, match=r"Use gufe\.LigandAtomMapping"):
             ligand_utils.get_alchemical_charge_difference(simple_mapping)
