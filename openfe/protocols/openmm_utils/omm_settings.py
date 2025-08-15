@@ -9,9 +9,9 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 from __future__ import annotations
 
-from typing import Optional, Literal, TypeAlias
+from typing import Annotated, Optional, Literal, TypeAlias
 from openff.units import unit
-from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity,KCalPerMolQuantity, BoxQuantity, NanosecondQuantity, make_custom_quantity
+from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity,KCalPerMolQuantity, BoxQuantity, NanosecondQuantity, GufeQuantity, specify_quantity_units
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
@@ -25,9 +25,9 @@ from pydantic import ConfigDict, field_validator
 # TODO: do we just want to have protocol devs use something like:
 # PicosecondQuantity: TypeAlias = Annotated[GufeQuantity, AfterValidator(_unit_validator_factory("picosecond"))]
 
-FemtosecondQuantity: TypeAlias = make_custom_quantity("femtosecond")  # type: ignore
-InversePicosecondQuantity: TypeAlias = make_custom_quantity("1/picosecond")  # type: ignore
-TimestepQuantity: TypeAlias = make_custom_quantity("timestep")  # type: ignore
+FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
+InversePicosecondQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("1/picosecond")]
+TimestepQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("timestep")]
 
 class BaseSolvationSettings(SettingsBaseModel):
     """

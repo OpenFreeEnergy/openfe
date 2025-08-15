@@ -8,15 +8,16 @@ TODO
 * Rename from host/guest to molA/molB?
 * Add all the restraint settings entries.
 """
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional, TypeAlias
 
 from gufe.settings import SettingsBaseModel
-from gufe.settings.types import NanometerQuantity, make_custom_quantity
+from gufe.settings.types import NanometerQuantity, GufeQuantity, specify_quantity_units
 from openff.units import unit
 from pydantic import ConfigDict, field_validator
 
-SpringConstantLinearQuantity = make_custom_quantity("kilojoule_per_mole / nm ** 2")  # type: ignore
-SpringConstantAngularQuantity = make_custom_quantity("kilojoule_per_mole / radians ** 2")  # type: ignore
+SpringConstantLinearQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("kilojoule_per_mole / nm ** 2")]
+SpringConstantAngularQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("kilojoule_per_mole / radians ** 2")]
+
 class BaseRestraintSettings(SettingsBaseModel):
     """
     Base class for RestraintSettings objects.
@@ -29,7 +30,7 @@ class DistanceRestraintSettings(BaseRestraintSettings):
     two groups of atoms defined as ``host`` and ``guest``.
     """
 
-    spring_constant: SpringConstantLinearQuantity  # type: ignore
+    spring_constant: SpringConstantLinearQuantity
     """
     The distance restraint potential spring constant.
     """
@@ -111,41 +112,41 @@ class BoreschRestraintSettings(BaseRestraintSettings):
         (2025; DOI 10.26434/chemrxiv-2025-q08ld-v2)
     """
 
-    K_r: SpringConstantLinearQuantity = (  # type: ignore
-        4184.0  * unit.kilojoule_per_mole / unit.nm**2
+    K_r: SpringConstantLinearQuantity = (
+        4184.0 * unit.kilojoule_per_mole / unit.nm**2
     )
     """
     The bond spring constant between H0 and G0. Default 10 kcal/mol/Å²
     """
-    K_thetaA: SpringConstantAngularQuantity = (  # type: ignore
+    K_thetaA: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
-    The spring constant for the angle formed by H1-H0-G0. 
+    The spring constant for the angle formed by H1-H0-G0.
     Default 80 kcal/mol/rad²
     """
-    K_thetaB: SpringConstantAngularQuantity = (  # type: ignore
+    K_thetaB: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The spring constant for the angle formed by H0-G0-G1.
     Default 80 kcal/mol/rad²
     """
-    K_phiA: SpringConstantAngularQuantity = (  # type: ignore
+    K_phiA: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
     H2-H1-H0-G0. Default 80 kcal/mol/rad²
     """
-    K_phiB: SpringConstantAngularQuantity = (  # type: ignore
+    K_phiB: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
     The equilibrium force constant for the dihedral formed by
     H1-H0-G0-G1. Default 80 kcal/mol/rad²
     """
-    K_phiC: SpringConstantAngularQuantity = (  # type: ignore
+    K_phiC: SpringConstantAngularQuantity = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
     )
     """
