@@ -7,10 +7,10 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 import MDAnalysis as mda
-from gufe.settings.types import NanometerQuantity, make_custom_quantity
+from gufe.settings.types import NanometerQuantity, GufeQuantity, specify_quantity_units
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit
@@ -23,7 +23,7 @@ from .host import (
     find_host_atom_candidates,
 )
 
-RadiansQuantity = make_custom_quantity("radians")  # type: ignore
+RadiansQuantity = Annotated[GufeQuantity, specify_quantity_units("radians")]
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
