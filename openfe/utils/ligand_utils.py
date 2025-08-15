@@ -1,5 +1,7 @@
+from warnings import deprecated
 from gufe import LigandAtomMapping
 
+@deprecated("Use gufe.LigandAtomMapping.get_alchemical_charge_difference() instead")
 def get_alchemical_charge_difference(mapping: LigandAtomMapping) -> int:
     """
     Return the difference in formal charge between stateA and stateB defined as (formal charge A - formal charge B)
@@ -14,7 +16,5 @@ def get_alchemical_charge_difference(mapping: LigandAtomMapping) -> int:
     int:
         The difference in formal charge between the end states.
     """
-    from rdkit import Chem
-    charge_a = Chem.rdmolops.GetFormalCharge(mapping.componentA.to_rdkit())
-    charge_b = Chem.rdmolops.GetFormalCharge(mapping.componentB.to_rdkit())
-    return charge_a - charge_b
+
+    return mapping.get_alchemical_charge_difference()
