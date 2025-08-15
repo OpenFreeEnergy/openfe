@@ -34,7 +34,6 @@ from ..chemicalsystem_generator import (
     RFEComponentLabels,
 )
 from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
-from ...utils.ligand_utils import get_alchemical_charge_difference
 
 # TODO: move/or find better structure for protocol_generator combinations!
 PROTOCOL_GENERATOR = {
@@ -331,7 +330,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         protocol_settings = transformation_protocol.settings.unfrozen_copy()
         if "vacuum" in transformation_name:
             protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
-        elif get_alchemical_charge_difference(ligand_mapping_edge) != 0:
+        elif ligand_mapping_edge.get_alchemical_charge_difference() != 0:
             wmsg = ("Charge changing transformation between ligands "
                     f"{ligand_mapping_edge.componentA.name} and {ligand_mapping_edge.componentB.name}. "
                     "A more expensive protocol with 22 lambda windows, sampled "
