@@ -7,12 +7,9 @@ free energy calculations using OpenMM +/- Tools, such
 as :mod:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
-from __future__ import annotations
 
+from pydantic import ConfigDict, field_validator
 from typing import Annotated, Optional, Literal, TypeAlias
-from openff.units import unit
-from gufe.settings.types import NanometerQuantity, NanometerArrayQuantity, PicosecondQuantity,KCalPerMolQuantity, BoxQuantity, NanosecondQuantity, GufeQuantity, specify_quantity_units
-from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
     Settings as Settings,
@@ -21,9 +18,19 @@ from gufe.settings import (
     ThermoSettings as ThermoSettings,
 )
 
-from pydantic import ConfigDict, field_validator
-# TODO: do we just want to have protocol devs use something like:
-# PicosecondQuantity: TypeAlias = Annotated[GufeQuantity, AfterValidator(_unit_validator_factory("picosecond"))]
+from gufe.settings.types import (
+    NanometerQuantity,
+    NanometerArrayQuantity,
+    PicosecondQuantity,
+    KCalPerMolQuantity,
+    BoxQuantity,
+    NanosecondQuantity,
+    GufeQuantity,
+    specify_quantity_units,
+)
+
+from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
+from openff.units import unit
 
 FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
 InversePicosecondQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("1/picosecond")]
