@@ -22,12 +22,12 @@ from gufe.settings import (
 )
 
 from pydantic import ConfigDict, field_validator
-# TODO: do we just want to have protocol devs use:
+# TODO: do we just want to have protocol devs use something like:
 # PicosecondQuantity: TypeAlias = Annotated[GufeQuantity, AfterValidator(_unit_validator_factory("picosecond"))]
 
-FemtosecondQuantity: TypeAlias = make_custom_quantity("femtosecond")
-InversePicosecondQuantity: TypeAlias = make_custom_quantity("1/picosecond")
-TimestepQuantity: TypeAlias = make_custom_quantity("timestep")
+FemtosecondQuantity: TypeAlias = make_custom_quantity("femtosecond")  # type: ignore
+InversePicosecondQuantity: TypeAlias = make_custom_quantity("1/picosecond")  # type: ignore
+TimestepQuantity: TypeAlias = make_custom_quantity("timestep")  # type: ignore
 
 class BaseSolvationSettings(SettingsBaseModel):
     """

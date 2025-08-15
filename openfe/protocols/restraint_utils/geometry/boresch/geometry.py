@@ -23,7 +23,7 @@ from .host import (
     find_host_atom_candidates,
 )
 
-RadiansQuantity = make_custom_quantity("radians")
+RadiansQuantity = make_custom_quantity("radians")  # type: ignore
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """
