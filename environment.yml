@@ -52,3 +52,4 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/openforcefield/openff-interchange@1354fc88618e514b88af5093085bcf87d528bfe1
