@@ -51,6 +51,7 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/openforcefield/openff-interchange.git@naglcharges-handler
-    - git+https://github.com/openforcefield/openff-toolkit.git@allow-nagl-models-as-paths
+    - git+https://github.com/openforcefield/openff-interchange.git@main
+    - git+https://github.com/openforcefield/openff-toolkit.git@main
+    - git+https://github.com/openforcefield/openff-nagl-models@main
     - git+https://github.com/OpenFreeEnergy/gufe@main
