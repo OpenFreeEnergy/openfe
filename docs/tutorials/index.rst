@@ -20,6 +20,11 @@ Absolute Free Energies
 
 - :any:`Absolute Solvation Free Energy Protocol <ahfe_tutorial>`: A walk-through of calculating the hydration free energy of a benzene ligand.
 
+Relative Free Energies using Separated Topologies
+-------------------------------------------------
+
+- :any:`SepTop Protocol <septop_tutorial>`: A walk-through of calculating the relative binding free energy between TYK2 ligands using a Separated Topologies approach.
+
 Molecular Dynamics (MD)
 -----------------------
 
@@ -45,6 +50,7 @@ Generating Partial Charges
     rbfe_python_tutorial
     rbfe_cli_tutorial
     ahfe_tutorial
+    septop_tutorial
     md_tutorial
     plotting_with_cinnabar
     charge_molecules_cli_tutorial

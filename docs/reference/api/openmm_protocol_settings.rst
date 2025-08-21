@@ -10,6 +10,7 @@ can be found on the individual Protocol API reference documentation pages:
 
 * :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
 * :ref:`OpenMM Relative Free Energy <rfe protocol api>`
+* :ref:`OpenMM Relative Free Energy using SepTop <septop protocol api>`
 * :ref:`OpenMM Molecular Dynamics Protocol <md protocol api>`
 
 
@@ -121,6 +122,7 @@ These currently include the following Protocols:
 
 * :ref:`OpenMM Absolute Solvation Free Energy <afe solvation protocol api>`
 * :ref:`OpenMM Relative Free Energy <rfe protocol api>`
+* :ref:`OpenMM Relative Free Energy using SepTop <septop protocol api>`
 
 
 .. autopydantic_model:: MultiStateOutputSettings
