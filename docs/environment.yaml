@@ -1,6 +1,5 @@
 name: openfe-docs
 channels:
-- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
 dependencies:
 - autodoc-pydantic <2.0
