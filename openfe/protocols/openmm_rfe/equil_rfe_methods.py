@@ -133,14 +133,8 @@ def _get_alchemical_charge_difference(
       The formal charge difference between states A and B.
       This is defined as sum(charge state A) - sum(charge state B)
     """
-    chg_A = Chem.rdmolops.GetFormalCharge(
-        mapping.componentA.to_rdkit()
-    )
-    chg_B = Chem.rdmolops.GetFormalCharge(
-        mapping.componentB.to_rdkit()
-    )
 
-    difference = chg_A - chg_B
+    difference = mapping.get_alchemical_charge_difference()
 
     if abs(difference) > 0:
         if explicit_charge_correction:
