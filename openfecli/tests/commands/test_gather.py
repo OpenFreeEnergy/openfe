@@ -24,13 +24,13 @@ ZENODO_RBFE_DATA = pooch.create(
         registry={
             "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
             "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
-        retry_if_failed=3,
+        retry_if_failed=5,
     )
 ZENODO_CMET_DATA = pooch.create(
         path = POOCH_CACHE,
         base_url="doi:10.5281/zenodo.15200083",
         registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
-        retry_if_failed=3,
+        retry_if_failed=5,
     )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
