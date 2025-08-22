@@ -3,7 +3,7 @@ channels:
 - https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
 dependencies:
-- autodoc-pydantic <2.0
+- autodoc-pydantic >=2.0
 - gitpython
 - kartograf >=1.0.0
 - konnektor >=0.2.0
@@ -26,7 +26,7 @@ dependencies:
 - threadpoolctl
 - tqdm
 - pip:
-  - git+https://github.com/OpenFreeEnergy/gufe@main
+  - git+https://github.com/OpenFreeEnergy/gufe@drop_pydanticv1
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
 
 # These are added automatically by RTD, so we include them here 
