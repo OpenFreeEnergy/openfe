@@ -114,10 +114,10 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     """
 
     K_r: FloatQuantity["kilojoule_per_mole / nm ** 2"] = (
-        418.4 * unit.kilojoule_per_mole / unit.nm**2
+        4184.0 * unit.kilojoule_per_mole / unit.nm**2
     )
     """
-    The bond spring constant between H0 and G0. Default 1 kcal/mol/Å²
+    The bond spring constant between H0 and G0. Default 10 kcal/mol/Å²
     """
     K_thetaA: FloatQuantity["kilojoule_per_mole / radians ** 2"] = (
         334.72 * unit.kilojoule_per_mole / unit.radians**2
@@ -189,7 +189,7 @@ class BoreschRestraintSettings(BaseRestraintSettings):
     The indices of the guest component atoms to restraint.
     If defined, these will override any automatic selection.
     """
-    anchor_finding_strategy: Literal['multi-residue', 'bonded'] = 'multi-residue'
+    anchor_finding_strategy: Literal['multi-residue', 'bonded'] = 'bonded'
     """
     The Boresch atom picking strategy to use.
 
