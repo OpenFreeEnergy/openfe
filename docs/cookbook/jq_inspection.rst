@@ -1,60 +1,61 @@
 .. _jq_inspection:
 
-Using ``jq`` to inspect OpenFE JSONS
+Using ``jq`` to inspect OpenFE JSONs
 ==============================================
+Sometimes you may want to get a sense of the contents of JSON files, but the files are too unwieldy to inspect one-by-one in a code editor.
 
-`jq <https://github.com/jqlang/jq>`_ is a helpful command-line tool for quickly inspecting JSON files.
+`jq <https://github.com/jqlang/jq>`_ is a helpful command-line tool that we recommend for for quickly inspecting JSON files.
 
-.. code:: bash
+Below is a common use-case to get you started, but you can do much more by checking out the `jq manual <https://jqlang.org/manual/>`_.
 
-    $ jq "keys[]" rbfe_lig_1a_lig_03.json
-    ":version:"
-    "__module__"
-    "__qualname__"
-    "mapping"
-    "name"
-    "protocol"
-    "stateA"
-    "stateB"
+To view all the top-level JSON keys, use ``jq "keys" filename.json``, for example with a results JSON from the tutorial:
 
 .. code:: bash
 
-    $ jq ".protocol | keys[]" rbfe_lig_1a_lig_03.json
-    ":version:"
-    "__module__"
-    "__qualname__"
-    "settings"
+    $ jq "keys" rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json
+    [
+    "estimate",
+    "protocol_result",
+    "uncertainty",
+    "unit_results"
+    ]
+
+.. note::
+
+    You can use ``"keys[]"`` instead of ``"keys"`` for a cleaner output.
+
+Now that we know ``estimate`` is at the top-level of the JSON, we can use the following command to see all the values for the ``estimate`` key:
 
 .. code:: bash
 
-    $ jq ".protocol.settings | keys[]" rbfe_lig_1a_lig_03.json
-    ":is_custom:"
-    "__class__"
-    "__module__"
-    "alchemical_settings"
-    "complex_equil_output_settings"
-    "complex_equil_simulation_settings"
-    "complex_lambda_settings"
-    "complex_output_settings"
-    "complex_restraint_settings"
-    "complex_simulation_settings"
-    "complex_solvation_settings"
-    "engine_settings"
-    "forcefield_settings"
-    "integrator_settings"
-    "partial_charge_settings"
-    "protocol_repeats"
-    "solvent_equil_output_settings"
-    "solvent_equil_simulation_settings"
-    "solvent_lambda_settings"
-    "solvent_output_settings"
-    "solvent_restraint_settings"
-    "solvent_simulation_settings"
-    "solvent_solvation_settings"
-    "thermo_settings"
+    $ jq ".estimate" rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json
+    {
+    "magnitude": 23.347074789078682,
+    "unit": "kilocalorie / mole",
+    ":is_custom:": true,
+    "pint_unit_registry": "openff_units"
+    }
 
+This can be very helpful for quickly checking results for many files, for example:
 
 .. code:: bash
 
-    $ jq ".protocol.settings.protocol_repeats" rbfe_lig_1a_lig_03.json
-    1
+    $ jq ".estimate.magnitude" rbfe*.json
+    -14.925911852820793
+    -40.72063957254803
+    -27.76541486479537
+    -16.023754604070007
+    -57.38608716292447
+    -15.748326155729705
+    -39.933880531487326
+    -27.780933075807425
+    -16.76023951588401
+    -58.36294851896545
+    -19.038006312251575
+    -20.26856586311034
+    17.338257573349775
+    15.775784163095102
+    23.134622420900932
+    17.071712542470248
+    15.873122071409249
+    23.347074789078682
