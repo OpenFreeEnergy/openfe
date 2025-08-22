@@ -1,13 +1,11 @@
 name: openfe-docs
 channels:
-- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
 dependencies:
 - autodoc-pydantic <2.0
 - gitpython
 - kartograf >=1.0.0
 - konnektor >=0.2.0
-- libsass
 - lomap2 >=3.0.0
 - myst-parser
 - nbsphinx
@@ -23,7 +21,6 @@ dependencies:
 - sphinx-click
 - sphinx-design
 - sphinx-toolbox
-- threadpoolctl
 - tqdm
 - pip:
   - git+https://github.com/OpenFreeEnergy/gufe@main

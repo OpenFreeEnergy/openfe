@@ -107,6 +107,7 @@ autodoc_mock_imports = [
     "openmmforcefields",
     "openmmtools",
     "pymbar",
+    "threadpoolctl",
 ]
 
 # Extensions for the myst parser
