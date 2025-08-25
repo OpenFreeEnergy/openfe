@@ -1,7 +1,7 @@
 name: openfe-docs
-# channels:
-# - https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
-# - https://conda.anaconda.org/conda-forge
+channels:
+- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
+- https://conda.anaconda.org/conda-forge
 
 # explicit pins to speed up build: conda-metachannel
 dependencies:
