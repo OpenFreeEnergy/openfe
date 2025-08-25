@@ -153,6 +153,7 @@ List of Cookbooks
 
     loading_molecules
     dumping_transformation
+    jq_inspection
     choose_protocol
     generate_ligand_network
     rfe_alchemical_planners
