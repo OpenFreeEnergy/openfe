@@ -4,7 +4,9 @@ build:
   os: "ubuntu-24.04"
   tools:
     python: "miniconda3-3.12-24.9"
-
+  commands:
+    - conda list
+    - pip install --no-deps .
 sphinx:
    configuration: docs/conf.py
    fail_on_warning: true
