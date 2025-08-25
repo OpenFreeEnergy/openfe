@@ -2,7 +2,7 @@ name: openfe-docs
 channels:
 - https://conda.anaconda.org/conda-forge
 
-# explicit pins to speed up build: conda-metachannel
+# explicit pins to speed up build:
 dependencies:
 - autodoc-pydantic == 1.9.0
 - gitpython == 3.1.45
