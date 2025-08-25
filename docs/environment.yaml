@@ -30,6 +30,12 @@ dependencies:
   - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
 
+# tmp (eventually mock these)
+- psutil == 7.0.0
+- openmmtools == 0.25.1
+- openff-interchange-base == 0.4.5
+- openmmforcefields == 0.15.0
+
 # These are added automatically by RTD, so we include them here 
 # for a consistent environment.
 - mock
