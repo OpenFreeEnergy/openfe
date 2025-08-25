@@ -5,14 +5,14 @@ build:
   tools:
     python: "miniconda3-3.12-24.9"
   commands:
-    - conda list
-    - pip install --no-deps .
-sphinx:
-   configuration: docs/conf.py
-   fail_on_warning: true
+    - conda env create --name tmp --file docs/environment.yaml
+    # - pip install --no-deps .
+# sphinx:
+#    configuration: docs/conf.py
+#    fail_on_warning: true
 
-conda:
-  environment: docs/environment.yaml
+# conda:
+#   environment: docs/environment.yaml
 
 # python:
 #   # Install our python package before building the docs
