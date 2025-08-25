@@ -14,7 +14,7 @@ dependencies:
 - nbsphinx-link
 - openff-toolkit >=0.13.0
 - openff-units
-- openmm
+# - openmm
 - packaging
 - pip
 - plugcli
