@@ -33,7 +33,7 @@ zenodo_restraint_data = pooch.create(
     registry={
         "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 
 
