@@ -1,6 +1,5 @@
 name: openfe-docs
 channels:
-- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
 
 # explicit pins to speed up build: conda-metachannel
@@ -26,7 +25,7 @@ dependencies:
 - sphinx-design == 0.6.1
 - sphinx-toolbox == 4.0.0
 - threadpoolctl == 3.6.0
-- tqdm == 4.67.1s
+- tqdm == 4.67.1
 # - pip:
 #   - git+https://github.com/OpenFreeEnergy/gufe@main
 #   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
