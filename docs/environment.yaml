@@ -14,7 +14,7 @@ dependencies:
 - nbsphinx == 0.9.7
 - nbsphinx-link == 1.3.0
 # - openff-toolkit >=0.13.0
-# - openff-units == 0.3.1
+- openff-units == 0.3.1
 # - openmm == 8.3.1
 - packaging == 25.0
 - pip == 25.2
@@ -26,13 +26,13 @@ dependencies:
 - sphinx-toolbox == 4.0.0
 - threadpoolctl == 3.6.0
 - tqdm == 4.67.1
-# - pip:
-#   - git+https://github.com/OpenFreeEnergy/gufe@main
-#   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
+- pip:
+  - git+https://github.com/OpenFreeEnergy/gufe@main
+  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
 
-# # These are added automatically by RTD, so we include them here 
-# # for a consistent environment.
-# - mock
-# - pillow
-# - sphinx
-# - sphinx_rtd_theme
+# These are added automatically by RTD, so we include them here 
+# for a consistent environment.
+- mock
+- pillow
+- sphinx
+- sphinx_rtd_theme
