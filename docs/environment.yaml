@@ -1,13 +1,13 @@
 name: openfe-docs
-channels:
-- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
-- https://conda.anaconda.org/conda-forge
+# channels:
+# - https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
+# - https://conda.anaconda.org/conda-forge
 
 # explicit pins to speed up build: conda-metachannel
 dependencies:
 # - autodoc-pydantic == 1.9.0
 # - gitpython == 3.1.45
-- kartograf == 1.2.0
+# - kartograf == 1.2.0
 # - konnektor == 0.2.0
 # - libsass == 0.22.0
 # - lomap2 == 3.2.1
@@ -20,7 +20,7 @@ dependencies:
 # - packaging == 25.0
 # - pip == 25.2
 # - plugcli == 0.2.1
-# - python == 3.11.13
+- python == 3.11.13
 # - sphinx == 7.2.6
 # - sphinx-click == 6.0.0
 # - sphinx-design == 0.6.1

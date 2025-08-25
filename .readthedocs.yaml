@@ -9,8 +9,8 @@ sphinx:
    configuration: docs/conf.py
    fail_on_warning: true
 
-# conda:
-#   environment: docs/environment.yaml
+conda:
+  environment: docs/environment.yaml
 
 # python:
 #   # Install our python package before building the docs
