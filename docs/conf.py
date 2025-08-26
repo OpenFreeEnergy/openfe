@@ -107,6 +107,9 @@ autodoc_mock_imports = [
     "openmmforcefields",
     "openmmtools",
     "pymbar",
+    "openff.interchange",
+    "openmmforcefields",
+    "psutil"
 ]
 
 # Extensions for the myst parser
