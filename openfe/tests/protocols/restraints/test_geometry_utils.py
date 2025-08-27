@@ -55,7 +55,7 @@ zenodo_restraint_data = pooch.create(
     registry={
         "t4_lysozyme_trajectory.zip": "sha256:e985d055db25b5468491e169948f641833a5fbb67a23dbb0a00b57fb7c0e59c8"
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 pdb_data = pooch.create(
     path=POOCH_CACHE,
@@ -63,7 +63,7 @@ pdb_data = pooch.create(
     registry={
         "6CZJ.pdb": "sha256:94ab621b420bd10016c54c5c09a16b935313203eb71dfbf56b5e50b2d1940622"
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 
 
