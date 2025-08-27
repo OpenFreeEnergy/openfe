@@ -13,8 +13,8 @@ from gufe import (
 
 
 def get_alchemical_components(
-        stateA: ChemicalSystem,
-        stateB: ChemicalSystem,
+    stateA: ChemicalSystem,
+    stateB: ChemicalSystem,
 ) -> dict[str, list[Component]]:
     """
     Checks the equality between Components of two end state ChemicalSystems
