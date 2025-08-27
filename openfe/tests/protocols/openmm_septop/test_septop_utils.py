@@ -7,9 +7,9 @@ from unittest import mock
 
 from openfe.protocols.openmm_septop.utils import deserialize, serialize
 
-def test_serialize_creates_parent_directory():
+def test_serialize_creates_parent_directory(tmp_path):
 
-    filename = pathlib.Path("file.xml")
+    filename = tmp_path / "file.xml"
     with mock.patch("openmm.XmlSerializer.serialize", return_value="<xml></xml>"):
         serialize(object(), filename)
 
@@ -17,9 +17,9 @@ def test_serialize_creates_parent_directory():
     assert filename.read_text() == "<xml></xml>"
 
 
-def test_serialize_xml():
+def test_serialize_xml(tmp_path):
 
-    filename = pathlib.Path("file.xml")
+    filename = tmp_path / "file.xml"
     with mock.patch("openmm.XmlSerializer.serialize", return_value="<data>"):
         serialize(object(), filename)
 
