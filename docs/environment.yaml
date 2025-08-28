@@ -27,7 +27,7 @@ dependencies:
 - threadpoolctl == 3.6.0
 - tqdm == 4.67.1
 - pip:
-  - git+https://github.com/OpenFreeEnergy/gufe@main
+  - git+https://github.com/OpenFreeEnergy/gufe@drop_pydanticv1
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
 
 # These are added automatically by RTD, so we include them here 
