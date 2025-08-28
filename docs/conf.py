@@ -108,7 +108,6 @@ autodoc_mock_imports = [
     "openmmtools",
     "pymbar",
     "openff.interchange",
-    "openmmforcefields",
     "psutil"
 ]
 
