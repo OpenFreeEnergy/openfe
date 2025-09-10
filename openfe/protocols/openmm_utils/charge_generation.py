@@ -142,12 +142,11 @@ def assign_offmol_nagl_charges(
         prod_models = get_models_by_type(
             model_type='am1bcc', production_only=True
         )
-        # Currently there are no production models so expect an IndexError
         try:
             nagl_model = prod_models[-1]
         except IndexError:
-            errmsg = ("No production am1bcc NAGL models are current available "
-                      "please manually select a candidate release model")
+            errmsg = ("No production am1bcc NAGL models were found, "
+                      "please manually select a candidate release model.")
             raise ValueError(errmsg)
 
     model_path = validate_nagl_model_path(nagl_model)
