@@ -5,6 +5,7 @@ channels:
 # explicit pins to speed up build:
 dependencies:
 - autodoc-pydantic == 1.9.0
+- docutils == 0.20
 - gitpython == 3.1.45
 - kartograf == 1.2.0
 - konnektor == 0.2.0
