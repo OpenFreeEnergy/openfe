@@ -810,14 +810,15 @@ class TestOFFPartialCharge:
     def test_no_production_nagl(self, uncharged_mol):
         """Cleanly handle the case where a NAGL model isn't found."""
         with mock.patch("openff.nagl_models.get_models_by_type", return_value=None):
-            charge_generation.assign_offmol_partial_charges(
-                uncharged_mol,
-                overwrite=False,
-                method="nagl",
-                toolkit_backend="rdkit",
-                generate_n_conformers=None,
-                nagl_model=None,
-            )
+            with pytest.raises(ValueError, match="No production am1bcc NAGL"):
+                charge_generation.assign_offmol_partial_charges(
+                    uncharged_mol,
+                    overwrite=False,
+                    method="nagl",
+                    toolkit_backend="rdkit",
+                    generate_n_conformers=None,
+                    nagl_model=None,
+                )
 
     # Note: skipping nagl tests on macos/darwin due to known issues
     # see: https://github.com/openforcefield/openff-nagl/issues/78
