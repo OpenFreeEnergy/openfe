@@ -809,7 +809,7 @@ class TestOFFPartialCharge:
     @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
     def test_no_production_nagl(self, uncharged_mol):
         """Cleanly handle the case where a NAGL model isn't found."""
-        with mock.patch("openff.nagl_models.get_models_by_type", return_value=None):
+        with mock.patch("openfe.protocols.openmm_utils.charge_generation.get_models_by_type", return_value=[]):
             with pytest.raises(ValueError, match="No production am1bcc NAGL"):
                 charge_generation.assign_offmol_partial_charges(
                     uncharged_mol,

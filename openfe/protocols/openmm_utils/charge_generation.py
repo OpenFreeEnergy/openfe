@@ -41,9 +41,8 @@ except ImportError:
 try:
     from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
     from openff.nagl_models import (
-        validate_nagl_model_path
+        get_models_by_type, validate_nagl_model_path,
     )
-    import openff.nagl_models
 except ImportError:
     HAS_NAGL = False
 else:
@@ -140,7 +139,7 @@ def assign_offmol_nagl_charges(
         raise ImportError(errmsg)
 
     if nagl_model is None:
-        prod_models = openff.nagl_models.get_models_by_type(
+        prod_models = get_models_by_type(
             model_type='am1bcc', production_only=True
         )
         try:
