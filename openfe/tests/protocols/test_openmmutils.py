@@ -793,18 +793,32 @@ class TestOFFPartialCharge:
         # but the charges should have
         assert not np.allclose(charges, lig.partial_charges)
 
-    @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
-    def test_no_production_nagl(self, uncharged_mol):
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_latest_production_nagl(self, uncharged_mol):
+        """We expect to find a NAGL model and be able to generate partial charges with it."""
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="nagl",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            nagl_model=None,
+        )
+        assert uncharged_mol.partial_charges.units == "elementary_charge"
 
-        with pytest.raises(ValueError, match='No production am1bcc NAGL'):
-            charge_generation.assign_offmol_partial_charges(
-                uncharged_mol,
-                overwrite=False,
-                method='nagl',
-                toolkit_backend='rdkit',
-                generate_n_conformers=None,
-                nagl_model=None,
-            )
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_no_production_nagl(self, uncharged_mol):
+        """Cleanly handle the case where a NAGL model isn't found."""
+        with mock.patch("openfe.protocols.openmm_utils.charge_generation.get_models_by_type", return_value=[]):
+            with pytest.raises(ValueError, match="No production am1bcc NAGL"):
+                charge_generation.assign_offmol_partial_charges(
+                    uncharged_mol,
+                    overwrite=False,
+                    method="nagl",
+                    toolkit_backend="rdkit",
+                    generate_n_conformers=None,
+                    nagl_model=None,
+                )
 
     # Note: skipping nagl tests on macos/darwin due to known issues
     # see: https://github.com/openforcefield/openff-nagl/issues/78
