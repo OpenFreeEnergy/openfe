@@ -7,6 +7,6 @@ Details on the theory and behaviour of different Protocols are listed here.
 
 .. toctree::
    relativehybridtopology
-   absolutesolvation
    absolutebinding
+   absolutesolvation
    plainmd
