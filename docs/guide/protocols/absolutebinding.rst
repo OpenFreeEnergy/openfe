@@ -18,7 +18,7 @@ we apply orientational, or Boresch-style, restraints, as described below.
 
 The absolute binding free energy is then obtained via summation of free energy differences along the thermodynamic cycle.
 
-.. figure:: img/abfe_thermocycle.png
+.. figure:: img/abfe_cycle.png
    :scale: 80%
 
    Thermodynamic cycle for the absolute binding free energy protocol.
