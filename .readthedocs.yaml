@@ -10,8 +10,8 @@ sphinx:
    fail_on_warning: true
 
 conda:
-#  environment: docs/environment.yaml
-  environment: docs/docs_build.yaml
+  environment: docs/environment.yaml
+
 python:
   # Install our python package before building the docs
   install:
