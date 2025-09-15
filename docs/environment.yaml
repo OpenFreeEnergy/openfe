@@ -27,9 +27,9 @@ dependencies:
 - pip:
   - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
-  # - git+https://github.com/OpenFreeEnergy/kartograf@1.2.0
-  # - git+https://github.com/OpenFreeEnergy/konnektor@0.2.0
-  # - git+https://github.com/OpenFreeEnergy/lomap2@3.2.1
+  - git+https://github.com/OpenFreeEnergy/kartograf@main
+  - git+https://github.com/OpenFreeEnergy/konnektor@main
+  - git+https://github.com/OpenFreeEnergy/lomap@main
 
 
 # These are added automatically by RTD, so we include them here 
