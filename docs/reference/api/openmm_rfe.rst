@@ -41,7 +41,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
 Protocol Specific Settings Classes
 ----------------------------------
 
-Below are Settings classes which are unique to the `RelativeHybridTopologyProtocol`.
+Below are Settings classes which are unique to the ``RelativeHybridTopologyProtocol``.
 
 .. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
 

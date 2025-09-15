@@ -45,7 +45,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
 Protocol Specific Settings Classes
 ----------------------------------
 
-Below are Settings classes which are unique to the `AbsoluteSolvationProtocol`.
+Below are Settings classes which are unique to the ``AbsoluteSolvationProtocol``.
 
 
 .. autopydantic_model:: AlchemicalSettings
