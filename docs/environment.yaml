@@ -4,26 +4,26 @@ channels:
 
 # explicit pins to speed up build:
 dependencies:
-- autodoc-pydantic == 1.9.0
+- autodoc-pydantic >= 2.0
 - docutils == 0.20
-- gitpython == 3.1.45
-- libsass == 0.23.0
-- myst-parser == 4.0.1
-- nbsphinx == 0.9.7
-- nbsphinx-link == 1.3.0
+- gitpython
+- libsass
+- myst-parser
+- nbsphinx
+- nbsphinx-link
 - openff-toolkit-base == 0.17.0
 - openff-units == 0.3.1
 - openmm == 8.3.1
-- packaging == 25.0
-- pip == 25.2
-- plugcli == 0.2.1
-- python == 3.13.7
-- sphinx == 8.1.3
-- sphinx-click == 6.0.0
-- sphinx-design == 0.6.1
-- sphinx-toolbox == 4.0.0
-- threadpoolctl == 3.6.0
-- tqdm == 4.67.1
+- packaging
+- pip
+- plugcli >= 0.2.1
+- python
+- sphinx ~=7.0
+- sphinx-click
+- sphinx-design
+- sphinx-toolbox
+- threadpoolctl
+- tqdm
 - pip:
   - git+https://github.com/OpenFreeEnergy/gufe@drop_pydanticv1
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@bump_pydata_theme_version
@@ -35,7 +35,7 @@ dependencies:
 
 # These are added automatically by RTD, so we include them here
 # for a consistent environment.
-- mock==5.2.0
-- pillow==11.3.0
+- mock
+- pillow
 # - sphinx
 # - sphinx_rtd_theme
