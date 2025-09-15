@@ -134,11 +134,11 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """Settings for assigning partial charges to small molecules."""
 
     # Alchemical settings
-    lambda_settings: LambdaSettings
+    lambda_settings: SettingsBaseModel # LambdaSettings
     """
     Lambda protocol settings including lambda windows and lambda functions.
     """
-    alchemical_settings: AlchemicalSettings
+    alchemical_settings: SettingsBaseModel # AlchemicalSettings
     """
     Alchemical protocol settings including soft core scaling.
     """
