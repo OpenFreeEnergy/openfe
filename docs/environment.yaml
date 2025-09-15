@@ -7,10 +7,7 @@ dependencies:
 - autodoc-pydantic == 1.9.0
 - docutils == 0.20
 - gitpython == 3.1.45
-# - kartograf == 1.2.0
-# - konnektor == 0.2.0
 - libsass == 0.22.0
-# - lomap2 == 3.2.1
 - myst-parser == 4.0.1
 - nbsphinx == 0.9.7
 - nbsphinx-link == 1.3.0
@@ -28,8 +25,12 @@ dependencies:
 - threadpoolctl == 3.6.0
 - tqdm == 4.67.1
 - pip:
-  # - git+https://github.com/OpenFreeEnergy/gufe@main
+  - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
+  # - git+https://github.com/OpenFreeEnergy/kartograf@1.2.0
+  # - git+https://github.com/OpenFreeEnergy/konnektor@0.2.0
+  # - git+https://github.com/OpenFreeEnergy/lomap2@3.2.1
+
 
 # These are added automatically by RTD, so we include them here 
 # for a consistent environment.
