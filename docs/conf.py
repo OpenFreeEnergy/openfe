@@ -109,7 +109,9 @@ autodoc_mock_imports = [
     "openmmtools",
     "pymbar",
     "openff.interchange",
-    "psutil"
+    "openmmforcefields",
+    "psutil",
+    "py3Dmol",
 ]
 
 # Extensions for the myst parser
