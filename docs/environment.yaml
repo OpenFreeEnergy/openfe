@@ -4,7 +4,7 @@ channels:
 
 # explicit pins to speed up build:
 dependencies:
-- autodoc-pydantic >= 2.0
+- autodoc-pydantic >= 2.1
 - docutils == 0.20
 - gitpython
 - libsass
@@ -18,7 +18,7 @@ dependencies:
 - pip
 - plugcli >= 0.2.1
 - python
-- sphinx ~=7.0
+- sphinx ==7.2.6
 - sphinx-click
 - sphinx-design
 - sphinx-toolbox
