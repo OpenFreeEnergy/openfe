@@ -18,7 +18,7 @@ dependencies:
 - pip
 - plugcli >= 0.2.1
 - python
-- sphinx ==7.2.6
+- sphinx ==7.2.6 # TODO: debug "duplicate object" warning with later versions
 - sphinx-click
 - sphinx-design
 - sphinx-toolbox
