@@ -1096,6 +1096,7 @@ def T4L_xml(
     # to test against reference xml
     default_settings.solvent_solvation_settings.solvent_padding = None
     default_settings.solvent_solvation_settings.number_of_solvent_molecules = 364
+    default_settings.forcefield_settings.small_molecule_forcefield = "openff-2.1.1"
     protocol = SepTopProtocol(settings=default_settings)
 
     dag = protocol.create(
@@ -1147,11 +1148,11 @@ class TestT4LXmlRegression:
 
         for a, b in zip(constraints, constraints_ref):
             # Particle 1
-            assert pytest.approx(a[0].value_in_unit(openmm.unit.nm), rel=1e-4) == b[0].value_in_unit(openmm.unit.nm)
+            assert a[0] == b[0]
             # Particle 2
-            assert pytest.approx(a[1].value_in_unit(openmm.unit.nm), rel=1e-4) == b[1].value_in_unit(openmm.unit.nm)
+            assert a[1] == b[1]
             # Constraint Quantity
-            assert pytest.approx(a[2].value_in_unit(openmm.unit.nm), rel=1e-4) == b[2].value_in_unit(openmm.unit.nm)
+            assert a[2] == b[2]
 
 
 def test_unit_tagging(benzene_toluene_dag, tmpdir):
