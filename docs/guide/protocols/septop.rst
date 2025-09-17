@@ -40,7 +40,7 @@ Partial annihilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the :class:`SepTopProtocol <.SepTopProtocol>` the coulombic interactions of the molecules are fully turned off (annihilated) in the respective non-interacting end states.
-The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions are turned off, keeping the intramolecular Lennard-Jones interactions.
 
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
@@ -91,7 +91,7 @@ Simulation details
 Here are some details of how the simulation is carried out which are not detailed in the :class:`SepTopProtocol <.SepTopProtocol>`:
 
 * The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [4]_.
-* A MonteCarloBarostat is used in the NPT ensemble to maintain constant pressure.
+* A `Monte Carlo barostat <https://docs.openmm.org/latest/api-python/generated/openmm.openmm.MonteCarloBarostat.html>`_ is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
