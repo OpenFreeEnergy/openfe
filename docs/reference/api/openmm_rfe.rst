@@ -9,7 +9,7 @@ implemented in OpenFE.
 Protocol API specification
 --------------------------
 
-.. module:: openfe.protocols.openmm_rfe
+.. module:: openfe.protocols.openmm_rfe.equil_rfe_methods
 
 .. autosummary::
    :nosignatures:
@@ -25,7 +25,7 @@ Protocol Settings
 
 Below are the settings which can be tweaked in the protocol. The default settings (accessed using :meth:`RelativeHybridTopologyProtocol.default_settings`) will automatically populate a settings which we have found to be useful for running relative binding free energies using explicit solvent. There will however be some cases (such as when doing gas phase calculations) where you will need to tweak some of the following settings.
 
-.. autopydantic_model:: RelativeHybridTopologyProtocolSettings
+.. autopydantic_model:: openfe.protocols.openmm_rfe.equil_rfe_settings.RelativeHybridTopologyProtocolSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False
@@ -41,11 +41,9 @@ Below are the settings which can be tweaked in the protocol. The default setting
 Protocol Specific Settings Classes
 ----------------------------------
 
-Below are Settings classes which are unique to the `RelativeHybridTopologyProtocol`.
+Below are Settings classes which are unique to the ``RelativeHybridTopologyProtocol``.
 
-.. module:: openfe.protocols.openmm_rfe.equil_rfe_settings
-
-.. autopydantic_model:: AlchemicalSettings
+.. autopydantic_model:: openfe.protocols.openmm_rfe.equil_rfe_settings.AlchemicalSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False
@@ -56,7 +54,7 @@ Below are Settings classes which are unique to the `RelativeHybridTopologyProtoc
    :inherited-members: SettingsBaseModel
    :member-order: bysource
 
-.. autopydantic_model:: LambdaSettings
+.. autopydantic_model:: openfe.protocols.openmm_rfe.equil_rfe_settings.LambdaSettings
    :model-show-json: False
    :model-show-field-summary: False
    :model-show-config-member: False
