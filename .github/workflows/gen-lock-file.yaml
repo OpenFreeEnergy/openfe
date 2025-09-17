@@ -48,6 +48,7 @@ jobs:
         dependencies:
           - openfe==${{ steps.latest-version.outputs.VERSION }}
           - python=3.12
+          - cuda<12.9
         EOF
 
     - name: Generate lock files
