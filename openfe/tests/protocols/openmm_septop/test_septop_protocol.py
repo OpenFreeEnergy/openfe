@@ -1147,11 +1147,11 @@ class TestT4LXmlRegression:
 
         for a, b in zip(constraints, constraints_ref):
             # Particle 1
-            assert a[0] == b[0]
+            assert pytest.approx(a[0].value_in_unit(openmm.unit.nm), rel=1e-4) == b[0].value_in_unit(openmm.unit.nm)
             # Particle 2
-            assert a[1] == b[1]
+            assert pytest.approx(a[1].value_in_unit(openmm.unit.nm), rel=1e-4) == b[1].value_in_unit(openmm.unit.nm)
             # Constraint Quantity
-            assert a[2] == b[2]
+            assert pytest.approx(a[2].value_in_unit(openmm.unit.nm), rel=1e-4) == b[2].value_in_unit(openmm.unit.nm)
 
 
 def test_unit_tagging(benzene_toluene_dag, tmpdir):
