@@ -2,7 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
 import pathlib
-import gzip
 
 import pytest
 from importlib import resources
