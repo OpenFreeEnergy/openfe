@@ -7,7 +7,7 @@ dependencies:
   - coverage
   - duecredit<0.10
   - kartograf>=1.2.0
-  - konnektor~=0.2.0
+#  - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
   - numpy
@@ -29,7 +29,7 @@ dependencies:
   - pooch
   - py3dmol
   - pydantic >=1.10.17  # practically, this almost always means pydantic v2 because of our other dependencies.
-  - pygraphviz
+  - pygraphviz  # TODO: make this an optional dependency?
   - pytest
   - pytest-xdist
   - pytest-cov
@@ -39,7 +39,6 @@ dependencies:
   - rdkit
   - rich
   - tqdm
-  - typing-extensions
   - zstandard
   # Issue #443
   - pymbar>4.0
@@ -52,3 +51,4 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/konnektor@move_network_plotting_from_openfe

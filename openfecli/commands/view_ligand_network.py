@@ -18,7 +18,7 @@ def view_ligand_network(ligand_network: os.PathLike):
     e.g. ``openfe view-ligand-network network_setup/ligand_network.graphml``
     
     """
-    from openfe.utils.atommapping_network_plotting import (
+    from konnektor.visualization.atommapping_network_plotting import (
         plot_atommapping_network
     )
     from openfe.setup import LigandNetwork
