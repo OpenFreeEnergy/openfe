@@ -7,7 +7,7 @@ dependencies:
   - coverage
   - duecredit<0.10
   - kartograf>=1.2.0
-  - konnektor~=0.2.0
+#  - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
   - numpy
@@ -52,3 +52,4 @@ dependencies:
   - threadpoolctl
   - pip:
     - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/konnektor@move_network_plotting_from_openfe

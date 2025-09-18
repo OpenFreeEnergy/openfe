@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.figure
 import importlib.resources
 
-from openfe.utils.atommapping_network_plotting import (
+from konnektor.visualization.atommapping_network_plotting import (
     AtomMappingNetworkDrawing, plot_atommapping_network,
     LigandNode,
 )

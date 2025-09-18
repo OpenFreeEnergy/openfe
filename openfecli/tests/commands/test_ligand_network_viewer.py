@@ -15,7 +15,7 @@ def test_view_ligand_network():
 
     backend = matplotlib.get_backend()
     matplotlib.use("ps")
-    loc = "openfe.utils.atommapping_network_plotting.matplotlib.use"
+    loc = "konnektor.visualization.atommapping_network_plotting.matplotlib.use"
     with runner.isolated_filesystem():
         with mock.patch(loc, mock.Mock()):
             result = runner.invoke(view_ligand_network, [str(ref)])

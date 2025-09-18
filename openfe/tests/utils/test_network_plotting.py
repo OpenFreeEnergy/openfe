@@ -4,7 +4,7 @@ from numpy import testing as npt
 
 from matplotlib import pyplot as plt
 import networkx as nx
-from openfe.utils.network_plotting import (
+from konnektor.visualization.network_plotting import (
     Node, Edge, EventHandler, GraphDrawing
 )
 
