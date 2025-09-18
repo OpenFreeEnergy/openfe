@@ -10,13 +10,6 @@ from typing import Iterable, NamedTuple
 from ..conftest import mol_from_smiles
 
 
-class _NetworkTestContainer(NamedTuple):
-    """Container to facilitate network testing"""
-    network: LigandNetwork
-    nodes: Iterable[SmallMoleculeComponent]
-    edges: Iterable[LigandAtomMapping]
-    n_nodes: int
-    n_edges: int
 
 
 @pytest.fixture
@@ -34,20 +27,6 @@ def std_edges(mols):
     edge23 = LigandAtomMapping(mol2, mol3, {0: 0})
     edge13 = LigandAtomMapping(mol1, mol3, {0: 0, 2: 1})
     return edge12, edge23, edge13
-
-
-@pytest.fixture
-def simple_network(mols, std_edges):
-    """Network with no edges duplicated and all nodes in edges"""
-    network = LigandNetwork(std_edges)
-    return _NetworkTestContainer(
-        network=network,
-        nodes=mols,
-        edges=std_edges,
-        n_nodes=3,
-        n_edges=3,
-    )
-
 
 @pytest.fixture(scope='session')
 def benzene_transforms():
