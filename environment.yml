@@ -39,7 +39,6 @@ dependencies:
   - rdkit
   - rich
   - tqdm
-  - typing-extensions
   - zstandard
   # Issue #443
   - pymbar>4.0
