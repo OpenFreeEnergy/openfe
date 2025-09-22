@@ -511,10 +511,10 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
     @classmethod
     def _adaptive_settings(
-            cls,
-            stateA: ChemicalSystem,
-            stateB: ChemicalSystem,
-            mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping]
+        cls,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping]
     ) -> RelativeHybridTopologyProtocolSettings:
         """
         Get the recommended OpenFE settings for this protocol based on the input states involved in the
@@ -528,8 +528,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             The fast settings used are still being refined and tested and will only be applied
             to net neutral transformations.
         """
-        # get an unfrozen copy of the default settings that we can edit
-        protocol_settings = cls.default_settings().unfrozen_copy()
+        # get the default settings that we can edit
+        protocol_settings: RelativeHybridTopologyProtocolSettings = cls.default_settings()
+
+        if isinstance(mapping, list):
+            mapping = mapping[0]
 
         if mapping.get_alchemical_charge_difference() != 0:
             # apply the recommended charge change settings taken from the industry benchmarking as fast settings not validated
@@ -563,8 +566,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
 
             protocol_settings.solvation_settings.solvent_padding = padding_size
 
-        # make sure to lock the settings again when done editing
-        return protocol_settings.frozen_copy()
+        return protocol_settings
 
 
     def _create(
