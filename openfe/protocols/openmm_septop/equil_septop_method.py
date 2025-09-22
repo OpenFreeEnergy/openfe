@@ -247,7 +247,7 @@ class SepTopComplexMixin:
             * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
-            * restraint_settings: ComplexRestraintsSettings
+            * restraint_settings: BoreschRestraintSettings
         """
         prot_settings = self._inputs["protocol"].settings # type: ignore
 
@@ -1404,7 +1404,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         selection: str = "backbone",
     ):
         """
-        Get the atom indices of a Mdtraj object, given a selection string.
+        Get the atom indices of a MDTraj object, given a selection string.
         Parameters
         ----------
         traj: md.Trajectory
@@ -1952,7 +1952,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
 
 class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
     """
-    Protocol Unit for the solvent phase of an relative SepTop free energy
+    Protocol Unit for the solvent phase of a relative SepTop free energy
     """
 
     @staticmethod
@@ -2124,14 +2124,12 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        print("test", alchem_comps, smc_comps, prot_comp, solv_comp)
         smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
             alchem_comps, smc_comps
         )
 
         # 2. Get settings
         settings = self._handle_settings()
-        print(settings)
 
         # 3. Assign partial charges
         self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
