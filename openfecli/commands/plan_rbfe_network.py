@@ -5,7 +5,7 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
+    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS, ADAPTIVE_SETTINGS
 )
 
 def plan_rbfe_network_main(
@@ -19,7 +19,8 @@ def plan_rbfe_network_main(
     n_protocol_repeats,
     partial_charge_settings,
     processors,
-    overwrite_charges
+    overwrite_charges,
+    adaptive_settings,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -49,6 +50,8 @@ def plan_rbfe_network_main(
         The number of processors that should be used when generating the charges
     overwrite_charges: bool
         If any partial charges already present on the small molecules should be overwritten
+    adaptive_settings: bool
+        Whether to let the protocol adapt the settings for each transformation to maximise throughput with minimal accuracy loss.
 
     Returns
     -------
@@ -96,7 +99,8 @@ def plan_rbfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
-        protocol=protocol
+        protocol=protocol,
+        adaptive_settings=adaptive_settings
     )
     alchemical_network = network_planner(
         ligands=charged_small_molecules, solvent=solvent, protein=protein,
@@ -139,6 +143,11 @@ def plan_rbfe_network_main(
     default=OVERWRITE.kwargs["default"],
     is_flag=True
 )
+@ADAPTIVE_SETTINGS.parameter(
+    help=ADAPTIVE_SETTINGS.kwargs["help"],
+    default=ADAPTIVE_SETTINGS.kwargs["default"],
+    is_flag=True
+)
 @print_duration
 def plan_rbfe_network(
         molecules: list[str], protein: str, cofactors: tuple[str],
@@ -146,7 +155,8 @@ def plan_rbfe_network(
         output_dir: str,
         n_protocol_repeats: int,
         n_cores: int,
-        overwrite_charges: bool
+        overwrite_charges: bool,
+        adaptive_settings: bool
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for use by
@@ -244,7 +254,8 @@ def plan_rbfe_network(
         n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
         processors=n_cores,
-        overwrite_charges=overwrite_charges
+        overwrite_charges=overwrite_charges,
+        adaptive_settings=adaptive_settings
     )
     write("\tDone")
     write("")

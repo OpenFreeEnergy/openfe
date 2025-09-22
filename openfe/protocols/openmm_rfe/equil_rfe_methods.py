@@ -534,7 +534,11 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if mapping.get_alchemical_charge_difference() != 0:
             # apply the recommended charge change settings taken from the industry benchmarking as fast settings not validated
             # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
-            #TODO should we have a warning here about the longer protocol settings?
+            wmsg = ("Charge changing transformation between ligands "
+                    f"{mapping.componentA.name} and {mapping.componentB.name}. "
+                    "A more expensive protocol with 22 lambda windows, sampled "
+                    "for 20 ns each, will be used here.")
+            warnings.warn(wmsg)
             protocol_settings.alchemical_settings.explicit_charge_correction = True
             protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
             protocol_settings.simulation_settings.n_replicas = 22
