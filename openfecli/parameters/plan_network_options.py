@@ -161,12 +161,15 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
         mapper_obj = cls(**opt.mapper.settings)
     else:
-        mapper_obj = LomapAtomMapper(
-            time=20,
-            threed=True,
-            max3d=1.0,
-            element_change=True,
-            shift=False
+        mapper_obj = KartografAtomMapper(
+            atom_max_distance=0.95,
+            atom_map_hydrogens=True,
+            # Non-default setting, as we remove these later anyway when correcting for constraints
+            map_hydrogens_on_hydrogens_only=True,
+            map_exact_ring_matches_only=True,
+            # Current default, but should be changed in future Kartograf releases
+            allow_partial_fused_rings=True,
+            allow_bond_breaks=False,
         )
 
     # todo: choice of scorer goes here
@@ -215,14 +218,14 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     )
 # TODO: do we want this in the docs anywhere?
 DEFAULT_YAML="""
-    mapper: LomapAtomMapper
+    mapper: KartografAtomMapper
         settings:
-            time: 20
-            threed: True
-            max3d: 1.0
-            element_change: true
-            seed: ''
-            shift: false
+            atom_max_distance: 0.95
+            atom_map_hydrogens: true
+            map_hydrogens_on_hydrogens_only: true
+            map_exact_ring_matches_only: true
+            allow_partial_fused_rings: true
+            allow_bond_breaks: false
 
     network:
         method: generate_minimal_spanning_network
@@ -241,8 +244,8 @@ and/or partial charge method (``partial_charge``) to use.
 
 \b
 Supported atom mapper choices are:
-    - ``LomapAtomMapper`` (default)
-    - ``KartografAtomMapper``
+    - ``KartografAtomMapper`` (default)
+    - ``LomapAtomMapper``
 \b
 Supported network planning algorithms include (but are not limited to):
     - ``generate_minimal_spanning_network`` (default)
