@@ -513,7 +513,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
         if count > 1:
             # this is raised before we hit the KeyError below
             raise ValueError(f"Atom {idx} was involved in {count} unique constraints "
-                             f" that changed between the two end-state This should not happen for core "
+                             f" that changed between the two end-states. This should not happen for core "
                              f"atoms, please check your atom mapping. Please raise an issue on the openfe github with "
                              f"the steps to reproduce this error for more help.")
     for idx in to_del:
