@@ -433,6 +433,8 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     * Very slow, needs refactoring
     * Can we drop having topologies as inputs here?
     """
+    from collections import Counter
+
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 
     h_elem = app.Element.getByAtomicNumber(1)
@@ -502,6 +504,18 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
 
             to_del.append(pick_H(i, j, x, y))
 
+    # count the number of times each atom appears
+    to_del_counts = Counter(to_del)
+    # if a H-atom appears more than once, it means it was involved in
+    # multiple different constraints at the end states but that the atom is in the core region
+    # this should not happen
+    for idx, count in to_del_counts.items():
+        if count > 1:
+            # this is raised before we hit the KeyError below
+            raise ValueError(f"Atom {idx} was involved in {count} unique constraints "
+                             f" that changed between the two end-state This should not happen for core "
+                             f"atoms, please check your atom mapping. Please raise an issue on the openfe github with "
+                             f"the steps to reproduce this error for more help.")
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
 
