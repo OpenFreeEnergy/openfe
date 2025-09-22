@@ -509,6 +509,60 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             output_settings=MultiStateOutputSettings(),
         )
 
+    @classmethod
+    def _adaptive_settings(
+            cls,
+            stateA: ChemicalSystem,
+            stateB: ChemicalSystem,
+            mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping]
+    ) -> RelativeHybridTopologyProtocolSettings:
+        """
+        Get the recommended OpenFE settings for this protocol based on the input states involved in the
+        transformation.
+
+        These are intended as a suitable starting point for creating an instance of this protocol, which can be further
+        customized before performing a Protocol.
+
+        Notes
+        -----
+            The fast settings used are still being refined and tested and will only be applied
+            to net neutral transformations.
+        """
+        # get an unfrozen copy of the default settings that we can edit
+        protocol_settings = cls.default_settings().unfrozen_copy()
+
+        if mapping.get_alchemical_charge_difference() != 0:
+            # apply the recommended charge change settings taken from the industry benchmarking as fast settings not validated
+            # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
+            #TODO should we have a warning here about the longer protocol settings?
+            protocol_settings.alchemical_settings.explicit_charge_correction = True
+            protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
+            protocol_settings.simulation_settings.n_replicas = 22
+            protocol_settings.lambda_settings.lambda_windows = 22
+
+        else:
+            # apply the fast settings we have benchmarked
+            protocol_settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+            protocol_settings.simulation_settings.time_per_iteration = 2.5 * unit.picosecond
+            protocol_settings.solvation_settings.box_shape = "dodecahedron"
+
+            # check if we have a protein and solvent component in stateA and stateB
+            _, protein_comp_a, _ = system_validation.get_components(state=stateA)
+            _, protein_comp_b, _ = system_validation.get_components(state=stateB)
+
+            # default solvent padding size for solvent only legs
+            padding_size = 1.5 * unit.nanometer
+
+            # if we have protein we can shrink the padding size
+            if protein_comp_a is not None and protein_comp_b is not None:
+                padding_size = 1 * unit.nanometer
+
+            protocol_settings.solvation_settings.solvent_padding = padding_size
+
+        # make sure to lock the settings again when done editing
+        return protocol_settings.frozen_copy()
+
+
     def _create(
         self,
         stateA: ChemicalSystem,
