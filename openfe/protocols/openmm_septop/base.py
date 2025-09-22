@@ -12,10 +12,7 @@ TODO
 ----
 * Add in all the AlchemicalFactory and AlchemicalRegion kwargs
   as settings.
-* Allow for a more flexible setting of Lambda regions.
 """
-from __future__ import annotations
-
 import abc
 import logging
 import pathlib
