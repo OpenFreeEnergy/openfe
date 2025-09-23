@@ -35,7 +35,7 @@ Reference atoms are picked based on different criteria, such as the root mean sq
 fluctuation of the atoms in a short MD simulation, the secondary structure of the protein,
 and the distance between atoms, based on heuristics from Baumann et al. [1]_ and Alibay et al. [2]_.
 Two strategies for selecting protein atoms are available, either picking atoms that are bonded to each other or that can span multiple residues.
-This can be specified in the ``restraint_settings.anchor_finding_strategy`` settings.
+This can be specified using the ``restraint_settings.anchor_finding_strategy`` settings.
 
 Partial annihilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
