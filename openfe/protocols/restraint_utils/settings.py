@@ -18,6 +18,7 @@ from pydantic import ConfigDict, field_validator
 SpringConstantLinearQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("kilojoule_per_mole / nm ** 2")]
 SpringConstantAngularQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("kilojoule_per_mole / radians ** 2")]
 
+
 class BaseRestraintSettings(SettingsBaseModel):
     """
     Base class for RestraintSettings objects.

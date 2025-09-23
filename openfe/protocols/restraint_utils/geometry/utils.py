@@ -544,7 +544,6 @@ def get_local_rmsf(atomgroup: mda.AtomGroup): # -> ArrayQuantity:
 
     nojump = NoJump()
     align = Aligner(ag)
-
     copy_u.trajectory.add_transformations(nojump, align)
 
     rmsf = RMSF(ag)
