@@ -470,7 +470,7 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     # there are two reasons constraints would invalidate a mapping entry
     # 1) length of constraint changed (but both constrained)
     # 2) constraint removed to harmonic bond (only one constrained)
-    to_del = []
+    to_del = set()
     for (i, j), l_old in old_constraints.items():
         x, y = old_to_new_atom_map[i], old_to_new_atom_map[j]
 
@@ -481,12 +481,12 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
                 l_new = new_constraints.pop((y, x))
             except KeyError:
                 # type 2) constraint doesn't exist in new system
-                to_del.append(pick_H(i, j, x, y))
+                to_del.add(pick_H(i, j, x, y))
                 continue
 
         # type 1) constraint length changed
         if l_old != l_new:
-            to_del.append(pick_H(i, j, x, y))
+            to_del.add(pick_H(i, j, x, y))
 
     # iterate over new_constraints (we were .popping items out)
     # (if any left these are type 2))
@@ -496,9 +496,8 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
         for x, y in new_constraints:
             i, j = new_to_old[x], new_to_old[y]
 
-            to_del.append(pick_H(i, j, x, y))
+            to_del.add(pick_H(i, j, x, y))
 
-    # to_del = set(to_del) # Making a set to avoid repeated indices (TODO: TEST!!)
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
 
