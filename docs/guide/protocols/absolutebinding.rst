@@ -52,7 +52,7 @@ For the transformation in the binding site, the following steps are carried out,
 1. Restrain the ligand using orientational restraints.
 2. Turn off the electrostatic interactions of the ligand.
 3. Decouple Lennard-Jones interactions of the ligand.
-4. Release the restraints of the now dummy ligand analytically and transfer the ligand into the solvent.
+4. Release the restraints of the now dummy ligand analytically.
 
 The lambda schedule in the solvent phase is similar to the one in the complex, except that no restraints are applied.
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
