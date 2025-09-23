@@ -9,4 +9,5 @@ Details on the theory and behaviour of different Protocols are listed here.
    relativehybridtopology
    absolutebinding
    absolutesolvation
+   septop
    plainmd

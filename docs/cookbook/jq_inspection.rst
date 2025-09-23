@@ -24,7 +24,20 @@ To view all the top-level JSON keys, use ``jq "keys" filename.json``, for exampl
 
     You can use ``"keys[]"`` instead of ``"keys"`` for a cleaner output.
 
-Now that we know ``estimate`` is at the top-level of the JSON, we can use the following command to see all the values for the ``estimate`` key:
+Now that you know ``estimate`` is at the top-level of the JSON, you can use the following pattern to see the next level of keys:
+
+.. code:: bash
+
+    $ jq ".estimate | keys " rbfe_lig_ejm_46_solvent_lig_jmc_28_solvent.json
+    {
+    "magnitude",
+    "unit":,
+    ":is_custom:":,
+    "pint_unit_registry":
+    }
+
+
+If you want to show all the keys _and_ their values, simply omit ``| key`` from the query:
 
 .. code:: bash
 
@@ -35,6 +48,7 @@ Now that we know ``estimate`` is at the top-level of the JSON, we can use the fo
     ":is_custom:": true,
     "pint_unit_registry": "openff_units"
     }
+
 
 This can be very helpful for quickly checking results for many files, for example:
 

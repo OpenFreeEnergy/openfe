@@ -18,6 +18,7 @@ OpenFE API Reference
     openmm_rfe
     openmm_solvation_afe
     openmm_binding_afe
+    openmm_septop
     openmm_md
     openmm_protocol_settings
 

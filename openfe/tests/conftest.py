@@ -1,6 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
+import pathlib
+
 import pytest
 from importlib import resources
 from rdkit import Chem
@@ -10,7 +12,7 @@ import urllib.request
 
 import gufe
 import openfe
-
+from openfe.protocols.openmm_septop.utils import deserialize
 from gufe import AtomMapper, SmallMoleculeComponent, LigandAtomMapping
 
 
@@ -209,6 +211,24 @@ def benzene_modifications():
         for rdmol in supp:
             files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
     return files
+
+
+@pytest.fixture(scope='session')
+def charged_benzene_modifications():
+    files = {}
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
+        fn = str(d / 'charged_benzenes.sdf')
+        supp = Chem.SDMolSupplier(str(fn), removeHs=False)
+        for rdmol in supp:
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+    return files
+
+
+@pytest.fixture(scope='session')
+def T4L_reference_xml():
+    with resources.as_file(resources.files('openfe.tests.data.openmm_septop')) as d:
+        f = str(d / 'system.xml.bz2')
+    return deserialize(pathlib.Path(f))
 
 
 @pytest.fixture

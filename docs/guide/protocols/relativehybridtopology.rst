@@ -1,3 +1,5 @@
+.. _userguide_relative_hybrid_topology_protocol:
+
 Relative Hybrid Topology Protocol
 =================================
 
