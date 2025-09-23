@@ -56,8 +56,7 @@ For the transformation in the binding site, the following steps are carried out,
 
 The lambda schedule in the solvent phase is similar to the one in the complex, except that no restraints are applied.
 A soft-core potential is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
-Both the soft-core potential functions from Beutler et al. [3]_ and from Gapsys et al. [4]_ are available and can be specified in the ``alchemical_settings.softcore_LJ`` settings
-(default: ``gapsys``).
+The soft-core potential function from Beutler et al. [3]_ is used by default.
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec``, ``lambda_vdw``, and ``lambda_restraints``.
 
 Simulation overview
