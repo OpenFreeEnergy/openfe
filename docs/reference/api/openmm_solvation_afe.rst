@@ -39,7 +39,6 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :exclude-members: get_defaults
    :member-order: bysource
 
-
 Protocol Specific Settings Classes
 ----------------------------------
 
