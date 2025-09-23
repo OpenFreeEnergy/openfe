@@ -41,7 +41,7 @@ Partial annihilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the :class:`.AbsoluteBindingProtocol` the coulombic interactions of the molecule are fully turned off (annihilated).
-The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions turned off, keeping the intramolecular Lennard-Jones interactions.
+The Lennard-Jones interactions are instead decoupled, meaning the intermolecular interactions are turned off, keeping the intramolecular Lennard-Jones interactions.
 
 The lambda schedule
 ~~~~~~~~~~~~~~~~~~~
