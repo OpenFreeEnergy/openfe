@@ -445,6 +445,39 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return system_generator
 
     @staticmethod
+    def check_assign_velocities_with_virtual_site(
+        system: openmm.System,
+        integrator_settings: IntegratorSettings,
+    ):
+        """
+        Virtual sites sanity check - ensure we restart velocities when
+        there are virtual sites in the system
+
+        Raises
+        ------
+        ValueError
+        * If the system has a virtual site but the integrator settings specify
+        that velocities are not reassigned.
+
+        Parameters
+        ----------
+        system: openmm.System
+        integrator_settings: IntegratorSettings
+        """
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        has_virtual_sites = False
+        for ix in range(system.getNumParticles()):
+            if system.isVirtualSite(ix):
+                has_virtual_sites = True
+        if has_virtual_sites:
+            if not integrator_settings.reassign_velocities:
+                errmsg = (
+                    "Simulations with virtual sites without velocity "
+                    "reassignments are unstable in openmmtools")
+                raise ValueError(errmsg)
+
+    @staticmethod
     def _assign_partial_charges(
         partial_charge_settings: OpenFFPartialChargeSettings,
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
