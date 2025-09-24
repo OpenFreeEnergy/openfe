@@ -39,6 +39,7 @@ Below are the settings which can be tweaked in the protocol. The default setting
    :exclude-members: get_defaults
    :member-order: bysource
 
+
 Protocol Specific Settings Classes
 ----------------------------------
 
@@ -65,4 +66,3 @@ Below are Settings classes which are unique to the ``AbsoluteSolvationProtocol``
    :field-list-validators: False
    :inherited-members: SettingsBaseModel
    :member-order: bysource
-
