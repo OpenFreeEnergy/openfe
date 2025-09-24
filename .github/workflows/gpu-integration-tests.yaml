@@ -20,7 +20,7 @@ jobs:
         id: aws-start
         uses: omsf/start-aws-gha-runner@v1.0.0
         with:
-          aws_image_id: ami-0b7f661c228e6a4bb
+          aws_image_id: ami-076a54ed41e67782d
           aws_instance_type: g4dn.xlarge
           aws_home_dir: /home/ubuntu
           aws_root_device_size: 125
