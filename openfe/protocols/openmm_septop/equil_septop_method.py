@@ -14,6 +14,8 @@ following alchemical sampling methods:
 Current limitations
 -------------------
 
+* Transformations that involve net charge changes are currently not supported.
+  The ligands must have the same net charge.
 * Only small molecules are allowed to act as alchemical molecules.
   Alchemically changing protein or solvent components would induce
   perturbations which are too large to be handled by this Protocol.
