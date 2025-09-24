@@ -16,7 +16,6 @@ from openff.units.openmm import from_openmm
 from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
 
 import openmm
-import os
 import pathlib
 import mdtraj as md
 

@@ -834,17 +834,10 @@ def test_virtual_sites_no_reassign(
     dag_units = list(dag.protocol_units)
     # Only check the Solvent Unit
     solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
-    sol_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
     with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run(dry=True)
-        serialized_topology = solv_setup_output["topology"]
-        serialized_system = solv_setup_output["system"]
-
         errmsg = "Simulations with virtual sites without velocity"
         with pytest.raises(ValueError, match=errmsg):
-            solv_run = sol_run_unit[0].run(
-                serialized_system, serialized_topology, dry=True
-            )["debug"]["sampler"]
+            solv_setup_output = solv_setup_unit[0].run(dry=True)
 
 
 @pytest.mark.parametrize(

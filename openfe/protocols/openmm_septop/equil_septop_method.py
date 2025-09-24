@@ -1810,6 +1810,18 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             smc_off_B,
             settings,
         )
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        has_virtual_sites = False
+        for ix in range(omm_system_AB.getNumParticles()):
+            if omm_system_AB.isVirtualSite(ix):
+                has_virtual_sites = True
+        if has_virtual_sites:
+            if not settings["integrator_settings"].reassign_velocities:
+                errmsg = (
+                    "Simulations with virtual sites without velocity "
+                    "reassignments are unstable in openmmtools")
+                raise ValueError(errmsg)
 
         # Get the comp_resids of the AB system
         resids_A = list(itertools.chain(*comp_resids_A.values()))
@@ -2152,6 +2164,18 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 settings,
             )
         )
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        has_virtual_sites = False
+        for ix in range(omm_system_AB.getNumParticles()):
+            if omm_system_AB.isVirtualSite(ix):
+                has_virtual_sites = True
+        if has_virtual_sites:
+            if not settings["integrator_settings"].reassign_velocities:
+                errmsg = (
+                    "Simulations with virtual sites without velocity "
+                    "reassignments are unstable in openmmtools")
+                raise ValueError(errmsg)
 
         # 6. Get atom indices for ligand A and ligand B and the solvent in the
         # system AB
