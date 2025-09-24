@@ -5,7 +5,6 @@ import pytest
 from openff.units import unit
 from gufe.protocols import execute_DAG
 import openfe
-import simtk
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
@@ -16,7 +15,7 @@ from numpy.testing import assert_allclose
 from openff.units.openmm import from_openmm
 from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
 
-from openmm import Platform
+import openmm
 import os
 import pathlib
 import mdtraj as md
@@ -159,7 +158,7 @@ def test_lambda_energies(
         system = output["system"]
         alchemical_system = deserialize(system)
         topology = output["topology"]
-        pdb = simtk.openmm.app.pdbfile.PDBFile(str(topology))
+        pdb = openmm.app.pdbfile.PDBFile(str(topology))
         positions = pdb.getPositions(asNumpy=True)
 
         # Remove Harmonic restraint force solvent
@@ -221,7 +220,7 @@ def test_lambda_energies(
 @pytest.fixture
 def available_platforms() -> set[str]:
     return {
-        Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())
+        openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())
     }
 
 

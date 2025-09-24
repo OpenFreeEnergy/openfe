@@ -47,7 +47,6 @@ from openfe.utils import without_oechem_backend
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
@@ -478,7 +477,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: BaseSolvationSettings,
-    ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
+    ) -> tuple[openmm.app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
         for each component in the system.
@@ -502,7 +501,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        system_modeller : app.Modeller
+        system_modeller : openmm.app.Modeller
           OpenMM Modeller object generated from ProteinComponent and
           OpenFF Molecules.
         comp_resids : dict[Component, npt.NDArray]
@@ -652,10 +651,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        omm_system: app.System
-        omm_topology: app.Topology
+        omm_system: openmm.app.System
+        omm_topology: openmm.app.Topology
         positions: openmm.unit.Quantity
-        system_modeller: app.Modeller
+        system_modeller: openmm.app.Modeller
         comp_resids: dict[Component, npt.NDArray]
           A dictionary of residues for each component in the System.
         """
@@ -843,7 +842,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
     def _get_reporter(
         self,
-        topology: app.Topology,
+        topology: openmm.app.Topology,
         positions: openmm.unit.Quantity,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
@@ -853,7 +852,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        topology : app.Topology
+        topology : openmm.app.Topology
           A Topology of the system being created.
         positions : openmm.unit.Quantity
           Positions of the pre-alchemical simulation system.
