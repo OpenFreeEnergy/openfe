@@ -29,7 +29,8 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
-from gufe.vendor.openff.models.types import FloatQuantity
+from gufe.settings.types import PicosecondQuantity
+
 from openff.units import unit
 from pydantic.v1 import validator
 
@@ -257,14 +258,14 @@ class LambdaSettings(SettingsBaseModel):
 
 class SepTopEquilOutputSettings(MDOutputSettings):
     # reporter settings
-    output_indices = "all"
+    output_indices: str = "all"
     production_trajectory_filename: Optional[str] = "simulation"
     """
     Basename for the path to the storage file for analysis. The protocol will
     append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the
     respective endstates. Default 'simulation'.
     """
-    trajectory_write_interval: FloatQuantity["picosecond"] = 20.0 * unit.picosecond
+    trajectory_write_interval: PicosecondQuantity = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 20 * unit.picosecond.
     """
