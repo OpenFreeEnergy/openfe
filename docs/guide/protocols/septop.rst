@@ -34,7 +34,10 @@ Orientational restraints
 
 Orientational, or Boresch-style, restraints are automaticallly (unless manually specified) applied between three protein and three ligand atoms using one bond,
 two angle, and three dihedral restraints. Reference atoms are picked based on different criteria, such as the root mean squared
-fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms, based on heuristics from Baumann et al. [2]_.
+fluctuation of the atoms in a short MD simulation, the secondary structure of the protein, and the distance between atoms,
+based on heuristics from Baumann et al. [2]_ and Alibay et al. [3]_.
+Two strategies for selecting protein atoms are available, either picking atoms that are bonded to each other or that can span multiple residues.
+This can be specified using the ``restraint_settings.anchor_finding_strategy`` settings.
 
 Partial annihilation scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,15 +51,15 @@ The lambda schedule
 Molecular interactions are modified along an alchemical path using a discrete set of lambda windows.
 For the transformation of ligand A to ligand B in the binding site, the following steps are carried out, starting with ligand A being fully interacting in the binding site while ligand B is decoupled.
 
-1. Insert the non-interacting dummy ligand B into the binding site and restrain it using orientational restraints. The contribution of the restraints is calculated analytically.
+1. Restrain the non-interacting dummy ligand B in the binding site. The contribution of the restraints is calculated analytically.
 2. Turn on the van der Waals (vdW) interactions of ligand B while also turning on orientational restraints on ligand A.
 3. Turn on the electrostatic interactions of ligand B while at the same time turning off the electrostatics of ligand A.
 4. Turn off vdW interactions of ligand A while simultaneously releasing restraints on ligand B.
-5. Release the restraints of the now dummy ligand A analytically and transfer the ligand into the solvent.
+5. Release the restraints of the now dummy ligand A analytically.
 
 The lambda schedule in the solvent phase is similar to the one in the complex, except that a single harmonic distance restraint is
 applied between the respective central atom in the two ligands to keep the ligands apart while doing the alchemical transformation.
-A soft-core potential from Beutler et al. [3]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
+A soft-core potential from Beutler et al. [4]_ is applied to the Lennard-Jones potential to avoid instablilites in intermediate lambda windows.
 The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_A``, ``lambda_elec_B``,  ``lambda_vdw_A``, ``lambda_vdw_B``,
 ``lambda_restraints_A``, and ``lambda_restraints_B``.
 
@@ -90,7 +93,7 @@ Simulation details
 
 Here are some details of how the simulation is carried out which are not detailed in the :class:`SepTopProtocol <.SepTopProtocol>`:
 
-* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [4]_.
+* The protocol applies a `LangevinMiddleIntegrator <https://openmmtools.readthedocs.io/en/latest/api/generated/openmmtools.mcmc.LangevinDynamicsMove.html>`_ which uses Langevin dynamics, with the LFMiddle discretization [5]_.
 * A `Monte Carlo barostat <https://docs.openmm.org/latest/api-python/generated/openmm.openmm.MonteCarloBarostat.html>`_ is used in the NPT ensemble to maintain constant pressure.
 
 Getting the free energy estimate
@@ -127,5 +130,6 @@ References
 
 .. [1] Separated topologies--a method for relative binding free energy calculations using orientational restraints, G. Rocklin, D. Mobley, K. Dill;  Chem Phys, 2013; 138(8):085104. doi: 10.1063/1.4792251.
 .. [2] Broadening the Scope of Binding Free Energy Calculations Using a Separated Topologies Approach, H. Baumann, E. Dybeck, C. McClendon, F. Pickard IV, V. Gapsys, L. Pérez-Benito, D. Hahn, G. Tresadern, A. Mathiowetz, D. Mobley, J. Chem. Theory Comput., 2023, 19, 15, 5058–5076
-.. [3] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
-.. [4] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
+.. [3] Evaluating the use of absolute binding free energy in the fragment optimisation process, I. Alibay, A. Magarkar, D. Seeliger, P. Biggin, Commun Chem 5, 105 (2022)
+.. [4] Avoiding singularities and numerical instabilities in free energy calculations based on molecular simulations, T.C. Beutler, A.E. Mark, R.C. van Schaik, P.R. Greber, and W.F. van Gunsteren, Chem. Phys. Lett., 222 529–539 (1994)
+.. [5] Unified Efficient Thermostat Scheme for the Canonical Ensemble with Holonomic or Isokinetic Constraints via Molecular Dynamics, Zhijun Zhang, Xinzijian Liu, Kangyu Yan, Mark E. Tuckerman, and Jian Liu, J. Phys. Chem. A 2019, 123, 28, 6056-6079
