@@ -21,9 +21,8 @@ Current limitations
 
 Acknowledgements
 ----------------
-This Protocol is based on, and leverages components originating from
-the SepTop implementation from the Mobleylab
-(https://github.com/MobleyLab/SeparatedTopologies) as well as
+This Protocol is based on and inspired by the SepTop implementation from
+the Mobleylab (https://github.com/MobleyLab/SeparatedTopologies) as well as
 femto (https://github.com/Psivant/femto).
 
 """
