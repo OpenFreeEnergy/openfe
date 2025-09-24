@@ -342,17 +342,17 @@ class IntegratorSettings(SettingsBaseModel):
     """Size of the simulation timestep. Default 4.0 * unit.femtosecond."""
     langevin_collision_rate: FloatQuantity['1/picosecond'] = 1.0 / unit.picosecond
     """Collision frequency. Default 1.0 / unit.pisecond."""
-    reassign_velocities = False
+    reassign_velocities: bool = False
     """
     If ``True``, velocities are reassigned from the Maxwell-Boltzmann
     distribution at the beginning of each MC move. Default ``False``.
     """
-    n_restart_attempts = 20
+    n_restart_attempts: int = 20
     """
     Number of attempts to restart from Context if there are NaNs in the
     energies after integration. Default 20.
     """
-    constraint_tolerance = 1e-06
+    constraint_tolerance: float = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
     barostat_frequency: FloatQuantity['timestep'] = 25.0 * unit.timestep  # todo: IntQuantity
     """
