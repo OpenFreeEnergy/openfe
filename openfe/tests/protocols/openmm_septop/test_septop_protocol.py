@@ -30,21 +30,21 @@ from openfe.protocols.openmm_septop.equil_septop_method import (
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
 from openfe.tests.protocols.conftest import compute_energy
-from openff.units import unit as offunit
+from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm
 from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
-E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
-EPSILON0 = (
+E_CHARGE = from_openmm(1.602176634e-19 * openmm.unit.coulomb)
+EPSILON0 = from_openmm(
     1e-6
     * 8.8541878128e-12
     / (openmm.unit.AVOGADRO_CONSTANT_NA * E_CHARGE**2)
     * openmm.unit.farad
     / openmm.unit.meter
 )
-ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstrom
+ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.units * 10.0  # nm -> angstrom
 
 
 @pytest.fixture()
@@ -434,7 +434,7 @@ def compute_interaction_energy(
         4.0 * lambda_vdw * epsilon * ((sigma / r_vdw) ** 12 - (sigma / r_vdw) ** 6)
         # electrostatics
         + ONE_4PI_EPS0 * lambda_charges * charge / r_electrostatics
-    ) * openmm.unit.kilojoule_per_mole
+    ) * unit.kilojoule_per_mole
 
 
 @pytest.fixture
@@ -447,9 +447,9 @@ def three_particle_system():
     sigmas = 1.1, 1.2, 1.3
     epsilons = 210, 220, 230
 
-    force.addParticle(charges[0], sigmas[0] * openmm.unit.angstrom, epsilons[0])
-    force.addParticle(charges[1], sigmas[1] * openmm.unit.angstrom, epsilons[1])
-    force.addParticle(charges[2], sigmas[2] * openmm.unit.angstrom, epsilons[2])
+    force.addParticle(charges[0], sigmas[0] * unit.angstrom, epsilons[0])
+    force.addParticle(charges[1], sigmas[1] * unit.angstrom, epsilons[1])
+    force.addParticle(charges[2], sigmas[2] * unit.angstrom, epsilons[2])
 
     system = openmm.System()
     system.addParticle(1.0)
@@ -474,7 +474,7 @@ def three_particle_system():
         np.array(
             [[0.0, 0.0, 0.0], [distances[0][1], 0.0, 0.0], [0.0, distances[0][2], 0.0]]
         )
-        * openmm.unit.angstrom
+        * unit.angstrom
     )
 
     return system, coords, interaction_energy_fn
@@ -674,7 +674,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert isinstance(
             solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat
         )
-        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 29
@@ -690,7 +690,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert isinstance(
             complex_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat
         )
-        assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+        assert complex_sampler._thermodynamic_states[1].pressure == 1 * unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 2713
@@ -755,7 +755,7 @@ def test_dry_run_methods(
         assert solv_sampler.is_periodic
         assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
                           MonteCarloBarostat)
-        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * unit.bar
 
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb('alchemical_system.pdb')
@@ -765,9 +765,9 @@ def test_dry_run_methods(
 @pytest.mark.parametrize(
     "pressure",
     [
-        1.0 * openmm.unit.atmosphere,
-        0.9 * openmm.unit.atmosphere,
-        1.1 * openmm.unit.atmosphere,
+        1.0 * unit.atmosphere,
+        0.9 * unit.atmosphere,
+        1.1 * unit.atmosphere,
     ],
 )
 def test_dry_run_ligand_system_pressure(
@@ -807,7 +807,7 @@ def test_dry_run_ligand_system_pressure(
 
 @pytest.mark.parametrize(
     "cutoff",
-    [1.0 * offunit.nanometer, 12.0 * offunit.angstrom, 0.9 * offunit.nanometer],
+    [1.0 * unit.nanometer, 12.0 * unit.angstrom, 0.9 * unit.nanometer],
 )
 def test_dry_run_ligand_system_cutoff(
     cutoff,
@@ -820,7 +820,7 @@ def test_dry_run_ligand_system_cutoff(
     Test that the right nonbonded cutoff is propagated to the system.
     """
     default_settings.solvent_solvation_settings.solvent_padding = (
-        1.9 * offunit.nanometer
+        1.9 * unit.nanometer
     )
     default_settings.forcefield_settings.nonbonded_cutoff = cutoff
 
@@ -903,7 +903,7 @@ def test_dry_run_benzene_toluene_noncubic(
 ):
     default_settings.protocol_repeats = 1
     default_settings.solvent_solvation_settings.solvent_padding = (
-        1.5 * offunit.nanometer
+        1.5 * unit.nanometer
     )
     default_settings.solvent_solvation_settings.box_shape = "dodecahedron"
 
@@ -939,7 +939,7 @@ def test_dry_run_benzene_toluene_noncubic(
             [width, 0, 0],
             [0, width, 0],
             [0.5 * width, 0.5 * width, 0.5 * math.sqrt(2) * width],
-        ] * offunit.nanometer
+        ] * unit.nanometer
         assert_allclose(
             expected_vectors,
             from_openmm(vectors),
@@ -967,7 +967,7 @@ def test_dry_run_solv_user_charges_benzene_toluene(
         """
         rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
         rand_arr[-1] = -sum(rand_arr[:-1])
-        return rand_arr * offunit.elementary_charge
+        return rand_arr * unit.elementary_charge
 
     def check_partial_charges(offmol):
         offmol_pchgs = assign_fictitious_charges(offmol)
@@ -1294,15 +1294,15 @@ class TestProtocolResult:
 
         assert est
         assert est.m == pytest.approx(0.48, abs=0.5)
-        assert isinstance(est, offunit.Quantity)
-        assert est.is_compatible_with(offunit.kilojoule_per_mole)
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
 
     def test_get_uncertainty(self, protocolresult):
         est = protocolresult.get_uncertainty()
 
         assert est.m == pytest.approx(0.0, abs=0.2)
-        assert isinstance(est, offunit.Quantity)
-        assert est.is_compatible_with(offunit.kilojoule_per_mole)
+        assert isinstance(est, unit.Quantity)
+        assert est.is_compatible_with(unit.kilojoule_per_mole)
 
     def test_get_individual(self, protocolresult):
         inds = protocolresult.get_individual_estimates()
@@ -1312,8 +1312,8 @@ class TestProtocolResult:
         assert isinstance(inds["complex"], list)
         assert len(inds["solvent"]) == len(inds["complex"]) == 1
         for e, u in itertools.chain(inds["solvent"], inds["complex"]):
-            assert e.is_compatible_with(offunit.kilojoule_per_mole)
-            assert u.is_compatible_with(offunit.kilojoule_per_mole)
+            assert e.is_compatible_with(unit.kilojoule_per_mole)
+            assert u.is_compatible_with(unit.kilojoule_per_mole)
 
     @pytest.mark.parametrize('key', ['solvent', 'complex'])
     def test_get_forwards_etc(self, key, protocolresult):
