@@ -61,7 +61,7 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        if: ${{ matrix.python-version != "3.13" }}
+        if: ${{ matrix.python-version != '3.13' }}
         uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: environment.yml
@@ -78,7 +78,7 @@ jobs:
 
       - name: "Setup Micromamba"
         # Can't install espaloma with python 3.13
-        if: ${{ matrix.python-version == "3.13" }}
+        if: ${{ matrix.python-version == '3.13' }}
         uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: environment.yml
