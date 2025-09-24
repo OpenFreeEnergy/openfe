@@ -1264,6 +1264,20 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             )
 
             # 6. Get integrator
+            # Virtual sites sanity check - ensure we restart velocities when
+            # there are virtual sites in the system
+            has_virtual_sites = False
+            for ix in range(system.getNumParticles()):
+                if system.isVirtualSite(ix):
+                    has_virtual_sites = True
+            if has_virtual_sites:
+                if not settings["integrator_settings"].reassign_velocities:
+                    errmsg = (
+                        "Simulations with virtual sites without velocity "
+                        "reassignments are unstable in openmmtools")
+                    raise ValueError(errmsg)
+
+            # Get the integrator
             integrator = self._get_integrator(
                 settings["integrator_settings"],
                 settings["simulation_settings"],

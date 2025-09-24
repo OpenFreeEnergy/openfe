@@ -805,6 +805,48 @@ def test_dry_run_ligand_system_pressure(
         assert solv_sampler._thermodynamic_states[1].pressure == pressure
 
 
+def test_virtual_sites_no_reassign(
+    benzene_complex_system,
+    toluene_complex_system,
+    tmpdir,
+    default_settings,
+):
+    """
+    Test that an error is raised when not reassigning velocities
+    in a system with virtual site.
+    """
+    default_settings.protocol_repeats = 1
+    default_settings.forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",
+        "amber/tip4pew_standard.xml",  # FF with VS
+    ]
+    default_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
+    default_settings.integrator_settings.reassign_velocities = False
+
+    protocol = SepTopProtocol(
+        settings=default_settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    dag_units = list(dag.protocol_units)
+    # Only check the Solvent Unit
+    solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        serialized_topology = solv_setup_output["topology"]
+        serialized_system = solv_setup_output["system"]
+
+        errmsg = "Simulations with virtual sites without velocity"
+        with pytest.raises(ValueError, match=errmsg):
+            solv_run = sol_run_unit[0].run(
+                serialized_system, serialized_topology, dry=True
+            )["debug"]["sampler"]
+
+
 @pytest.mark.parametrize(
     "cutoff",
     [1.0 * offunit.nanometer, 12.0 * offunit.angstrom, 0.9 * offunit.nanometer],
