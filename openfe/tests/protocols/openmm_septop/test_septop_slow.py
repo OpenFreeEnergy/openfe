@@ -225,22 +225,6 @@ def available_platforms() -> set[str]:
     }
 
 
-@pytest.fixture
-def set_openmm_threads_1():
-    # for vacuum sims, we want to limit threads to one
-    # this fixture sets OPENMM_CPU_THREADS='1' for a single test, then reverts to previously held value
-    previous: str | None = os.environ.get("OPENMM_CPU_THREADS")
-
-    try:
-        os.environ["OPENMM_CPU_THREADS"] = "1"
-        yield
-    finally:
-        if previous is None:
-            del os.environ["OPENMM_CPU_THREADS"]
-        else:
-            os.environ["OPENMM_CPU_THREADS"] = previous
-
-
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize("platform", ["CUDA"])
@@ -249,7 +233,6 @@ def test_openmm_run_engine(
     available_platforms,
     benzene_modifications,
     T4_protein_component,
-    set_openmm_threads_1,
     tmpdir,
     default_settings,
 ):
@@ -355,7 +338,6 @@ def test_restraints_solvent(
     available_platforms,
     benzene_complex_system,
     toluene_complex_system,
-    set_openmm_threads_1,
     tmpdir,
     default_settings,
 ):
