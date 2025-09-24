@@ -62,6 +62,7 @@ jobs:
           create-args: >-
             espaloma_charge==0.0.8
             openeye-toolkits
+            python=3.12
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
