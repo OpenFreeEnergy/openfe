@@ -66,9 +66,15 @@ The lambda schedule is defined in the ``lambda_settings`` objects ``lambda_elec_
 Simulation overview
 ~~~~~~~~~~~~~~~~~~~
 
-The :class:`.ProtocolDAG` of the :class:`SepTopProtocol <.SepTopProtocol>` contains :class:`.ProtocolUnit`\ s from both the complex and solvent transformations.
-This means that both legs of the thermodynamic cycle are constructed and run sequentially in the same :class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the :class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
-If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG` contains multiple :class:`.ProtocolUnit`\ s of both complex and solvent transformations.
+The :class:`.ProtocolDAG` of the :class:`SepTopProtocol <.SepTopProtocol>` contains :class:`.ProtocolUnit`\ s from both
+the complex and solvent transformations.
+This means that both legs of the thermodynamic cycle are constructed and run sequentially in the same
+:class:`.ProtocolDAG`. This is different from the :class:`.RelativeHybridTopologyProtocol` where the
+:class:`.ProtocolDAG` only runs a single leg of a thermodynamic cycle.
+If multiple ``protocol_repeats`` are run (default: ``protocol_repeats=3``), the :class:`.ProtocolDAG`
+contains multiple :class:`.ProtocolUnit`\ s of both complex and solvent transformations.
+In that case, every :class:`.ProtocolUnit` would be run N times, where N is the number of ``protocol_repeats``. This means that also the
+selection of the atoms for restraints would be performed multiple times.
 
 Simulation steps
 """"""""""""""""
