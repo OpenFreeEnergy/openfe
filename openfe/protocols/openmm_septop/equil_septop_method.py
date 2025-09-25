@@ -70,6 +70,7 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
     SepTopEquilOutputSettings,
+    ComplexEquilOutputSettings,
     SepTopSettings,
     SettingsBaseModel,
 )
@@ -245,7 +246,7 @@ class SepTopComplexMixin:
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : SepTopEquilOutputSettings
+            * equil_output_settings : ComplexEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BoreschRestraintSettings
@@ -987,10 +988,10 @@ class SepTopProtocol(gufe.Protocol):
                 equilibration_length=0.1 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
             ),
-            complex_equil_output_settings=SepTopEquilOutputSettings(
+            complex_equil_output_settings=ComplexEquilOutputSettings(
                 equil_nvt_structure=None,
                 equil_npt_structure="equil_npt",
-                production_trajectory_filename="equil_npt",
+                production_trajectory_filename="equil_production",
                 log_output="equil_simulation",
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
@@ -1220,14 +1221,6 @@ class SepTopProtocol(gufe.Protocol):
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvent_solvation_settings
         )
-
-        # Make sure that we have the full system for restraint trajectory analysis
-        if self.settings.complex_equil_output_settings.output_indices != "all":
-            errmsg = (
-                "Complex simulations need to output the full system "
-                "during equilibration simulations."
-            )
-            raise ValueError(errmsg)
 
         # Validate protein component
         system_validation.validate_protein(stateA)

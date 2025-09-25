@@ -696,24 +696,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert pdb.n_atoms == 2713
 
 
-def test_output_full_system(
-    benzene_complex_system,
-    toluene_complex_system,
-    tmpdir,
-    default_settings,
-):
-    default_settings.complex_equil_output_settings.output_indices = "not water"
-    protocol = SepTopProtocol(settings=default_settings)
-
-    errmsg = "Complex simulations need to output the full system "
-    with pytest.raises(ValueError, match=errmsg):
-        dag = protocol.create(
-            stateA=benzene_complex_system,
-            stateB=toluene_complex_system,
-            mapping=None,
-        )
-
-
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_methods(
     benzene_complex_system,

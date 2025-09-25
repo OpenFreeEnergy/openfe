@@ -301,6 +301,17 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     """
 
 
+class ComplexEquilOutputSettings(SepTopEquilOutputSettings):
+
+    @validator("output_indices")
+    def must_be_all(cls, v):
+        if v != "all":
+            errmsg = ("Complex simulations need to output the full system "
+                      f"during equilibration simulations, got {v}.")
+            raise ValueError(errmsg)
+        return v
+
+
 class SepTopSettings(SettingsBaseModel):
     """
     Configuration object for ``AbsoluteSolvationProtocol``.
@@ -384,7 +395,7 @@ class SepTopSettings(SettingsBaseModel):
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    complex_equil_output_settings: SepTopEquilOutputSettings
+    complex_equil_output_settings: ComplexEquilOutputSettings
     """
     Simulation output settings for the complex non-alchemical equilibration.
     """
@@ -414,3 +425,4 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the Boresch restraints in the complex
     """
+
