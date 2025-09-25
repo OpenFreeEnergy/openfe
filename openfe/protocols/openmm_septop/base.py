@@ -453,16 +453,18 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         Virtual sites sanity check - ensure we restart velocities when
         there are virtual sites in the system
 
+        Parameters
+        ----------
+        system: openmm.System
+            The OpenMM System being checked.
+        integrator_settings: IntegratorSettings
+           Multistate sampler integrator settings.
+
         Raises
         ------
         ValueError
         * If the system has a virtual site but the integrator settings specify
-        that velocities are not reassigned.
-
-        Parameters
-        ----------
-        system: openmm.System
-        integrator_settings: IntegratorSettings
+          that velocities are not reassigned.
         """
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
