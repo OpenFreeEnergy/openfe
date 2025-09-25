@@ -258,6 +258,12 @@ class LambdaSettings(SettingsBaseModel):
 class SepTopEquilOutputSettings(MDOutputSettings):
     # reporter settings
     output_indices = "all"
+    """
+    Selection string for which part of the system to write coordinates for.
+    The SepTop protocol enforces "all" since the full system output is
+    required in the complex leg.
+    Default "all". 
+    """
     production_trajectory_filename: Optional[str] = "simulation"
     """
     Basename for the path to the storage file for analysis. The protocol will
@@ -300,14 +306,11 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     files of the respective endstates. Default 'simulation'.
     """
 
-
-class ComplexEquilOutputSettings(SepTopEquilOutputSettings):
-
     @validator("output_indices")
     def must_be_all(cls, v):
         if v != "all":
-            errmsg = ("Complex simulations need to output the full system "
-                      f"during equilibration simulations, got {v}.")
+            errmsg = ("Equilibration simulations need to output the full "
+                      f"system, got {v}.")
             raise ValueError(errmsg)
         return v
 
@@ -395,7 +398,7 @@ class SepTopSettings(SettingsBaseModel):
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    complex_equil_output_settings: ComplexEquilOutputSettings
+    complex_equil_output_settings: SepTopEquilOutputSettings
     """
     Simulation output settings for the complex non-alchemical equilibration.
     """

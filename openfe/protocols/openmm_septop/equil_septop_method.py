@@ -70,7 +70,6 @@ from openfe.protocols.openmm_septop.equil_septop_settings import (
     OpenMMEngineSettings,
     OpenMMSolvationSettings,
     SepTopEquilOutputSettings,
-    ComplexEquilOutputSettings,
     SepTopSettings,
     SettingsBaseModel,
 )
@@ -246,7 +245,7 @@ class SepTopComplexMixin:
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : ComplexEquilOutputSettings
+            * equil_output_settings : SepTopEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BoreschRestraintSettings
@@ -988,7 +987,7 @@ class SepTopProtocol(gufe.Protocol):
                 equilibration_length=0.1 * unit.nanosecond,
                 production_length=2.0 * unit.nanosecond,
             ),
-            complex_equil_output_settings=ComplexEquilOutputSettings(
+            complex_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
                 equil_npt_structure="equil_npt",
                 production_trajectory_filename="equil_production",
