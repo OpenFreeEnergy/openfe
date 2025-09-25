@@ -453,28 +453,30 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         Virtual sites sanity check - ensure we restart velocities when
         there are virtual sites in the system
 
+        Parameters
+        ----------
+        system: openmm.System
+            The OpenMM System being checked.
+        integrator_settings: IntegratorSettings
+           Multistate sampler integrator settings.
+
         Raises
         ------
         ValueError
         * If the system has a virtual site but the integrator settings specify
-        that velocities are not reassigned.
-
-        Parameters
-        ----------
-        system: openmm.System
-        integrator_settings: IntegratorSettings
+          that velocities are not reassigned.
         """
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
-        has_virtual_sites = False
+        if integrator_settings.reassign_velocities:
+            return
+        
         for ix in range(system.getNumParticles()):
             if system.isVirtualSite(ix):
-                has_virtual_sites = True
-        if has_virtual_sites:
-            if not integrator_settings.reassign_velocities:
                 errmsg = (
                     "Simulations with virtual sites without velocity "
-                    "reassignments are unstable in openmmtools")
+                    "reassignments are unstable in openmmtools"
+                )
                 raise ValueError(errmsg)
 
     @staticmethod
