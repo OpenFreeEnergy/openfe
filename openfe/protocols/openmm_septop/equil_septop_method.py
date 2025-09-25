@@ -1795,7 +1795,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             )
         )
 
-        smc_B_unique_keys = smc_comps_B.keys() - smc_comp_A.keys()
+        smc_B_unique_keys = smc_comps_B.keys() - smc_comps_A.keys()
         smc_comp_B_unique = {key: smc_comps_B[key] for key in smc_B_unique_keys}
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB = self.get_system_AB(
             solv_comp,
