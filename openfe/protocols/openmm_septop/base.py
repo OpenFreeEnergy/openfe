@@ -47,7 +47,6 @@ from openfe.utils import without_oechem_backend
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
-from openmm import app
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SystemGenerator
 from openmmtools import multistate
@@ -446,6 +445,41 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         return system_generator
 
     @staticmethod
+    def check_assign_velocities_with_virtual_site(
+        system: openmm.System,
+        integrator_settings: IntegratorSettings,
+    ):
+        """
+        Virtual sites sanity check - ensure we restart velocities when
+        there are virtual sites in the system
+
+        Parameters
+        ----------
+        system: openmm.System
+            The OpenMM System being checked.
+        integrator_settings: IntegratorSettings
+           Multistate sampler integrator settings.
+
+        Raises
+        ------
+        ValueError
+        * If the system has a virtual site but the integrator settings specify
+          that velocities are not reassigned.
+        """
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        if integrator_settings.reassign_velocities:
+            return
+        
+        for ix in range(system.getNumParticles()):
+            if system.isVirtualSite(ix):
+                errmsg = (
+                    "Simulations with virtual sites without velocity "
+                    "reassignments are unstable in openmmtools"
+                )
+                raise ValueError(errmsg)
+
+    @staticmethod
     def _assign_partial_charges(
         partial_charge_settings: OpenFFPartialChargeSettings,
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
@@ -478,7 +512,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_components: dict[SmallMoleculeComponent, OFFMolecule],
         system_generator: SystemGenerator,
         solvation_settings: BaseSolvationSettings,
-    ) -> tuple[app.Modeller, dict[Component, npt.NDArray]]:
+    ) -> tuple[openmm.app.Modeller, dict[Component, npt.NDArray]]:
         """
         Get an OpenMM Modeller object and a list of residue indices
         for each component in the system.
@@ -502,7 +536,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        system_modeller : app.Modeller
+        system_modeller : openmm.app.Modeller
           OpenMM Modeller object generated from ProteinComponent and
           OpenFF Molecules.
         comp_resids : dict[Component, npt.NDArray]
@@ -614,7 +648,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         dict[SmallMoleculeComponent, OFFMolecule],
         dict[SmallMoleculeComponent, OFFMolecule],
         dict[SmallMoleculeComponent, OFFMolecule],
-        dict[SmallMoleculeComponent, OFFMolecule],
     ]:
         # Get smcs for the different states and the common smcs
         smc_off_A = {m: m.to_openff() for m in alchem_comps["stateA"]}
@@ -629,7 +662,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_comps_B = smc_off_B | smc_off_both
         smc_comps_AB = smc_off_A | smc_off_B | smc_off_both
 
-        return smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B
+        return smc_comps_A, smc_comps_B, smc_comps_AB
 
     def get_system(
         self,
@@ -652,10 +685,10 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
 
         Returns
         -------
-        omm_system: app.System
-        omm_topology: app.Topology
+        omm_system: openmm.app.System
+        omm_topology: openmm.app.Topology
         positions: openmm.unit.Quantity
-        system_modeller: app.Modeller
+        system_modeller: openmm.app.Modeller
         comp_resids: dict[Component, npt.NDArray]
           A dictionary of residues for each component in the System.
         """
@@ -843,7 +876,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
     def _get_reporter(
         self,
-        topology: app.Topology,
+        topology: openmm.app.Topology,
         positions: openmm.unit.Quantity,
         simulation_settings: MultiStateSimulationSettings,
         output_settings: MultiStateOutputSettings,
@@ -853,7 +886,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         Parameters
         ----------
-        topology : app.Topology
+        topology : openmm.app.Topology
           A Topology of the system being created.
         positions : openmm.unit.Quantity
           Positions of the pre-alchemical simulation system.

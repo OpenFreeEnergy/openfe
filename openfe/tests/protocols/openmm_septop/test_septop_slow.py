@@ -5,7 +5,6 @@ import pytest
 from openff.units import unit
 from gufe.protocols import execute_DAG
 import openfe
-import simtk
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopSolventSetupUnit,
@@ -16,8 +15,7 @@ from numpy.testing import assert_allclose
 from openff.units.openmm import from_openmm
 from openfe.protocols.openmm_septop.utils import deserialize, SepTopParameterState
 
-from openmm import Platform
-import os
+import openmm
 import pathlib
 import mdtraj as md
 
@@ -159,7 +157,7 @@ def test_lambda_energies(
         system = output["system"]
         alchemical_system = deserialize(system)
         topology = output["topology"]
-        pdb = simtk.openmm.app.pdbfile.PDBFile(str(topology))
+        pdb = openmm.app.pdbfile.PDBFile(str(topology))
         positions = pdb.getPositions(asNumpy=True)
 
         # Remove Harmonic restraint force solvent
@@ -221,24 +219,8 @@ def test_lambda_energies(
 @pytest.fixture
 def available_platforms() -> set[str]:
     return {
-        Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())
+        openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())
     }
-
-
-@pytest.fixture
-def set_openmm_threads_1():
-    # for vacuum sims, we want to limit threads to one
-    # this fixture sets OPENMM_CPU_THREADS='1' for a single test, then reverts to previously held value
-    previous: str | None = os.environ.get("OPENMM_CPU_THREADS")
-
-    try:
-        os.environ["OPENMM_CPU_THREADS"] = "1"
-        yield
-    finally:
-        if previous is None:
-            del os.environ["OPENMM_CPU_THREADS"]
-        else:
-            os.environ["OPENMM_CPU_THREADS"] = previous
 
 
 @pytest.mark.integration
@@ -249,7 +231,6 @@ def test_openmm_run_engine(
     available_platforms,
     benzene_modifications,
     T4_protein_component,
-    set_openmm_threads_1,
     tmpdir,
     default_settings,
 ):
@@ -355,7 +336,6 @@ def test_restraints_solvent(
     available_platforms,
     benzene_complex_system,
     toluene_complex_system,
-    set_openmm_threads_1,
     tmpdir,
     default_settings,
 ):
