@@ -1767,7 +1767,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(
             alchem_comps, smc_comps
         )
 
@@ -1796,6 +1796,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             )
         )
 
+        smc_off_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB = self.get_system_AB(
             solv_comp,
             modeller_A,
@@ -2121,7 +2122,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(
             alchem_comps, smc_comps
         )
 

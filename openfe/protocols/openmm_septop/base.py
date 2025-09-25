@@ -646,7 +646,6 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         dict[SmallMoleculeComponent, OFFMolecule],
         dict[SmallMoleculeComponent, OFFMolecule],
         dict[SmallMoleculeComponent, OFFMolecule],
-        dict[SmallMoleculeComponent, OFFMolecule],
     ]:
         # Get smcs for the different states and the common smcs
         smc_off_A = {m: m.to_openff() for m in alchem_comps["stateA"]}
@@ -661,7 +660,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         smc_comps_B = smc_off_B | smc_off_both
         smc_comps_AB = smc_off_A | smc_off_B | smc_off_both
 
-        return smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B
+        return smc_comps_A, smc_comps_B, smc_comps_AB
 
     def get_system(
         self,
