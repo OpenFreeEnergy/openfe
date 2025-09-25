@@ -317,11 +317,11 @@ class SepTopEquilOutputSettings(MDOutputSettings):
 
 class SepTopSettings(SettingsBaseModel):
     """
-    Configuration object for ``AbsoluteSolvationProtocol``.
+    Configuration object for ``SepTopProtocol``.
 
     See Also
     --------
-    openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
+    openfe.protocols.openmm_septop.SepTopProtocol
     """
 
     protocol_repeats: int
