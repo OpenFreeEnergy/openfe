@@ -1804,13 +1804,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             smc_comp_B_unique,
             settings,
         )
-        omm_system_AB, omm_topology_AB, positions_AB, modeller_AB = self.get_system_AB(
-            solv_comp,
-            modeller_A,
-            smc_comps_AB,
-            smc_off_B,
-            settings,
-        )
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
         self.check_assign_velocities_with_virtual_site(omm_system_AB, settings["integrator_settings"])

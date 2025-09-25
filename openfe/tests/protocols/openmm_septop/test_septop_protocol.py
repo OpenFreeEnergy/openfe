@@ -104,6 +104,13 @@ def test_monotonic_lambda_windows(val, default_settings):
         lambda_settings.lambda_restraints_A = val["restraints"]
 
 
+def test_output_induces_not_all(default_settings):
+    errmsg = "Equilibration simulations need to output the full system"
+
+    with pytest.raises(ValueError, match=errmsg):
+        default_settings.complex_equil_output_settings.output_indices = "no water"
+
+
 @pytest.mark.parametrize(
     "val",
     [
