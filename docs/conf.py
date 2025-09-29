@@ -133,7 +133,7 @@ myst_heading_anchors = 3
 #
 html_theme = "ofe_sphinx_theme"
 html_theme_options = {
-    "logo": {"text": "OpenFE Documentation"},
+    "logo": {"text": "openfe"},
     "icon_links": [
         {
             "name": "GitHub",
@@ -145,7 +145,7 @@ html_theme_options = {
     "accent_color": "DarkGoldenYellow",
     "navigation_with_keys": False,
 }
-html_logo = "_static/Squaredcircle.svg"
+html_logo = "_static/OFE-color-icon.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
