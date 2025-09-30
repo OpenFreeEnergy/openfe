@@ -142,7 +142,7 @@ html_theme_options = {
             "type": "fontawesome",
         }
     ],
-    "accent_color": "CantinaPurple",
+    "accent_color": "cantina-purple",
     "navigation_with_keys": False,
 }
 html_logo = "_static/OFE-color-icon.svg"
