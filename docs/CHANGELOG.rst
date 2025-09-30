@@ -6,6 +6,7 @@ Changelog
 
 v1.6.1
 ====================
+This release includes minor fixes and updates to tests. 
 
 **Added:**
 
