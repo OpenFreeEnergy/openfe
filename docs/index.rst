@@ -23,19 +23,17 @@ and lastly, the API Reference provides a direct technical explanation of our cod
 `Source Repository <https://github.com/OpenFreeEnergy/openfe/>`__ |
 `Issues & Ideas <https://github.com/OpenFreeEnergy/openfe/issues/>`__
 
-.. grid:: 1 2 3 4
+.. grid:: 1 2 2 4
     :gutter: 3
 
     .. grid-item-card:: Try it out
-        :img-top: _static/Rocket.svg
         :text-align: center
         :link: http://try.openfree.energy
         :link-type: url
 
-        New to *OpenFE*?  Start here and try it from your browser
+        New to **OpenFE**?  Start here and try it from your browser
 
     .. grid-item-card:: Installing OpenFE
-        :img-top: _static/Download.svg
         :text-align: center
         :link: installation
         :link-type: doc
@@ -43,7 +41,6 @@ and lastly, the API Reference provides a direct technical explanation of our cod
         Check out our installation guide to get it working on your machine!
 
     .. grid-item-card:: Available Protocols
-        :img-top: _static/CLI.svg
         :text-align: center
         :link: guide/protocols/index
         :link-type: doc
@@ -51,7 +48,6 @@ and lastly, the API Reference provides a direct technical explanation of our cod
         Documentation on available methods included in the openfe package
 
     .. grid-item-card:: Changelog
-        :img-top: _static/Showcase.svg
         :text-align: center
         :link: CHANGELOG
         :link-type: doc
@@ -59,7 +55,6 @@ and lastly, the API Reference provides a direct technical explanation of our cod
         Any notable changes in the package for each released version
 
     .. grid-item-card:: Tutorials
-        :img-top: _static/Tutorial.svg
         :text-align: center
         :link: tutorials/index
         :link-type: doc
@@ -67,7 +62,6 @@ and lastly, the API Reference provides a direct technical explanation of our cod
         Worked through examples of how to use the OpenFE toolkit
 
     .. grid-item-card:: User Guide
-        :img-top: _static/UserGuide.svg
         :text-align: center
         :link: guide/index
         :link-type: doc
@@ -75,7 +69,6 @@ and lastly, the API Reference provides a direct technical explanation of our cod
         Explanations of the underlying concepts behind the OpenFE toolkit
 
     .. grid-item-card:: Cookbook
-        :img-top: _static/Cookbook.svg
         :text-align: center
         :link: cookbook/index
         :link-type: doc
@@ -83,7 +76,6 @@ and lastly, the API Reference provides a direct technical explanation of our cod
         How-to guides for toolkit components
 
     .. grid-item-card:: API Reference
-        :img-top: _static/API.svg
         :text-align: center
         :link: reference/index
         :link-type: doc

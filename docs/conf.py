@@ -133,7 +133,7 @@ myst_heading_anchors = 3
 #
 html_theme = "ofe_sphinx_theme"
 html_theme_options = {
-    "logo": {"text": "openfe"},
+    "logo": {"text": "OpenFE docs"},
     "icon_links": [
         {
             "name": "GitHub",
