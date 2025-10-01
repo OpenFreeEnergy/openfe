@@ -147,6 +147,7 @@ html_theme_options = {
     "navbar_end": ["navbar-icon-links"],  # TODO: add "theme-switcher" to add back dark mode toggle
 }
 html_logo = "_static/OFE-color-icon.svg"
+html_favicon = '_static/OFE-color-icon.svg'
 html_context = {
    "default_mode": "light"
 }
