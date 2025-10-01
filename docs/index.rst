@@ -18,14 +18,14 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 .. grid:: 1 2 2 4
     :gutter: 3
 
-    .. grid-item-card:: :fas:`laptop-code` Try **openfe** in your browser 
+    .. grid-item-card:: :fas:`laptop-code` Try openfe in your browser
         :text-align: center
         :link: http://try.openfree.energy
         :link-type: url
 
         Curious about **openfe**?  Start here and run the openfe showcase notebook in your browser.
 
-    .. grid-item-card:: :fas:`download` Installing *openfe*
+    .. grid-item-card:: :fas:`download` Install openfe
         :text-align: center
         :link: installation
         :link-type: doc
