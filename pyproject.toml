@@ -35,7 +35,6 @@ scripts.openfe = "openfecli.cli:main"
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
-license-files = [ "LICENSE" ]
 
 [tool.setuptools.packages]
 find = { namespaces = false }
