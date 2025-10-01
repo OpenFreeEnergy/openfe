@@ -61,7 +61,7 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         Comprehensive details of both the **openfe** CLI and Python API.
 
-    .. grid-item-card:: :fas:`gears`\ |nbsp|\ Available\ |nbsp|\ Protocols
+    .. grid-item-card:: :fas:`gears` Protocols
         :text-align: center
         :link: guide/protocols/index
         :link-type: doc
@@ -92,6 +92,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-.. |nbsp| unicode:: 0xA0 .. copyright sign
-    :trim:

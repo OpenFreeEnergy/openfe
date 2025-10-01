@@ -1,5 +1,5 @@
-User&nbsp;Guide
-===============
+User\ |nbsp|\ Guide
+===================
 
 .. toctree::
     :maxdepth: 2
@@ -12,3 +12,6 @@ User&nbsp;Guide
     protocols/index
     under_the_hood
     troubleshooting
+
+.. |nbsp| unicode:: 0xA0 .. copyright sign
+    :trim:
