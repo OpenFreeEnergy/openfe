@@ -68,7 +68,7 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         Details of the specific Free Energy Protocols included in **openfe**.
 
-    .. grid-item-card:: :fas:`clock-rotate-left` CHANGELOG
+    .. grid-item-card:: :fas:`clock-rotate-left` Changelog 
         :text-align: center
         :link: CHANGELOG
         :link-type: doc
