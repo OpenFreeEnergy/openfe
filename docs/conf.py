@@ -144,9 +144,12 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
+    "navbar_end": ["navbar-icon-links"],  # TODO: add "theme-switcher" to add back dark mode toggle
 }
 html_logo = "_static/OFE-color-icon.svg"
-
+html_context = {
+   "default_mode": "light"
+}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
