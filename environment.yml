@@ -51,4 +51,4 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    - git+https://github.com/OpenFreeEnergy/gufe@v1.6.1
