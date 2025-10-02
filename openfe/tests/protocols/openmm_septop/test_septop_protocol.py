@@ -104,6 +104,13 @@ def test_monotonic_lambda_windows(val, default_settings):
         lambda_settings.lambda_restraints_A = val["restraints"]
 
 
+def test_output_induces_not_all(default_settings):
+    errmsg = "Equilibration simulations need to output the full system"
+
+    with pytest.raises(ValueError, match=errmsg):
+        default_settings.complex_equil_output_settings.output_indices = "no water"
+
+
 @pytest.mark.parametrize(
     "val",
     [
@@ -696,24 +703,6 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert pdb.n_atoms == 2713
 
 
-def test_output_full_system(
-    benzene_complex_system,
-    toluene_complex_system,
-    tmpdir,
-    default_settings,
-):
-    default_settings.complex_equil_output_settings.output_indices = "not water"
-    protocol = SepTopProtocol(settings=default_settings)
-
-    errmsg = "Complex simulations need to output the full system "
-    with pytest.raises(ValueError, match=errmsg):
-        dag = protocol.create(
-            stateA=benzene_complex_system,
-            stateB=toluene_complex_system,
-            mapping=None,
-        )
-
-
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
 def test_dry_run_methods(
     benzene_complex_system,
@@ -803,6 +792,41 @@ def test_dry_run_ligand_system_pressure(
         )["debug"]["sampler"]
 
         assert solv_sampler._thermodynamic_states[1].pressure == pressure
+
+
+def test_virtual_sites_no_reassign(
+    benzene_complex_system,
+    toluene_complex_system,
+    tmpdir,
+    default_settings,
+):
+    """
+    Test that an error is raised when not reassigning velocities
+    in a system with virtual site.
+    """
+    default_settings.protocol_repeats = 1
+    default_settings.forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",
+        "amber/tip4pew_standard.xml",  # FF with VS
+    ]
+    default_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
+    default_settings.integrator_settings.reassign_velocities = False
+
+    protocol = SepTopProtocol(
+        settings=default_settings,
+    )
+    dag = protocol.create(
+        stateA=benzene_complex_system,
+        stateB=toluene_complex_system,
+        mapping=None,
+    )
+    dag_units = list(dag.protocol_units)
+    # Only check the Solvent Unit
+    solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
+    with tmpdir.as_cwd():
+        errmsg = "Simulations with virtual sites without velocity"
+        with pytest.raises(ValueError, match=errmsg):
+            solv_setup_output = solv_setup_unit[0].run(dry=True)
 
 
 @pytest.mark.parametrize(
