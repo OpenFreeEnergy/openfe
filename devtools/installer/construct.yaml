@@ -14,11 +14,12 @@ specs:
   - conda
   - jupyterlab
   - mamba
-  - notebook <7
+  - notebook <7  # TODO from https://github.com/OpenFreeEnergy/openfe/pull/498, is this still needed?
   - openfe=={{ environ["VERSION"] }}
   - pip
   - pytest
   - pytest-xdist
+  - jupyter_client >8.4.0
   # python needs to match https://github.com/googlecolab/backend-info/blob/main/os-info.txt
   # until colab pushes a fix
   - python 3.11.12
