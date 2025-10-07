@@ -387,13 +387,10 @@ def _get_indices(topology, resids):
     ----------
     topology : openmm.app.Topology
         Topology to search from.
-    residue_name : str
-        Name of the residue to get the indices for.
+    resids : npt.NDArrayLike
+        An array of residue indices which match the residues we want to get
+        atom indices for.
     """
-    # TODO: remove, this shouldn't be necessary anymore
-    if len(resids) > 1:
-        raise ValueError("multiple residues were found")
-
     # create list of openmm residues
     top_res = [r for r in topology.residues() if r.index in resids]
 
