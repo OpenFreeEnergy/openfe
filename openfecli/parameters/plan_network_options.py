@@ -244,7 +244,7 @@ and/or partial charge method (``partial_charge``) to use.
 
 \b
 Supported atom mapper choices are:
-    - ``KartografAtomMapper`` (default)
+    - ``KartografAtomMapper`` (default as of v1.7.0)
     - ``LomapAtomMapper``
 \b
 Supported network planning algorithms include (but are not limited to):
