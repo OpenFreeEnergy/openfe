@@ -36,8 +36,8 @@ def test_get_boresch_missing_atoms(eg5_protein_ligand_universe, eg5_ligands):
         _ = find_boresch_restraint(
             universe=eg5_protein_ligand_universe,
             guest_rdmol=eg5_ligands[1].to_rdkit(),
-            guest_idxs=[a.ix for a in ligand_atoms],
-            host_idxs=[a.ix for a in host_atoms],
+            guest_idxs=ligand_atoms.atoms.ix,
+            host_idxs=host_atoms.atoms.ix,
             host_selection="backbone",
             guest_restraint_atoms_idxs=[33, 12, 13],
         )
@@ -55,8 +55,8 @@ def test_boresch_too_few_host_atoms_found(eg5_protein_ligand_universe, eg5_ligan
         _ = find_boresch_restraint(
             universe=eg5_protein_ligand_universe,
             guest_rdmol=eg5_ligands[1].to_rdkit(),
-            guest_idxs=[a.ix for a in ligand_atoms],
-            host_idxs=[a.ix for a in host_atoms],
+            guest_idxs=ligand_atoms.atoms.ix,
+            host_idxs=host_atoms.atoms.ix,
             # select an atom group with no atoms
             host_selection="resnum 2",
         )
@@ -71,8 +71,8 @@ def test_boresch_restraint_user_defined(eg5_protein_ligand_universe, eg5_ligands
     restraint_geometry = find_boresch_restraint(
         universe=eg5_protein_ligand_universe,
         guest_rdmol=eg5_ligands[1].to_rdkit(),
-        guest_idxs=[a.ix for a in ligand_atoms],
-        host_idxs=[a.ix for a in host_atoms],
+        guest_idxs=ligand_atoms.atoms.ix,
+        host_idxs=host_atoms.atoms.ix,
         host_selection="backbone",
         guest_restraint_atoms_idxs=[33, 12, 13],
         host_restraint_atoms_idxs=[3517, 1843, 3920],
@@ -111,7 +111,7 @@ def test_boresch_no_guest_atoms_found_ethane(eg5_protein_pdb):
         _ = find_boresch_restraint(
             universe=universe,
             guest_rdmol=lig.atoms.convert_to("RDKIT"),
-            guest_idxs=[a.ix for a in ligand_atoms],
+            guest_idxs=ligand_atoms.atoms.ix,
             host_idxs=[1, 2, 3],
             host_selection="backbone",
         )
@@ -131,7 +131,7 @@ def test_boresch_no_guest_atoms_found_collinear(eg5_protein_pdb):
         _ = find_boresch_restraint(
             universe=universe,
             guest_rdmol=lig.atoms.convert_to("RDKIT", force=True),
-            guest_idxs=[a.ix for a in ligand_atoms],
+            guest_idxs=ligand_atoms.atoms.ix,
             host_idxs=[1, 2, 3],
             host_selection="backbone",
         )
@@ -149,8 +149,8 @@ def test_boresch_no_host_atom_pool(eg5_protein_ligand_universe, eg5_ligands):
         _ = find_boresch_restraint(
             universe=eg5_protein_ligand_universe,
             guest_rdmol=eg5_ligands[1].to_rdkit(),
-            guest_idxs=[a.ix for a in ligand_atoms],
-            host_idxs=[a.ix for a in host_atoms],
+            guest_idxs=ligand_atoms.atoms.ix,
+            host_idxs=host_atoms.atoms.ix,
             host_selection="backbone",
             host_min_distance=0.0 * unit.angstrom,
             host_max_distance=0.1 * unit.angstrom,
@@ -160,8 +160,8 @@ def test_boresch_no_host_atom_pool(eg5_protein_ligand_universe, eg5_ligands):
 def test_boresch_no_host_anchor(eg5_protein_ligand_universe, eg5_ligands):
     """
     Make sure an error is raised if we can not find a host anchor from the pool.
-    The anchor atoms have a hard coded min distance of 0.5nm so we make the initial atom pool all atoms
-    closer than this cutoff.
+    We limit the selection to a single TYR near the binding site to
+    force only one residue being picked up.
     """
 
     ligand_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG")
@@ -170,11 +170,11 @@ def test_boresch_no_host_anchor(eg5_protein_ligand_universe, eg5_ligands):
         _ = find_boresch_restraint(
             universe=eg5_protein_ligand_universe,
             guest_rdmol=eg5_ligands[1].to_rdkit(),
-            guest_idxs=[a.ix for a in ligand_atoms],
-            host_idxs=[a.ix for a in host_atoms],
-            host_selection="backbone",
-            host_min_distance=0.0 * unit.angstrom,
-            host_max_distance=0.499 * unit.nanometers,
+            guest_idxs=ligand_atoms.atoms.ix,
+            host_idxs=host_atoms.atoms.ix,
+            host_selection="backbone and resname TYR",
+            host_min_distance=0 * unit.nanometers,
+            host_max_distance=1 * unit.nanometers,
         )
 
 
@@ -188,8 +188,8 @@ def test_get_boresch_restraint_single_frame(eg5_protein_ligand_universe, eg5_lig
     restraint_geometry = find_boresch_restraint(
         universe=eg5_protein_ligand_universe,
         guest_rdmol=eg5_ligands[1].to_rdkit(),
-        guest_idxs=[a.ix for a in ligand_atoms],
-        host_idxs=[a.ix for a in host_atoms],
+        guest_idxs=ligand_atoms.atoms.ix,
+        host_idxs=host_atoms.atoms.ix,
         host_selection="backbone",
     )
     assert isinstance(restraint_geometry, BoreschRestraintGeometry)
@@ -218,8 +218,8 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     restraint_geometry = find_boresch_restraint(
         universe=eg5_protein_ligand_universe,
         guest_rdmol=eg5_ligands[1].to_rdkit(),
-        guest_idxs=[a.ix for a in ligand_atoms],
-        host_idxs=[a.ix for a in host_atoms],
+        guest_idxs=ligand_atoms.atoms.ix,
+        host_idxs=host_atoms.atoms.ix,
         host_selection="backbone",
         dssp_filter=True,
     )
@@ -232,14 +232,14 @@ def test_get_boresch_restraint_dssp(eg5_protein_ligand_universe, eg5_ligands):
     # we should get the same guest atoms
     assert restraint_geometry.guest_atoms == [5528, 5507, 5508]
     # different host atoms
-    assert restraint_geometry.host_atoms == [3058, 1895, 1933]
+    assert restraint_geometry.host_atoms == [3517, 3058, 3548]
     # check the measured values
-    assert 1.09084815 == pytest.approx(restraint_geometry.r_aA0.to("nanometer").m)
-    assert 0.93824134 == pytest.approx(restraint_geometry.theta_A0.to("radians").m)
-    assert 1.58227158 == pytest.approx(restraint_geometry.theta_B0.to("radians").m)
-    assert 2.09875582 == pytest.approx(restraint_geometry.phi_A0.to("radians").m)
-    assert -0.142658924 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
-    assert -1.5340895 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
+    assert 1.01590371 == pytest.approx(restraint_geometry.r_aA0.to("nanometer").m)
+    assert 0.84966606 == pytest.approx(restraint_geometry.theta_A0.to("radians").m)
+    assert 1.23561539 == pytest.approx(restraint_geometry.theta_B0.to("radians").m)
+    assert 2.56825286 == pytest.approx(restraint_geometry.phi_A0.to("radians").m)
+    assert -1.60162692 == pytest.approx(restraint_geometry.phi_B0.to("radians").m)
+    assert -0.02396901 == pytest.approx(restraint_geometry.phi_C0.to("radians").m)
 
 
 POOCH_CACHE = pooch.os_cache("openfe")
@@ -249,7 +249,7 @@ zenodo_restraint_data = pooch.create(
     registry={
         "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 
 
@@ -332,9 +332,9 @@ def test_get_boresch_restrain_industry_benchmark_systems(
     universe = mda.Merge(protein.atoms, lig_uni.atoms)
 
     ligand_atoms = universe.select_atoms("resname LIG")
-    lig_ids = [a.ix for a in ligand_atoms]
+    lig_ids = ligand_atoms.atoms.ix
     host_atoms = universe.select_atoms("protein")
-    host_ids = [a.ix for a in host_atoms]
+    host_ids = host_atoms.atoms.ix
 
     # create the geometry
     restraint_geometry = find_boresch_restraint(
@@ -343,6 +343,7 @@ def test_get_boresch_restrain_industry_benchmark_systems(
         guest_idxs=lig_ids,
         host_idxs=host_ids,
         host_selection="backbone",
+        anchor_finding_strategy='multi-residue',
         dssp_filter=False,
         # reduce the search space for CI speed!
         host_max_distance=1.5 * unit.nanometer,

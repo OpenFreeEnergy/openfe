@@ -108,7 +108,7 @@ zenodo_restraint_data = pooch.create(
     registry={
         "industry_benchmark_systems.zip": "sha256:2bb5eee36e29b718b96bf6e9350e0b9957a592f6c289f77330cbb6f4311a07bd"
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 
 
@@ -366,5 +366,5 @@ def test_get_boresch_state_correction(tyk2_protein_ligand_system, tyk2_rdkit_lig
         thermodynamic_state=state, geometry=geometry
     )
     assert (
-        pytest.approx(correction.to(unit.kilocalorie_per_mole).m) == -7.424692312779209
+        pytest.approx(correction.to(unit.kilocalorie_per_mole).m) == -9.28421610202858
     )

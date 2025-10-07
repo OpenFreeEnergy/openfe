@@ -7,7 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
-from typing import Optional
+from typing import Literal, Optional
 
 import MDAnalysis as mda
 from gufe.vendor.openff.models.types import FloatQuantity
@@ -17,7 +17,11 @@ from openff.units import Quantity, unit
 from rdkit import Chem
 
 from .guest import find_guest_atom_candidates
-from .host import find_host_anchor, find_host_atom_candidates
+from .host import (
+    find_host_anchor_multi,
+    find_host_anchor_bonded,
+    find_host_atom_candidates,
+)
 
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
@@ -133,6 +137,7 @@ def find_boresch_restraint(
     guest_restraint_atoms_idxs: Optional[list[int]] = None,
     host_restraint_atoms_idxs: Optional[list[int]] = None,
     host_selection: str = "all",
+    anchor_finding_strategy: Literal['multi-residue', 'bonded'] = 'multi-residue',
     dssp_filter: bool = False,
     rmsf_cutoff: Quantity = 0.1 * unit.nanometer,
     host_min_distance: Quantity = 1 * unit.nanometer,
@@ -168,6 +173,9 @@ def find_boresch_restraint(
       be returned. Must be defined alongside ``guest_restraint_atoms_idxs``.
     host_selection : str
       An MDAnalysis selection string to sub-select the host atoms.
+    anchor_finding_strategy: Literal['multi-residue', 'bonded']
+      How host anchor atoms are found. Default `multi-residue`, attempts
+      to find host anchors across multiple residues.
     dssp_filter : bool
       Whether or not to filter the host atoms by their secondary structure.
     rmsf_cutoff : openff.units.Quantity
@@ -251,21 +259,39 @@ def find_boresch_restraint(
         host_pool = find_host_atom_candidates(
             universe=universe,
             host_idxs=host_idxs,
-            l1_idx=guest_anchor[0],
+            guest_anchor_idx=guest_anchor[0],
             host_selection=host_selection,
             dssp_filter=dssp_filter,
             rmsf_cutoff=rmsf_cutoff,
-            min_distance=host_min_distance,
-            max_distance=host_max_distance,
+            min_search_distance=host_min_distance,
+            max_search_distance=host_max_distance,
         )
 
-        host_anchor = find_host_anchor(
-            guest_atoms=universe.atoms[list(guest_anchor)],
-            host_atom_pool=universe.atoms[list(host_pool)],
-            minimum_distance=0.5 * unit.nanometer,
-            angle_force_constant=angle_force_constant,
-            temperature=temperature,
-        )
+        if anchor_finding_strategy == 'multi-residue':
+            host_anchor = find_host_anchor_multi(
+                guest_atoms=universe.atoms[list(guest_anchor)],
+                host_atom_pool=universe.atoms[list(host_pool)],
+                host_minimum_distance=0.5 * unit.nanometer,
+                # TODO: work out a rename for this, it's confusing
+                guest_minimum_distance=host_min_distance,
+                angle_force_constant=angle_force_constant,
+                temperature=temperature,
+            )
+        elif anchor_finding_strategy == 'bonded':
+            host_anchor = find_host_anchor_bonded(
+                guest_atoms=universe.atoms[list(guest_anchor)],
+                host_atom_pool=universe.atoms[list(host_pool)],
+                guest_minimum_distance=host_min_distance,
+                angle_force_constant=angle_force_constant,
+                temperature=temperature,
+            )
+        else:
+            # We're doing something we shouldn't be
+            errmsg = (
+                f"Unknown anchor finding strategy: {anchor_finding_strategy}"
+            )
+            raise NotImplementedError(errmsg)
+
         # continue if it's empty, otherwise stop
         if host_anchor is not None:
             break

@@ -8,6 +8,7 @@ on:
    # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
     paths-ignore:
       - "docs/*"
+      - ".readthedocs.yaml"
   push:
     branches:
       - main
