@@ -1,7 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
-import copy
 from typing import Iterable, Callable, Type, Optional
 import warnings
 
@@ -35,9 +34,8 @@ from ..chemicalsystem_generator import (
     RFEComponentLabels,
 )
 from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
-from ...utils.ligand_utils import get_alchemical_charge_difference
 
-# TODO: move/or find better structure for protocol_generator combintations!
+# TODO: move/or find better structure for protocol_generator combinations!
 PROTOCOL_GENERATOR = {
     RelativeHybridTopologyProtocol: EasyChemicalSystemGenerator,
 }
@@ -50,7 +48,7 @@ class RelativeAlchemicalNetworkPlanner(
 
     def __init__(
         self,
-        name: str = "easy_rfe_calculation",
+        name: str = "easy_rfe_calculation",  # TODO: remove 'easy'
         mappers: Optional[Iterable[LigandAtomMapper]] = None,
         mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
@@ -176,7 +174,7 @@ class RelativeAlchemicalNetworkPlanner(
             set(all_transformation_labels)
         ):
             raise ValueError(
-                "There were multiple transformations with the same edge label! This might lead to overwritting your files. \n labels: "
+                "There were multiple transformations with the same edge label! This might lead to overwriting your files. \n labels: "
                 + str(len(all_transformation_labels))
                 + "\nunique: "
                 + str(len(set(all_transformation_labels)))
@@ -332,7 +330,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         protocol_settings = transformation_protocol.settings.unfrozen_copy()
         if "vacuum" in transformation_name:
             protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
-        elif get_alchemical_charge_difference(ligand_mapping_edge) != 0:
+        elif ligand_mapping_edge.get_alchemical_charge_difference() != 0:
             wmsg = ("Charge changing transformation between ligands "
                     f"{ligand_mapping_edge.componentA.name} and {ligand_mapping_edge.componentB.name}. "
                     "A more expensive protocol with 22 lambda windows, sampled "

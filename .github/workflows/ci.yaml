@@ -8,12 +8,12 @@ on:
    # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
     paths-ignore:
       - "docs/*"
+      - ".readthedocs.yaml"
   push:
     branches:
       - main
   schedule:
-    # At 07:00 UTC on Monday and Thursday.
-    - cron: "0 7 * * *"
+    - cron: "0 4 * * *"
   workflow_dispatch:
   release:
     types:
@@ -30,33 +30,23 @@ defaults:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} 🗃️${{ matrix.pydantic-version }} oechem: ${{ matrix.openeye }}"
+    name: "💻-${{matrix.os }} 🐍-${{ matrix.python-version }} oechem: ${{ matrix.openeye }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        pydantic-version: [">1"]
+        os: ["ubuntu-latest", "macos-latest"]
         python-version:
-          - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
         openeye: ["no"]
-        include:
-          - os: "macos-latest"
-            python-version: "3.12"
-            pydantic-version: ">1"
+        include: # NOTE: openeye does not yet support 3.13.
           - os: "ubuntu-latest"
             python-version: "3.11"
-            pydantic-version: "<2"
-          - os: "ubuntu-latest"
-            python-version: "3.11"
-            pydantic-version: ">1"
             openeye: "yes"
           - os: "macos-latest"
             python-version: "3.12"
-            pydantic-version: ">1"
-            omff-version: ">0.13"
-            openeye: ["no"]
+            openeye: "yes"
 
     env:
       OE_LICENSE: ${{ github.workspace }}/oe_license.txt
@@ -71,10 +61,8 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: '1.5.6-0'
-          micromamba-binary-path: ~/.local/bin/micromamba
           environment-file: environment.yml
           environment-name: openfe_env
           cache-environment: true
@@ -99,16 +87,16 @@ jobs:
       - name: "Install"
         run: python -m pip install --no-deps -e .
 
-      - name: "Test imports"
-        run: |
-          # if we add more to this, consider changing to for + env vars
-          python -Ic "import openfe; print(openfe.__version__)"
-
       - name: "Environment Information"
         run: |
           micromamba info
           micromamba list
           pip list
+
+      - name: "Test imports"
+        run: |
+          # if we add more to this, consider changing to for + env vars
+          python -Ic "import openfe; print(openfe.__version__)"
 
       - name: "Run tests"
         env:

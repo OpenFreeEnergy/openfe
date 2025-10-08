@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Gowers"
-  given-names: "Richard J."
-  orcid: "https://orcid.org/0000-0002-3241-1846"
 - family-names: "Alibay"
   given-names: "Irfan"
   orcid: "https://orcid.org/0000-0001-5787-9130"
+- family-names: "Gowers"
+  given-names: "Richard J."
+  orcid: "https://orcid.org/0000-0002-3241-1846"
 - family-names: "Swenson"
   given-names: "David W.H."
   orcid: "https://orcid.org/0000-0001-9922-7923"
@@ -34,9 +34,12 @@ authors:
 - given-names: Matthew
   family-names: Thompson
   orcid: 'https://orcid.org/0000-0002-1460-3983'
+- given-names: Alyssa
+  family-names: Travitz
+  orcid: 'https://orcid.org/0000-0001-5953-8807'
 title: "The Open Free Energy library"
-version: 1.1.0
-date-released: 2024-09-25
+version: 1.7.0
+date-released: 2025-04-25
 url: "https://openfree.energy/"
 repository-code: "https://github.com/openfreeEnergy/openfe"
 doi: 10.5281/zenodo.8344247

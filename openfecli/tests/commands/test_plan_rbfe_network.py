@@ -22,7 +22,7 @@ from openff.utilities import skip_if_missing
 def mol_dir_args(tmpdir_factory):
     ofe_dir_path = tmpdir_factory.mktemp('moldir')
 
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         for f in ['ligand_23.sdf', 'ligand_55.sdf']:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
@@ -32,7 +32,7 @@ def mol_dir_args(tmpdir_factory):
 def dummy_charge_dir_args(tmpdir_factory):
     ofe_dir_path = tmpdir_factory.mktemp('charge_moldir')
 
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
@@ -52,7 +52,7 @@ def cdk8_files(tmpdir_factory)->tuple[str, str]:
 
 @pytest.fixture
 def protein_args():
-    with resources.files("openfe.tests.data") as d:
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
         return ["--protein", str(d / "181l_only.pdb")]
 
 
@@ -95,12 +95,12 @@ def test_plan_rbfe_network_main():
         OpenFFPartialChargeSettings
     )
 
-    with resources.files("openfe.tests.data.openmm_rfe") as d:
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [
             SmallMoleculeComponent.from_sdf_file(d / f)
             for f in ['ligand_23.sdf', 'ligand_55.sdf']
         ]
-    with resources.files("openfe.tests.data") as d:
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
         protein_component = ProteinComponent.from_pdb_file(
             str(d / "181l_only.pdb")
         )
@@ -251,7 +251,7 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
 
 @pytest.fixture
 def eg5_files():
-    with resources.files('openfe.tests.data.eg5') as p:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as p:
         pdb_path = str(p.joinpath('eg5_protein.pdb'))
         lig_path = str(p.joinpath('eg5_ligands.sdf'))
         cof_path = str(p.joinpath('eg5_cofactor.sdf'))
@@ -300,6 +300,15 @@ def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
             validate_charges(node.components["ligand"])
             if "cofactor1" in node.components:
                 validate_charges(node.components["cofactor1"])
+
+
+@pytest.fixture
+def cdk8_files():
+    with resources.as_file(resources.files("openfe.tests.data.cdk8")) as p:
+        pdb_path = str(p.joinpath("cdk8_protein.pdb"))
+        lig_path = str(p.joinpath("cdk8_ligands.sdf"))
+
+        yield pdb_path, lig_path
 
 def test_plan_rbfe_network_charge_changes(cdk8_files):
     """

@@ -15,22 +15,21 @@ import logging
 from collections import defaultdict
 import gufe
 import openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import from_openmm, to_openmm
 import openmm.unit as omm_unit
 from typing import Optional
-from openmm import app
 import pathlib
 from typing import Any, Iterable
 import uuid
 import time
-import numpy as np
 import mdtraj
 from mdtraj.reporters import XTCReporter
 from openfe.utils import without_oechem_backend, log_system_probe
 from gufe import (
-    settings, ChemicalSystem, SmallMoleculeComponent,
-    ProteinComponent, SolventComponent
+    settings,
+    ChemicalSystem,
+    SmallMoleculeComponent,
 )
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
@@ -273,9 +272,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 positions: omm_unit.Quantity,
                 simulation_settings: MDSimulationSettings,
                 output_settings: MDOutputSettings,
-                temperature: unit.Quantity,
-                barostat_frequency: unit.Quantity,
-                timestep: unit.Quantity,
+                temperature: Quantity,
+                barostat_frequency: Quantity,
+                timestep: Quantity,
                 equil_steps_nvt: Optional[int],
                 equil_steps_npt: int,
                 prod_steps: int,
@@ -298,7 +297,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Settings for output of MD simulation
         temperature: FloatQuantity["kelvin"]
           temperature setting
-        barostat_frequency: unit.Quantity
+        barostat_frequency: openff.units.Quantity
           Frequency for the barostat
         timestep: FloatQuantity["femtosecond"]
           Simulation integration timestep
@@ -684,8 +683,20 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 'nc': shared_basepath / output_settings.production_trajectory_filename,
                 'last_checkpoint': shared_basepath / output_settings.checkpoint_storage_filename,
             }
-            if output_settings.equil_nvt_structure:
+            # The checkpoint file can not exist if frequency > sim length
+            if not output['last_checkpoint'].exists():
+                output['last_checkpoint'] = None
+
+            # The NVT PDB can be ommitted if we don't run the simulation
+            # Note: we could also just check the file exist
+            if (
+                output_settings.equil_nvt_structure
+                and sim_settings.equilibration_length_nvt is not None
+            ):
                 output['nvt_equil_pdb'] = shared_basepath / output_settings.equil_nvt_structure
+            else:
+                output['nvt_equil_pdb'] = None
+
             if output_settings.equil_npt_structure:
                 output['npt_equil_pdb'] = shared_basepath / output_settings.equil_npt_structure
 

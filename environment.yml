@@ -2,42 +2,44 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
+  - cinnabar ~=0.5.0
+  - click >=8.2.0
+  - coverage
   - duecredit<0.10
-  - kartograf>=1.0.0
+  - kartograf>=1.2.0
+  - konnektor~=0.2.0
   - lomap2>=3.2.1
-  - numpy
   - networkx
-  - rdkit
+  - numpy<2.3
+  - openfe-analysis>=0.3.1
+  - openff-interchange-base
+  - openff-nagl-base >=0.3.3
+  - openff-nagl-models>=0.1.2
+  - openff-toolkit-base >=0.16.2
+  - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
+  - openmm ~=8.3.0
+  - openmmforcefields
+  - openmmtools >=0.25.0
   - packaging
+  - pandas
+  - perses>=0.10.3
+  - plugcli
+  - pint>=0.24.0
   - pip
+  - pooch
+  - py3dmol
+  - pydantic >=1.10.17  # practically, this almost always means pydantic v2 because of our other dependencies.
+  - pygraphviz
   - pytest
   - pytest-xdist
   - pytest-cov
+  - pytest-regressions
   - pytest-rerunfailures
-  - pydantic >=1.10.17
   - pyyaml
-  - coverage
-  - cinnabar ~=0.4.0
-  - openff-toolkit>=0.16.2
-  - openff-nagl-base >=0.3.3
-  - openff-nagl-models>=0.1.2
-  - openff-units==0.2.0
-  - openff-interchange
-  - pint<0.22
-  - openff-models>=0.0.5
-  - openfe-analysis>=0.3.1
-  - click
-  - typing-extensions
-  - numpy<2.0.0
-  - openmm >=8.0.0,!=8.1.0,<8.2.0
-  - openmmtools >=0.24.1
-  - openmmforcefields
-  - perses>=0.10.3
-  - pooch
-  - py3dmol
-  - plugcli
+  - rdkit
+  - rich
   - tqdm
-  - pygraphviz
+  - typing-extensions
   - zstandard
   # Issue #443
   - pymbar>4.0
@@ -49,4 +51,5 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    # pin gufe to pre-pydanticv2 commit until openfe's pydantic v2 migration is complete
+    - git+https://github.com/OpenFreeEnergy/gufe@0e4d69a137c750136b3b2473bf6da9a34c28cb60

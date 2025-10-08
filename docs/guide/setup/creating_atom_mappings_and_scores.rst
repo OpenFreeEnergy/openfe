@@ -16,6 +16,7 @@ The :class:`.LigandAtomMapper` takes pairs of :class:`openfe.SmallMoleculeCompon
 
 Built in to the ``openfe`` package are bindings to the `Lomap <https://github.com/OpenFreeEnergy/Lomap>`_ package,
 including the :class:`.openfe.setup.LomapAtomMapper`, which uses an MCS approach based on RDKit.
+
 .. TODO: insert example output
 
 This is how we can create a mapping between two ligands: 

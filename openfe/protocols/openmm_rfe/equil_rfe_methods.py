@@ -31,7 +31,7 @@ from itertools import chain
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import to_openmm, from_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
@@ -133,14 +133,8 @@ def _get_alchemical_charge_difference(
       The formal charge difference between states A and B.
       This is defined as sum(charge state A) - sum(charge state B)
     """
-    chg_A = Chem.rdmolops.GetFormalCharge(
-        mapping.componentA.to_rdkit()
-    )
-    chg_B = Chem.rdmolops.GetFormalCharge(
-        mapping.componentB.to_rdkit()
-    )
 
-    difference = chg_A - chg_B
+    difference = mapping.get_alchemical_charge_difference()
 
     if abs(difference) > 0:
         if explicit_charge_correction:
@@ -257,20 +251,20 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
             raise NotImplementedError("Can't stitch together results yet")
 
     @staticmethod
-    def compute_mean_estimate(dGs:list[unit.Quantity]):
+    def compute_mean_estimate(dGs:list[Quantity]) -> Quantity:
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
-        vals = [dG.to(u).m for dG in dGs]
+        vals = np.asarray([dG.to(u).m for dG in dGs])
 
         return np.average(vals) * u
 
-    def get_estimate(self) -> unit.Quantity:
+    def get_estimate(self) -> Quantity:
         """Average free energy difference of this transformation
 
         Returns
         -------
-        dG : unit.Quantity
+        dG : openff.units.Quantity
           The free energy difference between the first and last states. This is
           a Quantity defined with units.
         """
@@ -279,15 +273,15 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return self.compute_mean_estimate(dGs)
 
     @staticmethod
-    def compute_uncertainty(dGs:list[unit.Quantity]):
+    def compute_uncertainty(dGs:list[Quantity]) -> Quantity:
         u = dGs[0].u
         # convert all values to units of the first value, then take average of magnitude
         # this would avoid a screwy case where each value was in different units
-        vals = [dG.to(u).m for dG in dGs]
+        vals = np.asarray([dG.to(u).m for dG in dGs])
 
         return np.std(vals) * u
 
-    def get_uncertainty(self) -> unit.Quantity:
+    def get_uncertainty(self) -> Quantity:
         """The uncertainty/error in the dG value: The std of the estimates of
         each independent repeat
         """
@@ -296,13 +290,13 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
         return self.compute_uncertainty(dGs)
 
 
-    def get_individual_estimates(self) -> list[tuple[unit.Quantity, unit.Quantity]]:
+    def get_individual_estimates(self) -> list[tuple[Quantity, Quantity]]:
         """Return a list of tuples containing the individual free energy
         estimates and associated MBAR errors for each repeat.
 
         Returns
         -------
-        dGs : list[tuple[unit.Quantity]]
+        dGs : list[tuple[openff.units.Quantity]]
           n_replicate simulation list of tuples containing the free energy
           estimates (first entry) and associated MBAR estimate errors
           (second entry).
@@ -312,7 +306,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
                for pus in self.data.values()]
         return dGs
 
-    def get_forward_and_reverse_energy_analysis(self) -> list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]:
+    def get_forward_and_reverse_energy_analysis(self) -> list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]:
         """
         Get a list of forward and reverse analysis of the free energies
         for each repeat using uncorrelated production samples.
@@ -333,7 +327,7 @@ class RelativeHybridTopologyProtocolResult(gufe.ProtocolResult):
 
         Returns
         -------
-        forward_reverse : list[Optional[dict[str, Union[npt.NDArray, unit.Quantity]]]]
+        forward_reverse : list[Optional[dict[str, Union[npt.NDArray, openff.units.Quantity]]]]
 
 
         Raises
@@ -531,7 +525,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             stateA, stateB
         )
         _validate_alchemical_components(alchem_comps, mapping)
-        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping  # type: ignore
+        ligandmapping = mapping[0] if isinstance(mapping, list) else mapping
 
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
@@ -553,7 +547,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         units = [RelativeHybridTopologyProtocolUnit(
             protocol=self,
             stateA=stateA, stateB=stateB,
-            ligandmapping=ligandmapping,  # type: ignore
+            ligandmapping=ligandmapping,
             generation=0, repeat_id=int(uuid.uuid4()),
             name=f'{Anames} to {Bnames} repeat {i} generation 0')
             for i in range(n_repeats)]
@@ -1043,6 +1037,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             temperature=to_openmm(thermo_settings.temperature),
             endstates=alchem_settings.endstate_dispersion_correction,
             minimization_platform=platform.getName(),
+            # Turns off minimization when running in dry mode
+            # otherwise do a very small one to avoid NaNs
+            minimization_steps=100 if not dry else 0
         )
 
         try:
@@ -1070,7 +1067,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running equilibration phase")
 
                 sampler.equilibrate(
-                    int(equil_steps / steps_per_iteration)  # type: ignore
+                    int(equil_steps / steps_per_iteration)
                 )
 
                 # production
@@ -1078,7 +1075,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running production phase")
 
                 sampler.extend(
-                    int(prod_steps / steps_per_iteration)  # type: ignore
+                    int(prod_steps / steps_per_iteration)
                 )
 
                 self.logger.info("Production phase complete")

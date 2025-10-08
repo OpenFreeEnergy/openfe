@@ -1451,10 +1451,43 @@ class TestConstraintRemoval:
         else:
             assert 'A: 1-6 B: 2-8' in str(e)
 
+    def test_double_constraint_fail(self):
+        # make sure catch cases where a H is involved with two different unique constraints in the end states
+        # see <https://github.com/OpenFreeEnergy/openfe/issues/1093>
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
+            fn1 = str(d / 'malt1_shapefit_Pfizer-01-01.sdf')
+            fn2 = str(d / 'malt1_shapefit_1832577-09-9.sdf')
+
+        lig1 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
+        lig2 = openfe.SmallMoleculeComponent.from_sdf_file(fn2)
+
+        # mapping taken from issue
+        mapping = setup.LigandAtomMapping(
+            componentA=lig1,
+            componentB=lig2,
+            componentA_to_componentB={
+                26: 28, 27: 30, 28: 29, 29: 31, 30: 27, 31: 32, 32: 38, 34: 13, 39: 40, 40: 41, 0: 0, 1: 2, 2: 1, 3: 3,
+                4: 6, 5: 4, 6: 5, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 23, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18,
+                19: 19, 20: 20, 21: 21, 22: 22
+            }
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
+            lig1, lig2, constraints=app.HBonds
+        )
+
+        with pytest.raises(ValueError, match="Atom 34 was involved in 2 unique constraints"):
+            _ = openmm_rfe._rfe_utils.topologyhelpers._remove_constraints(
+                mapping.componentA_to_componentB,
+                stateA_system, stateA_topology,
+                stateB_system, stateB_topology,
+            )
+
+
 
 @pytest.fixture(scope='session')
 def tyk2_xml(tmp_path_factory):
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         fn1 = str(d / 'ligand_23.sdf')
         fn2 = str(d / 'ligand_55.sdf')
     lig23 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
@@ -1496,7 +1529,7 @@ def tyk2_xml(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def tyk2_reference_xml():
-    with resources.files('openfe.tests.data.openmm_rfe') as d:
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
         f = d / 'reference.xml'
         with open(f, 'r') as i:
             xmldata = i.read()
@@ -2067,24 +2100,26 @@ def test_dry_run_complex_alchemwater_totcharge(
     mapping_name, chgA, chgB, correction, core_atoms,
     new_uniq, old_uniq, tmpdir, request, T4_protein_component,
 ):
-
     mapping = request.getfixturevalue(mapping_name)
+    solvent = openfe.SolventComponent()
     stateA_system = openfe.ChemicalSystem(
         {'ligand': mapping.componentA,
-         'solvent': openfe.SolventComponent(),
+         'solvent': solvent,
          'protein': T4_protein_component}
     )
     stateB_system = openfe.ChemicalSystem(
         {'ligand': mapping.componentB,
-         'solvent': openfe.SolventComponent(),
+         'solvent': solvent,
          'protein': T4_protein_component}
     )
 
-    solv_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    solv_settings.alchemical_settings.explicit_charge_correction = correction
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    settings.solvation_settings.solvent_padding="0.9 nm"
+    settings.solvation_settings.box_shape="dodecahedron"
+    settings.alchemical_settings.explicit_charge_correction = correction
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-            settings=solv_settings,
+            settings=settings,
     )
 
     # create DAG from protocol and take first (and only) work unit from within

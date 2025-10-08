@@ -1,21 +1,9 @@
-name: "Package Install Tests"
+name: "Daily package install tests."
 on:
-  pull_request:
-    branches:
-      - main
-   # Skip CI if changed files only affect the following folders
-   # - docs: documentation changes don't need code validation
-   # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
-    paths-ignore:
-      - "docs/*"
-  push:
-    branches:
-      - main
-
   workflow_dispatch:
   schedule:
-    # At 07:00 UTC on Monday and Thursday.
-    - cron: "0 7 * * *"
+    # At 03:00 UTC daily
+    - cron: "0 3 * * *"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -28,7 +16,7 @@ defaults:
 jobs:
   package-tests:
     runs-on: ubuntu-latest
-    name: "package install tests"
+    name: "main branch long tests"
     steps:
       - uses: actions/checkout@v4
 
@@ -37,9 +25,8 @@ jobs:
         run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
 
       - name: "Setup Micromamba"
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: '1.5.6-0'
           environment-file: environment.yml
           environment-name: openfe_env
           cache-environment: true
@@ -47,7 +34,7 @@ jobs:
           cache-environment-key: environment-${{ steps.date.outputs.date }}
           cache-downloads-key: downloads-${{ steps.date.outputs.date }}
           create-args: >-
-            python=3.10
+            python=3.12
           init-shell: bash
 
       - name: "install extra deps"

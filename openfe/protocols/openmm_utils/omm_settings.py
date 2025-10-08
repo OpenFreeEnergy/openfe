@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional, Literal
 from openff.units import unit
-from openff.models.types import FloatQuantity, ArrayQuantity
+from gufe.vendor.openff.models.types import FloatQuantity, ArrayQuantity
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 
 from gufe.settings import (
@@ -411,9 +411,9 @@ class OutputSettings(SettingsBaseModel):
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
     """
-    checkpoint_interval: FloatQuantity['picosecond'] = 250.0 * unit.picosecond
+    checkpoint_interval: FloatQuantity['nanosecond'] = 1.0 * unit.nanosecond
     """
-    Frequency to write the checkpoint file. Default 1 * unit.picosecond.
+    Frequency to write the checkpoint file. Default 1 * unit.nanosecond.
     """
     checkpoint_storage_filename = 'checkpoint.chk'
     """
@@ -568,18 +568,16 @@ class MultiStateSimulationSettings(SimulationSettings):
     If ``None``, no real time analysis will be performed and the yaml
     file will not be written.
 
-    Must be a multiple of ``OutputSettings.checkpoint_interval``
-
     Default `250`.
-    
+
     """
     early_termination_target_error: Optional[FloatQuantity['kilocalorie_per_mole']] = 0.0 * unit.kilocalorie_per_mole
     # todo: have default ``None`` or ``0.0 * unit.kilocalorie_per_mole``
     #  (later would give an example of unit).
     """
-    Target error for the real time analysis measured in kcal/mol. Once the MBAR 
-    error of the free energy is at or below this value, the simulation will be 
-    considered complete. 
+    Target error for the real time analysis measured in kcal/mol. Once the MBAR
+    error of the free energy is at or below this value, the simulation will be
+    considered complete.
     A suggested value of 0.12 * `unit.kilocalorie_per_mole` has
     shown to be effective in both hydration and binding free energy benchmarks.
     Default ``None``, i.e. no early termination will occur.
@@ -588,8 +586,8 @@ class MultiStateSimulationSettings(SimulationSettings):
     # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
-    carried out. 
-    
+    carried out.
+
     Default 500 * unit.picosecond.
     """
 
@@ -653,7 +651,7 @@ class MDSimulationSettings(SimulationSettings):
 
     equilibration_length_nvt: Optional[FloatQuantity['nanosecond']]
     """
-    Length of the equilibration phase in the NVT ensemble in units of time. 
+    Length of the equilibration phase in the NVT ensemble in units of time.
     The total number of steps from this equilibration length
     (i.e. ``equilibration_length_nvt`` / :class:`IntegratorSettings.timestep`).
     If None, no NVT equilibration will be performed.
@@ -673,16 +671,16 @@ class MDOutputSettings(OutputSettings):
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
     preminimized_structure: Optional[str] = 'system.pdb'
-    """Path to the pdb file of the full pre-minimized system. 
+    """Path to the pdb file of the full pre-minimized system.
     Default 'system.pdb'."""
     minimized_structure: Optional[str] = 'minimized.pdb'
-    """Path to the pdb file of the system after minimization. 
+    """Path to the pdb file of the system after minimization.
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
     equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
-    """Path to the pdb file of the system after NVT equilibration. 
+    """Path to the pdb file of the system after NVT equilibration.
     Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
     equil_npt_structure: Optional[str] = 'equil_npt.pdb'
-    """Path to the pdb file of the system after NPT equilibration. 
+    """Path to the pdb file of the system after NPT equilibration.
     Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
     log_output: Optional[str] = 'simulation.log'
     """

@@ -1,6 +1,6 @@
 **Added:**
 
-* ``openfe gather`` now accepts any number of filepaths and/or directories containing results JSON files, instead of only accepting one results directory.
+* Added a cookbook for using ``jq`` to inspect JSON files.
 
 **Changed:**
 

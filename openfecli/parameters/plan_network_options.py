@@ -161,12 +161,15 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
         mapper_obj = cls(**opt.mapper.settings)
     else:
-        mapper_obj = LomapAtomMapper(
-            time=20,
-            threed=True,
-            max3d=1.0,
-            element_change=True,
-            shift=False
+        mapper_obj = KartografAtomMapper(
+            atom_max_distance=0.95,
+            atom_map_hydrogens=True,
+            # Non-default setting, as we remove these later anyway when correcting for constraints
+            map_hydrogens_on_hydrogens_only=True,
+            map_exact_ring_matches_only=True,
+            # Current default, but should be changed in future Kartograf releases
+            allow_partial_fused_rings=True,
+            allow_bond_breaks=False,
         )
 
     # todo: choice of scorer goes here
@@ -213,29 +216,50 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         solvent,
         partial_charge_settings,
     )
+# TODO: do we want this in the docs anywhere?
+DEFAULT_YAML="""
+    mapper: KartografAtomMapper
+        settings:
+            atom_max_distance: 0.95
+            atom_map_hydrogens: true
+            map_hydrogens_on_hydrogens_only: true
+            map_exact_ring_matches_only: true
+            allow_partial_fused_rings: true
+            allow_bond_breaks: false
 
+    network:
+        method: generate_minimal_spanning_network
 
-_yaml_help = """\
-Path to a YAML file specifying the atom mapper (`mapper:`), network planning algorithm (`network:`),
-and/or partial charge method (`partial_charge:`) to use.
+    partial_charge:
+        method: am1bcc
+        settings:
+            off_toolkit_backend: ambertools
+            number_of_conformers: None
+            nagl_model: None
+"""
 
+_yaml_help = """
+Path to a YAML file specifying the atom mapper (``mapper``), network planning algorithm (``network``),
+and/or partial charge method (``partial_charge``) to use.
+
+\b
 Supported atom mapper choices are:
-    - `LomapAtomMapper`
-    - `KartografAtomMapper`
-
+    - ``KartografAtomMapper`` (default as of v1.7.0)
+    - ``LomapAtomMapper``
+\b
 Supported network planning algorithms include (but are not limited to):
-    - `generate_minimal_spanning_tree`
-    - `generate_minimal_redundant_network`
-    - `generate_radial_network`
-    - `generate_lomap_network`
-
+    - ``generate_minimal_spanning_network`` (default)
+    - ``generate_minimal_redundant_network``
+    - ``generate_radial_network``
+    - ``generate_lomap_network``
+\b
 Supported partial charge method choices are:
-    - ``am1bcc``
-    - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` in settings is set to ``openeye``)
-    - ``nagl`` (must have ``openff-nagl`` installed)
-    - ``espaloma`` (must have ``espaloma_charge`` installed)
+    - ``am1bcc`` (default)
+    - ``am1bccelf10`` (only possible if ``off_toolkit_backend`` is ``openeye``)
+    - ``nagl`` (must have openff-nagl installed)
+    - ``espaloma`` (must have espaloma_charge installed)
 
-The `settings:` allows for passing in any keyword arguments of the method's corresponding Python API.
+``settings:`` allows for passing in any keyword arguments of the method's corresponding Python API.
 
 For example:
 ::
@@ -253,7 +277,8 @@ For example:
   partial_charge:
     method: am1bcc
     settings:
-      off_toolkit_backend: ambertools      
+      off_toolkit_backend: ambertools
+
 """
 
 YAML_OPTIONS = Option(

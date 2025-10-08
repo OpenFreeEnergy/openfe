@@ -32,7 +32,7 @@ from openmm import unit as ommunit
 from openmmtools import multistate
 from pymbar.utils import ParameterError
 
-from ..conftest import HAS_INTERNET
+from openfe.tests.conftest import HAS_INTERNET
 
 
 @pytest.mark.parametrize('padding, number_solv, box_vectors, box_size', [
@@ -233,10 +233,10 @@ class TestFEAnalysis:
     # Note: class scope _will_ cause this to segfault - the reporter has to close
     @pytest.fixture(scope='function')
     def reporter(self):
-        with resources.files('openfe.tests.data.openmm_rfe') as d:
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             ncfile = str(d / 'vacuum_nocoord.nc')
 
-        with resources.files('openfe.tests.data.openmm_rfe') as d:
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             chkfile = str(d / 'vacuum_nocoord_checkpoint.nc')
 
         r = multistate.MultiStateReporter(
@@ -793,18 +793,32 @@ class TestOFFPartialCharge:
         # but the charges should have
         assert not np.allclose(charges, lig.partial_charges)
 
-    @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
-    def test_no_production_nagl(self, uncharged_mol):
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_latest_production_nagl(self, uncharged_mol):
+        """We expect to find a NAGL model and be able to generate partial charges with it."""
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="nagl",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            nagl_model=None,
+        )
+        assert uncharged_mol.partial_charges.units == "elementary_charge"
 
-        with pytest.raises(ValueError, match='No production am1bcc NAGL'):
-            charge_generation.assign_offmol_partial_charges(
-                uncharged_mol,
-                overwrite=False,
-                method='nagl',
-                toolkit_backend='rdkit',
-                generate_n_conformers=None,
-                nagl_model=None,
-            )
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_no_production_nagl(self, uncharged_mol):
+        """Cleanly handle the case where a NAGL model isn't found."""
+        with mock.patch("openfe.protocols.openmm_utils.charge_generation.get_models_by_type", return_value=[]):
+            with pytest.raises(ValueError, match="No production am1bcc NAGL"):
+                charge_generation.assign_offmol_partial_charges(
+                    uncharged_mol,
+                    overwrite=False,
+                    method="nagl",
+                    toolkit_backend="rdkit",
+                    generate_n_conformers=None,
+                    nagl_model=None,
+                )
 
     # Note: skipping nagl tests on macos/darwin due to known issues
     # see: https://github.com/openforcefield/openff-nagl/issues/78
@@ -934,15 +948,15 @@ class TestOFFPartialCharge:
 POOCH_CACHE = pooch.os_cache('openfe')
 RFE_OUTPUT = pooch.create(
     path=POOCH_CACHE,
-    base_url="doi:10.6084/m9.figshare.24101655",
+    base_url="doi:10.5281/zenodo.15375081",
     registry={
-        "checkpoint.nc": "5af398cb14340fddf7492114998b244424b6c3f4514b2e07e4bd411484c08464",
-        "db.json": "b671f9eb4daf9853f3e1645f9fd7c18150fd2a9bf17c18f23c5cf0c9fd5ca5b3",
-        "hybrid_system.pdb": "07203679cb14b840b36e4320484df2360f45e323faadb02d6eacac244fddd517",
-        "simulation.nc": "92361a0864d4359a75399470135f56642b72c605069a4c33dbc4be6f91f28b31",
-        "simulation_real_time_analysis.yaml": "65706002f371fafba96037f29b054fd7e050e442915205df88567f48f5e5e1cf",
+        "checkpoint.nc": "md5:3cfd70a4cbe463403d6ec7cca84fc31a",
+        "db.json": "md5:33c8c1a0b629a52dcc291beff59fabc6",
+        "hybrid_system.pdb": "md5:44a1e78294360037acf419b95be18fb3",
+        "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
+        "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 
 @pytest.fixture

@@ -21,13 +21,13 @@ from .utils import assert_click_success
 
 @pytest.fixture
 def tyk2_ligands():
-    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+    with resources.as_file(resources.files('openfecli.tests.data.rbfe_tutorial')) as d:
         yield str(d / 'tyk2_ligands.sdf')
 
 
 @pytest.fixture
 def tyk2_protein():
-    with resources.files('openfecli.tests.data.rbfe_tutorial') as d:
+    with resources.as_file(resources.files('openfecli.tests.data.rbfe_tutorial')) as d:
         yield str(d / 'tyk2_protein.pdb')
 
 
@@ -68,6 +68,19 @@ def test_plan_tyk2(tyk2_ligands, tyk2_protein, expected_transformations):
                 path.join('alchemicalNetwork/transformations', f))
         # make sure these are the only transforms
         assert len(os.listdir("alchemicalNetwork/transformations")) == len(expected_transformations)
+
+        # check that the correct default settings are used, we currently have no provenance on the object so check
+        # the output string
+        # check the atom mapper
+        assert "Mapper: <KartografAtomMapper" in result.output
+        # check the score method
+        assert "Mapping Scorer: <function default_lomap_score" in result.output
+        # check the network planner
+        assert "Network Generation: <function generate_minimal_spanning_network" in result.output
+        # check the partial charge method
+        assert "Partial Charge Generation: am1bcc" in result.output
+        # check the number of repeats
+        assert "n_protocol_repeats=3" in result.output
 
 
 @pytest.fixture
@@ -118,7 +131,7 @@ def test_run_tyk2(tyk2_ligands, tyk2_protein, expected_transformations,
             result2 = runner.invoke(quickrun, [fn])
             assert_click_success(result2)
 
-        gather_result = runner.invoke(gather, ["--report", "ddg", '.'])
+        gather_result = runner.invoke(gather, ["--report", "ddg", '.', '--tsv'])
 
         assert_click_success(gather_result)
         assert gather_result.stdout == ref_gather
