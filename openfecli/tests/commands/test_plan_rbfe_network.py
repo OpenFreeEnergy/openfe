@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 from importlib import resources
 import shutil
+import tarfile
 from click.testing import CliRunner
 from ..utils import assert_click_success
 
@@ -37,6 +38,17 @@ def dummy_charge_dir_args(tmpdir_factory):
 
     return ["--molecules", ofe_dir_path]
 
+@pytest.fixture(scope='session')
+def cdk8_files(tmpdir_factory)->tuple[str, str]:
+
+    cdk8_tmpdir = tmpdir_factory.mktemp("cdk8_data")
+    with tarfile.open(resources.files('openfe.tests.data')/"cdk8.tar.gz", mode='r') as f:
+        f.extractall(cdk8_tmpdir, filter='tar')
+
+    protein = str(cdk8_tmpdir/'cdk8'/'cdk8_protein.pdb')
+    ligand = str(cdk8_tmpdir/'cdk8'/'cdk8_ligands.sdf')
+
+    return (protein, ligand)
 
 @pytest.fixture
 def protein_args():
