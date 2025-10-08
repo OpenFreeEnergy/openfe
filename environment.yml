@@ -10,7 +10,7 @@ dependencies:
   - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
-  - numpy
+  - numpy<2.3
   - openfe-analysis>=0.3.1
   - openff-interchange-base
   - openff-nagl-base >=0.3.3
@@ -51,4 +51,5 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    - git+https://github.com/OpenFreeEnergy/gufe@main
+    # pin gufe to pre-pydanticv2 commit until openfe's pydantic v2 migration is complete
+    - git+https://github.com/OpenFreeEnergy/gufe@0e4d69a137c750136b3b2473bf6da9a34c28cb60

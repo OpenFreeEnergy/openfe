@@ -4,6 +4,25 @@ Changelog
 
 .. current developments
 
+v1.6.1
+====================
+This release includes minor fixes and updates to tests. 
+
+**Added:**
+
+* Added a cookbook for using ``jq`` to inspect JSON files.
+
+**Changed:**
+
+* Remove unnecessary limit on residues ids (``resids``) when getting mappings from topology in ``topology_helpers.py`` utility module.
+* The relative hybrid topology protocol no longer runs the FIRE minimizer when ``dry=True``.
+
+**Fixed:**
+
+* Updated tests to expect to find NAGL, now that it is supported.
+
+
+
 v1.6.0
 ====================
 This release adds support for OpenMM 8.3.0 and Python 3.13.
