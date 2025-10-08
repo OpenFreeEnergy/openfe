@@ -22,7 +22,7 @@ import openfe
 from openfe.protocols import openmm_md
 import pathlib
 import logging
-from openfe.tests.conftest import HAS_INTERNET, HAS_ESPALOMA
+from openfe.tests.conftest import HAS_ESPALOMA
 
 
 def test_create_default_settings():
