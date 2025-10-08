@@ -15,13 +15,14 @@ from openfe.protocols.openmm_md.plain_md_methods import (
     PlainMDProtocol, PlainMDProtocolUnit, PlainMDProtocolResult,
 )
 from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA_CHARGE
 )
 import json
 import openfe
 from openfe.protocols import openmm_md
 import pathlib
 import logging
+from openfe.tests.conftest import HAS_ESPALOMA
 
 
 def test_create_default_settings():
@@ -180,6 +181,27 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
         system = unit.run(dry=True)["debug"]["system"]
 
 
+@pytest.mark.skipif(not HAS_ESPALOMA, reason='espaloma is not available')
+def test_dry_run_espaloma_vacuum(benzene_vacuum_system, tmpdir):
+    vac_settings = PlainMDProtocol.default_settings()
+    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    vac_settings.forcefield_settings.small_molecule_forcefield = 'espaloma-0.3.2'
+
+    protocol = PlainMDProtocol(
+            settings=vac_settings,
+    )
+
+    # create DAG from protocol and take first (and only) work unit from within
+    dag = protocol.create(
+        stateA=benzene_vacuum_system,
+        stateB=benzene_vacuum_system,
+        mapping=None,
+    )
+    unit = list(dag.protocol_units)[0]
+    with tmpdir.as_cwd():
+        system = unit.run(dry=True)["debug"]["system"]
+
+
 @pytest.mark.parametrize('method, backend, ref_key', [
     ('am1bcc', 'ambertools', 'ambertools'),
     pytest.param(
@@ -198,7 +220,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
         ),
     ),
 ])
