@@ -14,6 +14,8 @@ following alchemical sampling methods:
 Current limitations
 -------------------
 
+* Transformations that involve net charge changes are currently not supported.
+  The ligands must have the same net charge.
 * Only small molecules are allowed to act as alchemical molecules.
   Alchemically changing protein or solvent components would induce
   perturbations which are too large to be handled by this Protocol.
@@ -21,9 +23,8 @@ Current limitations
 
 Acknowledgements
 ----------------
-This Protocol is based on, and leverages components originating from
-the SepTop implementation from the Mobleylab
-(https://github.com/MobleyLab/SeparatedTopologies) as well as
+This Protocol is based on and inspired by the SepTop implementation from
+the Mobleylab (https://github.com/MobleyLab/SeparatedTopologies) as well as
 femto (https://github.com/Psivant/femto).
 
 """
@@ -989,7 +990,7 @@ class SepTopProtocol(gufe.Protocol):
             complex_equil_output_settings=SepTopEquilOutputSettings(
                 equil_nvt_structure=None,
                 equil_npt_structure="equil_npt",
-                production_trajectory_filename="equil_npt",
+                production_trajectory_filename="equil_production",
                 log_output="equil_simulation",
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
@@ -1219,14 +1220,6 @@ class SepTopProtocol(gufe.Protocol):
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvent_solvation_settings
         )
-
-        # Make sure that we have the full system for restraint trajectory analysis
-        if self.settings.complex_equil_output_settings.output_indices != "all":
-            errmsg = (
-                "Complex simulations need to output the full system "
-                "during equilibration simulations."
-            )
-            raise ValueError(errmsg)
 
         # Validate protein component
         system_validation.validate_protein(stateA)
@@ -1773,7 +1766,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(
             alchem_comps, smc_comps
         )
 
@@ -1802,13 +1795,18 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             )
         )
 
+        smc_B_unique_keys = smc_comps_B.keys() - smc_comps_A.keys()
+        smc_comp_B_unique = {key: smc_comps_B[key] for key in smc_B_unique_keys}
         omm_system_AB, omm_topology_AB, positions_AB, modeller_AB = self.get_system_AB(
             solv_comp,
             modeller_A,
             smc_comps_AB,
-            smc_off_B,
+            smc_comp_B_unique,
             settings,
         )
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        self.check_assign_velocities_with_virtual_site(omm_system_AB, settings["integrator_settings"])
 
         # Get the comp_resids of the AB system
         resids_A = list(itertools.chain(*comp_resids_A.values()))
@@ -2124,7 +2122,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        smc_comps_A, smc_comps_B, smc_comps_AB, smc_off_B = self.get_smc_comps(
+        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(
             alchem_comps, smc_comps
         )
 
@@ -2151,6 +2149,9 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 settings,
             )
         )
+        # Virtual sites sanity check - ensure we restart velocities when
+        # there are virtual sites in the system
+        self.check_assign_velocities_with_virtual_site(omm_system_AB, settings["integrator_settings"])
 
         # 6. Get atom indices for ligand A and ligand B and the solvent in the
         # system AB

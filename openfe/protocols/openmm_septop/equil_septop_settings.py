@@ -258,6 +258,12 @@ class LambdaSettings(SettingsBaseModel):
 class SepTopEquilOutputSettings(MDOutputSettings):
     # reporter settings
     output_indices: str = "all"
+    """
+    Selection string for which part of the system to write coordinates for.
+    The SepTop protocol enforces "all" since the full system output is
+    required in the complex leg.
+    Default "all". 
+    """
     production_trajectory_filename: Optional[str] = "simulation"
     """
     Basename for the path to the storage file for analysis. The protocol will
@@ -300,14 +306,22 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     files of the respective endstates. Default 'simulation'.
     """
 
+    @validator("output_indices")
+    def must_be_all(cls, v):
+        if v != "all":
+            errmsg = ("Equilibration simulations need to output the full "
+                      f"system, got {v}.")
+            raise ValueError(errmsg)
+        return v
+
 
 class SepTopSettings(SettingsBaseModel):
     """
-    Configuration object for ``AbsoluteSolvationProtocol``.
+    Configuration object for ``SepTopProtocol``.
 
     See Also
     --------
-    openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
+    openfe.protocols.openmm_septop.SepTopProtocol
     """
 
     protocol_repeats: int
@@ -414,3 +428,4 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the Boresch restraints in the complex
     """
+

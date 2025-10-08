@@ -26,8 +26,7 @@ dependencies:
 - tqdm
 - pip:
   - git+https://github.com/OpenFreeEnergy/gufe@main
-  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@bump_pydata_theme_version
-  - nbsphinx-link==1.3.1
+  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.3.0
   # pip install these so that conda-forge gufe doesn't pull in ambertools and cause a memory error
   - git+https://github.com/OpenFreeEnergy/kartograf@main
   - git+https://github.com/OpenFreeEnergy/konnektor@main
