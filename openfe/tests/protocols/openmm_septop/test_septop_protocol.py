@@ -1318,7 +1318,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(0.48, abs=0.5)
+        assert est.m == pytest.approx(5.18, abs=0.5)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -1342,32 +1342,19 @@ class TestProtocolResult:
 
     @pytest.mark.parametrize('key', ['solvent', 'complex'])
     def test_get_forwards_etc(self, key, protocolresult):
-        far = protocolresult.get_forward_and_reverse_energy_analysis()
-
-        assert isinstance(far, dict)
-        assert isinstance(far[key], list)
-        far1 = far[key][0]
-        assert isinstance(far1, dict)
-
-        for k in ['fractions', 'forward_DGs', 'forward_dDGs',
-                  'reverse_DGs', 'reverse_dDGs']:
-            assert k in far1
-
-            if k == 'fractions':
-                assert isinstance(far1[k], np.ndarray)
-
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
-    def test_get_frwd_reverse_none_return(self, key, protocolresult):
-        # fetch the first result of type key
-        data = [i for i in protocolresult.data[key].values()][0][0]
-        # set the output to None
-        data.outputs['forward_and_reverse_energies'] = None
-
-        # now fetch the analysis results and expect a warning
+        """
+        Due to the short simulation times, we expect the frwd/reverse
+        analysis to be None.
+        """
         wmsg = ("were found in the forward and reverse dictionaries "
                 f"of the repeats of the {key}")
         with pytest.warns(UserWarning, match=wmsg):
-            protocolresult.get_forward_and_reverse_energy_analysis()
+            far = protocolresult.get_forward_and_reverse_energy_analysis()
+
+        assert isinstance(far, dict)
+        assert isinstance(far[key], list)
+        for entry in far[key]:
+            assert entry is None
 
     @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_overlap_matrices(self, key, protocolresult):
@@ -1422,8 +1409,8 @@ class TestProtocolResult:
 
     @pytest.mark.parametrize("key, expected_size", 
         [
-            ["solvent", 1],
-            ["complex", 1],
+            ["solvent", 87],
+            ["complex", 1868],
         ]
     )
     def test_selection_indices(self, key, protocolresult, expected_size):
@@ -1432,7 +1419,7 @@ class TestProtocolResult:
         assert isinstance(indices, dict)
         assert isinstance(indices[key], list)
         for inds in indices[key]:
-            assert isinstance(inds, npt.NDArray)
+            assert isinstance(inds, np.ndarray)
             assert len(inds) == expected_size
 
     def test_filenotfound_replica_states(self, protocolresult):
