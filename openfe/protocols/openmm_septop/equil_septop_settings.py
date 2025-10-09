@@ -31,7 +31,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
 from gufe.settings.types import PicosecondQuantity
 
-from openff.units import unit
+from openff.units import unit as offunit
 from pydantic import field_validator
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -270,9 +270,9 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the
     respective endstates. Default 'simulation'.
     """
-    trajectory_write_interval: PicosecondQuantity = 20.0 * unit.picosecond
+    trajectory_write_interval: PicosecondQuantity = 20.0 * offunit.picosecond
     """
-    Frequency to write the xtc file. Default 20 * unit.picosecond.
+    Frequency to write the xtc file. Default 20 * offunit.picosecond.
     """
     preminimized_structure: Optional[str] = "system"
     """

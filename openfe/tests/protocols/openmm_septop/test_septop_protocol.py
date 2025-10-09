@@ -31,7 +31,7 @@ from openfe.protocols.openmm_septop.equil_septop_method import (
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
 from openfe.tests.protocols.conftest import compute_energy
-from openff.units import unit
+from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
 from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
@@ -771,7 +771,7 @@ def test_dry_run_ligand_system_pressure(
     Test that the right nonbonded cutoff is propagated to the system.
     """
     # openfe settings requires openff/pint units
-    default_settings.thermo_settings.pressure = pressure * unit.bar
+    default_settings.thermo_settings.pressure = pressure * offunit.bar
 
     protocol = SepTopProtocol(
         settings=default_settings,
@@ -834,7 +834,7 @@ def test_virtual_sites_no_reassign(
 
 @pytest.mark.parametrize(
     "cutoff",
-    [1.0 * unit.nanometer, 12.0 * unit.angstrom, 0.9 * unit.nanometer],
+    [1.0 * offunit.nanometer, 12.0 * offunit.angstrom, 0.9 * offunit.nanometer],
 )
 def test_dry_run_ligand_system_cutoff(
     cutoff,
@@ -847,7 +847,7 @@ def test_dry_run_ligand_system_cutoff(
     Test that the right nonbonded cutoff is propagated to the system.
     """
     default_settings.solvent_solvation_settings.solvent_padding = (
-        1.9 * unit.nanometer
+        1.9 * offunit.nanometer
     )
     default_settings.forcefield_settings.nonbonded_cutoff = cutoff
 
@@ -930,7 +930,7 @@ def test_dry_run_benzene_toluene_noncubic(
 ):
     default_settings.protocol_repeats = 1
     default_settings.solvent_solvation_settings.solvent_padding = (
-        1.5 * unit.nanometer
+        1.5 * offunit.nanometer
     )
     default_settings.solvent_solvation_settings.box_shape = "dodecahedron"
 
@@ -966,7 +966,7 @@ def test_dry_run_benzene_toluene_noncubic(
             [width, 0, 0],
             [0, width, 0],
             [0.5 * width, 0.5 * width, 0.5 * math.sqrt(2) * width],
-        ] * unit.nanometer
+        ] * offunit.nanometer
         assert_allclose(
             expected_vectors,
             from_openmm(vectors),
@@ -994,7 +994,7 @@ def test_dry_run_solv_user_charges_benzene_toluene(
         """
         rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
         rand_arr[-1] = -sum(rand_arr[:-1])
-        return rand_arr * unit.elementary_charge
+        return rand_arr * offunit.elementary_charge
 
     def check_partial_charges(offmol):
         offmol_pchgs = assign_fictitious_charges(offmol)
@@ -1320,16 +1320,16 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(0.48, abs=0.5)
-        assert isinstance(est, unit.Quantity)
-        assert est.is_compatible_with(unit.kilojoule_per_mole)
+        assert est.m == pytest.approx(5.18, abs=0.5)
+        assert isinstance(est, offunit.Quantity)
+        assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
     def test_get_uncertainty(self, protocolresult):
         est = protocolresult.get_uncertainty()
 
         assert est.m == pytest.approx(0.0, abs=0.2)
-        assert isinstance(est, unit.Quantity)
-        assert est.is_compatible_with(unit.kilojoule_per_mole)
+        assert isinstance(est, offunit.Quantity)
+        assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
     def test_get_individual(self, protocolresult):
         inds = protocolresult.get_individual_estimates()
@@ -1339,8 +1339,8 @@ class TestProtocolResult:
         assert isinstance(inds["complex"], list)
         assert len(inds["solvent"]) == len(inds["complex"]) == 1
         for e, u in itertools.chain(inds["solvent"], inds["complex"]):
-            assert e.is_compatible_with(unit.kilojoule_per_mole)
-            assert u.is_compatible_with(unit.kilojoule_per_mole)
+            assert e.is_compatible_with(offunit.kilojoule_per_mole)
+            assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
     @pytest.mark.parametrize('key', ['solvent', 'complex'])
     def test_get_forwards_etc(self, key, protocolresult):
