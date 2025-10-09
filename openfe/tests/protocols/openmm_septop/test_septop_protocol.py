@@ -483,7 +483,7 @@ def three_particle_system():
         np.array(
             [[0.0, 0.0, 0.0], [distances[0][1], 0.0, 0.0], [0.0, distances[0][2], 0.0]]
         )
-        * unit.angstrom
+        * openmm.unit.angstrom
     )
 
     return system, coords, interaction_energy_fn
