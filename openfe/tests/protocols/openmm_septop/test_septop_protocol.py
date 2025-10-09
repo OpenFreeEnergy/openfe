@@ -456,7 +456,6 @@ def three_particle_system():
     epsilons = 210, 220, 230
 
     force.addParticle(charges[0], sigmas[0] * openmm.unit.angstrom, epsilons[0])
-    force.addParticle(charges[0], sigmas[0] * openmm.unit.angstrom, epsilons[0])
     force.addParticle(charges[1], sigmas[1] * openmm.unit.angstrom, epsilons[1])
     force.addParticle(charges[2], sigmas[2] * openmm.unit.angstrom, epsilons[2])
 
