@@ -745,8 +745,9 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         -------
         indices : dict[str, list[npt.NDArray]]
           A dictionary keyed as `complex` and `solvent` for each
-          state, each containing a list of NDArrays containing the
-          indices for each replica.
+          state, each containing a list of NDArrays containing the corresponding
+          full system atom indices for each atom written in the production
+          trajectory files for each replica.
         """
         indices: dict[str, list[Optional[npt.NDArray]]] = {}
 
