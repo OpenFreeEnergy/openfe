@@ -757,7 +757,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         mdt_top = mdt.Topology.from_openmm(topology)
 
-        selection_indices = mdt_top.select(
+        # Store the selection indices in self to use later
+        # when storing them in the unit results
+        self.selection_indices = mdt_top.select(
                 output_settings.output_indices
         )
 
@@ -790,7 +792,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
-            analysis_particle_indices=selection_indices,
+            analysis_particle_indices=self.selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
             position_interval=pos_interval,
@@ -798,10 +800,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # Write out the structure's PDB whilst we're here
-        if len(selection_indices) > 0:
+        if len(self.selection_indices) > 0:
             traj = mdt.Trajectory(
-                positions[selection_indices, :],
-                mdt_top.subset(selection_indices),
+                positions[self.selection_indices, :],
+                mdt_top.subset(self.selection_indices),
             )
             traj.save_pdb(
                 self.shared_basepath / output_settings.output_structure
@@ -1202,6 +1204,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             chk = settings['output_settings'].checkpoint_storage_filename
             unit_result_dict['nc'] = nc
             unit_result_dict['last_checkpoint'] = chk
+            unit_result_dict['selection_indices'] = self.selection_indices
 
             if restraint_geometry is not None:
                 unit_result_dict['restraint_geometry'] = restraint_geometry.dict()

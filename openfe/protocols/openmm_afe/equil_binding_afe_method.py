@@ -1,10 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""OpenMM Equilibrium Solvation AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_solvation_afe_method`
-===============================================================================================================
+"""OpenMM Equilibrium Binding AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_binding_afe_method`
+==========================================================================================================
 
 This module implements the necessary methodology tooling to run calculate an
-absolute solvation free energy using OpenMM tools and one of the following
+absolute binding free energy using OpenMM tools and one of the following
 alchemical sampling methods:
 
 * Hamiltonian Replica Exchange
@@ -13,21 +13,15 @@ alchemical sampling methods:
 
 Current limitations
 -------------------
-* Disapearing molecules are only allowed in state A. Support for
-  appearing molecules will be added in due course.
+* Disapearing molecules are only allowed in state A.
 * Only small molecules are allowed to act as alchemical molecules.
-  Alchemically changing protein or solvent components would induce
-  perturbations which are too large to be handled by this Protocol.
-
 
 Acknowledgements
 ----------------
-* Originally based on hydration.py in
-  `espaloma_charge <https://github.com/choderalab/espaloma_charge>`_
+* This Protocol re-implements components from
+  `Yank <https://github.com/choderalab/yank>`_.
 
 """
-from __future__ import annotations
-
 import itertools
 import logging
 import pathlib
@@ -458,6 +452,28 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         ]
 
         return geometries
+
+    def selection_indices(self) -> dict[str, list[Optional[npt.NDArray]]]:
+        """
+        Get the system selection indices used to write PDB and
+        trajectory files.
+
+        Returns
+        -------
+        indices : dict[str, list[npt.NDArray]]
+          A dictionary keyed as `complex` and `solvent` for each
+          state, each containing a list of NDArrays containing the corresponding
+          full system atom indices for each atom written in the production
+          trajectory files for each replica.
+        """
+        indices: dict[str, list[Optional[npt.NDArray]]] = {}
+
+        for key in ["complex", "solvent"]:
+            indices[key] = []
+            for pus in self.data[key].values():
+                indices[key].append(pus[0].outputs["selection_indices"])
+
+        return indices
 
 
 class AbsoluteBindingProtocol(gufe.Protocol):

@@ -1,0 +1,1 @@
+[["AbsoluteBindingProtocolResult-a4c3346030e697bbbcc7483cb0bb4f44", {"n_protocol_dag_results": 1, "data": {"solvent": {}, "complex": {}}, "__qualname__": "AbsoluteBindingProtocolResult", "__module__": "openfe.protocols.openmm_afe.equil_binding_afe_method", ":version:": 1}]]

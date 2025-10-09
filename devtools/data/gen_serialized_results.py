@@ -97,7 +97,7 @@ def execute_and_serialize(
             shared_basedir=workdir,
             scratch_basedir=workdir,
             keep_shared=True,
-            raise_error=False,
+            raise_error=True,
             n_retries=2,
         )
     protres = protocol.gather([dagres])
@@ -156,7 +156,7 @@ def generate_abfe_settings():
     settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
     settings.solvent_solvation_settings.box_shape = 'dodecahedron'
     settings.complex_solvation_settings.box_shape = 'dodecahedron'
-    settings.solvent_solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.solvent_solvation_settings.solvent_padding = 1.5 * unit.nanometer
     settings.complex_solvation_settings.solvent_padding = 1.0 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.8 * unit.nanometer
     settings.protocol_repeats = 3
@@ -166,23 +166,25 @@ def generate_abfe_settings():
 
 
 def generate_abfe_json():
-    tyk2_ligand, tyk2_protein = get_tyk2_inputs()
+    print("starting")
+    ligands, protein = get_hif2a_inputs()
     protocol = AbsoluteBindingProtocol(settings=generate_abfe_settings())
     sysA = openfe.ChemicalSystem(
         {
-            "ligand": tyk2_ligand,
-            "protein": tyk2_protein,
+            "ligand": ligands[0],
+            "protein": protein,
             "solvent": openfe.SolventComponent(),
         }
     )
     sysB = openfe.ChemicalSystem(
         {
-            "protein": tyk2_protein,
+            "protein": protein,
             "solvent": openfe.SolventComponent(),
         }
     )
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
+    print(dag)
     execute_and_serialize(dag, protocol, "ABFEProtocol", new_serialization=True)
 
 
@@ -302,10 +304,10 @@ def generate_septop_json():
         
 
 if __name__ == "__main__":
-    molA = get_molecule(LIGA, "ligandA")
-    molB = get_molecule(LIGB, "ligandB")
-    generate_md_json(molA)
+    #molA = get_molecule(LIGA, "ligandA")
+    #molB = get_molecule(LIGB, "ligandB")
+    #generate_md_json(molA)
     generate_abfe_json()
-    generate_ahfe_json(molA)
-    generate_rfe_json(molA, molB)
-    generate_septop_json()
+    #generate_ahfe_json(molA)
+    #generate_rfe_json(molA, molB)
+    #generate_septop_json()
