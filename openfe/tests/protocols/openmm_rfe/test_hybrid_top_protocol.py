@@ -40,7 +40,7 @@ from openfe.protocols.openmm_rfe.equil_rfe_methods import (
 )
 from openfe.protocols.openmm_utils import system_creation, omm_compute
 from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA_CHARGE
 )
 
 
@@ -610,7 +610,7 @@ def test_dry_run_ligand_system_cutoff(
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
         ),
     ),
 ])
@@ -1450,6 +1450,39 @@ class TestConstraintRemoval:
             assert 'A: 2-8 B: 1-6' in str(e)
         else:
             assert 'A: 1-6 B: 2-8' in str(e)
+
+    def test_double_constraint_fail(self):
+        # make sure catch cases where a H is involved with two different unique constraints in the end states
+        # see <https://github.com/OpenFreeEnergy/openfe/issues/1093>
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
+            fn1 = str(d / 'malt1_shapefit_Pfizer-01-01.sdf')
+            fn2 = str(d / 'malt1_shapefit_1832577-09-9.sdf')
+
+        lig1 = openfe.SmallMoleculeComponent.from_sdf_file(fn1)
+        lig2 = openfe.SmallMoleculeComponent.from_sdf_file(fn2)
+
+        # mapping taken from issue
+        mapping = setup.LigandAtomMapping(
+            componentA=lig1,
+            componentB=lig2,
+            componentA_to_componentB={
+                26: 28, 27: 30, 28: 29, 29: 31, 30: 27, 31: 32, 32: 38, 34: 13, 39: 40, 40: 41, 0: 0, 1: 2, 2: 1, 3: 3,
+                4: 6, 5: 4, 6: 5, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 23, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18,
+                19: 19, 20: 20, 21: 21, 22: 22
+            }
+        )
+
+        stateA_topology, stateA_system, stateB_topology, stateB_system = self.make_systems(
+            lig1, lig2, constraints=app.HBonds
+        )
+
+        with pytest.raises(ValueError, match="Atom 34 was involved in 2 unique constraints"):
+            _ = openmm_rfe._rfe_utils.topologyhelpers._remove_constraints(
+                mapping.componentA_to_componentB,
+                stateA_system, stateA_topology,
+                stateB_system, stateB_topology,
+            )
+
 
 
 @pytest.fixture(scope='session')

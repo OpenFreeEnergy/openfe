@@ -58,6 +58,7 @@ jobs:
               - openeye
           create-args: >-
             espaloma_charge==0.0.8
+            espaloma==0.4.0
             openeye-toolkits
             python=3.12
 
