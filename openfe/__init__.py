@@ -13,6 +13,7 @@ from gufe import (
     ChemicalSystem,
     Component,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     Transformation,
