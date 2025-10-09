@@ -37,15 +37,15 @@ from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
-E_CHARGE = from_openmm(1.602176634e-19 * openmm.unit.coulomb)
-EPSILON0 = from_openmm(
+E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
+EPSILON0 = (
     1e-6
     * 8.8541878128e-12
     / (openmm.unit.AVOGADRO_CONSTANT_NA * E_CHARGE**2)
     * openmm.unit.farad
     / openmm.unit.meter
 )
-ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.units * 10.0  # nm -> angstrom
+ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstrom
 
 
 @pytest.fixture()
@@ -442,7 +442,7 @@ def compute_interaction_energy(
         4.0 * lambda_vdw * epsilon * ((sigma / r_vdw) ** 12 - (sigma / r_vdw) ** 6)
         # electrostatics
         + ONE_4PI_EPS0 * lambda_charges * charge / r_electrostatics
-    ) * unit.kilojoule_per_mole
+    ) * openmm.unit.kilojoule_per_mole
 
 
 @pytest.fixture
@@ -455,9 +455,10 @@ def three_particle_system():
     sigmas = 1.1, 1.2, 1.3
     epsilons = 210, 220, 230
 
-    force.addParticle(charges[0], sigmas[0] * unit.angstrom, epsilons[0])
-    force.addParticle(charges[1], sigmas[1] * unit.angstrom, epsilons[1])
-    force.addParticle(charges[2], sigmas[2] * unit.angstrom, epsilons[2])
+    force.addParticle(charges[0], sigmas[0] * openmm.unit.angstrom, epsilons[0])
+    force.addParticle(charges[0], sigmas[0] * openmm.unit.angstrom, epsilons[0])
+    force.addParticle(charges[1], sigmas[1] * openmm.unit.angstrom, epsilons[1])
+    force.addParticle(charges[2], sigmas[2] * openmm.unit.angstrom, epsilons[2])
 
     system = openmm.System()
     system.addParticle(1.0)
@@ -753,11 +754,10 @@ def test_dry_run_methods(
 
 
 @pytest.mark.parametrize(
-    "pressure",
-    [
-        1.0 * unit.bar,  # TODO: should this accept openmm units? (needs to be handled in gufe)
-        0.9 * unit.bar,
-        1.1 * unit.bar,
+    "pressure",[
+        1.0,
+        0.9,
+        1.1,
     ],
 )
 def test_dry_run_ligand_system_pressure(
@@ -770,7 +770,8 @@ def test_dry_run_ligand_system_pressure(
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    default_settings.thermo_settings.pressure = pressure
+    # openfe settings requires openff/pint units
+    default_settings.thermo_settings.pressure = pressure * unit.bar
 
     protocol = SepTopProtocol(
         settings=default_settings,
@@ -792,7 +793,8 @@ def test_dry_run_ligand_system_pressure(
             serialized_system, serialized_topology, dry=True
         )["debug"]["sampler"]
 
-        assert solv_sampler._thermodynamic_states[1].pressure == pressure
+        # at this point, the units will be in openmm units
+        assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
 
 
 def test_virtual_sites_no_reassign(
