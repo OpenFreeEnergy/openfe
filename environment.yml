@@ -51,5 +51,4 @@ dependencies:
   # Control blas/openmp threads
   - threadpoolctl
   - pip:
-    # pin gufe to pre-pydanticv2 commit until openfe's pydantic v2 migration is complete
-    - git+https://github.com/OpenFreeEnergy/gufe@0e4d69a137c750136b3b2473bf6da9a34c28cb60
+    - git+https://github.com/OpenFreeEnergy/gufe@pressure_units_in_bar

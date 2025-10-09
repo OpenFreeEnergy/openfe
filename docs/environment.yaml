@@ -25,7 +25,7 @@ dependencies:
 - threadpoolctl
 - tqdm
 - pip:
-  - git+https://github.com/OpenFreeEnergy/gufe@main
+  - git+https://github.com/OpenFreeEnergy/gufe@pressure_units_in_bar
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.3.0
   # pip install these so that conda-forge gufe doesn't pull in ambertools and cause a memory error
   - git+https://github.com/OpenFreeEnergy/kartograf@main
