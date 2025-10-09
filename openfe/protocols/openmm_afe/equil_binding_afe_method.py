@@ -66,10 +66,11 @@ from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGe
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 from openfe.utils import log_system_probe
-from openff.units import Quantity, unit
+from openff.units import unit as offunit
+from openff.units import Quantity
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import System
-from openmm import unit as omm_unit
+from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology
 from openmmtools import multistate
 from openmmtools.states import GlobalParameterState, ThermodynamicState
@@ -147,7 +148,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             correction_dGs.append(
                 (
                     pus[0].outputs["standard_state_correction"],
-                    0 * unit.kilocalorie_per_mole,  # correction has no error
+                    0 * offunit.kilocalorie_per_mole,  # correction has no error
                 )
             )
 
@@ -510,8 +511,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
-                temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,
+                temperature=298.15 * offunit.kelvin,
+                pressure=1 * offunit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
@@ -669,9 +670,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             integrator_settings=IntegratorSettings(),
             restraint_settings=BoreschRestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.1 * unit.nanosecond,
-                equilibration_length=0.2 * unit.nanosecond,
-                production_length=0.5 * unit.nanosecond,
+                equilibration_length_nvt=0.1 * offunit.nanosecond,
+                equilibration_length=0.2 * offunit.nanosecond,
+                production_length=0.5 * offunit.nanosecond,
             ),
             solvent_equil_output_settings=MDOutputSettings(
                 equil_nvt_structure="equil_nvt_structure.pdb",
@@ -681,8 +682,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
-                equilibration_length=1.0 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
+                equilibration_length=1.0 * offunit.nanosecond,
+                production_length=10.0 * offunit.nanosecond,
             ),
             solvent_output_settings=MultiStateOutputSettings(
                 output_structure="alchemical_system.pdb",
@@ -690,9 +691,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 checkpoint_storage_filename="solvent_checkpoint.nc",
             ),
             complex_equil_simulation_settings=MDSimulationSettings(
-                equilibration_length_nvt=0.25 * unit.nanosecond,
-                equilibration_length=0.5 * unit.nanosecond,
-                production_length=5.0 * unit.nanosecond,
+                equilibration_length_nvt=0.25 * offunit.nanosecond,
+                equilibration_length=0.5 * offunit.nanosecond,
+                production_length=5.0 * offunit.nanosecond,
             ),
             complex_equil_output_settings=MDOutputSettings(
                 output_indices="all",
@@ -703,8 +704,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=30,
-                equilibration_length=1 * unit.nanosecond,
-                production_length=10.0 * unit.nanosecond,
+                equilibration_length=1 * offunit.nanosecond,
+                production_length=10.0 * offunit.nanosecond,
             ),
             complex_output_settings=MultiStateOutputSettings(
                 output_structure="alchemical_system.pdb",
@@ -1036,7 +1037,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     @staticmethod
     def _get_mda_universe(
         topology: omm_topology,
-        positions: omm_unit.Quantity,
+        positions: ommunit.Quantity,
         trajectory: Optional[pathlib.Path],
     ) -> mda.Universe:
         """
@@ -1170,7 +1171,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         self,
         system: System,
         topology: omm_topology,
-        positions: omm_unit.Quantity,
+        positions: ommunit.Quantity,
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],

@@ -1,33 +1,30 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import gzip
 import itertools
 import json
-import gzip
-from math import sqrt
 import sys
-import pytest
+from math import sqrt
 from unittest import mock
-from openmm import NonbondedForce, CustomNonbondedForce
-from openmmtools.multistate.multistatesampler import MultiStateSampler
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
+
+import gufe
 import mdtraj as mdt
 import numpy as np
-from numpy.testing import assert_allclose
-import gufe
 import openfe
+import pytest
+from numpy.testing import assert_allclose
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
-    AbsoluteBindingSolventUnit,
     AbsoluteBindingComplexUnit,
     AbsoluteBindingProtocol,
+    AbsoluteBindingSolventUnit,
 )
-
 from openfe.protocols.openmm_utils import system_validation
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
-)
+from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity, from_openmm
+from openmm import CustomNonbondedForce, NonbondedForce
+from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 
 @pytest.fixture()
@@ -54,13 +51,13 @@ def test_serialize_protocol(default_settings):
 
 
 class BaseABFESystemTests:
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def protocol(self, settings):
         return openmm_afe.AbsoluteBindingProtocol(
             settings=s,
         )
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def dag(self, protocol, stateA, stateB):
         return protocol.create(
             stateA=stateA,
@@ -68,59 +65,51 @@ class BaseABFESystemTests:
             mapping=None,
         )
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def complex_units(self, dag):
-        return [
-            u for u in prot_units
-            if isinstance(u, AbsoluteBindingComplexUnit)
-        ]
+        return [u for u in prot_units if isinstance(u, AbsoluteBindingComplexUnit)]
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def solvent_units(self, dag):
-        return [
-            u for u in prot_units
-            if isinstance(u, AbsoluteBindingSolventUnit)
-        ]
+        return [u for u in prot_units if isinstance(u, AbsoluteBindingSolventUnit)]
 
 
 class BaseBenzeneT4Tests(BaseABFESystemTests):
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def solvent(self):
-        return SolventComponent(
-            ion_concentration = 0 * offunit.molar
-        )
+        return SolventComponent(ion_concentration=0 * offunit.molar)
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def settings(self):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
         s.protocol_repeats = 1
         s.complex_output_settings.output_indices = "not water"
         return s
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def stateA(self, benzene_modifications, T4_protein_component, solvent):
         return ChemicalSystem(
             {
-                'benzene': benzene_modifications['benzene'],
-                'protein': T4_protein_component,
-                'solvent': solvent,
+                "benzene": benzene_modifications["benzene"],
+                "protein": T4_protein_component,
+                "solvent": solvent,
             }
         )
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def stateB(self, T4_protein_component, solvent):
         return ChemicalSystem(
             {
-                'protein': T4_protein_component,
-                'solvent': solvent,
+                "protein": T4_protein_component,
+                "solvent": solvent,
             }
         )
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def sampler(self, request):
         phase_unit = request.getfixturevalue(self.phase_unit_name)
         with tmpdir.as_cwd():
-            return phase_unit[0].run(dry=True, verbose=True)['debug']['sampler']
+            return phase_unit[0].run(dry=True, verbose=True)["debug"]["sampler"]
 
     def test_number_of_units(self, dag, complex_units, solvent_units):
         assert len(list(dag.protocol_units)) == 2
@@ -131,14 +120,14 @@ class BaseBenzeneT4Tests(BaseABFESystemTests):
         assert sampler.is_periodic
 
 
-#class TestBenzeneSolventDry(BaseBenzeneT4Tests):
+# class TestBenzeneSolventDry(BaseBenzeneT4Tests):
 #    @pytest.fixture(scope='class')
 #    def sampler(self, solvent_units
 
 
-#def test_dry_run_solvent_benzene(
+# def test_dry_run_solvent_benzene(
 #    benzene_modifications, T4_protein_component, tmpdir,
-#):
+# ):
 #
 #    with tmpdir.as_cwd():
 #
@@ -146,27 +135,29 @@ class BaseBenzeneT4Tests(BaseABFESystemTests):
 #        assert pdb.n_atoms == 12
 
 
-def test_dry_run_complex_benzene(
-    benzene_modifications, T4_protein_component, tmpdir
-):
+def test_dry_run_complex_benzene(benzene_modifications, T4_protein_component, tmpdir):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
     s.complex_output_settings.output_indices = "not water"
 
     protocol = openmm_afe.AbsoluteBindingProtocol(
-            settings=s,
+        settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'protein': T4_protein_component,
-        'solvent': SolventComponent()
-    })
+    stateA = ChemicalSystem(
+        {
+            "benzene": benzene_modifications["benzene"],
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
 
-    stateB = ChemicalSystem({
-        'protein': T4_protein_component,
-        'solvent': SolventComponent(),
-    })
+    stateB = ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
@@ -179,23 +170,21 @@ def test_dry_run_complex_benzene(
 
     assert len(prot_units) == 2
 
-    comp_unit = [u for u in prot_units
-                 if isinstance(u, AbsoluteBindingComplexUnit)]
-    sol_unit = [u for u in prot_units
-                if isinstance(u, AbsoluteBindingSolventUnit)]
+    comp_unit = [u for u in prot_units if isinstance(u, AbsoluteBindingComplexUnit)]
+    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteBindingSolventUnit)]
 
     assert len(comp_unit) == 1
     assert len(sol_unit) == 1
 
     with tmpdir.as_cwd():
-        comp_sampler = comp_unit[0].run(dry=True, verbose=True)['debug']['sampler']
+        comp_sampler = comp_unit[0].run(dry=True, verbose=True)["debug"]["sampler"]
         assert comp_sampler.is_periodic
 
-        pdb = mdt.load_pdb('alchemical_system.pdb')
+        pdb = mdt.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 2698
 
 
-#def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
+# def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
 #    """
 #    Create a test system with fictitious user supplied charges and
 #    ensure that they are properly passed through to the constructed
@@ -281,7 +270,7 @@ def test_dry_run_complex_benzene(
 #            assert pytest.approx(c) == prop_chgs[i]
 
 
-#def test_unit_tagging(benzene_solvation_dag, tmpdir):
+# def test_unit_tagging(benzene_solvation_dag, tmpdir):
 #    # test that executing the units includes correct gen and repeat info
 #
 #    dag_units = benzene_solvation_dag.protocol_units
@@ -310,7 +299,7 @@ def test_dry_run_complex_benzene(
 #    assert len(vac_repeats) == len(solv_repeats) == 3
 
 
-#def test_gather(benzene_solvation_dag, tmpdir):
+# def test_gather(benzene_solvation_dag, tmpdir):
 #    # check that .gather behaves as expected
 #    with (
 #        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run',
@@ -341,10 +330,11 @@ class TestProtocolResult:
         return pr
 
     def test_reload_protocol_result(self, afe_solv_transformation_json):
-        d = json.loads(afe_solv_transformation_json,
-                       cls=gufe.tokenization.JSON_HANDLER.decoder)
+        d = json.loads(
+            afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder
+        )
 
-        pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d['protocol_result'])
+        pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d["protocol_result"])
 
         assert pr
 
@@ -368,14 +358,14 @@ class TestProtocolResult:
         inds = protocolresult.get_individual_estimates()
 
         assert isinstance(inds, dict)
-        assert isinstance(inds['solvent'], list)
-        assert isinstance(inds['complex'], list)
-        assert len(inds['solvent']) == len(inds['complex']) == 3
-        for e, u in itertools.chain(inds['solvent'], inds['complex']):
+        assert isinstance(inds["solvent"], list)
+        assert isinstance(inds["complex"], list)
+        assert len(inds["solvent"]) == len(inds["complex"]) == 3
+        for e, u in itertools.chain(inds["solvent"], inds["complex"]):
             assert e.is_compatible_with(offunit.kilojoule_per_mole)
             assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_forwards_etc(self, key, protocolresult):
         far = protocolresult.get_forward_and_reverse_energy_analysis()
 
@@ -392,24 +382,26 @@ class TestProtocolResult:
         #     if k == 'fractions':
         #         assert isinstance(far1[k], np.ndarray)
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_frwd_reverse_none_return(self, key, protocolresult):
         # fetch the first result of type key
         data = [i for i in protocolresult.data[key].values()][0][0]
         # set the output to None
-        data.outputs['forward_and_reverse_energies'] = None
+        data.outputs["forward_and_reverse_energies"] = None
 
         # now fetch the analysis results and expect a warning
-        wmsg = ("were found in the forward and reverse dictionaries "
-                f"of the repeats of the {key}")
+        wmsg = (
+            "were found in the forward and reverse dictionaries "
+            f"of the repeats of the {key}"
+        )
         with pytest.warns(UserWarning, match=wmsg):
             protocolresult.get_forward_and_reverse_energy_analysis()
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_overlap_matrices(self, key, protocolresult):
         ovp = protocolresult.get_overlap_matrices()
 
-        if key == 'complex':
+        if key == "complex":
             n_rep = 30
         else:
             n_rep = 14
@@ -419,14 +411,14 @@ class TestProtocolResult:
         assert len(ovp[key]) == 3
 
         ovp1 = ovp[key][0]
-        assert isinstance(ovp1['matrix'], np.ndarray)
-        assert ovp1['matrix'].shape == (n_rep, n_rep)
+        assert isinstance(ovp1["matrix"], np.ndarray)
+        assert ovp1["matrix"].shape == (n_rep, n_rep)
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_replica_transition_statistics(self, key, protocolresult):
         rpx = protocolresult.get_replica_transition_statistics()
 
-        if key == 'complex':
+        if key == "complex":
             n_rep = 30
         else:
             n_rep = 14
@@ -435,12 +427,12 @@ class TestProtocolResult:
         assert isinstance(rpx[key], list)
         assert len(rpx[key]) == 3
         rpx1 = rpx[key][0]
-        assert 'eigenvalues' in rpx1
-        assert 'matrix' in rpx1
-        assert rpx1['eigenvalues'].shape == (n_rep,)
-        assert rpx1['matrix'].shape == (n_rep, n_rep)
+        assert "eigenvalues" in rpx1
+        assert "matrix" in rpx1
+        assert rpx1["eigenvalues"].shape == (n_rep,)
+        assert rpx1["matrix"].shape == (n_rep, n_rep)
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_equilibration_iterations(self, key, protocolresult):
         eq = protocolresult.equilibration_iterations()
 
@@ -449,7 +441,7 @@ class TestProtocolResult:
         assert len(eq[key]) == 3
         assert all(isinstance(v, float) for v in eq[key])
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_production_iterations(self, key, protocolresult):
         prod = protocolresult.production_iterations()
 

@@ -1,34 +1,30 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import json
 import gzip
-import openfe
-from openfe.protocols.openmm_afe import (
-    AbsoluteBindingProtocol,
-    AbsoluteBindingSolventUnit,
-    AbsoluteBindingComplexUnit,
-    AbsoluteBindingProtocolResult,
-)
+import json
+
 import gufe
-from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+import openfe
 import pytest
+from gufe.tests.test_tokenization import GufeTokenizableTestsMixin
+from openfe.protocols.openmm_afe import (
+    AbsoluteBindingComplexUnit,
+    AbsoluteBindingProtocol,
+    AbsoluteBindingProtocolResult,
+    AbsoluteBindingSolventUnit,
+)
 
 
 @pytest.fixture
 def protocol():
-    return AbsoluteBindingProtocol(
-               AbsoluteBindingProtocol.default_settings()
-           )
+    return AbsoluteBindingProtocol(AbsoluteBindingProtocol.default_settings())
 
 
 @pytest.fixture
 def protocol_units(protocol, benzene_complex_system, T4_protein_component):
     stateA = benzene_complex_system
     stateB = openfe.ChemicalSystem(
-        {
-            'protein': T4_protein_component,
-            'solvent': openfe.SolventComponent()
-        }
+        {"protein": T4_protein_component, "solvent": openfe.SolventComponent()}
     )
     pus = protocol.create(
         stateA=stateA,
