@@ -2,6 +2,8 @@
 Dev script to generate some result jsons that are used for testing
 
 Generates
+- SepTopProtocol_json_results.gy
+  - used in septop_json fixture
 - AHFEProtocol_json_results.gz
   - used in afe_solvation_json fixture
 - RHFEProtocol_json_results.gz
@@ -14,6 +16,7 @@ import json
 import logging
 import pathlib
 import tempfile
+from rdkit import Chem
 from openff.toolkit import (
     Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
 )
@@ -29,6 +32,7 @@ import openfe
 from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol
 from openfe.protocols.openmm_afe import AbsoluteSolvationProtocol
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
+from openfe.protocols.openmm_septop import SepTopProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -49,6 +53,17 @@ def get_molecule(smi, name):
     return openfe.SmallMoleculeComponent.from_openff(m, name=name)
 
 
+def get_hif2a_inputs():
+    with gzip.open('inputs/hif2a_protein.pdb.gz', 'r') as f:
+        protcomp = openfe.ProteinComponent.from_pdb_file(f, name='hif2a_prot')
+
+    with gzip.open('inputs/hif2a_ligands.sdf.gz', 'r') as f:
+        smcs = [openfe.SmallMoleculeComponent(mol) for mol in
+                list(Chem.ForwardSDMolSupplier(f, removeHs=False))]
+
+    return smcs, protcomp
+
+
 def execute_and_serialize(dag, protocol, simname):
     logger.info(f"running {simname}")
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -57,7 +72,7 @@ def execute_and_serialize(dag, protocol, simname):
             dag,
             shared_basedir=workdir,
             scratch_basedir=workdir,
-            keep_shared=False,
+            keep_shared=True,
             n_retries=3
         )
     protres = protocol.gather([dagres])
@@ -160,11 +175,59 @@ def generate_rfe_json(smcA, smcB):
     )
 
     execute_and_serialize(dag, protocol, "RHFEProtocol")
+
+
+def generate_septop_settings():
+    settings = SepTopProtocol.default_settings()
+    settings.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    settings.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
+    settings.solvent_simulation_settings.equilibration_length = 100 * unit.picosecond
+    settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
+    settings.solvent_simulation_settings.time_per_iteration = 2.5 * unit.ps
+    settings.complex_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
+    settings.complex_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    settings.complex_equil_simulation_settings.production_length = 10 * unit.picosecond
+    settings.complex_simulation_settings.equilibration_length = 100 * unit.picosecond
+    settings.complex_simulation_settings.production_length = 500 * unit.picosecond
+    settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
+    settings.solvent_solvation_settings.box_shape = 'dodecahedron'
+    settings.complex_solvation_settings.box_shape = 'dodecahedron'
+    settings.solvent_solvation_settings.solvent_padding = 1.2 * unit.nanometer
+    settings.complex_solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
+    settings.protocol_repeats = 1
+    settings.engine_settings.compute_platform = 'CUDA'
+
+    return settings
+
+
+def generate_septop_json():
+    hif2a_ligands, hif2a_protein = get_hif2a_inputs()
+    protocol = SepTopProtocol(settings=generate_septop_settings())
+    sysA = openfe.ChemicalSystem(
+        {
+            "ligand_A": hif2a_ligands[0],
+            "protein": hif2a_protein,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+    sysB = openfe.ChemicalSystem(
+        {
+            "ligand_B": hif2a_ligands[1],
+            "protein": hif2a_protein,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
+
+    dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
+    execute_and_serialize(dag, protocol, "SepTopProtocol")
         
 
 if __name__ == "__main__":
     molA = get_molecule(LIGA, "ligandA")
     molB = get_molecule(LIGB, "ligandB")
-    generate_md_json(molA)
-    generate_ahfe_json(molA)
-    generate_rfe_json(molA, molB)
+    # generate_md_json(molA)
+    # generate_ahfe_json(molA)
+    # generate_rfe_json(molA, molB)
+    generate_septop_json()
