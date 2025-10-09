@@ -904,7 +904,9 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         """
         mdt_top = mdt.Topology.from_openmm(topology)
 
-        selection_indices = mdt_top.select(output_settings.output_indices)
+        # We store selection indices in self to avoid re-creating the MDTraj Topology
+        # in the future
+        self.selection_indices = mdt_top.select(output_settings.output_indices)
 
         nc = self.shared_basepath / output_settings.output_filename
         chk = output_settings.checkpoint_storage_filename
@@ -935,7 +937,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
-            analysis_particle_indices=selection_indices,
+            analysis_particle_indices=self.selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
             position_interval=pos_interval,
@@ -943,10 +945,10 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         )
 
         # Write out the structure's PDB whilst we're here
-        if len(selection_indices) > 0:
+        if len(self.selection_indices) > 0:
             traj = mdt.Trajectory(
-                positions[selection_indices, :],
-                mdt_top.subset(selection_indices),
+                positions[self.selection_indices, :],
+                mdt_top.subset(self.selection_indices),
             )
             traj.save_pdb(self.shared_basepath / output_settings.output_structure)
 
@@ -1350,6 +1352,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             return {
                 "nc": nc,
                 "last_checkpoint": chk,
+                "selection_indices": self.selection_indices,
                 **unit_result_dict,
             }
         else:
