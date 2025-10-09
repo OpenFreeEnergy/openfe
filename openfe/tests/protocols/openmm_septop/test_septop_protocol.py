@@ -682,7 +682,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert isinstance(
             solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat
         )
-        assert solv_sampler._thermodynamic_states[1].pressure == 1 * unit.bar
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 29
@@ -698,7 +698,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert isinstance(
             complex_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat
         )
-        assert complex_sampler._thermodynamic_states[1].pressure == 1 * unit.bar
+        assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 2713
@@ -745,7 +745,7 @@ def test_dry_run_methods(
         assert solv_sampler.is_periodic
         assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
                           MonteCarloBarostat)
-        assert solv_sampler._thermodynamic_states[1].pressure == 1 * unit.bar
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
 
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb('alchemical_system.pdb')
@@ -755,9 +755,9 @@ def test_dry_run_methods(
 @pytest.mark.parametrize(
     "pressure",
     [
-        1.0 * unit.atmosphere,
-        0.9 * unit.atmosphere,
-        1.1 * unit.atmosphere,
+        1.0 * unit.bar,  # TODO: should this accept openmm units? (needs to be handled in gufe)
+        0.9 * unit.bar,
+        1.1 * unit.bar,
     ],
 )
 def test_dry_run_ligand_system_pressure(

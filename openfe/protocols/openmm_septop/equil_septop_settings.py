@@ -306,7 +306,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     files of the respective endstates. Default 'simulation'.
     """
 
-    @validator("output_indices")
+    @field_validator("output_indices")
     def must_be_all(cls, v):
         if v != "all":
             errmsg = ("Equilibration simulations need to output the full "

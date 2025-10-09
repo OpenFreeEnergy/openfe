@@ -798,7 +798,7 @@ class SepTopProtocol(gufe.Protocol):
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
-                pressure=1 * unit.bar,  # TODO: this is converted to atm as of gufe v1.7.0, do we still want 1 bar, or 1 atm?
+                pressure=1 * unit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
