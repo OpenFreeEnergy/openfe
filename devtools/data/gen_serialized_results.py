@@ -227,7 +227,7 @@ def generate_septop_json():
 if __name__ == "__main__":
     molA = get_molecule(LIGA, "ligandA")
     molB = get_molecule(LIGB, "ligandB")
-    # generate_md_json(molA)
-    # generate_ahfe_json(molA)
-    # generate_rfe_json(molA, molB)
+    generate_md_json(molA)
+    generate_ahfe_json(molA)
+    generate_rfe_json(molA, molB)
     generate_septop_json()
