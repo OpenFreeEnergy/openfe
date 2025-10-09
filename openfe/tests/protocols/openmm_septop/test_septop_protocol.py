@@ -15,6 +15,7 @@ import openmm.app
 import openmm.unit
 import pytest
 from numpy.testing import assert_allclose
+import numpy.typing as npt
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopComplexRunUnit,
@@ -1418,6 +1419,21 @@ class TestProtocolResult:
         assert isinstance(prod[key], list)
         assert len(prod[key]) == 1
         assert all(isinstance(v, float) for v in prod[key])
+
+    @pytest.mark.parametrize("key, expected_size", 
+        [
+            ["solvent", 1],
+            ["complex", 1],
+        ]
+    )
+    def test_selection_indices(self, key, protocolresult, expected_size):
+        indices = protocolresult.selection_indices()
+
+        assert isinstance(indices, dict)
+        assert isinstance(indices[key], list)
+        for inds in indices[key]:
+            assert isinstance(inds, npt.NDArray)
+            assert len(inds) == expected_size
 
     def test_filenotfound_replica_states(self, protocolresult):
         errmsg = "File could not be found"
