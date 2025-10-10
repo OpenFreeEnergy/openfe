@@ -518,7 +518,8 @@ class FindHostAtoms(AnalysisBase):
         self.results.host_idxs = np.array(list(self.results.host_idxs))
 
 
-def get_local_rmsf(atomgroup: mda.AtomGroup): # -> ArrayQuantity:
+# TODO: needs custom type https://github.com/OpenFreeEnergy/openfe/issues/1569
+def get_local_rmsf(atomgroup: mda.AtomGroup): # -> ArrayQuantity: 
     """
     Get the RMSF of an AtomGroup when aligned upon itself.
 
