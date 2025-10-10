@@ -306,6 +306,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         mapping_scorer: Callable[[LigandAtomMapping], float]  = default_lomap_score,
         ligand_network_planner: Callable = generate_minimal_spanning_network,
         protocol: Optional[Protocol] = None,
+        adaptive_settings: bool = False,
     ):
         super().__init__(
             name=name,
@@ -314,6 +315,7 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
             ligand_network_planner=ligand_network_planner,
             protocol=protocol,
         )
+        self._adaptive_settings = adaptive_settings
 
     def _build_transformation(
         self,
@@ -327,21 +329,27 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         """
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
-        protocol_settings = transformation_protocol.settings.unfrozen_copy()
-        if "vacuum" in transformation_name:
-            protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
-        elif ligand_mapping_edge.get_alchemical_charge_difference() != 0:
-            wmsg = ("Charge changing transformation between ligands "
-                    f"{ligand_mapping_edge.componentA.name} and {ligand_mapping_edge.componentB.name}. "
-                    "A more expensive protocol with 22 lambda windows, sampled "
-                    "for 20 ns each, will be used here.")
-            warnings.warn(wmsg)
-            # apply the recommended charge change settings taken from the industry benchmarking
-            # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
-            protocol_settings.alchemical_settings.explicit_charge_correction = True
-            protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
-            protocol_settings.simulation_settings.n_replicas = 22
-            protocol_settings.lambda_settings.lambda_windows = 22
+        if self._adaptive_settings and isinstance(transformation_protocol, RelativeHybridTopologyProtocol):
+            # adaptive transformation settings are only supported for RelativeHybridTopologyProtocol currently
+            protocol_settings = transformation_protocol._adaptive_settings(
+                stateA=stateA, stateB=stateB, mapping=ligand_mapping_edge
+            )
+        else:
+            protocol_settings = transformation_protocol.settings.unfrozen_copy()
+            if "vacuum" in transformation_name:
+                protocol_settings.forcefield_settings.nonbonded_method = "nocutoff"
+            elif ligand_mapping_edge.get_alchemical_charge_difference() != 0:
+                wmsg = ("Charge changing transformation between ligands "
+                        f"{ligand_mapping_edge.componentA.name} and {ligand_mapping_edge.componentB.name}. "
+                        "A more expensive protocol with 22 lambda windows, sampled "
+                        "for 20 ns each, will be used here.")
+                warnings.warn(wmsg)
+                # apply the recommended charge change settings taken from the industry benchmarking
+                # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
+                protocol_settings.alchemical_settings.explicit_charge_correction = True
+                protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
+                protocol_settings.simulation_settings.n_replicas = 22
+                protocol_settings.lambda_settings.lambda_windows = 22
 
         transformation_protocol = transformation_protocol.__class__(
             settings=protocol_settings
