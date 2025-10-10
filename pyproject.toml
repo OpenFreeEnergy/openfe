@@ -66,7 +66,7 @@ lint.ignore = [
   "F401", # unused imports (TODO: we should fix these)
   "UP03", # pyupgrade linting (TODO: we should fix these)
 ]
-lint.isort.known-first-party = [ "gufe" ]
+lint.isort.known-first-party = [ "openfe" ]
 
 [tool.coverage.run]
 omit = [
