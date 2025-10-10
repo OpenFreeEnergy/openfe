@@ -15,8 +15,6 @@ TODO
 * Add support for restraints
 
 """
-from typing import Annotated
-from annotated_types import Gt
 from gufe.settings import (
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
