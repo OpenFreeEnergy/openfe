@@ -361,7 +361,7 @@ class IntegratorSettings(SettingsBaseModel):
     """
     constraint_tolerance: float = 1e-06
     """Tolerance for the constraint solver. Default 1e-6."""
-    barostat_frequency: TimestepQuantity = 25.0 * unit.timestep  # todo: IntQuantity
+    barostat_frequency: TimestepQuantity = 25.0 * unit.timestep
     """
     Frequency at which volume scaling changes should be attempted.
     Note: The barostat frequency is ignored for gas-phase simulations.
@@ -551,12 +551,12 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default `repex`.
     """
     time_per_iteration: PicosecondQuantity = 1.0 * unit.picosecond
-    # todo: Add field_validators in the protocol
+    # todo: Add validators in the protocol
     """
     Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
     """
     real_time_analysis_interval: PicosecondQuantity | None= 250.0 * unit.picosecond
-    # todo: Add field_validators in the protocol
+    # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
 
@@ -585,7 +585,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default ``None``, i.e. no early termination will occur.
     """
     real_time_analysis_minimum_time: PicosecondQuantity = 500.0 * unit.picosecond
-    # todo: Add field_validators in the protocol
+    # todo: Add validators in the protocol
     """
     Simulation time which must pass before real time analysis is
     carried out.
