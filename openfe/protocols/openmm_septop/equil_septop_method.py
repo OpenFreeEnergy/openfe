@@ -736,6 +736,30 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         return geometry_A, geometry_B
 
+    def selection_indices(self) -> dict[str, list[Optional[npt.NDArray]]]:
+        """
+        Get the system selection indices used to write PDB and
+        trajectory files.
+
+        Returns
+        -------
+        indices : dict[str, list[npt.NDArray]]
+          A dictionary keyed as `complex` and `solvent` for each
+          state, each containing a list of NDArrays containing the corresponding
+          full system atom indices for each atom written in the production
+          trajectory files for each replica.
+        """
+        indices: dict[str, list[Optional[npt.NDArray]]] = {}
+
+        for key in ["complex", "solvent"]:
+            indices[key] = []
+            for pus in self.data[key].values():
+                indices[key].append(
+                    pus[0].outputs["selection_indices"]
+                )
+
+        return indices
+
 
 class SepTopProtocol(gufe.Protocol):
     """
