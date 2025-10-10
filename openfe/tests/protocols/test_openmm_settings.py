@@ -69,7 +69,7 @@ class TestOpenMMSolvationSettings:
     def test_unreduced_box_vectors(self):
         s = omm_settings.OpenMMSolvationSettings()
 
-        # From interchange tests
+        # Taken from interchange tests, but we require units
         # rhombic dodecahedron with first and last rows swapped
         box_vectors = np.asarray(
             [
@@ -77,7 +77,6 @@ class TestOpenMMSolvationSettings:
                 [0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0],
             ],
-        # add units, openfe doesn't assume nanometers but interchange does
         ) * unit.nanometer
 
         with pytest.raises(ValueError, match="not in OpenMM reduced form"):
