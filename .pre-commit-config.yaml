@@ -10,9 +10,12 @@ repos:
   rev: v6.0.0
   hooks:
   - id: check-added-large-files
+  - id: check-case-conflict
+  - id: check-executables-have-shebangs
+  - id: check-symlinks
   - id: check-toml
+  # - id: check-yaml  # TODO: resolve violation in devtools/installer/construct.yaml
   - id: debug-statements
-  # - id: end-of-file-fixer  # TODO: add this back in when we're ready to touch many files
 
 - repo: https://github.com/tox-dev/pyproject-fmt
   rev: "v2.8.0"
