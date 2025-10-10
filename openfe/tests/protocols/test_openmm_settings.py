@@ -77,7 +77,7 @@ class TestOpenMMSolvationSettings:
                 [0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0],
             ],
-        # add units, openfe doesn't duck-type but interchange does
+        # add units, openfe doesn't assume nanometers but interchange does
         ) * unit.nanometer
 
         with pytest.raises(ValueError, match="not in OpenMM reduced form"):
