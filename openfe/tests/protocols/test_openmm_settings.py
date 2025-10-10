@@ -77,7 +77,7 @@ class TestOpenMMSolvationSettings:
                 [0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0],
             ],
-        )
+        ) * unit.nanometer
 
         with pytest.raises(ValueError, match="not in OpenMM reduced form"):
             s.box_vectors = box_vectors
