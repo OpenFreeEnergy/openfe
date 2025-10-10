@@ -119,7 +119,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     --------
     openfe.protocols.openmm_afe.AbsoluteSolvationProtocol
     """
-    protocol_repeats: Annotated[int, Gt(0)]
+    protocol_repeats: int
     """
     The number of completely independent repeats of the entire sampling 
     process. The mean of the repeats defines the final estimate of FE 
@@ -212,3 +212,11 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
     """
+
+
+    @field_validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
