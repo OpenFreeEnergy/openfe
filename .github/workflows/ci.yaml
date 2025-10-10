@@ -9,6 +9,8 @@ on:
     paths-ignore:
       - "docs/*"
       - ".readthedocs.yaml"
+      - ".github/workflows/cpu-long-tests.yaml"
+      - ".github/workflows/gpu-integration-tests.yaml"
   push:
     branches:
       - main
