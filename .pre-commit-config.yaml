@@ -12,10 +12,9 @@ repos:
   - id: check-added-large-files
   - id: check-toml
   - id: debug-statements
-  # - id: end-of-file-fixer
+  # - id: end-of-file-fixer  # TODO: add this back in when we're ready to touch many files
 
 - repo: https://github.com/tox-dev/pyproject-fmt
   rev: "v2.8.0"
   hooks:
     - id: pyproject-fmt
-
