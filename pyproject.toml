@@ -46,6 +46,28 @@ openfe = [ '"./openfe/tests/data/lomap_basic/toluene.mol2"' ]
 [tool.setuptools_scm]
 fallback_version = "0.0.0"
 
+[tool.ruff]
+line-length = 120
+
+format.exclude = [ "openfe/*", "openfecli/*" ]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+lint.select = [
+  # "F",  # Pyflakes
+  # "I", # isort
+  # "W", # pycodestyle warnings
+  # "E",  # pycodestyle errors
+  # "C901"  # mccabe complexity  TODO: add this back in
+  # "UP", # TODO: add this in
+]
+lint.ignore = [
+  "E402", # module-level import not at top (conflicts w/ isort)
+  "E722", # bare excepts (TODO: we should fix these in a follow-up PR)
+  "E731", # lambda expressions (TODO: we should fix these)
+  "F401", # unused imports (TODO: we should fix these)
+  "UP03", # pyupgrade linting (TODO: we should fix these)
+]
+lint.isort.known-first-party = [ "gufe" ]
+
 [tool.coverage.run]
 omit = [
   "openfe/due.py",
