@@ -28,7 +28,7 @@ dependencies:
   - pip
   - pooch
   - py3dmol
-  - pydantic >= 2.0.0
+  - pydantic >= 2.0.0, <2.12.0  # https://github.com/openforcefield/openff-interchange/issues/1346
   - pygraphviz
   - pytest
   - pytest-xdist
