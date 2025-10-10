@@ -10,7 +10,6 @@ TODO
 from typing import Iterable, Optional
 
 import MDAnalysis as mda
-# from gufe.vendor.openff.models.types import ArrayQuantity
 from openfe.protocols.restraint_utils.geometry.utils import (
     get_aromatic_rings,
     get_central_atom_idx,
