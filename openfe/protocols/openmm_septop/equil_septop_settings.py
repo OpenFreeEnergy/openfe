@@ -29,10 +29,10 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
-from gufe.vendor.openff.models.types import FloatQuantity
-from openff.units import unit
-from pydantic.v1 import validator
+from gufe.settings.types import PicosecondQuantity
 
+from openff.units import unit as offunit
+from pydantic import field_validator
 
 class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
@@ -216,7 +216,7 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
-    @validator(
+    @field_validator(
         "lambda_elec_A",
         "lambda_elec_B",
         "lambda_vdw_A",
@@ -234,7 +234,7 @@ class LambdaSettings(SettingsBaseModel):
                 raise ValueError(errmsg)
         return v
 
-    @validator(
+    @field_validator(
         "lambda_elec_A",
         "lambda_elec_B",
         "lambda_vdw_A",
@@ -257,7 +257,7 @@ class LambdaSettings(SettingsBaseModel):
 
 class SepTopEquilOutputSettings(MDOutputSettings):
     # reporter settings
-    output_indices = "all"
+    output_indices: str = "all"
     """
     Selection string for which part of the system to write coordinates for.
     The SepTop protocol enforces "all" since the full system output is
@@ -270,9 +270,9 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     append a '_stateA.xtc' and a '_stateB.xtc' for the output files of the
     respective endstates. Default 'simulation'.
     """
-    trajectory_write_interval: FloatQuantity["picosecond"] = 20.0 * unit.picosecond
+    trajectory_write_interval: PicosecondQuantity = 20.0 * offunit.picosecond
     """
-    Frequency to write the xtc file. Default 20 * unit.picosecond.
+    Frequency to write the xtc file. Default 20 * offunit.picosecond.
     """
     preminimized_structure: Optional[str] = "system"
     """
@@ -306,7 +306,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     files of the respective endstates. Default 'simulation'.
     """
 
-    @validator("output_indices")
+    @field_validator("output_indices")
     def must_be_all(cls, v):
         if v != "all":
             errmsg = ("Equilibration simulations need to output the full "
@@ -331,7 +331,7 @@ class SepTopSettings(SettingsBaseModel):
     difference, while the variance between repeats is used as the uncertainty.
     """
 
-    @validator("protocol_repeats")
+    @field_validator("protocol_repeats")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."

@@ -38,6 +38,10 @@ def test_create_default_settings():
     settings = AbsoluteSolvationProtocol.default_settings()
     assert settings
 
+def test_invalid_protocol_repeats():
+    settings = AbsoluteSolvationProtocol.default_settings()
+    with pytest.raises(ValueError, match="must be a positive value"):
+        settings.protocol_repeats = -1
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, -1], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
