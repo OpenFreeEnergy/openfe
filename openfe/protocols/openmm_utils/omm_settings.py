@@ -412,7 +412,7 @@ class OutputSettings(SettingsBaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # reporter settings
-    output_indices: str = 'not water'  # TODO: add Literal here?
+    output_indices: str = 'not water' 
     """
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
