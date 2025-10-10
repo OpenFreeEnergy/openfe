@@ -42,7 +42,7 @@ def test_create_default_protocol():
 
 def test_invalid_protocol_repeats():
     settings = PlainMDProtocol.default_settings()
-    with pytest.raises(ValidationError, match='should be greater than 0'):
+    with pytest.raises(ValueError, match="must be a positive value"):
         settings.protocol_repeats = -1
 
 def test_serialize_protocol():
