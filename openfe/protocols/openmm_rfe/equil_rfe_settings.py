@@ -106,6 +106,14 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     process. The mean of the repeats defines the final estimate of FE
     difference, while the variance between repeats is used as the uncertainty.
     """
+
+    @field_validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
     # Inherited things
 
     forcefield_settings: OpenMMSystemGeneratorFFSettings
@@ -145,10 +153,3 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     """
     Simulation output control settings.
     """
-
-    @field_validator('protocol_repeats')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v

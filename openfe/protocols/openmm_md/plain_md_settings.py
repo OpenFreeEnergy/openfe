@@ -29,6 +29,13 @@ class PlainMDProtocolSettings(Settings):
     Number of independent MD runs to perform.
     """
 
+    @field_validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
     # Things for creating the systems
     forcefield_settings: OpenMMSystemGeneratorFFSettings
     partial_charge_settings: OpenFFPartialChargeSettings
@@ -46,9 +53,3 @@ class PlainMDProtocolSettings(Settings):
     # Simulations output settings
     output_settings: MDOutputSettings
 
-    @field_validator('protocol_repeats')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v

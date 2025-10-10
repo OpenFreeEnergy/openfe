@@ -126,6 +126,13 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     difference, while the variance between repeats is used as the uncertainty.  
     """
 
+    @field_validator('protocol_repeats')
+    def must_be_positive(cls, v):
+        if v <= 0:
+            errmsg = f"protocol_repeats must be a positive value, got {v}."
+            raise ValueError(errmsg)
+        return v
+
     # Inherited things
     solvent_forcefield_settings: OpenMMSystemGeneratorFFSettings
     vacuum_forcefield_settings: OpenMMSystemGeneratorFFSettings
@@ -212,11 +219,3 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     including the partial charge assignment method, and the
     number of conformers used to generate the partial charges.
     """
-
-
-    @field_validator('protocol_repeats')
-    def must_be_positive(cls, v):
-        if v <= 0:
-            errmsg = f"protocol_repeats must be a positive value, got {v}."
-            raise ValueError(errmsg)
-        return v
