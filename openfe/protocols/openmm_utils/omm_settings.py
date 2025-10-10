@@ -145,7 +145,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``solvent_padding``, ``box_size``,
       or ``box_vectors``.
     """
-    box_vectors: BoxQuantity | None = None # TODO: check that BoxQuantity does the validation we want.
+    box_vectors: BoxQuantity | None = None
     """
     `OpenMM reduced form box vectors <http://docs.openmm.org/latest/userguide/theory/05_other_features.html#periodic-boundary-conditions>`.
 
