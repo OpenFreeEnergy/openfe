@@ -13,6 +13,7 @@ alchemical sampling methods:
 
 Current limitations
 -------------------
+* Alchemical species with a net charge are not currently supported.
 * Disapearing molecules are only allowed in state A. Support for
   appearing molecules will be added in due course.
 * Only small molecules are allowed to act as alchemical molecules.

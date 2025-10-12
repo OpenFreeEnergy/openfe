@@ -13,6 +13,7 @@ alchemical sampling methods:
 
 Current limitations
 -------------------
+* Alchemical species with a net charge are not currently supported.
 * Disapearing molecules are only allowed in state A.
 * Only small molecules are allowed to act as alchemical molecules.
 
@@ -750,10 +751,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)
-        if len(diff[0]) > 1:
+        if len(diff[0]) > 1 or len(diff[0]) == 0:
             errmsg = (
-                "More than one unique components found in stateA, "
-                "only one alchemical species is supported"
+                "Only one alchemical species is supported. "
+                f"Number of unique components found in stateA: {len(diff[0])}."
             )
             raise ValueError(errmsg)
 
@@ -766,7 +767,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         if len(diff[1]) > 0:
-            errmsg = "Unique components are found in stateB, " "this should not happen"
+            errmsg = "Unique components in stateB, this should not happen."
             raise ValueError(errmsg)
 
     @staticmethod
@@ -850,6 +851,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             stateA,
             stateB,
         )
+        # Check that the alchemical components don't contain a
+        # ligand with a net charge...?
+        self._validate_net_charge(alchem_comps)
 
         # Validate the lambda schedule
         self._validate_lambda_schedule(
