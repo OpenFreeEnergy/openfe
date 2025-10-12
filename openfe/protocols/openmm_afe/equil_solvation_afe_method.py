@@ -13,6 +13,7 @@ alchemical sampling methods:
 
 Current limitations
 -------------------
+* Alchemical species with a net charge are not currently supported.
 * Disapearing molecules are only allowed in state A. Support for
   appearing molecules will be added in due course.
 * Only small molecules are allowed to act as alchemical molecules.
@@ -489,7 +490,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         )
 
     @staticmethod
-    def _validate_solvent_endstates(
+    def _validate_endstates(
         stateA: ChemicalSystem, stateB: ChemicalSystem,
     ) -> None:
         """
@@ -509,48 +510,12 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          If stateA or stateB contains a ProteinComponent
-          If there is no SolventComponent in either stateA or stateB
-        """
-        # Check that there are no protein components
-        for comp in itertools.chain(stateA.values(), stateB.values()):
-            if isinstance(comp, ProteinComponent):
-                errmsg = ("Protein components are not allowed for "
-                          "absolute solvation free energies")
-                raise ValueError(errmsg)
-
-        # check that there is a solvent component
-        if not any(
-            isinstance(comp, SolventComponent) for comp in stateA.values()
-        ):
-            errmsg = "No SolventComponent found in stateA"
-            raise ValueError(errmsg)
-
-        if not any(
-            isinstance(comp, SolventComponent) for comp in stateB.values()
-        ):
-            errmsg = "No SolventComponent found in stateB"
-            raise ValueError(errmsg)
-
-    @staticmethod
-    def _validate_alchemical_components(
-        alchemical_components: dict[str, list[Component]]
-    ) -> None:
-        """
-        Checks that the ChemicalSystem alchemical components are correct.
-
-        Parameters
-        ----------
-        alchemical_components : Dict[str, list[Component]]
-          Dictionary containing the alchemical components for
-          stateA and stateB.
-
-        Raises
-        ------
-        ValueError
+          If stateA or stateB contains a ProteinComponent.
+          If there is no SolventComponent in either stateA or stateB.
           If there are alchemical components in state B.
           If there are non SmallMoleculeComponent alchemical species.
           If there are more than one alchemical species.
+          If the alchemical species is charged.
 
         Notes
         -----
@@ -559,26 +524,55 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
           SmallMoleculeComponents.
         * Currently doesn't support more than one alchemical component
           being desolvated.
+        * Currently doesn't support charged alchemical components.
+        * Solvent must always be present in both end states.
         """
+        # Check that there are no protein components
+        if stateA.contains(ProteinComponent) or stateB.contains(ProteinComponent):
+            errmsg = ("Protein components are not allowed for "
+                      "absolute solvation free energies")
+            raise ValueError(errmsg)
 
-        # Crash out if there are any alchemical components in state B for now
-        if len(alchemical_components['stateB']) > 0:
+        # Check that there is a solvent component in both end states
+        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
+            errmsg = "No SolventComponent found in stateA and stateB"
+            raise ValueError(errmsg)
+
+        # Now we check the alchemical Components
+        diff = stateA.component_diff(stateB)
+
+        # Check that there's only one state A unique Component
+        if len(diff[0]) > 1 or len(diff[0]) == 0:
+            errmsg = (
+                "Only one alchemical species is supported "
+                "for absolute solvation free energies. "
+                f"Number of unique components found in stateA: {len(diff[0])}."
+            )
+            raise ValueError(errmsg)
+
+        # Make sure that the state A unique is an SMC
+        if not isinstance(diff[0][0], SmallMoleculeComponent):
+            errmsg = (
+                "Only dissapearing SmallMoleculeComponents "
+                "are supported by this protocol. "
+                f"Found a {type(diff[0][0])}"
+            )
+            raise ValueError(errmsg)
+
+        # Check that the state A unique isn't charged
+        if diff[0][0].total_charge != 0:
+            errmsg = (
+                "Charged alchemical molecules are not currently "
+                "supported for solvation free energies. "
+                f"Molecule total charge: {diff[0][0].total_charge}."
+            )
+            raise ValueError(errmsg)
+
+        # If there are any alchemical Components in state B
+        if len(diff[1]) > 0:
             errmsg = ("Components appearing in state B are not "
                       "currently supported")
             raise ValueError(errmsg)
-
-        if len(alchemical_components['stateA']) > 1:
-            errmsg = ("More than one alchemical components is not supported "
-                      "for absolute solvation free energies")
-            raise ValueError(errmsg)
-
-        # Crash out if any of the alchemical components are not
-        # SmallMoleculeComponent
-        for comp in alchemical_components['stateA']:
-            if not isinstance(comp, SmallMoleculeComponent):
-                errmsg = ("Non SmallMoleculeComponent alchemical species "
-                          "are not currently supported")
-                raise ValueError(errmsg)
 
     @staticmethod
     def _validate_lambda_schedule(
@@ -648,35 +642,43 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             logger.warning(wmsg)
             warnings.warn(wmsg)
 
-    def _create(
+    def _validate(
         self,
+        *,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
         mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
-    ) -> list[gufe.ProtocolUnit]:
-        # TODO: extensions
+    ):
+        # Check we're not extending
         if extends:  # pragma: no-cover
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Validate components and get alchemical components
-        self._validate_solvent_endstates(stateA, stateB)
-        alchem_comps = system_validation.get_alchemical_components(
-            stateA, stateB,
-        )
-        self._validate_alchemical_components(alchem_comps)
+        # Check we're not using a mapping, since we're not doing anything with it
+        if mapping is not None:
+            wmsg = "A mapping was passed but is not used by this Protocol."
+            logger.warning(wmsg)
+
+        # Validate the endstates & alchemical components
+        self._validate_endstates(stateA, stateB)
 
         # Validate the lambda schedule
-        self._validate_lambda_schedule(self.settings.lambda_settings,
-                                       self.settings.solvent_simulation_settings)
-        self._validate_lambda_schedule(self.settings.lambda_settings,
-                                       self.settings.vacuum_simulation_settings)
+        for solv_sets in (
+            self.settings.solvent_simulation_settings,
+            self.settings.vacuum_simulation_settings
+        ):
+            self._validate_lambda_schedule(
+                self.settings.lambda_settings,
+                solv_sets,
+            )
 
         # Check nonbond & solvent compatibility
         solv_nonbonded_method = self.settings.solvent_forcefield_settings.nonbonded_method
         vac_nonbonded_method = self.settings.vacuum_forcefield_settings.nonbonded_method
+
         # Use the more complete system validation solvent checks
         system_validation.validate_solvent(stateA, solv_nonbonded_method)
+
         # Gas phase is always gas phase
         if vac_nonbonded_method.lower() != 'nocutoff':
             errmsg = ("Only the nocutoff nonbonded_method is supported for "
@@ -688,7 +690,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvation_settings
         )
-    
+
         # Check vacuum equilibration MD settings is 0 ns
         nvt_time = self.settings.vacuum_equil_simulation_settings.equilibration_length_nvt
         if nvt_time is not None:
@@ -696,11 +698,22 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 errmsg = "NVT equilibration cannot be run in vacuum simulation"
                 raise ValueError(errmsg)
 
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
+        extends: Optional[gufe.ProtocolDAGResult] = None,
+    ) -> list[gufe.ProtocolUnit]:
+        # Get the alchemical components
+        alchem_comps = system_validation.get_alchemical_components(
+            stateA, stateB,
+        )
+
         # Get the name of the alchemical species
         alchname = alchem_comps['stateA'][0].name
 
         # Create list units for vacuum and solvent transforms
-
         solvent_units = [
             AbsoluteSolvationSolventUnit(
                 protocol=self,
