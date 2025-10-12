@@ -705,6 +705,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
+        # Validate inputs
+        self.validate(stateA, stateB, mapping, extends)
+
         # Get the alchemical components
         alchem_comps = system_validation.get_alchemical_components(
             stateA, stateB,
