@@ -9,8 +9,8 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 """
 
 from pydantic import ConfigDict, field_validator
-from typing import Annotated, Optional, Literal, TypeAlias
-from ...utils.typing import (
+from typing import Optional, Literal
+from openfe.utils.typing import (
     FemtosecondQuantity,
     InversePicosecondQuantity,
     TimestepQuantity,

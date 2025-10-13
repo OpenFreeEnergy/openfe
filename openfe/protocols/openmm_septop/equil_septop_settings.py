@@ -29,7 +29,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
-from gufe.settings.types import PicosecondQuantity
+from openfe.utils.typing import PicosecondQuantity
 
 from openff.units import unit as offunit
 from pydantic import field_validator

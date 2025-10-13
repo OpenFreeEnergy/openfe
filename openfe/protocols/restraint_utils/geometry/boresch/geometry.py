@@ -10,11 +10,11 @@ TODO
 from typing import Annotated, Literal, Optional, TypeAlias
 
 import MDAnalysis as mda
-from gufe.settings.types import NanometerQuantity, GufeQuantity, specify_quantity_units
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit
 from rdkit import Chem
+from openfe.utils.typing import NanometerQuantity, RadiansQuantity
 
 from .guest import find_guest_atom_candidates
 from .host import (
@@ -23,7 +23,6 @@ from .host import (
     find_host_atom_candidates,
 )
 
-RadiansQuantity:TypeAlias = Annotated[GufeQuantity, specify_quantity_units("radians")]
 
 class BoreschRestraintGeometry(HostGuestRestraintGeometry):
     """

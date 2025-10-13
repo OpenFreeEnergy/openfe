@@ -11,10 +11,10 @@ from typing import Optional
 
 import MDAnalysis as mda
 import numpy as np
-from gufe.settings.types import NanometerQuantity
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds
 from openff.units import Quantity, unit
+from openfe.utils.typing import NanometerQuantity
 
 from .harmonic import DistanceRestraintGeometry
 from .utils import _get_mda_selection

@@ -11,7 +11,6 @@ from __future__ import annotations
 from typing import Literal
 from openff.units import unit
 
-from gufe.settings.types import NanometerQuantity
 from gufe.settings import (
     Settings,
     SettingsBaseModel,
@@ -19,6 +18,8 @@ from gufe.settings import (
     ThermoSettings,
 )
 from pydantic import ConfigDict, field_validator
+
+from openfe.utils.typing import NanometerQuantity
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,

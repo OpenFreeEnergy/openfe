@@ -6,12 +6,13 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
-from openfe.utils import requires_package
-from gufe.settings.types import AngstromQuantity
 from openff.units import unit, Quantity
 from openff.units.openmm import to_openmm
 
-from ...utils.silence_root_logging import silence_root_logging
+from openfe.utils import requires_package
+from openfe.utils.silence_root_logging import silence_root_logging
+from openfe.utils.typing import AngstromQuantity
+
 try:
     with silence_root_logging():
         from perses.rjmc.atom_mapping import (
