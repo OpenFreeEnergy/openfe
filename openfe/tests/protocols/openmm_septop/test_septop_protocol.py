@@ -753,11 +753,10 @@ def test_dry_run_methods(
 
 
 @pytest.mark.parametrize(
-    "pressure",
-    [
-        1.0 * openmm.unit.atmosphere,
-        0.9 * openmm.unit.atmosphere,
-        1.1 * openmm.unit.atmosphere,
+    "pressure",[
+        1.0,
+        0.9,
+        1.1,
     ],
 )
 def test_dry_run_ligand_system_pressure(
@@ -770,7 +769,8 @@ def test_dry_run_ligand_system_pressure(
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    default_settings.thermo_settings.pressure = pressure
+    # openfe settings requires openff/pint units
+    default_settings.thermo_settings.pressure = pressure * offunit.bar
 
     protocol = SepTopProtocol(
         settings=default_settings,
@@ -792,7 +792,8 @@ def test_dry_run_ligand_system_pressure(
             serialized_system, serialized_topology, dry=True
         )["debug"]["sampler"]
 
-        assert solv_sampler._thermodynamic_states[1].pressure == pressure
+        # at this point, the units will be in openmm units
+        assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
 
 
 def test_virtual_sites_no_reassign(

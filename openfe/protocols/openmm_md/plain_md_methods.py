@@ -31,8 +31,10 @@ from gufe import (
     ChemicalSystem,
     SmallMoleculeComponent,
 )
+from gufe.settings.types import KelvinQuantity
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
+    FemtosecondQuantity
 )
 from openfe.protocols.openmm_md.plain_md_settings import (
     PlainMDProtocolSettings,
@@ -274,9 +276,9 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
                 positions: omm_unit.Quantity,
                 simulation_settings: MDSimulationSettings,
                 output_settings: MDOutputSettings,
-                temperature: Quantity,
+                temperature: KelvinQuantity,
                 barostat_frequency: Quantity,
-                timestep: Quantity,
+                timestep: FemtosecondQuantity,
                 equil_steps_nvt: Optional[int],
                 equil_steps_npt: int,
                 prod_steps: int,
@@ -297,11 +299,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
           Settings for MD simulation
         output_settings: OutputSettingsMD
           Settings for output of MD simulation
-        temperature: FloatQuantity["kelvin"]
+        temperature: KelvinQuantity
           temperature setting
         barostat_frequency: openff.units.Quantity
           Frequency for the barostat
-        timestep: FloatQuantity["femtosecond"]
+        timestep: FemtosecondQuantity
           Simulation integration timestep
         equil_steps_nvt: Optional[int]
           number of steps for NVT equilibration
