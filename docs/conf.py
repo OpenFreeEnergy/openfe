@@ -55,6 +55,7 @@ extensions = [
     "nbsphinx_link",
     "sphinx.ext.mathjax",
 ]
+suppress_warnings = ["config.cache"] # https://github.com/sphinx-doc/sphinx/issues/12300
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
