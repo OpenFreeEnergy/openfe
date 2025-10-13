@@ -1,25 +1,25 @@
 name: openfe-docs
 channels:
-- https://conda.anaconda.org/jaimergp/label/unsupported-cudatoolkit-shim
 - https://conda.anaconda.org/conda-forge
+
+# explicit pins to speed up build:
 dependencies:
-- autodoc-pydantic <2.0
+- autodoc-pydantic >= 2.1
+- docutils == 0.20
 - gitpython
-- kartograf >=1.0.0
 - libsass
-- lomap2 >=3.0.0
 - myst-parser
 - nbsphinx
 - nbsphinx-link
-- openff-models >=0.0.5
-- openff-toolkit >=0.13.0
-- openff-units
-- openmm
+- openff-toolkit-base == 0.17.0
+- openff-units == 0.3.1
+- openmm == 8.3.1
 - packaging
 - pip
-- plugcli
-- python=3.10
-- sphinx <7.3
+- plugcli >= 0.2.1
+- python
+- pydantic >=2.0.0, <2.12.0  # https://github.com/openforcefield/openff-interchange/issues/1346
+- sphinx ==7.2.6 # TODO: debug "duplicate object" warning with later versions
 - sphinx-click
 - sphinx-design
 - sphinx-toolbox
@@ -27,11 +27,15 @@ dependencies:
 - tqdm
 - pip:
   - git+https://github.com/OpenFreeEnergy/gufe@main
-  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.2.0
+  - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.3.0
+  # pip install these so that conda-forge gufe doesn't pull in ambertools and cause a memory error
+  - git+https://github.com/OpenFreeEnergy/kartograf@main
+  - git+https://github.com/OpenFreeEnergy/konnektor@main
+  - git+https://github.com/OpenFreeEnergy/lomap@main
 
-# These are added automatically by RTD, so we include them here 
+# These are added automatically by RTD, so we include them here
 # for a consistent environment.
 - mock
 - pillow
-- sphinx
-- sphinx_rtd_theme
+# - sphinx
+# - sphinx_rtd_theme

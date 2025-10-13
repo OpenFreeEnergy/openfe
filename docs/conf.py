@@ -55,6 +55,7 @@ extensions = [
     "nbsphinx_link",
     "sphinx.ext.mathjax",
 ]
+suppress_warnings = ["config.cache"] # https://github.com/sphinx-doc/sphinx/issues/12300
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
@@ -66,7 +67,7 @@ intersphinx_mapping = {
     "openeye": ("https://docs.eyesopen.com/toolkits/python/", None),
     "mdtraj": ("https://www.mdtraj.org/1.9.5/", None),
     "openff.units": ("https://docs.openforcefield.org/projects/units/en/stable", None),
-    "gufe": ("https://gufe.readthedocs.io/en/latest/", None),
+    "gufe": ("https://gufe.openfree.energy/en/latest/", None),
 }
 
 autoclass_content = "both"
@@ -102,11 +103,17 @@ exclude_patterns = [
 ]
 
 autodoc_mock_imports = [
+    "MDAnalysis",
     "matplotlib",
     "mdtraj",
+    "openfe_analysis",
     "openmmforcefields",
     "openmmtools",
     "pymbar",
+    "openff.interchange",
+    "openmmforcefields",
+    "psutil",
+    "py3Dmol",
 ]
 
 # Extensions for the myst parser
@@ -127,7 +134,7 @@ myst_heading_anchors = 3
 #
 html_theme = "ofe_sphinx_theme"
 html_theme_options = {
-    "logo": {"text": "OpenFE Documentation"},
+    "logo": {"text": "OpenFE docs"},
     "icon_links": [
         {
             "name": "GitHub",
@@ -136,11 +143,20 @@ html_theme_options = {
             "type": "fontawesome",
         }
     ],
-    "accent_color": "DarkGoldenYellow",
+    "accent_color": "cantina-purple",
     "navigation_with_keys": False,
+    "navbar_end": ["navbar-icon-links"],  # TODO: add "theme-switcher" to add back dark mode toggle
 }
-html_logo = "_static/Squaredcircle.svg"
-
+html_logo = "_static/OFE-color-icon.svg"
+html_favicon = '_static/OFE-color-icon.svg'
+html_context = {
+   "default_mode": "light"
+}
+# temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
+html_sidebars = {
+    "installation": [],
+    "CHANGELOG":[],
+}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -175,6 +191,7 @@ try:
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
+            branch='june-2025',
             to_path=example_notebooks_path,
         )
 except Exception as e:

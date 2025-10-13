@@ -19,7 +19,7 @@ from openfe.protocols.openmm_utils import (charge_generation,
                                            multistate_analysis, omm_settings,
                                            settings_validation,
                                            system_creation, system_validation)
-from openfe.protocols.openmm_utils.charge_generation import (HAS_ESPALOMA,
+from openfe.protocols.openmm_utils.charge_generation import (HAS_ESPALOMA_CHARGE,
                                                              HAS_NAGL,
                                                              HAS_OPENEYE)
 from openff.toolkit import Molecule as OFFMol
@@ -234,10 +234,10 @@ class TestFEAnalysis:
     # function scope if it happens.
     @pytest.fixture(scope='class')
     def reporter(self):
-        with resources.files('openfe.tests.data.openmm_rfe') as d:
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             ncfile = str(d / 'vacuum_nocoord.nc')
 
-        with resources.files('openfe.tests.data.openmm_rfe') as d:
+        with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             chkfile = str(d / 'vacuum_nocoord_checkpoint.nc')
 
         r = multistate.MultiStateReporter(
@@ -794,18 +794,32 @@ class TestOFFPartialCharge:
         # but the charges should have
         assert not np.allclose(charges, lig.partial_charges)
 
-    @pytest.mark.skipif(not HAS_NAGL, reason='NAGL is not available')
-    def test_no_production_nagl(self, uncharged_mol):
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_latest_production_nagl(self, uncharged_mol):
+        """We expect to find a NAGL model and be able to generate partial charges with it."""
+        charge_generation.assign_offmol_partial_charges(
+            uncharged_mol,
+            overwrite=False,
+            method="nagl",
+            toolkit_backend="rdkit",
+            generate_n_conformers=None,
+            nagl_model=None,
+        )
+        assert uncharged_mol.partial_charges.units == "elementary_charge"
 
-        with pytest.raises(ValueError, match='No production am1bcc NAGL'):
-            charge_generation.assign_offmol_partial_charges(
-                uncharged_mol,
-                overwrite=False,
-                method='nagl',
-                toolkit_backend='rdkit',
-                generate_n_conformers=None,
-                nagl_model=None,
-            )
+    @pytest.mark.skipif(not HAS_NAGL, reason="NAGL is not available")
+    def test_no_production_nagl(self, uncharged_mol):
+        """Cleanly handle the case where a NAGL model isn't found."""
+        with mock.patch("openfe.protocols.openmm_utils.charge_generation.get_models_by_type", return_value=[]):
+            with pytest.raises(ValueError, match="No production am1bcc NAGL"):
+                charge_generation.assign_offmol_partial_charges(
+                    uncharged_mol,
+                    overwrite=False,
+                    method="nagl",
+                    toolkit_backend="rdkit",
+                    generate_n_conformers=None,
+                    nagl_model=None,
+                )
 
     # Note: skipping nagl tests on macos/darwin due to known issues
     # see: https://github.com/openforcefield/openff-nagl/issues/78
@@ -847,13 +861,13 @@ class TestOFFPartialCharge:
         pytest.param(
             'espaloma', 'rdkit', 'espaloma', None,
             marks=pytest.mark.skipif(
-                not HAS_ESPALOMA, reason='needs espaloma',
+                not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
             ),
         ),
         pytest.param(
             'espaloma', 'ambertools', 'espaloma', None,
             marks=pytest.mark.skipif(
-                not HAS_ESPALOMA, reason='needs espaloma',
+                not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
             ),
         ),
     ])
@@ -900,7 +914,7 @@ class TestOFFPartialCharge:
     def test_espaloma_import_error(self, monkeypatch, uncharged_mol):
         monkeypatch.setattr(
             sys.modules['openfe.protocols.openmm_utils.charge_generation'],
-            'HAS_ESPALOMA',
+            'HAS_ESPALOMA_CHARGE',
             False
         )
 
@@ -943,7 +957,7 @@ RFE_OUTPUT = pooch.create(
         "simulation.nc": "md5:bc4e842b47de17704d804ae345b91599",
         "simulation_real_time_analysis.yaml": "md5:68a7d81462c42353a91bbbe5e64fd418",
     },
-    retry_if_failed=3,
+    retry_if_failed=5,
 )
 
 @pytest.fixture

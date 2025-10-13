@@ -16,7 +16,7 @@ import numpy as np
 import numpy.typing as npt
 from openmm import app, System, NonbondedForce
 from openmm import unit as omm_unit
-from openff.units import unit
+from openff.units import unit, Quantity
 from openfe import SolventComponent
 
 
@@ -223,7 +223,7 @@ def get_alchemical_waters(
     topology: app.Topology,
     positions: npt.NDArray,
     charge_difference: int,
-    distance_cutoff: unit.Quantity = 0.8 * unit.nanometer,
+    distance_cutoff: Quantity = 0.8 * unit.nanometer,
 ) -> list[int]:
     """
     Pick a list of waters to be used for alchemical charge correction.
@@ -237,7 +237,7 @@ def get_alchemical_waters(
     charge_difference : int
       The charge difference between the two end states
       calculated as stateA_formal_charge - stateB_formal_charge.
-    distance_cutoff : unit.Quantity
+    distance_cutoff : openff.units.Quantity
       The minimum distance away from the solutes from which an alchemical
       water can be chosen.
 
@@ -387,13 +387,10 @@ def _get_indices(topology, resids):
     ----------
     topology : openmm.app.Topology
         Topology to search from.
-    residue_name : str
-        Name of the residue to get the indices for.
+    resids : npt.NDArrayLike
+        An array of residue indices which match the residues we want to get
+        atom indices for.
     """
-    # TODO: remove, this shouldn't be necessary anymore
-    if len(resids) > 1:
-        raise ValueError("multiple residues were found")
-
     # create list of openmm residues
     top_res = [r for r in topology.residues() if r.index in resids]
 
@@ -433,6 +430,8 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
     * Very slow, needs refactoring
     * Can we drop having topologies as inputs here?
     """
+    from collections import Counter
+
     no_const_old_to_new_atom_map = deepcopy(old_to_new_atom_map)
 
     h_elem = app.Element.getByAtomicNumber(1)
@@ -502,6 +501,18 @@ def _remove_constraints(old_to_new_atom_map, old_system, old_topology,
 
             to_del.append(pick_H(i, j, x, y))
 
+    # count the number of times each atom appears
+    to_del_counts = Counter(to_del)
+    # if a H-atom appears more than once, it means it was involved in
+    # multiple different constraints at the end states but that the atom is in the core region
+    # this should not happen
+    for idx, count in to_del_counts.items():
+        if count > 1:
+            # this is raised before we hit the KeyError below
+            raise ValueError(f"Atom {idx} was involved in {count} unique constraints "
+                             f" that changed between the two end-states. This should not happen for core "
+                             f"atoms, please check your atom mapping. Please raise an issue on the openfe github with "
+                             f"the steps to reproduce this error for more help.")
     for idx in to_del:
         del no_const_old_to_new_atom_map[idx]
 

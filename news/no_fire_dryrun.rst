@@ -1,10 +1,10 @@
 **Added:**
 
-* Added compatibility for Numpy 2
+* <news item>
 
 **Changed:**
 
-* <news item>
+* The relative hybrid topology protocol no longer runs the FIRE minimizer when ``dry=True``. 
 
 **Deprecated:**
 

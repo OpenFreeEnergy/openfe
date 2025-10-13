@@ -24,13 +24,13 @@ ZENODO_RBFE_DATA = pooch.create(
         registry={
             "rbfe_results_serial_repeats.tar.gz": "md5:2355ecc80e03242a4c7fcbf20cb45487",
             "rbfe_results_parallel_repeats.tar.gz": "md5:ff7313e14eb6f2940c6ffd50f2192181"},
-        retry_if_failed=3,
+        retry_if_failed=5,
     )
 ZENODO_CMET_DATA = pooch.create(
         path = POOCH_CACHE,
         base_url="doi:10.5281/zenodo.15200083",
         registry={"cmet_results.tar.gz": "md5:a4ca67a907f744c696b09660dc1eb8ec"},
-        retry_if_failed=3,
+        retry_if_failed=5,
     )
 
 @pytest.mark.parametrize('est,unc,unc_prec,est_str,unc_str', [
@@ -413,10 +413,10 @@ class TestRBFEGatherFailedEdges:
             assert "The results network is disconnected" in str(result.stderr)
 
 
-    def test_missing_leg_allow_partial_(self, results_paths_serial_missing_legs: str):
-        runner = CliRunner()
+    def test_allow_partial_msg_not_printed(self, results_paths_serial_missing_legs: str):
         # we *dont* want the suggestion to use --allow-partial if the user already used it!
-        with pytest.warns(match='[^using the \-\-allow\-partial]'):
-            args =  ["--report", "ddg", "--allow-partial"]
-            result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
-            assert_click_success(result)
+        runner = CliRunner()
+        args =  ["--report", "ddg", "--allow-partial"]
+        result = runner.invoke(gather, results_paths_serial_missing_legs + args + ['--tsv'])
+        assert_click_success(result)
+        assert "--allow-partial" not in result.output

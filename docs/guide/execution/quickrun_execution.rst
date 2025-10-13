@@ -3,34 +3,25 @@
 Execution with Quickrun
 =======================
 
-The planning and preparation of a campaign of alchemical simulations using the ``openfe`` package is intended to be
-achievable on a local workstation in a matter of minutes.
-The **execution** of these simulations however requires a large amount of computational power,
-and beyond running single calculations locally,
-is intended to be distributed across a HPC environment.
-Doing this requires storing and sending the details of the simulation from the local workstation to a HPC environment,
-this can be done via the :func:`.Transformation.dump` function which
-:ref:`creates a saved "json" version of the data<dumping_transformations>`.
-These serialised "json" files are the currency of executing a campaign of simulations,
-and contain all the information required to execute a single simulation.
+The planning and preparation of a campaign of alchemical simulations using ``openfe`` is intended to be achievable on a local workstation in a matter of minutes.
+The *execution* of these simulations however requires a large amount of computational power, and beyond running single calculations locally, is intended to be distributed across a HPC environment.
+Doing this requires storing and sending the details of the simulation from the local workstation to a HPC environment, which can be done via the :func:`.Transformation.to_json` function which :ref:`creates a saved JSON version of the data<dumping_transformations>`.
+These serialized JSON files are the currency of executing a campaign of simulations and contain all the information required to execute a single simulation.
 
-To read this information and execute the simulation, the command line interface provides a ``quickrun`` command,
-the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
-Briefly, this command takes a "json" simulation as an input and will then execute the simulation contained within,
-therefore this command would execute a simulation saved to a file called "transformation.json".
+To read the ``Transformation`` information and execute the simulation, the command line interface provides the ``openfe quickrun`` command, the full details of which are given in :ref:`the CLI reference section<cli_quickrun>`.
+Briefly, this command takes in the ``Transformation`` information represented as JSON, then executes a simulation according to those specifications.
+For example, the following command executes a simulation defined by ``transformation.json`` and produces a results file named ``results.json``.
 
 ::
 
   openfe quickrun transformation.json -o results.json
 
 
-Which will produce a results file called ``results.json``.
-
 Executing within a job submission script
 ----------------------------------------
 
-It is likely that computational jobs will be submitted to a queueing engine, such as slurm.
-The ``quickrun`` command can be integrated into as:
+You may need to submit computational jobs to a queueing engine, such as Slurm.
+The ``openfe quickrun`` command can be used within a submission script as follows:
 
 ::
 
@@ -44,24 +35,22 @@ The ``quickrun`` command can be integrated into as:
 
   openfe quickrun transformation.json -o results.json
 
+
 Parallel execution of repeats with Quickrun
 ===========================================
 
 Serial execution of multiple repeats of a transformation can be inefficient when simulation times are long.
-Higher throughput can be achieved with parallel execution by running one repeat per HPC job. Most protocols are set up to
-run three repeats in serial by default, but this can be changed by either:
- 
+Higher throughput can be achieved with parallel execution by running one repeat per HPC job.
+Most protocols are set up to run three repeats in serial by default, but this can be changed by either:
+
  1. Defining the protocol setting ``protocol_repeats`` - see the :ref:`protocol configuration guide <cookbook/choose_protocol.nblink>` for more details.
  2. Using the ``openfe plan-rhfe-network`` (or ``plan-rbfe-network``) command line flag ``--n-protocol-repeats``.
 
-Each transformation can then be executed multiple times via the
-``openfe quickrun`` command to produce a set of repeats, however, you need to ensure to use unique results
-files for each repeat to ensure they don't overwrite each other. We recommend using folders named ``results_x`` where x is 0-2
-to store the repeated calculations as our :ref:`openfe gather <cli_gather>` command also supports this file structure.
+Each transformation can then be executed multiple times via the ``openfe quickrun`` command to produce a set of repeats.
+However, **you must use unique results files for each repeat to ensure they don't overwrite each other**.
+We recommend using folders named ``results_x`` where x is 0-2 to store the repeated calculations as our :ref:`openfe gather <cli_gather>` command also supports this file structure.
 
-Here is an example of a simple script that will create and submit a separate job script (``\*.job`` named file)
-for every alchemical transformation (for the simplest SLURM use case) in a network running each repeat in parallel and writing the
-results to a unique folder:
+Below is an example of a simple script that will create and submit a separate job script (``\*.job`` named file) for every alchemical transformation (for the simplest SLURM use case) in a network running each repeat in parallel and writing the results to a unique folder:
 
 .. code-block:: bash
 
@@ -110,6 +99,12 @@ it to the root directory which includes the repeat results and it will automatic
 ::
 
  openfe gather results_parallel
+
+Optimizing GPU performance with NVIDIA MPS
+==========================================
+
+You can further optimize execution of ``openfe quickrun`` using NVIDIA's Multi-Process Service (MPS).
+See NVIDIA's documentation on `MPS for OpenFE free energy calculations <https://developer.nvidia.com/blog/maximizing-openmm-molecular-dynamics-throughput-with-nvidia-multi-process-service/?ref=blog.omsf.io#mps_for_openfe_free_energy_calculations>`_ for details.
 
 See Also
 --------

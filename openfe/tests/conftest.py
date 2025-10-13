@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
-import importlib
+import pathlib
+
 import pytest
 from importlib import resources
 from rdkit import Chem
@@ -12,7 +13,7 @@ import urllib.request
 
 import gufe
 import openfe
-
+from openfe.protocols.openmm_septop.utils import deserialize
 from gufe import AtomMapper, SmallMoleculeComponent, LigandAtomMapping
 
 
@@ -151,10 +152,10 @@ def lomap_basic_test_files_dir(tmpdir_factory):
     lomap_files = tmpdir_factory.mktemp('lomap_files')
     lomap_basic = 'openfe.tests.data.lomap_basic'
 
-    for f in importlib.resources.contents(lomap_basic):
+    for f in resources.contents(lomap_basic):
         if not f.endswith('mol2'):
             continue
-        stuff = importlib.resources.read_binary(lomap_basic, f)
+        stuff = resources.read_binary(lomap_basic, f)
 
         with open(str(lomap_files.join(f)), 'wb') as fout:
             fout.write(stuff)
@@ -176,7 +177,7 @@ def atom_mapping_basic_test_files():
         '2-naftanol',
         'methylcyclohexane',
         'toluene']:
-        with importlib.resources.files('openfe.tests.data.lomap_basic') as d:
+        with resources.as_file(resources.files('openfe.tests.data.lomap_basic')) as d:
             fn = str(d / (f + '.mol2'))
             mol = Chem.MolFromMol2File(fn, removeHs=False)
             files[f] = SmallMoleculeComponent(mol, name=f)
@@ -205,7 +206,7 @@ def lomap_old_mapper() -> AtomMapper:
 @pytest.fixture(scope='session')
 def benzene_modifications():
     files = {}
-    with importlib.resources.files('openfe.tests.data') as d:
+    with resources.as_file(resources.files('openfe.tests.data')) as d:
         fn = str(d / 'benzene_modifications.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
@@ -216,21 +217,26 @@ def benzene_modifications():
 @pytest.fixture(scope='session')
 def charged_benzene_modifications():
     files = {}
-    with importlib.resources.files('openfe.tests.data') as d:
-        fn = str(d / 'benzene_modifications.sdf')
+    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
+        fn = str(d / 'charged_benzenes.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
-            offmol = Molecule.from_rdkit(rdmol)
-            offmol.assign_partial_charges(partial_charge_method='gasteiger')
-            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent.from_openff(offmol)
+            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
     return files
+
+
+@pytest.fixture(scope='session')
+def T4L_reference_xml():
+    with resources.as_file(resources.files('openfe.tests.data.openmm_septop')) as d:
+        f = str(d / 'system.xml.bz2')
+    return deserialize(pathlib.Path(f))
 
 
 @pytest.fixture
 def serialization_template():
     def inner(filename):
         loc = "openfe.tests.data.serialization"
-        tmpl = importlib.resources.read_text(loc, filename)
+        tmpl = resources.read_text(loc, filename)
         return tmpl.replace('{OFE_VERSION}', openfe.__version__)
 
     return inner
@@ -240,7 +246,7 @@ def serialization_template():
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.files('openfe.tests.data') as d:
+    with resources.as_file(resources.files('openfe.tests.data')) as d:
         fn = str(d / 'benzene_modifications.sdf')
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
@@ -250,28 +256,28 @@ def benzene_transforms():
 
 @pytest.fixture(scope='session')
 def T4_protein_component():
-    with resources.files('openfe.tests.data') as d:
+    with resources.as_file(resources.files('openfe.tests.data')) as d:
         fn = str(d / '181l_only.pdb')
         comp = gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
     return comp
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def eg5_protein_pdb():
-    with resources.files('openfe.tests.data.eg5') as d:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_protein.pdb')
 
 
 @pytest.fixture()
 def eg5_ligands_sdf():
-    with resources.files('openfe.tests.data.eg5') as d:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_ligands.sdf')
 
 
 @pytest.fixture()
 def eg5_cofactor_sdf():
-    with resources.files('openfe.tests.data.eg5') as d:
+    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_cofactor.sdf')
 
 
@@ -293,13 +299,13 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 @pytest.fixture()
 def orion_network():
-    with resources.files('openfe.tests.data.external_formats') as d:
+    with resources.as_file(resources.files('openfe.tests.data.external_formats')) as d:
         yield str(d / 'somebenzenes_nes.dat')
 
 
 @pytest.fixture()
 def fepplus_network():
-    with resources.files('openfe.tests.data.external_formats') as d:
+    with resources.as_file(resources.files('openfe.tests.data.external_formats')) as d:
         yield str(d / 'somebenzenes_edges.edge')
 
 
@@ -308,7 +314,7 @@ def CN_molecule():
     """
     A basic CH3NH2 molecule for quick testing.
     """
-    with resources.files('openfe.tests.data') as d:
+    with resources.as_file(resources.files('openfe.tests.data')) as d:
         fn = str(d / 'CN.sdf')
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
 
@@ -345,3 +351,9 @@ except:  # -no-cov-
     HAS_INTERNET = False
 else:
     HAS_INTERNET = True
+
+try:
+    import espaloma
+    HAS_ESPALOMA = True
+except ModuleNotFoundError:
+    HAS_ESPALOMA = False

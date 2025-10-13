@@ -2,33 +2,33 @@ name: openfe_env
 channels:
   - conda-forge
 dependencies:
-  - cinnabar ~=0.4.0
+  - cinnabar ~=0.5.0
   - click >=8.2.0
   - coverage
   - duecredit<0.10
-  - kartograf>=1.0.0
+  - kartograf>=1.2.0
+  - konnektor~=0.2.0
   - lomap2>=3.2.1
   - networkx
-  - numpy<2.0.0
+  - numpy<2.3
   - openfe-analysis>=0.3.1
-  - openff-interchange
-  - openff-models>=0.0.5
+  - openff-interchange-base
   - openff-nagl-base >=0.3.3
   - openff-nagl-models>=0.1.2
-  - openff-toolkit>=0.16.2
-  - openff-units==0.2.0
-  - openmm >=8.2.0
+  - openff-toolkit-base >=0.16.2
+  - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
+  - openmm ~=8.3.0
   - openmmforcefields
   - openmmtools >=0.25.0
   - packaging
   - pandas
   - perses>=0.10.3
   - plugcli
-  - pint<0.22
+  - pint>=0.24.0
   - pip
   - pooch
   - py3dmol
-  - pydantic >=1.10.17
+  - pydantic >= 2.0.0, <2.12.0  # https://github.com/openforcefield/openff-interchange/issues/1346
   - pygraphviz
   - pytest
   - pytest-xdist
@@ -44,7 +44,7 @@ dependencies:
   # Issue #443
   - pymbar>4.0
   # docs
-  - autodoc-pydantic<2.0
+  - autodoc-pydantic>=2.0
   - pydata-sphinx-theme
   - sphinx-click
   - sphinx-toolbox

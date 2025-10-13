@@ -1,12 +1,12 @@
 Installation
 ============
 
-``openfe`` currently only works on POSIX systems (macOS and UNIX/Linux).
+**openfe** is currently only compatible with POSIX systems (macOS and UNIX/Linux).
 
 We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
 
-- Python 3.10, 3.11, 3.12 - **we do not yet support Python 3.13**
-- OpenMM 8.0, 8.1.1, 8.1.2 - **we do not yet support OpenMM v8.2.0**
+- OpenMM 8.0, 8.1.2, 8.2.0 - **we do not yet support OpenMM v8.3.0**
+- `OpenEye Toolkits` is not yet compatible with Python 3.13, so **openfe** cannot use openeye functionality with Python 3.13.
 
 When you install ``openfe`` through any of the methods described below, you
 will install both the core library and the command line interface (CLI).

@@ -25,7 +25,7 @@ from openfe.protocols.openmm_afe import (
 
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA
+    HAS_NAGL, HAS_OPENEYE, HAS_ESPALOMA_CHARGE
 )
 
 
@@ -38,6 +38,10 @@ def test_create_default_settings():
     settings = AbsoluteSolvationProtocol.default_settings()
     assert settings
 
+def test_invalid_protocol_repeats():
+    settings = AbsoluteSolvationProtocol.default_settings()
+    with pytest.raises(ValueError, match="must be a positive value"):
+        settings.protocol_repeats = -1
 
 @pytest.mark.parametrize('val', [
     {'elec': [0.0, -1], 'vdw': [0.0, 1.0], 'restraints': [0.0, 1.0]},
@@ -619,7 +623,7 @@ def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
     pytest.param(
         'espaloma', 'rdkit', 'espaloma',
         marks=pytest.mark.skipif(
-            not HAS_ESPALOMA, reason='needs espaloma',
+            not HAS_ESPALOMA_CHARGE, reason='needs espaloma charge',
         ),
     ),
 ])

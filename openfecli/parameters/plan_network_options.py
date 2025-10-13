@@ -5,11 +5,7 @@
 """
 import click
 from collections import namedtuple
-try:
-    # todo; once we're fully v2, we can use ConfigDict not nested class
-    from pydantic.v1 import BaseModel  # , ConfigDict
-except ImportError:
-    from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from plugcli.params import Option
 from typing import Any, Optional
 import yaml
@@ -29,38 +25,28 @@ PlanNetworkOptions = namedtuple(
 
 
 class MapperSelection(BaseModel):
-    # model_config = ConfigDict(extra='allow', str_to_lower=True)
-    class Config:
-        extra = 'allow'
-        anystr_lower = True
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: Optional[str] = None
     settings: dict[str, Any] = {}
 
 
 class NetworkSelection(BaseModel):
-    # model_config = ConfigDict(extra='allow', str_to_lower=True)
-    class Config:
-        extra = 'allow'
-        anystr_lower = True
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: Optional[str] = None
     settings: dict[str, Any] = {}
 
 
 class PartialChargeSelection(BaseModel):
-    class Config:
-        extra = 'allow'
-        anystr_lower = True
+    model_config = ConfigDict(extra='allow', str_to_lower=True)
 
     method: Optional[str] = 'am1bcc'
     settings: dict[str, Any] = {}
 
 
 class CliYaml(BaseModel):
-    # model_config = ConfigDict(extra='allow')
-    class Config:
-        extra = 'allow'
+    model_config = ConfigDict(extra='allow')
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
@@ -161,12 +147,15 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             raise KeyError(f"Bad mapper choice: '{opt.mapper.method}'")
         mapper_obj = cls(**opt.mapper.settings)
     else:
-        mapper_obj = LomapAtomMapper(
-            time=20,
-            threed=True,
-            max3d=1.0,
-            element_change=True,
-            shift=False
+        mapper_obj = KartografAtomMapper(
+            atom_max_distance=0.95,
+            atom_map_hydrogens=True,
+            # Non-default setting, as we remove these later anyway when correcting for constraints
+            map_hydrogens_on_hydrogens_only=True,
+            map_exact_ring_matches_only=True,
+            # Current default, but should be changed in future Kartograf releases
+            allow_partial_fused_rings=True,
+            allow_bond_breaks=False,
         )
 
     # todo: choice of scorer goes here
@@ -215,14 +204,14 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     )
 # TODO: do we want this in the docs anywhere?
 DEFAULT_YAML="""
-    mapper: LomapAtomMapper
+    mapper: KartografAtomMapper
         settings:
-            time: 20
-            threed: True
-            max3d: 1.0
-            element_change: true
-            seed: ''
-            shift: false
+            atom_max_distance: 0.95
+            atom_map_hydrogens: true
+            map_hydrogens_on_hydrogens_only: true
+            map_exact_ring_matches_only: true
+            allow_partial_fused_rings: true
+            allow_bond_breaks: false
 
     network:
         method: generate_minimal_spanning_network
@@ -241,8 +230,8 @@ and/or partial charge method (``partial_charge``) to use.
 
 \b
 Supported atom mapper choices are:
-    - ``LomapAtomMapper`` (default)
-    - ``KartografAtomMapper``
+    - ``KartografAtomMapper`` (default as of v1.7.0)
+    - ``LomapAtomMapper``
 \b
 Supported network planning algorithms include (but are not limited to):
     - ``generate_minimal_spanning_network`` (default)
