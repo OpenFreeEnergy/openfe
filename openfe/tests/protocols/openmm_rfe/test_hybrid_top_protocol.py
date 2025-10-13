@@ -256,6 +256,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
 
 
 @pytest.mark.slow
+## TODO: this is breaking because the components are not the same gufe tokenizables as in the mapping
 def test_dry_many_molecules_solvent(
     benzene_many_solv_system, toluene_many_solv_system,
     benzene_to_toluene_mapping, tmpdir
@@ -430,8 +431,11 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=settings)
 
-    dag = protocol.create(stateA=benzene_system, stateB=toluene_system,
-                          mapping=benzene_to_toluene_mapping)
+    dag = protocol.create(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=benzene_to_toluene_mapping,
+    )
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
@@ -443,12 +447,34 @@ def test_confgen_mocked_fail(benzene_system, toluene_system,
 
 @pytest.fixture(scope='session')
 def tip4p_hybrid_factory(
-    benzene_system, toluene_system,
-    benzene_to_toluene_mapping, tmp_path_factory,
+    benzene_modifications, tmp_path_factory,
 ):
     """
     Hybrid system with virtual sites in the environment (waters)
     """
+    # Session scoped, so we do things by hand here
+    # Generate the end state systems
+    benzene_offmol = benzene_modifications['benzene'].to_openff()
+    benzene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    benzene = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    toluene_offmol = benzene_modifications['toluene'].to_openff()
+    toluene_offmol.assign_partial_charges(partial_charge_method='gasteiger')
+    toluene = openfe.SmallMoleculeComponent.from_openff(toluene_offmol)
+
+    solvent = openfe.SolventComponent(
+        positive_ion='Na',
+        negative_ion='Cl',
+        ion_concentration=0.15 * unit.molar
+    )
+
+    stateA = openfe.ChemicalSystem({'ligand': benzene, 'solvent': solvent})
+    stateB = openfe.ChemicalSystem({'ligand': toluene, 'solvent': solvent})
+
+    # Now the mapping
+    mapper = openfe.setup.LomapAtomMapper(element_change=False)
+    mapping = next(mapper.suggest_mappings(benzene, toluene))
+
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
@@ -464,9 +490,9 @@ def tip4p_hybrid_factory(
             settings=settings,
     )
     dag = protocol.create(
-        stateA=benzene_system,
-        stateB=toluene_system,
-        mapping=benzene_to_toluene_mapping,
+        stateA=stateA,
+        stateB=stateB,
+        mapping=mapping,
     )
     dag_unit = list(dag.protocol_units)[0]
 
@@ -999,11 +1025,8 @@ def test_missing_ligand(benzene_system, benzene_to_toluene_mapping):
         )
 
 
-def test_vaccuum_PME_error(benzene_vacuum_system, benzene_modifications,
-                           benzene_to_toluene_mapping):
-    # state B doesn't have a solvent component (i.e. its vacuum)
-    stateB = openfe.ChemicalSystem({'ligand': benzene_modifications['toluene']})
-
+def test_vacuum_PME_error(benzene_vacuum_system, toluene_vacuum_system,
+                          benzene_to_toluene_mapping):
     p = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=openmm_rfe.RelativeHybridTopologyProtocol.default_settings(),
     )
@@ -1011,7 +1034,7 @@ def test_vaccuum_PME_error(benzene_vacuum_system, benzene_modifications,
     with pytest.raises(ValueError, match=errmsg):
         _ = p.create(
             stateA=benzene_vacuum_system,
-            stateB=stateB,
+            stateB=toluene_vacuum_system,
             mapping=benzene_to_toluene_mapping,
         )
 

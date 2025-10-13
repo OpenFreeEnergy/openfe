@@ -230,8 +230,9 @@ def get_settings():
 
 class TestFEAnalysis:
 
-    # Note: class scope _will_ cause this to segfault - the reporter has to close
-    @pytest.fixture(scope='function')
+    # Note: scope on this can sometimes cause segfault, may need to revert to
+    # function scope if it happens.
+    @pytest.fixture(scope='class')
     def reporter(self):
         with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
             ncfile = str(d / 'vacuum_nocoord.nc')
@@ -247,7 +248,7 @@ class TestFEAnalysis:
         finally:
             r.close()
 
-    @pytest.fixture()
+    @pytest.fixture(scope='class')
     def analyzer(self, reporter):
         return multistate_analysis.MultistateEquilFEAnalysis(
             reporter, sampling_method='repex',

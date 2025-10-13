@@ -7,6 +7,7 @@ import pytest
 from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from openff.toolkit import Molecule
 from openff.units import unit
 import urllib.request
 
