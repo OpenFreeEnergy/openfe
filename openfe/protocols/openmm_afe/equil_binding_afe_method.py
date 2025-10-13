@@ -735,17 +735,18 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         Raises
         ------
         ValueError
-          If stateA does not contain a ProteinComponent
-          If stateA does not contain a SolventComponent
-          If stateA has more than one unique Component
-          If the stateA unique Component is not a SmallMoleculeComponent
-          If stateB contains any unique Components
+          If stateA & stateB do not contain a ProteinComponent.
+          If stateA & stateB do not contain a SolventComponent.
+          If stateA has more than one unique Component.
+          If the stateA unique Component is not a SmallMoleculeComponent.
+          If stateB contains any unique Components.
+          If the alchemical species is charged.
         """
-        if not any(isinstance(comp, ProteinComponent) for comp in stateA.values()):
+        if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
+        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
             errmsg = "No SolventComponent found"
             raise ValueError(errmsg)
 
@@ -766,8 +767,19 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             )
             raise ValueError(errmsg)
 
+        # Check that the state A unique isn't charged
+        if diff[0][0].total_charge != 0:
+            errmsg = (
+                "Charged alchemical molecules are not currently "
+                "supported for solvation free energies. "
+                f"Molecule total charge: {diff[0][0].total_charge}."
+            )
+            raise ValueError(errmsg)
+
+        # If there are any alchemical Components in state B
         if len(diff[1]) > 0:
-            errmsg = "Unique components in stateB, this should not happen."
+            errmsg = ("Components appearing in state B are not "
+                      "currently supported")
             raise ValueError(errmsg)
 
     @staticmethod
@@ -851,9 +863,6 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             stateA,
             stateB,
         )
-        # Check that the alchemical components don't contain a
-        # ligand with a net charge...?
-        self._validate_net_charge(alchem_comps)
 
         # Validate the lambda schedule
         self._validate_lambda_schedule(

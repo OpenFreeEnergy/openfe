@@ -241,7 +241,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     difference, while the variance between repeats is used as the uncertainty.
     """
 
-    @validator('protocol_repeats')
+    @field_validator('protocol_repeats')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."
