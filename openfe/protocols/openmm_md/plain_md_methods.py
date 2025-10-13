@@ -31,7 +31,7 @@ from gufe import (
     ChemicalSystem,
     SmallMoleculeComponent,
 )
-from gufe.settings.types import KelvinQuantity
+
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
     FemtosecondQuantity

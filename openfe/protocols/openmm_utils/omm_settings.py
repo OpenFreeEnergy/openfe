@@ -10,7 +10,17 @@ and :mod`openfe.protocols.openmm_afe.equil_afe_methods.py`
 
 from pydantic import ConfigDict, field_validator
 from typing import Annotated, Optional, Literal, TypeAlias
-
+from ...utils.typing import (
+    FemtosecondQuantity,
+    InversePicosecondQuantity,
+    TimestepQuantity,
+    NanometerQuantity,
+    NanometerArrayQuantity,
+    PicosecondQuantity,
+    KCalPerMolQuantity,
+    BoxQuantity,
+    NanosecondQuantity,
+)
 from gufe.settings import (
     Settings as Settings,
     SettingsBaseModel,
@@ -18,23 +28,8 @@ from gufe.settings import (
     ThermoSettings as ThermoSettings,
 )
 
-from gufe.settings.types import (
-    NanometerQuantity,
-    NanometerArrayQuantity,
-    PicosecondQuantity,
-    KCalPerMolQuantity,
-    BoxQuantity,
-    NanosecondQuantity,
-    GufeQuantity,
-    specify_quantity_units,
-)
-
 from openff.interchange.components._packmol import _box_vectors_are_in_reduced_form
 from openff.units import unit
-
-FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
-InversePicosecondQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("1/picosecond")]
-TimestepQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("timestep")]
 
 class BaseSolvationSettings(SettingsBaseModel):
     """
