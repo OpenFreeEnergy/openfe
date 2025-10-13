@@ -233,6 +233,19 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         pdb = mdt.load_pdb('hybrid_system.pdb')
         assert pdb.n_atoms == 16
 
+        # check we can extract the correct positions for the end states
+        old_positions = htf.old_positions(htf.hybrid_positions)
+        # check the shape and positions match the input
+        assert old_positions.shape == (12, 3)
+        # rdkit positions are in angstrom
+        benzene_positions = benzene_vacuum_system.components["ligand"].to_rdkit().GetConformer().GetPositions()
+        assert_allclose(old_positions.value_in_unit(omm_unit.angstrom), benzene_positions)
+        # same for toluene
+        toluene_positions = toluene_vacuum_system.components["ligand"].to_rdkit().GetConformer().GetPositions()
+        new_positions = htf.new_positions(htf.hybrid_positions)
+        assert new_positions.shape == (15, 3)
+        assert_allclose(new_positions.value_in_unit(omm_unit.angstrom), toluene_positions)
+
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
                              benzene_to_toluene_mapping, tmpdir):
