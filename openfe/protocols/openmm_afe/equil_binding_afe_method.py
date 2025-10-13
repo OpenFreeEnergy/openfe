@@ -516,154 +516,39 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 pressure=1 * offunit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
+            # fmt: off
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0,
-                    0.25,
-                    0.5,
-                    0.75,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
+                    0.0, 0.25, 0.5, 0.75, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                 ],
                 lambda_vdw=[
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.12,
-                    0.24,
-                    0.36,
-                    0.48,
-                    0.6,
-                    0.7,
-                    0.77,
-                    0.85,
-                    1.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.12, 0.24, 0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0
                 ],
                 lambda_restraints=[
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
                 ],
             ),
             complex_lambda_settings=LambdaSettings(
                 lambda_elec=[
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.1,
-                    0.2,
-                    0.3,
-                    0.4,
-                    0.5,
-                    0.6,
-                    0.7,
-                    0.8,
-                    0.9,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.00,
-                    1.0,
-                    1.00,
-                    1.0,
-                    1.00,
-                    1.0,
-                    1.00,
-                    1.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0
                 ],
                 lambda_vdw=[
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.1,
-                    0.2,
-                    0.3,
-                    0.4,
-                    0.5,
-                    0.6,
-                    0.65,
-                    0.7,
-                    0.75,
-                    0.8,
-                    0.85,
-                    0.9,
-                    0.95,
-                    1.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0
                 ],
                 lambda_restraints=[
-                    0.0,
-                    0.2,
-                    0.4,
-                    0.6,
-                    0.8,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.00,
-                    1.0,
-                    1.00,
-                    1.0,
-                    1.00,
-                    1.0,
-                    1.00,
-                    1.0,
+                    0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0
                 ],
             ),
+            # fmt: on
             partial_charge_settings=OpenFFPartialChargeSettings(),
             complex_solvation_settings=OpenMMSolvationSettings(),
             solvent_solvation_settings=OpenMMSolvationSettings(),
@@ -731,11 +616,15 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If stateB contains any unique Components.
           If the alchemical species is charged.
         """
-        if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
+        if not (
+            stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)
+        ):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
+        if not (
+            stateA.contains(SolventComponent) and stateB.contains(SolventComponent)
+        ):
             errmsg = "No SolventComponent found"
             raise ValueError(errmsg)
 
@@ -767,8 +656,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # If there are any alchemical Components in state B
         if len(diff[1]) > 0:
-            errmsg = ("Components appearing in state B are not "
-                      "currently supported")
+            errmsg = "Components appearing in state B are not " "currently supported"
             raise ValueError(errmsg)
 
     @staticmethod
@@ -838,8 +726,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         *,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None
+        mapping: Optional[
+            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
+        ] = None,
+        extends: Optional[gufe.ProtocolDAGResult] = None,
     ):
         # Check we're not extending
         if extends:  # pragma: no-cover
@@ -886,12 +776,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # Validate inputs
-        self.validate(
-            stateA=stateA,
-            stateB=stateB,
-            mapping=mapping,
-            extends=extends
-        )
+        self.validate(stateA=stateA, stateB=stateB, mapping=mapping, extends=extends)
 
         # Get the alchemical components
         alchem_comps = system_validation.get_alchemical_components(
