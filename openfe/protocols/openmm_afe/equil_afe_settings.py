@@ -114,6 +114,54 @@ class LambdaSettings(SettingsBaseModel):
         return v
 
 
+class ABFEPreEquilOuputSettings(MDOutputSettings):
+    output_indices: str = "all"
+    """
+    Selection string for which part of the system to write coordinates for.
+    For now, must be "all".
+    """
+
+    equil_nvt_structure: str | None = "equil_nvt_structure.pdb"
+    """
+    Name of the PDB file containing the system after NVT pre-equilibration.
+    Only the atom subset specified by output_indices is saved.
+    Default 'equil_nvt_structure.pdb'.
+    """
+
+    equil_npt_structure: str | None = "equil_npt_structure.pdb"
+    """
+    Name of the PDB file containing the system after NPT pre-equilibration.
+    Only the atom subset specified by output_indices is saved.
+    Default 'equil_npt_structure.pdb'.
+    """
+
+    production_trajectory_filename: str | None = "production_equil.xtc"
+    """
+    Name pre-equilibration "production" (i.e. extended NPT) trajectory file.
+    Only the atom subset specified by output_indices is saved.
+    Default `production_equil.xtc`.
+    """
+
+    log_output: str | None = "production_equil_simulation.log"
+    """
+    Filename for writing the pre-equilibration extended NPT MD simulation
+    log file. This includes ns/day, timesteps, energies, density, etc.
+    Default 'production_equil_simulation.log'
+    """
+
+    @field_validator('output_indices')
+    def must_be_all(cls, v):
+        # Would be better if this was just changed to a Literal
+        # but changing types in child classes in pydantic is messy
+        if v != 'all':
+            msg = (
+                "output_indices must be all for ABFE "
+                "pre-equilibration simulations"
+            )
+            raise ValueError(msg)
+        return v
+
+
 # This subclasses from SettingsBaseModel as it has vacuum_forcefield and
 # solvent_forcefield fields, not just a single forcefield_settings field
 class AbsoluteSolvationSettings(SettingsBaseModel):
@@ -306,7 +354,9 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     Simulation control settings, including simulation lengths
     for the solvent transformation.
     """
-    complex_equil_output_settings: MDOutputSettings
+
+    # Simulation output settings
+    complex_equil_output_settings: ABFEPreEquilOuputSettings
     """
     Simulation output settings for the complex non-alchemical equilibration.
     """
@@ -314,7 +364,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Simulation output settings for the complex transformation.
     """
-    solvent_equil_output_settings: MDOutputSettings
+    solvent_equil_output_settings: ABFEPreEquilOuputSettings
     """
     Simulation output settings for the solvent non-alchemical equilibration.
     """
@@ -333,4 +383,3 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     Settings controlling how restraints are added to the system in the
     complex simulation.
     """
-

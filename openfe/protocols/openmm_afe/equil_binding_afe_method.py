@@ -52,7 +52,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     FlatBottomRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
-    MDOutputSettings,
+    ABFEPreEquilOuputSettings,
     MDSimulationSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
@@ -675,12 +675,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 equilibration_length=0.2 * offunit.nanosecond,
                 production_length=0.5 * offunit.nanosecond,
             ),
-            solvent_equil_output_settings=MDOutputSettings(
-                equil_nvt_structure="equil_nvt_structure.pdb",
-                equil_npt_structure="equil_npt_structure.pdb",
-                production_trajectory_filename="production_equil.xtc",
-                log_output="equil_simulation.log",
-            ),
+            solvent_equil_output_settings=ABFEPreEquilOuputSettings(),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
                 equilibration_length=1.0 * offunit.nanosecond,
@@ -696,13 +691,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 equilibration_length=0.5 * offunit.nanosecond,
                 production_length=5.0 * offunit.nanosecond,
             ),
-            complex_equil_output_settings=MDOutputSettings(
-                output_indices="all",
-                equil_nvt_structure="equil_nvt_structure.pdb",
-                equil_npt_structure="equil_npt_structure.pdb",
-                production_trajectory_filename="production_equil.xtc",
-                log_output="equil_simulation.log",
-            ),
+            complex_equil_output_settings=ABFEPreEquilOuputSettings(),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=30,
                 equilibration_length=1 * offunit.nanosecond,
@@ -844,25 +833,25 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 )
                 raise ValueError(errmsg)
 
-    def _create(
+    def _validate(
         self,
+        *,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[
-            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
-        ] = None,
-        extends: Optional[gufe.ProtocolDAGResult] = None,
-    ) -> list[gufe.ProtocolUnit]:
-        # TODO: extensions
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
+        extends: Optional[gufe.ProtocolDAGResult] = None
+    ):
+        # Check we're not extending
         if extends:  # pragma: no-cover
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Validate components and get alchemical components
+        # Check we're not using a mapping, since we're not doing anything with it
+        if mapping is not None:
+            wmsg = "A mapping was passed but is not used by this Protocol."
+            logger.warning(wmsg)
+
+        # Validate the end states & alchemical components
         self._validate_endstates(stateA, stateB)
-        alchem_comps = system_validation.get_alchemical_components(
-            stateA,
-            stateB,
-        )
 
         # Validate the lambda schedule
         self._validate_lambda_schedule(
@@ -887,13 +876,28 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             self.settings.complex_solvation_settings
         )
 
-        # Make sure that we have the full system for restraint trajectory analysis
-        if self.settings.complex_equil_output_settings.output_indices != "all":
-            errmsg = (
-                "Complex simulations need to output the full system "
-                "during equilibration simulations."
-            )
-            raise ValueError(errmsg)
+    def _create(
+        self,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: Optional[
+            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
+        ] = None,
+        extends: Optional[gufe.ProtocolDAGResult] = None,
+    ) -> list[gufe.ProtocolUnit]:
+        # Validate inputs
+        self.validate(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=mapping,
+            extends=extends
+        )
+
+        # Get the alchemical components
+        alchem_comps = system_validation.get_alchemical_components(
+            stateA,
+            stateB,
+        )
 
         # Get the name of the alchemical species
         alchname = alchem_comps["stateA"][0].name
@@ -1016,7 +1020,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
+            * equil_output_settings : ABFEPreEquilOuputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
@@ -1388,7 +1392,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : MDOutputSettings
+            * equil_output_settings : ABFEPreEquilOuputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
         """
