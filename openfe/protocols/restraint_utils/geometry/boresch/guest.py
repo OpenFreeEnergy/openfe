@@ -10,8 +10,6 @@ TODO
 from typing import Iterable, Optional
 
 import MDAnalysis as mda
-import numpy.typing as npt
-from gufe.vendor.openff.models.types import ArrayQuantity
 from openfe.protocols.restraint_utils.geometry.utils import (
     get_aromatic_rings,
     get_central_atom_idx,
@@ -125,7 +123,9 @@ def _bonded_angles_from_pool(
 
 
 def _get_guest_atom_pool(
-    rdmol: Chem.Mol, rmsf: ArrayQuantity, rmsf_cutoff: Quantity
+    rdmol: Chem.Mol,
+    rmsf, #: ArrayQuantity, TODO: new pydantic v2-compatible quantity needed here.
+    rmsf_cutoff: Quantity
 ) -> tuple[Optional[set[int]], bool]:
     """
     Filter atoms based on rmsf & rings, defaulting to heavy atoms if

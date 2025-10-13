@@ -15,7 +15,7 @@ import MDAnalysis as mda
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
-from gufe.vendor.openff.models.types import ArrayQuantity
+# from gufe.vendor.openff.models.types import ArrayQuantity  TODO: write a custom quantity to replace this in pydantic v2
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.dssp import DSSP
 from MDAnalysis.analysis.rms import RMSF
@@ -518,7 +518,8 @@ class FindHostAtoms(AnalysisBase):
         self.results.host_idxs = np.array(list(self.results.host_idxs))
 
 
-def get_local_rmsf(atomgroup: mda.AtomGroup) -> ArrayQuantity:
+# TODO: needs custom type https://github.com/OpenFreeEnergy/openfe/issues/1569
+def get_local_rmsf(atomgroup: mda.AtomGroup): # -> ArrayQuantity: 
     """
     Get the RMSF of an AtomGroup when aligned upon itself.
 

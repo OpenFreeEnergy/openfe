@@ -40,7 +40,7 @@ from openfe.protocols.restraint_utils.settings import (
 
 import numpy as np
 
-from pydantic.v1 import validator
+from pydantic import field_validator
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -93,7 +93,7 @@ class LambdaSettings(SettingsBaseModel):
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
-    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    @field_validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
     def must_be_between_0_and_1(cls, v):
         for window in v:
             if not 0 <= window <= 1:
@@ -102,7 +102,7 @@ class LambdaSettings(SettingsBaseModel):
                 raise ValueError(errmsg)
         return v
 
-    @validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
+    @field_validator('lambda_elec', 'lambda_vdw', 'lambda_restraints')
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
@@ -131,7 +131,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     difference, while the variance between repeats is used as the uncertainty.  
     """
 
-    @validator('protocol_repeats')
+    @field_validator('protocol_repeats')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."
