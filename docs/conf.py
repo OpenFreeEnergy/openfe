@@ -148,7 +148,6 @@ html_theme_options = {
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = '_static/OFE-color-icon.svg'
-# html_context = {"default_mode": "light"}
 # temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
 html_sidebars = {
     "installation": [],
