@@ -120,6 +120,10 @@ def test_create_default_protocol():
 
     assert protocol
 
+def test_invalid_protocol_repeats():
+    settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    with pytest.raises(ValueError, match="must be a positive value"):
+        settings.protocol_repeats = -1
 
 def test_serialize_protocol():
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
