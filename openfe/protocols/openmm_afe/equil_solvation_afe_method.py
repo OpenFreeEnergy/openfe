@@ -535,7 +535,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
 
         # Check that there is a solvent component in both end states
         if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
-            errmsg = "No SolventComponent found in stateA and stateB"
+            errmsg = "No SolventComponent found in stateA and/or stateB"
             raise ValueError(errmsg)
 
         # Now we check the alchemical Components
@@ -706,7 +706,9 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # Validate inputs
-        self.validate(stateA, stateB, mapping, extends)
+        self.validate(
+            stateA=stateA, stateB=stateB, mapping=mapping, extends=extends
+        )
 
         # Get the alchemical components
         alchem_comps = system_validation.get_alchemical_components(

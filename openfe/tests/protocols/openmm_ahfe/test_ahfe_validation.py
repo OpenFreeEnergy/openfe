@@ -1,20 +1,6 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import itertools
-import json
-from math import sqrt
-import sys
 import pytest
-from unittest import mock
-from openmm import NonbondedForce, CustomNonbondedForce
-from openmmtools.multistate.multistatesampler import MultiStateSampler
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
-import mdtraj as mdt
-import numpy as np
-from numpy.testing import assert_allclose
-import gufe
-import openfe
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
@@ -116,7 +102,7 @@ def test_validate_lambda_schedule_nonzero_restraints(val, default_settings):
         )
 
 
-def test_validate_solvent_endstates_protcomp(
+def test_validate_endstates_protcomp(
     benzene_modifications, T4_protein_component
 ):
     stateA = ChemicalSystem({
@@ -132,10 +118,10 @@ def test_validate_solvent_endstates_protcomp(
     })
 
     with pytest.raises(ValueError, match="Protein components are not allowed"):
-        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_solvent_endstates_nosolvcomp_stateA(
+def test_validate_endstates_nosolvcomp_stateA(
     benzene_modifications, T4_protein_component
 ):
     stateA = ChemicalSystem({
@@ -151,10 +137,10 @@ def test_validate_solvent_endstates_nosolvcomp_stateA(
     with pytest.raises(
         ValueError, match="No SolventComponent found in stateA"
     ):
-        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_solvent_endstates_nosolvcomp_stateB(
+def test_validate_endstates_nosolvcomp_stateB(
     benzene_modifications, T4_protein_component
 ):
     stateA = ChemicalSystem({
@@ -168,14 +154,15 @@ def test_validate_solvent_endstates_nosolvcomp_stateB(
     })
 
     with pytest.raises(
-        ValueError, match="No SolventComponent found in stateB"
+        ValueError, match="No SolventComponent found in stateA and/or stateB"
     ):
-        AbsoluteSolvationProtocol._validate_solvent_endstates(stateA, stateB)
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
 def test_validate_alchem_comps_appearingB(benzene_modifications):
     stateA = ChemicalSystem({
-        'solvent': SolventComponent()
+        'solvent': SolventComponent(),
+        'toluene': benzene_modifications['toluene'],
     })
 
     stateB = ChemicalSystem({
@@ -183,10 +170,8 @@ def test_validate_alchem_comps_appearingB(benzene_modifications):
         'solvent': SolventComponent()
     })
 
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
-
     with pytest.raises(ValueError, match='Components appearing in state B'):
-        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
 def test_validate_alchem_comps_multi(benzene_modifications):
@@ -204,24 +189,40 @@ def test_validate_alchem_comps_multi(benzene_modifications):
 
     assert len(alchem_comps['stateA']) == 2
 
-    with pytest.raises(ValueError, match='More than one alchemical'):
-        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
+    with pytest.raises(ValueError, match='Only one alchemical species'):
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
 def test_validate_alchem_nonsmc(benzene_modifications):
     stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
+        'solvent': SolventComponent(),
+        'solvent2': SolventComponent(smiles='C'),
     })
 
     stateB = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
+        'solvent': SolventComponent(),
     })
 
-    alchem_comps = system_validation.get_alchemical_components(stateA, stateB)
+    errmsg = "Only dissapearing SmallMoleculeComponents"
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
-    with pytest.raises(ValueError, match='Non SmallMoleculeComponent'):
-        AbsoluteSolvationProtocol._validate_alchemical_components(alchem_comps)
+
+def test_charged_alchem_comp(charged_benzene_modifications):
+
+    stateA = ChemicalSystem({
+        'solute': charged_benzene_modifications['benzoic_acid'],
+        'solvent': SolventComponent(),
+    })
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    assert charged_benzene_modifications['benzoic_acid'].total_charge == -1
+
+    with pytest.raises(ValueError, match='Charged alchemical molecules'):
+        AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
 def test_vac_bad_nonbonded(benzene_modifications):
