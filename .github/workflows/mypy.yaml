@@ -3,9 +3,11 @@ on:
   pull_request:
     branches:
       - main
+      - 'feat/**'
   push:
     branches:
       - main
+      - 'feat/**'
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
