@@ -436,7 +436,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
         return production_lengths
 
-    def restraint_geometries(self) -> list[dict[str, Any]]:
+    def restraint_geometries(self) -> list[BoreschRestraintGeometry]:
         """
         Get a list of the restraint geometries for the
         complex simulations. These define the atoms that have
