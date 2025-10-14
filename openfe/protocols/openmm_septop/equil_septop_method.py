@@ -726,11 +726,15 @@ class SepTopProtocolResult(gufe.ProtocolResult):
           in the system that are involved in the restraint of ligand B.
         """
         geometry_A = [
-            pus[0].outputs["restraint_geometry_A"]
+            BoreschRestraintGeometry.model_validate(
+                pus[0].outputs["restraint_geometry_A"]
+            )
             for pus in self.data["complex_setup"].values()
         ]
         geometry_B = [
-            pus[0].outputs["restraint_geometry_B"]
+            BoreschRestraintGeometry.model_validate(
+                pus[0].outputs["restraint_geometry_B"]
+            )
             for pus in self.data["complex_setup"].values()
         ]
 
