@@ -651,13 +651,16 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ):
         # Check we're not extending
-        if extends:  # pragma: no-cover
-            raise NotImplementedError("Can't extend simulations yet")
+        if extends is not None:
+            # This should be a NotImplementedError, but the underlying
+            # `validate` method wraps a call to `_validate` around a
+            # NotImplementedError exception guard
+            raise ValueError("Can't extend simulations yet")
 
         # Check we're not using a mapping, since we're not doing anything with it
         if mapping is not None:
             wmsg = "A mapping was passed but is not used by this Protocol."
-            logger.warning(wmsg)
+            warnings.warn(wmsg)
 
         # Validate the endstates & alchemical components
         self._validate_endstates(stateA, stateB)
