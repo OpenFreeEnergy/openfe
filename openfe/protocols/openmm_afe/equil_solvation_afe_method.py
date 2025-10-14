@@ -530,7 +530,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         # Check that there are no protein components
         if stateA.contains(ProteinComponent) or stateB.contains(ProteinComponent):
             errmsg = ("Protein components are not allowed for "
-                      "absolute solvation free energies")
+                      "absolute solvation free energies.")
             raise ValueError(errmsg)
 
         # Check that there is a solvent component in both end states
@@ -542,7 +542,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         diff = stateA.component_diff(stateB)
 
         # Check that there's only one state A unique Component
-        if len(diff[0]) > 1 or len(diff[0]) == 0:
+        if len(diff[0]) != 1:
             errmsg = (
                 "Only one alchemical species is supported "
                 "for absolute solvation free energies. "
