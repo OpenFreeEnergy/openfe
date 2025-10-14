@@ -710,7 +710,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         return production_lengths
 
-    def restraint_geometries(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    def restraint_geometries(self) -> tuple[list[BoreschRestraintGeometry], list[BoreschRestraintGeometry]]:
         """
         Get a list of the restraint geometries for the
         complex simulations. These define the atoms that have
