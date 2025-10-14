@@ -1,4 +1,4 @@
-[![Logo](https://img.shields.io/badge/OSMF-OpenFreeEnergy-%23002f4a)](https://openfree.energy/)
+[![Logo](https://img.shields.io/badge/OMSF-OpenFreeEnergy-8A2283)](https://openfree.energy/)
 [![build](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/OpenFreeEnergy/openfe/actions/workflows/ci.yaml)
 [![coverage](https://codecov.io/gh/OpenFreeEnergy/openfe/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenFreeEnergy/openfe)
 [![documentation](https://readthedocs.org/projects/openfe/badge/?version=stable)](https://docs.openfree.energy/en/stable/?badge=stable)
@@ -44,16 +44,14 @@ python -m pip install --no-deps .
 
 ## Issues
 
-If you think you have encountered a software issue, please raise this on the "Issues" tab in Github.
-In general the more details you can provide the better,
-we recommend reading section 3.3 of [this article](https://livecomsjournal.org/index.php/livecoms/article/view/v3i1e1473)
-to understand the problem solving process.
+If you think you have encountered a software issue, please raise this on the [Issues tab](https://github.com/OpenFreeEnergy/openfe/issues) in Github.
+In general, the more details you can provide the better.
+We recommend reading section 3.3 of [this article](https://livecomsjournal.org/index.php/livecoms/article/view/v3i1e1473) to understand the problem solving process.
 
 
 ## Discussions
 
-If you have any questions on using the OpenFE package, reach out on the ["Discussions" tab above](https://github.com/OpenFreeEnergy/openfe/discussions) to start a conversation!
-We are happy to get you started in using our software.
+If you have general questions about using OpenFE (i.e. not bugs or feature requests), reach out on the ["Discussions" tab above](https://github.com/OpenFreeEnergy/openfe/discussions) to start a conversation!
 
 ## Authors
 
