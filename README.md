@@ -7,8 +7,7 @@
 
 # `openfe` - A Python package for executing alchemical free energy calculations.
 
-The `openfe` package is the flagship project of [Open Free Energy](https://openfree.energy),
-a pre competitive consortium aiming to provide robust, permissively licensed open source tools for molecular simulation in the drug discovery field.
+The `openfe` package is the flagship project of [Open Free Energy](https://openfree.energy), a pre competitive consortium aiming to provide robust, permissively licensed open source tools for molecular simulation in the drug discovery field.
 
 Using `openfe` you can easily plan and execute alchemical free energy calculations.
 
@@ -42,6 +41,19 @@ The openfe library can then be installed via:
 ```
 python -m pip install --no-deps .
 ```
+
+## Issues
+
+If you think you have encountered a software issue, please raise this on the "Issues" tab in Github.
+In general the more details you can provide the better,
+we recommend reading section 3.3 of [this article](https://livecomsjournal.org/index.php/livecoms/article/view/v3i1e1473)
+to understand the problem solving process.
+
+
+## Discussions
+
+If you have any questions on using the OpenFE package, reach out on the ["Discussions" tab above](https://github.com/OpenFreeEnergy/openfe/discussions) to start a conversation!
+We are happy to get you started in using our software.
 
 ## Authors
 
