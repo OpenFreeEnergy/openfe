@@ -23,7 +23,10 @@ This library is made available under the [MIT](https://opensource.org/licenses/M
 
 ### Latest release
 
-The latest release of `openfe` can be installed via `mamba`, `docker`, or a `single file installer`. See [our installation instructions](https://docs.openfree.energy/en/stable/installation.html) for more details.
+The latest release of `openfe` can be installed via `mamba`, `docker`, or a `single file installer`.
+
+See [our installation instructions](https://docs.openfree.energy/en/stable/installation.html) for more details.
+
 Dependencies can be installed via conda through:
 
 ### Development version
@@ -34,6 +37,7 @@ First install the package dependencies using `mamba`:
 
 ```bash
 mamba env create -f environment.yml
+mamba activate openfe_env
 ```
 
 The openfe library can then be installed via:
