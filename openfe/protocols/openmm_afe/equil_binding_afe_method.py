@@ -656,7 +656,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # If there are any alchemical Components in state B
         if len(diff[1]) > 0:
-            errmsg = "Components appearing in state B are not " "currently supported"
+            errmsg = "Components appearing in state B are not currently supported"
             raise ValueError(errmsg)
 
     @staticmethod
@@ -732,26 +732,65 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ):
         # Check we're not extending
-        if extends:  # pragma: no-cover
-            raise NotImplementedError("Can't extend simulations yet")
+        if extends is not None:
+            # This technically should be NotImplementedError
+            # but gufe.Protocol.validate calls `_validate` wrapped around an
+            # except for NotImplementedError, so we can't raise it here
+            raise ValueError("Can't extend simulations yet")
 
         # Check we're not using a mapping, since we're not doing anything with it
         if mapping is not None:
             wmsg = "A mapping was passed but is not used by this Protocol."
-            logger.warning(wmsg)
+            warnings.warn(wmsg)
 
         # Validate the end states & alchemical components
         self._validate_endstates(stateA, stateB)
 
-        # Validate the lambda schedule
-        self._validate_lambda_schedule(
-            self.settings.solvent_lambda_settings,
-            self.settings.solvent_simulation_settings,
-        )
+        # Validate the complex lambda schedule
         self._validate_lambda_schedule(
             self.settings.complex_lambda_settings,
             self.settings.complex_simulation_settings,
         )
+
+        # If the complex restraints schedule is all zero, it might be bad
+        # but we don't dissallow it.
+        if all(
+            [
+                i == 0
+                for i in self.settings.complex_lambda_settings.lambda_restraints
+            ]
+        ):
+            wmsg = (
+                "No restraints are being applied in the complex phase, "
+                "this will likely lead to problematic results."
+            )
+            warnings.warn(wmsg)
+
+        # Validate the solvent lambda schedule
+        self._validate_lambda_schedule(
+            self.settings.solvent_lambda_settings,
+            self.settings.solvent_simulation_settings,
+        )
+
+        # If the solvent restraints schedule is all zero, it was likely
+        # copied from the complex schedule. In this case we just ignore
+        # the values and let the user know.
+        # P.S. we don't need to change the settings at this point
+        # the list gets popped out later in the SolventUnit, because we
+        # don't have a restraint parameter state.
+
+        if any(
+            [
+                i != 0
+                for i in self.settings.solvent_lambda_settings.lambda_restraints
+            ]
+        ):
+            wmsg = (
+                "There is an attempt to add restraints in the solvent "
+                "phase. This protocol does not apply restraints in the "
+                "solvent phase. These restraint lambda values will be ignored."
+            )
+            warnings.warn(wmsg)
 
         # Check nonbond & solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
