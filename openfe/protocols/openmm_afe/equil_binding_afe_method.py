@@ -449,7 +449,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
           in the system that are involved in the restraint.
         """
         geometries = [
-            pus[0].outputs["restraint_geometry"]
+            BoreschRestraintGeometry.model_validate(pus[0].outputs["restraint_geometry"])
             for pus in self.data["complex"].values()
         ]
 
@@ -630,7 +630,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # Needs gufe 1.3
         diff = stateA.component_diff(stateB)
-        if len(diff[0]) > 1 or len(diff[0]) == 0:
+        if len(diff[0]) != 1:
             errmsg = (
                 "Only one alchemical species is supported. "
                 f"Number of unique components found in stateA: {len(diff[0])}."
