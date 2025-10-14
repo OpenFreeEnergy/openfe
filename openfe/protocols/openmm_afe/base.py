@@ -1211,4 +1211,13 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
             return unit_result_dict
         else:
-            return {'debug': {'sampler': sampler}}
+            return {
+                        # Add in various objects we can used to test the system
+                        'debug': {
+                            'sampler': sampler,
+                            'system': omm_system,
+                            'alchem_system': alchem_system,
+                            'alchem_indices': alchem_indices,
+                            'alchem_factory': alchem_factory
+                        }
+                   }
