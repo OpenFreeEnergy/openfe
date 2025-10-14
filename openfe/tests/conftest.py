@@ -3,12 +3,15 @@
 import os
 import pathlib
 
+import mdtraj
 import pytest
 from importlib import resources
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from openff.units import unit
 import urllib.request
+import pandas as pd
+import numpy as np
 
 import gufe
 import openfe
@@ -201,6 +204,13 @@ def lomap_old_mapper() -> AtomMapper:
         shift=True,
     )
 
+@pytest.fixture
+def benzene_toluene_topology():
+    """Load the mdtraj hybrid topology reference for benzene to toluene."""
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        atoms = pd.read_csv(d / "benzene_toluene_hybrid_top"/ "hybrid_topology_atoms.csv")
+        bonds = np.loadtxt(d / "benzene_toluene_hybrid_top"/ "hybrid_topology_bonds.txt")
+        return mdtraj.Topology.from_dataframe(atoms=atoms, bonds=bonds)
 
 @pytest.fixture(scope='session')
 def benzene_modifications():
