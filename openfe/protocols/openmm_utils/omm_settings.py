@@ -314,10 +314,13 @@ class OpenMMEngineSettings(SettingsBaseModel):
     * In the future make precision and deterministic forces user defined too.
     """
 
-    compute_platform: Optional[str] = None
+    compute_platform: Optional[str] = 'cuda'
     """
     OpenMM compute platform to perform MD integration with. If ``None``, will
-    choose fastest available platform. Default ``None``.
+    choose fastest available platform.
+    Allowed platforms are; ``cuda``, ``opencl``, ``cpu``.
+    Default ``cuda``.
+    
     """
     gpu_device_index: Optional[list[int]] = None
     """
@@ -331,6 +334,15 @@ class OpenMMEngineSettings(SettingsBaseModel):
 
     Default ``None``.
     """
+
+    @field_validator('compute_platform')
+    def supported_sampler(cls, v):
+        supported = ['cpu', 'opencl', 'cuda']
+        if v is not None and v.lower() not in supported:
+            errmsg = ("Only the following OpenMM compute backends are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
 
 
 class IntegratorSettings(SettingsBaseModel):
