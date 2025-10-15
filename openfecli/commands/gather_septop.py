@@ -34,6 +34,7 @@ def _load_valid_result_json(
       value ``None``.
       If
     """
+    # TODO: replace this with gather's _load_valid_result
 
     # TODO: only load this once during collection, then pass namedtuple(fname, dict) into this function
     # for now though, it's not the bottleneck on performance
@@ -123,6 +124,7 @@ def _get_names(result: dict) -> tuple[str, str]:
     tuple[str, str]
         Ligand names corresponding to the results.
     """
+    # TODO: use gather's _get_names once it is improves (uses input.stateA/B.name)
     try:
         nm = list(result["unit_results"].values())[0]["name"]
 
