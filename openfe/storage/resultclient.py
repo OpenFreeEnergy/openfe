@@ -14,6 +14,7 @@ from gufe.tokenization import (
     from_dict,
     JSON_HANDLER,
 )
+from gufe.storage.externalresource import ExternalStorage
 
 
 GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]+)"')
@@ -45,8 +46,8 @@ class _ResultContainer(abc.ABC):
 
     def __getitem__(self, item):
         # code for the case this is a file
-        if item in self.result_server:
-            return self.result_server.load_stream(item)
+        if item in self.external_storage:
+            return self.external_storage.load_stream(item)
 
         # code for the case this is a "directory"
         hash_item = self._to_path_component(item)
@@ -64,15 +65,15 @@ class _ResultContainer(abc.ABC):
         raise NotImplementedError()
 
     def __iter__(self):
-        for loc in self.result_server:
+        for loc in self.external_storage:
             if loc.startswith(self.path):
                 yield loc
 
-    def load_stream(self, location, *, allow_changed=False):
-        return self.result_server.load_stream(location, allow_changed)
+    def load_stream(self, location):
+        return self.external_storage.load_stream(location)
 
-    def load_bytes(self, location, *, allow_changed=False):
-        with self.load_stream(location, allow_changed=allow_changed) as f:
+    def load_bytes(self, location):
+        with self.load_stream(location) as f:
             byte_data = f.read()
 
         return byte_data
@@ -82,8 +83,8 @@ class _ResultContainer(abc.ABC):
         return self.parent.path + "/" + self._path_component
 
     @property
-    def result_server(self):
-        return self.parent.result_server
+    def external_storage(self) -> ExternalStorage:
+        return self.parent.external_storage
 
     def __repr__(self):
         # probably should include repr of external store, too
@@ -91,16 +92,12 @@ class _ResultContainer(abc.ABC):
 
 
 class ResultClient(_ResultContainer):
-    def __init__(self, external_store):
-        # default client is using JSONMetadataStore with the given external
-        # result store; users could easily write a subblass that behaves
-        # differently
-        metadata_store = JSONMetadataStore(external_store)
-        self._result_server = ResultServer(external_store, metadata_store)
+    def __init__(self, external_store, external_storage: ExternalStorage):
+        self._external_storage = external_storage
         super().__init__(parent=self, path_component=None)
 
-    def delete(self, location):
-        self._result_server.delete(location)
+    def delete(self, location: str):
+        self._external_storage.delete(location)
 
     @staticmethod
     def _gufe_key_to_storage_key(prefix: str, key: str):
@@ -135,11 +132,11 @@ class ResultClient(_ResultContainer):
 
             # we trust that if we get the same key, it's the same object, so
             # we only store on keys that we don't already know
-            if key not in self.result_server:
+            if key not in self.external_storage:
                 data = json.dumps(
                     o.to_keyed_dict(), cls=JSON_HANDLER.encoder, sort_keys=True
                 ).encode("utf-8")
-                self.result_server.store_bytes(key, data)
+                self.external_storage.store_bytes(key, data)
 
     def store_transformation(self, transformation):
         """Store a :class:`.Transformation`.
@@ -235,8 +232,8 @@ class ResultClient(_ResultContainer):
         """
         return self._load_gufe_tokenizable("setup", key)
 
-    def _load_next_level(self, transformation):
-        return TransformationResult(self, transformation)
+    def _load_next_level(self, item):
+        return TransformationResult(self, item)
 
     # override these two inherited properies since this is always the end of
     # the recursive chain
@@ -245,8 +242,8 @@ class ResultClient(_ResultContainer):
         return "transformations"
 
     @property
-    def result_server(self):
-        return self._result_server
+    def external_storage(self):
+        return self._external_storage
 
 
 class TransformationResult(_ResultContainer):
@@ -254,8 +251,8 @@ class TransformationResult(_ResultContainer):
         super().__init__(parent, transformation)
         self.transformation = transformation
 
-    def _load_next_level(self, clone):
-        return CloneResult(self, clone)
+    def _load_next_level(self, item):
+        return CloneResult(self, item)
 
 
 class CloneResult(_ResultContainer):
@@ -267,14 +264,14 @@ class CloneResult(_ResultContainer):
     def _to_path_component(item):
         return str(item)
 
-    def _load_next_level(self, extension):
-        return ExtensionResult(self, extension)
+    def _load_next_level(self, item):
+        return ExtensionResult(self, item)
 
 
 class ExtensionResult(_ResultContainer):
-    def __init__(self, parent, extension):
-        super().__init__(parent, str(extension))
-        self.extension = extension
+    def __init__(self, parent, item):
+        super().__init__(parent, str(item))
+        self.extension = item
 
     @staticmethod
     def _to_path_component(item):
@@ -284,5 +281,5 @@ class ExtensionResult(_ResultContainer):
         # different here -- we don't cache the actual file objects
         return self._load_next_level(filename)
 
-    def _load_next_level(self, filename):
-        return self.result_server.load_stream(self.path + "/" + filename)
+    def _load_next_level(self, item):
+        return self.external_storage.load_stream(self.path + "/" + item)
