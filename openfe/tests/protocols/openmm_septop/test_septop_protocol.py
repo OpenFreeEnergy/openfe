@@ -30,6 +30,7 @@ from openfe.protocols.openmm_septop.equil_septop_method import (
 )
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
@@ -1434,7 +1435,12 @@ class TestProtocolResult:
         assert isinstance(geom, tuple)
         assert len(geom) == 2
         assert isinstance(geom[0], list)
-        assert isinstance(geom[0][0], dict)
-        assert list(geom[0][0].keys()) == [
-            'guest_atoms', 'host_atoms', 'r_aA0', 'theta_A0', 'theta_B0', 'phi_A0', 'phi_B0', 'phi_C0',
-        ]
+        assert isinstance(geom[0][0], BoreschRestraintGeometry)
+        assert geom[0][0].guest_atoms == [1779, 1778, 1777]
+        assert geom[0][0].host_atoms == [802, 801, 800]
+        assert pytest.approx(geom[0][0].r_aA0) == 0.774170 * offunit.nanometer
+        assert pytest.approx(geom[0][0].theta_A0) == 1.793181 * offunit.radian
+        assert pytest.approx(geom[0][0].theta_B0) == 1.501008 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_A0) == 0.939174 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_B0) == -1.504071 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_C0) == -0.745093 * offunit.radian
