@@ -52,6 +52,30 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
+def test_create_independent_repeat_ids(benzene_system):
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    )
+
+    stateB = ChemicalSystem({'solvent': SolventComponent()})
+
+    dags = []
+    for i in range(2):
+        dags.append(protocol.create(
+            stateA=benzene_system,
+            stateB=stateB,
+            mapping=None
+        ))
+
+    repeat_ids = set()
+
+    for dag in dags:
+        for u in dag.protocol_units:
+            repeat_ids.add(u.inputs['repeat_id'])
+
+    assert len(repeat_ids) == 12
+
+
 @pytest.mark.parametrize('method', [
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])

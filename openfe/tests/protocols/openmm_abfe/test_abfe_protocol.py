@@ -79,6 +79,45 @@ def test_unit_tagging(benzene_complex_dag, tmpdir):
     assert len(complex_repeats) == len(solv_repeats) == 3
 
 
+def test_create_independent_repeat_ids(benzene_modifications, T4_protein_component):
+    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(
+        settings=s,
+    )
+
+    stateA = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "benzene": benzene_modifications["benzene"],
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    stateB = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    dags = []
+    for i in range(2):
+        dags.append(protocol.create(
+            stateA=stateA,
+            stateB=stateB,
+            mapping=None
+        ))
+
+    repeat_ids = set()
+
+    for dag in dags:
+        for u in dag.protocol_units:
+            repeat_ids.add(u.inputs['repeat_id'])
+
+    assert len(repeat_ids) == 12
+
+
 class BaseABFESystemTests:
     @pytest.fixture(scope="class")
     def protocol(self, settings):
