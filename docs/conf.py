@@ -145,13 +145,9 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
-    "navbar_end": ["navbar-icon-links"],  # TODO: add "theme-switcher" to add back dark mode toggle
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = '_static/OFE-color-icon.svg'
-html_context = {
-   "default_mode": "light"
-}
 # temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
 html_sidebars = {
     "installation": [],
