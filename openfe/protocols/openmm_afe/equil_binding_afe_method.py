@@ -66,7 +66,6 @@ from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
-from openfe.utils import log_system_probe
 from openff.units import unit as offunit
 from openff.units import Quantity
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -899,6 +898,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
     """
+    simtype = "complex"
 
     def _get_components(self):
         """
@@ -1250,27 +1250,12 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             rest_geom,
         )
 
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": "complex",
-            **outputs,
-        }
-
 
 class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the solvent phase of an absolute binding free energy
     """
+    simtype = "solvent"
 
     def _get_components(self):
         """
@@ -1344,19 +1329,3 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         )
 
         return settings
-
-    def _execute(
-        self,
-        ctx: gufe.Context,
-        **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
-
-        return {
-            "repeat_id": self._inputs["repeat_id"],
-            "generation": self._inputs["generation"],
-            "simtype": "solvent",
-            **outputs,
-        }

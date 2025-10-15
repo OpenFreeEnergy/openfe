@@ -60,7 +60,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
-from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
 
@@ -784,6 +783,8 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the vacuum phase of an absolute solvation free energy
     """
+    simtype = "vacuum"
+
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -861,26 +862,13 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
 
         return settings
 
-    def _execute(
-        self, ctx: gufe.Context, **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
-
-        return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            'simtype': 'vacuum',
-            **outputs
-        }
-
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the solvent phase of an absolute solvation free energy
     """
+    simtype = "solvent"
+
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -952,18 +940,3 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         )
 
         return settings
-
-    def _execute(
-        self, ctx: gufe.Context, **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
-
-        return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            'simtype': 'solvent',
-            **outputs
-        }

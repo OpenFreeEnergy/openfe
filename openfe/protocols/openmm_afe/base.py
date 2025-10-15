@@ -69,7 +69,9 @@ from openfe.protocols.openmm_utils import (
     omm_compute,
 )
 from openfe.protocols.restraint_utils import geometry
-from openfe.utils import without_oechem_backend
+from openfe.utils import (
+    without_oechem_backend, log_system_probe
+)
 
 
 logger = logging.getLogger(__name__)
@@ -1221,3 +1223,20 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                             'alchem_factory': alchem_factory
                         }
                    }
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            **outputs,
+        }
+
