@@ -14,32 +14,6 @@ from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGe
 from openff.units import unit as offunit
 
 
-@pytest.fixture
-def benzene_complex_dag(benzene_modifications, T4_protein_component):
-    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
-
-    protocol = openmm_afe.AbsoluteBindingProtocol(
-        settings=s,
-    )
-
-    stateA = gufe.ChemicalSystem(
-        {
-            "protein": T4_protein_component,
-            "benzene": benzene_modifications["benzene"],
-            "solvent": gufe.SolventComponent(),
-        }
-    )
-
-    stateB = gufe.ChemicalSystem(
-        {
-            "protein": T4_protein_component,
-            "solvent": gufe.SolventComponent(),
-        }
-    )
-
-    return protocol.create(stateA=stateA, stateB=stateB, mapping=None)
-
-
 def test_gather(benzene_complex_dag, tmpdir):
     # check that .gather behaves as expected
     with (

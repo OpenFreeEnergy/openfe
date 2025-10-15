@@ -50,6 +50,35 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
+def test_unit_tagging(benzene_complex_dag, tmpdir):
+    # test that executing the units includes correct gen and repeat info
+
+    dag_units = benzene_complex_dag.protocol_units
+
+    with (
+        mock.patch('openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingSolventUnit.run',
+                   return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
+        mock.patch('openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingComplexUnit.run',
+                   return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
+    ):
+        results = []
+        for u in dag_units:
+            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
+            results.append(ret)
+
+    solv_repeats = set()
+    complex_repeats = set()
+    for ret in results:
+        assert isinstance(ret, gufe.ProtocolUnitResult)
+        assert ret.outputs['generation'] == 0
+        if ret.outputs['simtype'] == 'complex':
+            complex_repeats.add(ret.outputs['repeat_id'])
+        else:
+            solv_repeats.add(ret.outputs['repeat_id'])
+    # Repeat ids are random ints so just check their lengths
+    assert len(complex_repeats) == len(solv_repeats) == 3
+
+
 class BaseABFESystemTests:
     @pytest.fixture(scope="class")
     def protocol(self, settings):
