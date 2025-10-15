@@ -3,6 +3,7 @@
 import gzip
 import itertools
 import json
+from unittest import mock
 
 import gufe
 import numpy as np
@@ -11,6 +12,60 @@ import pytest
 from openfe.protocols import openmm_afe
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openff.units import unit as offunit
+
+
+@pytest.fixture
+def benzene_complex_dag(benzene_modifications, T4_protein_component):
+    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(
+        settings=s,
+    )
+
+    stateA = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "benzene": benzene_modifications["benzene"],
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    stateB = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    return protocol.create(stateA=stateA, stateB=stateB, mapping=None)
+
+
+def test_gather(benzene_complex_dag, tmpdir):
+    # check that .gather behaves as expected
+    with (
+        mock.patch(
+            "openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingSolventUnit.run",
+            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
+        ),
+        mock.patch(
+            "openfe.protocols.openmm_afe.equil_binding_afe_method.AbsoluteBindingComplexUnit.run",
+            return_value={"nc": "file.nc", "last_checkpoint": "chck.nc"},
+        ),
+    ):
+        dagres = gufe.protocols.execute_DAG(
+            benzene_complex_dag,
+            shared_basedir=tmpdir,
+            scratch_basedir=tmpdir,
+            keep_shared=True,
+        )
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(
+        settings=openmm_afe.AbsoluteBindingProtocol.default_settings(),
+    )
+
+    res = protocol.gather([dagres])
+
+    assert isinstance(res, openmm_afe.AbsoluteBindingProtocolResult)
 
 
 class TestProtocolResult:
@@ -26,7 +81,7 @@ class TestProtocolResult:
             afe_solv_transformation_json, cls=gufe.tokenization.JSON_HANDLER.decoder
         )
 
-        pr = openmm_afe.AbsoluteSolvationProtocolResult.from_dict(d["protocol_result"])
+        pr = openmm_afe.AbsoluteBindingProtocolResult.from_dict(d["protocol_result"])
 
         assert pr
 
