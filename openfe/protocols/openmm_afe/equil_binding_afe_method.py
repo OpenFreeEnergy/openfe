@@ -804,6 +804,12 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             self.settings.complex_solvation_settings
         )
 
+        # Validate integrator things
+        settings_validation.validate_timestep(
+            self.settings.forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep
+        )
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -967,11 +973,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
         settings["output_settings"] = prot_settings.complex_output_settings
         settings["restraint_settings"] = prot_settings.restraint_settings
-
-        settings_validation.validate_timestep(
-            settings["forcefield_settings"].hydrogen_mass,
-            settings["integrator_settings"].timestep,
-        )
 
         return settings
 
@@ -1322,10 +1323,5 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
         settings["output_settings"] = prot_settings.solvent_output_settings
-
-        settings_validation.validate_timestep(
-            settings["forcefield_settings"].hydrogen_mass,
-            settings["integrator_settings"].timestep,
-        )
 
         return settings

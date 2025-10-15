@@ -271,6 +271,31 @@ def test_validate_fail_extends(
         prot.validate(stateA=stateA, stateB=stateB, mapping=None, extends=fake_result)
 
 
+def test_high_timestep(benzene_modifications, T4_protein_component):
+    s = AbsoluteBindingProtocol.default_settings()
+    s.forcefield_settings.hydrogen_mass = 1.0
+
+    stateA = ChemicalSystem(
+        {
+            "benzene": benzene_modifications["benzene"],
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    stateB = ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    protocol = AbsoluteBindingProtocol(settings=s)
+
+    with pytest.raises(ValueError, match="too large for hydrogen"):
+        protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
+
+
 def test_validate_warnings(
     benzene_modifications, T4_protein_component, default_settings
 ):

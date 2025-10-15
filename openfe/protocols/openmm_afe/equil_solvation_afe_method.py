@@ -700,6 +700,18 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 errmsg = "NVT equilibration cannot be run in vacuum simulation"
                 raise ValueError(errmsg)
 
+        # Validate integrator things
+        settings_validation.validate_timestep(
+            self.settings.vacuum_forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep
+        )
+
+        settings_validation.validate_timestep(
+            self.settings.solvent_forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep
+        )
+
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -855,11 +867,6 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
         settings['output_settings'] = prot_settings.vacuum_output_settings
 
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
-
         return settings
 
 
@@ -933,10 +940,5 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings['equil_output_settings'] = prot_settings.solvent_equil_output_settings
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
         settings['output_settings'] = prot_settings.solvent_output_settings
-
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
 
         return settings
