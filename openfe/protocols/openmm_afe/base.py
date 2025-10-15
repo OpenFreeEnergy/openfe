@@ -543,6 +543,21 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 topology=modeller.topology,
                 molecules=list(smc_components.values()),
             )
+
+        # Check and fail early on the presence of virtual sites
+        # and multistate sampler not using velocity restart
+        if not settings['integrator_settings'].reassign_velocities:
+            has_vsite = any(
+                system.isVirtualSite(i)
+                for i in range(system.getNumParticles())
+            )
+            if has_vsite:
+                errmsg = (
+                    "Simulations with virtual sites without "
+                    "velocity reassignment are unstable"
+                )
+                raise ValueError(errmsg)
+
         return topology, system, positions, comp_resids
 
     def _get_lambda_schedule(
