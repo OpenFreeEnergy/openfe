@@ -226,10 +226,14 @@ class TestT4LysozymeDryRun:
         else:
             assert len(system.getForces()) == 9
 
-        # Check that the nonbonded force is PME
+        # Check that the nonbonded force
         nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
         assert len(nonbond) == 1
         assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
+        assert (
+            from_openmm(nonbond[0].getCutoffDistance())
+            == settings.forcefield_settings.nonbonded_cutoff
+        )
 
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
@@ -256,10 +260,14 @@ class TestT4LysozymeDryRun:
 
         assert len(system.getForces()) == 5
 
-        # Check that the nonbonded force is PME
+        # Check that the nonbonded force
         nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
         assert len(nonbond) == 1
         assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
+        assert (
+            from_openmm(nonbond[0].getCutoffDistance())
+            == settings.forcefield_settings.nonbonded_cutoff
+        )
 
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
@@ -329,24 +337,24 @@ class TestT4LysozymeDryRun:
         reference_system, alchemical_system, alchemical_regions, positions
     ):
         compare_system_energies(
-            reference_system=data["system"],
-            alchemical_system=data["alchem_system"],
-            alchemical_regions=alchem_region,
-            positions=data["positions"],
+            reference_system=reference_system,
+            alchemical_system=alchemical_system,
+            alchemical_regions=alchemical_regions,
+            positions=positions,
         )
 
         check_noninteracting_energy_components(
-            reference_system=data["system"],
-            alchemical_system=data["alchem_system"],
-            alchemical_rergions=alchem_region,
-            positions=data["positions"],
+            reference_system=reference_system,
+            alchemical_system=alchemical_system,
+            alchemical_regions=alchemical_regions,
+            positions=positions,
         )
 
         check_interacting_energy_components(
-            reference_system=data["system"],
-            alchemical_system=data["alchem_system"],
-            alchemical_regions=alchem_region,
-            positions=data["positions"],
+            reference_system=reference_system,
+            alchemical_system=alchemical_system,
+            alchemical_regions=alchemical_regions,
+            positions=positions,
         )
 
     def test_complex_dry_run(self, complex_units, settings, tmpdir):
@@ -386,7 +394,7 @@ class TestT4LysozymeDryRun:
             self._test_energies(
                 reference_system=data["system"],
                 alchemical_system=data["alchem_system"],
-                alchemical_regions=alchem_regions,
+                alchemical_regions=alchem_region,
                 positions=data["positions"],
             )
 
@@ -426,6 +434,30 @@ class TestT4LysozymeDryRun:
             self._test_energies(
                 reference_system=data["system"],
                 alchemical_system=data["alchem_system"],
-                alchemical_regions=alchem_regions,
+                alchemical_regions=alchem_region,
                 positions=data["positions"],
             )
+
+
+@pytest.mark.slow
+class TestT4LysozymeTIP4PDryRun(TestT4LysozymeDryRun):
+    @pytest.fixture(scope="class")
+    def settings(self):
+        s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+        s.protocol_repeats = 1
+        s.complex_output_settings.output_indices = "not water"
+        s.complex_solvation_settings.box_shape = "dodecahedron"
+        s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
+        s.complex_solvation_settings.solvent_model = "tip4pew"
+        s.solvent_solvation_settings.box_shape = "cube"
+        s.solvent_solvation_settings.solvent_model = "tip4pew"
+        s.forcefield_settings.nonbonded_cutoff = 0.8 * offunit.nanometer
+        s.forcefield_settings.forcefields = [
+            "amber/ff14SB.xml",  # ff14SB protein force field
+            "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+            "amber/phosaa10.xml",  # Handles THE TPO
+        ]
+        s.integrator_settings.reassign_velocities = True
+        s.integrator_settings.barostat_frequency = 100.0 * offunit.timestep
+        s.thermo_settings.pressure = 1.1 * offunit.bar
+        return s
