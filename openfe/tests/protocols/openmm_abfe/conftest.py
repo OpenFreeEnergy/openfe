@@ -31,4 +31,3 @@ def benzene_complex_dag(benzene_modifications, T4_protein_component):
     )
 
     return protocol.create(stateA=stateA, stateB=stateB, mapping=None)
-
