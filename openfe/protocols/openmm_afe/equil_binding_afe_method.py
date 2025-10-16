@@ -52,7 +52,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     FlatBottomRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
-    ABFEPreEquilOuputSettings,
+    ABFEPreEquilOutputSettings,
     MDSimulationSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
@@ -559,7 +559,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 equilibration_length=0.2 * offunit.nanosecond,
                 production_length=0.5 * offunit.nanosecond,
             ),
-            solvent_equil_output_settings=ABFEPreEquilOuputSettings(),
+            solvent_equil_output_settings=ABFEPreEquilOutputSettings(),
             solvent_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=14,
                 equilibration_length=1.0 * offunit.nanosecond,
@@ -575,7 +575,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 equilibration_length=0.5 * offunit.nanosecond,
                 production_length=5.0 * offunit.nanosecond,
             ),
-            complex_equil_output_settings=ABFEPreEquilOuputSettings(),
+            complex_equil_output_settings=ABFEPreEquilOutputSettings(),
             complex_simulation_settings=MultiStateSimulationSettings(
                 n_replicas=30,
                 equilibration_length=1 * offunit.nanosecond,
@@ -950,7 +950,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : ABFEPreEquilOuputSettings
+            * equil_output_settings : ABFEPreEquilOutputSettings
             * simulation_settings : SimulationSettings
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintSettings
@@ -1304,7 +1304,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
             * engine_settings : OpenMMEngineSettings
             * integrator_settings : IntegratorSettings
             * equil_simulation_settings : MDSimulationSettings
-            * equil_output_settings : ABFEPreEquilOuputSettings
+            * equil_output_settings : ABFEPreEquilOutputSettings
             * simulation_settings : MultiStateSimulationSettings
             * output_settings: MultiStateOutputSettings
         """

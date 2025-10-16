@@ -364,7 +364,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
 
     # Simulation output settings
-    complex_equil_output_settings: ABFEPreEquilOuputSettings
+    complex_equil_output_settings: ABFEPreEquilOutputSettings
     """
     Simulation output settings for the complex non-alchemical equilibration.
     """
@@ -372,7 +372,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Simulation output settings for the complex transformation.
     """
-    solvent_equil_output_settings: ABFEPreEquilOuputSettings
+    solvent_equil_output_settings: ABFEPreEquilOutputSettings
     """
     Simulation output settings for the solvent non-alchemical equilibration.
     """
