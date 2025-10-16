@@ -471,7 +471,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
         return s
 
 
-@pyest.mark.slow
+@pytest.mark.slow
 class TestT4EnergiesRegression:
     """
     Test:
