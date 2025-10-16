@@ -1657,7 +1657,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
           The standard state correction for the restraint for ligand A.
         correction_B: unit.Quantity
           The standard state correction for the restraint for ligand B.
-        thermodynamic_state.system: openmm.System
+        restrained_system: openmm.System
           The OpenMM system with the added restraints forces
         rest_geom_A: geometry.HostGuestRestraintGeometry
           The restraint Geometry object for ligand A.
@@ -1750,10 +1750,15 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # Boresch restraint has to be turned on in the analytical corr.
         correction_B = -correction_B # type: ignore[operator]
 
+        # Get the system
+        # Note:  you have to remove the thermostat, otherwise you end up
+        # with an Andersen thermostat by default!
+        restrained_system = thermodynamic_state.get_system(remove_thermostat=True)
+
         return (
             correction_A,
             correction_B,
-            thermodynamic_state.system,
+            restrained_system,
             rest_geom_A,
             rest_geom_B,
         )
