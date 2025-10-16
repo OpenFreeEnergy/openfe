@@ -10,14 +10,15 @@ from __future__ import annotations
 
 from typing import Literal
 from openff.units import unit
-from gufe.vendor.openff.models.types import FloatQuantity
 
+from gufe.settings.typing import NanometerQuantity
 from gufe.settings import (
     Settings,
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
+from pydantic import ConfigDict, field_validator
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,
@@ -27,46 +28,39 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenFFPartialChargeSettings,
 )
 
-from pydantic.v1 import validator
-
-
 class LambdaSettings(SettingsBaseModel):
-    class Config:
-        extra = 'ignore'
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
 
     """Lambda schedule settings.
 
     Settings controlling the lambda schedule, these include the switching
     function type, and the number of windows.
     """
-    lambda_functions = 'default'
+    lambda_functions: str = 'default'
     """
     Key of which switching functions to use for alchemical mutation.
     Default 'default'.
     """
-    lambda_windows = 11
+    lambda_windows: int = 11
     """Number of lambda windows to calculate. Default 11."""
 
 
 class AlchemicalSettings(SettingsBaseModel):
-    class Config:
-        extra = 'ignore'
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
 
     """Settings for the alchemical protocol
 
     This describes the creation of the hybrid system.
     """
 
-    endstate_dispersion_correction = False
+    endstate_dispersion_correction: bool = False
     """
     Whether to have extra unsampled endstate windows for long range
     correction. Default False.
     """
 
     # alchemical settings
-    use_dispersion_correction = False
+    use_dispersion_correction: bool = False
     """
     Whether to use dispersion correction in the hybrid topology state.
     Default False.
@@ -77,15 +71,15 @@ class AlchemicalSettings(SettingsBaseModel):
     JCTC 2012, or the one by Beutler et al. Chem. Phys. Lett. 1994.
     Default 'gapsys'.
     """
-    softcore_alpha = 0.85
+    softcore_alpha: float = 0.85
     """Softcore alpha parameter. Default 0.85"""
-    turn_off_core_unique_exceptions = False
+    turn_off_core_unique_exceptions:bool = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
     at lambda 0 and old exceptions at lambda 1 between unique atoms and core
     atoms. If False they are present in the nonbonded force. Default False.
     """
-    explicit_charge_correction = False
+    explicit_charge_correction: bool = False
     """
     Whether to explicitly account for a charge difference during the
     alchemical transformation by transforming a water to a counterion
@@ -98,7 +92,7 @@ class AlchemicalSettings(SettingsBaseModel):
 
     Default False.
     """
-    explicit_charge_correction_cutoff: FloatQuantity['nanometer'] = 0.8 * unit.nanometer
+    explicit_charge_correction_cutoff: NanometerQuantity = 0.8 * unit.nanometer
     """
     The minimum distance from the system solutes from which an
     alchemical water can be chosen. Default 0.8 * unit.nanometer.
@@ -113,7 +107,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     difference, while the variance between repeats is used as the uncertainty.
     """
 
-    @validator('protocol_repeats')
+    @field_validator('protocol_repeats')
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."

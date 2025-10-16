@@ -30,6 +30,7 @@ from openfe.protocols.openmm_septop.equil_septop_method import (
 )
 from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
+from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
@@ -753,11 +754,10 @@ def test_dry_run_methods(
 
 
 @pytest.mark.parametrize(
-    "pressure",
-    [
-        1.0 * openmm.unit.atmosphere,
-        0.9 * openmm.unit.atmosphere,
-        1.1 * openmm.unit.atmosphere,
+    "pressure",[
+        1.0,
+        0.9,
+        1.1,
     ],
 )
 def test_dry_run_ligand_system_pressure(
@@ -770,7 +770,8 @@ def test_dry_run_ligand_system_pressure(
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    default_settings.thermo_settings.pressure = pressure
+    # openfe settings requires openff/pint units
+    default_settings.thermo_settings.pressure = pressure * offunit.bar
 
     protocol = SepTopProtocol(
         settings=default_settings,
@@ -792,7 +793,8 @@ def test_dry_run_ligand_system_pressure(
             serialized_system, serialized_topology, dry=True
         )["debug"]["sampler"]
 
-        assert solv_sampler._thermodynamic_states[1].pressure == pressure
+        # at this point, the units will be in openmm units
+        assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
 
 
 def test_virtual_sites_no_reassign(
@@ -1433,7 +1435,12 @@ class TestProtocolResult:
         assert isinstance(geom, tuple)
         assert len(geom) == 2
         assert isinstance(geom[0], list)
-        assert isinstance(geom[0][0], dict)
-        assert list(geom[0][0].keys()) == [
-            'guest_atoms', 'host_atoms', 'r_aA0', 'theta_A0', 'theta_B0', 'phi_A0', 'phi_B0', 'phi_C0',
-        ]
+        assert isinstance(geom[0][0], BoreschRestraintGeometry)
+        assert geom[0][0].guest_atoms == [1779, 1778, 1777]
+        assert geom[0][0].host_atoms == [802, 801, 800]
+        assert pytest.approx(geom[0][0].r_aA0) == 0.774170 * offunit.nanometer
+        assert pytest.approx(geom[0][0].theta_A0) == 1.793181 * offunit.radian
+        assert pytest.approx(geom[0][0].theta_B0) == 1.501008 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_A0) == 0.939174 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_B0) == -1.504071 * offunit.radian
+        assert pytest.approx(geom[0][0].phi_C0) == -0.745093 * offunit.radian

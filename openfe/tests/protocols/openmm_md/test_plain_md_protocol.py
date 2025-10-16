@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import sys
 import gufe
+from pydantic import ValidationError
 import pytest
 from unittest import mock
 from numpy.testing import assert_allclose
@@ -39,6 +40,10 @@ def test_create_default_protocol():
 
     assert protocol
 
+def test_invalid_protocol_repeats():
+    settings = PlainMDProtocol.default_settings()
+    with pytest.raises(ValueError, match="must be a positive value"):
+        settings.protocol_repeats = -1
 
 def test_serialize_protocol():
     protocol = PlainMDProtocol(
