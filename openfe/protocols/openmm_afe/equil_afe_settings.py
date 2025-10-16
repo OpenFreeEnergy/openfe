@@ -123,7 +123,7 @@ class LambdaSettings(SettingsBaseModel):
         return v
 
 
-class ABFEPreEquilOuputSettings(MDOutputSettings):
+class ABFEPreEquilOutputSettings(MDOutputSettings):
     output_indices: str = "all"
     """
     Selection string for which part of the system to write coordinates for.
