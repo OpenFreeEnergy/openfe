@@ -1149,11 +1149,11 @@ class TestT4LXmlRegression:
     @staticmethod
     def test_particles(T4L_xml, T4L_septop_reference_xml):
         nr_particles = T4L_xml.getNumParticles()
-        nr_particles_ref = T4L_reference_xml.getNumParticles()
+        nr_particles_ref = T4L_septop_reference_xml.getNumParticles()
         assert nr_particles == nr_particles_ref
         particle_masses = [T4L_xml.getParticleMass(i) for i in range(nr_particles)]
         particle_masses_ref = [
-            T4L_reference_xml.getParticleMass(i) for i in range(nr_particles)
+            T4L_septop_reference_xml.getParticleMass(i) for i in range(nr_particles)
         ]
         assert particle_masses
 
@@ -1163,13 +1163,13 @@ class TestT4LXmlRegression:
     @staticmethod
     def test_constraints(T4L_xml, T4L_septop_reference_xml):
         nr_constraints = T4L_xml.getNumConstraints()
-        nr_constraints_ref = T4L_reference_xml.getNumConstraints()
+        nr_constraints_ref = T4L_septop_reference_xml.getNumConstraints()
         assert nr_constraints == nr_constraints_ref
         constraints = [
             T4L_xml.getConstraintParameters(i) for i in range(nr_constraints)
         ]
         constraints_ref = [
-            T4L_reference_xml.getConstraintParameters(i) for i in range(nr_constraints)
+            T4L_septop_reference_xml.getConstraintParameters(i) for i in range(nr_constraints)
         ]
         assert constraints
 
