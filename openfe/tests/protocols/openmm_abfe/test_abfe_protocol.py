@@ -1,10 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
+from importlib import resources
 import itertools
 import json
 import sys
 from math import sqrt
+import pathlib
 from unittest import mock
 
 import gufe
@@ -13,7 +15,7 @@ import numpy as np
 import openfe
 import pytest
 from numpy.testing import assert_allclose
-from openmmtools.alchemy import AlchemicalRegion
+from openmmtools.alchemy import AlchemicalRegion, AlchemicalState, AbsoluteAlchemicalFactory
 from openmmtools.tests.test_alchemy import (
     compare_system_energies,
     check_noninteracting_energy_components,
@@ -21,6 +23,7 @@ from openmmtools.tests.test_alchemy import (
     overlap_check,
 )
 from openfe import ChemicalSystem, SolventComponent, SmallMoleculeComponent
+from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingComplexUnit,
@@ -30,6 +33,7 @@ from openfe.protocols.openmm_afe import (
 from openfe.protocols.openmm_utils import system_validation
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmm import unit as ommunit
 from openmm import (
     CustomBondForce,
     CustomNonbondedForce,
@@ -440,7 +444,11 @@ class TestT4LysozymeDryRun:
 
 
 @pytest.mark.slow
-class TestT4LysozymeTIP4PDryRun(TestT4LysozymeDryRun):
+class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
+    """
+    TIP4P and a few extra settings to test out the dry run.
+    """
+
     @pytest.fixture(scope="class")
     def settings(self):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
@@ -461,3 +469,165 @@ class TestT4LysozymeTIP4PDryRun(TestT4LysozymeDryRun):
         s.integrator_settings.barostat_frequency = 100.0 * offunit.timestep
         s.thermo_settings.pressure = 1.1 * offunit.bar
         return s
+
+
+@pyest.mark.slow
+class TestT4EnergiesRegression:
+    """
+    Test:
+      * Regression of a system energies against a previusly serialized one.
+      * That the energies do what we think they should be doing.
+    """
+
+    @pytest.fixture()
+    def t4_reference_system(self):
+        with resources.as_file(resources.files("openfe.tests.data.openmm_afe")) as d:
+            f = d / "T4_abfe_system.xml.bz2"
+            system = deserialize(f)
+        return system
+
+    @pytest.fixture()
+    def t4_validation_data(self, benzene_modifications, T4_protein_component, tmpdir):
+        s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+        s.protocol_repeats = 1
+        s.forcefield_settings.small_molecule_forcefield = "openff-2.2.1"
+        s.complex_solvation_settings = OpenMMSolvationSettings(
+            solvent_padding=None,
+            number_of_solvent_molecules=1000,
+            box_shape="dodecahedron",
+        )
+
+        protocol = openmm_afe.AbsoluteBindingProtocol(settings=s)
+
+        stateA = gufe.ChemicalSystem(
+            {
+                "protein": T4_protein_component,
+                "benzene": benzene_modifications["benzene"],
+                "solvent": gufe.SolventComponent(),
+            }
+        )
+
+        stateB = gufe.ChemicalSystem(
+            {
+                "protein": T4_protein_component,
+                "solvent": gufe.SolventComponent(),
+            }
+        )
+
+        dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
+
+        complex_units = [
+            u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)
+        ]
+
+        with tmpdir.as_cwd():
+            data = complex_units[0].run(dry=True)["debug"]
+            return data
+
+    @pytest.mark.parametrize("lambda_val", [0, 1])
+    def test_energies_regression(
+        self, lambda_val, t4_reference_system, t4_validation_data
+    ):
+
+        def get_components(system, lambda_val):
+            alchemical_region = AlchemicalRegion(
+                alchemical_atoms=t4_validation_data["alchem_indices"]
+            )
+
+            class AlchemStateRest(AlchemicalState):
+                lambda_restraints = AlchemicalState._LambdaParameter('lambda_restraints')
+
+            alchemical_state = AlchemStateRest.from_system(
+                system, parameters_name_suffix=alchemical_region.name
+            )
+            alchemical_state.lambda_sterics = lambda_val
+            alchemical_state.lambda_electrostatics = lambda_val
+            alchemical_state.lambda_restraints = lambda_val
+
+            return AbsoluteAlchemicalFactory.get_energy_components(
+                system, alchemical_state, t4_validation_data['positions']
+            )
+
+        energies_ref = get_components(t4_reference_system, lambda_val)
+        energies_val = get_components(t4_validation_data['alchem_system'], lambda_val)
+        
+        # Check the keys match
+        assert [k for k in energies_ref.keys()] == [k for k in energies_val.keys()]
+
+        for key in energies_ref.keys():
+            e_ref = energies_ref[key].value_in_unit(ommunit.kilojoule_per_mole)
+            e_val = energies_val[key].value_in_unit(ommunit.kilojoule_per_mole)
+            assert pytest.approx(e_ref) == e_val
+
+
+def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
+    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.complex_solvation_settings.box_shape = "dodecahedron"
+    s.complex_solvation_settings.solvent_padding = 0.8 * offunit.nanometer
+    s.forcefield_settings.nonbonded_cutoff = 0.7 * offunit.nanometer
+
+    protocol = openmm_afe.AbsoluteBindingProtocol(settings=s)
+
+    def assign_fictitious_charges(offmol):
+        """
+        Get a random array of fake partial charges for your offmol.
+        """
+        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
+        rand_arr[-1] = -sum(rand_arr[:-1])
+        return rand_arr * offunit.elementary_charge
+
+    benzene_offmol = benzene_modifications["benzene"].to_openff()
+    offmol_pchgs = assign_fictitious_charges(benzene_offmol)
+    benzene_offmol.partial_charges = offmol_pchgs
+    benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
+
+    # check propchgs
+    prop_chgs = benzene_smc.to_dict()["molprops"]["atom.dprop.PartialCharge"]
+    prop_chgs = np.array(prop_chgs.split(), dtype=float)
+    assert_allclose(prop_chgs, offmol_pchgs)
+
+    stateA = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "benzene": benzene_smc,
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    stateB = gufe.ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": gufe.SolventComponent(),
+        }
+    )
+
+    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
+
+    complex_units = [
+        u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)
+    ]
+
+    with tmpdir.as_cwd():
+        data = complex_units[0].run(dry=True)["debug"]
+
+        system_nbf = [
+            f for f in data["system"].getForces() if isinstance(f, NonbondedForce)
+        ][0]
+        alchem_system_nbf = [
+            f
+            for f in data["alchem_system"].getForces()
+            if isinstance(f, NonbondedForce)
+        ][0]
+
+        for i in range(12):
+            # add 2613 to account for the protein
+            index = i + 2613
+
+            c, s, e = system_nbf.getParticleParameters(index)
+            assert pytest.approx(prop_chgs[i]) == c.value_in_unit(
+                ommunit.elementary_charge
+            )
+
+            offsets = alchem_system_nbf.getParticleParameterOffset(i)
+            assert pytest.approx(prop_chgs[i]) == offsets[2]

@@ -1147,7 +1147,7 @@ class TestT4LXmlRegression:
     """Generates SepTop system XML (solvent) and performs regression test"""
 
     @staticmethod
-    def test_particles(T4L_xml, T4L_reference_xml):
+    def test_particles(T4L_xml, T4L_septop_reference_xml):
         nr_particles = T4L_xml.getNumParticles()
         nr_particles_ref = T4L_reference_xml.getNumParticles()
         assert nr_particles == nr_particles_ref
@@ -1161,7 +1161,7 @@ class TestT4LXmlRegression:
             assert a == b
 
     @staticmethod
-    def test_constraints(T4L_xml, T4L_reference_xml):
+    def test_constraints(T4L_xml, T4L_septop_reference_xml):
         nr_constraints = T4L_xml.getNumConstraints()
         nr_constraints_ref = T4L_reference_xml.getNumConstraints()
         assert nr_constraints == nr_constraints_ref

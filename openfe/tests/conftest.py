@@ -235,7 +235,7 @@ def charged_benzene_modifications():
 
 
 @pytest.fixture(scope='session')
-def T4L_reference_xml():
+def T4L_septop_reference_xml():
     with resources.as_file(resources.files('openfe.tests.data.openmm_septop')) as d:
         f = str(d / 'system.xml.bz2')
     return deserialize(pathlib.Path(f))
