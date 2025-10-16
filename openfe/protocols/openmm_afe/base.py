@@ -1240,7 +1240,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                             'restrained_system': restrained_omm_system,
                             'alchem_system': alchem_system,
                             'alchem_indices': alchem_indices,
-                            'alchem_factory': alchem_factory
+                            'alchem_factory': alchem_factory,
+                            'positions': positions
                         }
                    }
 

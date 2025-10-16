@@ -13,6 +13,13 @@ import numpy as np
 import openfe
 import pytest
 from numpy.testing import assert_allclose
+from openmmtools.alchemy import AlchemicalRegion
+from openmmtools.tests.test_alchemy import (
+    compare_system_energies,
+    check_noninteracting_energy_components,
+    check_interacting_energy_components,
+    overlap_check,
+)
 from openfe import ChemicalSystem, SolventComponent, SmallMoleculeComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
@@ -329,6 +336,30 @@ class TestT4LysozymeDryRun:
             pdb = mdt.load_pdb('alchemical_system.pdb')
             assert pdb.n_atoms == self.num_all_not_water
 
+            # Check energies
+            alchem_region = AlchemicalRegion(alchemical_atoms=data['alchem_indices'])
+
+            compare_system_energies(
+                data['system'],
+                data['alchem_system'],
+                alchem_region,
+                data['positions'],
+            )
+
+            check_noninteracting_energy_components(
+                data['system'],
+                data['alchem_system'],
+                alchem_region,
+                data['positions'],
+            )
+
+            check_interacting_energy_components(
+                data['system'],
+                data['alchem_system'],
+                alchem_region,
+                data['positions'],
+            )
+
     def test_solvent_dry_run(self, solvent_units, settings, tmpdir):
         with tmpdir.as_cwd():
             data = solvent_units[0].run(dry=True, verbose=True)["debug"]
@@ -358,3 +389,27 @@ class TestT4LysozymeDryRun:
             # Check the PDB
             pdb = mdt.load_pdb('alchemical_system.pdb')
             assert pdb.n_atoms == self.num_solvent_atoms
+
+            # Check energies
+            alchem_region = AlchemicalRegion(alchemical_atoms=data['alchem_indices'])
+
+            compare_system_energies(
+                data['system'],
+                data['alchem_system'],
+                alchem_region,
+                data['positions'],
+            )
+
+            check_noninteracting_energy_components(
+                data['system'],
+                data['alchem_system'],
+                alchem_region,
+                data['positions'],
+            )
+
+            check_interacting_energy_components(
+                data['system'],
+                data['alchem_system'],
+                alchem_region,
+                data['positions'],
+            )
