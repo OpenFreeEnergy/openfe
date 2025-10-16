@@ -166,7 +166,6 @@ def generate_abfe_settings():
 
 
 def generate_abfe_json():
-    print("starting")
     ligands, protein = get_hif2a_inputs()
     protocol = AbsoluteBindingProtocol(settings=generate_abfe_settings())
     sysA = openfe.ChemicalSystem(
@@ -184,7 +183,6 @@ def generate_abfe_json():
     )
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
-    print(dag)
     execute_and_serialize(dag, protocol, "ABFEProtocol", new_serialization=True)
 
 
