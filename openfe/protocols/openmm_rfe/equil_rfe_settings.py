@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Literal
 from openff.units import unit
 
-from gufe.settings.types import NanometerQuantity
+from gufe.settings.typing import NanometerQuantity
 from gufe.settings import (
     Settings,
     SettingsBaseModel,
