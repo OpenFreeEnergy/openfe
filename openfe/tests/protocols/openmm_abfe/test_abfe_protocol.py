@@ -13,7 +13,7 @@ import numpy as np
 import openfe
 import pytest
 from numpy.testing import assert_allclose
-from openfe import ChemicalSystem, SolventComponent
+from openfe import ChemicalSystem, SolventComponent, SmallMoleculeComponent
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingComplexUnit,
@@ -22,14 +22,30 @@ from openfe.protocols.openmm_afe import (
 )
 from openfe.protocols.openmm_utils import system_validation
 from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import CustomNonbondedForce, NonbondedForce
+from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openmm import (
+    CustomBondForce,
+    CustomNonbondedForce,
+    CustomCompoundBondForce,
+    HarmonicAngleForce,
+    HarmonicBondForce,
+    MonteCarloBarostat,
+    NonbondedForce,
+    PeriodicTorsionForce,
+)
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 
 @pytest.fixture()
 def default_settings():
     return AbsoluteBindingProtocol.default_settings()
+
+
+@pytest.fixture(scope='module')
+def benzene_wcharges(benzene_modifications):
+    benz_off = benzene_modifications['benzene'].to_openff()
+    benz_off.assign_partial_charges(partial_charge_method='gasteiger')
+    return SmallMoleculeComponent.from_openff(benz_off)
 
 
 def test_create_default_protocol(default_settings):
@@ -118,15 +134,46 @@ def test_create_independent_repeat_ids(benzene_modifications, T4_protein_compone
     assert len(repeat_ids) == 12
 
 
-class BaseABFESystemTests:
+class TestT4LysozymeDryRun:
+
+    solvent = SolventComponent(ion_concentration=0 * offunit.molar)
+    num_all_not_water = 2634
+    num_complex_atoms = 2613
+    num_solvent_atoms = 12
+
     @pytest.fixture(scope="class")
     def protocol(self, settings):
         return openmm_afe.AbsoluteBindingProtocol(
-            settings=s,
+            settings=settings,
         )
 
     @pytest.fixture(scope="class")
-    def dag(self, protocol, stateA, stateB):
+    def settings(self):
+        s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+        s.protocol_repeats = 1
+        s.complex_output_settings.output_indices = "not water"
+        s.complex_solvation_settings.box_shape = "dodecahedron"
+        s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
+        s.solvent_solvation_settings.box_shape = "cube"
+        return s
+
+    @pytest.fixture(scope="class")
+    def dag(self, protocol, benzene_wcharges, T4_protein_component):
+        stateA = ChemicalSystem(
+            {
+                "benzene": benzene_wcharges,
+                "protein": T4_protein_component,
+                "solvent": self.solvent,
+            }
+        )
+
+        stateB = ChemicalSystem(
+            {
+                "protein": T4_protein_component,
+                "solvent": self.solvent,
+            }
+        )
+
         return protocol.create(
             stateA=stateA,
             stateB=stateB,
@@ -135,255 +182,179 @@ class BaseABFESystemTests:
 
     @pytest.fixture(scope="class")
     def complex_units(self, dag):
-        return [u for u in prot_units if isinstance(u, AbsoluteBindingComplexUnit)]
+        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
 
     @pytest.fixture(scope="class")
     def solvent_units(self, dag):
-        return [u for u in prot_units if isinstance(u, AbsoluteBindingSolventUnit)]
-
-
-class BaseBenzeneT4Tests(BaseABFESystemTests):
-    @pytest.fixture(scope="class")
-    def solvent(self):
-        return SolventComponent(ion_concentration=0 * offunit.molar)
-
-    @pytest.fixture(scope="class")
-    def settings(self):
-        s = openmm_afe.AbsoluteBindingProtocol.default_settings()
-        s.protocol_repeats = 1
-        s.complex_output_settings.output_indices = "not water"
-        return s
-
-    @pytest.fixture(scope="class")
-    def stateA(self, benzene_modifications, T4_protein_component, solvent):
-        return ChemicalSystem(
-            {
-                "benzene": benzene_modifications["benzene"],
-                "protein": T4_protein_component,
-                "solvent": solvent,
-            }
-        )
-
-    @pytest.fixture(scope="class")
-    def stateB(self, T4_protein_component, solvent):
-        return ChemicalSystem(
-            {
-                "protein": T4_protein_component,
-                "solvent": solvent,
-            }
-        )
-
-    @pytest.fixture(scope="class")
-    def sampler(self, request):
-        phase_unit = request.getfixturevalue(self.phase_unit_name)
-        with tmpdir.as_cwd():
-            return phase_unit[0].run(dry=True, verbose=True)["debug"]["sampler"]
+        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingSolventUnit)]
 
     def test_number_of_units(self, dag, complex_units, solvent_units):
         assert len(list(dag.protocol_units)) == 2
         assert len(complex_units) == 1
         assert len(solvent_units) == 1
 
-    def test_sampler_periodicity(self, sampler):
+    def _assert_force_num(self, system, forcetype, number):
+        forces = [f for f in system.getForces() if isinstance(f, forcetype)]
+        assert len(forces) == number
+
+    def _assert_expected_alchemical_forces(self, system, complexed: bool, settings):
+        """
+        Assert the forces expected in the alchemical system.
+        """
+        self._assert_force_num(system, NonbondedForce, 1)
+        self._assert_force_num(system, CustomNonbondedForce, 2)
+        self._assert_force_num(system, CustomBondForce, 2)
+        self._assert_force_num(system, HarmonicBondForce, 1)
+        self._assert_force_num(system, HarmonicAngleForce, 1)
+        self._assert_force_num(system, PeriodicTorsionForce, 1)
+        self._assert_force_num(system, MonteCarloBarostat, 1)
+
+        if complexed:
+            self._assert_force_num(system, CustomCompoundBondForce, 1)
+            assert len(system.getForces()) == 10
+        else:
+            assert len(system.getForces()) == 9
+
+        # Check that the nonbonded force is PME
+        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
+        assert len(nonbond) == 1
+        assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
+
+        # Check the barostat made it all the way through
+        barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
+        assert len(barostat) == 1
+        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
+        assert barostat[0].getDefaultTemperature() == to_openmm(settings.thermo_settings.temperature)
+
+    def _assert_expected_nonalchemical_forces(self, system, settings):
+        """
+        Assert the forces expected in the non-alchemical system.
+        """
+        self._assert_force_num(system, NonbondedForce, 1)
+        self._assert_force_num(system, HarmonicBondForce, 1)
+        self._assert_force_num(system, HarmonicAngleForce, 1)
+        self._assert_force_num(system, PeriodicTorsionForce, 1)
+        self._assert_force_num(system, MonteCarloBarostat, 1)
+
+        assert len(system.getForces()) == 5
+
+        # Check that the nonbonded force is PME
+        nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
+        assert len(nonbond) == 1
+        assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
+
+        # Check the barostat made it all the way through
+        barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
+        assert len(barostat) == 1
+        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
+        assert barostat[0].getDefaultTemperature() == to_openmm(settings.thermo_settings.temperature)
+
+    def _verify_sampler(self, sampler, complexed: bool, settings):
+        """
+        Utility to verify the contents of the sampler.
+        """
         assert sampler.is_periodic
+        assert isinstance(sampler, MultiStateSampler)
+        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+        assert sampler._thermodynamic_states[1].pressure == to_openmm(settings.thermo_settings.pressure)
+        for state in sampler._thermodynamic_states:
+            system = state.get_system(remove_thermostat=True)
+            self._assert_expected_alchemical_forces(system, complexed, settings)
 
+    @staticmethod
+    def _test_dodecahedron_vectors(system):
+        # dodecahedron has the following shape:
+        # [width, 0, 0], [0, width, 0], [0.5, 0.5, 0.5 * sqrt(2)] * width
 
-# class TestBenzeneSolventDry(BaseBenzeneT4Tests):
-#    @pytest.fixture(scope='class')
-#    def sampler(self, solvent_units
+        vectors = system.getDefaultPeriodicBoxVectors()
+        width = float(from_openmm(vectors)[0][0].to("nanometer").m)
 
+        expected_vectors = [
+            [width, 0, 0],
+            [0, width, 0],
+            [0.5 * width, 0.5 * width, 0.5 * sqrt(2) * width],
+        ] * offunit.nanometer
 
-# def test_dry_run_solvent_benzene(
-#    benzene_modifications, T4_protein_component, tmpdir,
-# ):
-#
-#    with tmpdir.as_cwd():
-#
-#        pdb = mdt.load_pdb('alchemical_system.pdb')
-#        assert pdb.n_atoms == 12
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors),
+        )
 
+    @staticmethod
+    def _test_cubic_vectors(system):
+        # cube is an identity matrix
+        vectors = system.getDefaultPeriodicBoxVectors()
+        width = float(from_openmm(vectors)[0][0].to("nanometer").m)
 
-def test_dry_run_complex_benzene(benzene_modifications, T4_protein_component, tmpdir):
-    s = openmm_afe.AbsoluteBindingProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.complex_output_settings.output_indices = "not water"
+        expected_vectors = [
+            [width, 0, 0],
+            [0, width, 0],
+            [0, 0, width],
+        ] * offunit.nanometer
 
-    protocol = openmm_afe.AbsoluteBindingProtocol(
-        settings=s,
-    )
+        assert_allclose(
+            expected_vectors,
+            from_openmm(vectors),
+        )
 
-    stateA = ChemicalSystem(
-        {
-            "benzene": benzene_modifications["benzene"],
-            "protein": T4_protein_component,
-            "solvent": SolventComponent(),
-        }
-    )
+    def test_complex_dry_run(self, complex_units, settings, tmpdir):
+        with tmpdir.as_cwd():
+            data = complex_units[0].run(dry=True, verbose=True)["debug"]
 
-    stateB = ChemicalSystem(
-        {
-            "protein": T4_protein_component,
-            "solvent": SolventComponent(),
-        }
-    )
+            # Check the sampler
+            self._verify_sampler(data["sampler"], complexed=True, settings=settings)
 
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
+            # Check the alchemical system
+            self._assert_expected_alchemical_forces(data['alchem_system'], complexed=True, settings=settings)
+            self._test_dodecahedron_vectors(data['alchem_system'])
 
-    assert len(prot_units) == 2
+            # Check the alchemical indices
+            expected_indices = [
+                i + self.num_complex_atoms for i in range(self.num_solvent_atoms)
+            ]
+            assert expected_indices == data['alchem_indices']
 
-    comp_unit = [u for u in prot_units if isinstance(u, AbsoluteBindingComplexUnit)]
-    sol_unit = [u for u in prot_units if isinstance(u, AbsoluteBindingSolventUnit)]
+            # Check the non-alchemical system
+            self._assert_expected_nonalchemical_forces(data['system'], settings)
+            self._test_dodecahedron_vectors(data['system'])
+            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+            assert_allclose(
+                from_openmm(data['alchem_system'].getDefaultPeriodicBoxVectors()),
+                from_openmm(data['system'].getDefaultPeriodicBoxVectors())
+            )
 
-    assert len(comp_unit) == 1
-    assert len(sol_unit) == 1
+            # Check the PDB
+            pdb = mdt.load_pdb('alchemical_system.pdb')
+            assert pdb.n_atoms == self.num_all_not_water
 
-    with tmpdir.as_cwd():
-        comp_sampler = comp_unit[0].run(dry=True, verbose=True)["debug"]["sampler"]
-        assert comp_sampler.is_periodic
+    def test_solvent_dry_run(self, solvent_units, settings, tmpdir):
+        with tmpdir.as_cwd():
+            data = solvent_units[0].run(dry=True, verbose=True)["debug"]
 
-        pdb = mdt.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 2698
+            # Check the sampler
+            self._verify_sampler(data["sampler"], complexed=False, settings=settings)
 
+            # Check the alchemical system
+            self._assert_expected_alchemical_forces(data['alchem_system'], complexed=False, settings=settings)
+            self._test_cubic_vectors(data['alchem_system'])
 
-# def test_dry_run_solv_user_charges_benzene(benzene_modifications, tmpdir):
-#    """
-#    Create a test system with fictitious user supplied charges and
-#    ensure that they are properly passed through to the constructed
-#    alchemical system.
-#    """
-#    s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-#    s.protocol_repeats = 1
-#
-#    protocol = openmm_afe.AbsoluteSolvationProtocol(
-#            settings=s,
-#    )
-#
-#    def assign_fictitious_charges(offmol):
-#        """
-#        Get a random array of fake partial charges for your offmol.
-#        """
-#        rand_arr = np.random.randint(1, 10, size=offmol.n_atoms) / 100
-#        rand_arr[-1] = -sum(rand_arr[:-1])
-#        return rand_arr * offunit.elementary_charge
-#
-#    benzene_offmol = benzene_modifications['benzene'].to_openff()
-#    offmol_pchgs = assign_fictitious_charges(benzene_offmol)
-#    benzene_offmol.partial_charges = offmol_pchgs
-#    benzene_smc = openfe.SmallMoleculeComponent.from_openff(benzene_offmol)
-#
-#    # check propchgs
-#    prop_chgs = benzene_smc.to_dict()['molprops']['atom.dprop.PartialCharge']
-#    prop_chgs = np.array(prop_chgs.split(), dtype=float)
-#    np.testing.assert_allclose(prop_chgs, offmol_pchgs)
-#
-#    # Create ChemicalSystems
-#    stateA = ChemicalSystem({
-#        'benzene': benzene_smc,
-#        'solvent': SolventComponent()
-#    })
-#
-#    stateB = ChemicalSystem({
-#        'solvent': SolventComponent(),
-#    })
-#
-#    # Create DAG from protocol, get the vacuum and solvent units
-#    # and eventually dry run the first solvent unit
-#    dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None,)
-#    prot_units = list(dag.protocol_units)
-#
-#    vac_unit = [u for u in prot_units
-#                if isinstance(u, AbsoluteSolvationVacuumUnit)][0]
-#    sol_unit = [u for u in prot_units
-#                if isinstance(u, AbsoluteSolvationSolventUnit)][0]
-#
-#    # check sol_unit charges
-#    with tmpdir.as_cwd():
-#        sampler = sol_unit.run(dry=True)['debug']['sampler']
-#        system = sampler._thermodynamic_states[0].system
-#        nonbond = [f for f in system.getForces()
-#                   if isinstance(f, NonbondedForce)]
-#
-#        assert len(nonbond) == 1
-#
-#        # loop through the 12 benzene atoms
-#        # partial charge is stored in the offset
-#        for i in range(12):
-#            offsets = nonbond[0].getParticleParameterOffset(i)
-#            c = ensure_quantity(offsets[2], 'openff')
-#            assert pytest.approx(c) == prop_chgs[i]
-#
-#    # check vac_unit charges
-#    with tmpdir.as_cwd():
-#        sampler = vac_unit.run(dry=True)['debug']['sampler']
-#        system = sampler._thermodynamic_states[0].system
-#        nonbond = [f for f in system.getForces()
-#                   if isinstance(f, CustomNonbondedForce)]
-#        assert len(nonbond) == 4
-#
-#        custom_elec = [
-#            n for n in nonbond if
-#            n.getGlobalParameterName(0) == 'lambda_electrostatics'][0]
-#
-#        # loop through the 12 benzene atoms
-#        for i in range(12):
-#            c, s = custom_elec.getParticleParameters(i)
-#            c = ensure_quantity(c, 'openff')
-#            assert pytest.approx(c) == prop_chgs[i]
+            # Check the alchemical indices
+            expected_indices = [
+                i for i in range(self.num_solvent_atoms)
+            ]
+            assert expected_indices == data['alchem_indices']
 
+            # Check the non-alchemical system
+            self._assert_expected_nonalchemical_forces(data['system'], settings)
+            self._test_cubic_vectors(data['system'])
+            # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
+            assert_allclose(
+                from_openmm(data['alchem_system'].getDefaultPeriodicBoxVectors()),
+                from_openmm(data['system'].getDefaultPeriodicBoxVectors())
+            )
 
-# def test_unit_tagging(benzene_solvation_dag, tmpdir):
-#    # test that executing the units includes correct gen and repeat info
-#
-#    dag_units = benzene_solvation_dag.protocol_units
-#
-#    with (
-#        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run',
-#                   return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
-#        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run',
-#                   return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
-#    ):
-#        results = []
-#        for u in dag_units:
-#            ret = u.execute(context=gufe.Context(tmpdir, tmpdir))
-#            results.append(ret)
-#
-#    solv_repeats = set()
-#    vac_repeats = set()
-#    for ret in results:
-#        assert isinstance(ret, gufe.ProtocolUnitResult)
-#        assert ret.outputs['generation'] == 0
-#        if ret.outputs['simtype'] == 'vacuum':
-#            vac_repeats.add(ret.outputs['repeat_id'])
-#        else:
-#            solv_repeats.add(ret.outputs['repeat_id'])
-#    # Repeat ids are random ints so just check their lengths
-#    assert len(vac_repeats) == len(solv_repeats) == 3
-
-
-# def test_gather(benzene_solvation_dag, tmpdir):
-#    # check that .gather behaves as expected
-#    with (
-#        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationSolventUnit.run',
-#                   return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
-#        mock.patch('openfe.protocols.openmm_afe.equil_solvation_afe_method.AbsoluteSolvationVacuumUnit.run',
-#                   return_value={'nc': 'file.nc', 'last_checkpoint': 'chck.nc'}),
-#    ):
-#        dagres = gufe.protocols.execute_DAG(benzene_solvation_dag,
-#                                            shared_basedir=tmpdir,
-#                                            scratch_basedir=tmpdir,
-#                                            keep_shared=True)
-#
-#    protocol = AbsoluteSolvationProtocol(
-#        settings=AbsoluteSolvationProtocol.default_settings(),
-#    )
-#
-#    res = protocol.gather([dagres])
-#
-#    assert isinstance(res, openmm_afe.AbsoluteSolvationProtocolResult)
+            # Check the PDB
+            pdb = mdt.load_pdb('alchemical_system.pdb')
+            assert pdb.n_atoms == self.num_solvent_atoms

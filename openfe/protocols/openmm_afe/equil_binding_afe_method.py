@@ -1247,7 +1247,9 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         return (
             restraint_parameter_state,
             correction,
-            thermodynamic_state.system,
+            # Remove the thermostat, otherwise you'll get an
+            # Andersen thermostat by default!
+            thermodynamic_state.get_system(remove_thermostat=True),
             rest_geom,
         )
 

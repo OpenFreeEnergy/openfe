@@ -1132,7 +1132,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas = self._get_lambda_schedule(settings)
 
         # 6. Add restraints
-        restraint_parameter_state, standard_state_corr, omm_system, restraint_geometry = self._add_restraints(
+        # Note: when no restraint is applied, restrained_omm_system == omm_system
+        restraint_parameter_state, standard_state_corr, restrained_omm_system, restraint_geometry = self._add_restraints(
             omm_system,
             omm_topology,
             positions,
@@ -1143,7 +1144,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # 7. Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
-            omm_topology, omm_system, comp_resids, alchem_comps
+            omm_topology,
+            restrained_omm_system,
+            comp_resids,
+            alchem_comps
         )
 
         # 8. Get compound and sampler states
@@ -1233,6 +1237,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                         'debug': {
                             'sampler': sampler,
                             'system': omm_system,
+                            'restrained_system': restrained_omm_system,
                             'alchem_system': alchem_system,
                             'alchem_indices': alchem_indices,
                             'alchem_factory': alchem_factory

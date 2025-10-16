@@ -8,6 +8,8 @@ from openfe.protocols import openmm_afe
 @pytest.fixture
 def benzene_complex_dag(benzene_modifications, T4_protein_component):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
+    s.complex_output_settings.output_indices = "not water"
+    s.solvent_output_settings.output_indices = "not water"
 
     protocol = openmm_afe.AbsoluteBindingProtocol(
         settings=s,
