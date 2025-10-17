@@ -527,8 +527,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     0.12, 0.24, 0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0
                 ],
                 lambda_restraints=[
-                    0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+                    1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
                 ],
             ),
             complex_lambda_settings=LambdaSettings(
@@ -543,9 +543,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0
                 ],
                 lambda_restraints=[
-                    0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0
+                    1.0, 0.8, 0.6, 0.4, 0.2, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00, 0.0, 0.00, 0.0, 0.00, 0.0, 0.00, 0.0
                 ],
             ),
             # fmt: on
@@ -756,7 +756,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # but we don't dissallow it.
         if all(
             [
-                i == 0
+                i == 1.0
                 for i in self.settings.complex_lambda_settings.lambda_restraints
             ]
         ):
@@ -772,7 +772,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             self.settings.solvent_simulation_settings,
         )
 
-        # If the solvent restraints schedule is all zero, it was likely
+        # If the solvent restraints schedule is not all one, it was likely
         # copied from the complex schedule. In this case we just ignore
         # the values and let the user know.
         # P.S. we don't need to change the settings at this point
@@ -781,7 +781,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         if any(
             [
-                i != 0
+                i != 1.0
                 for i in self.settings.solvent_lambda_settings.lambda_restraints
             ]
         ):

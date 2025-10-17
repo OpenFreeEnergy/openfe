@@ -56,12 +56,10 @@ class LambdaSettings(SettingsBaseModel):
 
     Notes
     -----
-    * In all cases a lambda value of 0 defines a fully interacting state A and
-      a non-interacting state B, whilst a value of 1 defines a fully interacting
-      state B and a non-interacting state A.
+    * In all cases a lambda value of 0 defines a fully interacting parameter,
+      whilst a value of 1 defines a non-interacting parameter.
     * ``lambda_elec``, ``lambda_vdw``, and ``lambda_restraints`` must all be of
       the same length, defining all the windows of the transformation.
-
     """
 
     # fmt: off
@@ -72,7 +70,7 @@ class LambdaSettings(SettingsBaseModel):
     # fmt: on
     """
     List of floats of lambda values for the electrostatics. 
-    Zero means state A and 1 means state B.
+    Zero means fully interacting, and one means annihilated.
     Length of this list needs to match length of lambda_vdw and lambda_restraints.
     """
     # fmt: off
@@ -83,19 +81,21 @@ class LambdaSettings(SettingsBaseModel):
     # fmt: on
     """
     List of floats of lambda values for the van der Waals.
-    Zero means state A and 1 means state B.
+    Zero means full interacting and one means decoupled.
     Length of this list needs to match length of lambda_elec and lambda_restraints.
     """
     # fmt: off
     lambda_restraints: list[float] = [
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
     ]
     # fmt: on
     """
     List of floats of lambda values for the restraints.
-    Zero means state A and 1 means state B.
-    Length of this list needs to match length of lambda_vdw and lambda_elec.
+    Zero means a fully interacting restraint, and one means
+    non-interacting.
+
+    Note: The length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
     @field_validator("lambda_elec", "lambda_vdw", "lambda_restraints")
@@ -113,8 +113,9 @@ class LambdaSettings(SettingsBaseModel):
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
+        monotonic = np.all(difference <= 0) or np.all(difference >= 0)
 
-        if not all(i >= 0.0 for i in difference):
+        if not monotonic:
             errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
             raise ValueError(errmsg)
 

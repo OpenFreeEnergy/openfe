@@ -63,7 +63,7 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(-20.65, abs=0.5)
+        assert est.m == pytest.approx(-19.66, abs=0.5)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
@@ -179,13 +179,13 @@ class TestProtocolResult:
         assert len(geom) == 3
         assert isinstance(geom[0], BoreschRestraintGeometry)
         assert geom[0].guest_atoms == [1779, 1778, 1777]
-        assert geom[0].host_atoms == [1361, 1360, 1359]
-        assert pytest.approx(geom[0].r_aA0) == 1.286575 * offunit.nanometer
-        assert pytest.approx(geom[0].theta_A0) == 0.709959 * offunit.radian
-        assert pytest.approx(geom[0].theta_B0) == 1.809288 * offunit.radian
-        assert pytest.approx(geom[0].phi_A0) == 1.1643949 * offunit.radian
-        assert pytest.approx(geom[0].phi_B0) == -1.48076010 * offunit.radian
-        assert pytest.approx(geom[0].phi_C0) == 0.701796 * offunit.radian
+        assert geom[0].host_atoms == [785, 786, 787]
+        assert pytest.approx(geom[0].r_aA0) == 1.198196 * offunit.nanometer
+        assert pytest.approx(geom[0].theta_A0) == 1.291536 * offunit.radian
+        assert pytest.approx(geom[0].theta_B0) == 1.136262 * offunit.radian
+        assert pytest.approx(geom[0].phi_A0) == 0.309693614 * offunit.radian
+        assert pytest.approx(geom[0].phi_B0) == 0.76734425 * offunit.radian
+        assert pytest.approx(geom[0].phi_C0) == -1.43720878 * offunit.radian
 
     @pytest.mark.parametrize(
         "key, expected_size",
