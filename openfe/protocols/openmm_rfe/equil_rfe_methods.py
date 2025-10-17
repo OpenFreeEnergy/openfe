@@ -46,7 +46,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, SolventComponent, ProtienComponent,
+    SmallMoleculeComponent, SolventComponent, ProteinComponent,
 )
 
 from .equil_rfe_settings import (
