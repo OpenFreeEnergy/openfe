@@ -16,6 +16,7 @@ from gufe import AlchemicalNetwork, SmallMoleculeComponent
 import json
 import numpy as np
 from openff.utilities import skip_if_missing
+from openff.units import unit
 
 @pytest.fixture(scope='session')
 def mol_dir_args(tmpdir_factory):
@@ -114,6 +115,18 @@ def test_plan_rbfe_network_main():
     # check the ligands have charges assigned
     for node in alchemical_network.nodes:
         validate_charges(node.components["ligand"])
+
+    # check that the adaptive settings have been correctly applied
+    for edge in alchemical_network.edges:
+        settings = edge.protocol.settings
+        if "complex" in edge.name:
+            padding = 1.0  # nm
+        else:
+            padding = 1.5 # nm
+        assert settings.solvation_settings.solvent_padding == padding * unit.nanometer
+        assert settings.forcefield_settings.nonbonded_cutoff == 0.9 * unit.nanometer
+        assert settings.solvation_settings.box_shape == "dodecahedron"
+        assert settings.simulation_settings.time_per_iteration == 2.5 * unit.picosecond
 
 
 @pytest.fixture
@@ -298,7 +311,7 @@ def cdk8_files():
 
         yield pdb_path, lig_path
 
-def test_plan_rbfe_network_charge_changes(cdk8_files):
+def test_plan_rbfe_network_charge_changes(cdk8_files, caplog):
     """
     Make sure the protocol settings are changed and a warning is printed when we plan a network
     with a net charge change.
@@ -312,25 +325,26 @@ def test_plan_rbfe_network_charge_changes(cdk8_files):
     ]
 
     with runner.isolated_filesystem():
-        with pytest.warns(UserWarning, match="Charge changing transformation between ligands lig_40 and lig_41"):
-            result = runner.invoke(plan_rbfe_network, args)
+        result = runner.invoke(plan_rbfe_network, args)
 
-            assert result.exit_code == 0
-            # load the transformations and check the settings
-            network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
-            for edge in network.edges:
-                settings = edge.protocol.settings
-                # check the charged transform
-                if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_41":
-                    assert settings.alchemical_settings.explicit_charge_correction is True
-                    assert settings.simulation_settings.production_length.m == 20.0
-                    assert settings.simulation_settings.n_replicas == 22
-                    assert settings.lambda_settings.lambda_windows == 22
-                else:
-                    assert settings.alchemical_settings.explicit_charge_correction is False
-                    assert settings.simulation_settings.production_length.m == 5.0
-                    assert settings.simulation_settings.n_replicas == 11
-                    assert settings.lambda_settings.lambda_windows == 11
+        assert result.exit_code == 0
+        # load the transformations and check the settings
+        network = AlchemicalNetwork.from_json("alchemicalNetwork/alchemicalNetwork.json")
+        for edge in network.edges:
+            settings = edge.protocol.settings
+            # check the charged transform
+            if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_41":
+                assert settings.alchemical_settings.explicit_charge_correction is True
+                assert settings.simulation_settings.production_length.m == 20.0
+                assert settings.simulation_settings.n_replicas == 22
+                assert settings.lambda_settings.lambda_windows == 22
+            else:
+                assert settings.alchemical_settings.explicit_charge_correction is False
+                assert settings.simulation_settings.production_length.m == 5.0
+                assert settings.simulation_settings.n_replicas == 11
+                assert settings.lambda_settings.lambda_windows == 11
+
+    assert "Charge changing transformation between ligands lig_40 and lig_41" in caplog.text
 
 
 @pytest.fixture
