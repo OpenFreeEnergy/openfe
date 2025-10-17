@@ -223,7 +223,7 @@ class TestT4LysozymeDryRun:
         else:
             assert len(system.getForces()) == 9
 
-        # Check that the nonbonded force
+        # Check the nonbonded force has the right contents
         nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
         assert len(nonbond) == 1
         assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME
@@ -257,7 +257,7 @@ class TestT4LysozymeDryRun:
 
         assert len(system.getForces()) == 5
 
-        # Check that the nonbonded force
+        # Check that the nonbonded force has the right contents
         nonbond = [f for f in system.getForces() if isinstance(f, NonbondedForce)]
         assert len(nonbond) == 1
         assert nonbond[0].getNonbondedMethod() == NonbondedForce.PME

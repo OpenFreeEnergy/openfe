@@ -87,6 +87,21 @@ def execute_and_serialize(
     simname,
     new_serialization: bool = False
 ):
+    """
+    Execute & serialize a DAG
+
+    Parameters
+    ----------
+    dag : gufe.ProtocolDAG
+      The DAG to execute & serialize.
+    protocol : gufe.Protocol
+      The Protocol to which the DAG belongs.
+    simname : str
+      The name of the simulation, used for the serialized file name.
+    new_serialization : bool
+      Whether or not we should use the "new" `to_json` serialization.
+      Default is False (for now).
+    """
     logger.info(f"running {simname}")
     with tempfile.TemporaryDirectory() as tmpdir:
         workdir = pathlib.Path(tmpdir)
