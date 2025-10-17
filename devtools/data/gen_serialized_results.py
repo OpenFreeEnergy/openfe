@@ -158,14 +158,12 @@ def generate_abfe_settings():
     settings.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
     settings.solvent_simulation_settings.equilibration_length = 100 * unit.picosecond
     settings.solvent_simulation_settings.production_length = 500 * unit.picosecond
-    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
     settings.solvent_simulation_settings.time_per_iteration = 2.5 * unit.ps
     settings.complex_equil_simulation_settings.equilibration_length_nvt = 10 * unit.picosecond
     settings.complex_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.complex_equil_simulation_settings.production_length = 100 * unit.picosecond
     settings.complex_simulation_settings.equilibration_length = 100 * unit.picosecond
     settings.complex_simulation_settings.production_length = 500 * unit.picosecond
-    settings.complex_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
     settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
     settings.solvent_solvation_settings.box_shape = 'dodecahedron'
     settings.complex_solvation_settings.box_shape = 'dodecahedron'
