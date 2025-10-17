@@ -327,6 +327,11 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """
     Settings for controlling the solvent transformation leg
     lambda schedule for the different components (vdw, elec, restraints).
+
+    Notes
+    -----
+    * The `restraints` entry of the lambda settings will be ignored in the
+      solvent leg.
     """
 
     # MD Engine things
