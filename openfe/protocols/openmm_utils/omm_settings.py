@@ -18,7 +18,7 @@ from gufe.settings import (
     ThermoSettings as ThermoSettings,
 )
 
-from gufe.settings.types import (
+from gufe.settings.typing import (
     NanometerQuantity,
     NanometerArrayQuantity,
     PicosecondQuantity,
