@@ -3,7 +3,7 @@
 """OpenMM Equilibrium Binding AFE Protocol --- :mod:`openfe.protocols.openmm_afe.equil_binding_afe_method`
 ==========================================================================================================
 
-This module implements the necessary methodology tooling to run calculate an
+This module implements the necessary methodology tooling to calculate an
 absolute binding free energy using OpenMM tools and one of the following
 alchemical sampling methods:
 
@@ -961,7 +961,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         Returns
         -------
         alchem_comps : dict[str, Component]
-          A list of alchemical components
+          A dict of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
         prot_comp : Optional[ProteinComponent]
