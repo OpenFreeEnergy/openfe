@@ -46,7 +46,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, SolventComponent,
+    SmallMoleculeComponent, SolventComponent, ProtienComponent,
 )
 
 from .equil_rfe_settings import (
@@ -491,18 +491,28 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         """
         return RelativeHybridTopologyProtocolSettings(
             protocol_repeats=3,
-            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
+            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
+                # fast settings
+                nonbonded_cutoff=0.9 * unit.nanometer
+            ),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
-            solvation_settings=OpenMMSolvationSettings(),
+            solvation_settings=OpenMMSolvationSettings(
+                # fast settings
+                box_shape="dodecahedron",
+                # make the default padding work for all cases
+                solvent_padding=1.5 * unit.nanometer
+            ),
             alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
             lambda_settings=LambdaSettings(),
             simulation_settings=MultiStateSimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
+                # fast settings
+                time_per_iteration=2.5 * unit.picosecond
             ),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
@@ -523,10 +533,19 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         These are intended as a suitable starting point for creating an instance of this protocol, which can be further
         customized before performing a Protocol.
 
-        Notes
-        -----
-            The fast settings used are still being refined and tested and will only be applied
-            to net neutral transformations.
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+            The initial state of the transformation.
+        stateB : ChemicalSystem
+            The final state of the transformation.
+        mapping : LigandAtomMapping | list[LigandAtomMapping]
+            The mapping(s) between transforming components in stateA and stateB.
+
+        Returns
+        -------
+        RelativeHybridTopologyProtocolSettings
+            The recommended settings for this protocol based on the input states.
         """
         # get the default settings that we can edit
         protocol_settings: RelativeHybridTopologyProtocolSettings = cls.default_settings()
@@ -537,34 +556,19 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         if mapping.get_alchemical_charge_difference() != 0:
             # apply the recommended charge change settings taken from the industry benchmarking as fast settings not validated
             # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
-            wmsg = ("Charge changing transformation between ligands "
+            info = ("Charge changing transformation between ligands "
                     f"{mapping.componentA.name} and {mapping.componentB.name}. "
                     "A more expensive protocol with 22 lambda windows, sampled "
                     "for 20 ns each, will be used here.")
-            warnings.warn(wmsg)
+            logger.info(info)
             protocol_settings.alchemical_settings.explicit_charge_correction = True
             protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
             protocol_settings.simulation_settings.n_replicas = 22
             protocol_settings.lambda_settings.lambda_windows = 22
 
-        else:
-            # apply the fast settings we have benchmarked
-            protocol_settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
-            protocol_settings.simulation_settings.time_per_iteration = 2.5 * unit.picosecond
-            protocol_settings.solvation_settings.box_shape = "dodecahedron"
-
-            # check if we have a protein and solvent component in stateA and stateB
-            _, protein_comp_a, _ = system_validation.get_components(state=stateA)
-            _, protein_comp_b, _ = system_validation.get_components(state=stateB)
-
-            # default solvent padding size for solvent only legs
-            padding_size = 1.5 * unit.nanometer
-
-            # if we have protein we can shrink the padding size
-            if protein_comp_a is not None and protein_comp_b is not None:
-                padding_size = 1 * unit.nanometer
-
-            protocol_settings.solvation_settings.solvent_padding = padding_size
+        # adapt the solvation padding based on the system components
+        if stateA.contains(ProtienComponent) and stateB.contains(ProtienComponent):
+            protocol_settings.solvation_settings.solvent_padding = 1 * unit.nanometer
 
         return protocol_settings
 

@@ -22,10 +22,3 @@ OVERWRITE = Option(
     default=False,
     help="Overwrite any partial charges present in the input molecules."
 )
-
-ADAPTIVE_SETTINGS = Option(
-    "--adaptive-settings",
-    is_flag=True,
-    default=False,
-    help="Let the protocol adapt the settings for each transformation to maximise throughput with minimal accuracy loss."
-)
