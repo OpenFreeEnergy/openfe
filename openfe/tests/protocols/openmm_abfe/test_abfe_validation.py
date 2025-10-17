@@ -3,7 +3,6 @@
 import pytest
 from gufe import ProtocolDAGResult, LigandAtomMapping
 from openfe import ChemicalSystem, SolventComponent
-from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,
 )

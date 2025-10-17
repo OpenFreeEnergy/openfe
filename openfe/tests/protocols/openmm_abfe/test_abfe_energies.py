@@ -1,20 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import gzip
 from importlib import resources
-import itertools
-import json
-import sys
-from math import sqrt
-import pathlib
-from unittest import mock
 
 import gufe
-import mdtraj as mdt
 import numpy as np
-import openfe
 import pytest
-from numpy.testing import assert_allclose
 from openmmtools.alchemy import (
     AlchemicalRegion,
     AlchemicalState,
@@ -22,23 +12,11 @@ from openmmtools.alchemy import (
 )
 import openmm
 from openmm import Platform
-from openmmtools.tests.test_alchemy import (
-    compare_system_energies,
-    check_noninteracting_energy_components,
-    check_interacting_energy_components,
-    overlap_check,
-)
-from openfe import ChemicalSystem, SolventComponent, SmallMoleculeComponent
 from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 from openfe.protocols import openmm_afe
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingComplexUnit,
-    AbsoluteBindingProtocol,
-    AbsoluteBindingSolventUnit,
 )
-from openfe.protocols.openmm_utils import system_validation
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import unit as ommunit
 from openfe.protocols.openmm_septop.utils import deserialize
 import collections

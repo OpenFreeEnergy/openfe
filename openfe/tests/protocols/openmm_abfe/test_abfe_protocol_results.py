@@ -179,13 +179,13 @@ class TestProtocolResult:
         assert len(geom) == 3
         assert isinstance(geom[0], BoreschRestraintGeometry)
         assert geom[0].guest_atoms == [1779, 1778, 1777]
-        assert geom[0].host_atoms == [882, 881, 880]
-        assert pytest.approx(geom[0].r_aA0) == 1.239978 * offunit.nanometer
-        assert pytest.approx(geom[0].theta_A0) == 1.103763 * offunit.radian
-        assert pytest.approx(geom[0].theta_B0) == 1.535166 * offunit.radian
-        assert pytest.approx(geom[0].phi_A0) == 0.293096 * offunit.radian
-        assert pytest.approx(geom[0].phi_B0) == -2.394508 * offunit.radian
-        assert pytest.approx(geom[0].phi_C0) == -0.499805 * offunit.radian
+        assert geom[0].host_atoms == [1361, 1360, 1359]
+        assert pytest.approx(geom[0].r_aA0) == 1.286575 * offunit.nanometer
+        assert pytest.approx(geom[0].theta_A0) == 0.709959 * offunit.radian
+        assert pytest.approx(geom[0].theta_B0) == 1.809288 * offunit.radian
+        assert pytest.approx(geom[0].phi_A0) == 1.1643949 * offunit.radian
+        assert pytest.approx(geom[0].phi_B0) == -1.48076010 * offunit.radian
+        assert pytest.approx(geom[0].phi_C0) == 0.701796 * offunit.radian
 
     @pytest.mark.parametrize(
         "key, expected_size",

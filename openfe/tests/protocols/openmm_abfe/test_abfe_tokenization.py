@@ -1,9 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
-import json
 
-import gufe
 import openfe
 import pytest
 from gufe.tests.test_tokenization import GufeTokenizableTestsMixin

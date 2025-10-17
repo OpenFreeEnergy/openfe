@@ -48,8 +48,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteBindingSettings,
     AlchemicalSettings,
     BoreschRestraintSettings,
-    DistanceRestraintSettings,
-    FlatBottomRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
     ABFEPreEquilOutputSettings,
@@ -61,14 +59,17 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMSolvationSettings,
     SettingsBaseModel,
 )
-from openfe.protocols.openmm_utils import settings_validation, system_validation
+from openfe.protocols.openmm_utils import (
+    settings_validation,
+    system_validation
+)
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 from openff.units import unit as offunit
 from openff.units import Quantity
-from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
+from openff.units.openmm import to_openmm
 from openmm import System
 from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology

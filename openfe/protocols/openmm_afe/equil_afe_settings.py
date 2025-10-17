@@ -33,8 +33,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
 )
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
-    DistanceRestraintSettings,
-    FlatBottomRestraintSettings,
     BoreschRestraintSettings,
 )
 

@@ -19,7 +19,6 @@ import logging
 import pathlib
 from rdkit import Chem
 import tempfile
-from rdkit import Chem
 from openff.toolkit import (
     Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
 )
@@ -41,7 +40,6 @@ from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_septop import SepTopProtocol
 
 import sys
-import logging
 from openfecli.utils import configure_logger
 
 # avoid problems with output not showing if queueing system kills a job
@@ -213,7 +211,7 @@ def generate_ahfe_settings():
 
     return settings
 
-    
+
 def generate_ahfe_json(smc):
     protocol = AbsoluteSolvationProtocol(settings=generate_ahfe_settings())
     sysA = openfe.ChemicalSystem(
@@ -233,7 +231,7 @@ def generate_rfe_settings():
     settings.simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.simulation_settings.production_length = 250 * unit.picosecond
     settings.forcefield_settings.nonbonded_method = "nocutoff"
-    
+
     return settings
 
 
@@ -299,7 +297,7 @@ def generate_septop_json():
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
     execute_and_serialize(dag, protocol, "SepTopProtocol")
-        
+
 
 if __name__ == "__main__":
     molA = get_molecule(LIGA, "ligandA")
