@@ -34,6 +34,7 @@ def protocol_dry_settings():
     settings = AbsoluteSolvationProtocol.default_settings()
     settings.vacuum_engine_settings.compute_platform = None
     settings.solvent_engine_settings.compute_platform = None
+    settings.protocol_repeats = 1
     return settings
 
 
@@ -69,7 +70,6 @@ def test_dry_run_vac_benzene(
     protocol_dry_settings,
     tmpdir
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.vacuum_simulation_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
@@ -111,8 +111,6 @@ def test_dry_run_vac_benzene(
 
 def test_confgen_fail_AFE(benzene_modifications, protocol_dry_settings, tmpdir):
     # check system parametrisation works even if confgen fails
-    protocol_dry_settings.protocol_repeats = 1
-
     protocol = openmm_afe.AbsoluteSolvationProtocol(
         settings=protocol_dry_settings,
     )
@@ -147,7 +145,6 @@ def test_confgen_fail_AFE(benzene_modifications, protocol_dry_settings, tmpdir):
 def test_dry_run_solv_benzene(
     benzene_modifications, protocol_dry_settings, tmpdir
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
@@ -193,7 +190,6 @@ def test_dry_run_solv_benzene(
 def test_dry_run_solv_benzene_tip4p(
     benzene_modifications, protocol_dry_settings, tmpdir
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -295,8 +291,6 @@ def test_dry_run_solv_user_charges_benzene(
     ensure that they are properly passed through to the constructed
     alchemical system.
     """
-    protocol_dry_settings.protocol_repeats = 1
-
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=protocol_dry_settings,
     )
@@ -404,7 +398,6 @@ def test_dry_run_charge_backends(
     Check that partial charge generation with different backends
     works as expected.
     """
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.partial_charge_settings.partial_charge_method = method
     protocol_dry_settings.partial_charge_settings.off_toolkit_backend = backend
     protocol_dry_settings.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
@@ -454,7 +447,6 @@ def test_dry_run_charge_backends(
 
 
 def test_high_timestep(benzene_modifications, protocol_dry_settings, tmpdir):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.solvent_forcefield_settings.hydrogen_mass = 1.0
     protocol_dry_settings.vacuum_forcefield_settings.hydrogen_mass = 1.0
 
@@ -688,7 +680,6 @@ def test_dry_run_vacuum_write_frequency(
     protocol_dry_settings,
     tmpdir
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
     protocol_dry_settings.solvent_output_settings.positions_write_frequency = positions_write_frequency
     protocol_dry_settings.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
