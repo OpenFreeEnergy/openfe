@@ -30,7 +30,7 @@ from openfe.protocols.openmm_utils.charge_generation import (
 
 
 @pytest.fixture()
-def protocol_settings():
+def protocol_dry_settings():
     settings = AbsoluteSolvationProtocol.default_settings()
     settings.vacuum_engine_settings.compute_platform = None
     settings.solvent_engine_settings.compute_platform = None
@@ -66,14 +66,14 @@ def test_serialize_protocol(default_settings):
 def test_dry_run_vac_benzene(
     benzene_modifications,
     method,
-    protocol_settings,
+    protocol_dry_settings,
     tmpdir
 ):
-    protocol_settings.protocol_repeats = 1
-    protocol_settings.vacuum_simulation_settings.sampler_method = method
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.vacuum_simulation_settings.sampler_method = method
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
@@ -109,12 +109,12 @@ def test_dry_run_vac_benzene(
         assert not vac_sampler.is_periodic
 
 
-def test_confgen_fail_AFE(benzene_modifications, protocol_settings, tmpdir):
+def test_confgen_fail_AFE(benzene_modifications, protocol_dry_settings, tmpdir):
     # check system parametrisation works even if confgen fails
-    protocol_settings.protocol_repeats = 1
+    protocol_dry_settings.protocol_repeats = 1
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-        settings=protocol_settings,
+        settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
@@ -145,13 +145,13 @@ def test_confgen_fail_AFE(benzene_modifications, protocol_settings, tmpdir):
 
 
 def test_dry_run_solv_benzene(
-    benzene_modifications, protocol_settings, tmpdir
+    benzene_modifications, protocol_dry_settings, tmpdir
 ):
-    protocol_settings.protocol_repeats = 1
-    protocol_settings.solvent_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
@@ -191,24 +191,24 @@ def test_dry_run_solv_benzene(
 
 
 def test_dry_run_solv_benzene_tip4p(
-    benzene_modifications, protocol_settings, tmpdir
+    benzene_modifications, protocol_dry_settings, tmpdir
 ):
-    protocol_settings.protocol_repeats = 1
-    protocol_settings.vacuum_forcefield_settings.forcefields = [
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    protocol_settings.solvent_forcefield_settings.forcefields = [
+    protocol_dry_settings.solvent_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    protocol_settings.solvation_settings.solvent_model = 'tip4pew'
-    protocol_settings.integrator_settings.reassign_velocities = True
+    protocol_dry_settings.solvation_settings.solvent_model = 'tip4pew'
+    protocol_dry_settings.integrator_settings.reassign_velocities = True
 
     protocol = AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
@@ -238,12 +238,12 @@ def test_dry_run_solv_benzene_tip4p(
 
 
 def test_dry_run_solv_benzene_noncubic(
-    benzene_modifications, protocol_settings, tmpdir
+    benzene_modifications, protocol_dry_settings, tmpdir
 ):
-    protocol_settings.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
-    protocol_settings.solvation_settings.box_shape = 'dodecahedron'
+    protocol_dry_settings.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
+    protocol_dry_settings.solvation_settings.box_shape = 'dodecahedron'
 
-    protocol = AbsoluteSolvationProtocol(settings=protocol_settings)
+    protocol = AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
     stateA = ChemicalSystem({
         'benzene': benzene_modifications['benzene'],
@@ -288,17 +288,17 @@ def test_dry_run_solv_benzene_noncubic(
 
 
 def test_dry_run_solv_user_charges_benzene(
-    benzene_modifications, protocol_settings, tmpdir
+    benzene_modifications, protocol_dry_settings, tmpdir
 ):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
     alchemical system.
     """
-    protocol_settings.protocol_repeats = 1
+    protocol_dry_settings.protocol_repeats = 1
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     def assign_fictitious_charges(offmol):
@@ -398,18 +398,18 @@ def test_dry_run_solv_user_charges_benzene(
 ])
 def test_dry_run_charge_backends(
     CN_molecule, tmpdir, method, backend, ref_key,
-    protocol_settings, am1bcc_ref_charges
+    protocol_dry_settings, am1bcc_ref_charges
 ):
     """
     Check that partial charge generation with different backends
     works as expected.
     """
-    protocol_settings.protocol_repeats = 1
-    protocol_settings.partial_charge_settings.partial_charge_method = method
-    protocol_settings.partial_charge_settings.off_toolkit_backend = backend
-    protocol_settings.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.partial_charge_settings.partial_charge_method = method
+    protocol_dry_settings.partial_charge_settings.off_toolkit_backend = backend
+    protocol_dry_settings.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
 
-    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_settings)
+    protocol = openmm_afe.AbsoluteSolvationProtocol(settings=protocol_dry_settings)
 
     # Create ChemicalSystems
     stateA = ChemicalSystem({
@@ -453,13 +453,13 @@ def test_dry_run_charge_backends(
     )
 
 
-def test_high_timestep(benzene_modifications, protocol_settings, tmpdir):
-    protocol_settings.protocol_repeats = 1
-    protocol_settings.solvent_forcefield_settings.hydrogen_mass = 1.0
-    protocol_settings.vacuum_forcefield_settings.hydrogen_mass = 1.0
+def test_high_timestep(benzene_modifications, protocol_dry_settings, tmpdir):
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.solvent_forcefield_settings.hydrogen_mass = 1.0
+    protocol_dry_settings.vacuum_forcefield_settings.hydrogen_mass = 1.0
 
     protocol = AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
@@ -485,9 +485,9 @@ def test_high_timestep(benzene_modifications, protocol_settings, tmpdir):
 
 
 @pytest.fixture
-def benzene_solvation_dag(benzene_modifications, protocol_settings):
+def benzene_solvation_dag(benzene_modifications, protocol_dry_settings):
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
@@ -685,18 +685,18 @@ def test_dry_run_vacuum_write_frequency(
     benzene_modifications,
     positions_write_frequency,
     velocities_write_frequency,
-    protocol_settings,
+    protocol_dry_settings,
     tmpdir
 ):
-    protocol_settings.protocol_repeats = 1
-    protocol_settings.solvent_output_settings.output_indices = "resname UNK"
-    protocol_settings.solvent_output_settings.positions_write_frequency = positions_write_frequency
-    protocol_settings.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
-    protocol_settings.vacuum_output_settings.positions_write_frequency = positions_write_frequency
-    protocol_settings.vacuum_output_settings.velocities_write_frequency = velocities_write_frequency
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.solvent_output_settings.positions_write_frequency = positions_write_frequency
+    protocol_dry_settings.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
+    protocol_dry_settings.vacuum_output_settings.positions_write_frequency = positions_write_frequency
+    protocol_dry_settings.vacuum_output_settings.velocities_write_frequency = velocities_write_frequency
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
-            settings=protocol_settings,
+            settings=protocol_dry_settings,
     )
 
     stateA = ChemicalSystem({
