@@ -466,12 +466,6 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         t0 = time.time()
         simulation.step(prod_steps)
         t1 = time.time()
-        # Write out the final frame --temp debug
-        state = simulation.context.getState(
-                getPositions=True,
-                enforcePeriodicBox=False,
-        )
-        xtc_reporter.report(simulation, state)
 
         if verbose:
             logger.info(f"Completed simulation in {t1 - t0} seconds")
