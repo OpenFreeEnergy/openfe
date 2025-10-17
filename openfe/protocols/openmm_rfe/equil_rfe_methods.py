@@ -500,19 +500,12 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
                 pressure=1 * unit.bar,
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
-            solvation_settings=OpenMMSolvationSettings(
-                # fast settings
-                box_shape="dodecahedron",
-                # make the default padding work for all cases
-                solvent_padding=1.5 * unit.nanometer
-            ),
+            solvation_settings=OpenMMSolvationSettings(),
             alchemical_settings=AlchemicalSettings(softcore_LJ='gapsys'),
             lambda_settings=LambdaSettings(),
             simulation_settings=MultiStateSimulationSettings(
                 equilibration_length=1.0 * unit.nanosecond,
                 production_length=5.0 * unit.nanosecond,
-                # fast settings
-                time_per_iteration=2.5 * unit.picosecond
             ),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
