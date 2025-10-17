@@ -216,13 +216,6 @@ def test_lambda_energies(
                 assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
 
 
-@pytest.fixture
-def available_platforms() -> set[str]:
-    return {
-        openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())
-    }
-
-
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize("platform", ["CUDA"])
