@@ -145,13 +145,9 @@ html_theme_options = {
     ],
     "accent_color": "cantina-purple",
     "navigation_with_keys": False,
-    "navbar_end": ["navbar-icon-links"],  # TODO: add "theme-switcher" to add back dark mode toggle
 }
 html_logo = "_static/OFE-color-icon.svg"
 html_favicon = '_static/OFE-color-icon.svg'
-html_context = {
-   "default_mode": "light"
-}
 # temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
 html_sidebars = {
     "installation": [],
@@ -191,7 +187,7 @@ try:
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch='june-2025',
+            branch='oct-2025',
             to_path=example_notebooks_path,
         )
 except Exception as e:

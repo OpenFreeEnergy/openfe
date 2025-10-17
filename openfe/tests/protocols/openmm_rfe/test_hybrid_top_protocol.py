@@ -189,7 +189,7 @@ def test_validate_alchemical_components_missing_alchem_comp(
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
 def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
-                                benzene_to_toluene_mapping, method, tmpdir):
+                                benzene_to_toluene_mapping, method, tmpdir, benzene_toluene_topology):
 
     vac_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
@@ -232,6 +232,20 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, toluene_vacuum_system,
         # check that our PDB has the right number of atoms
         pdb = mdt.load_pdb('hybrid_system.pdb')
         assert pdb.n_atoms == 16
+
+        # regression test that we have the expected mdtraj topology
+        assert benzene_toluene_topology == htf.hybrid_topology
+
+        # check we can extract the correct positions for the end states
+        old_positions = htf.old_positions(htf.hybrid_positions)
+        # check the shape and positions match the input
+        assert old_positions.shape == (12, 3)
+        # compare with the input positions which are stored on the htf
+        assert_allclose(old_positions.value_in_unit(omm_unit.angstrom), htf._old_positions.value_in_unit(omm_unit.angstrom))
+        # same for toluene
+        new_positions = htf.new_positions(htf.hybrid_positions)
+        assert new_positions.shape == (15, 3)
+        assert_allclose(new_positions.value_in_unit(omm_unit.angstrom), htf._new_positions.value_in_unit(omm_unit.angstrom))
 
 
 def test_dry_run_gaff_vacuum(benzene_vacuum_system, toluene_vacuum_system,
