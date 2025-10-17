@@ -431,9 +431,9 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         return {
             "solvent": solv_dGs,
             "complex": complex_dGs,
-            "standard_state_complex_A": complex_correction_dGs_A,
-            "standard_state_complex_B": complex_correction_dGs_B,
-            "standard_state_solvent": solv_correction_dGs,
+            "standard_state_correction_complex_A": complex_correction_dGs_A,
+            "standard_state_correction_complex_B": complex_correction_dGs_B,
+            "standard_state_correction_solvent": solv_correction_dGs,
         }
 
     def get_estimate(self) -> Quantity:
@@ -458,9 +458,9 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         individual_estimates = self.get_individual_estimates()
         solv_ddG = _get_average(individual_estimates["solvent"])
         complex_ddG = _get_average(individual_estimates["complex"])
-        complex_corr_A = _get_average(individual_estimates["standard_state_complex_A"])
-        complex_corr_B = _get_average(individual_estimates["standard_state_complex_B"])
-        solv_corr = _get_average(individual_estimates["standard_state_solvent"])
+        complex_corr_A = _get_average(individual_estimates["standard_state_correction_complex_A"])
+        complex_corr_B = _get_average(individual_estimates["standard_state_correction_complex_B"])
+        solv_corr = _get_average(individual_estimates["standard_state_correction_solvent"])
 
         return (complex_ddG + complex_corr_A + complex_corr_B) - (solv_ddG + solv_corr)
 
