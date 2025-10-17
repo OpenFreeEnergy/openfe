@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
 from typing import Tuple, Union, Optional, Dict, Iterable
+import warnings
 
 from rdkit import Chem
 from rdkit.Geometry.rdGeometry import Point3D
@@ -135,6 +136,7 @@ def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
     py3Dmol.view
         view containing all component coordinates
     """
+    warnings.warn("Use gufe.LigandAtomMapping.get_alchemical_charge_difference() instead.", DeprecationWarning)
 
     if(view is None):
         view = py3Dmol.view(width=600, height=600)
@@ -190,6 +192,8 @@ def view_mapping_3d(
     view : py3Dmol.view
         View of the system containing both molecules in the edge.
     """
+    warnings.warn("view_mapping_3d is deprecated, please use the class method LigandAtomMapping.view_3d() instead.", DeprecationWarning)
+
 
     if shift is None:
         shift = np.array([_get_max_dist_in_x(mapping) * 1.5, 0, 0])
