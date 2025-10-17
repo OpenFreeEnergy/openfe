@@ -54,6 +54,7 @@ def protocol_dry_settings():
     # a set of settings for dry run tests
     s = SepTopProtocol.default_settings()
     s.engine_settings.compute_platform = None
+    s.protocol_repeats = 1
     return s
 
 
@@ -648,7 +649,6 @@ def benzene_toluene_dag(
     toluene_complex_system,
     protocol_dry_settings,
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     return protocol.create(
@@ -725,7 +725,6 @@ def test_dry_run_methods(
 
     protocol_dry_settings.solvent_simulation_settings.sampler_method = method
     protocol_dry_settings.complex_simulation_settings.sampler_method = method
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.complex_output_settings.output_indices = 'resname UNK'
     protocol_dry_settings.solvent_output_settings.output_indices = 'resname UNK'
 
@@ -816,7 +815,6 @@ def test_virtual_sites_no_reassign(
     Test that an error is raised when not reassigning velocities
     in a system with virtual site.
     """
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",
         "amber/tip4pew_standard.xml",  # FF with VS
@@ -892,7 +890,6 @@ def test_dry_run_benzene_toluene_tip4p(
     tmpdir,
     protocol_dry_settings,
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -937,7 +934,6 @@ def test_dry_run_benzene_toluene_noncubic(
     tmpdir,
     protocol_dry_settings,
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
         1.5 * offunit.nanometer
     )
@@ -993,8 +989,6 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     ensure that they are properly passed through to the constructed
     alchemical system.
     """
-    protocol_dry_settings.protocol_repeats = 1
-
     protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     def assign_fictitious_charges(offmol):
@@ -1102,7 +1096,6 @@ def test_high_timestep(
     tmpdir,
     protocol_dry_settings,
 ):
-    protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
     protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
 

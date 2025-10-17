@@ -478,6 +478,7 @@ def test_high_timestep(benzene_modifications, protocol_dry_settings, tmpdir):
 
 @pytest.fixture
 def benzene_solvation_dag(benzene_modifications, protocol_dry_settings):
+    protocol_dry_settings.protocol_repeats = 3
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=protocol_dry_settings,
     )

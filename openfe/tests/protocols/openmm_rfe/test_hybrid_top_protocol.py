@@ -49,6 +49,7 @@ def vac_settings():
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.forcefield_settings.nonbonded_method = 'nocutoff'
     settings.engine_settings.compute_platform = None
+    settings.protocol_repeats = 1
     return settings
 
 
@@ -56,6 +57,7 @@ def vac_settings():
 def solv_settings():
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.engine_settings.compute_platform = None
+    settings.protocol_repeats = 1
     return settings
 
 
@@ -208,7 +210,6 @@ def test_dry_run_default_vacuum(
     method, vac_settings, tmpdir, benzene_toluene_topology
 ):
     vac_settings.simulation_settings.sampler_method = method
-    vac_settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -421,7 +422,6 @@ def test_dry_run_ligand(
 ):
     # this might be a bit time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.protocol_repeats = 1
     solv_settings.output_settings.output_indices = 'resname UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -454,8 +454,6 @@ def test_confgen_mocked_fail(
     """
     Check that even if conformer generation fails, we can still perform a sim
     """
-    solv_settings.protocol_repeats = 1
-
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(settings=solv_settings)
 
     dag = protocol.create(stateA=benzene_system, stateB=toluene_system,
@@ -651,7 +649,6 @@ def test_dry_run_charge_backends(
     CN_molecule, tmpdir, method, backend, ref_key,
     vac_settings, am1bcc_ref_charges
 ):
-    vac_settings.protocol_repeats = 1
     vac_settings.partial_charge_settings.partial_charge_method = method
     vac_settings.partial_charge_settings.off_toolkit_backend = backend
     vac_settings.partial_charge_settings.nagl_model = 'openff-gnn-am1bcc-0.1.0-rc.1.pt'
@@ -722,8 +719,6 @@ def test_dry_run_user_charges(benzene_modifications, vac_settings, tmpdir):
     and ensure that they are properly passed through to the constructed
     hybrid topology.
     """
-    vac_settings.protocol_repeats = 1
-
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
         settings=vac_settings,
     )
@@ -922,7 +917,6 @@ def test_dry_run_complex(
 ):
     # this will be very time consuming
     solv_settings.simulation_settings.sampler_method = method
-    solv_settings.protocol_repeats = 1
     solv_settings.output_settings.output_indices = 'protein or resname  UNK'
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
@@ -2204,7 +2198,6 @@ def test_dry_run_vacuum_write_frequency(
 ):
     vac_settings.output_settings.positions_write_frequency = positions_write_frequency
     vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
-    vac_settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
@@ -2244,10 +2237,8 @@ def test_pos_write_frequency_not_divisible(
     vac_settings,
 ):
 
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.output_settings.positions_write_frequency = positions_write_frequency
     vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
-    vac_settings.protocol_repeats = 1
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
