@@ -567,7 +567,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             protocol_settings.lambda_settings.lambda_windows = 22
 
         # adapt the solvation padding based on the system components
-        if stateA.contains(ProtienComponent) and stateB.contains(ProtienComponent):
+        if stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent):
             protocol_settings.solvation_settings.solvent_padding = 1 * unit.nanometer
 
         return protocol_settings
