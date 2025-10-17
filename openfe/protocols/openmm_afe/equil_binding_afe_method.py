@@ -161,8 +161,46 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         return {
             "solvent": solv_dGs,
             "complex": complex_dGs,
-            "standard_state": correction_dGs,
+            "standard_state_correction": correction_dGs,
         }
+
+    @staticmethod
+    def _add_complex_standard_state_corr(
+        complex_dG: list[tuple[Quantity, Quantity]],
+        standard_state_dG: list[tuple[Quantity, Quantity]],
+    ) -> list[tuple[Quantity, Quantity]]:
+        """
+        Helper method to combine the
+        complex & standard state corrections legs.
+
+        Parameters
+        ----------
+        complex_dG : list[tuple[openff.units.Quantity, openff.units.Quantity]]
+          The individual estimates of the complex leg,
+          where the first entry of each tuple is the dG estimate
+          and the second entry is the MBAR error.
+        standard_state_dG : list[tuple[Quantity, Quantity]]
+          The individual standard state corrections for each corresponding
+          complex leg. The first entry is the correction, the second
+          is an empty error value of 0.
+
+        Returns
+        -------
+        combined_dG : list[tuple[openff.units.Quantity,openff.units. Quantity]]
+          A list of dG estimates & MBAR errors for the combined
+          complex & standard state correction of each repeat.
+
+        Notes
+        -----
+        We assume that both list of items are in the right order.
+        """
+        combined_dG: list[Quantity] = []
+        for comp, corr in zip(complex_dG, standard_state_dG):
+            # No need to convert unit types, since pint takes care of that
+            # No need to add errors since there's just the one
+            combined_dG.append([comp[0] + corr[0], comp[1]])
+
+        return combined_dG
 
     def get_estimate(self) -> Quantity:
         """Get the binding free energy estimate for this calculation.
@@ -183,11 +221,15 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             return np.average(dGs) * u
 
         individual_estimates = self.get_individual_estimates()
-        complex_dG = _get_average(individual_estimates["complex"])
+        complex_dG = _get_average(
+            self._add_complex_standard_state_corr(
+                individual_estimates["complex"],
+                individual_estimates["standard_state_correction"]
+            )
+        )
         solv_dG = _get_average(individual_estimates["solvent"])
-        standard_state_dG = _get_average(individual_estimates["standard_state"])
 
-        return -(complex_dG + standard_state_dG) + solv_dG
+        return -complex_dG + solv_dG
 
     def get_uncertainty(self) -> Quantity:
         """Get the binding free energy error for this calculation.
@@ -209,12 +251,17 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             return np.std(dGs) * u
 
         individual_estimates = self.get_individual_estimates()
-        complex_err = _get_stdev(individual_estimates["complex"])
+
+        complex_err = _get_stdev(
+            self._add_complex_standard_state_corr(
+                individual_estimates["complex"],
+                individual_estimates["standard_state_correction"]
+            )
+        )
         solv_err = _get_stdev(individual_estimates["solvent"])
-        standard_state_err = _get_stdev(individual_estimates["standard_state"])
 
         # return the combined error
-        return np.sqrt(complex_err**2 + solv_err**2 + standard_state_err**2)
+        return np.sqrt(complex_err**2 + solv_err**2)
 
     def get_forward_and_reverse_energy_analysis(
         self,
