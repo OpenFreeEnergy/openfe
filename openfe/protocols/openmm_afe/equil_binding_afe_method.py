@@ -194,7 +194,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         -----
         We assume that both list of items are in the right order.
         """
-        combined_dG: list[Quantity] = []
+        combined_dG: list[tuple(Quantity, Quantity)] = []
         for comp, corr in zip(complex_dG, standard_state_dG):
             # No need to convert unit types, since pint takes care of that
             # except that mypy hates it because pint isn't typed properly...
