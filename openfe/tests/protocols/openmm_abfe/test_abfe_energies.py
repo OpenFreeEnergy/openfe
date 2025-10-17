@@ -106,7 +106,7 @@ def get_alchemical_energy_components(
 class TestT4EnergiesRegression:
     """
     Test:
-      * Regression of a system energies against a previusly serialized one.
+      * Regression of a system energies against a previously serialized one.
       * That the energies do what we think they should be doing.
     """
 
