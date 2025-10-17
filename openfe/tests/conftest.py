@@ -263,6 +263,14 @@ def T4_protein_component():
 
 
 @pytest.fixture(scope='session')
+def a2a_protein_membrane_component():
+    with resources.as_file(resources.files('openfe.tests.data.a2a')) as d:
+        fn = str(d / 'system_charmm-gui.pdb')
+
+    return openfe.ProteinMembraneComponent.from_pdb_file(fn, name="a2a")
+
+
+@pytest.fixture(scope='session')
 def eg5_protein_pdb():
     with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
         yield str(d / 'eg5_protein.pdb')
@@ -294,6 +302,18 @@ def eg5_ligands(eg5_ligands_sdf) -> list[SmallMoleculeComponent]:
 @pytest.fixture()
 def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
     return SmallMoleculeComponent.from_sdf_file(eg5_cofactor_sdf)
+
+
+@pytest.fixture()
+def a2a_ligands_sdf():
+    with resources.as_file(resources.files('openfe.tests.data.a2a')) as d:
+        yield str(d / 'ligands_am1bcc_translated_charmm.sdf')
+
+
+@pytest.fixture()
+def a2a_ligands(a2a_ligands_sdf) -> list[SmallMoleculeComponent]:
+    return [SmallMoleculeComponent(m)
+            for m in Chem.SDMolSupplier(a2a_ligands_sdf, removeHs=False)]
 
 
 @pytest.fixture()
