@@ -197,8 +197,9 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         combined_dG: list[Quantity] = []
         for comp, corr in zip(complex_dG, standard_state_dG):
             # No need to convert unit types, since pint takes care of that
+            # except that mypy hates it because pint isn't typed properly...
             # No need to add errors since there's just the one
-            combined_dG.append([comp[0] + corr[0], comp[1]])
+            combined_dG.append((comp[0] + corr[0], comp[1]))  # type: ignore[operator]
 
         return combined_dG
 
