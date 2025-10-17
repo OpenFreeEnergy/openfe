@@ -60,6 +60,7 @@ jobs:
             espaloma_charge==0.0.8
             espaloma==0.4.0
             openeye-toolkits
+            python=3.12
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
@@ -91,7 +92,7 @@ jobs:
           DUECREDIT_ENABLE: 'yes'
           OFE_INTEGRATION_TESTS: FALSE
         run: |
-          pytest -n logical -vv --durations=10 openfecli/tests/ openfe/tests/
+          pytest -n logical -vv --durations=10 --runslow openfecli/tests/ openfe/tests/
 
   stop-aws-runner:
     runs-on: ubuntu-latest
