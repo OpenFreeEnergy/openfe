@@ -17,6 +17,7 @@ OpenFE API Reference
     defining_and_executing_simulations
     openmm_rfe
     openmm_solvation_afe
+    openmm_binding_afe
     openmm_septop
     openmm_md
     openmm_protocol_settings

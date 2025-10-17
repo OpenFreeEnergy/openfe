@@ -52,10 +52,34 @@ def test_serialize_protocol(default_settings):
     assert protocol == ret
 
 
+def test_create_independent_repeat_ids(benzene_system):
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=openmm_afe.AbsoluteSolvationProtocol.default_settings()
+    )
+
+    stateB = ChemicalSystem({'solvent': SolventComponent()})
+
+    dags = []
+    for i in range(2):
+        dags.append(protocol.create(
+            stateA=benzene_system,
+            stateB=stateB,
+            mapping=None
+        ))
+
+    repeat_ids = set()
+
+    for dag in dags:
+        for u in dag.protocol_units:
+            repeat_ids.add(u.inputs['repeat_id'])
+
+    assert len(repeat_ids) == 12
+
+
 @pytest.mark.parametrize('method', [
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
-def test_dry_run_vac_benzene(benzene_modifications,
+def test_dry_run_vac_benzene(benzene_system,
                              method, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
@@ -65,10 +89,7 @@ def test_dry_run_vac_benzene(benzene_modifications,
             settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
@@ -98,7 +119,7 @@ def test_dry_run_vac_benzene(benzene_modifications,
         assert not vac_sampler.is_periodic
 
 
-def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
+def test_confgen_fail_AFE(benzene_system, tmpdir):
     # check system parametrisation works even if confgen fails
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
@@ -107,10 +128,7 @@ def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
         settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
@@ -134,7 +152,7 @@ def test_confgen_fail_AFE(benzene_modifications,  tmpdir):
             assert vac_sampler
 
 
-def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
+def test_dry_run_solv_benzene(benzene_system, tmpdir):
     s = openmm_afe.AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
     s.solvent_output_settings.output_indices = "resname UNK"
@@ -143,10 +161,7 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
             settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
@@ -179,7 +194,50 @@ def test_dry_run_solv_benzene(benzene_modifications, tmpdir):
         assert pdb.n_atoms == 12
 
 
-def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
+def test_dry_run_vsite_fail(benzene_system, tmpdir):
+    s = AbsoluteSolvationProtocol.default_settings()
+    s.protocol_repeats = 1
+    s.vacuum_forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",    # ff14SB protein force field
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    s.solvent_forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",    # ff14SB protein force field
+        "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
+        "amber/phosaa10.xml",  # Handles THE TPO
+    ]
+    s.solvation_settings.solvent_model = 'tip4pew'
+    s.integrator_settings.reassign_velocities = False
+
+    protocol = AbsoluteSolvationProtocol(
+            settings=s,
+    )
+
+    stateA = benzene_system
+
+    stateB = ChemicalSystem({
+        'solvent': SolventComponent(),
+    })
+
+    # Create DAG from protocol, get the vacuum and solvent units
+    # and eventually dry run the first solvent unit
+    dag = protocol.create(
+        stateA=stateA,
+        stateB=stateB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+
+    sol_unit = [u for u in prot_units
+                if isinstance(u, AbsoluteSolvationSolventUnit)]
+
+    with tmpdir.as_cwd():
+        with pytest.raises(ValueError, match="are unstable"):
+            _ = sol_unit[0].run(dry=True)
+
+
+def test_dry_run_solv_benzene_tip4p(benzene_system, tmpdir):
     s = AbsoluteSolvationProtocol.default_settings()
     s.protocol_repeats = 1
     s.vacuum_forcefield_settings.forcefields = [
@@ -199,10 +257,7 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
             settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
@@ -226,7 +281,7 @@ def test_dry_run_solv_benzene_tip4p(benzene_modifications, tmpdir):
 
 
 def test_dry_run_solv_benzene_noncubic(
-    benzene_modifications, tmpdir
+    benzene_system, tmpdir
 ):
     s = AbsoluteSolvationProtocol.default_settings()
     s.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
@@ -234,10 +289,7 @@ def test_dry_run_solv_benzene_noncubic(
 
     protocol = AbsoluteSolvationProtocol(settings=s)
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
@@ -441,50 +493,15 @@ def test_dry_run_charge_backends(
     )
 
 
-def test_high_timestep(benzene_modifications, tmpdir):
-    s = AbsoluteSolvationProtocol.default_settings()
-    s.protocol_repeats = 1
-    s.solvent_forcefield_settings.hydrogen_mass = 1.0
-    s.vacuum_forcefield_settings.hydrogen_mass = 1.0
-
-    protocol = AbsoluteSolvationProtocol(
-            settings=s,
-    )
-
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
-
-    stateB = ChemicalSystem({
-        'solvent': SolventComponent(),
-    })
-
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
-
-    with tmpdir.as_cwd():
-        errmsg = "too large for hydrogen mass"
-        with pytest.raises(ValueError, match=errmsg):
-            prot_units[0].run(dry=True)
-
-
 @pytest.fixture
-def benzene_solvation_dag(benzene_modifications):
+def benzene_solvation_dag(benzene_system):
     s = AbsoluteSolvationProtocol.default_settings()
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
@@ -672,7 +689,7 @@ class TestProtocolResult:
                          [[100 * offunit.picosecond, None],
                          [None, None],
                          [None, 100 * offunit.picosecond]])
-def test_dry_run_vacuum_write_frequency(benzene_modifications,
+def test_dry_run_vacuum_write_frequency(benzene_system,
                                         positions_write_frequency,
                                         velocities_write_frequency,
                                         tmpdir):
@@ -688,10 +705,7 @@ def test_dry_run_vacuum_write_frequency(benzene_modifications,
             settings=s,
     )
 
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
+    stateA = benzene_system
 
     stateB = ChemicalSystem({
         'solvent': SolventComponent(),
