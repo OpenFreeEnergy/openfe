@@ -914,7 +914,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         Returns
         -------
         alchem_comps : dict[str, Component]
-          A list of alchemical components
+          A dict of alchemical components
         solv_comp : SolventComponent
           The SolventComponent of the system
         prot_comp : Optional[ProteinComponent]
