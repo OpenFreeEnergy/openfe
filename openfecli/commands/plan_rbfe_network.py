@@ -19,7 +19,7 @@ def plan_rbfe_network_main(
     n_protocol_repeats,
     partial_charge_settings,
     processors,
-    overwrite_charges
+    overwrite_charges,
 ):
     """Utility method to plan a relative binding free energy network.
 
@@ -96,7 +96,7 @@ def plan_rbfe_network_main(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
-        protocol=protocol
+        protocol=protocol,
     )
     alchemical_network = network_planner(
         ligands=charged_small_molecules, solvent=solvent, protein=protein,
@@ -146,7 +146,7 @@ def plan_rbfe_network(
         output_dir: str,
         n_protocol_repeats: int,
         n_cores: int,
-        overwrite_charges: bool
+        overwrite_charges: bool,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for use by
@@ -245,7 +245,7 @@ def plan_rbfe_network(
         n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
         processors=n_cores,
-        overwrite_charges=overwrite_charges
+        overwrite_charges=overwrite_charges,
     )
     write("\tDone")
     write("")
