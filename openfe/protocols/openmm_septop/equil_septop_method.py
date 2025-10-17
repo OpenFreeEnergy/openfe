@@ -431,10 +431,95 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         return {
             "solvent": solv_dGs,
             "complex": complex_dGs,
-            "standard_state_complex_A": complex_correction_dGs_A,
-            "standard_state_complex_B": complex_correction_dGs_B,
-            "standard_state_solvent": solv_correction_dGs,
+            "standard_state_correction_complex_A": complex_correction_dGs_A,
+            "standard_state_correction_complex_B": complex_correction_dGs_B,
+            "standard_state_correction_solvent": solv_correction_dGs,
         }
+
+    @staticmethod
+    def _add_complex_standard_state_corr(
+        complex_dG: list[tuple[Quantity, Quantity]],
+        standard_state_corrA_dG: list[tuple[Quantity, Quantity]],
+        standard_state_corrB_dG: list[tuple[Quantity, Quantity]],
+    ) -> list[tuple[Quantity, Quantity]]:
+        """
+        Helper method to combine the
+        complex & standard state corrections legs.
+
+        Parameters
+        ----------
+        complex_dG : list[tuple[openff.units.Quantity, openff.units.Quantity]]
+          The individual estimates of the complex leg,
+          where the first entry of each tuple is the dG estimate
+          and the second entry is the MBAR error.
+        standard_state_corrA_dG : list[tuple[Quantity, Quantity]]
+          The individual standard state corrections of state A
+          for each corresponding complex leg. The first entry is the
+          correction, the second is an empty error value of 0.
+        standard_state_corrB_dG : list[tuple[Quantity, Quantity]]
+          The individual standard state corrections of state B
+          for each corresponding complex leg. The first entry is the
+          correction, the second is an empty error value of 0.
+
+        Returns
+        -------
+        combined_dG : list[tuple[openff.units.Quantity,openff.units. Quantity]]
+          A list of dG estimates & MBAR errors for the combined
+          complex & standard state correction of each repeat.
+
+        Notes
+        -----
+        We assume that both list of items are in the right order.
+        """
+        combined_dG: list[tuple[Quantity, Quantity]] = []
+        for comp, corrA, corrB in zip(
+            complex_dG, standard_state_corrA_dG, standard_state_corrB_dG
+        ):
+            # No need to convert unit types, since pint takes care of that
+            # except that mypy hates it because pint isn't typed properly...
+            # No need to add errors since there's just the one
+            combined_dG.append((comp[0] + corrA[0] + corrB[0], comp[1]))  # type: ignore[operator]
+
+        return combined_dG
+
+    @staticmethod
+    def _add_solvent_standard_state_corr(
+        solvent_dG: list[tuple[Quantity, Quantity]],
+        standard_state_corr_dG: list[tuple[Quantity, Quantity]],
+    ) -> list[tuple[Quantity, Quantity]]:
+        """
+        Helper method to combine the
+        solvent & standard state corrections legs.
+
+        Parameters
+        ----------
+        solvent_dG : list[tuple[openff.units.Quantity, openff.units.Quantity]]
+          The individual estimates of the solvent leg,
+          where the first entry of each tuple is the dG estimate
+          and the second entry is the MBAR error.
+        standard_state_corrA_dG : list[tuple[Quantity, Quantity]]
+          The individual solvent standard state corrections.
+          The first entry is the correction, the second is an empty error
+          value of 0.
+
+        Returns
+        -------
+        combined_dG : list[tuple[openff.units.Quantity,openff.units. Quantity]]
+          A list of dG estimates & MBAR errors for the combined
+          solvent & standard state correction of each repeat.
+
+        Notes
+        -----
+        We assume that both list of items are in the right order.
+        """
+        combined_dG: list[tuple[Quantity, Quantity]] = []
+        for comp, corr in zip(solvent_dG, standard_state_corr_dG):
+            # No need to convert unit types, since pint takes care of that
+            # except that mypy hates it because pint isn't typed properly...
+            # No need to add errors since there's just the one
+            combined_dG.append((comp[0] + corr[0], comp[1]))  # type: ignore[operator]
+
+        return combined_dG
 
     def get_estimate(self) -> Quantity:
         """Get the difference in binding free energy estimate for this calculation.
@@ -456,13 +541,21 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             return np.average(ddGs) * u
 
         individual_estimates = self.get_individual_estimates()
-        solv_ddG = _get_average(individual_estimates["solvent"])
-        complex_ddG = _get_average(individual_estimates["complex"])
-        complex_corr_A = _get_average(individual_estimates["standard_state_complex_A"])
-        complex_corr_B = _get_average(individual_estimates["standard_state_complex_B"])
-        solv_corr = _get_average(individual_estimates["standard_state_solvent"])
+        solv_ddG = _get_average(
+            self._add_solvent_standard_state_corr(
+                individual_estimates["solvent"],
+                individual_estimates["standard_state_correction_solvent"],
+            )
+        )
+        complex_ddG = _get_average(
+            self._add_complex_standard_state_corr(
+                individual_estimates["complex"],
+                individual_estimates["standard_state_correction_complex_A"],
+                individual_estimates["standard_state_correction_complex_B"],
+            )
+        )
 
-        return (complex_ddG + complex_corr_A + complex_corr_B) - (solv_ddG + solv_corr)
+        return complex_ddG - solv_ddG
 
     def get_uncertainty(self) -> Quantity:
         """Get the relative free energy error for this calculation.
@@ -484,8 +577,19 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             return np.std(ddGs) * u
 
         individual_estimates = self.get_individual_estimates()
-        solv_err = _get_stdev(individual_estimates["solvent"])
-        complex_err = _get_stdev(individual_estimates["complex"])
+        solv_err = _get_stdev(
+            self._add_solvent_standard_state_corr(
+                individual_estimates["solvent"],
+                individual_estimates["standard_state_correction_solvent"],
+            )
+        )
+        complex_err = _get_stdev(
+            self._add_complex_standard_state_corr(
+                individual_estimates["complex"],
+                individual_estimates["standard_state_correction_complex_A"],
+                individual_estimates["standard_state_correction_complex_B"],
+            )
+        )
 
         # return the combined error
         return np.sqrt(solv_err**2 + complex_err**2)
@@ -2308,7 +2412,7 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
 
 class SepTopComplexRunUnit(SepTopComplexMixin, BaseSepTopRunUnit):
     """
-    Protocol Unit for the solvent phase of an relative SepTop free energy
+    Protocol Unit for the complex phase of an relative SepTop free energy
     """
 
     def _get_lambda_schedule(
