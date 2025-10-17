@@ -290,8 +290,7 @@ def test_openmm_run_engine(
         }
     )
 
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
+    # Create DAG from protocol
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
