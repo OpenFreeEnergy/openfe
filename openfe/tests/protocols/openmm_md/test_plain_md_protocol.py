@@ -362,7 +362,8 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    # we need a larger padding distance when using the dodecahedron box
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = True

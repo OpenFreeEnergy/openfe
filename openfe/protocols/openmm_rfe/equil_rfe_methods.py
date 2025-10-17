@@ -517,7 +517,8 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         cls,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping]
+        mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping],
+        initial_settings: None | RelativeHybridTopologyProtocolSettings = None,
     ) -> RelativeHybridTopologyProtocolSettings:
         """
         Get the recommended OpenFE settings for this protocol based on the input states involved in the
@@ -534,14 +535,27 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             The final state of the transformation.
         mapping : LigandAtomMapping | list[LigandAtomMapping]
             The mapping(s) between transforming components in stateA and stateB.
+        initial_settings : None | RelativeHybridTopologyProtocolSettings, optional
+            Initial settings to base the adaptive settings on. If None, default settings are used.
 
         Returns
         -------
         RelativeHybridTopologyProtocolSettings
             The recommended settings for this protocol based on the input states.
+
+        Notes
+        -----
+        - If the transformation involves a change in net charge, the settings are adapted to use a more expensive
+          protocol with 22 lambda windows and 20 ns production length per window.
+        - If both states contain a ProteinComponent, the solvation padding is set to 1 nm.
+        - If initial_settings is provided, the adaptive settings are based on a copy of these settings.
         """
-        # get the default settings that we can edit
-        protocol_settings: RelativeHybridTopologyProtocolSettings = cls.default_settings()
+        # use initial settings or default settings
+        # this is needed for the CLI so we don't override user settings
+        if initial_settings is not None:
+            protocol_settings = initial_settings.copy(deep=True)
+        else:
+            protocol_settings = cls.default_settings()
 
         if isinstance(mapping, list):
             mapping = mapping[0]

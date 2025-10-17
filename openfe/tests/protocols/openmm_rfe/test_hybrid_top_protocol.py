@@ -469,7 +469,7 @@ def tip4p_hybrid_factory(
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = True
@@ -1883,7 +1883,7 @@ def test_get_alchemical_waters_no_waters(
     with pytest.raises(ValueError, match=errmsg):
         topologyhelpers.get_alchemical_waters(
             topology, positions, charge_difference=1,
-            distance_cutoff=2.0 * unit.nanometer
+            distance_cutoff=3.0 * unit.nanometer
         )
 
 

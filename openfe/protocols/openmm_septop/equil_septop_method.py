@@ -984,7 +984,9 @@ class SepTopProtocol(gufe.Protocol):
             complex_lambda_settings=LambdaSettings(),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvent_solvation_settings=OpenMMSolvationSettings(),
-            complex_solvation_settings=OpenMMSolvationSettings(),
+            complex_solvation_settings=OpenMMSolvationSettings(
+                solvent_padding=1.0 * unit.nanometer,
+            ),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(

@@ -327,13 +327,13 @@ class RBFEAlchemicalNetworkPlanner(RelativeAlchemicalNetworkPlanner):
         """
         transformation_name = self.name + "_" + stateA.name + "_" + stateB.name
 
+        protocol_settings = transformation_protocol.settings.unfrozen_copy()
+
         if isinstance(transformation_protocol, RelativeHybridTopologyProtocol):
             # adaptive transformation settings are only supported for RelativeHybridTopologyProtocol currently
             protocol_settings = transformation_protocol._adaptive_settings(
-                stateA=stateA, stateB=stateB, mapping=ligand_mapping_edge
+                stateA=stateA, stateB=stateB, mapping=ligand_mapping_edge, initial_settings=protocol_settings
             )
-        else:
-            protocol_settings = transformation_protocol.settings.unfrozen_copy()
 
         if "vacuum" in transformation_name:
             protocol_settings.nonbonded_method = "nocutoff"
