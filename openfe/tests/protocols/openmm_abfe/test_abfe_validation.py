@@ -243,6 +243,28 @@ def test_validate_endstates_unique_stateB(benzene_modifications, T4_protein_comp
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
+def test_charged_endstate(charged_benzene_modifications, T4_protein_component):
+
+    stateA = ChemicalSystem(
+        {
+            "benzene": charged_benzene_modifications["benzoic_acid"],
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    stateB = ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    errmsg = "Charged alchemical molecules are not currently supported"
+    with pytest.raises(ValueError, match=errmsg):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
 def test_validate_fail_extends(
     benzene_modifications, T4_protein_component, default_settings
 ):
