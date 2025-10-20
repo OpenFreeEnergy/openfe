@@ -119,11 +119,11 @@ class LambdaSettings(SettingsBaseModel):
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
-        monotonic = np.all(difference <= 0)
+        monotonic = np.all(difference >= 0)
 
         if not monotonic:
             errmsg = (
-                "The lambda scchedule is not monoticcally increasing, "
+                "The lambda scchedule is not monotonically increasing, "
                 f"got the follow schedule {v}."
             )
             raise ValueError(errmsg)
