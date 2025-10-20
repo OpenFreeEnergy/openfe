@@ -2187,6 +2187,8 @@ def test_dry_run_vacuum_write_frequency(benzene_vacuum_system,
     vac_settings.output_settings.positions_write_frequency = positions_write_frequency
     vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
     vac_settings.protocol_repeats = 1
+    # set the time per iteration to 1 to get the expected outputs
+    vac_settings.simulation_settings.time_per_iteration = 1 * unit.picosecond
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,

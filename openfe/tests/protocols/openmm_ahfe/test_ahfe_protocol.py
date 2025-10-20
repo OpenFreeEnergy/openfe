@@ -683,6 +683,9 @@ def test_dry_run_vacuum_write_frequency(benzene_modifications,
     s.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
     s.vacuum_output_settings.positions_write_frequency = positions_write_frequency
     s.vacuum_output_settings.velocities_write_frequency = velocities_write_frequency
+    # set the time per iteration to 1 ps to make the math easy
+    s.solvent_simulation_settings.time_per_iteration = 1 * offunit.picosecond
+    s.vacuum_simulation_settings.time_per_iteration = 1 * offunit.picosecond
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=s,
