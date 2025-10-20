@@ -278,7 +278,7 @@ def minimize(thermodynamic_state: states.ThermodynamicState,
         The state at which the system could be minimized
     sampler_state : openmmtools.states.SamplerState
         The starting state at which to minimize the system.
-    max_iterations : int, optional, default 100
+    max_iterations : Optional[int]
         The maximum number of minimization steps. Default is 100.
     platform_name : str
         The OpenMM platform name to carry out the minimization with.
@@ -286,7 +286,7 @@ def minimize(thermodynamic_state: states.ThermodynamicState,
     Returns
     -------
     sampler_state : openmmtools.states.SamplerState
-        The posititions and accompanying state following minimization
+        The positions and accompanying state following minimization
     """
     # Only run a minimization if max_iterations is not None
     if max_iterations:
