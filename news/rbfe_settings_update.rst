@@ -10,6 +10,8 @@
 
 * The default `solvent_padding` settings of the `OpenMMSolvationSettings` class has been increased from 1.2 nm to 1.5 nm to be compatible with the new `box_shape` default as part of the fast settings update (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
 
+* The default `nonbonded_cutoff` setting of the `OpenMMSystemGeneratorFFSettings` class has been decreased to 0.9 nm from 1.0 nm, in line with current force fields best practices and our newly validated fast settings (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
 * When calling the CLI `openfe plan_rbfe_network`, the `RelativeHybridTopologyProtocol` settings now reflects the above "fast" settings updates. This includes;
   * Dodecahedron box solvation
   * Solvation cutoff of 1.5 nm in solvent-only legs, and 1.0 nm in complex legs
