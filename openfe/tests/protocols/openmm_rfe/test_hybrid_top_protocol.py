@@ -111,6 +111,17 @@ def test_create_default_settings():
 
     assert settings
 
+def test_adaptive_settings_no_initial(benzene_system, toluene_system, benzene_to_toluene_mapping):
+    settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=[benzene_to_toluene_mapping,]
+    )
+    # this is a solvent system make sure the padding is 1.5 nm
+    assert settings.solvation_settings.solvent_padding == 1.5 * unit.nanometer
+    # make sure the default parameter is not changed
+    assert settings.protocol_repeats == 3
+
 
 def test_create_default_protocol():
     # this is roughly how it should be created
