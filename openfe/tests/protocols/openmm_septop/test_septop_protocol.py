@@ -50,8 +50,18 @@ ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstr
 
 
 @pytest.fixture()
+def protocol_dry_settings():
+    # a set of settings for dry run tests
+    s = SepTopProtocol.default_settings()
+    s.engine_settings.compute_platform = None
+    s.protocol_repeats = 1
+    return s
+
+
+@pytest.fixture()
 def default_settings():
-    return SepTopProtocol.default_settings()
+    s = SepTopProtocol.default_settings()
+    return s
 
 
 def test_create_default_settings():
@@ -637,10 +647,9 @@ class TestNonbondedInteractions:
 def benzene_toluene_dag(
     benzene_complex_system,
     toluene_complex_system,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     return protocol.create(
         stateA=benzene_complex_system,
@@ -710,18 +719,17 @@ def test_dry_run_methods(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
     method,
 ):
 
-    default_settings.solvent_simulation_settings.sampler_method = method
-    default_settings.complex_simulation_settings.sampler_method = method
-    default_settings.protocol_repeats = 1
-    default_settings.complex_output_settings.output_indices = 'resname UNK'
-    default_settings.solvent_output_settings.output_indices = 'resname UNK'
+    protocol_dry_settings.solvent_simulation_settings.sampler_method = method
+    protocol_dry_settings.complex_simulation_settings.sampler_method = method
+    protocol_dry_settings.complex_output_settings.output_indices = 'resname UNK'
+    protocol_dry_settings.solvent_output_settings.output_indices = 'resname UNK'
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -765,16 +773,16 @@ def test_dry_run_ligand_system_pressure(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
     # openfe settings requires openff/pint units
-    default_settings.thermo_settings.pressure = pressure * offunit.bar
+    protocol_dry_settings.thermo_settings.pressure = pressure * offunit.bar
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -801,22 +809,21 @@ def test_virtual_sites_no_reassign(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Test that an error is raised when not reassigning velocities
     in a system with virtual site.
     """
-    default_settings.protocol_repeats = 1
-    default_settings.forcefield_settings.forcefields = [
+    protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",
         "amber/tip4pew_standard.xml",  # FF with VS
     ]
-    default_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
-    default_settings.integrator_settings.reassign_velocities = False
+    protocol_dry_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
+    protocol_dry_settings.integrator_settings.reassign_velocities = False
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -841,18 +848,18 @@ def test_dry_run_ligand_system_cutoff(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    default_settings.solvent_solvation_settings.solvent_padding = (
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
         1.9 * offunit.nanometer
     )
-    default_settings.forcefield_settings.nonbonded_cutoff = cutoff
+    protocol_dry_settings.forcefield_settings.nonbonded_cutoff = cutoff
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -881,18 +888,17 @@ def test_dry_run_benzene_toluene_tip4p(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    default_settings.forcefield_settings.forcefields = [
+    protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    default_settings.solvent_solvation_settings.solvent_model = "tip4pew"
-    default_settings.integrator_settings.reassign_velocities = True
+    protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
+    protocol_dry_settings.integrator_settings.reassign_velocities = True
 
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     # Create DAG from protocol, get the solvent units
     # and eventually dry run the first solvent unit
@@ -926,15 +932,14 @@ def test_dry_run_benzene_toluene_noncubic(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    default_settings.solvent_solvation_settings.solvent_padding = (
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
         1.5 * offunit.nanometer
     )
-    default_settings.solvent_solvation_settings.box_shape = "dodecahedron"
+    protocol_dry_settings.solvent_solvation_settings.box_shape = "dodecahedron"
 
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
@@ -977,16 +982,14 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     benzene_modifications,
     T4_protein_component,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
     alchemical system.
     """
-    default_settings.protocol_repeats = 1
-
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     def assign_fictitious_charges(offmol):
         """
@@ -1091,13 +1094,12 @@ def test_high_timestep(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    default_settings.forcefield_settings.hydrogen_mass = 1.0
-    default_settings.forcefield_settings.hydrogen_mass = 1.0
+    protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
+    protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
 
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -1117,14 +1119,14 @@ def T4L_xml(
     benzene_complex_system,
     toluene_complex_system,
     tmp_path_factory,
-    default_settings,
+    protocol_dry_settings,
 ):
     # Fixing the number of solvent molecules in the solvent settings
     # to test against reference xml
-    default_settings.solvent_solvation_settings.solvent_padding = None
-    default_settings.solvent_solvation_settings.number_of_solvent_molecules = 364
-    default_settings.forcefield_settings.small_molecule_forcefield = "openff-2.1.1"
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = None
+    protocol_dry_settings.solvent_solvation_settings.number_of_solvent_molecules = 364
+    protocol_dry_settings.forcefield_settings.small_molecule_forcefield = "openff-2.1.1"
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     dag = protocol.create(
         stateA=benzene_complex_system,
