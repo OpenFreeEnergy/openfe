@@ -216,13 +216,6 @@ def test_lambda_energies(
                 assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
 
 
-@pytest.fixture
-def available_platforms() -> set[str]:
-    return {
-        openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())
-    }
-
-
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize("platform", ["CUDA"])
@@ -297,8 +290,7 @@ def test_openmm_run_engine(
         }
     )
 
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
+    # Create DAG from protocol
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
