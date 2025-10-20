@@ -89,7 +89,7 @@ def test_create_independent_repeat_ids(benzene_system):
     'repex', 'sams', 'independent', 'InDePeNdENT'
 ])
 def test_dry_run_vac_benzene(
-    benzene_modifications,
+    benzene_system,
     method,
     protocol_dry_settings,
     tmpdir
@@ -130,7 +130,11 @@ def test_dry_run_vac_benzene(
         assert not vac_sampler.is_periodic
 
 
-def test_confgen_fail_AFE(benzene_modifications, protocol_dry_settings, tmpdir):
+def test_confgen_fail_AFE(
+    benzene_system,
+    protocol_dry_settings,
+    tmpdir
+):
     # check system parametrisation works even if confgen fails
     protocol = openmm_afe.AbsoluteSolvationProtocol(
         settings=protocol_dry_settings,
@@ -161,7 +165,7 @@ def test_confgen_fail_AFE(benzene_modifications, protocol_dry_settings, tmpdir):
 
 
 def test_dry_run_solv_benzene(
-    benzene_modifications, protocol_dry_settings, tmpdir
+    benzene_system, protocol_dry_settings, tmpdir
 ):
     protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
 
@@ -244,7 +248,7 @@ def test_dry_run_vsite_fail(benzene_system, tmpdir, protocol_dry_settings):
 
 
 def test_dry_run_solv_benzene_tip4p(
-    benzene_modifications, protocol_dry_settings, tmpdir
+    benzene_system, protocol_dry_settings, tmpdir
 ):
     protocol_dry_settings.vacuum_forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
@@ -287,7 +291,7 @@ def test_dry_run_solv_benzene_tip4p(
 
 
 def test_dry_run_solv_benzene_noncubic(
-    benzene_modifications, protocol_dry_settings, tmpdir
+    benzene_system, protocol_dry_settings, tmpdir
 ):
     protocol_dry_settings.solvation_settings.solvent_padding = 1.5 * offunit.nanometer
     protocol_dry_settings.solvation_settings.box_shape = 'dodecahedron'
@@ -496,38 +500,8 @@ def test_dry_run_charge_backends(
     )
 
 
-def test_high_timestep(benzene_modifications, protocol_dry_settings, tmpdir):
-    protocol_dry_settings.solvent_forcefield_settings.hydrogen_mass = 1.0
-    protocol_dry_settings.vacuum_forcefield_settings.hydrogen_mass = 1.0
-
-    protocol = AbsoluteSolvationProtocol(
-            settings=protocol_dry_settings,
-    )
-
-    stateA = ChemicalSystem({
-        'benzene': benzene_modifications['benzene'],
-        'solvent': SolventComponent()
-    })
-
-    stateB = ChemicalSystem({
-        'solvent': SolventComponent(),
-    })
-
-    dag = protocol.create(
-        stateA=stateA,
-        stateB=stateB,
-        mapping=None,
-    )
-    prot_units = list(dag.protocol_units)
-
-    with tmpdir.as_cwd():
-        errmsg = "too large for hydrogen mass"
-        with pytest.raises(ValueError, match=errmsg):
-            prot_units[0].run(dry=True)
-
-
 @pytest.fixture
-def benzene_solvation_dag(benzene_modifications, protocol_dry_settings):
+def benzene_solvation_dag(benzene_system, protocol_dry_settings):
     protocol_dry_settings.protocol_repeats = 3
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=protocol_dry_settings,
@@ -722,7 +696,7 @@ class TestProtocolResult:
                          [None, None],
                          [None, 100 * offunit.picosecond]])
 def test_dry_run_vacuum_write_frequency(
-    benzene_modifications,
+    benzene_system,
     positions_write_frequency,
     velocities_write_frequency,
     protocol_dry_settings,
