@@ -288,6 +288,7 @@ def minimize(thermodynamic_state: states.ThermodynamicState,
     sampler_state : openmmtools.states.SamplerState
         The posititions and accompanying state following minimization
     """
+    # Only run a minimization if max_iterations is not None
     if max_iterations:
         # we won't take any steps, so use a simple integrator
         integrator = openmm.VerletIntegrator(1.0)
