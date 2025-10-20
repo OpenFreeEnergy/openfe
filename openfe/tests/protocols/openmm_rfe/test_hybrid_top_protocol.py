@@ -19,7 +19,7 @@ from openff.units import unit
 from openff.units.openmm import ensure_quantity
 from openff.units.openmm import to_openmm, from_openmm
 from openmm import (
-    app, XmlSerializer, MonteCarloBarostat,
+    app, XmlSerializer, MonteCarloBarostat, MonteCarloMembraneBarostat,
     NonbondedForce, CustomNonbondedForce
 )
 from openmm import unit as omm_unit
@@ -984,20 +984,16 @@ def test_dry_run_membrane_complex(
 
     with tmpdir.as_cwd():
         sampler = dag_unit.run(dry=True)['debug']['sampler']
-        end_time = time.time()
-        length = end_time - start_time
-        print(length)
-        assert 4==5
 
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
         assert isinstance(sampler._thermodynamic_states[0].barostat,
-                          MonteCarloBarostat)
+                          MonteCarloMembraneBarostat)
         assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
         # Check we have the right number of atoms in the PDB
         pdb = mdt.load_pdb('hybrid_system.pdb')
-        assert pdb.n_atoms == 2629
+        assert pdb.n_atoms == 4667
 
 
 def test_lambda_schedule_default():
