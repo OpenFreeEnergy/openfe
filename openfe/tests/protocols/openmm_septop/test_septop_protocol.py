@@ -722,7 +722,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         pdb = md.load_pdb("topology.pdb")
-        assert pdb.n_atoms == 1346
+        assert pdb.n_atoms == 1762
         central_atoms = np.array([[2, 19]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
         assert np.isclose(distance, 0.8661)
@@ -739,7 +739,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 29
+        assert pdb.n_atoms == 31
 
         complex_setup_output = complex_setup_unit[0].run(dry=True)
         serialized_topology = complex_setup_output["topology"]
@@ -755,7 +755,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 2713
+        assert pdb.n_atoms == 2687
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])

@@ -46,7 +46,7 @@ from rdkit import Chem
 import gufe
 from gufe import (
     settings, ChemicalSystem, LigandAtomMapping, Component, ComponentMapping,
-    SmallMoleculeComponent, SolventComponent,
+    SmallMoleculeComponent, SolventComponent, ProteinComponent,
 )
 
 from .equil_rfe_settings import (
@@ -508,6 +508,74 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             integrator_settings=IntegratorSettings(),
             output_settings=MultiStateOutputSettings(),
         )
+
+    @classmethod
+    def _adaptive_settings(
+        cls,
+        stateA: ChemicalSystem,
+        stateB: ChemicalSystem,
+        mapping: gufe.LigandAtomMapping | list[gufe.LigandAtomMapping],
+        initial_settings: None | RelativeHybridTopologyProtocolSettings = None,
+    ) -> RelativeHybridTopologyProtocolSettings:
+        """
+        Get the recommended OpenFE settings for this protocol based on the input states involved in the
+        transformation.
+
+        These are intended as a suitable starting point for creating an instance of this protocol, which can be further
+        customized before performing a Protocol.
+
+        Parameters
+        ----------
+        stateA : ChemicalSystem
+            The initial state of the transformation.
+        stateB : ChemicalSystem
+            The final state of the transformation.
+        mapping : LigandAtomMapping | list[LigandAtomMapping]
+            The mapping(s) between transforming components in stateA and stateB.
+        initial_settings : None | RelativeHybridTopologyProtocolSettings, optional
+            Initial settings to base the adaptive settings on. If None, default settings are used.
+
+        Returns
+        -------
+        RelativeHybridTopologyProtocolSettings
+            The recommended settings for this protocol based on the input states.
+
+        Notes
+        -----
+        - If the transformation involves a change in net charge, the settings are adapted to use a more expensive
+          protocol with 22 lambda windows and 20 ns production length per window.
+        - If both states contain a ProteinComponent, the solvation padding is set to 1 nm.
+        - If initial_settings is provided, the adaptive settings are based on a copy of these settings.
+        """
+        # use initial settings or default settings
+        # this is needed for the CLI so we don't override user settings
+        if initial_settings is not None:
+            protocol_settings = initial_settings.copy(deep=True)
+        else:
+            protocol_settings = cls.default_settings()
+
+        if isinstance(mapping, list):
+            mapping = mapping[0]
+
+        if mapping.get_alchemical_charge_difference() != 0:
+            # apply the recommended charge change settings taken from the industry benchmarking as fast settings not validated
+            # <https://github.com/OpenFreeEnergy/IndustryBenchmarks2024/blob/2df362306e2727321d55d16e06919559338c4250/industry_benchmarks/utils/plan_rbfe_network.py#L128-L146>
+            info = ("Charge changing transformation between ligands "
+                    f"{mapping.componentA.name} and {mapping.componentB.name}. "
+                    "A more expensive protocol with 22 lambda windows, sampled "
+                    "for 20 ns each, will be used here.")
+            logger.info(info)
+            protocol_settings.alchemical_settings.explicit_charge_correction = True
+            protocol_settings.simulation_settings.production_length = 20 * unit.nanosecond
+            protocol_settings.simulation_settings.n_replicas = 22
+            protocol_settings.lambda_settings.lambda_windows = 22
+
+        # adapt the solvation padding based on the system components
+        if stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent):
+            protocol_settings.solvation_settings.solvent_padding = 1 * unit.nanometer
+
+        return protocol_settings
+
 
     def _create(
         self,
