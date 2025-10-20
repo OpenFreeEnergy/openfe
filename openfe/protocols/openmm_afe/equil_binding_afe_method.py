@@ -575,8 +575,8 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     0.12, 0.24, 0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0
                 ],
                 lambda_restraints=[
-                    1.0, 1.0, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+                    0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
                 ],
             ),
             complex_lambda_settings=LambdaSettings(
@@ -591,9 +591,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0
                 ],
                 lambda_restraints=[
-                    1.0, 0.8, 0.6, 0.4, 0.2, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00, 0.0, 0.00, 0.0, 0.00, 0.0, 0.00, 0.0
+                    0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0
                 ],
             ),
             # fmt: on
@@ -804,7 +804,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # but we don't dissallow it.
         if all(
             [
-                i == 1.0
+                i == 0.0
                 for i in self.settings.complex_lambda_settings.lambda_restraints
             ]
         ):
@@ -829,7 +829,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         if any(
             [
-                i != 1.0
+                i != 0.0
                 for i in self.settings.solvent_lambda_settings.lambda_restraints
             ]
         ):

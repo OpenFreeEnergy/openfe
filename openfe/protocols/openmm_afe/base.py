@@ -591,7 +591,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # interacting (which would be non-interacting for us)
         lambdas['lambda_electrostatics'] = [1-x for x in lambda_elec]
         lambdas['lambda_sterics'] = [1-x for x in lambda_vdw]
-        lambdas['lambda_restraints'] = [1-x for x in lambda_rest]
+        lambdas['lambda_restraints'] = [x for x in lambda_rest]
 
         return lambdas
 

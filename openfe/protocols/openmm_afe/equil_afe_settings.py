@@ -56,8 +56,11 @@ class LambdaSettings(SettingsBaseModel):
 
     Notes
     -----
-    * In all cases a lambda value of 0 defines a fully interacting parameter,
-      whilst a value of 1 defines a non-interacting parameter.
+    * In all cases a lambda value of 0 defines the system in state A, whilst
+      a value of 1 defines the system in state B. In an absolute transformation,
+      state A means a fully interacting ligand without any restraints applied,
+      and state B means a fully non-interacting ligand, with optional restraints
+      applied.
     * ``lambda_elec``, ``lambda_vdw``, and ``lambda_restraints`` must all be of
       the same length, defining all the windows of the transformation.
     """
@@ -70,8 +73,10 @@ class LambdaSettings(SettingsBaseModel):
     # fmt: on
     """
     List of floats of lambda values for the electrostatics. 
-    Zero means fully interacting, and one means annihilated.
-    Length of this list needs to match length of lambda_vdw and lambda_restraints.
+    Zero means fully interacting (state A),
+    and one means annihilated (state B).
+    Length of this list needs to match length of lambda_vdw and
+    lambda_restraints.
     """
     # fmt: off
     lambda_vdw: list[float] = [
@@ -81,19 +86,20 @@ class LambdaSettings(SettingsBaseModel):
     # fmt: on
     """
     List of floats of lambda values for the van der Waals.
-    Zero means full interacting and one means decoupled.
-    Length of this list needs to match length of lambda_elec and lambda_restraints.
+    Zero means full interacting (state A) and one means decoupled (state B).
+    Length of this list needs to match length of lambda_elec and
+    lambda_restraints.
     """
     # fmt: off
     lambda_restraints: list[float] = [
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     ]
     # fmt: on
     """
     List of floats of lambda values for the restraints.
-    Zero means a fully interacting restraint, and one means
-    non-interacting.
+    Zero means no restraints are applied (state A), and
+    one means restraints are fully applied (state B).
 
     Note: The length of this list needs to match length of lambda_vdw and lambda_elec.
     """
@@ -113,10 +119,13 @@ class LambdaSettings(SettingsBaseModel):
     def must_be_monotonic(cls, v):
 
         difference = np.diff(v)
-        monotonic = np.all(difference <= 0) or np.all(difference >= 0)
+        monotonic = np.all(difference <= 0)
 
         if not monotonic:
-            errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
+            errmsg = (
+                "The lambda scchedule is not monoticcally increasing, "
+                f"got the follow schedule {v}."
+            )
             raise ValueError(errmsg)
 
         return v

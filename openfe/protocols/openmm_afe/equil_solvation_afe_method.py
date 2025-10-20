@@ -438,8 +438,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                     0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                     0.36, 0.48, 0.6, 0.7, 0.77, 0.85, 1.0],
                 lambda_restraints=[
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             ),
             partial_charge_settings=OpenFFPartialChargeSettings(),
             solvation_settings=OpenMMSolvationSettings(),
