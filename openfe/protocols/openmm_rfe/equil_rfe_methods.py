@@ -1108,9 +1108,9 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             temperature=to_openmm(thermo_settings.temperature),
             endstates=alchem_settings.endstate_dispersion_correction,
             minimization_platform=platform.getName(),
-            # Turns off minimization when running in dry mode
+            # Set minimization steps to None when running in dry mode
             # otherwise do a very small one to avoid NaNs
-            minimization_steps=100 if not dry else 0
+            minimization_steps=100 if not dry else None
         )
 
         try:
