@@ -275,7 +275,7 @@ def T4_protein_component():
 @pytest.fixture(scope='session')
 def a2a_protein_membrane_component():
     with resources.as_file(resources.files('openfe.tests.data.a2a')) as d:
-        fn = str(d / 'system_charmm-gui.pdb')
+        fn = str(d / 'protein.pdb')
 
     return openfe.ProteinMembraneComponent.from_pdb_file(fn, name="a2a")
 
@@ -317,7 +317,7 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 @pytest.fixture()
 def a2a_ligands_sdf():
     with resources.as_file(resources.files('openfe.tests.data.a2a')) as d:
-        yield str(d / 'ligands_am1bcc_translated_charmm.sdf')
+        yield str(d / 'ligands.sdf')
 
 
 @pytest.fixture()
