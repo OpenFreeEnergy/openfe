@@ -1,6 +1,6 @@
 **Added:**
 
-* Added the `_adaptive_settings` class method to the `RelativeHybridTopologyProtocol` which adapts the recommended default settings based on the input transformation type (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+* <news item>
 
 **Changed:**
 
