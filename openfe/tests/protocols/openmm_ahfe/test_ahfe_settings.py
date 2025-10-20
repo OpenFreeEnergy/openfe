@@ -38,7 +38,7 @@ def test_incorrect_window_settings(val, default_settings):
     {'elec': [0.0, 0.1, 0.0], 'vdw': [0.0, 1.0, 1.0], 'restraints': [0.0, 1.0, 1.0]},
 ])
 def test_monotonic_lambda_windows(val, default_settings):
-    errmsg = "The lambda schedule is not monotonic."
+    errmsg = "The lambda schedule is not monotonically increasing"
     lambda_settings = default_settings.lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):

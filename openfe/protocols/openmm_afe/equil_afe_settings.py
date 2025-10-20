@@ -123,7 +123,7 @@ class LambdaSettings(SettingsBaseModel):
 
         if not monotonic:
             errmsg = (
-                "The lambda scchedule is not monotonically increasing, "
+                "The lambda schedule is not monotonically increasing, "
                 f"got the follow schedule {v}."
             )
             raise ValueError(errmsg)

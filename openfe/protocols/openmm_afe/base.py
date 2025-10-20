@@ -1225,7 +1225,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             unit_result_dict['selection_indices'] = self.selection_indices
 
             if restraint_geometry is not None:
-                unit_result_dict['restraint_geometry'] = restraint_geometry.dict()
+                unit_result_dict['restraint_geometry'] = restraint_geometry.model_dump()
 
             return unit_result_dict
         else:

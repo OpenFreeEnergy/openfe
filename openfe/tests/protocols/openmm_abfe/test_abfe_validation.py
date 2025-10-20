@@ -64,7 +64,7 @@ def test_validate_solvent_lambda_schedule_naked_charge(val, default_settings):
 @pytest.mark.parametrize(
     "val",
     [
-        {"elec": [1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [1.0, 0.0]},
+        {"elec": [1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [0.0, 1.0]},
     ],
 )
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
@@ -343,7 +343,7 @@ def test_validate_warnings(
 
     # one the complex restraints
     default_settings.complex_lambda_settings.lambda_restraints = [
-        1 for _ in default_settings.complex_lambda_settings.lambda_restraints
+        0 for _ in default_settings.complex_lambda_settings.lambda_restraints
     ]
 
     # add a restraint in solvent
