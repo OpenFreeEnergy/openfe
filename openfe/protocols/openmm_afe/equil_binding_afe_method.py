@@ -598,7 +598,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             ),
             # fmt: on
             partial_charge_settings=OpenFFPartialChargeSettings(),
-            complex_solvation_settings=OpenMMSolvationSettings(),
+            complex_solvation_settings=OpenMMSolvationSettings(
+                solvent_padding=1.0 * offunit.nanometer,
+            ),
             solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),

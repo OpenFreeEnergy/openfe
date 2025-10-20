@@ -10,7 +10,11 @@ import numpy as np
 import openfe
 import pytest
 from numpy.testing import assert_allclose
-from openmmtools.alchemy import AlchemicalRegion, AlchemicalState, AbsoluteAlchemicalFactory
+from openmmtools.alchemy import (
+    AlchemicalRegion,
+    AlchemicalState,
+    AbsoluteAlchemicalFactory,
+)
 from openmmtools.tests.test_alchemy import (
     compare_system_energies,
     check_noninteracting_energy_components,
@@ -155,6 +159,7 @@ class TestT4LysozymeDryRun:
     def settings(self):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
         s.protocol_repeats = 1
+        s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
@@ -446,6 +451,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
     def settings(self):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
         s.protocol_repeats = 1
+        s.engine_settings.compute_platform = "cpu"
         s.complex_output_settings.output_indices = "not water"
         s.complex_solvation_settings.box_shape = "dodecahedron"
         s.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
@@ -467,6 +473,7 @@ class TestT4LysozymeTIP4PExtraSettingsDryRun(TestT4LysozymeDryRun):
 def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
     s = openmm_afe.AbsoluteBindingProtocol.default_settings()
     s.protocol_repeats = 1
+    s.engine_settings.compute_platform = "cpu"
     s.complex_solvation_settings.box_shape = "dodecahedron"
     s.complex_solvation_settings.solvent_padding = 0.8 * offunit.nanometer
     s.forcefield_settings.nonbonded_cutoff = 0.7 * offunit.nanometer

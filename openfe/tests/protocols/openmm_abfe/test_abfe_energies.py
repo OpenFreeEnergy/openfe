@@ -121,6 +121,7 @@ class TestT4EnergiesRegression:
     def t4_validation_data(self, benzene_modifications, T4_protein_component, tmpdir):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
         s.protocol_repeats = 1
+        s.engine_settings.compute_platform = 'cpu'
         s.forcefield_settings.small_molecule_forcefield = "openff-2.2.1"
         s.complex_solvation_settings = OpenMMSolvationSettings(
             solvent_padding=None,
