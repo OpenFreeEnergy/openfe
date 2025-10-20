@@ -106,14 +106,44 @@ def test_incorrect_window_settings(val, default_settings):
         },
     ],
 )
-def test_monotonic_lambda_windows(val, default_settings):
-    errmsg = "The lambda schedule is not monotonic."
+def test_monotonic_lambda_windows_A(val, default_settings):
+    errmsg = "The lambda schedule for ligand A"
     lambda_settings = default_settings.complex_lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec_A = val["elec"]
         lambda_settings.lambda_vdw_A = val["vdw"]
         lambda_settings.lambda_restraints_A = val["restraints"]
+
+
+@pytest.mark.parametrize(
+    "val",
+    [
+        {
+            "elec": [1.0, 0.1, 1.0],
+            "vdw": [1.0, 1.0, 1.0],
+            "restraints": [1.0, 1.0, 1.0],
+        },
+        {
+            "elec": [1.0, 1.0, 1.0],
+            "vdw": [1.0, 0.0, 1.0],
+            "restraints": [1.0, 1.0, 1.0],
+        },
+        {
+            "elec": [1.0, 1.0, 1.0],
+            "vdw": [1.0, 1.0, 1.0],
+            "restraints": [1.0, 0.0, 1.0],
+        },
+    ],
+)
+def test_monotonic_lambda_windows_B(val, default_settings):
+    errmsg = "The lambda schedule for ligand B"
+    lambda_settings = default_settings.complex_lambda_settings
+
+    with pytest.raises(ValueError, match=errmsg):
+        lambda_settings.lambda_elec_B = val["elec"]
+        lambda_settings.lambda_vdw_B = val["vdw"]
+        lambda_settings.lambda_restraints_B = val["restraints"]
 
 
 def test_output_induces_not_all(default_settings):
@@ -126,21 +156,28 @@ def test_output_induces_not_all(default_settings):
 @pytest.mark.parametrize(
     "val",
     [
-        {"elec": [1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [0.0, 0.0]},
+        {
+            "elec_A": [1.0, 1.0],
+            "vdw_A": [0.0, 1.0],
+            "restraints_A": [0.0, 0.0],
+            "elec_B": [1.0, 1.0],
+            "vdw_B": [1.0, 1.0],
+            "restraints_B": [0.0, 0.0],
+        },
     ],
 )
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints"]
-    default_settings.complex_lambda_settings.lambda_elec_B = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints"]
+    default_settings.complex_lambda_settings.lambda_elec_A = val["elec_A"]
+    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw_A"]
+    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints_A"]
+    default_settings.complex_lambda_settings.lambda_elec_B = val["elec_B"]
+    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw_B"]
+    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints_B"]
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     errmsg = (
         f"Number of replicas {n_replicas} does not equal the"
-        f" number of lambda windows {len(val['vdw'])}"
+        f" number of lambda windows {len(val['vdw_A'])}"
     )
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
@@ -175,16 +212,23 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
 @pytest.mark.parametrize(
     "val",
     [
-        {"elec": [1.0, 0.5], "vdw": [1.0, 1.0], "restraints": [0.0, 0.0]},
+        {
+            "elec_A": [0.0, 1.0],
+            "vdw_A": [1.0, 1.0],
+            "restraints_A": [0.0, 0.0],
+            "elec_B": [1.0, 1.0],
+            "vdw_B": [1.0, 1.0],
+            "restraints_B": [0.0, 0.0],
+        },
     ],
 )
 def test_validate_lambda_schedule_nakedcharge(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints"]
-    default_settings.complex_lambda_settings.lambda_elec_B = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints"]
+    default_settings.complex_lambda_settings.lambda_elec_A = val["elec_A"]
+    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw_A"]
+    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints_A"]
+    default_settings.complex_lambda_settings.lambda_elec_B = val["elec_B"]
+    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw_B"]
+    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints_B"]
     n_replicas = 2
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     default_settings.solvent_simulation_settings.n_replicas = n_replicas
