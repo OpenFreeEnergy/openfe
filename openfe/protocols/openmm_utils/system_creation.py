@@ -43,13 +43,11 @@ def get_system_generator(
       Force field settings, including necessary information
       for constraints, hydrogen mass, rigid waters,
       non-ligand FF xmls, and the ligand FF name.
-    integrator_settings: IntegratorSettings
-      Integrator settings, including COM removal.
     thermo_settings : ThermoSettings
       Thermodynamic settings, including necessary settings
       for defining the ensemble conditions.
     integrator_settings : IntegratorSettings
-      Integrator settings, including barostat control variables.
+      Integrator settings, including barostat control variables and COM removal.
     cache : Optional[pathlib.Path]
       Path to openff force field cache.
     has_solvent : bool
@@ -130,7 +128,7 @@ def get_system_generator(
             integrator_settings.barostat_frequency.m,
         )
 
-    if not thermo_settings.membrane and has_solvent:
+    elif not thermo_settings.membrane and has_solvent:
         barostat = MonteCarloBarostat(
             ensure_quantity(thermo_settings.pressure, 'openmm'),
             ensure_quantity(thermo_settings.temperature, 'openmm'),
@@ -138,7 +136,6 @@ def get_system_generator(
         )
     else:
         barostat = None
-
     system_generator = SystemGenerator(
         forcefields=forcefield_settings.forcefields,
         small_molecule_forcefield=forcefield_settings.small_molecule_forcefield,
@@ -170,7 +167,7 @@ def get_omm_modeller(
     ----------
     protein_comp : Optional[ProteinComponent]
       Protein Component, if it exists.
-    solvent_comp : Optional[ProteinCompoinent]
+    solvent_comp : Optional[SolventComponent]
       Solvent Component, if it exists.
     small_mols : dict
       Small molecules to add.
@@ -238,6 +235,8 @@ def get_omm_modeller(
             isinstance(protein_comp, ProteinMembraneComponent)
             and protein_comp._periodic_box_vectors
     ):
+        # Set the periodic box vectors
+        system_modeller.topology.setPeriodicBoxVectors(protein_comp._periodic_box_vectors)
         skip_solvation = True
 
     # Add solvent if needed

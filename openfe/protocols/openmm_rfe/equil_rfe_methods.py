@@ -789,7 +789,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                                   off_small_mols['both']):
                 system_generator.create_system(mol.to_topology().to_openmm(),
                                                molecules=[mol])
-
             # c. get OpenMM Modeller + a dictionary of resids for each component
             stateA_modeller, comp_resids = system_creation.get_omm_modeller(
                 protein_comp=protein_comp,

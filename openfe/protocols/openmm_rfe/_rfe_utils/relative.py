@@ -319,6 +319,8 @@ class HybridTopologyFactory:
                             'MonteCarloBarostat', 'CMMotionRemover'}
 
             force_names = forces.keys()
+            print('known forces', known_forces)
+            print('present forces', force_names)
             unknown_forces = set(force_names) - set(known_forces)
             if unknown_forces:
                 errmsg = (f"Unknown forces {unknown_forces} encountered in "
@@ -392,7 +394,9 @@ class HybridTopologyFactory:
         """
         # Check that if there is a barostat in the old system,
         # it is added to the hybrid system
+        print('force keys', self._old_system_forces.keys())
         if "MonteCarloBarostat" in self._old_system_forces.keys():
+            print('Found barostat')
             barostat = copy.deepcopy(
                 self._old_system_forces["MonteCarloBarostat"])
             self._hybrid_system.addForce(barostat)
