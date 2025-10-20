@@ -10,7 +10,7 @@ TODO
 from typing import Annotated, Literal, Optional, TypeAlias
 
 import MDAnalysis as mda
-from gufe.settings.types import NanometerQuantity, GufeQuantity, specify_quantity_units
+from gufe.settings.typing import NanometerQuantity, GufeQuantity, specify_quantity_units
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
 from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit

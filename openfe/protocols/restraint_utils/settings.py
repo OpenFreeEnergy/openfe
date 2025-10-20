@@ -11,7 +11,7 @@ TODO
 from typing import Annotated, Literal, Optional, TypeAlias
 
 from gufe.settings import SettingsBaseModel
-from gufe.settings.types import NanometerQuantity, GufeQuantity, specify_quantity_units
+from gufe.settings.typing import NanometerQuantity, GufeQuantity, specify_quantity_units
 from openff.units import unit
 from pydantic import ConfigDict, field_validator
 
