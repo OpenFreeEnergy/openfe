@@ -341,7 +341,7 @@ class TestSystemCreation:
         assert generator.forcefield_kwargs == forcefield_kwargs
         periodic_kwargs = {
                 'nonbondedMethod': app.PME,
-                'nonbondedCutoff': 1.0 * ommunit.nanometer
+                'nonbondedCutoff': 0.9 * ommunit.nanometer
         }
         nonperiodic_kwargs = {'nonbondedMethod': app.NoCutoff,}
         assert generator.nonperiodic_forcefield_kwargs == nonperiodic_kwargs
