@@ -491,10 +491,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         """
         return RelativeHybridTopologyProtocolSettings(
             protocol_repeats=3,
-            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(
-                # fast settings
-                nonbonded_cutoff=0.9 * unit.nanometer
-            ),
+            forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * unit.kelvin,
                 pressure=1 * unit.bar,
