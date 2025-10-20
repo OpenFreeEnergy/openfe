@@ -1039,7 +1039,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             minimization_platform=platform.getName(),
             # Set minimization steps to 1 when running in dry mode
             # otherwise do a very small one to avoid NaNs
-            minimization_steps=100 if not dry else 1
+            minimization_steps=100 if not dry else None
         )
 
         try:

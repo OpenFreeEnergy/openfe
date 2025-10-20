@@ -58,7 +58,7 @@ class HybridCompatibilityMixin(object):
         endstates : bool
             Whether or not to generate unsampled endstates (i.e. dispersion
             correction).
-        minimization_steps : int
+        minimization_steps : Optional[int]
             Number of steps to pre-minimize states.
         minimization_platform : str
             Platform to do the initial pre-minimization with.
@@ -288,20 +288,21 @@ def minimize(thermodynamic_state: states.ThermodynamicState,
     sampler_state : openmmtools.states.SamplerState
         The posititions and accompanying state following minimization
     """
-    # we won't take any steps, so use a simple integrator
-    integrator = openmm.VerletIntegrator(1.0)
-    platform = openmm.Platform.getPlatformByName(platform_name)
-    dummy_cache = cache.DummyContextCache(platform=platform)
-    context, integrator = dummy_cache.get_context(
-        thermodynamic_state, integrator
-    )
-    try:
-        sampler_state.apply_to_context(
-            context, ignore_velocities=True
+    if max_iterations:
+        # we won't take any steps, so use a simple integrator
+        integrator = openmm.VerletIntegrator(1.0)
+        platform = openmm.Platform.getPlatformByName(platform_name)
+        dummy_cache = cache.DummyContextCache(platform=platform)
+        context, integrator = dummy_cache.get_context(
+            thermodynamic_state, integrator
         )
-        openmm.LocalEnergyMinimizer.minimize(
-            context, maxIterations=max_iterations
-        )
-        sampler_state.update_from_context(context)
-    finally:
-        del context, integrator, dummy_cache
+        try:
+            sampler_state.apply_to_context(
+                context, ignore_velocities=True
+            )
+            openmm.LocalEnergyMinimizer.minimize(
+                context, maxIterations=max_iterations
+            )
+            sampler_state.update_from_context(context)
+        finally:
+            del context, integrator, dummy_cache
