@@ -289,7 +289,7 @@ def minimize(thermodynamic_state: states.ThermodynamicState,
         The posititions and accompanying state following minimization
     """
     # Only run a minimization if max_iterations is not None
-    if max_iterations:
+    if max_iterations is not None:
         # we won't take any steps, so use a simple integrator
         integrator = openmm.VerletIntegrator(1.0)
         platform = openmm.Platform.getPlatformByName(platform_name)
