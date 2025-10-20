@@ -51,5 +51,5 @@ def test_visualize_3D_mapping(benzene_phenol_mapping):
     """
     smoke test just checking if nothing goes horribly wrong
     """
-    with pytest.raises(DeprecationWarning, match="LigandAtomMapping"):
+    with pytest.warns(DeprecationWarning, match=r"LigandAtomMapping"):
         view_mapping_3d(mapping=benzene_phenol_mapping)

@@ -136,7 +136,7 @@ def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
     py3Dmol.view
         view containing all component coordinates
     """
-    warnings.warn("Use gufe.LigandAtomMapping.get_alchemical_charge_difference() instead.", DeprecationWarning)
+    warnings.warn("Use gufe.LigandAtomMapping.view_3d() instead.", DeprecationWarning)
 
     if(view is None):
         view = py3Dmol.view(width=600, height=600)
