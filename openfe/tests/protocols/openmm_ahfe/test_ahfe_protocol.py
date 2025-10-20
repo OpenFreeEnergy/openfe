@@ -707,6 +707,9 @@ def test_dry_run_vacuum_write_frequency(
     protocol_dry_settings.solvent_output_settings.velocities_write_frequency = velocities_write_frequency
     protocol_dry_settings.vacuum_output_settings.positions_write_frequency = positions_write_frequency
     protocol_dry_settings.vacuum_output_settings.velocities_write_frequency = velocities_write_frequency
+    # set the time per iteration to 1 ps to make the math easy
+    protocol_dry_settings.solvent_simulation_settings.time_per_iteration = 1 * offunit.picosecond
+    protocol_dry_settings.vacuum_simulation_settings.time_per_iteration = 1 * offunit.picosecond
 
     protocol = openmm_afe.AbsoluteSolvationProtocol(
             settings=protocol_dry_settings,

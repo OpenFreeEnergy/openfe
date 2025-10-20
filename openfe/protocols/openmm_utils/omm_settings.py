@@ -118,7 +118,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
     Allowed values are: ``tip3p``, ``spce``, ``tip4pew``, and ``tip5p``.
     """
-    solvent_padding: NanometerQuantity | None = 1.2 * unit.nanometer
+    solvent_padding: NanometerQuantity | None = 1.5 * unit.nanometer
     """
     Minimum distance from any solute bounding sphere to the edge of the box.
 
@@ -127,7 +127,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``number_of_solvent_molecules``,
       ``box_size``, or ``box_vectors``.
     """
-    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'cube'
+    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'dodecahedron'
     """
     The shape of the periodic box to create.
 
@@ -562,10 +562,10 @@ class MultiStateSimulationSettings(SimulationSettings):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    time_per_iteration: PicosecondQuantity = 1.0 * unit.picosecond
+    time_per_iteration: PicosecondQuantity = 2.5 * unit.picosecond
     # todo: Add validators in the protocol
     """
-    Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
+    Simulation time between each MCMC move attempt. Default 2.5 * unit.picosecond.
     """
     real_time_analysis_interval: PicosecondQuantity | None= 250.0 * unit.picosecond
     # todo: Add validators in the protocol
