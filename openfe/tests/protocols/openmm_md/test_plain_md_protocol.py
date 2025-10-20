@@ -26,6 +26,14 @@ import logging
 from openfe.tests.conftest import HAS_ESPALOMA
 
 
+@pytest.fixture()
+def vac_settings():
+    settings = PlainMDProtocol.default_settings()
+    settings.forcefield_settings.nonbonded_method = 'nocutoff'
+    settings.engine_settings.compute_platform = None
+    return settings
+
+
 def test_create_default_settings():
     settings = PlainMDProtocol.default_settings()
 
@@ -87,10 +95,7 @@ def test_create_independent_repeat_ids(benzene_system):
     assert len(repeat_ids) == 6
 
 
-def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
-
-    vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+def test_dry_run_default_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
 
     protocol = PlainMDProtocol(
             settings=vac_settings,
@@ -112,10 +117,8 @@ def test_dry_run_default_vacuum(benzene_vacuum_system, tmpdir):
             protocol.settings.thermo_settings.temperature)).barostat is None
 
 
-def test_dry_run_logger_output(benzene_vacuum_system, tmpdir, caplog):
+def test_dry_run_logger_output(benzene_vacuum_system, vac_settings, tmpdir, caplog):
 
-    vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.simulation_settings.equilibration_length_nvt = 1 * unit.picosecond
     vac_settings.simulation_settings.equilibration_length = 1 * unit.picosecond
     vac_settings.simulation_settings.production_length = 1 * unit.picosecond
@@ -143,10 +146,8 @@ def test_dry_run_logger_output(benzene_vacuum_system, tmpdir, caplog):
         assert "running production phase" in messages
 
 
-def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
+def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
 
-    vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.output_settings.forcefield_cache = None
 
     protocol = PlainMDProtocol(
@@ -166,9 +167,7 @@ def test_dry_run_ffcache_none_vacuum(benzene_vacuum_system, tmpdir):
         dag_unit.run(dry=True)['debug']['system']
 
 
-def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
-    vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
     vac_settings.forcefield_settings.small_molecule_forcefield = 'gaff-2.11'
 
     protocol = PlainMDProtocol(
@@ -187,9 +186,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, tmpdir):
 
 
 @pytest.mark.skipif(not HAS_ESPALOMA, reason='espaloma is not available')
-def test_dry_run_espaloma_vacuum(benzene_vacuum_system, tmpdir):
-    vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
+def test_dry_run_espaloma_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
     vac_settings.forcefield_settings.small_molecule_forcefield = 'espaloma-0.3.2'
 
     protocol = PlainMDProtocol(
@@ -230,10 +227,8 @@ def test_dry_run_espaloma_vacuum(benzene_vacuum_system, tmpdir):
     ),
 ])
 def test_dry_run_charge_backends(
-    CN_molecule, tmpdir, method, backend, ref_key, am1bcc_ref_charges
+    CN_molecule, tmpdir, method, backend, ref_key, vac_settings, am1bcc_ref_charges
 ):
-    vac_settings = PlainMDProtocol.default_settings()
-    vac_settings.forcefield_settings.nonbonded_method = 'nocutoff'
     vac_settings.partial_charge_settings.partial_charge_method = method
     vac_settings.partial_charge_settings.off_toolkit_backend = backend
     vac_settings.partial_charge_settings.nagl_model = "openff-gnn-am1bcc-0.1.0-rc.1.pt"
@@ -268,6 +263,7 @@ def test_dry_many_molecules_solvent(
     A basic test flushing "will it work if you pass multiple molecules"
     """
     settings = PlainMDProtocol.default_settings()
+    settings.engine_settings.compute_platform = None
 
     protocol = PlainMDProtocol(
             settings=settings,
@@ -357,6 +353,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
     environment (waters)
     """
     settings = PlainMDProtocol.default_settings()
+    settings.engine_settings.compute_platform = None
     settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",    # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
@@ -386,6 +383,7 @@ def test_dry_run_ligand_tip4p(benzene_system, tmpdir):
 def test_dry_run_complex(benzene_complex_system, tmpdir):
     # this will be very time consuming
     settings = PlainMDProtocol.default_settings()
+    settings.engine_settings.compute_platform = None
 
     protocol = PlainMDProtocol(
             settings=settings,

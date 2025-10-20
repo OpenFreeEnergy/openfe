@@ -94,3 +94,15 @@ class TestOpenMMSolvationSettings:
 
         with pytest.raises(ValueError, match="must be a 1-D array"):
             s.box_size = np.array([[1, 2, 3], [1, 2, 3]]) * unit.angstrom
+
+
+class TestOpenMMEngineSettings:
+    @pytest.mark.parametrize('platform', ['CUDA', 'OpenCL', 'cPu'])
+    def test_ok_platforms(self, platform):
+        s = omm_settings.OpenMMEngineSettings(compute_platform=platform)
+        assert isinstance(s, omm_settings.OpenMMEngineSettings)
+
+    def test_fail_platform(self):
+        with pytest.raises(ValueError, match="OpenMM compute backends"):
+            _ = omm_settings.OpenMMEngineSettings(compute_platform="foo")
+

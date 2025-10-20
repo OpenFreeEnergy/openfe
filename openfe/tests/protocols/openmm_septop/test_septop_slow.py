@@ -22,7 +22,9 @@ import mdtraj as md
 
 @pytest.fixture()
 def default_settings():
-    return SepTopProtocol.default_settings()
+    s = SepTopProtocol.default_settings()
+    s.engine_settings.compute_platform = None
+    return s
 
 
 def compare_energies(alchemical_system, positions):
