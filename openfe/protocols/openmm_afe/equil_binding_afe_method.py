@@ -23,6 +23,7 @@ Acknowledgements
   `Yank <https://github.com/choderalab/yank>`_.
 
 """
+
 import itertools
 import logging
 import pathlib
@@ -59,10 +60,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     OpenMMSolvationSettings,
     SettingsBaseModel,
 )
-from openfe.protocols.openmm_utils import (
-    settings_validation,
-    system_validation
-)
+from openfe.protocols.openmm_utils import settings_validation, system_validation
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
@@ -224,8 +222,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         individual_estimates = self.get_individual_estimates()
         complex_dG = _get_average(
             self._add_complex_standard_state_corr(
-                individual_estimates["complex"],
-                individual_estimates["standard_state_correction"]
+                individual_estimates["complex"], individual_estimates["standard_state_correction"]
             )
         )
         solv_dG = _get_average(individual_estimates["solvent"])
@@ -255,8 +252,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
         complex_err = _get_stdev(
             self._add_complex_standard_state_corr(
-                individual_estimates["complex"],
-                individual_estimates["standard_state_correction"]
+                individual_estimates["complex"], individual_estimates["standard_state_correction"]
             )
         )
         solv_err = _get_stdev(individual_estimates["solvent"])
@@ -299,14 +295,11 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
             given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[
-            str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]
-        ] = {}
+        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]] = {}
 
         for key in ["solvent", "complex"]:
             forward_reverse[key] = [
-                pus[0].outputs["forward_and_reverse_energies"]
-                for pus in self.data[key].values()
+                pus[0].outputs["forward_and_reverse_energies"] for pus in self.data[key].values()
             ]
 
             if None in forward_reverse[key]:
@@ -380,14 +373,10 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         try:
             for key in ["solvent", "complex"]:
                 repex_stats[key] = [
-                    pus[0].outputs["replica_exchange_statistics"]
-                    for pus in self.data[key].values()
+                    pus[0].outputs["replica_exchange_statistics"] for pus in self.data[key].values()
                 ]
         except KeyError:
-            errmsg = (
-                "Replica exchange statistics were not found, "
-                "did you run a repex calculation?"
-            )
+            errmsg = "Replica exchange statistics were not found, did you run a repex calculation?"
             raise ValueError(errmsg)
 
         return repex_stats
@@ -454,8 +443,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
         for key in ["solvent", "complex"]:
             equilibration_lengths[key] = [
-                pus[0].outputs["equilibration_iterations"]
-                for pus in self.data[key].values()
+                pus[0].outputs["equilibration_iterations"] for pus in self.data[key].values()
             ]
 
         return equilibration_lengths
@@ -478,8 +466,7 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
 
         for key in ["solvent", "complex"]:
             production_lengths[key] = [
-                pus[0].outputs["production_iterations"]
-                for pus in self.data[key].values()
+                pus[0].outputs["production_iterations"] for pus in self.data[key].values()
             ]
 
         return production_lengths
@@ -666,15 +653,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If stateB contains any unique Components.
           If the alchemical species is charged.
         """
-        if not (
-            stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)
-        ):
+        if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
             errmsg = "No ProteinComponent found"
             raise ValueError(errmsg)
 
-        if not (
-            stateA.contains(SolventComponent) and stateB.contains(SolventComponent)
-        ):
+        if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
             errmsg = "No SolventComponent found"
             raise ValueError(errmsg)
 
@@ -776,9 +759,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         *,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[
-            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
-        ] = None,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ):
         # Check we're not extending
@@ -804,12 +785,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
 
         # If the complex restraints schedule is all zero, it might be bad
         # but we don't dissallow it.
-        if all(
-            [
-                i == 0.0
-                for i in self.settings.complex_lambda_settings.lambda_restraints
-            ]
-        ):
+        if all([i == 0.0 for i in self.settings.complex_lambda_settings.lambda_restraints]):
             wmsg = (
                 "No restraints are being applied in the complex phase, "
                 "this will likely lead to problematic results."
@@ -829,12 +805,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # the list gets popped out later in the SolventUnit, because we
         # don't have a restraint parameter state.
 
-        if any(
-            [
-                i != 0.0
-                for i in self.settings.solvent_lambda_settings.lambda_restraints
-            ]
-        ):
+        if any([i != 0.0 for i in self.settings.solvent_lambda_settings.lambda_restraints]):
             wmsg = (
                 "There is an attempt to add restraints in the solvent "
                 "phase. This protocol does not apply restraints in the "
@@ -858,16 +829,14 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         # Validate integrator things
         settings_validation.validate_timestep(
             self.settings.forcefield_settings.hydrogen_mass,
-            self.settings.integrator_settings.timestep
+            self.settings.integrator_settings.timestep,
         )
 
     def _create(
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[
-            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
-        ] = None,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # Validate inputs
@@ -892,10 +861,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 alchemical_components=alchem_comps,
                 generation=0,
                 repeat_id=int(uuid.uuid4()),
-                name=(
-                    f"Absolute Binding, {alchname} solvent leg: "
-                    f"repeat {i} generation 0"
-                ),
+                name=(f"Absolute Binding, {alchname} solvent leg: repeat {i} generation 0"),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -908,10 +874,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 alchemical_components=alchem_comps,
                 generation=0,
                 repeat_id=int(uuid.uuid4()),
-                name=(
-                    f"Absolute Binding, {alchname} complex leg: "
-                    f"repeat {i} generation 0"
-                ),
+                name=(f"Absolute Binding, {alchname} complex leg: repeat {i} generation 0"),
             )
             for i in range(self.settings.protocol_repeats)
         ]
@@ -940,14 +903,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             "complex": {},
         }
         for k, v in unsorted_solvent_repeats.items():
-            repeats["solvent"][str(k)] = sorted(
-                v, key=lambda x: x.outputs["generation"]
-            )
+            repeats["solvent"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
 
         for k, v in unsorted_complex_repeats.items():
-            repeats["complex"][str(k)] = sorted(
-                v, key=lambda x: x.outputs["generation"]
-            )
+            repeats["complex"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
         return repeats
 
 
@@ -955,6 +914,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
     """
+
     simtype = "complex"
 
     def _get_components(self):
@@ -1017,9 +977,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings["lambda_settings"] = prot_settings.complex_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
         settings["integrator_settings"] = prot_settings.integrator_settings
-        settings["equil_simulation_settings"] = (
-            prot_settings.complex_equil_simulation_settings
-        )
+        settings["equil_simulation_settings"] = prot_settings.complex_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.complex_equil_output_settings
         settings["simulation_settings"] = prot_settings.complex_simulation_settings
         settings["output_settings"] = prot_settings.complex_output_settings
@@ -1238,9 +1196,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         # and the solvent.
         solv_comps = [c for c in comp_resids if isinstance(c, SolventComponent)]
         exclude_comps = [alchem_comps["stateA"]] + solv_comps
-        residxs = np.concatenate(
-            [v for i, v in comp_resids.items() if i not in exclude_comps]
-        )
+        residxs = np.concatenate([v for i, v in comp_resids.items() if i not in exclude_comps])
 
         host_atom_ids = self._get_idxs_from_residxs(topology, residxs)
 
@@ -1251,8 +1207,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         univ = self._get_mda_universe(
             topology,
             positions,
-            self.shared_basepath
-            / settings["equil_output_settings"].production_trajectory_filename,
+            self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
         )
 
         if isinstance(settings["restraint_settings"], BoreschRestraintSettings):
@@ -1292,9 +1247,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         )
 
         # Get the GlobalParameterState for the restraint
-        restraint_parameter_state = omm_restraints.RestraintParameterState(
-            lambda_restraints=1.0
-        )
+        restraint_parameter_state = omm_restraints.RestraintParameterState(lambda_restraints=1.0)
         return (
             restraint_parameter_state,
             correction,
@@ -1309,6 +1262,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the solvent phase of an absolute binding free energy
     """
+
     simtype = "solvent"
 
     def _get_components(self):
@@ -1370,9 +1324,7 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
         settings["lambda_settings"] = prot_settings.solvent_lambda_settings
         settings["engine_settings"] = prot_settings.engine_settings
         settings["integrator_settings"] = prot_settings.integrator_settings
-        settings["equil_simulation_settings"] = (
-            prot_settings.solvent_equil_simulation_settings
-        )
+        settings["equil_simulation_settings"] = prot_settings.solvent_equil_simulation_settings
         settings["equil_output_settings"] = prot_settings.solvent_equil_output_settings
         settings["simulation_settings"] = prot_settings.solvent_simulation_settings
         settings["output_settings"] = prot_settings.solvent_output_settings

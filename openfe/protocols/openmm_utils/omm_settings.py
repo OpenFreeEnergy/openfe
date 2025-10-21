@@ -33,14 +33,19 @@ from openff.interchange.components._packmol import _box_vectors_are_in_reduced_f
 from openff.units import unit
 
 FemtosecondQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("femtosecond")]
-InversePicosecondQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("1/picosecond")]
-TimestepQuantity: TypeAlias =  Annotated[GufeQuantity, specify_quantity_units("timestep")]
+InversePicosecondQuantity: TypeAlias = Annotated[
+    GufeQuantity, specify_quantity_units("1/picosecond")
+]
+TimestepQuantity: TypeAlias = Annotated[GufeQuantity, specify_quantity_units("timestep")]
+
 
 class BaseSolvationSettings(SettingsBaseModel):
     """
     Base class for SolvationSettings objects.
     """
-    model_config = ConfigDict(arbitrary_types_allowed = True)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
 
 class OpenMMSolvationSettings(BaseSolvationSettings):
     """Settings for controlling how a system is solvated using OpenMM tooling.
@@ -111,7 +116,8 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     :mod:`openmm.app.Modeller`
     Base class for SolvationSettings objects
     """
-    solvent_model: Literal['tip3p', 'spce', 'tip4pew', 'tip5p'] = 'tip3p'
+
+    solvent_model: Literal["tip3p", "spce", "tip4pew", "tip5p"] = "tip3p"
     """
     Force field water model to use when solvating and defining the model
     properties (e.g. adding virtual site particles).
@@ -127,7 +133,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``number_of_solvent_molecules``,
       ``box_size``, or ``box_vectors``.
     """
-    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'dodecahedron'
+    box_shape: Optional[Literal["cube", "dodecahedron", "octahedron"]] = "dodecahedron"
     """
     The shape of the periodic box to create.
 
@@ -169,7 +175,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
       ``number_of_solvent_molecules``, or ``box_vectors``.
     """
 
-    @field_validator('box_vectors')
+    @field_validator("box_vectors")
     def supported_vectors(cls, v):
         if v is not None:
             if not _box_vectors_are_in_reduced_form(v):
@@ -177,22 +183,21 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
                 raise ValueError(errmsg)
         return v
 
-    @field_validator('solvent_padding')
+    @field_validator("solvent_padding")
     def is_positive_distance(cls, v):
         # these are time units, not simulation steps
         if v is None:
             return v
 
         if not v.is_compatible_with(unit.nanometer):
-            raise ValueError("solvent_padding must be in distance units "
-                             "(i.e. nanometers)")
+            raise ValueError("solvent_padding must be in distance units (i.e. nanometers)")
         if v < 0:
             errmsg = "solvent_padding must be a positive value"
             raise ValueError(errmsg)
 
         return v
 
-    @field_validator('number_of_solvent_molecules')
+    @field_validator("number_of_solvent_molecules")
     def positive_solvent_number(cls, v):
         if v is None:
             return v
@@ -203,14 +208,13 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
         return v
 
-    @field_validator('box_size')
+    @field_validator("box_size")
     def box_size_properties(cls, v):
         if v is None:
             return v
 
-        if v.shape != (3, ):
-            errmsg = (f"box_size must be a 1-D array of length 3 "
-                      f"got {v} with shape {v.shape}")
+        if v.shape != (3,):
+            errmsg = f"box_size must be a 1-D array of length 3 got {v} with shape {v.shape}"
             raise ValueError(errmsg)
 
         return v
@@ -220,6 +224,7 @@ class BasePartialChargeSettings(SettingsBaseModel):
     """
     Base class for partial charge assignment.
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
@@ -227,7 +232,8 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
     """
     Settings for controlling partial charge assignment using the OpenFF tooling
     """
-    partial_charge_method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'] = 'am1bcc'
+
+    partial_charge_method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"] = "am1bcc"
     """
     Selection of method for partial charge generation.
 
@@ -261,7 +267,7 @@ class OpenFFPartialChargeSettings(BasePartialChargeSettings):
       are supported. A maximum of one conformer is allowed.
 
     """
-    off_toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'] = 'ambertools'
+    off_toolkit_backend: Literal["ambertools", "openeye", "rdkit"] = "ambertools"
     """
     The OpenFF toolkit registry backend to use for partial charge generation.
 
