@@ -955,6 +955,7 @@ def test_dry_run_membrane_complex(
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.protocol_repeats = 1
     settings.thermo_settings.membrane = True
+    settings.engine_settings.compute_platform = 'cpu'
     settings.forcefield_settings.forcefields = [
         'amber/ff14SB.xml',
         'amber/tip3p_standard.xml',
