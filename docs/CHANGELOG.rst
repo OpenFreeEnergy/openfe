@@ -4,6 +4,53 @@ Changelog
 
 .. current developments
 
+v1.7.0
+====================
+
+**Added:**
+
+* Addition of an Absolute Binding Free Energy Protocol (PR #1045).
+* Added a cookbook for using ``jq`` to inspect JSON files.
+* The AbsoluteSolvationProtocol now properly implements the `validate` method,
+  allowing users to verify inputs by calling the method directly (PR #1572).
+* Added a new RBFE protocol based on Separated Topologies.
+
+**Changed:**
+
+* The default atom mapper used in the CLI has been changed from ``LomapAtomMapper`` to ``KartografAtomMapper`` in line with the recommended defaults from the industry benchmarking paper. Users who whish to continue to use ``LomapAtomMapper`` can so via the YAML configuration file, see the `documentation <https://docs.openfree.energy/en/latest/tutorials/rbfe_cli_tutorial.html#customize-your-campaign-setup>`_ for details (PR `#1530 <https://github.com/OpenFreeEnergy/openfe/pull/1530>`_).
+* An improved error message is now shown when a mapping involving a changing constraint length cannot be fixed (PR `#1529 <https://github.com/OpenFreeEnergy/openfe/pull/1529>`_).
+* The default platform for OpenMM-based Protocols is now CUDA and will fail
+  by default on a non-Nvidia GPU enabled system.
+* Remove unnecessary limit on residues ids (``resids``) when getting mappings from topology in ``topology_helpers.py`` utility module.
+* The relative hybrid topology protocol no longer runs the FIRE minimizer when ``dry=True``.
+* Units must be explicitly assigned when defining ``Settings`` parameters, and values will be converted to match the default units for a given field. For example, use ``1.0 * units.bar`` or ``"1 bar"`` for pressure, and ``300 * unit.kelvin`` or ``"300 kelvin"`` for temperature.
+* For protocol developers: ``FloatQuantity`` is no longer supported. Instead, use `GufeQuantity` and `specify_quantity_units()` to make a `TypeAlias`.
+* The default `time_per_iteration` setting of the `MultiStateSimulationSettings` class has been increased from 1.0 ps to 2.5 ps as part of the fast settings update (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* The default `box_shape` setting of the `OpenMMSolvationSettings` class has been changed from `cubic` to `dodecahedron` to improve simulation efficiency as part of the fast settings update (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* The default `solvent_padding` settings of the `OpenMMSolvationSettings` class has been increased from 1.2 nm to 1.5 nm to be compatible with the new `box_shape` default as part of the fast settings update (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* The default `nonbonded_cutoff` setting of the `OpenMMSystemGeneratorFFSettings` class has been decreased to 0.9 nm from 1.0 nm, in line with current force fields best practices and our newly validated fast settings (PR `#1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
+
+* When calling the CLI `openfe plan_rbfe_network`, the `RelativeHybridTopologyProtocol` settings now reflects the above "fast" settings updates. This includes;
+  * Dodecahedron box solvation
+  * Solvation cutoff of 1.5 nm in solvent-only legs, and 1.0 nm in complex legs
+  * A replica exchange rate of 2.5 ps
+  * A 0.9 nm nonbonded cutoff
+
+**Deprecated:**
+
+* Deprecated ``openfe.utils.visualization_3D.view_mapping_3d()``. Use the method ``LigandAtomMapping.view_3d()`` instead.
+* Deprecated ``openfe.utils.ligand_utils.get_alchemical_charge_difference()``, which is replaced by ``LigandAtomMapping.get_alchemical_charge_difference()`` in ``gufe`` (PR #1479).
+
+**Fixed:**
+
+* Charged molecules are now explicitly disallowed in the
+  AbsoluteSolvationProtocol (PR #1572).
+
+
+
 v1.6.1
 ====================
 This release includes minor fixes and updates to tests. 
