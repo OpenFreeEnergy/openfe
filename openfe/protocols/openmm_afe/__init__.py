@@ -13,10 +13,23 @@ from .equil_solvation_afe_method import (
     AbsoluteSolvationSolventUnit,
 )
 
+from .equil_binding_afe_method import (
+    AbsoluteBindingProtocol,
+    AbsoluteBindingSettings,
+    AbsoluteBindingProtocolResult,
+    AbsoluteBindingComplexUnit,
+    AbsoluteBindingSolventUnit,
+)
+
 __all__ = [
     "AbsoluteSolvationProtocol",
     "AbsoluteSolvationSettings",
     "AbsoluteSolvationProtocolResult",
     "AbsoluteVacuumUnit",
     "AbsoluteSolventUnit",
+    "AbsoluteBindingProtocol",
+    "AbsoluteBindingSettings",
+    "AbsoluteBindingProtocolResult",
+    "AbsoluteBindingComplexUnit",
+    "AbsoluteBindingSolventUnit",
 ]

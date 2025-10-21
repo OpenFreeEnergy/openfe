@@ -60,7 +60,6 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 )
 from ..openmm_utils import system_validation, settings_validation
 from .base import BaseAbsoluteUnit
-from openfe.utils import log_system_probe
 from openfe.due import due, Doi
 
 
@@ -701,6 +700,18 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 errmsg = "NVT equilibration cannot be run in vacuum simulation"
                 raise ValueError(errmsg)
 
+        # Validate integrator things
+        settings_validation.validate_timestep(
+            self.settings.vacuum_forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep
+        )
+
+        settings_validation.validate_timestep(
+            self.settings.solvent_forcefield_settings.hydrogen_mass,
+            self.settings.integrator_settings.timestep
+        )
+
+
     def _create(
         self,
         stateA: ChemicalSystem,
@@ -784,6 +795,8 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the vacuum phase of an absolute solvation free energy
     """
+    simtype = "vacuum"
+
     def _get_components(self):
         """
         Get the relevant components for a vacuum transformation.
@@ -854,33 +867,15 @@ class AbsoluteSolvationVacuumUnit(BaseAbsoluteUnit):
         settings['simulation_settings'] = prot_settings.vacuum_simulation_settings
         settings['output_settings'] = prot_settings.vacuum_output_settings
 
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
-
         return settings
-
-    def _execute(
-        self, ctx: gufe.Context, **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
-
-        return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            'simtype': 'vacuum',
-            **outputs
-        }
 
 
 class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
     """
     Protocol Unit for the solvent phase of an absolute solvation free energy
     """
+    simtype = "solvent"
+
     def _get_components(self):
         """
         Get the relevant components for a solvent transformation.
@@ -911,7 +906,7 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
 
     def _handle_settings(self) -> dict[str, SettingsBaseModel]:
         """
-        Extract the relevant settings for a vacuum transformation.
+        Extract the relevant settings for a solvent transformation.
 
         Returns
         -------
@@ -946,24 +941,4 @@ class AbsoluteSolvationSolventUnit(BaseAbsoluteUnit):
         settings['simulation_settings'] = prot_settings.solvent_simulation_settings
         settings['output_settings'] = prot_settings.solvent_output_settings
 
-        settings_validation.validate_timestep(
-            settings['forcefield_settings'].hydrogen_mass,
-            settings['integrator_settings'].timestep
-        )
-
         return settings
-
-    def _execute(
-        self, ctx: gufe.Context, **kwargs,
-    ) -> dict[str, Any]:
-        log_system_probe(logging.INFO, paths=[ctx.scratch])
-
-        outputs = self.run(scratch_basepath=ctx.scratch,
-                           shared_basepath=ctx.shared)
-
-        return {
-            'repeat_id': self._inputs['repeat_id'],
-            'generation': self._inputs['generation'],
-            'simtype': 'solvent',
-            **outputs
-        }

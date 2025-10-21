@@ -19,18 +19,20 @@ from __future__ import annotations
 import abc
 import os
 import logging
+import copy
 
 import gufe
 from gufe.components import Component
 import numpy as np
 import numpy.typing as npt
 import openmm
-from openff.units import unit
+from openff.units import unit, Quantity
 from openff.units.openmm import from_openmm, to_openmm, ensure_quantity
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openmmtools import multistate
 from openmmtools.states import (SamplerState,
                                 ThermodynamicState,
+                                GlobalParameterState,
                                 create_thermodynamic_state_protocol,)
 from openmmtools.alchemy import (AlchemicalRegion, AbsoluteAlchemicalFactory,
                                  AlchemicalState,)
@@ -66,7 +68,10 @@ from openfe.protocols.openmm_utils import (
     multistate_analysis, charge_generation,
     omm_compute,
 )
-from openfe.utils import without_oechem_backend
+from openfe.protocols.restraint_utils import geometry
+from openfe.utils import (
+    without_oechem_backend, log_system_probe
+)
 
 
 logger = logging.getLogger(__name__)
@@ -261,6 +266,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             shared_basepath=self.shared_basepath,
         )
 
+        # TODO: if we still see crashes, see if using enforcePeriodicBox is necessary
+        # on newer tests, these were not necessary.
         state = simulation.context.getState(getPositions=True)
         equilibrated_positions = state.getPositions(asNumpy=True)
         box = state.getPeriodicBoxVectors()
@@ -536,6 +543,21 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 topology=modeller.topology,
                 molecules=list(smc_components.values()),
             )
+
+        # Check and fail early on the presence of virtual sites
+        # and multistate sampler not using velocity restart
+        if not settings['integrator_settings'].reassign_velocities:
+            has_vsite = any(
+                system.isVirtualSite(i)
+                for i in range(system.getNumParticles())
+            )
+            if has_vsite:
+                errmsg = (
+                    "Simulations with virtual sites without "
+                    "velocity reassignment are unstable"
+                )
+                raise ValueError(errmsg)
+
         return topology, system, positions, comp_resids
 
     def _get_lambda_schedule(
@@ -562,21 +584,35 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         lambda_elec = settings['lambda_settings'].lambda_elec
         lambda_vdw = settings['lambda_settings'].lambda_vdw
+        lambda_rest = settings['lambda_settings'].lambda_restraints
 
-        # Reverse lambda schedule since in AbsoluteAlchemicalFactory 1
-        # means fully interacting, not stateB
-        lambda_elec = [1-x for x in lambda_elec]
-        lambda_vdw = [1-x for x in lambda_vdw]
-        lambdas['lambda_electrostatics'] = lambda_elec
-        lambdas['lambda_sterics'] = lambda_vdw
+        # Reverse lambda schedule for vdw, elect, and restraints
+        # since in AbsoluteAlchemicalFactory 1 means fully
+        # interacting (which would be non-interacting for us)
+        lambdas['lambda_electrostatics'] = [1-x for x in lambda_elec]
+        lambdas['lambda_sterics'] = [1-x for x in lambda_vdw]
+        lambdas['lambda_restraints'] = [x for x in lambda_rest]
 
         return lambdas
 
-    def _add_restraints(self, system, topology, settings):
+    def _add_restraints(
+        self,
+        system: openmm.System,
+        topology: GlobalParameterState,
+        positions: openmm.unit.Quantity,
+        alchem_comps: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        settings: dict[str, SettingsBaseModel], 
+    ) -> tuple[
+        Optional[GlobalParameterState],
+        Optional[Quantity],
+        Optional[openmm.System],
+        Optional[geometry.BaseRestraintGeometry],
+    ]:
         """
         Placeholder method to add restraints if necessary
         """
-        return
+        return None, None, system, None
 
     def _get_alchemical_system(
         self,
@@ -598,7 +634,6 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           A dictionary of residues for each component in the System.
         alchem_comps : dict[str, list[Component]]
           A dictionary of alchemical components for each end state.
-
 
         Returns
         -------
@@ -637,6 +672,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         settings: dict[str, SettingsBaseModel],
         lambdas: dict[str, list[float]],
         solvent_comp: Optional[SolventComponent],
+        restraint_state: Optional[GlobalParameterState],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
         Get a list of sampler and thermodynmic states from an
@@ -656,6 +692,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           A dictionary of lambda scales.
         solvent_comp : Optional[SolventComponent]
           The solvent component of the system, if there is one.
+        restraint_state : Optional[GlobalParameterState]
+          The restraint parameter control state, if there is one.
 
         Returns
         -------
@@ -664,18 +702,36 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         cmp_states : list[ThermodynamicState]
           A list of ThermodynamicState for each replica in the system.
         """
+        # Fetch an alchemical state
         alchemical_state = AlchemicalState.from_system(alchemical_system)
+
         # Set up the system constants
         temperature = settings['thermo_settings'].temperature
         pressure = settings['thermo_settings'].pressure
         constants = dict()
         constants['temperature'] = ensure_quantity(temperature, 'openmm')
+
         if solvent_comp is not None:
             constants['pressure'] = ensure_quantity(pressure, 'openmm')
 
+        # Get the thermodynamic parameter protocol
+        param_protocol = copy.deepcopy(lambdas)
+
+        # Get the composable states
+        if restraint_state is not None:
+            composable_states = [alchemical_state, restraint_state]
+        else:
+            composable_states = [alchemical_state,]
+
+            # In this case we also don't have a restraint being controlled
+            # so we drop it from the protocol
+            param_protocol.pop('lambda_restraints', None)
+
         cmp_states = create_thermodynamic_state_protocol(
-            alchemical_system, protocol=lambdas,
-            constants=constants, composable_states=[alchemical_state],
+            alchemical_system,
+            protocol=param_protocol,
+            constants=constants,
+            composable_states=composable_states,
         )
 
         sampler_state = SamplerState(positions=positions)
@@ -715,7 +771,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         """
         mdt_top = mdt.Topology.from_openmm(topology)
 
-        selection_indices = mdt_top.select(
+        # Store the selection indices in self to use later
+        # when storing them in the unit results
+        self.selection_indices = mdt_top.select(
                 output_settings.output_indices
         )
 
@@ -748,7 +806,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         reporter = multistate.MultiStateReporter(
             storage=nc,
-            analysis_particle_indices=selection_indices,
+            analysis_particle_indices=self.selection_indices,
             checkpoint_interval=chk_intervals,
             checkpoint_storage=chk,
             position_interval=pos_interval,
@@ -756,10 +814,10 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         )
 
         # Write out the structure's PDB whilst we're here
-        if len(selection_indices) > 0:
+        if len(self.selection_indices) > 0:
             traj = mdt.Trajectory(
-                positions[selection_indices, :],
-                mdt_top.subset(selection_indices),
+                positions[self.selection_indices, :],
+                mdt_top.subset(self.selection_indices),
             )
             traj.save_pdb(
                 self.shared_basepath / output_settings.output_structure
@@ -926,6 +984,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         sampler: multistate.MultiStateSampler,
         reporter: multistate.MultiStateReporter,
         settings: dict[str, SettingsBaseModel],
+        standard_state_corr: Optional[Quantity],
         dry: bool
     ):
         """
@@ -939,6 +998,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           The reporter associated with the sampler.
         settings : dict[str, SettingsBaseModel]
           The dictionary of settings for the protocol.
+        standard_state_corr : Optional[openff.units.Quantity]
+          The standard state correction, if available.
         dry : bool
           Whether or not to dry run the simulation
 
@@ -969,9 +1030,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             # minimize
             if self.verbose:
                 self.logger.info("minimizing systems")
+
             sampler.minimize(
                 max_iterations=settings['simulation_settings'].minimization_steps
             )
+
             # equilibrate
             if self.verbose:
                 self.logger.info("equilibrating systems")
@@ -997,7 +1060,12 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             analyzer.plot(filepath=self.shared_basepath, filename_prefix="")
             analyzer.close()
 
-            return analyzer.unit_results_dict
+            return_dict = analyzer.unit_results_dict
+
+            if standard_state_corr is not None:
+                return_dict['standard_state_correction'] = standard_state_corr.to('kilocalorie_per_mole')
+
+            return return_dict
 
         else:
             # close reporter when you're done, prevent file handle clashes
@@ -1061,11 +1129,22 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas = self._get_lambda_schedule(settings)
 
         # 6. Add restraints
-        self._add_restraints(omm_system, omm_topology, settings)
+        # Note: when no restraint is applied, restrained_omm_system == omm_system
+        restraint_parameter_state, standard_state_corr, restrained_omm_system, restraint_geometry = self._add_restraints(
+            omm_system,
+            omm_topology,
+            positions,
+            alchem_comps,
+            comp_resids,
+            settings,
+        )
 
         # 7. Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
-            omm_topology, omm_system, comp_resids, alchem_comps
+            omm_topology,
+            restrained_omm_system,
+            comp_resids,
+            alchem_comps
         )
 
         # 8. Get compound and sampler states
@@ -1075,7 +1154,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             box_vectors,
             settings,
             lambdas,
-            solv_comp
+            solv_comp,
+            restraint_parameter_state,
         )
 
         # 9. Create the multistate reporter & create PDB
@@ -1109,7 +1189,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
             # 13. Run simulation
             unit_result_dict = self._run_simulation(
-                sampler, reporter, settings, dry
+                sampler,
+                reporter,
+                settings,
+                standard_state_corr,
+                dry
             )
 
         finally:
@@ -1136,10 +1220,41 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if not dry:
             nc = self.shared_basepath / settings['output_settings'].output_filename
             chk = settings['output_settings'].checkpoint_storage_filename
-            return {
-                'nc': nc,
-                'last_checkpoint': chk,
-                **unit_result_dict,
-            }
+            unit_result_dict['nc'] = nc
+            unit_result_dict['last_checkpoint'] = chk
+            unit_result_dict['selection_indices'] = self.selection_indices
+
+            if restraint_geometry is not None:
+                unit_result_dict['restraint_geometry'] = restraint_geometry.model_dump()
+
+            return unit_result_dict
         else:
-            return {'debug': {'sampler': sampler}}
+            return {
+                        # Add in various objects we can used to test the system
+                        'debug': {
+                            'sampler': sampler,
+                            'system': omm_system,
+                            'restrained_system': restrained_omm_system,
+                            'alchem_system': alchem_system,
+                            'alchem_indices': alchem_indices,
+                            'alchem_factory': alchem_factory,
+                            'positions': positions
+                        }
+                   }
+
+    def _execute(
+        self,
+        ctx: gufe.Context,
+        **kwargs,
+    ) -> dict[str, Any]:
+        log_system_probe(logging.INFO, paths=[ctx.scratch])
+
+        outputs = self.run(scratch_basepath=ctx.scratch, shared_basepath=ctx.shared)
+
+        return {
+            "repeat_id": self._inputs["repeat_id"],
+            "generation": self._inputs["generation"],
+            "simtype": self.simtype,
+            **outputs,
+        }
+
