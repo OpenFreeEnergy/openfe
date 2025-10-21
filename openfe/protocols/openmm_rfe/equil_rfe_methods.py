@@ -595,14 +595,15 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         _validate_alchemical_components(alchem_comps, mapping)
         ligandmapping = mapping[0] if isinstance(mapping, list) else mapping
 
-        # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
-        system_validation.validate_solvent(stateA, nonbond)
+        if not self.settings.thermo_settings.membrane:
+            # Validate solvent component
+            system_validation.validate_solvent(stateA, nonbond)
 
-        # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(
-            self.settings.solvation_settings
-        )
+            # Validate solvation settings
+            settings_validation.validate_openmm_solvation_settings(
+                self.settings.solvation_settings
+            )
 
         # Validate protein component
         system_validation.validate_protein(stateA)
@@ -856,7 +857,6 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                                   off_small_mols['both']):
                 system_generator.create_system(mol.to_topology().to_openmm(),
                                                molecules=[mol])
-
             # c. get OpenMM Modeller + a dictionary of resids for each component
             stateA_modeller, comp_resids = system_creation.get_omm_modeller(
                 protein_comp=protein_comp,

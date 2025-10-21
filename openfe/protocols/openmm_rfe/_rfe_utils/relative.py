@@ -314,9 +314,12 @@ class HybridTopologyFactory:
 
         def _check_unknown_forces(forces, system_name):
             # TODO: double check that CMMotionRemover is ok being here
-            known_forces = {'HarmonicBondForce', 'HarmonicAngleForce',
-                            'PeriodicTorsionForce', 'NonbondedForce',
-                            'MonteCarloBarostat', 'CMMotionRemover'}
+            known_forces = {
+                'HarmonicBondForce', 'HarmonicAngleForce',
+                'PeriodicTorsionForce', 'NonbondedForce',
+                'MonteCarloBarostat', 'CMMotionRemover',
+                'MonteCarloMembraneBarostat',
+            }
 
             force_names = forces.keys()
             unknown_forces = set(force_names) - set(known_forces)
@@ -392,9 +395,11 @@ class HybridTopologyFactory:
         """
         # Check that if there is a barostat in the old system,
         # it is added to the hybrid system
-        if "MonteCarloBarostat" in self._old_system_forces.keys():
+        known_barostats = ["MonteCarloBarostat", "MonteCarloMembraneBarostat"]
+        present_barostat = [i for i in self._old_system_forces.keys() if i in known_barostats]
+        if len(present_barostat) == 1:
             barostat = copy.deepcopy(
-                self._old_system_forces["MonteCarloBarostat"])
+                self._old_system_forces[present_barostat[0]])
             self._hybrid_system.addForce(barostat)
 
         # Copy over the box vectors from the old system
