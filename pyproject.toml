@@ -47,9 +47,9 @@ openfe = [ '"./openfe/tests/data/lomap_basic/toluene.mol2"' ]
 fallback_version = "0.0.0"
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 
-format.exclude = [ "openfe/*", "openfecli/*" ]
+format.exclude = ["openfecli/*", "openfe/*"]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 lint.select = [
   # "F",  # Pyflakes
