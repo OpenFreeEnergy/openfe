@@ -7,6 +7,13 @@ Changelog
 v1.7.0
 ====================
 
+This release brings several long awaited features to OpenFE, including the SepTop and ABFE Protocols, as well as the adoption of more computationally efficient settings in the CLI and across the API.
+
+The v1.7.0 release also comes with some API changes and breaks, these include:
+  * "CUDA" is now the default platform in the settings, you will need to change this if you run on a non-NVIDIA powered platform.
+  * The default solvation cutoff is now 1.5 nm, to avoid issues with small boxes when dealing with ligands in solvent. When calculating complexes using the MD or HybridTopology Protocols with the API, you will need to reduce this value to ~ 1 nm to avoid excessively large water boxes.
+  * The API has fully migrated to Pydantic V2 and the `GufeQuantity` scheme. This only affects Protocol developers. If needed, please see the `gufe typing documentation <https://gufe.openfree.energy/en/latest/generated/gufe.settings.typing.html>` for more details.
+
 **Added:**
 
 * Addition of an Absolute Binding Free Energy Protocol (PR #1045).
