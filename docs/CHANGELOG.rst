@@ -40,6 +40,7 @@ The v1.7.0 release also comes with some API changes and breaks, including:
 * The default ``nonbonded_cutoff`` setting of the ``OpenMMSystemGeneratorFFSettings`` class has been decreased to 0.9 nm from 1.0 nm, in line with current force fields best practices and our newly validated fast settings (`PR #1523 <https://github.com/OpenFreeEnergy/openfe/pull/1523>`_).
 
 * When calling the CLI ``openfe plan_rbfe_network``, the ``RelativeHybridTopologyProtocol`` settings now reflects the above "fast" settings updates. This includes;
+
   * Dodecahedron box solvation
   * Solvation cutoff of 1.5 nm in solvent-only legs, and 1.0 nm in complex legs
   * A replica exchange rate of 2.5 ps
