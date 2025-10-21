@@ -50,8 +50,18 @@ ONE_4PI_EPS0 = 1 / (4 * np.pi * EPSILON0) * EPSILON0.unit * 10.0  # nm -> angstr
 
 
 @pytest.fixture()
+def protocol_dry_settings():
+    # a set of settings for dry run tests
+    s = SepTopProtocol.default_settings()
+    s.engine_settings.compute_platform = None
+    s.protocol_repeats = 1
+    return s
+
+
+@pytest.fixture()
 def default_settings():
-    return SepTopProtocol.default_settings()
+    s = SepTopProtocol.default_settings()
+    return s
 
 
 def test_create_default_settings():
@@ -96,14 +106,44 @@ def test_incorrect_window_settings(val, default_settings):
         },
     ],
 )
-def test_monotonic_lambda_windows(val, default_settings):
-    errmsg = "The lambda schedule is not monotonic."
+def test_monotonic_lambda_windows_A(val, default_settings):
+    errmsg = "The lambda schedule for ligand A"
     lambda_settings = default_settings.complex_lambda_settings
 
     with pytest.raises(ValueError, match=errmsg):
         lambda_settings.lambda_elec_A = val["elec"]
         lambda_settings.lambda_vdw_A = val["vdw"]
         lambda_settings.lambda_restraints_A = val["restraints"]
+
+
+@pytest.mark.parametrize(
+    "val",
+    [
+        {
+            "elec": [1.0, 0.1, 1.0],
+            "vdw": [1.0, 1.0, 1.0],
+            "restraints": [1.0, 1.0, 1.0],
+        },
+        {
+            "elec": [1.0, 1.0, 1.0],
+            "vdw": [1.0, 0.0, 1.0],
+            "restraints": [1.0, 1.0, 1.0],
+        },
+        {
+            "elec": [1.0, 1.0, 1.0],
+            "vdw": [1.0, 1.0, 1.0],
+            "restraints": [1.0, 0.0, 1.0],
+        },
+    ],
+)
+def test_monotonic_lambda_windows_B(val, default_settings):
+    errmsg = "The lambda schedule for ligand B"
+    lambda_settings = default_settings.complex_lambda_settings
+
+    with pytest.raises(ValueError, match=errmsg):
+        lambda_settings.lambda_elec_B = val["elec"]
+        lambda_settings.lambda_vdw_B = val["vdw"]
+        lambda_settings.lambda_restraints_B = val["restraints"]
 
 
 def test_output_induces_not_all(default_settings):
@@ -116,21 +156,28 @@ def test_output_induces_not_all(default_settings):
 @pytest.mark.parametrize(
     "val",
     [
-        {"elec": [1.0, 1.0], "vdw": [0.0, 1.0], "restraints": [0.0, 0.0]},
+        {
+            "elec_A": [1.0, 1.0],
+            "vdw_A": [0.0, 1.0],
+            "restraints_A": [0.0, 0.0],
+            "elec_B": [1.0, 1.0],
+            "vdw_B": [1.0, 1.0],
+            "restraints_B": [0.0, 0.0],
+        },
     ],
 )
 def test_validate_lambda_schedule_nreplicas(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints"]
-    default_settings.complex_lambda_settings.lambda_elec_B = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints"]
+    default_settings.complex_lambda_settings.lambda_elec_A = val["elec_A"]
+    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw_A"]
+    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints_A"]
+    default_settings.complex_lambda_settings.lambda_elec_B = val["elec_B"]
+    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw_B"]
+    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints_B"]
     n_replicas = 3
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     errmsg = (
         f"Number of replicas {n_replicas} does not equal the"
-        f" number of lambda windows {len(val['vdw'])}"
+        f" number of lambda windows {len(val['vdw_A'])}"
     )
     with pytest.raises(ValueError, match=errmsg):
         SepTopProtocol._validate_lambda_schedule(
@@ -165,16 +212,23 @@ def test_validate_lambda_schedule_nwindows(val, default_settings):
 @pytest.mark.parametrize(
     "val",
     [
-        {"elec": [1.0, 0.5], "vdw": [1.0, 1.0], "restraints": [0.0, 0.0]},
+        {
+            "elec_A": [0.0, 1.0],
+            "vdw_A": [1.0, 1.0],
+            "restraints_A": [0.0, 0.0],
+            "elec_B": [1.0, 1.0],
+            "vdw_B": [1.0, 1.0],
+            "restraints_B": [0.0, 0.0],
+        },
     ],
 )
 def test_validate_lambda_schedule_nakedcharge(val, default_settings):
-    default_settings.complex_lambda_settings.lambda_elec_A = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints"]
-    default_settings.complex_lambda_settings.lambda_elec_B = val["elec"]
-    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw"]
-    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints"]
+    default_settings.complex_lambda_settings.lambda_elec_A = val["elec_A"]
+    default_settings.complex_lambda_settings.lambda_vdw_A = val["vdw_A"]
+    default_settings.complex_lambda_settings.lambda_restraints_A = val["restraints_A"]
+    default_settings.complex_lambda_settings.lambda_elec_B = val["elec_B"]
+    default_settings.complex_lambda_settings.lambda_vdw_B = val["vdw_B"]
+    default_settings.complex_lambda_settings.lambda_restraints_B = val["restraints_B"]
     n_replicas = 2
     default_settings.complex_simulation_settings.n_replicas = n_replicas
     default_settings.solvent_simulation_settings.n_replicas = n_replicas
@@ -637,10 +691,9 @@ class TestNonbondedInteractions:
 def benzene_toluene_dag(
     benzene_complex_system,
     toluene_complex_system,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     return protocol.create(
         stateA=benzene_complex_system,
@@ -669,7 +722,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         pdb = md.load_pdb("topology.pdb")
-        assert pdb.n_atoms == 1346
+        assert pdb.n_atoms == 1762
         central_atoms = np.array([[2, 19]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
         assert np.isclose(distance, 0.8661)
@@ -686,7 +739,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 29
+        assert pdb.n_atoms == 31
 
         complex_setup_output = complex_setup_unit[0].run(dry=True)
         serialized_topology = complex_setup_output["topology"]
@@ -702,7 +755,7 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
-        assert pdb.n_atoms == 2713
+        assert pdb.n_atoms == 2687
 
 
 @pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
@@ -710,18 +763,17 @@ def test_dry_run_methods(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
     method,
 ):
 
-    default_settings.solvent_simulation_settings.sampler_method = method
-    default_settings.complex_simulation_settings.sampler_method = method
-    default_settings.protocol_repeats = 1
-    default_settings.complex_output_settings.output_indices = 'resname UNK'
-    default_settings.solvent_output_settings.output_indices = 'resname UNK'
+    protocol_dry_settings.solvent_simulation_settings.sampler_method = method
+    protocol_dry_settings.complex_simulation_settings.sampler_method = method
+    protocol_dry_settings.complex_output_settings.output_indices = 'resname UNK'
+    protocol_dry_settings.solvent_output_settings.output_indices = 'resname UNK'
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -765,16 +817,16 @@ def test_dry_run_ligand_system_pressure(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
     # openfe settings requires openff/pint units
-    default_settings.thermo_settings.pressure = pressure * offunit.bar
+    protocol_dry_settings.thermo_settings.pressure = pressure * offunit.bar
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -801,22 +853,21 @@ def test_virtual_sites_no_reassign(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Test that an error is raised when not reassigning velocities
     in a system with virtual site.
     """
-    default_settings.protocol_repeats = 1
-    default_settings.forcefield_settings.forcefields = [
+    protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",
         "amber/tip4pew_standard.xml",  # FF with VS
     ]
-    default_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
-    default_settings.integrator_settings.reassign_velocities = False
+    protocol_dry_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
+    protocol_dry_settings.integrator_settings.reassign_velocities = False
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -841,18 +892,18 @@ def test_dry_run_ligand_system_cutoff(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    default_settings.solvent_solvation_settings.solvent_padding = (
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
         1.9 * offunit.nanometer
     )
-    default_settings.forcefield_settings.nonbonded_cutoff = cutoff
+    protocol_dry_settings.forcefield_settings.nonbonded_cutoff = cutoff
 
     protocol = SepTopProtocol(
-        settings=default_settings,
+        settings=protocol_dry_settings,
     )
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -881,18 +932,17 @@ def test_dry_run_benzene_toluene_tip4p(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    default_settings.forcefield_settings.forcefields = [
+    protocol_dry_settings.forcefield_settings.forcefields = [
         "amber/ff14SB.xml",  # ff14SB protein force field
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    default_settings.solvent_solvation_settings.solvent_model = "tip4pew"
-    default_settings.integrator_settings.reassign_velocities = True
+    protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
+    protocol_dry_settings.integrator_settings.reassign_velocities = True
 
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     # Create DAG from protocol, get the solvent units
     # and eventually dry run the first solvent unit
@@ -926,15 +976,14 @@ def test_dry_run_benzene_toluene_noncubic(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    default_settings.solvent_solvation_settings.solvent_padding = (
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
         1.5 * offunit.nanometer
     )
-    default_settings.solvent_solvation_settings.box_shape = "dodecahedron"
+    protocol_dry_settings.solvent_solvation_settings.box_shape = "dodecahedron"
 
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
@@ -977,16 +1026,14 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     benzene_modifications,
     T4_protein_component,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
     """
     Create a test system with fictitious user supplied charges and
     ensure that they are properly passed through to the constructed
     alchemical system.
     """
-    default_settings.protocol_repeats = 1
-
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     def assign_fictitious_charges(offmol):
         """
@@ -1091,13 +1138,12 @@ def test_high_timestep(
     benzene_complex_system,
     toluene_complex_system,
     tmpdir,
-    default_settings,
+    protocol_dry_settings,
 ):
-    default_settings.protocol_repeats = 1
-    default_settings.forcefield_settings.hydrogen_mass = 1.0
-    default_settings.forcefield_settings.hydrogen_mass = 1.0
+    protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
+    protocol_dry_settings.forcefield_settings.hydrogen_mass = 1.0
 
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -1117,14 +1163,14 @@ def T4L_xml(
     benzene_complex_system,
     toluene_complex_system,
     tmp_path_factory,
-    default_settings,
+    protocol_dry_settings,
 ):
     # Fixing the number of solvent molecules in the solvent settings
     # to test against reference xml
-    default_settings.solvent_solvation_settings.solvent_padding = None
-    default_settings.solvent_solvation_settings.number_of_solvent_molecules = 364
-    default_settings.forcefield_settings.small_molecule_forcefield = "openff-2.1.1"
-    protocol = SepTopProtocol(settings=default_settings)
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = None
+    protocol_dry_settings.solvent_solvation_settings.number_of_solvent_molecules = 364
+    protocol_dry_settings.forcefield_settings.small_molecule_forcefield = "openff-2.1.1"
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     dag = protocol.create(
         stateA=benzene_complex_system,
@@ -1147,13 +1193,13 @@ class TestT4LXmlRegression:
     """Generates SepTop system XML (solvent) and performs regression test"""
 
     @staticmethod
-    def test_particles(T4L_xml, T4L_reference_xml):
+    def test_particles(T4L_xml, T4L_septop_reference_xml):
         nr_particles = T4L_xml.getNumParticles()
-        nr_particles_ref = T4L_reference_xml.getNumParticles()
+        nr_particles_ref = T4L_septop_reference_xml.getNumParticles()
         assert nr_particles == nr_particles_ref
         particle_masses = [T4L_xml.getParticleMass(i) for i in range(nr_particles)]
         particle_masses_ref = [
-            T4L_reference_xml.getParticleMass(i) for i in range(nr_particles)
+            T4L_septop_reference_xml.getParticleMass(i) for i in range(nr_particles)
         ]
         assert particle_masses
 
@@ -1161,15 +1207,15 @@ class TestT4LXmlRegression:
             assert a == b
 
     @staticmethod
-    def test_constraints(T4L_xml, T4L_reference_xml):
+    def test_constraints(T4L_xml, T4L_septop_reference_xml):
         nr_constraints = T4L_xml.getNumConstraints()
-        nr_constraints_ref = T4L_reference_xml.getNumConstraints()
+        nr_constraints_ref = T4L_septop_reference_xml.getNumConstraints()
         assert nr_constraints == nr_constraints_ref
         constraints = [
             T4L_xml.getConstraintParameters(i) for i in range(nr_constraints)
         ]
         constraints_ref = [
-            T4L_reference_xml.getConstraintParameters(i) for i in range(nr_constraints)
+            T4L_septop_reference_xml.getConstraintParameters(i) for i in range(nr_constraints)
         ]
         assert constraints
 
@@ -1320,14 +1366,14 @@ class TestProtocolResult:
         est = protocolresult.get_estimate()
 
         assert est
-        assert est.m == pytest.approx(5.18, abs=0.5)
+        assert est.m == pytest.approx(5.18, abs=0.1)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 
     def test_get_uncertainty(self, protocolresult):
         est = protocolresult.get_uncertainty()
 
-        assert est.m == pytest.approx(0.0, abs=0.2)
+        assert est.m == pytest.approx(0.0, abs=0.1)
         assert isinstance(est, offunit.Quantity)
         assert est.is_compatible_with(offunit.kilojoule_per_mole)
 

@@ -118,7 +118,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
 
     Allowed values are: ``tip3p``, ``spce``, ``tip4pew``, and ``tip5p``.
     """
-    solvent_padding: NanometerQuantity | None = 1.2 * unit.nanometer
+    solvent_padding: NanometerQuantity | None = 1.5 * unit.nanometer
     """
     Minimum distance from any solute bounding sphere to the edge of the box.
 
@@ -127,7 +127,7 @@ class OpenMMSolvationSettings(BaseSolvationSettings):
     * Cannot be defined alongside ``number_of_solvent_molecules``,
       ``box_size``, or ``box_vectors``.
     """
-    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'cube'
+    box_shape: Optional[Literal['cube', 'dodecahedron', 'octahedron']] = 'dodecahedron'
     """
     The shape of the periodic box to create.
 
@@ -314,10 +314,13 @@ class OpenMMEngineSettings(SettingsBaseModel):
     * In the future make precision and deterministic forces user defined too.
     """
 
-    compute_platform: Optional[str] = None
+    compute_platform: Optional[str] = 'cuda'
     """
     OpenMM compute platform to perform MD integration with. If ``None``, will
-    choose fastest available platform. Default ``None``.
+    choose fastest available platform.
+    Allowed platforms are; ``cuda``, ``opencl``, ``cpu``.
+    Default ``cuda``.
+    
     """
     gpu_device_index: Optional[list[int]] = None
     """
@@ -331,6 +334,15 @@ class OpenMMEngineSettings(SettingsBaseModel):
 
     Default ``None``.
     """
+
+    @field_validator('compute_platform')
+    def supported_sampler(cls, v):
+        supported = ['cpu', 'opencl', 'cuda']
+        if v is not None and v.lower() not in supported:
+            errmsg = ("Only the following OpenMM compute backends are "
+                      f"supported: {supported}")
+            raise ValueError(errmsg)
+        return v
 
 
 class IntegratorSettings(SettingsBaseModel):
@@ -550,10 +562,10 @@ class MultiStateSimulationSettings(SimulationSettings):
     or `independent` (independently sampled lambda windows).
     Default `repex`.
     """
-    time_per_iteration: PicosecondQuantity = 1.0 * unit.picosecond
+    time_per_iteration: PicosecondQuantity = 2.5 * unit.picosecond
     # todo: Add validators in the protocol
     """
-    Simulation time between each MCMC move attempt. Default 1 * unit.picosecond.
+    Simulation time between each MCMC move attempt. Default 2.5 * unit.picosecond.
     """
     real_time_analysis_interval: PicosecondQuantity | None= 250.0 * unit.picosecond
     # todo: Add validators in the protocol

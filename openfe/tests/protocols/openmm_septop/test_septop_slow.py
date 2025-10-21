@@ -22,7 +22,9 @@ import mdtraj as md
 
 @pytest.fixture()
 def default_settings():
-    return SepTopProtocol.default_settings()
+    s = SepTopProtocol.default_settings()
+    s.engine_settings.compute_platform = None
+    return s
 
 
 def compare_energies(alchemical_system, positions):
@@ -216,13 +218,6 @@ def test_lambda_energies(
                 assert_allclose(from_openmm(value), from_openmm(energy_13[key]))
 
 
-@pytest.fixture
-def available_platforms() -> set[str]:
-    return {
-        openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())
-    }
-
-
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
 @pytest.mark.parametrize("platform", ["CUDA"])
@@ -297,8 +292,7 @@ def test_openmm_run_engine(
         }
     )
 
-    # Create DAG from protocol, get the vacuum and solvent units
-    # and eventually dry run the first solvent unit
+    # Create DAG from protocol
     dag = protocol.create(
         stateA=stateA,
         stateB=stateB,
@@ -371,7 +365,7 @@ def test_restraints_solvent(
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run()
         pdb = md.load_pdb("topology.pdb")
-        assert pdb.n_atoms == 1346
+        assert pdb.n_atoms == 1762
         central_atoms = np.array([[2, 19]], dtype=np.int32)
         distance = md.compute_distances(pdb, central_atoms)[0][0]
         # For right now just checking that ligands at least somewhat apart

@@ -17,6 +17,14 @@ class TestDuecredit:
         ['openfe.protocols.openmm_afe.equil_solvation_afe_method',
          ['10.5281/zenodo.596504', '10.48550/arxiv.2302.06758',
           '10.5281/zenodo.596622', '10.1371/journal.pcbi.1005659']],
+        [
+            'openfe.protocols.openmm_afe.equil_binding_afe_method',
+            [
+                '10.5281/zenodo.596504',
+                '10.5281/zenodo.596622',
+                 '10.1371/journal.pcbi.1005659',
+            ]
+        ],
         ['openfe.protocols.openmm_rfe.equil_rfe_methods',
          ['10.5281/zenodo.1297683', '10.5281/zenodo.596622',
           '10.1371/journal.pcbi.1005659']],
