@@ -186,7 +186,7 @@ class LambdaSettings(SettingsBaseModel):
     ]
     """
     List of floats of lambda values for the restraints of ligand A.
-    Zero means fully interacting and 1 means fully decoupled.
+    Zero means no restraints are applied and 1 means restraints are fully applied.
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
     lambda_restraints_B: list[float] = [
@@ -212,7 +212,7 @@ class LambdaSettings(SettingsBaseModel):
     ]
     """
     List of floats of lambda values for the restraints of ligand B.
-    Zero means fully interacting and 1 means fully decoupled.
+    Zero means no restraints are applied and 1 means restraints are fully applied.
     Length of this list needs to match length of lambda_vdw and lambda_elec.
     """
 
@@ -236,20 +236,36 @@ class LambdaSettings(SettingsBaseModel):
 
     @field_validator(
         "lambda_elec_A",
-        "lambda_elec_B",
         "lambda_vdw_A",
-        "lambda_vdw_B",
         "lambda_restraints_A",
-        "lambda_restraints_B",
     )
-    def must_be_monotonic(cls, v):
+    def must_be_monotonically_increasing_A(cls, v):
 
         difference = np.diff(v)
 
-        monotonic = np.all(difference <= 0) or np.all(difference >= 0)
+        monotonic = np.all(difference >= 0)
 
         if not monotonic:
-            errmsg = f"The lambda schedule is not monotonic, got schedule {v}."
+            errmsg = ("The lambda schedule for ligand A is not monotonically"
+                      f" increasing, got schedule {v}.")
+            raise ValueError(errmsg)
+
+        return v
+
+    @field_validator(
+        "lambda_elec_B",
+        "lambda_vdw_B",
+        "lambda_restraints_B",
+    )
+    def must_be_monotonically_decreasing_B(cls, v):
+
+        difference = np.diff(v)
+
+        monotonic = np.all(difference <= 0)
+
+        if not monotonic:
+            errmsg = ("The lambda schedule for ligand B is not monotonically"
+                      f" decreasing, got schedule {v}.")
             raise ValueError(errmsg)
 
         return v

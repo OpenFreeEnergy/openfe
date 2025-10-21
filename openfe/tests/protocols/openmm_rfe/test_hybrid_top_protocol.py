@@ -128,6 +128,17 @@ def test_create_default_settings():
 
     assert settings
 
+def test_adaptive_settings_no_initial(benzene_system, toluene_system, benzene_to_toluene_mapping):
+    settings = openmm_rfe.RelativeHybridTopologyProtocol._adaptive_settings(
+        stateA=benzene_system,
+        stateB=toluene_system,
+        mapping=[benzene_to_toluene_mapping,]
+    )
+    # this is a solvent system make sure the padding is 1.5 nm
+    assert settings.solvation_settings.solvent_padding == 1.5 * unit.nanometer
+    # make sure the default parameter is not changed
+    assert settings.protocol_repeats == 3
+
 
 def test_create_default_protocol():
     # this is roughly how it should be created
@@ -482,7 +493,7 @@ def tip4p_hybrid_factory(
         "amber/tip4pew_standard.xml",  # FF we are testsing with the fun VS
         "amber/phosaa10.xml",  # Handles THE TPO
     ]
-    settings.solvation_settings.solvent_padding = 1.0 * unit.nanometer
+    settings.solvation_settings.solvent_padding = 1.5 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.solvation_settings.solvent_model = 'tip4pew'
     settings.integrator_settings.reassign_velocities = True
@@ -1960,7 +1971,7 @@ def test_get_alchemical_waters_no_waters(
     with pytest.raises(ValueError, match=errmsg):
         topologyhelpers.get_alchemical_waters(
             topology, positions, charge_difference=1,
-            distance_cutoff=2.0 * unit.nanometer
+            distance_cutoff=3.0 * unit.nanometer
         )
 
 
@@ -2262,6 +2273,9 @@ def test_dry_run_vacuum_write_frequency(
 ):
     vac_settings.output_settings.positions_write_frequency = positions_write_frequency
     vac_settings.output_settings.velocities_write_frequency = velocities_write_frequency
+
+    # set the time per iteration to 1 to get the expected outputs
+    vac_settings.simulation_settings.time_per_iteration = 1 * unit.picosecond
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
             settings=vac_settings,
