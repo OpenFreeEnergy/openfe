@@ -1,5 +1,3 @@
-import logging
-
 class MsgIncludesStringFilter:
     """Logging filter to silence specfic log messages.
 
@@ -16,3 +14,12 @@ class MsgIncludesStringFilter:
 
     def filter(self, record):
         return not self.string in record.msg
+
+
+class AppendMsgFilter:
+    """Logging filter to append a message to a specfic log message.
+
+    See https://docs.python.org/3/library/logging.html#filter-objects
+
+    """
+    pass

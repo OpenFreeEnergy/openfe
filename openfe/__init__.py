@@ -1,5 +1,7 @@
 # silence pymbar logging warnings
 import logging
+
+from openfe.utils.logging_filter import MsgIncludesStringFilter
 #def _mute_timeseries(record):
 #    return not "Warning on use of the timeseries module:" in record.msg
 #def _mute_jax(record):
@@ -29,7 +31,6 @@ from gufe.protocols import (
     ProtocolResult,
     execute_DAG,
 )
-
 from . import utils
 from . import setup
 from .setup import (
