@@ -1003,11 +1003,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
         # ability to print the schedule directly in settings?
+        # fmt: off
         lambdas = _rfe_utils.lambdaprotocol.LambdaProtocol(
             functions=lambda_settings.lambda_functions,
             windows=lambda_settings.lambda_windows
         )
-
+        # fmt: on
         # PR #125 temporarily pin lambda schedule spacing to n_replicas
         n_replicas = sampler_settings.n_replicas
         if n_replicas != len(lambdas.lambda_schedule):
@@ -1062,12 +1063,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         )
 
         #  b. Write out a PDB containing the subsampled hybrid state
+        # fmt: off
         bfactors = np.zeros_like(selection_indices, dtype=float)  # solvent
         bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_old_atoms']))] = 0.25  # lig A
         bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['core_atoms']))] = 0.50  # core
         bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
         # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
-
         if len(selection_indices) > 0:
             traj = mdtraj.Trajectory(
                 hybrid_factory.hybrid_positions[selection_indices, :],
@@ -1076,6 +1077,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 shared_basepath / output_settings.output_structure,
                 bfactors=bfactors,
             )
+        # fmt: on
 
         # 10. Get compute platform
         # restrict to a single CPU if running vacuum

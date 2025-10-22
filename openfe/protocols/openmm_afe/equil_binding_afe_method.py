@@ -543,6 +543,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         Settings
           a set of default settings
         """
+        # fmt: off
         return AbsoluteBindingSettings(
             protocol_repeats=3,
             forcefield_settings=settings.OpenMMSystemGeneratorFFSettings(),
@@ -551,7 +552,6 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 pressure=1 * offunit.bar,
             ),
             alchemical_settings=AlchemicalSettings(),
-            # fmt: off
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0,
@@ -583,7 +583,6 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0, 1.00, 1.0
                 ],
             ),
-            # fmt: on
             partial_charge_settings=OpenFFPartialChargeSettings(),
             complex_solvation_settings=OpenMMSolvationSettings(
                 solvent_padding=1.0 * offunit.nanometer,
@@ -625,6 +624,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
                 checkpoint_storage_filename="complex_checkpoint.nc",
             ),
         )
+        # fmt: on
 
     @staticmethod
     def _validate_endstates(

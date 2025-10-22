@@ -597,14 +597,13 @@ class HybridTopologyFactory:
             particles[i] = atm_map[vs.getParticle(i)]
             weights[i] = vs.getWeight(i)
         if not all(i in env_atoms for i in particles.values()):
-            errmsg = ("Virtual sites bound to non-environment atoms "
-                      "are not supported")
+            errmsg = "Virtual sites bound to non-environment atoms are not supported"
             raise ValueError(errmsg)
         return openmm.ThreeParticleAverageSite(
             particles[0], particles[1], particles[2],
             weights[0], weights[1], weights[2],
-        )
-                    
+        )  # fmt: skip
+
     def _handle_virtual_sites(self):
         """
         Ensure that all virtual sites in old and new system are copied over to

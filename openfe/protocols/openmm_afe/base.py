@@ -720,11 +720,11 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         if restraint_state is not None:
             composable_states = [alchemical_state, restraint_state]
         else:
-            composable_states = [alchemical_state,]
+            composable_states = [alchemical_state]
 
             # In this case we also don't have a restraint being controlled
             # so we drop it from the protocol
-            param_protocol.pop('lambda_restraints', None)
+            param_protocol.pop("lambda_restraints", None)
 
         cmp_states = create_thermodynamic_state_protocol(
             alchemical_system,

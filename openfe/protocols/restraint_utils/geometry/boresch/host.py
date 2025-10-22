@@ -439,7 +439,7 @@ class EvaluateHostAtoms1(AnalysisBase):
             dihed_bounds = all(
                 check_dihedral_bounds(dihed * unit.radians)
                 for dihed in self.results.dihedrals[i]
-            )
+            )  # fmt: skip
             dihed_variance = check_angular_variance(
                 self.results.dihedrals[i] * unit.radians,
                 upper_bound=np.pi * unit.radians,
@@ -530,7 +530,7 @@ class EvaluateHostAtoms2(EvaluateHostAtoms1):
             dihed_bounds = all(
                 check_dihedral_bounds(dihed * unit.radians)
                 for dihed in self.results.dihedrals[i]
-            )
+            )  # fmt: skip
             dihed_variance = check_angular_variance(
                 self.results.dihedrals[i] * unit.radians,
                 upper_bound=np.pi * unit.radians,
@@ -554,7 +554,7 @@ def _get_lowest_variance_restraint_hostanchor(
     proposed_restraints: list[mda.AtomGroup],
     angle_force_constant: Quantity,
     temperature: Quantity
-) -> list[int] | None:
+) -> list[int] | None:  # fmt: skip
     """
     Evaluate a list of proposed restraints and return the lowest variance
     valid restraint.

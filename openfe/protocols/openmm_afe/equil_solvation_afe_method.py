@@ -498,7 +498,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
             vacuum_output_settings=MultiStateOutputSettings(
                 output_filename="vacuum.nc", checkpoint_storage_filename="vacuum_checkpoint.nc"
             ),
-        )
+        )  # fmt: skip
 
     @staticmethod
     def _validate_endstates(

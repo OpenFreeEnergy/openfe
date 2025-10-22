@@ -1871,19 +1871,23 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         self._assign_partial_charges(settings["charge_settings"], smc_comps_AB)
 
         # 5. Get the OpenMM systems
-        omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = self.get_system(
-            solv_comp,
-            prot_comp,
-            smc_comps_A,
-            settings,
-        )
+        omm_system_A, omm_topology_A, positions_A, modeller_A, comp_resids_A = (
+            self.get_system(
+                solv_comp,
+                prot_comp,
+                smc_comps_A,
+                settings,
+            )
+        )  # fmt: skip
 
-        omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = self.get_system(
-            solv_comp,
-            prot_comp,
-            smc_comps_B,
-            settings,
-        )
+        omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = (
+            self.get_system(
+                solv_comp,
+                prot_comp,
+                smc_comps_B,
+                settings,
+            )
+        )  # fmt: skip
 
         smc_B_unique_keys = smc_comps_B.keys() - smc_comps_A.keys()
         smc_comp_B_unique = {key: smc_comps_B[key] for key in smc_B_unique_keys}
@@ -2228,7 +2232,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 smc_comps_A | smc_off_B,
                 settings,
             )
-        )
+        )  # fmt: skip
+
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
         self.check_assign_velocities_with_virtual_site(
