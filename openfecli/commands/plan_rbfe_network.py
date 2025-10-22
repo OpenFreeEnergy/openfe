@@ -120,45 +120,27 @@ def plan_rbfe_network_main(
 @click.command(
     "plan-rbfe-network",
     short_help=(
-        "Plan a relative binding free energy network, saved as JSON files "
-        "for the quickrun command."
-    )
+        "Plan a relative binding free energy network, saved as JSON files for the quickrun command."
+    ),
 )
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
-@PROTEIN.parameter(
-    multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"]
-)
-@COFACTORS.parameter(
-    multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"]
-)
-@YAML_OPTIONS.parameter(
-    multiple=False, required=False, default=None,
-    help=YAML_OPTIONS.kwargs["help"],
-)
-@OUTPUT_DIR.parameter(
-    help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
-    default="alchemicalNetwork",
-)
-@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
-@NCORES.parameter(
-    help=NCORES.kwargs["help"],
-    default=1,
-)
-@OVERWRITE.parameter(
-    help=OVERWRITE.kwargs["help"],
-    default=OVERWRITE.kwargs["default"],
-    is_flag=True
-)
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
+@PROTEIN.parameter(multiple=False, required=True, default=None, help=PROTEIN.kwargs["help"])
+@COFACTORS.parameter(multiple=True, required=False, default=None, help=COFACTORS.kwargs["help"])
+@YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_OPTIONS.kwargs["help"])  # fmt: skip
+@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")  # fmt: skip
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])  # fmt: skip
+@NCORES.parameter(help=NCORES.kwargs["help"], default=1)
+@OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
 @print_duration
 def plan_rbfe_network(
-        molecules: list[str], protein: str, cofactors: tuple[str],
-        yaml_settings: str,
-        output_dir: str,
-        n_protocol_repeats: int,
-        n_cores: int,
-        overwrite_charges: bool,
+    molecules: list[str],
+    protein: str,
+    cofactors: tuple[str],
+    yaml_settings: str,
+    output_dir: str,
+    n_protocol_repeats: int,
+    n_cores: int,
+    overwrite_charges: bool,
 ):
     """
     Plan a relative binding free energy network, saved as JSON files for use by
@@ -205,10 +187,7 @@ def plan_rbfe_network(
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
-    write(
-        "\t\tSmall Molecules: "
-        + " ".join([str(sm) for sm in small_molecules])
-    )
+    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     protein = PROTEIN.get(protein)
     write("\t\tProtein: " + str(protein))
@@ -242,7 +221,7 @@ def plan_rbfe_network(
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
-    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
     # DO
     write("Planning RBFE-Campaign:")
