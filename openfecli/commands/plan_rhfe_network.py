@@ -188,7 +188,7 @@ def plan_rhfe_network(
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
-    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  #fmt: skip
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
     # DO
     write("Planning RHFE-Campaign:")
