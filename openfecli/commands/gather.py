@@ -211,16 +211,16 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
     try:
         result_id = _get_result_id(result, fpath)
     except (ValueError, IndexError):
-        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True, fg='yellow')
+        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
-    if result['estimate'] is None:
-        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True, fg='yellow')
+    if result["estimate"] is None:
+        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if result['uncertainty'] is None:
-        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True, fg='yellow')
+    if result["uncertainty"] is None:
+        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if all('exception' in u for u in result['unit_results'].values()):
-        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True, fg='yellow')
+    if all("exception" in u for u in result["unit_results"].values()):
+        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
 
     return result_id, result
@@ -338,7 +338,10 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> None:
             data.append((ligA, ligB, DDGhyd, hyd_unc))
         elif DDGbind is None and DDGhyd is None:
             data.append((ligA, ligB, FAIL_STR, FAIL_STR))
-    df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
+    df = pd.DataFrame(
+        data,
+        columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"],
+    )
     return df
 
 
@@ -376,15 +379,17 @@ def _generate_raw(legs: dict, allow_partial=True) -> None:
     )
     return df
 
+
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
 
     for leg in legs.values():
         for run_type, sim_results in leg.items():
             if len(sim_results) < 2:
-                msg='ERROR: Every edge must have at least two simulation repeats'
-                click.secho(msg, err=True, fg='red')
+                msg = "ERROR: Every edge must have at least two simulation repeats"
+                click.secho(msg, err=True, fg="red")
                 sys.exit(1)
+
 
 def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
@@ -437,9 +442,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
             idB = len(nm_to_idx)
             nm_to_idx[ligB] = idB
 
-        g.add_edge(
-            idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc,
-        )
+        g.add_edge(idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc)
 
     if DDGbind_count > 2:
         if not nx.is_weakly_connected(g):
@@ -475,7 +478,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
         expected_ligs.remove(ligA)
 
     for ligA in expected_ligs:
-        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})
+        data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})  # fmt: skip
 
     df = pd.DataFrame(data)
     return df
@@ -545,16 +548,23 @@ def _get_legs_from_result_jsons(
             if result is None:
                 parsed_raw_data = [(None, None)]
             else:
-                parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
-                                    v[0]['outputs']['unit_estimate_error'])
-                                    for v in result["protocol_result"]["data"].values()]
+                parsed_raw_data = [
+                    (
+                        v[0]["outputs"]["unit_estimate"],
+                        v[0]["outputs"]["unit_estimate_error"],
+                    )
+                    for v in result["protocol_result"]["data"].values()
+                ]
             legs[names][simtype].append(parsed_raw_data)
         else:
             if result is None:
                 # we want the dict name/simtype entry to exist for error reporting, even if there's no valid data
                 dGs = []
             else:
-                dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
+                dGs = [
+                    v[0]["outputs"]["unit_estimate"]
+                    for v in result["protocol_result"]["data"].values()
+                ]
             legs[names][simtype].extend(dGs)
 
     return legs

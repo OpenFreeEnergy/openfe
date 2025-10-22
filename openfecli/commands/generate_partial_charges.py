@@ -29,41 +29,24 @@ For example:
 
 @click.command("charge-molecules", short_help="Generate partial charges for a set of molecules.")
 @MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
-@YAML_OPTIONS.parameter(
-    multiple=False,
-    required=False,
-    default=None,
-    help=YAML_HELP,
-)
+@YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_HELP)
 @OUTPUT_FILE_AND_EXT.parameter(
     help="The name of the SDF file the charged ligands should be written to.",
     required=True,
     type=click.Path(exists=False, path_type=pathlib.Path),
 )
-@NCORES.parameter(
-    help=NCORES.kwargs["help"],
-    default=1,
-)
-@OVERWRITE.parameter(
-    help=OVERWRITE.kwargs["help"],
-    default=OVERWRITE.kwargs["default"],
-    is_flag=True
-)
-def charge_molecules(
-        molecules,
-        yaml_settings,
-        output,
-        n_cores,
-        overwrite_charges
-):
+@NCORES.parameter(help=NCORES.kwargs["help"], default=1)
+@OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
+def charge_molecules(molecules, yaml_settings, output, n_cores, overwrite_charges):
     """
     Generate partial charges for the set of input molecules and write them to file.
     """
     from openfecli.utils import write
 
     if output.exists():
-        raise FileExistsError(f"The output file {output} already exists, choose a new file to write the charged"
-                              "ligands to")
+        raise FileExistsError(
+            f"The output file {output} already exists, choose a new file to write the charged ligands to"
+        )
 
     write("SMALL MOLECULE PARTIAL CHARGE GENERATOR")
     write("_________________________________________")
@@ -77,10 +60,7 @@ def charge_molecules(
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
-    write(
-        "\t\tSmall Molecules: "
-        + " ".join([str(sm) for sm in small_molecules])
-    )
+    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     partial_charge = yaml_options.partial_charge
