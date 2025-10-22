@@ -28,6 +28,7 @@ the Mobleylab (https://github.com/MobleyLab/SeparatedTopologies) as well as
 femto (https://github.com/Psivant/femto).
 
 """
+
 from __future__ import annotations
 
 import copy
@@ -158,8 +159,7 @@ def _get_mdtraj_from_openmm(
         positions_in_mdtraj_format,
         mdtraj_topology,
         unitcell_lengths=np.array([lx, ly, lz]),
-        unitcell_angles=np.array(
-            [np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)]),
+        unitcell_angles=np.array([np.rad2deg(alpha), np.rad2deg(beta), np.rad2deg(gamma)]),
     )
 
     return mdtraj_system
@@ -250,7 +250,7 @@ class SepTopComplexMixin:
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BoreschRestraintSettings
         """
-        prot_settings = self._inputs["protocol"].settings # type: ignore
+        prot_settings = self._inputs["protocol"].settings  # type: ignore
 
         settings = {
             "forcefield_settings": prot_settings.forcefield_settings,
@@ -336,7 +336,7 @@ class SepTopSolventMixin:
             * output_settings: MultiStateOutputSettings
             * restraint_settings: BaseRestraintsSettings
         """
-        prot_settings = self._inputs["protocol"].settings # type: ignore
+        prot_settings = self._inputs["protocol"].settings  # type: ignore
 
         settings = {
             "forcefield_settings": prot_settings.forcefield_settings,
@@ -472,9 +472,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         We assume that both list of items are in the right order.
         """
         combined_dG: list[tuple[Quantity, Quantity]] = []
-        for comp, corrA, corrB in zip(
-            complex_dG, standard_state_corrA_dG, standard_state_corrB_dG
-        ):
+        for comp, corrA, corrB in zip(complex_dG, standard_state_corrA_dG, standard_state_corrB_dG):
             # No need to convert unit types, since pint takes care of that
             # except that mypy hates it because pint isn't typed properly...
             # No need to add errors since there's just the one
@@ -629,14 +627,11 @@ class SepTopProtocolResult(gufe.ProtocolResult):
             given thermodynamic cycle leg.
         """
 
-        forward_reverse: dict[
-            str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]
-        ] = {}
+        forward_reverse: dict[str, list[Optional[dict[str, Union[npt.NDArray, Quantity]]]]] = {}
 
         for key in ["complex", "solvent"]:
             forward_reverse[key] = [
-                pus[0].outputs["forward_and_reverse_energies"]
-                for pus in self.data[key].values()
+                pus[0].outputs["forward_and_reverse_energies"] for pus in self.data[key].values()
             ]
 
             if None in forward_reverse[key]:
@@ -710,14 +705,10 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         try:
             for key in ["complex", "solvent"]:
                 repex_stats[key] = [
-                    pus[0].outputs["replica_exchange_statistics"]
-                    for pus in self.data[key].values()
+                    pus[0].outputs["replica_exchange_statistics"] for pus in self.data[key].values()
                 ]
         except KeyError:
-            errmsg = (
-                "Replica exchange statistics were not found, "
-                "did you run a repex calculation?"
-            )
+            errmsg = "Replica exchange statistics were not found, did you run a repex calculation?"
             raise ValueError(errmsg)
 
         return repex_stats
@@ -784,8 +775,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         for key in ["complex", "solvent"]:
             equilibration_lengths[key] = [
-                pus[0].outputs["equilibration_iterations"]
-                for pus in self.data[key].values()
+                pus[0].outputs["equilibration_iterations"] for pus in self.data[key].values()
             ]
 
         return equilibration_lengths
@@ -808,13 +798,14 @@ class SepTopProtocolResult(gufe.ProtocolResult):
 
         for key in ["complex", "solvent"]:
             production_lengths[key] = [
-                pus[0].outputs["production_iterations"]
-                for pus in self.data[key].values()
+                pus[0].outputs["production_iterations"] for pus in self.data[key].values()
             ]
 
         return production_lengths
 
-    def restraint_geometries(self) -> tuple[list[BoreschRestraintGeometry], list[BoreschRestraintGeometry]]:
+    def restraint_geometries(
+        self,
+    ) -> tuple[list[BoreschRestraintGeometry], list[BoreschRestraintGeometry]]:
         """
         Get a list of the restraint geometries for the
         complex simulations. These define the atoms that have
@@ -830,15 +821,11 @@ class SepTopProtocolResult(gufe.ProtocolResult):
           in the system that are involved in the restraint of ligand B.
         """
         geometry_A = [
-            BoreschRestraintGeometry.model_validate(
-                pus[0].outputs["restraint_geometry_A"]
-            )
+            BoreschRestraintGeometry.model_validate(pus[0].outputs["restraint_geometry_A"])
             for pus in self.data["complex_setup"].values()
         ]
         geometry_B = [
-            BoreschRestraintGeometry.model_validate(
-                pus[0].outputs["restraint_geometry_B"]
-            )
+            BoreschRestraintGeometry.model_validate(pus[0].outputs["restraint_geometry_B"])
             for pus in self.data["complex_setup"].values()
         ]
 
@@ -862,9 +849,7 @@ class SepTopProtocolResult(gufe.ProtocolResult):
         for key in ["complex", "solvent"]:
             indices[key] = []
             for pus in self.data[key].values():
-                indices[key].append(
-                    pus[0].outputs["selection_indices"]
-                )
+                indices[key].append(pus[0].outputs["selection_indices"])
 
         return indices
 
@@ -1184,9 +1169,7 @@ class SepTopProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
     @staticmethod
-    def _validate_alchemical_components(
-        alchemical_components: dict[str, list[Component]]
-    ) -> None:
+    def _validate_alchemical_components(alchemical_components: dict[str, list[Component]]) -> None:
         """
         Checks that the ChemicalSystem alchemical components are correct.
 
@@ -1316,9 +1299,7 @@ class SepTopProtocol(gufe.Protocol):
         self,
         stateA: ChemicalSystem,
         stateB: ChemicalSystem,
-        mapping: Optional[
-            Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]
-        ] = None,
+        mapping: Optional[Union[gufe.ComponentMapping, list[gufe.ComponentMapping]]] = None,
         extends: Optional[gufe.ProtocolDAGResult] = None,
     ) -> list[gufe.ProtocolUnit]:
         # TODO: extensions
@@ -1396,13 +1377,9 @@ class SepTopProtocol(gufe.Protocol):
         alchname_B = alchem_comps["stateB"][0].name
 
         solvent_setup = create_setup_units(SepTopSolventSetupUnit, "solvent")
-        solvent_run = create_run_units(
-            SepTopSolventRunUnit, "solvent", setup=solvent_setup
-        )
+        solvent_run = create_run_units(SepTopSolventRunUnit, "solvent", setup=solvent_setup)
         complex_setup = create_setup_units(SepTopComplexSetupUnit, "complex")
-        complex_run = create_run_units(
-            SepTopComplexRunUnit, "complex", setup=complex_setup
-        )
+        complex_run = create_run_units(SepTopComplexRunUnit, "complex", setup=complex_setup)
 
         return solvent_setup + solvent_run + complex_setup + complex_run
 
@@ -1424,16 +1401,12 @@ class SepTopProtocol(gufe.Protocol):
                     if "Run" in pu.name:
                         unsorted_solvent_repeats_run[pu.outputs["repeat_id"]].append(pu)
                     elif "Setup" in pu.name:
-                        unsorted_solvent_repeats_setup[pu.outputs["repeat_id"]].append(
-                            pu
-                        )
+                        unsorted_solvent_repeats_setup[pu.outputs["repeat_id"]].append(pu)
                 else:
                     if "Run" in pu.name:
                         unsorted_complex_repeats_run[pu.outputs["repeat_id"]].append(pu)
                     elif "Setup" in pu.name:
-                        unsorted_complex_repeats_setup[pu.outputs["repeat_id"]].append(
-                            pu
-                        )
+                        unsorted_complex_repeats_setup[pu.outputs["repeat_id"]].append(pu)
 
         repeats: dict[str, dict[str, list[gufe.ProtocolUnitResult]]] = {
             "solvent_setup": {},
@@ -1442,22 +1415,14 @@ class SepTopProtocol(gufe.Protocol):
             "complex": {},
         }
         for k, v in unsorted_solvent_repeats_setup.items():
-            repeats["solvent_setup"][str(k)] = sorted(
-                v, key=lambda x: x.outputs["generation"]
-            )
+            repeats["solvent_setup"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
         for k, v in unsorted_solvent_repeats_run.items():
-            repeats["solvent"][str(k)] = sorted(
-                v, key=lambda x: x.outputs["generation"]
-            )
+            repeats["solvent"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
 
         for k, v in unsorted_complex_repeats_setup.items():
-            repeats["complex_setup"][str(k)] = sorted(
-                v, key=lambda x: x.outputs["generation"]
-            )
+            repeats["complex_setup"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
         for k, v in unsorted_complex_repeats_run.items():
-            repeats["complex"][str(k)] = sorted(
-                v, key=lambda x: x.outputs["generation"]
-            )
+            repeats["complex"][str(k)] = sorted(v, key=lambda x: x.outputs["generation"])
         return repeats
 
 
@@ -1586,9 +1551,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         """
         mdtraj_complex_A = _get_mdtraj_from_openmm(omm_topology_A, positions_A)
         mdtraj_complex_B = _get_mdtraj_from_openmm(omm_topology_B, positions_B)
-        alignment_indices = SepTopComplexSetupUnit._get_selection_atom_indices(
-            mdtraj_complex_A
-        )
+        alignment_indices = SepTopComplexSetupUnit._get_selection_atom_indices(mdtraj_complex_A)
         imaged_complex_B = mdtraj_complex_B.image_molecules()
         imaged_complex_B.superpose(
             mdtraj_complex_A,
@@ -1773,8 +1736,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # In some cases (debugging / dry runs) this won't be available
         # so we'll default to using input positions.
         out_traj = (
-            self.shared_basepath
-            / settings["equil_output_settings"].production_trajectory_filename
+            self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename
         )
         u_A = self._get_mda_universe(
             topology_A,
@@ -1811,15 +1773,12 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             settings["restraint_settings"],
         )
         # We have to update the indices for ligand B to match the AB complex
-        new_boresch_B_indices = [
-            ligand_B_inxs_B.index(i) for i in rest_geom_B.guest_atoms
-        ]
+        new_boresch_B_indices = [ligand_B_inxs_B.index(i) for i in rest_geom_B.guest_atoms]
         rest_geom_B.guest_atoms = [ligand_B_inxs[i] for i in new_boresch_B_indices]
 
         if self.verbose:
             self.logger.info(
-                f"restraint geometry is: ligand A: {rest_geom_A}"
-                f"and ligand B: {rest_geom_B}."
+                f"restraint geometry is: ligand A: {rest_geom_A}and ligand B: {rest_geom_B}."
             )
 
         # We need a temporary thermodynamic state to add the restraint
@@ -1852,7 +1811,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
         # Multiply the correction for ligand B by -1 as for this ligands,
         # Boresch restraint has to be turned on in the analytical corr.
-        correction_B = -correction_B # type: ignore[operator]
+        correction_B = -correction_B  # type: ignore[operator]
 
         # Get the system
         # Note:  you have to remove the thermostat, otherwise you end up
@@ -1903,9 +1862,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(
-            alchem_comps, smc_comps
-        )
+        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         # 3. Get settings
         settings = self._handle_settings()
@@ -1921,7 +1878,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 smc_comps_A,
                 settings,
             )
-        )
+        )  # fmt: skip
 
         omm_system_B, omm_topology_B, positions_B, modeller_B, comp_resids_B = (
             self.get_system(
@@ -1930,7 +1887,7 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
                 smc_comps_B,
                 settings,
             )
-        )
+        )  # fmt: skip
 
         smc_B_unique_keys = smc_comps_B.keys() - smc_comps_A.keys()
         smc_comp_B_unique = {key: smc_comps_B[key] for key in smc_B_unique_keys}
@@ -1943,15 +1900,15 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
-        self.check_assign_velocities_with_virtual_site(omm_system_AB, settings["integrator_settings"])
+        self.check_assign_velocities_with_virtual_site(
+            omm_system_AB, settings["integrator_settings"]
+        )
 
         # Get the comp_resids of the AB system
         resids_A = list(itertools.chain(*comp_resids_A.values()))
         resids_AB = [r.index for r in modeller_AB.topology.residues()]
         diff_resids = list(set(resids_AB) - set(resids_A))
-        comp_resids_AB = comp_resids_A | {
-            alchem_comps["stateB"][0]: np.array(diff_resids)
-        }
+        comp_resids_AB = comp_resids_A | {alchem_comps["stateB"][0]: np.array(diff_resids)}
 
         # 6. Pre-equilbrate System (for restraint selection)
         self.logger.info("Pre-equilibrating the systems")
@@ -2002,9 +1959,9 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
 
         # Update positions from AB system
         positions_AB[all_atom_ids_A[0] : all_atom_ids_A[-1] + 1, :] = equil_positions_A
-        positions_AB[atom_indices_AB_B[0] : atom_indices_AB_B[-1] + 1, :] = (
-            updated_positions_B[atom_indices_B[0] : atom_indices_B[-1] + 1]
-        )
+        positions_AB[atom_indices_AB_B[0] : atom_indices_AB_B[-1] + 1, :] = updated_positions_B[
+            atom_indices_B[0] : atom_indices_B[-1] + 1
+        ]
 
         # 9. Create the alchemical system
         self.logger.info("Creating the alchemical system and applying restraints")
@@ -2016,21 +1973,19 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
 
         # 10. Apply Restraints
-        corr_A, corr_B, system, restraint_geom_A, restraint_geom_B = (
-            self._add_restraints(
-                alchemical_system,
-                omm_topology_A,
-                omm_topology_B,
-                equil_positions_A,
-                equil_positions_B,
-                alchem_comps["stateA"][0],
-                alchem_comps["stateB"][0],
-                atom_indices_AB_A,
-                atom_indices_AB_B,
-                atom_indices_B,
-                comp_atomids_AB[prot_comp],
-                settings,
-            )
+        corr_A, corr_B, system, restraint_geom_A, restraint_geom_B = self._add_restraints(
+            alchemical_system,
+            omm_topology_A,
+            omm_topology_B,
+            equil_positions_A,
+            equil_positions_B,
+            alchem_comps["stateA"][0],
+            alchem_comps["stateB"][0],
+            atom_indices_AB_A,
+            atom_indices_AB_B,
+            atom_indices_B,
+            comp_atomids_AB[prot_comp],
+            settings,
         )
 
         equil_positions_AB, box_AB = _pre_equilibrate(
@@ -2120,12 +2075,8 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         pos_ligandA = rdmol_A.GetConformers()[0].GetPositions()
         pos_ligandB = rdmol_B.GetConformers()[0].GetPositions()
 
-        ligand_1_radius = np.linalg.norm(
-            pos_ligandA - pos_ligandA.mean(axis=0), axis=1
-        ).max()
-        ligand_2_radius = np.linalg.norm(
-            pos_ligandB - pos_ligandB.mean(axis=0), axis=1
-        ).max()
+        ligand_1_radius = np.linalg.norm(pos_ligandA - pos_ligandA.mean(axis=0), axis=1).max()
+        ligand_2_radius = np.linalg.norm(pos_ligandB - pos_ligandB.mean(axis=0), axis=1).max()
         ligand_distance = (ligand_1_radius + ligand_2_radius) * 1.5
 
         ligand_offset = pos_ligandA.mean(0) - pos_ligandB.mean(0)
@@ -2183,7 +2134,6 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         """
 
         if isinstance(settings["restraint_settings"], DistanceRestraintSettings):
-
             rest_geom = geometry.harmonic.get_molecule_centers_restraint(
                 molA_rdmol=ligand_1,
                 molB_rdmol=ligand_2,
@@ -2199,8 +2149,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
             self.logger.info(f"restraint geometry is: {rest_geom}")
 
         distance = np.linalg.norm(
-            positions_AB[rest_geom.guest_atoms[0]]
-            - positions_AB[rest_geom.host_atoms[0]]
+            positions_AB[rest_geom.guest_atoms[0]] - positions_AB[rest_geom.host_atoms[0]]
         )
 
         k_distance = to_openmm(settings["restraint_settings"].spring_constant)
@@ -2259,9 +2208,7 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
         # 1. Get components
         self.logger.info("Creating and setting up the OpenMM systems")
         alchem_comps, solv_comp, prot_comp, smc_comps = self._get_components()
-        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(
-            alchem_comps, smc_comps
-        )
+        smc_comps_A, smc_comps_B, smc_comps_AB = self.get_smc_comps(alchem_comps, smc_comps)
 
         # 2. Get settings
         settings = self._handle_settings()
@@ -2285,10 +2232,13 @@ class SepTopSolventSetupUnit(SepTopSolventMixin, BaseSepTopSetupUnit):
                 smc_comps_A | smc_off_B,
                 settings,
             )
-        )
+        )  # fmt: skip
+
         # Virtual sites sanity check - ensure we restart velocities when
         # there are virtual sites in the system
-        self.check_assign_velocities_with_virtual_site(omm_system_AB, settings["integrator_settings"])
+        self.check_assign_velocities_with_virtual_site(
+            omm_system_AB, settings["integrator_settings"]
+        )
 
         # 6. Get atom indices for ligand A and ligand B and the solvent in the
         # system AB
@@ -2364,7 +2314,6 @@ class SepTopSolventRunUnit(SepTopSolventMixin, BaseSepTopRunUnit):
     def _get_lambda_schedule(
         self, settings: dict[str, SettingsBaseModel]
     ) -> dict[str, list[float]]:
-
         lambdas = dict()
 
         lambda_elec_A = settings["lambda_settings"].lambda_elec_A

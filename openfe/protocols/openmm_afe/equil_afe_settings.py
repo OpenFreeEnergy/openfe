@@ -15,6 +15,7 @@ TODO
 * Add support for restraints
 
 """
+
 from gufe.settings import (
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
@@ -109,15 +110,13 @@ class LambdaSettings(SettingsBaseModel):
         for window in v:
             if not 0 <= window <= 1:
                 errmsg = (
-                    "Lambda windows must be between 0 and 1, got a"
-                    f" window with value {window}."
+                    f"Lambda windows must be between 0 and 1, got a window with value {window}."
                 )
                 raise ValueError(errmsg)
         return v
 
     @field_validator("lambda_elec", "lambda_vdw", "lambda_restraints")
     def must_be_monotonic(cls, v):
-
         difference = np.diff(v)
         monotonic = np.all(difference >= 0)
 
@@ -171,7 +170,7 @@ class ABFEPreEquilOutputSettings(MDOutputSettings):
         # Would be better if this was just changed to a Literal
         # but changing types in child classes in pydantic is messy
         if v != "all":
-            msg = "output_indices must be all for ABFE " "pre-equilibration simulations"
+            msg = "output_indices must be all for ABFE pre-equilibration simulations"
             raise ValueError(msg)
         return v
 

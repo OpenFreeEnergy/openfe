@@ -21,7 +21,7 @@ from git import Repo
 import nbsphinx
 import nbformat
 
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath("../"))
 
 
 os.environ["SPHINX"] = "True"
@@ -31,7 +31,7 @@ os.environ["SPHINX"] = "True"
 project = "OpenFE"
 copyright = "2022, The OpenFE Development Team"
 author = "The OpenFE Development Team"
- # don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
+# don't include patch version (https://github.com/OpenFreeEnergy/openfe/issues/1261)
 version = f"{parse(version('openfe')).major}.{parse(version('openfe')).minor}"
 
 # -- General configuration ---------------------------------------------------
@@ -55,7 +55,7 @@ extensions = [
     "nbsphinx_link",
     "sphinx.ext.mathjax",
 ]
-suppress_warnings = ["config.cache"] # https://github.com/sphinx-doc/sphinx/issues/12300
+suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/issues/12300
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
@@ -147,11 +147,11 @@ html_theme_options = {
     "navigation_with_keys": False,
 }
 html_logo = "_static/OFE-color-icon.svg"
-html_favicon = '_static/OFE-color-icon.svg'
+html_favicon = "_static/OFE-color-icon.svg"
 # temporary fix, see https://github.com/pydata/pydata-sphinx-theme/issues/1662
 html_sidebars = {
     "installation": [],
-    "CHANGELOG":[],
+    "CHANGELOG": [],
 }
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -183,11 +183,11 @@ example_notebooks_path = Path("ExampleNotebooks")
 try:
     if example_notebooks_path.exists():
         repo = Repo(example_notebooks_path)
-        repo.remote('origin').pull()
+        repo.remote("origin").pull()
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch='oct-2025',
+            branch="oct-2025",
             to_path=example_notebooks_path,
         )
 except Exception as e:
@@ -195,7 +195,7 @@ except Exception as e:
 
     filename = e.__traceback__.tb_frame.f_code.co_filename
     lineno = e.__traceback__.tb_lineno
-    getLogger('sphinx.ext.openfe_git').warning(
+    getLogger("sphinx.ext.openfe_git").warning(
         f"Getting ExampleNotebooks failed in {filename} line {lineno}: {e}"
     )
 

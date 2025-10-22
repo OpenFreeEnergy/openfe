@@ -13,18 +13,15 @@ Generates
 - MDProtocol_json_results.gz
   - used in md_json fixture
 """
+
 import gzip
 import json
 import logging
 import pathlib
 from rdkit import Chem
 import tempfile
-from openff.toolkit import (
-    Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
-)
-from openff.toolkit.utils.toolkit_registry import (
-    toolkit_registry_manager, ToolkitRegistry
-)
+from openff.toolkit import Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
+from openff.toolkit.utils.toolkit_registry import toolkit_registry_manager, ToolkitRegistry
 from openff.units import unit
 from kartograf.atom_aligner import align_mol_shape
 from kartograf import KartografAtomMapper
@@ -46,20 +43,18 @@ from openfecli.utils import configure_logger
 sys.stdout.reconfigure(line_buffering=True)
 
 stdout_handler = logging.StreamHandler(sys.stdout)
-configure_logger('gufekey', handler=stdout_handler)
-configure_logger('gufe', handler=stdout_handler)
-configure_logger('openfe', handler=stdout_handler)
-configure_logger('openmmtools.multistate.multistatereporter', level=logging.DEBUG, handler=stdout_handler)
-configure_logger('openmmtools.multistate.multistatesampler', level=logging.DEBUG, handler=stdout_handler)
+configure_logger("gufekey", handler=stdout_handler)
+configure_logger("gufe", handler=stdout_handler)
+configure_logger("openfe", handler=stdout_handler)
+configure_logger("openmmtools.multistate.multistatereporter", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
+configure_logger("openmmtools.multistate.multistatesampler", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
 
 logger = logging.getLogger(__name__)
 
 LIGA = "[H]C([H])([H])C([H])([H])C(=O)C([H])([H])C([H])([H])[H]"
 LIGB = "[H]C([H])([H])C(=O)C([H])([H])C([H])([H])C([H])([H])[H]"
 
-amber_rdkit = ToolkitRegistry(
-    [RDKitToolkitWrapper(), AmberToolsToolkitWrapper()]
-)
+amber_rdkit = ToolkitRegistry([RDKitToolkitWrapper(), AmberToolsToolkitWrapper()])
 
 
 def get_molecule(smi, name):
@@ -71,12 +66,14 @@ def get_molecule(smi, name):
 
 
 def get_hif2a_inputs():
-    with gzip.open('inputs/hif2a_protein.pdb.gz', 'r') as f:
-        protcomp = openfe.ProteinComponent.from_pdb_file(f, name='hif2a_prot')
+    with gzip.open("inputs/hif2a_protein.pdb.gz", "r") as f:
+        protcomp = openfe.ProteinComponent.from_pdb_file(f, name="hif2a_prot")
 
-    with gzip.open('inputs/hif2a_ligands.sdf.gz', 'r') as f:
-        smcs = [openfe.SmallMoleculeComponent(mol) for mol in
-                list(Chem.ForwardSDMolSupplier(f, removeHs=False))]
+    with gzip.open("inputs/hif2a_ligands.sdf.gz", "r") as f:
+        smcs = [
+            openfe.SmallMoleculeComponent(mol)
+            for mol in list(Chem.ForwardSDMolSupplier(f, removeHs=False))
+        ]
 
     return smcs, protcomp
 
@@ -86,7 +83,7 @@ def execute_and_serialize(
     protocol,
     simname,
     new_serialization: bool = False
-):
+):  # fmt: skip
     """
     Execute & serialize a DAG
 
@@ -127,9 +124,9 @@ def execute_and_serialize(
                 unit.key: unit.to_keyed_dict()
                 for unit in dagres.protocol_unit_results
             }
-        }
+        }  # fmt: skip
 
-        with gzip.open(f"{simname}_json_results.gz", 'wt') as zipfile:
+        with gzip.open(f"{simname}_json_results.gz", "wt") as zipfile:
             json.dump(outdict, zipfile, cls=JSON_HANDLER.encoder)
 
 
@@ -165,13 +162,13 @@ def generate_abfe_settings():
     settings.complex_simulation_settings.equilibration_length = 100 * unit.picosecond
     settings.complex_simulation_settings.production_length = 500 * unit.picosecond
     settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
-    settings.solvent_solvation_settings.box_shape = 'dodecahedron'
-    settings.complex_solvation_settings.box_shape = 'dodecahedron'
+    settings.solvent_solvation_settings.box_shape = "dodecahedron"
+    settings.complex_solvation_settings.box_shape = "dodecahedron"
     settings.solvent_solvation_settings.solvent_padding = 1.5 * unit.nanometer
     settings.complex_solvation_settings.solvent_padding = 1.0 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.8 * unit.nanometer
     settings.protocol_repeats = 3
-    settings.engine_settings.compute_platform = 'CUDA'
+    settings.engine_settings.compute_platform = "CUDA"
 
     return settings
 
@@ -210,29 +207,25 @@ def generate_ahfe_settings():
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
     settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
                                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                            1.0]
+                                            1.0]  # fmt: skip
     settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
                                            0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
-                                           1.0]
+                                           1.0]  # fmt: skip
     settings.protocol_repeats = 3
     settings.solvent_simulation_settings.n_replicas = 14
     settings.vacuum_simulation_settings.n_replicas = 14
-    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
-    settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole
-    settings.vacuum_engine_settings.compute_platform = 'CPU'
-    settings.solvent_engine_settings.compute_platform = 'CUDA'
+    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole  # fmt: skip
+    settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole  # fmt: skip
+    settings.vacuum_engine_settings.compute_platform = "CPU"
+    settings.solvent_engine_settings.compute_platform = "CUDA"
 
     return settings
 
 
 def generate_ahfe_json(smc):
     protocol = AbsoluteSolvationProtocol(settings=generate_ahfe_settings())
-    sysA = openfe.ChemicalSystem(
-        {"ligand": smc, "solvent": openfe.SolventComponent()}
-    )
-    sysB = openfe.ChemicalSystem(
-        {"solvent": openfe.SolventComponent()}
-    )
+    sysA = openfe.ChemicalSystem({"ligand": smc, "solvent": openfe.SolventComponent()})
+    sysB = openfe.ChemicalSystem({"solvent": openfe.SolventComponent()})
 
     dag = protocol.create(stateA=sysA, stateB=sysB, mapping=None)
 
@@ -255,12 +248,10 @@ def generate_rfe_json(smcA, smcB):
     mapper = KartografAtomMapper(atom_map_hydrogens=True)
     mapping = next(mapper.suggest_mappings(smcA, a_smcB))
 
-    systemA = openfe.ChemicalSystem({'ligand': smcA})
-    systemB = openfe.ChemicalSystem({'ligand': a_smcB})
+    systemA = openfe.ChemicalSystem({"ligand": smcA})
+    systemB = openfe.ChemicalSystem({"ligand": a_smcB})
 
-    dag = protocol.create(
-        stateA=systemA, stateB=systemB, mapping=mapping
-    )
+    dag = protocol.create(stateA=systemA, stateB=systemB, mapping=mapping)
 
     execute_and_serialize(dag, protocol, "RHFEProtocol")
 
@@ -279,13 +270,13 @@ def generate_septop_settings():
     settings.complex_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.complex_simulation_settings.production_length = 50 * unit.picosecond
     settings.complex_simulation_settings.time_per_iteration = 2.5 * unit.ps
-    settings.solvent_solvation_settings.box_shape = 'dodecahedron'
-    settings.complex_solvation_settings.box_shape = 'dodecahedron'
+    settings.solvent_solvation_settings.box_shape = "dodecahedron"
+    settings.complex_solvation_settings.box_shape = "dodecahedron"
     settings.solvent_solvation_settings.solvent_padding = 1.2 * unit.nanometer
     settings.complex_solvation_settings.solvent_padding = 1.0 * unit.nanometer
     settings.forcefield_settings.nonbonded_cutoff = 0.9 * unit.nanometer
     settings.protocol_repeats = 1
-    settings.engine_settings.compute_platform = 'CUDA'
+    settings.engine_settings.compute_platform = "CUDA"
 
     return settings
 

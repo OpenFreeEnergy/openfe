@@ -131,18 +131,14 @@ class SepTopParameterState(GlobalParameterState):
         value 1."""
 
         def __init__(self, parameter_name):
-            super().__init__(
-                parameter_name, standard_value=1.0, validator=self.lambda_validator
-            )
+            super().__init__(parameter_name, standard_value=1.0, validator=self.lambda_validator)
 
         @staticmethod
         def lambda_validator(self, instance, parameter_value):
             if parameter_value is None:
                 return parameter_value
             if not (0.0 <= parameter_value <= 1.0):
-                raise ValueError(
-                    "{} must be between 0 and 1.".format(self.parameter_name)
-                )
+                raise ValueError("{} must be between 0 and 1.".format(self.parameter_name))
             return float(parameter_value)
 
     # Lambda parameters for ligand A

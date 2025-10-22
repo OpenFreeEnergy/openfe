@@ -2,6 +2,9 @@
 # License: MIT
 # OpenFE note: eventually we aim to move this to openmmtools where possible
 
+# turn off formatting since this is mostly vendored code
+# fmt: off
+
 import numpy as np
 import warnings
 import copy
