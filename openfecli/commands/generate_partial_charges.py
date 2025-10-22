@@ -26,21 +26,19 @@ For example:
 
 """
 
-@click.command(
-    "charge-molecules",
-    short_help="Generate partial charges for a set of molecules."
-)
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
+
+@click.command("charge-molecules", short_help="Generate partial charges for a set of molecules.")
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
 @YAML_OPTIONS.parameter(
-    multiple=False, required=False, default=None,
+    multiple=False,
+    required=False,
+    default=None,
     help=YAML_HELP,
 )
 @OUTPUT_FILE_AND_EXT.parameter(
     help="The name of the SDF file the charged ligands should be written to.",
     required=True,
-    type=click.Path(exists=False, path_type=pathlib.Path)
+    type=click.Path(exists=False, path_type=pathlib.Path),
 )
 @NCORES.parameter(
     help=NCORES.kwargs["help"],
@@ -100,7 +98,7 @@ def charge_molecules(
         toolkit_backend=partial_charge.off_toolkit_backend,
         generate_n_conformers=partial_charge.number_of_conformers,
         nagl_model=partial_charge.nagl_model,
-        processors=n_cores
+        processors=n_cores,
     )
 
     write("\tDone")
@@ -115,6 +113,4 @@ def charge_molecules(
             output.write(mol.to_sdf())
 
 
-PLUGIN = OFECommandPlugin(
-    command=charge_molecules, section="Miscellaneous", requires_ofe=(0, 3)
-)
+PLUGIN = OFECommandPlugin(command=charge_molecules, section="Miscellaneous", requires_ofe=(0, 3))

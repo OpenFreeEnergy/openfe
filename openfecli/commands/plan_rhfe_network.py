@@ -64,7 +64,7 @@ def plan_rhfe_network_main(
         toolkit_backend=partial_charge_settings.off_toolkit_backend,
         generate_n_conformers=partial_charge_settings.number_of_conformers,
         nagl_model=partial_charge_settings.nagl_model,
-        processors=processors
+        processors=processors,
     )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
@@ -87,9 +87,7 @@ def plan_rhfe_network_main(
         "for the quickrun command."
     ),
 )
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
 @YAML_OPTIONS.parameter(
     multiple=False, required=False, default=None,
     help=YAML_OPTIONS.kwargs["help"],

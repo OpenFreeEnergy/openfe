@@ -5,8 +5,16 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
+    MOL_DIR,
+    PROTEIN,
+    OUTPUT_DIR,
+    COFACTORS,
+    YAML_OPTIONS,
+    NCORES,
+    OVERWRITE,
+    N_PROTOCOL_REPEATS,
 )
+
 
 def plan_rbfe_network_main(
     mapper,
@@ -60,7 +68,9 @@ def plan_rbfe_network_main(
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
     )
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
+        RelativeHybridTopologyProtocol,
+    )
     from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     protocol_settings = RelativeHybridTopologyProtocol.default_settings()
@@ -76,7 +86,7 @@ def plan_rbfe_network_main(
         toolkit_backend=partial_charge_settings.off_toolkit_backend,
         generate_n_conformers=partial_charge_settings.number_of_conformers,
         nagl_model=partial_charge_settings.nagl_model,
-        processors=processors
+        processors=processors,
     )
 
     if cofactors:
@@ -89,7 +99,7 @@ def plan_rbfe_network_main(
             toolkit_backend=partial_charge_settings.off_toolkit_backend,
             generate_n_conformers=partial_charge_settings.number_of_conformers,
             nagl_model=partial_charge_settings.nagl_model,
-            processors=processors
+            processors=processors,
         )
 
     network_planner = RBFEAlchemicalNetworkPlanner(
@@ -99,7 +109,9 @@ def plan_rbfe_network_main(
         protocol=protocol,
     )
     alchemical_network = network_planner(
-        ligands=charged_small_molecules, solvent=solvent, protein=protein,
+        ligands=charged_small_molecules,
+        solvent=solvent,
+        protein=protein,
         cofactors=cofactors,
     )
     return alchemical_network, network_planner._ligand_network
