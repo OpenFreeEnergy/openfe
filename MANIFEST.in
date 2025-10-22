@@ -1,4 +1,6 @@
 recursive-include openfe/tests/data/ *.sdf
+recursive-include openfe/tests/data/ *.bz2
+recursive-include openfe/tests/data/ *.csv
 recursive-include openfe/tests/data/ *.pdb
 recursive-include openfe/tests/data/ *.mol2
 recursive-include openfe/tests/data/ *.xml
