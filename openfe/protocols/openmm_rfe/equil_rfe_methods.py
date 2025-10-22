@@ -233,7 +233,10 @@ def _validate_alchemical_components(
         raise ValueError(errmsg)
 
     # Check that all alchemical components are mapped & small molecules
-    mapped = {"stateA": [m.componentA for m in mapping], "stateB": [m.componentB for m in mapping]}
+    mapped = {
+        "stateA": [m.componentA for m in mapping],
+        "stateB": [m.componentB for m in mapping],
+    }
 
     for idx in ["stateA", "stateB"]:
         if len(alchemical_components[idx]) != len(mapped[idx]):

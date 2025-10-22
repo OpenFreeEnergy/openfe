@@ -496,7 +496,8 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
                 production_length=2.0 * unit.nanosecond,
             ),
             vacuum_output_settings=MultiStateOutputSettings(
-                output_filename="vacuum.nc", checkpoint_storage_filename="vacuum_checkpoint.nc"
+                output_filename="vacuum.nc",
+                checkpoint_storage_filename="vacuum_checkpoint.nc",
             ),
         )  # fmt: skip
 

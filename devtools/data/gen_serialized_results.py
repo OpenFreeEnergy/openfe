@@ -46,12 +46,8 @@ stdout_handler = logging.StreamHandler(sys.stdout)
 configure_logger("gufekey", handler=stdout_handler)
 configure_logger("gufe", handler=stdout_handler)
 configure_logger("openfe", handler=stdout_handler)
-configure_logger(
-    "openmmtools.multistate.multistatereporter", level=logging.DEBUG, handler=stdout_handler
-)
-configure_logger(
-    "openmmtools.multistate.multistatesampler", level=logging.DEBUG, handler=stdout_handler
-)
+configure_logger("openmmtools.multistate.multistatereporter", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
+configure_logger("openmmtools.multistate.multistatesampler", level=logging.DEBUG, handler=stdout_handler)  # fmt: skip
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +78,12 @@ def get_hif2a_inputs():
     return smcs, protcomp
 
 
-def execute_and_serialize(dag, protocol, simname, new_serialization: bool = False):
+def execute_and_serialize(
+    dag,
+    protocol,
+    simname,
+    new_serialization: bool = False
+):  # fmt: skip
     """
     Execute & serialize a DAG
 
@@ -120,9 +121,10 @@ def execute_and_serialize(dag, protocol, simname, new_serialization: bool = Fals
             "uncertainty": protres.get_uncertainty(),
             "protocol_result": protres.to_dict(),
             "unit_results": {
-                unit.key: unit.to_keyed_dict() for unit in dagres.protocol_unit_results
-            },
-        }
+                unit.key: unit.to_keyed_dict()
+                for unit in dagres.protocol_unit_results
+            }
+        }  # fmt: skip
 
         with gzip.open(f"{simname}_json_results.gz", "wt") as zipfile:
             json.dump(outdict, zipfile, cls=JSON_HANDLER.encoder)
@@ -203,47 +205,17 @@ def generate_ahfe_settings():
     settings.vacuum_equil_simulation_settings.production_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.equilibration_length = 10 * unit.picosecond
     settings.vacuum_simulation_settings.production_length = 1000 * unit.picosecond
-    settings.lambda_settings.lambda_elec = [
-        0.0,
-        0.25,
-        0.5,
-        0.75,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-    ]
-    settings.lambda_settings.lambda_vdw = [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.12,
-        0.24,
-        0.36,
-        0.48,
-        0.6,
-        0.7,
-        0.77,
-        0.85,
-        1.0,
-    ]
+    settings.lambda_settings.lambda_elec = [0.0, 0.25, 0.5, 0.75, 1.0, 1.0,
+                                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                                            1.0]  # fmt: skip
+    settings.lambda_settings.lambda_vdw = [0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.24,
+                                           0.36, 0.48, 0.6, 0.7, 0.77, 0.85,
+                                           1.0]  # fmt: skip
     settings.protocol_repeats = 3
     settings.solvent_simulation_settings.n_replicas = 14
     settings.vacuum_simulation_settings.n_replicas = 14
-    settings.solvent_simulation_settings.early_termination_target_error = (
-        0.12 * unit.kilocalorie_per_mole
-    )
-    settings.vacuum_simulation_settings.early_termination_target_error = (
-        0.12 * unit.kilocalorie_per_mole
-    )
+    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole  # fmt: skip
+    settings.vacuum_simulation_settings.early_termination_target_error = 0.12 * unit.kilocalorie_per_mole  # fmt: skip
     settings.vacuum_engine_settings.compute_platform = "CPU"
     settings.solvent_engine_settings.compute_platform = "CUDA"
 

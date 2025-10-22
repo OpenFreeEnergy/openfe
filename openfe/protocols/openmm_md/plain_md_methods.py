@@ -271,7 +271,11 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         this is done on class creation.
         """
         super().__init__(
-            name=name, protocol=protocol, stateA=stateA, repeat_id=repeat_id, generation=generation
+            name=name,
+            protocol=protocol,
+            stateA=stateA,
+            repeat_id=repeat_id,
+            generation=generation,
         )
 
     @staticmethod

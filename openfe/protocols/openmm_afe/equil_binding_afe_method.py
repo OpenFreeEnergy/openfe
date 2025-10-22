@@ -222,7 +222,8 @@ class AbsoluteBindingProtocolResult(gufe.ProtocolResult):
         individual_estimates = self.get_individual_estimates()
         complex_dG = _get_average(
             self._add_complex_standard_state_corr(
-                individual_estimates["complex"], individual_estimates["standard_state_correction"]
+                individual_estimates["complex"],
+                individual_estimates["standard_state_correction"],
             )
         )
         solv_dG = _get_average(individual_estimates["solvent"])
