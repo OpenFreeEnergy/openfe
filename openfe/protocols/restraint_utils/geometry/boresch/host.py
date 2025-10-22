@@ -7,6 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 import warnings
 from typing import Optional
 
@@ -162,7 +163,7 @@ def find_host_atom_candidates(
         if len(filtered_host_idxs) < 20:
             wmsg = (
                 "Restraint generation: protein chain filter found too few "
-               f"host atoms ({len(filtered_host_idxs)} found). Will attempt to use all host atoms in "
+                f"host atoms ({len(filtered_host_idxs)} found). Will attempt to use all host atoms in "
                 f"selection: {host_selection}."
             )
             warnings.warn(wmsg)
@@ -209,6 +210,7 @@ class EvaluateBoreschAtoms(AnalysisBase):
     temperature : openff.units.Quanity
       The system temperature in units compatible with Kelvin.
     """
+
     def __init__(
         self,
         restraints: list[mda.AtomGroup],
@@ -258,10 +260,10 @@ class EvaluateBoreschAtoms(AnalysisBase):
 
             # angles
             for i in range(1, 3):
-                self.results.angles[ridx, i-1, self._frame_index] = calc_angles(
+                self.results.angles[ridx, i - 1, self._frame_index] = calc_angles(
                     restraint.atoms[i].position,
-                    restraint.atoms[i+1].position,
-                    restraint.atoms[i+2].position,
+                    restraint.atoms[i + 1].position,
+                    restraint.atoms[i + 2].position,
                     box=restraint.dimensions,
                 )
 
@@ -269,9 +271,9 @@ class EvaluateBoreschAtoms(AnalysisBase):
             for i in range(3):
                 self.results.dihedrals[ridx, i, self._frame_index] = calc_dihedrals(
                     restraint.atoms[i].position,
-                    restraint.atoms[i+1].position,
-                    restraint.atoms[i+2].position,
-                    restraint.atoms[i+3].position,
+                    restraint.atoms[i + 1].position,
+                    restraint.atoms[i + 2].position,
+                    restraint.atoms[i + 3].position,
                     box=restraint.dimensions,
                 )
 
@@ -586,19 +588,23 @@ def _get_lowest_variance_restraint_hostanchor(
 
     valid_indices = []
     valid_variances = []
-    for ridx in range(len(proposed_restraints)):     
+    for ridx in range(len(proposed_restraints)):
         if restraints_eval.results.valid[ridx]:
             valid_indices.append(ridx)
 
-            dih_variance = sum([
-                circvar(diheds, high=np.pi, low=-np.pi)
-                for diheds in restraints_eval.results.dihedrals[ridx]
-            ])
+            dih_variance = sum(
+                [
+                    circvar(diheds, high=np.pi, low=-np.pi)
+                    for diheds in restraints_eval.results.dihedrals[ridx]
+                ]
+            )
 
-            ang_variance = sum([
-                circvar(angles, high=np.pi, low=0)
-                for angles in restraints_eval.results.angles[ridx]
-            ])
+            ang_variance = sum(
+                [
+                    circvar(angles, high=np.pi, low=0)
+                    for angles in restraints_eval.results.angles[ridx]
+                ]
+            )
 
             bond_variance = np.var(restraints_eval.results.bonds[ridx])
 
@@ -641,9 +647,9 @@ def find_host_anchor_bonded(
     Optional[list[int]]
       A list of indices for a selected combination of H0, H1, and H2.
     """
-    if not hasattr(guest_atoms, 'angles'):
+    if not hasattr(guest_atoms, "angles"):
         warnings.warn("no angles found - will attempt to guess")
-        guest_atoms.universe.guess_TopologyAttrs(context='default', to_guess=['angles'])
+        guest_atoms.universe.guess_TopologyAttrs(context="default", to_guess=["angles"])
 
     # Evaluate the host_atom_pool for suitability as H0 atoms
     h0_eval = EvaluateHostAtoms1(
@@ -671,9 +677,7 @@ def find_host_anchor_bonded(
                 else:
                     continue
 
-                proposed_restraints.append(
-                    host_atom_pool.universe.atoms[indices] + guest_atoms
-                )
+                proposed_restraints.append(host_atom_pool.universe.atoms[indices] + guest_atoms)
 
     # If there are no proposed restraints, return with nothing
     if len(proposed_restraints) == 0:
@@ -760,12 +764,8 @@ def find_host_anchor_multi(
                     if any(h2_eval.results.valid):
                         # Get the sum of the average distances (dsum_avgs)
                         # for all the host_atom_pool atoms
-                        distance1_avgs = np.array(
-                            [d.mean() for d in h2_eval.results.distances1]
-                        )
-                        distance2_avgs = np.array(
-                            [d.mean() for d in h2_eval.results.distances2]
-                        )
+                        distance1_avgs = np.array([d.mean() for d in h2_eval.results.distances1])
+                        distance2_avgs = np.array([d.mean() for d in h2_eval.results.distances2])
                         dsum_avgs = distance1_avgs + distance2_avgs
 
                         # Now filter by validity as H2 atom

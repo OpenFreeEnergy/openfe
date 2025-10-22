@@ -320,7 +320,7 @@ class OpenMMEngineSettings(SettingsBaseModel):
     * In the future make precision and deterministic forces user defined too.
     """
 
-    compute_platform: Optional[str] = 'cuda'
+    compute_platform: Optional[str] = "cuda"
     """
     OpenMM compute platform to perform MD integration with. If ``None``, will
     choose fastest available platform.
@@ -341,12 +341,11 @@ class OpenMMEngineSettings(SettingsBaseModel):
     Default ``None``.
     """
 
-    @field_validator('compute_platform')
+    @field_validator("compute_platform")
     def supported_sampler(cls, v):
-        supported = ['cpu', 'opencl', 'cuda']
+        supported = ["cpu", "opencl", "cuda"]
         if v is not None and v.lower() not in supported:
-            errmsg = ("Only the following OpenMM compute backends are "
-                      f"supported: {supported}")
+            errmsg = f"Only the following OpenMM compute backends are supported: {supported}"
             raise ValueError(errmsg)
         return v
 
@@ -390,35 +389,34 @@ class IntegratorSettings(SettingsBaseModel):
     Whether or not to remove the center of mass motion. Default ``False``.
     """
 
-    @field_validator('langevin_collision_rate', 'n_restart_attempts')
+    @field_validator("langevin_collision_rate", "n_restart_attempts")
     def must_be_positive_or_zero(cls, v):
         if v < 0:
-            errmsg = ("langevin_collision_rate, and n_restart_attempts must be"
-                      f" zero or positive values, got {v}.")
+            errmsg = (
+                "langevin_collision_rate, and n_restart_attempts must be"
+                f" zero or positive values, got {v}."
+            )
             raise ValueError(errmsg)
         return v
 
-    @field_validator('timestep', 'constraint_tolerance')
+    @field_validator("timestep", "constraint_tolerance")
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("timestep, and constraint_tolerance "
-                      f"must be positive values, got {v}.")
+            errmsg = f"timestep, and constraint_tolerance must be positive values, got {v}."
             raise ValueError(errmsg)
         return v
 
-    @field_validator('timestep')
+    @field_validator("timestep")
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
-            raise ValueError("timestep must be in time units "
-                             "(i.e. picoseconds)")
+            raise ValueError("timestep must be in time units (i.e. picoseconds)")
         return v
 
-    @field_validator('langevin_collision_rate')
+    @field_validator("langevin_collision_rate")
     def must_be_inverse_time(cls, v):
         if not v.is_compatible_with(1 / unit.picosecond):
-            raise ValueError("langevin collision_rate must be in inverse time "
-                             "(i.e. 1/picoseconds)")
+            raise ValueError("langevin collision_rate must be in inverse time (i.e. 1/picoseconds)")
         return v
 
 
@@ -427,10 +425,11 @@ class OutputSettings(SettingsBaseModel):
     Settings for simulation output settings,
     writing to disk, etc...
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # reporter settings
-    output_indices: str = 'not water' 
+    output_indices: str = "not water"
     """
     Selection string for which part of the system to write coordinates for.
     Default 'not water'.
@@ -439,18 +438,18 @@ class OutputSettings(SettingsBaseModel):
     """
     Frequency to write the checkpoint file. Default 1 * unit.nanosecond.
     """
-    checkpoint_storage_filename: str = 'checkpoint.chk'
+    checkpoint_storage_filename: str = "checkpoint.chk"
     """
     Separate filename for the checkpoint file. Note, this should
     not be a full path, just a filename. Default 'checkpoint.chk'.
     """
-    forcefield_cache: Optional[str] = 'db.json'
+    forcefield_cache: Optional[str] = "db.json"
     """
     Filename for caching small molecule residue templates so they can be
     later reused.
     """
 
-    @field_validator('checkpoint_interval')
+    @field_validator("checkpoint_interval")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"Checkpoint intervals must be positive, got {v}."
@@ -463,12 +462,13 @@ class MultiStateOutputSettings(OutputSettings):
     Settings for MultiState simulation output settings,
     writing to disk, etc...
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # reporter settings
-    output_filename: str = 'simulation.nc'
+    output_filename: str = "simulation.nc"
     """Path to the trajectory storage file. Default 'simulation.nc'."""
-    output_structure: str = 'hybrid_system.pdb'
+    output_structure: str = "hybrid_system.pdb"
     """
     Path of the output hybrid topology structure file. This is used
     to visualise and further manipulate the system.
@@ -495,12 +495,13 @@ class MultiStateOutputSettings(OutputSettings):
     ``MultiStateSimulationSettings.time_per_iteration``.
     """
 
-
-    @field_validator('positions_write_frequency', 'velocities_write_frequency')
+    @field_validator("positions_write_frequency", "velocities_write_frequency")
     def must_be_positive(cls, v):
         if v is not None and v < 0:
-            errmsg = ("Position_write_frequency and velocities_write_frequency"
-                      f" must be positive (or None), got {v}.")
+            errmsg = (
+                "Position_write_frequency and velocities_write_frequency"
+                f" must be positive (or None), got {v}."
+            )
             raise ValueError(errmsg)
         return v
 
@@ -509,6 +510,7 @@ class SimulationSettings(SettingsBaseModel):
     """
     Settings for simulation control, including lengths, etc...
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     minimization_steps: int = 5000
@@ -524,19 +526,17 @@ class SimulationSettings(SettingsBaseModel):
     Must be divisible by the :class:`IntegratorSettings.timestep`.
     """
 
-    @field_validator('equilibration_length', 'production_length')
+    @field_validator("equilibration_length", "production_length")
     def is_time(cls, v):
         # these are time units, not simulation steps
         if not v.is_compatible_with(unit.picosecond):
             raise ValueError("Durations must be in time units")
         return v
 
-    @field_validator('minimization_steps', 'equilibration_length',
-               'production_length')
+    @field_validator("minimization_steps", "equilibration_length", "production_length")
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = ("Minimization steps, and MD lengths must be positive, "
-                      f"got {v}")
+            errmsg = f"Minimization steps, and MD lengths must be positive, got {v}"
             raise ValueError(errmsg)
         return v
 
@@ -573,7 +573,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     """
     Simulation time between each MCMC move attempt. Default 2.5 * unit.picosecond.
     """
-    real_time_analysis_interval: PicosecondQuantity | None= 250.0 * unit.picosecond
+    real_time_analysis_interval: PicosecondQuantity | None = 250.0 * unit.picosecond
     # todo: Add validators in the protocol
     """
     Time interval at which to perform an analysis of the free energies.
@@ -611,7 +611,7 @@ class MultiStateSimulationSettings(SimulationSettings):
     Default 500 * unit.picosecond.
     """
 
-    sams_flatness_criteria: str = 'logZ-flatness'
+    sams_flatness_criteria: str = "logZ-flatness"
     """
     SAMS only. Method for assessing when to switch to asymptomatically
     optimal scheme.
@@ -623,41 +623,41 @@ class MultiStateSimulationSettings(SimulationSettings):
     n_replicas: int = 11
     """Number of replicas to use. Default 11."""
 
-    @field_validator('sams_flatness_criteria')
+    @field_validator("sams_flatness_criteria")
     def supported_flatness(cls, v):
-        supported = [
-            'logz-flatness', 'minimum-visits', 'histogram-flatness'
-        ]
+        supported = ["logz-flatness", "minimum-visits", "histogram-flatness"]
         if v.lower() not in supported:
-            errmsg = ("Only the following sams_flatness_criteria are "
-                      f"supported: {supported}")
+            errmsg = f"Only the following sams_flatness_criteria are supported: {supported}"
             raise ValueError(errmsg)
         return v
 
-    @field_validator('sampler_method')
+    @field_validator("sampler_method")
     def supported_sampler(cls, v):
-        supported = ['repex', 'sams', 'independent']
+        supported = ["repex", "sams", "independent"]
         if v.lower() not in supported:
-            errmsg = ("Only the following sampler_method values are "
-                      f"supported: {supported}")
+            errmsg = f"Only the following sampler_method values are supported: {supported}"
             raise ValueError(errmsg)
         return v
 
-    @field_validator('n_replicas', 'time_per_iteration')
+    @field_validator("n_replicas", "time_per_iteration")
     def must_be_positive(cls, v):
         if v <= 0:
-            errmsg = "n_replicas and steps_per_iteration must be positive " \
-                     f"values, got {v}."
+            errmsg = f"n_replicas and steps_per_iteration must be positive values, got {v}."
             raise ValueError(errmsg)
         return v
 
-    @field_validator('early_termination_target_error',
-               'real_time_analysis_minimum_time', 'sams_gamma0',
-               'n_replicas')
+    @field_validator(
+        "early_termination_target_error",
+        "real_time_analysis_minimum_time",
+        "sams_gamma0",
+        "n_replicas",
+    )
     def must_be_zero_or_positive(cls, v):
         if v < 0:
-            errmsg = ("Early termination target error, minimum iteration and"
-                      f" SAMS gamma0 must be 0 or positive values, got {v}.")
+            errmsg = (
+                "Early termination target error, minimum iteration and"
+                f" SAMS gamma0 must be 0 or positive values, got {v}."
+            )
             raise ValueError(errmsg)
         return v
 
@@ -666,6 +666,7 @@ class MDSimulationSettings(SimulationSettings):
     """
     Settings for simulation control for plain MD simulations
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     equilibration_length_nvt: NanosecondQuantity | None
@@ -678,29 +679,30 @@ class MDSimulationSettings(SimulationSettings):
 
 
 class MDOutputSettings(OutputSettings):
-    """ Settings for simulation output settings for plain MD simulations."""
+    """Settings for simulation output settings for plain MD simulations."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # reporter settings
-    production_trajectory_filename: Optional[str] = 'simulation.xtc'
+    production_trajectory_filename: Optional[str] = "simulation.xtc"
     """Path to the storage file for analysis. Default 'simulation.xtc'."""
     trajectory_write_interval: PicosecondQuantity = 20.0 * unit.picosecond
     """
     Frequency to write the xtc file. Default 5000 * unit.timestep.
     """
-    preminimized_structure: Optional[str] = 'system.pdb'
+    preminimized_structure: Optional[str] = "system.pdb"
     """Path to the pdb file of the full pre-minimized system.
     Default 'system.pdb'."""
-    minimized_structure: Optional[str] = 'minimized.pdb'
+    minimized_structure: Optional[str] = "minimized.pdb"
     """Path to the pdb file of the system after minimization.
     Only the specified atom subset is saved. Default 'minimized.pdb'."""
-    equil_nvt_structure: Optional[str] = 'equil_nvt.pdb'
+    equil_nvt_structure: Optional[str] = "equil_nvt.pdb"
     """Path to the pdb file of the system after NVT equilibration.
     Only the specified atom subset is saved. Default 'equil_nvt.pdb'."""
-    equil_npt_structure: Optional[str] = 'equil_npt.pdb'
+    equil_npt_structure: Optional[str] = "equil_npt.pdb"
     """Path to the pdb file of the system after NPT equilibration.
     Only the specified atom subset is saved. Default 'equil_npt.pdb'."""
-    log_output: Optional[str] = 'simulation.log'
+    log_output: Optional[str] = "simulation.log"
     """
     Filename for writing the log of the MD simulation, including timesteps,
     energies, density, etc.
