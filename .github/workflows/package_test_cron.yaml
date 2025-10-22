@@ -59,6 +59,6 @@ jobs:
           OFE_SLOW_TESTS: "true"
         run: |
           mkdir scratch
-          cd scrach
+          cd scratch
           pytest -n auto -v --pyargs openfe.tests
           pytest -n auto -v --pyargs openfecli.tests
