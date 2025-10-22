@@ -4,7 +4,7 @@ Installation
 **openfe** is currently only compatible with POSIX systems (macOS and UNIX/Linux).
 
 We try to follow `SPEC0 <https://scientific-python.org/specs/spec-0000/>`_ as far as minimum supported dependencies, with the following caveats:
-Note that this means that Python 3.10 support is no longer actively maintained.
+Note that this means that Python 3.10 support is no longer actively maintained as of ``openfe 1.6.0``.
 Additionally, if you want to use NAGL to assign partial charges, you must use ``python >= 3.11``.
 
 - OpenMM 8.0, 8.1.2, 8.2.0 - **we do not yet support OpenMM v8.3.0**
