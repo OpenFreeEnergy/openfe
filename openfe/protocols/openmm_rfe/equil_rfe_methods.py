@@ -951,6 +951,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             softcore_LJ_v2_alpha=alchem_settings.softcore_alpha,
             interpolate_old_and_new_14s=alchem_settings.turn_off_core_unique_exceptions,
         )
+        print(hybrid_factory.hybrid_system.getForces())
 
         # 4. Create lambda schedule
         # TODO - this should be exposed to users, maybe we should offer the
