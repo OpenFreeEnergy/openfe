@@ -12,3 +12,4 @@ dependencies:
   - pytest
   - pytest-xdist
   - python==3.12.*
+  - rdkit==2025.09.1
