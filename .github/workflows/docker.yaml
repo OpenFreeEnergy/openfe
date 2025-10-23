@@ -32,6 +32,7 @@ jobs:
       # see https://dev.to/mathio/squeezing-disk-space-from-github-actions-runners-an-engineers-guide-3pjg
       - name: Aggressive cleanup
         run: |
+        # remove unneeded packages to avoid running out of memory
           # Remove Java (JDKs)
           sudo rm -rf /usr/lib/jvm
       
