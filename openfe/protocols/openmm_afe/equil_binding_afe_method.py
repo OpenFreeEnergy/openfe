@@ -47,7 +47,7 @@ from gufe.components import Component
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteBindingSettings,
-    AlchemicalSettings,
+    ABFEAlchemicalSettings,
     BoreschRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
@@ -63,6 +63,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from openfe.protocols.openmm_utils import settings_validation, system_validation
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
+from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
 from openff.units import unit as offunit
@@ -551,8 +552,10 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             thermo_settings=settings.ThermoSettings(
                 temperature=298.15 * offunit.kelvin,
                 pressure=1 * offunit.bar,
+                ph=None,
+                redox_potential=None,
             ),
-            alchemical_settings=AlchemicalSettings(),
+            alchemical_settings=ABFEAlchemicalSettings(),
             solvent_lambda_settings=LambdaSettings(
                 lambda_elec=[
                     0.0, 0.25, 0.5, 0.75, 1.0,
@@ -911,7 +914,171 @@ class AbsoluteBindingProtocol(gufe.Protocol):
         return repeats
 
 
-class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
+def _get_mda_universe(
+    topology: omm_topology,
+    positions: ommunit.Quantity,
+    trajectory: Optional[pathlib.Path],
+) -> mda.Universe:
+    """
+    Helper method to get a Universe from an openmm Topology,
+    and either an input trajectory or a set of positions.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+      An OpenMM Topology that defines the System.
+    positions: openmm.unit.Quantity
+      The System's current positions.
+    Used if a trajectory file is None or is not a file.
+      trajectory: pathlib.Path
+      A Path to a trajectory file to read positions from.
+
+    Returns
+    -------
+    mda.Universe
+      An MDAnalysis Universe of the System.
+    """
+    from MDAnalysis.coordinates.memory import MemoryReader
+
+    # If the trajectory file doesn't exist, then we use positions
+    if trajectory is not None and trajectory.is_file():
+        return mda.Universe(
+            topology,
+            trajectory,
+            topology_format="OPENMMTOPOLOGY",
+        )
+    else:
+        # Positions is an openmm Quantity in nm we need
+        # to convert to angstroms
+        return mda.Universe(
+            topology,
+            np.array(positions._value) * 10,
+            topology_format="OPENMMTOPOLOGY",
+            trajectory_format=MemoryReader,
+        )
+
+
+def _get_idxs_from_residxs(
+    topology: omm_topology,
+    residxs: list[int],
+) -> list[int]:
+    """
+    Helper method to get the a list of atom indices which belong to a list
+    of residues.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+        An OpenMM Topology that defines the System.
+    residxs : list[int]
+        A list of residue numbers who's atoms we should get atom indices.
+
+    Returns
+    -------
+    atom_ids : list[int]
+        A list of atom indices.
+
+    TODO
+    ----
+    * Check how this works when we deal with virtual sites.
+    """
+    atom_ids = []
+
+    for r in topology.residues():
+        if r.index in residxs:
+            atom_ids.extend([at.index for at in r.atoms()])
+
+    return atom_ids
+
+
+class AbsoluteBindingUnitMixin:
+    """
+    Mixin for common class methods between Units
+    """
+    def _get_alchemical_ion(
+        self,
+        alchem_comps: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        omm_topology: omm_topology,
+        positions: ommunit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+    ) -> int | None:
+        """
+        Find a suitable alchemical ion for a net charge transformation.
+
+        Parameters
+        ----------
+        alchem_comps: dict[str, list[Component]]
+          A dictionary with a list of alchemical components
+          in both state A and B.
+        comp_resids: dict[Component, npt.NDArray]
+          A dictionary keyed by each Component in the System
+          which contains arrays with the residue indices that is contained
+          by that Component.
+        omm_topology : openmm.app.Topology
+          The OpenMM Topology of the system.
+        positions : openmm.unit.Quantity
+          The positions of the system.
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings that defines how to find and set
+          the restraint.
+
+        Returns
+        -------
+        int
+          The index of the alchemical ion.
+
+        """
+        IONS = {
+            -1: ['Na', 'K', 'Li', 'Cs', 'Rb'],
+            1: ['Cl', 'Br', 'F', 'I']
+        }
+
+        total_charge = alchem_comps["stateA"][0].total_charge
+
+        # Don't add an alchemical ion if we have zero net charge
+        # or we didn't request it.
+        if total_charge == 0 or not settings['alchemical_settings'].explicit_charge_correction:
+            return None
+
+        # For the ABFE protocol you'll never hit this, because we deal with it
+        # during validation. But just adding it in case it ends up in a subclass
+        if abs(total_charge) > 1:
+            errmsg = "Cannot handle net charge correction on charges greater than one"
+            raise ValueError(errmsg)
+
+        univ = _get_mda_universe(
+            omm_topology,
+            positions,
+            self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
+        )
+
+        counter_ions = [
+            at.element in IONS[total_charge]
+            for at in univ.atoms
+        ]
+
+        # get the alchemical atoms
+        residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
+        alchem_idxs = _get_idxs_from_residxs(topology=omm_topology, residxs=residxs)
+        alchem_atoms = univ.atoms[alchem_idxs]
+
+        # Re-using a utility from the restraints utilities
+        # TODO: rename this class!
+        atom_finder = FindHostAtoms(
+            host_atoms=counter_ions,
+            guest_atoms=alchem_atoms,
+            min_search_distance=settings['alchemical_settings'].alchemical_ion_min_distance,
+            max_search_distance=999 * offunit.nm  # TODO: change to None?
+        )
+
+        atom_finder.run()
+
+        # Just use the first one that comes back ok
+        return atom_finder.results.host_idxs[0]
+
+
+class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
     """
@@ -987,83 +1154,6 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         return settings
 
     @staticmethod
-    def _get_mda_universe(
-        topology: omm_topology,
-        positions: ommunit.Quantity,
-        trajectory: Optional[pathlib.Path],
-    ) -> mda.Universe:
-        """
-        Helper method to get a Universe from an openmm Topology,
-        and either an input trajectory or a set of positions.
-
-        Parameters
-        ----------
-        topology : openmm.app.Topology
-          An OpenMM Topology that defines the System.
-        positions: openmm.unit.Quantity
-          The System's current positions.
-          Used if a trajectory file is None or is not a file.
-        trajectory: pathlib.Path
-          A Path to a trajectory file to read positions from.
-
-        Returns
-        -------
-        mda.Universe
-          An MDAnalysis Universe of the System.
-        """
-        from MDAnalysis.coordinates.memory import MemoryReader
-
-        # If the trajectory file doesn't exist, then we use positions
-        if trajectory is not None and trajectory.is_file():
-            return mda.Universe(
-                topology,
-                trajectory,
-                topology_format="OPENMMTOPOLOGY",
-            )
-        else:
-            # Positions is an openmm Quantity in nm we need
-            # to convert to angstroms
-            return mda.Universe(
-                topology,
-                np.array(positions._value) * 10,
-                topology_format="OPENMMTOPOLOGY",
-                trajectory_format=MemoryReader,
-            )
-
-    @staticmethod
-    def _get_idxs_from_residxs(
-        topology: omm_topology,
-        residxs: list[int],
-    ) -> list[int]:
-        """
-        Helper method to get the a list of atom indices which belong to a list
-        of residues.
-
-        Parameters
-        ----------
-        topology : openmm.app.Topology
-          An OpenMM Topology that defines the System.
-        residxs : list[int]
-          A list of residue numbers who's atoms we should get atom indices.
-
-        Returns
-        -------
-        atom_ids : list[int]
-          A list of atom indices.
-
-        TODO
-        ----
-        * Check how this works when we deal with virtual sites.
-        """
-        atom_ids = []
-
-        for r in topology.residues():
-            if r.index in residxs:
-                atom_ids.extend([at.index for at in r.atoms()])
-
-        return atom_ids
-
-    @staticmethod
     def _get_boresch_restraint(
         universe: mda.Universe,
         guest_rdmol: Chem.Mol,
@@ -1127,6 +1217,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
+        alchem_ion: int | None,
     ) -> tuple[
         GlobalParameterState,
         Quantity,
@@ -1159,6 +1250,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         settings : dict[str, SettingsBaseModel]
           A dictionary of settings that defines how to find and set
           the restraint.
+        alchem_ions : int | None
+          The index of an alchemical ion, if it exists.
 
         Returns
         -------
@@ -1190,7 +1283,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
 
         # get the alchemicical atom ids
-        guest_atom_ids = self._get_idxs_from_residxs(topology, residxs)
+        guest_atom_ids = _get_idxs_from_residxs(topology, residxs)
 
         # Now get the host idxs
         # We assume this is everything but the alchemical component
@@ -1199,13 +1292,13 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         exclude_comps = [alchem_comps["stateA"]] + solv_comps
         residxs = np.concatenate([v for i, v in comp_resids.items() if i not in exclude_comps])
 
-        host_atom_ids = self._get_idxs_from_residxs(topology, residxs)
+        host_atom_ids = _get_idxs_from_residxs(topology, residxs)
 
         # Finally create an MDAnalysis Universe
         # We try to pass the equilibration production file path through
         # In some cases (debugging / dry runs) this won't be available
         # so we'll default to using input positions.
-        univ = self._get_mda_universe(
+        univ = _get_mda_universe(
             topology,
             positions,
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
@@ -1259,7 +1352,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit):
         )
 
 
-class AbsoluteBindingSolventUnit(BaseAbsoluteUnit):
+class AbsoluteBindingSolventUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
     """
     Protocol Unit for the solvent phase of an absolute binding free energy
     """

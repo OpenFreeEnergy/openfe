@@ -598,14 +598,28 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         return lambdas
 
+    def _get_alchemical_ion(
+        self,
+        alchem_comps: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        omm_topology: app.Topology,
+        positions: openmm.unit.Quantity,
+        settings: dict[str, SettingsBaseModel],
+    ) -> int | None:
+        """
+        Placeholder method to find alchemical ions if necessary.
+        """
+        return None
+
     def _add_restraints(
         self,
         system: openmm.System,
-        topology: GlobalParameterState,
+        topology: app.Topology,
         positions: openmm.unit.Quantity,
         alchem_comps: dict[str, list[Component]],
         comp_resids: dict[Component, npt.NDArray],
         settings: dict[str, SettingsBaseModel],
+        alchem_ion: int | None,
     ) -> tuple[
         Optional[GlobalParameterState],
         Optional[Quantity],
@@ -623,7 +637,8 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         system: openmm.System,
         comp_resids: dict[Component, npt.NDArray],
         alchem_comps: dict[str, list[Component]],
-    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[int]]:
+        alchem_ion: int | None,
+    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[list[int]]]:
         """
         Get an alchemically modified system and its associated factory
 
@@ -644,7 +659,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Factory for creating an alchemically modified system.
         alchemical_system : openmm.System
           Alchemically modified system
-        alchemical_indices : list[int]
+        alchemical_indices : list[list[int]]
           A list of atom indices for the alchemically modified
           species in the system.
 
@@ -652,14 +667,21 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----
         * Add support for all alchemical factory options
         """
-        alchemical_indices = self._get_alchemical_indices(topology, comp_resids, alchem_comps)
+        alchemical_indices = [self._get_alchemical_indices(topology, comp_resids, alchem_comps)]
 
-        alchemical_region = AlchemicalRegion(
-            alchemical_atoms=alchemical_indices,
-        )
+        if alchem_ion is not None:
+            alchemical_indices.append(alchem_ion)
+
+        alchemical_regions = []
+
+        for inds in alchemical_indices:
+            alchemical_regions.append(AlchemicalRegion(alchemical_atoms=inds))
 
         alchemical_factory = AbsoluteAlchemicalFactory()
-        alchemical_system = alchemical_factory.create_alchemical_system(system, alchemical_region)
+        alchemical_system = alchemical_factory.create_alchemical_system(
+            reference_system=system,
+            alchemical_regions=alchemical_regions
+        )
 
         return alchemical_factory, alchemical_system, alchemical_indices
 
@@ -1127,7 +1149,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         # 5. Get lambdas
         lambdas = self._get_lambda_schedule(settings)
 
-        # 6. Add restraints
+        # 6. Get alchemical ions
+        alchem_ion = self._get_alchemical_ion(
+            alchem_comps=alchem_comps,
+            comp_resids=comp_resids,
+            omm_topology=omm_topology,
+            positions=positions,
+            settings=settings,
+        )
+
+        # 7. Add restraints
         # Note: when no restraint is applied, restrained_omm_system == omm_system
         (
             restraint_parameter_state,
@@ -1141,14 +1172,19 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             alchem_comps,
             comp_resids,
             settings,
+            alchem_ion,
         )
 
-        # 7. Get alchemical system
+        # 8. Get alchemical system
         alchem_factory, alchem_system, alchem_indices = self._get_alchemical_system(
-            omm_topology, restrained_omm_system, comp_resids, alchem_comps
+            omm_topology,
+            restrained_omm_system,
+            comp_resids,
+            alchem_comps,
+            alchem_ion,
         )
 
-        # 8. Get compound and sampler states
+        # 9. Get compound and sampler states
         sampler_states, cmp_states = self._get_states(
             alchem_system,
             positions,
@@ -1159,7 +1195,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             restraint_parameter_state,
         )
 
-        # 9. Create the multistate reporter & create PDB
+        # 10. Create the multistate reporter & create PDB
         reporter = self._get_reporter(
             omm_topology,
             positions,
@@ -1169,18 +1205,18 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
 
         # Wrap in try/finally to avoid memory leak issues
         try:
-            # 10. Get context caches
+            # 11. Get context caches
             energy_ctx_cache, sampler_ctx_cache = self._get_ctx_caches(
                 settings["forcefield_settings"], settings["engine_settings"]
             )
 
-            # 11. Get integrator
+            # 12. Get integrator
             integrator = self._get_integrator(
                 settings["integrator_settings"],
                 settings["simulation_settings"],
             )
 
-            # 12. Get sampler
+            # 13. Get sampler
             sampler = self._get_sampler(
                 integrator,
                 reporter,
@@ -1192,7 +1228,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
                 sampler_ctx_cache,
             )
 
-            # 13. Run simulation
+            # 14. Run simulation
             unit_result_dict = self._run_simulation(
                 sampler, reporter, settings, standard_state_corr, dry
             )

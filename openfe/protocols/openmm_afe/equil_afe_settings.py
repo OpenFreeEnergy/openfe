@@ -15,12 +15,14 @@ TODO
 * Add support for restraints
 
 """
+from openff.units import unit as offunit
 
 from gufe.settings import (
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
+from gufe.settings.typing import NanometerQuantity
 from openfe.protocols.openmm_utils.omm_settings import (
     MultiStateSimulationSettings,
     BaseSolvationSettings,
@@ -46,6 +48,21 @@ class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
 
     Empty place holder for right now.
+    """
+
+
+class ABFEAlchemicalSettings(AlchemicalSettings):
+    """
+    Absolute binding free energy alchemical settings.
+    """
+    explicit_charge_correction: bool = True
+    """
+    Whether or not to use explicit charge correction using
+    a co-alchemical ion.
+    """
+    alchemical_ion_min_distance: NanometerQuantity = 1.2 * offunit.nanometer
+    """
+    The minimum distance to search for a co-alchemical ion.
     """
 
 
