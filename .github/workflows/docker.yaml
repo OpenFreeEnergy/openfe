@@ -29,6 +29,7 @@ jobs:
       packages: write
 
     steps:
+      # see https://dev.to/mathio/squeezing-disk-space-from-github-actions-runners-an-engineers-guide-3pjg
       - name: Aggressive cleanup
         run: |
           # Remove Java (JDKs)
