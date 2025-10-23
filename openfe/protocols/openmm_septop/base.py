@@ -13,6 +13,7 @@ TODO
 * Add in all the AlchemicalFactory and AlchemicalRegion kwargs
   as settings.
 """
+
 import abc
 import logging
 import pathlib
@@ -118,9 +119,7 @@ def _pre_equilibrate(
     """
     # Prep the simulation object
     # Restrict CPU count if no cutoff
-    restrict_cpu = (
-        settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
-    )
+    restrict_cpu = settings["forcefield_settings"].nonbonded_method.lower() == "nocutoff"
     platform = omm_compute.get_openmm_platform(
         platform_name=settings["engine_settings"].compute_platform,
         gpu_device_index=settings["engine_settings"].gpu_device_index,
@@ -177,8 +176,7 @@ def _pre_equilibrate(
     if endstate == "A" or endstate == "B" or endstate == "AB":
         if unfrozen_outsettings.production_trajectory_filename:
             unfrozen_outsettings.production_trajectory_filename = (
-                unfrozen_outsettings.production_trajectory_filename
-                + f"_state{endstate}.xtc"
+                unfrozen_outsettings.production_trajectory_filename + f"_state{endstate}.xtc"
             )
         if unfrozen_outsettings.preminimized_structure:
             unfrozen_outsettings.preminimized_structure = (
@@ -318,13 +316,9 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
             split_alchemical_forces=True,
         )
         # Alchemical Region for ligand A
-        alchemical_region_A = AlchemicalRegion(
-            alchemical_atoms=alchem_indices_A, name="A"
-        )
+        alchemical_region_A = AlchemicalRegion(alchemical_atoms=alchem_indices_A, name="A")
         # Alchemical Region for ligand B
-        alchemical_region_B = AlchemicalRegion(
-            alchemical_atoms=alchem_indices_B, name="B"
-        )
+        alchemical_region_B = AlchemicalRegion(alchemical_atoms=alchem_indices_B, name="B")
         alchemical_system = alchemical_factory.create_alchemical_system(
             system, [alchemical_region_A, alchemical_region_B]
         )
@@ -470,7 +464,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # there are virtual sites in the system
         if integrator_settings.reassign_velocities:
             return
-        
+
         for ix in range(system.getNumParticles()):
             if system.isVirtualSite(ix):
                 errmsg = (
@@ -553,9 +547,7 @@ class BaseSepTopSetupUnit(gufe.ProtocolUnit):
         # smiles roundtripping between rdkit and oechem
         with without_oechem_backend():
             for mol in smc_components.values():
-                system_generator.create_system(
-                    mol.to_topology().to_openmm(), molecules=[mol]
-                )
+                system_generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
 
             # get OpenMM modeller + dictionary of resids for each component
             system_modeller, comp_resids = system_creation.get_omm_modeller(
@@ -1068,16 +1060,12 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
         sampler : multistate.MultistateSampler
           A sampler configured for the chosen sampling method.
         """
-        rta_its, rta_min_its = (
-            settings_validation.convert_real_time_analysis_iterations(
-                simulation_settings=simulation_settings,
-            )
+        rta_its, rta_min_its = settings_validation.convert_real_time_analysis_iterations(
+            simulation_settings=simulation_settings,
         )
-        et_target_err = (
-            settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
-                thermo_settings.temperature,
-                simulation_settings.early_termination_target_error,
-            )
+        et_target_err = settings_validation.convert_target_error_from_kcal_per_mole_to_kT(
+            thermo_settings.temperature,
+            simulation_settings.early_termination_target_error,
         )
 
         # Select the right sampler
@@ -1164,9 +1152,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             # minimize
             if self.verbose:
                 self.logger.info("minimizing systems")
-            sampler.minimize(
-                max_iterations=settings["simulation_settings"].minimization_steps
-            )
+            sampler.minimize(max_iterations=settings["simulation_settings"].minimization_steps)
             # equilibrate
             if self.verbose:
                 self.logger.info("equilibrating systems")
@@ -1201,8 +1187,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             # clean up the reporter file
             fns = [
                 self.shared_basepath / settings["output_settings"].output_filename,
-                self.shared_basepath
-                / settings["output_settings"].checkpoint_storage_filename,
+                self.shared_basepath / settings["output_settings"].checkpoint_storage_filename,
             ]
             for fn in fns:
                 fn.unlink()
@@ -1335,9 +1320,7 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
             for context in list(sampler_ctx_cache._lru._data.keys()):
                 del sampler_ctx_cache._lru._data[context]
             # cautiously clear out the global context cache too
-            for context in list(
-                openmmtools.cache.global_context_cache._lru._data.keys()
-            ):
+            for context in list(openmmtools.cache.global_context_cache._lru._data.keys()):
                 del openmmtools.cache.global_context_cache._lru._data[context]
 
             del sampler_ctx_cache, energy_ctx_cache

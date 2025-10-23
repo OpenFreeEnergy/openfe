@@ -5,6 +5,8 @@
 This is adapted from Perses: https://github.com/choderalab/perses/
 See here for the license: https://github.com/choderalab/perses/blob/main/LICENSE
 """
+# turn off formatting since this is mostly vendored code
+# fmt: off
 
 import copy
 import warnings
