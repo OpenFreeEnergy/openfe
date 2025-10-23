@@ -683,10 +683,11 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         # Check that the state A unique isn't charged
-        if diff[0][0].total_charge != 0:
+        if abs(diff[0][0].total_charge) > 1:
             errmsg = (
                 "Charged alchemical molecules are not currently "
-                "supported for solvation free energies. "
+                "supported for absolute binding free energies with "
+                "absolute net charge greater than 1. "
                 f"Molecule total charge: {diff[0][0].total_charge}."
             )
             raise ValueError(errmsg)
