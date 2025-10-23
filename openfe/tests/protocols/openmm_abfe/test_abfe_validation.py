@@ -243,7 +243,7 @@ def test_validate_endstates_unique_stateB(benzene_modifications, T4_protein_comp
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-def test_charged_endstate_no_error(charged_benzene_modifications, T4_protein_component):
+def test_charged_endstate_warn(charged_benzene_modifications, T4_protein_component):
 
     stateA = ChemicalSystem(
         {
@@ -260,8 +260,11 @@ def test_charged_endstate_no_error(charged_benzene_modifications, T4_protein_com
         }
     )
 
-    # No error should be raised
-    AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+    # No error should be raised but an warning should
+    wmsg = "Net charge transformations are experimental and error prone."
+
+    with pytest.warns(UserWarning, match=wmsg):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
 def test_charged_endstate_error(charged_benzene_modifications, T4_protein_component):

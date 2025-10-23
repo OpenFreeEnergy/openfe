@@ -683,14 +683,19 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         # Check that the state A unique isn't charged
-        if abs(diff[0][0].total_charge) > 1:
-            errmsg = (
-                "Charged alchemical molecules with absolute net "
-                "charge greater than 1 are not currently "
-                "supported with absolute binding free energies. " 
-                f"Molecule total charge: {diff[0][0].total_charge}."
-            )
-            raise ValueError(errmsg)
+        if abs(diff[0][0].total_charge) >= 1:
+
+            if abs(diff[0][0].total_charge) > 1:
+                errmsg = (
+                    "Charged alchemical molecules with absolute net "
+                    "charge greater than 1 are not currently "
+                    "supported with absolute binding free energies. "
+                    f"Molecule total charge: {diff[0][0].total_charge}."
+                )
+                raise ValueError(errmsg)
+
+            wmsg = "Net charge transformations are experimental and error prone."
+            warnings.warn(wmsg)
 
         # If there are any alchemical Components in state B
         if len(diff[1]) > 0:
