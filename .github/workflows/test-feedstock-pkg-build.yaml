@@ -1,0 +1,71 @@
+name: Test conda-forge package build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-conda-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout openfe repository
+        uses: actions/checkout@v4
+        with:
+          path: openfe
+      
+      - name: Checkout conda-forge feedstock
+        uses: actions/checkout@v4
+        with:
+          repository: conda-forge/openfe-feedstock
+          path: openfe-feedstock
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      - name: Install conda-build dependencies
+        run: |
+          pip install pyyaml
+
+      # TODO just checkout the repo where we need it?
+      - name: Copy source code to recipe folder
+        run: cp -r openfe openfe-feedstock/recipe/openfe_source
+      
+      - name: Modify feedstock to use local path
+        run: |
+          cd openfe-feedstock
+          
+          # Backup original meta.yaml
+          cp recipe/meta.yaml recipe/meta.yaml.bak
+
+          # Add path after source: and delete url line
+          sed -i '/^source:/a\  path: ./openfe_source' recipe/meta.yaml
+          sed -i '/^  url:/d' recipe/meta.yaml
+          
+          echo "Modified meta.yaml:"
+          cat recipe/meta.yaml
+                
+      - name: Run conda-forge build test
+        run: |
+          cd openfe-feedstock
+          python build-locally.py
+        continue-on-error: true
+        id: build_test
+      
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-build-logs
+          path: |
+            openfe-feedstock/build_artifacts/
+            openfe-feedstock/recipe/meta.yaml
+            openfe-feedstock/recipe/meta.yaml.bak
+          if-no-files-found: warn
+      
+      - name: Check build status
+        if: steps.build_test.outcome == 'failure'
+        run: |
+          echo "❌ Conda forge build test failed. Check the uploaded logs for details."
+          exit 1
