@@ -3,7 +3,7 @@
 .. module:: openfe
 
 ====================================
-Welcome to the OpenFE documentation!
+Welcome to **openfe**' documentation!
 ====================================
 
 The **OpenFE** toolkit provides a free and open-source framework for alchemical free energy calculations.
@@ -85,9 +85,16 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
    reference/index
    CHANGELOG
 
-Indices and tables
-------------------
+Other OpenFE Ecosystem Projects:
+--------------------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+**openfe** is Open Free Energy's user-facing software for performing alchemical free energy calculations.
+Below are other software projects the Open Free Energy team maintains, many of which are used by **openfe** itself.
+
+* `Lomap <https://lomap.openfree.energy/en/latest/>_`: planning perturbation networks for free energy calculations
+* `cinnabar <https://cinnabar.openfree.energy/en/latest/>`_ (formery arsenic): plotting free energy calculation results
+* `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
+* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution
+* `kartograf <https://kartograf.openfree.energy/en/latest/>_`: atom mappings focusing on 3D geometries
+* `konnektor <https://konnektor.openfree.energy/en/latest/>`_`: free energy network planning, modification, and analysis
+  
