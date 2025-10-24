@@ -7,7 +7,7 @@ dependencies:
 - autodoc-pydantic >= 2.1
 - docutils == 0.20
 - gitpython
-- ipykernel  # https://nbsphinx.readthedocs.io/en/0.8.2/installation.html#Jupyter-Kernel
+# - ipykernel  # https://nbsphinx.readthedocs.io/en/0.8.2/installation.html#Jupyter-Kernel
 - libsass
 - myst-parser
 - nbsphinx
