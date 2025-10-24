@@ -7,7 +7,6 @@ dependencies:
 - autodoc-pydantic >= 2.1
 - docutils == 0.20
 - gitpython
-# - ipykernel  # https://nbsphinx.readthedocs.io/en/0.8.2/installation.html#Jupyter-Kernel
 - libsass
 - myst-parser
 - nbsphinx
@@ -29,7 +28,7 @@ dependencies:
 - pip:
   - git+https://github.com/OpenFreeEnergy/gufe@main
   - git+https://github.com/OpenFreeEnergy/ofe-sphinx-theme@v0.3.1
-  # pip install these so that conda-forge gufe doesn't pull in ambertools and cause a memory error
+  # pip install these so that we can make sure docs build on main while these packages' docs are under development
   - git+https://github.com/OpenFreeEnergy/kartograf@main
   - git+https://github.com/OpenFreeEnergy/konnektor@main
   - git+https://github.com/OpenFreeEnergy/lomap@main
