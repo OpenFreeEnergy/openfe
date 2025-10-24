@@ -1,0 +1,51 @@
+name: Test example notebooks
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  test-conda-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout openfe repository
+        uses: actions/checkout@v4
+        with:
+          path: openfe
+      
+      - name: Checkout example notebooks
+        uses: actions/checkout@v4
+        with:
+          repository: openfreeenergy/ExampleNotebooks
+          path: example-notebooks
+
+      - name: Setup Micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: openfe/environment.yml
+          environment-name: openfe_env
+          create-args: >-
+            python=3.12
+            nbval
+          init-shell: bash
+
+      - name: Install OpenFE
+        run: python -m pip install --no-deps -e ./openfe
+
+      - name: Environment Information
+        run: |
+          micromamba info
+          micromamba list
+
+      - name: Run example notebooks
+        run: |
+          cd example-notebooks
+          python -m pytest -v setup/ showcase/ cookbook/ openmm_rbfe/ networks/ --nbval-lax --nbval-cell-timeout=3000 -n auto --dist loadscope
