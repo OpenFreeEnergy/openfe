@@ -229,14 +229,6 @@ nbsphinx_prolog = cleandoc(r"""
         ~ "/"
         ~ path
     -%}
-    {%- set colab_url =
-        "http://colab.research.google.com/github/"
-        ~ gh_repo
-        ~ "/blob/"
-        ~ gh_branch
-        ~ "/"
-        ~ path
-    -%}
 
     .. container:: ofe-top-of-notebook
 
@@ -253,13 +245,6 @@ nbsphinx_prolog = cleandoc(r"""
             :outline:
 
             :octicon:`download` Download Notebook
-
-        .. button-link:: {{colab_url}}
-            :color: primary
-            :shadow:
-            :outline:
-
-            :octicon:`rocket` Run in Colab
 
     .. _{{ env.doc2path(env.docname, base=None) }}:
 """)
