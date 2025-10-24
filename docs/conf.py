@@ -187,7 +187,7 @@ try:
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="tmp_fix_docs",
+            branch="revert-237-v1.7_cookbooks",
             to_path=example_notebooks_path,
         )
 except Exception as e:
