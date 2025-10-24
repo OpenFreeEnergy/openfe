@@ -2,9 +2,9 @@
 
 .. module:: openfe
 
-====================================
+=====================================
 Welcome to **openfe**' documentation!
-====================================
+=====================================
 
 The **OpenFE** toolkit provides a free and open-source framework for alchemical free energy calculations.
 Using this toolkit you can plan, execute and analyse free energy calculations using a variety of methods.
