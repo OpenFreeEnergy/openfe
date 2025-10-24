@@ -60,7 +60,6 @@ suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/iss
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "scikit.learn": ("https://scikit-learn.org/stable", None),
     "openmm": ("http://docs.openmm.org/latest/api-python/", None),
     "rdkit": ("https://www.rdkit.org/docs", None),
