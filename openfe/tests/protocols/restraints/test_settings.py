@@ -3,6 +3,7 @@
 """
 Test the restraint settings.
 """
+
 import pytest
 from openfe.protocols.restraint_utils.settings import (
     BoreschRestraintSettings,
