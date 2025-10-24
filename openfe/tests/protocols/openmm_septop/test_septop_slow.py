@@ -28,7 +28,6 @@ def default_settings():
 
 
 def compare_energies(alchemical_system, positions):
-
     alchemical_state = SepTopParameterState.from_system(alchemical_system)
 
     from openmmtools.alchemy import AbsoluteAlchemicalFactory
@@ -113,12 +112,8 @@ def test_lambda_energies(
     default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = (
         10 * unit.picosecond
     )
-    default_settings.solvent_equil_simulation_settings.equilibration_length = (
-        10 * unit.picosecond
-    )
-    default_settings.solvent_equil_simulation_settings.production_length = (
-        1 * unit.picosecond
-    )
+    default_settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.production_length = 1 * unit.picosecond
     default_settings.solvent_solvation_settings.box_shape = "dodecahedron"
     default_settings.solvent_solvation_settings.solvent_padding = 1.8 * unit.nanometer
 
@@ -200,15 +195,9 @@ def test_lambda_energies(
                     from_openmm(energy_7[key]),
                     rtol=1e-05,
                 )
-                assert not np.allclose(
-                    from_openmm(energy_0[key]), from_openmm(energy_8[key])
-                )
-                assert not np.allclose(
-                    from_openmm(energy_0[key]), from_openmm(energy_12[key])
-                )
-                assert not np.allclose(
-                    from_openmm(energy_0[key]), from_openmm(energy_13[key])
-                )
+                assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_8[key]))
+                assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_12[key]))
+                assert not np.allclose(from_openmm(energy_0[key]), from_openmm(energy_13[key]))
 
             else:
                 assert_allclose(from_openmm(value), from_openmm(energy_0[key]))
@@ -235,40 +224,20 @@ def test_openmm_run_engine(
     # Run a really short calculation to check everything is going well
     default_settings.protocol_repeats = 1
     default_settings.solvent_output_settings.output_indices = "resname UNK"
-    default_settings.complex_equil_simulation_settings.equilibration_length = (
-        0.1 * unit.picosecond
-    )
-    default_settings.complex_equil_simulation_settings.production_length = (
-        0.1 * unit.picosecond
-    )
-    default_settings.complex_simulation_settings.equilibration_length = (
-        0.1 * unit.picosecond
-    )
-    default_settings.complex_simulation_settings.production_length = (
-        0.1 * unit.picosecond
-    )
+    default_settings.complex_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.complex_equil_simulation_settings.production_length = 0.1 * unit.picosecond
+    default_settings.complex_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.complex_simulation_settings.production_length = 0.1 * unit.picosecond
     default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = (
         0.1 * unit.picosecond
     )
-    default_settings.solvent_equil_simulation_settings.equilibration_length = (
-        0.1 * unit.picosecond
-    )
-    default_settings.solvent_equil_simulation_settings.production_length = (
-        0.1 * unit.picosecond
-    )
-    default_settings.solvent_simulation_settings.equilibration_length = (
-        0.1 * unit.picosecond
-    )
-    default_settings.solvent_simulation_settings.production_length = (
-        0.1 * unit.picosecond
-    )
+    default_settings.solvent_equil_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.production_length = 0.1 * unit.picosecond
+    default_settings.solvent_simulation_settings.equilibration_length = 0.1 * unit.picosecond
+    default_settings.solvent_simulation_settings.production_length = 0.1 * unit.picosecond
     default_settings.engine_settings.compute_platform = platform
-    default_settings.complex_simulation_settings.time_per_iteration = (
-        20 * unit.femtosecond
-    )
-    default_settings.solvent_simulation_settings.time_per_iteration = (
-        20 * unit.femtosecond
-    )
+    default_settings.complex_simulation_settings.time_per_iteration = 20 * unit.femtosecond
+    default_settings.solvent_simulation_settings.time_per_iteration = 20 * unit.femtosecond
     default_settings.complex_output_settings.checkpoint_interval = 20 * unit.femtosecond
     default_settings.solvent_output_settings.checkpoint_interval = 20 * unit.femtosecond
 
@@ -307,7 +276,7 @@ def test_openmm_run_engine(
         unit_shared = tmpdir / f"shared_{pur.source_key}_attempt_0"
         assert unit_shared.exists()
         assert pathlib.Path(unit_shared).is_dir()
-        if "SepTopComplexRunUnit" in pur.source_key.split("-") or "SepTopSolventRunUnit" in pur.source_key.split("-"):
+        if "SepTopComplexRunUnit" in pur.source_key.split("-") or "SepTopSolventRunUnit" in pur.source_key.split("-"):  # fmt: skip
             checkpoint = pur.outputs["last_checkpoint"]
             assert checkpoint == f"{pur.outputs['simtype']}_checkpoint.nc"
             assert (unit_shared / checkpoint).exists()
@@ -341,12 +310,8 @@ def test_restraints_solvent(
     default_settings.solvent_equil_simulation_settings.equilibration_length_nvt = (
         10 * unit.picosecond
     )
-    default_settings.solvent_equil_simulation_settings.equilibration_length = (
-        10 * unit.picosecond
-    )
-    default_settings.solvent_equil_simulation_settings.production_length = (
-        10 * unit.picosecond
-    )
+    default_settings.solvent_equil_simulation_settings.equilibration_length = 10 * unit.picosecond
+    default_settings.solvent_equil_simulation_settings.production_length = 10 * unit.picosecond
     default_settings.engine_settings.compute_platform = platform
 
     protocol = SepTopProtocol(

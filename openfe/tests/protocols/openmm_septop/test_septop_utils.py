@@ -7,8 +7,8 @@ from unittest import mock
 
 from openfe.protocols.openmm_septop.utils import deserialize, serialize
 
-def test_serialize_creates_parent_directory(tmp_path):
 
+def test_serialize_creates_parent_directory(tmp_path):
     filename = tmp_path / "file.xml"
     with mock.patch("openmm.XmlSerializer.serialize", return_value="<xml></xml>"):
         serialize(object(), filename)
@@ -18,7 +18,6 @@ def test_serialize_creates_parent_directory(tmp_path):
 
 
 def test_serialize_xml(tmp_path):
-
     filename = tmp_path / "file.xml"
     with mock.patch("openmm.XmlSerializer.serialize", return_value="<data>"):
         serialize(object(), filename)
@@ -28,7 +27,6 @@ def test_serialize_xml(tmp_path):
 
 
 def test_serialize_gz(tmpdir):
-
     filename = pathlib.Path(tmpdir / "file.xml.gz")
     expected = "<gzip_data>"
 
@@ -41,7 +39,6 @@ def test_serialize_gz(tmpdir):
 
 
 def test_serialize_bz2(tmpdir):
-
     filename = pathlib.Path(tmpdir / "file.xml.bz2")
     expected = "<bz2_data>"
 
@@ -54,7 +51,6 @@ def test_serialize_bz2(tmpdir):
 
 
 def test_deserialize_xml(tmpdir):
-
     filename = pathlib.Path(tmpdir / "file.xml")
     filename.write_text("<xml>things</xml>")
 
@@ -66,7 +62,6 @@ def test_deserialize_xml(tmpdir):
 
 
 def test_deserialize_gz(tmpdir):
-
     filename = pathlib.Path(tmpdir / "file.xml.gz")
     expected_serialized = "<xml>gz</xml>"
     with gzip.open(filename, "wb") as f:
@@ -80,7 +75,6 @@ def test_deserialize_gz(tmpdir):
 
 
 def test_deserialize_bz2(tmpdir):
-
     filename = pathlib.Path(tmpdir / "file.xml.bz2")
     expected_serialized = "<xml>bz2</xml>"
     with bz2.open(filename, "wb") as f:
@@ -91,4 +85,3 @@ def test_deserialize_bz2(tmpdir):
 
     deser.assert_called_once_with(expected_serialized)
     assert result == "FROM_BZ2"
-

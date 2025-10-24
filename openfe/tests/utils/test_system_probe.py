@@ -123,13 +123,9 @@ EXPECTED_SYSTEM_INFO = {
 
 def fake_disk_usage(path):
     if str(path) == "/foo":
-        return sdiskusage(
-            total=1958854045696, used=1232985415680, free=626288726016, percent=66.3
-        )
+        return sdiskusage(total=1958854045696, used=1232985415680, free=626288726016, percent=66.3)
     if str(path) == "/bar":
-        return sdiskusage(
-            total=4000770252800, used=1678226952192, free=2322615496704, percent=41.9
-        )
+        return sdiskusage(total=4000770252800, used=1678226952192, free=2322615496704, percent=41.9)
 
 
 @contextlib.contextmanager
@@ -164,9 +160,7 @@ def patch_system():
         ),
     )
     # Since this attribute doesn't exist on OSX, we have to create it
-    patch_psutil_Process_rlimit = patch(
-        "psutil.Process.rlimit", Mock(return_value=(-1, -1))
-    )
+    patch_psutil_Process_rlimit = patch("psutil.Process.rlimit", Mock(return_value=(-1, -1)))
     patch_psutil_virtual_memory = patch(
         "psutil.virtual_memory",
         Mock(
@@ -185,9 +179,7 @@ def patch_system():
             )
         ),
     )
-    patch_psutil_disk_usage = patch(
-        "psutil.disk_usage", Mock(side_effect=fake_disk_usage)
-    )
+    patch_psutil_disk_usage = patch("psutil.disk_usage", Mock(side_effect=fake_disk_usage))
 
     # assumes that each shell command is called in only one way
     cmd_to_output = {
@@ -220,18 +212,14 @@ def patch_system():
         yield stack
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
-)
+@pytest.mark.skipif(sys.platform == "darwin", reason="test requires psutil.Process.rlimit")
 def test_get_hostname():
     with patch_system():
         hostname = _get_hostname()
         assert hostname == "mock-hostname"
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
-)
+@pytest.mark.skipif(sys.platform == "darwin", reason="test requires psutil.Process.rlimit")
 def test_get_gpu_info():
     with patch_system():
         gpu_info = _get_gpu_info()
@@ -258,9 +246,7 @@ def test_get_gpu_info():
         assert gpu_info == expected_gpu_info
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
-)
+@pytest.mark.skipif(sys.platform == "darwin", reason="test requires psutil.Process.rlimit")
 def test_get_psutil_info():
     with patch_system():
         psutil_info = _get_psutil_info()
@@ -302,9 +288,7 @@ def test_get_psutil_info():
         assert psutil_info == expected_psutil_info
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
-)
+@pytest.mark.skipif(sys.platform == "darwin", reason="test requires psutil.Process.rlimit")
 def test_get_disk_usage():
     with patch_system():
         disk_info = _get_disk_usage()
@@ -327,9 +311,7 @@ def test_get_disk_usage():
         assert disk_info == expected_disk_info
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
-)
+@pytest.mark.skipif(sys.platform == "darwin", reason="test requires psutil.Process.rlimit")
 def test_get_disk_usage_with_path():
     with patch_system():
         disk_info = _get_disk_usage(paths=[pathlib.Path("/foo"), pathlib.Path("/bar")])
@@ -351,9 +333,7 @@ def test_get_disk_usage_with_path():
         assert disk_info == expected_disk_info
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin", reason="test requires psutil.Process.rlimit"
-)
+@pytest.mark.skipif(sys.platform == "darwin", reason="test requires psutil.Process.rlimit")
 def test_probe_system():
     with patch_system():
         system_info = _probe_system()

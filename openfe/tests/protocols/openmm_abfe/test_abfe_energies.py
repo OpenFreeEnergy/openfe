@@ -34,9 +34,7 @@ class AlchemStateRest(AlchemicalState):
     lambda_restraints = AlchemicalState._LambdaParameter("lambda_restraints")
 
 
-def get_alchemical_energy_components(
-    alchemical_system, alchemical_state, positions, platform
-):
+def get_alchemical_energy_components(alchemical_system, alchemical_state, positions, platform):
     """Compute potential energy of the alchemical system by Force.
 
     This can be useful for debug and analysis.
@@ -121,7 +119,7 @@ class TestT4EnergiesRegression:
     def t4_validation_data(self, benzene_modifications, T4_protein_component, tmpdir):
         s = openmm_afe.AbsoluteBindingProtocol.default_settings()
         s.protocol_repeats = 1
-        s.engine_settings.compute_platform = 'cpu'
+        s.engine_settings.compute_platform = "cpu"
         s.forcefield_settings.small_molecule_forcefield = "openff-2.2.1"
         s.complex_solvation_settings = OpenMMSolvationSettings(
             solvent_padding=None,
@@ -148,9 +146,7 @@ class TestT4EnergiesRegression:
 
         dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
-        complex_units = [
-            u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)
-        ]
+        complex_units = [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
 
         with tmpdir.as_cwd():
             data = complex_units[0].run(dry=True)["debug"]
@@ -181,10 +177,7 @@ class TestT4EnergiesRegression:
         )
 
     @pytest.mark.parametrize("lambda_val", [0, 1])
-    def test_energies_regression(
-        self, lambda_val, t4_reference_system, t4_validation_data
-    ):
-
+    def test_energies_regression(self, lambda_val, t4_reference_system, t4_validation_data):
         energies_ref = self.get_energy_components(
             t4_reference_system,
             t4_validation_data["alchem_indices"],
@@ -212,7 +205,6 @@ class TestT4EnergiesRegression:
             assert pytest.approx(e_ref, abs=1e-3) == e_val
 
     def test_lambda_scale(self, t4_validation_data):
-
         def assert_energies(actual, expected, nonbonded_lower: bool):
             assert [k for k in expected.keys()] == [k for k in actual.keys()]
             for key in expected.keys():
@@ -267,12 +259,12 @@ class TestT4EnergiesRegression:
 
         # turn off sterics
         expected = copy.deepcopy(energies)
-        expected[
-            "alchemically modified NonbondedForce for non-alchemical/alchemical sterics"
-        ] = (0 * ommunit.kilojoule_per_mole)
+        expected["alchemically modified NonbondedForce for non-alchemical/alchemical sterics"] = (
+            0 * ommunit.kilojoule_per_mole
+        )
         expected[
             "alchemically modified BondForce for non-alchemical/alchemical sterics exceptions"
-        ] = (0 * ommunit.kilojoule_per_mole)
+        ] = 0 * ommunit.kilojoule_per_mole
 
         energies = self.get_energy_components(
             t4_validation_data["alchem_system"],

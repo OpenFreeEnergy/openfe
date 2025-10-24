@@ -3,7 +3,10 @@
 import pytest
 
 from gufe import SolventComponent, AlchemicalNetwork
-from openfe.setup.alchemical_network_planner import RHFEAlchemicalNetworkPlanner, RBFEAlchemicalNetworkPlanner
+from openfe.setup.alchemical_network_planner import (
+    RHFEAlchemicalNetworkPlanner,
+    RBFEAlchemicalNetworkPlanner,
+)
 from .edge_types import r_complex_edge, r_solvent_edge, r_vacuum_edge
 import openfe
 
@@ -21,12 +24,14 @@ def test_rbfe_alchemical_network_planner_init():
 def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_protein_component):
     alchem_planner = RBFEAlchemicalNetworkPlanner(
         # these aren't default settings, but the test ligands aren't aligned
-        mappers=[openfe.LomapAtomMapper(
-            time=20,
-            element_change=False,
-            max3d=1,
-            shift=True,
-        )]
+        mappers=[
+            openfe.LomapAtomMapper(
+                time=20,
+                element_change=False,
+                max3d=1,
+                shift=True,
+            )
+        ]
     )
     alchem_network = alchem_planner(
         ligands=atom_mapping_basic_test_files.values(),
@@ -36,10 +41,14 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
     assert isinstance(alchem_network, AlchemicalNetwork)
     edges = alchem_network.edges
 
-    assert len(edges) == 14 # we build 2envs * (8 ligands - 1) = 14 relative edges.
-    assert sum([r_complex_edge(e) for e in edges]) == 7 # half of the transformations should be complex (they always are)!
-    assert sum([r_solvent_edge(e) for e in edges]) == 7 # half of the transformations should be solvent!
-    assert sum([r_vacuum_edge(e) for e in edges]) == 0 # no vacuum here!
+    assert len(edges) == 14  # we build 2envs * (8 ligands - 1) = 14 relative edges.
+    assert (
+        sum([r_complex_edge(e) for e in edges]) == 7
+    )  # half of the transformations should be complex (they always are)!
+    assert (
+        sum([r_solvent_edge(e) for e in edges]) == 7
+    )  # half of the transformations should be solvent!
+    assert sum([r_vacuum_edge(e) for e in edges]) == 0  # no vacuum here!
 
     expected_names = {
         "rbfe_1,3,7-trimethylnaphthalene_solvent_1-butyl-4-methylbenzene_solvent",
@@ -63,39 +72,42 @@ def test_rbfe_alchemical_network_planner_call(atom_mapping_basic_test_files, T4_
 
 def test_rhfe_alchemical_network_planner_call_multigraph(atom_mapping_basic_test_files):
     alchem_planner = RHFEAlchemicalNetworkPlanner(
-        mappers=[openfe.LomapAtomMapper(
-            time=20,
-            element_change=False,
-            max3d=1,
-            shift=True,
-        )]
+        mappers=[
+            openfe.LomapAtomMapper(
+                time=20,
+                element_change=False,
+                max3d=1,
+                shift=True,
+            )
+        ]
     )
 
-    ligand_network = alchem_planner._construct_ligand_network(atom_mapping_basic_test_files.values())
+    ligand_network = alchem_planner._construct_ligand_network(atom_mapping_basic_test_files.values())  # fmt: skip
     ligand_network_edges = list(ligand_network.edges)
     ligand_network_edges.extend(list(ligand_network.edges))
 
     chemical_system_generator = alchem_planner._chemical_system_generator_type(
-            solvent=SolventComponent()
-        )
+        solvent=SolventComponent()
+    )
 
-    with pytest.raises(ValueError, match="There were multiple transformations with the same edge label! This might lead to overwriting your files."):
+    with pytest.raises(
+        ValueError,
+        match="There were multiple transformations with the same edge label! This might lead to overwriting your files.",
+    ):
         _ = alchem_planner._build_transformations(
             ligand_network_edges=ligand_network_edges,
             protocol=alchem_planner.transformation_protocol,
-            chemical_system_generator=chemical_system_generator)
+            chemical_system_generator=chemical_system_generator,
+        )
 
 
 def test_rhfe_alchemical_network_planner_call(atom_mapping_basic_test_files):
     alchem_planner = RHFEAlchemicalNetworkPlanner(
-        mappers=[openfe.LomapAtomMapper(
-            time=20,
-            element_change=False,
-            max3d=1,
-            shift=True,
-        )]
+        mappers=[openfe.LomapAtomMapper(time=20, element_change=False, max3d=1, shift=True)]
     )
-    alchem_network = alchem_planner(ligands=atom_mapping_basic_test_files.values(), solvent=SolventComponent())
+    alchem_network = alchem_planner(
+        ligands=atom_mapping_basic_test_files.values(), solvent=SolventComponent()
+    )
 
     assert isinstance(alchem_network, AlchemicalNetwork)
 
@@ -119,8 +131,12 @@ def test_rhfe_alchemical_network_planner_call(atom_mapping_basic_test_files):
         "rhfe_2,6-dimethylnaphthalene_solvent_2-methyl-6-propylnaphthalene_solvent",
     }
     assert sum([r_complex_edge(e) for e in edges]) == 0  # no complex!
-    assert sum([r_solvent_edge(e) for e in edges]) == 7 # half of the transformations should be solvent!
-    assert sum([r_vacuum_edge(e) for e in edges]) == 7 # half of the transformations should be vacuum!
+    assert (
+        sum([r_solvent_edge(e) for e in edges]) == 7
+    )  # half of the transformations should be solvent!
+    assert (
+        sum([r_vacuum_edge(e) for e in edges]) == 7
+    )  # half of the transformations should be vacuum!
 
     result_names = {e.name for e in alchem_network.edges}
     assert result_names == expected_names

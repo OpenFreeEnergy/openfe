@@ -25,13 +25,14 @@ from konnektor import network_analysis, network_planners, network_tools
 
 
 def _hasten_lomap(mapper, ligands):
-    """take a mapper and some ligands, put a common core arg into the mapper """
+    """take a mapper and some ligands, put a common core arg into the mapper"""
     if mapper.seed:
         return mapper
 
     try:
-        core = _find_common_core([m.to_rdkit() for m in ligands],
-                                 element_change=mapper.element_change)
+        core = _find_common_core(
+            [m.to_rdkit() for m in ligands], element_change=mapper.element_change
+        )
     except RuntimeError:  # in case MCS throws a hissy fit
         core = ""
 
@@ -96,8 +97,10 @@ def generate_radial_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [
+        _hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
+        else m for m in mappers
+        ]  # fmt: skip
 
     ligands = list(ligands)
 
@@ -108,13 +111,16 @@ def generate_radial_network(
             central_ligand = ligands[central_ligand]
             ligands.remove(central_ligand)
         except IndexError:
-            raise ValueError(f"index '{central_ligand}' out of bounds, there are "
-                             f"{len(ligands)} ligands")
+            raise ValueError(
+                f"index '{central_ligand}' out of bounds, there are {len(ligands)} ligands"
+            )
     elif isinstance(central_ligand, str):
         possibles = [lig for lig in ligands if lig.name == central_ligand]
         if not possibles:
-            raise ValueError(f"No ligand called '{central_ligand}' "
-                f"available: {', '.join(lig.name for lig in ligands)}")
+            raise ValueError(
+                f"No ligand called '{central_ligand}' "
+                f"available: {', '.join(lig.name for lig in ligands)}"
+            )
         if len(possibles) > 1:
             raise ValueError(f"Multiple ligands called '{central_ligand}'")
         central_ligand = possibles[0]
@@ -183,8 +189,7 @@ def generate_maximal_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m for m in mappers]
     nodes = list(ligands)
 
     # Construct network
@@ -228,8 +233,7 @@ def generate_minimal_spanning_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m for m in mappers]
     nodes = list(ligands)
 
     # Construct network
@@ -282,8 +286,7 @@ def generate_minimal_redundant_network(
     """
     if isinstance(mappers, AtomMapper):
         mappers = [mappers]
-    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper)
-               else m for m in mappers]
+    mappers = [_hasten_lomap(m, ligands) if isinstance(m, LomapAtomMapper) else m for m in mappers]
     nodes = list(ligands)
 
     # Construct network
@@ -335,9 +338,7 @@ def generate_network_from_names(
 
     network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
 
-    network = network_planner.generate_network_from_names(
-        components=nodes, names=names
-    )
+    network = network_planner.generate_network_from_names(components=nodes, names=names)
 
     return network
 
@@ -373,9 +374,7 @@ def generate_network_from_indices(
     nodes = list(ligands)
 
     network_planner = ExplicitNetworkGenerator(mappers=mapper, scorer=None)
-    network = network_planner.generate_network_from_indices(
-        components=nodes, indices=indices
-    )
+    network = network_planner.generate_network_from_indices(components=nodes, indices=indices)
     return network
 
 
@@ -405,15 +404,16 @@ def load_orion_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, 'r') as f:
-        network_lines = [l.strip().split(' ') for l in f
-                         if not l.startswith('#')]
+    with open(network_file, "r") as f:
+        network_lines = [
+            l.strip().split(" ") for l in f
+            if not l.startswith("#")
+            ]  # fmt: skip
 
     names = []
     for entry in network_lines:
         if len(entry) != 3 or entry[1] != ">>":
-            errmsg = ("line does not match expected name >> name format: "
-                      f"{entry}")
+            errmsg = f"line does not match expected name >> name format: {entry}"
             raise KeyError(errmsg)
 
         names.append((entry[0], entry[2]))
@@ -450,15 +450,17 @@ def load_fepplus_network(
       If an unexpected line format is encountered.
     """
 
-    with open(network_file, 'r') as f:
+    with open(network_file, "r") as f:
         network_lines = [l.split() for l in f.readlines()]
 
     names = []
     for entry in network_lines:
-        if len(entry) != 5 or entry[1] != '#' or entry[3] != '->':
-            errmsg = ("line does not match expected format "
-                      "hash:hash # name -> name\n"
-                      f"line format: {entry}")
+        if len(entry) != 5 or entry[1] != "#" or entry[3] != "->":
+            errmsg = (
+                "line does not match expected format "
+                "hash:hash # name -> name\n"
+                f"line format: {entry}"
+            )
             raise KeyError(errmsg)
 
         names.append((entry[2], entry[4]))

@@ -8,6 +8,7 @@ from .utils import write
 
 import pathlib
 
+
 class _Fetcher:
     """Base class for fetchers. Defines the API and plugin creation.
 
@@ -24,7 +25,9 @@ class _Fetcher:
     requires_ofe: Tuple
         minimum version of OpenFE required
     """
+
     REQUIRES_INTERNET = None
+
     def __init__(
         self,
         resources,
@@ -32,7 +35,7 @@ class _Fetcher:
         short_help,
         requires_ofe,
         section=None,
-        long_help=None
+        long_help=None,
     ):
         self._resources = resources
         self.short_name = short_name
@@ -76,7 +79,7 @@ class _Fetcher:
             '-d', '--directory', default='.',
             help="output directory, defaults to current directory",
             type=click.Path(file_okay=False, dir_okay=True, writable=True),
-        )
+        )  # fmt: skip
         def command(directory):
             directory = pathlib.Path(directory)
             directory.mkdir(parents=True, exist_ok=True)
@@ -86,8 +89,9 @@ class _Fetcher:
             command,
             section=self.section,
             requires_ofe=self.requires_ofe,
-            fetcher=self
+            fetcher=self,
         )
+
 
 class URLFetcher(_Fetcher):
     """Fetcher for URLs.
@@ -95,11 +99,13 @@ class URLFetcher(_Fetcher):
     Resources should be (base, filename), e.g., ("https://google.com/",
     "index.html).
     """
+
     REQUIRES_INTERNET = True
+
     def __call__(self, dest_dir):
         for base, filename in self.resources:
             # let's just prevent one footgun here
-            if not base.endswith('/'):
+            if not base.endswith("/"):
                 base += "/"
 
             write(f"Fetching {base}{filename}")
@@ -107,7 +113,7 @@ class URLFetcher(_Fetcher):
             with urllib.request.urlopen(base + filename) as resp:
                 contents = resp.read()
 
-            with open(dest_dir / filename, mode='wb') as f:
+            with open(dest_dir / filename, mode="wb") as f:
                 f.write(contents)
 
 
@@ -117,7 +123,9 @@ class PkgResourceFetcher(_Fetcher):
     Resources should be (package, filename), e.g., ("openfecli",
     "__init__.py").
     """
+
     REQUIRES_INTERNET = False
+
     def __call__(self, dest_dir):
         for package, filename in self.resources:
             ref = importlib.resources.files(package) / filename
@@ -148,15 +156,16 @@ class FetchablePlugin(CommandPlugin):
 
     This includes the fetcher to simplify testing and introspection.
     """
+
     def __init__(self, command, section, requires_ofe, fetcher):
-        super().__init__(command=command,
-                         section=section,
-                         requires_lib=requires_ofe,
-                         requires_cli=requires_ofe)
+        super().__init__(
+            command=command,
+            section=section,
+            requires_lib=requires_ofe,
+            requires_cli=requires_ofe,
+        )
         self.fetcher = fetcher
 
     @property
     def filenames(self):
         return [res[1] for res in self.fetcher.resources]
-
-

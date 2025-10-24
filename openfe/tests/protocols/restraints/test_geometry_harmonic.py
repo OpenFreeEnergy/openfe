@@ -32,9 +32,7 @@ def test_get_distance_restraint_selection(eg5_protein_ligand_universe):
     """
     Check that you get a distance restraint using atom selections.
     """
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms(
-        "resname LIG and not name H*"
-    )
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
     water_atoms = eg5_protein_ligand_universe.select_atoms("resname HOH")
     restraint_geometry = get_distance_restraint(
         universe=eg5_protein_ligand_universe,
@@ -53,9 +51,7 @@ def test_get_distance_restraint_atom_list(eg5_protein_ligand_universe):
     """
     Check that we can get a restraint using a set of host and guest atom lists
     """
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms(
-        "resname LIG and not name H*"
-    )
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
     host_atoms = [1, 2, 3]
     restraint_geometry = get_distance_restraint(
         universe=eg5_protein_ligand_universe,

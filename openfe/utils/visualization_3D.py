@@ -11,7 +11,7 @@ from matplotlib.colors import rgb2hex
 try:
     import py3Dmol
 except ImportError:
-    pass    # Don't throw  error, will happen later
+    pass  # Don't throw  error, will happen later
 
 from gufe.mapping import AtomMapping
 from gufe.components.explicitmoleculecomponent import ExplicitMoleculeComponent
@@ -44,7 +44,7 @@ def _get_max_dist_in_x(atom_mapping: AtomMapping) -> float:
     return estm if (estm > 5) else 5
 
 
-def _translate(mol, shift:Union[Tuple[float, float, float], NDArray[np.float64]]):
+def _translate(mol, shift: Union[Tuple[float, float, float], NDArray[np.float64]]):
     """
         shifts the molecule by the shift vector
 
@@ -69,7 +69,7 @@ def _translate(mol, shift:Union[Tuple[float, float, float], NDArray[np.float64]]
     return mol
 
 
-def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[int, int]):
+def _add_spheres(view: py3Dmol.view, mol1: Chem.Mol, mol2: Chem.Mol, mapping: Dict[int, int]):
     """
         will add spheres according to mapping to the view. (inplace!)
 
@@ -109,11 +109,12 @@ def _add_spheres(view:py3Dmol.view, mol1:Chem.Mol, mol2:Chem.Mol, mapping:Dict[i
 
 
 @requires_package("py3Dmol")
-def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
-                     style: Optional[str] ="stick",
-                     shift: Optional[Tuple[float, float, float]] = None,
-                     view: py3Dmol.view = None
-                     ) -> py3Dmol.view:
+def view_components_3d(
+    mols: Iterable[ExplicitMoleculeComponent],
+    style: Optional[str] = "stick",
+    shift: Optional[Tuple[float, float, float]] = None,
+    view: py3Dmol.view = None,
+) -> py3Dmol.view:
     """visualize multiple component coordinates in one interactive view.
     It helps to understand how the components are aligned in the system to each other.
 
@@ -130,7 +131,7 @@ def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
         Amount to i*shift each mols_i in order to allow inspection of them in heavy overlap cases.
     view : py3Dmol, optional
         Allows to pass an already existing view, by default None
-        
+
     Returns
     -------
     py3Dmol.view
@@ -138,17 +139,17 @@ def view_components_3d(mols: Iterable[ExplicitMoleculeComponent],
     """
     warnings.warn("Use gufe.LigandAtomMapping.view_3d() instead.", DeprecationWarning)
 
-    if(view is None):
+    if view is None:
         view = py3Dmol.view(width=600, height=600)
-    
+
     for i, component in enumerate(mols):
         mol = Chem.Mol(component.to_rdkit())
-        if(shift is not None):
-            tmp_shift = np.array(shift, dtype=np.float64)*i
+        if shift is not None:
+            tmp_shift = np.array(shift, dtype=np.float64) * i
             mol = _translate(mol, tmp_shift)
 
         view.addModel(Chem.MolToMolBlock(mol))
-        
+
     view.setStyle({style: {}})
 
     view.zoomTo()
@@ -163,7 +164,6 @@ def view_mapping_3d(
     style: Optional[str] = "stick",
     shift: Optional[Union[Tuple[float, float, float], NDArray[np.float64]]] = None,
 ) -> py3Dmol.view:
-
     """
     Render relative transformation edge in 3D using py3Dmol.
 
@@ -192,8 +192,10 @@ def view_mapping_3d(
     view : py3Dmol.view
         View of the system containing both molecules in the edge.
     """
-    warnings.warn("view_mapping_3d is deprecated, please use the class method LigandAtomMapping.view_3d() instead.", DeprecationWarning)
-
+    warnings.warn(
+        "view_mapping_3d is deprecated, please use the class method LigandAtomMapping.view_3d() instead.",
+        DeprecationWarning,
+    )
 
     if shift is None:
         shift = np.array([_get_max_dist_in_x(mapping) * 1.5, 0, 0])

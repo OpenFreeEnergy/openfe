@@ -10,32 +10,25 @@ from openfecli.utils import write, print_duration, configure_logger
 
 
 def _format_exception(exception) -> str:
-    """Takes the exception as stored by Gufe and reformats it.
-    """
+    """Takes the exception as stored by Gufe and reformats it."""
     return f"{exception[0]}: {exception[1][0]}"
 
 
-
-@click.command(
-    'quickrun',
-    short_help="Run a given transformation, saved as a JSON file"
-)
-@click.argument('transformation', type=click.File(mode='r'),
-                required=True)
+@click.command("quickrun", short_help="Run a given transformation, saved as a JSON file")
+@click.argument("transformation", type=click.File(mode="r"), required=True)
 @click.option(
-    '--work-dir', '-d', default=None,
-    type=click.Path(dir_okay=True, file_okay=False, writable=True,
-                    path_type=pathlib.Path),
+    "--work-dir", "-d", default=None,
+    type=click.Path(dir_okay=True, file_okay=False, writable=True, path_type=pathlib.Path),
     help=(
         "Directory in which to store files in (defaults to current directory). "
         "If the directory does not exist, it will be created at runtime."
     ),
-)
+)  # fmt: skip
 @click.option(
-    'output', '-o', default=None,
+    "output", "-o", default=None,
     type=click.Path(dir_okay=False, file_okay=False, path_type=pathlib.Path),
     help="Filepath at which to create and write the JSON-formatted results.",
-)
+)  # fmt: skip
 @print_duration
 def quickrun(transformation, work_dir, output):
     """Run the transformation (edge) in the given JSON file.
@@ -67,18 +60,16 @@ def quickrun(transformation, work_dir, output):
 
     stdout_handler = logging.StreamHandler(sys.stdout)
 
-    configure_logger('gufekey', handler=stdout_handler)
-    configure_logger('gufe', handler=stdout_handler)
-    configure_logger('openfe', handler=stdout_handler)
+    configure_logger("gufekey", handler=stdout_handler)
+    configure_logger("gufe", handler=stdout_handler)
+    configure_logger("openfe", handler=stdout_handler)
 
     # silence the openmmtools.multistate API warning
     stfu = MsgIncludesStringFilter(
-        "The openmmtools.multistate API is experimental and may change in "
-        "future releases"
+        "The openmmtools.multistate API is experimental and may change in future releases"
     )
     omm_multistate = "openmmtools.multistate"
-    modules = ["multistatereporter", "multistateanalyzer",
-               "multistatesampler"]
+    modules = ["multistatereporter", "multistateanalyzer", "multistatesampler"]
     for module in modules:
         ms_log = logging.getLogger(omm_multistate + "." + module)
         ms_log.addFilter(stfu)
@@ -95,20 +86,21 @@ def quickrun(transformation, work_dir, output):
     trans = Transformation.from_json(transformation)
 
     if output is None:
-        output = work_dir / (str(trans.key) + '_results.json')
+        output = work_dir / (str(trans.key) + "_results.json")
     else:
         output.parent.mkdir(exist_ok=True, parents=True)
 
     write("Planning simulations for this edge...")
     dag = trans.create()
     write("Starting the simulations for this edge...")
-    dagresult = execute_DAG(dag,
-                            shared_basedir=work_dir,
-                            scratch_basedir=work_dir,
-                            keep_shared=True,
-                            raise_error=False,
-                            n_retries=2,
-                            )
+    dagresult = execute_DAG(
+        dag,
+        shared_basedir=work_dir,
+        scratch_basedir=work_dir,
+        keep_shared=True,
+        raise_error=False,
+        n_retries=2,
+    )
     write("Done with all simulations! Analyzing the results....")
     prot_result = trans.protocol.gather([dagresult])
 
@@ -119,16 +111,15 @@ def quickrun(transformation, work_dir, output):
         estimate = uncertainty = None  # for output file
 
     out_dict = {
-        'estimate': estimate,
-        'uncertainty': uncertainty,
-        'protocol_result': prot_result.to_dict(),
-        'unit_results': {
-            unit.key: unit.to_keyed_dict()
-            for unit in dagresult.protocol_unit_results
-        }
+        "estimate": estimate,
+        "uncertainty": uncertainty,
+        "protocol_result": prot_result.to_dict(),
+        "unit_results": {
+            unit.key: unit.to_keyed_dict() for unit in dagresult.protocol_unit_results
+        },
     }
 
-    with open(output, mode='w') as outf:
+    with open(output, mode="w") as outf:
         json.dump(out_dict, outf, cls=JSON_HANDLER.encoder)
 
     write(f"Here is the result:\n\tdG = {estimate} ± {uncertainty}\n")
@@ -144,11 +135,7 @@ def quickrun(transformation, work_dir, output):
         )
 
 
-PLUGIN = OFECommandPlugin(
-    command=quickrun,
-    section="Quickrun Executor",
-    requires_ofe=(0, 3)
-)
+PLUGIN = OFECommandPlugin(command=quickrun, section="Quickrun Executor", requires_ofe=(0, 3))
 
 if __name__ == "__main__":
     quickrun()

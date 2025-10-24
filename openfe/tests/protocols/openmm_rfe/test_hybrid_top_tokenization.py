@@ -13,22 +13,27 @@ todo:
 - RelativeHybridTopologyProtocolUnit
 """
 
+
 @pytest.fixture
 def rfe_protocol():
-    return openmm_rfe.RelativeHybridTopologyProtocol(openmm_rfe.RelativeHybridTopologyProtocol.default_settings())
+    return openmm_rfe.RelativeHybridTopologyProtocol(
+        openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
+    )
+
 
 @pytest.fixture
 def rfe_protocol_other_units():
     """Identical to rfe_protocol, but with `kcal / mol` as input unit instead of `kilocalorie_per_mole`."""
     new_settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
-    new_settings.simulation_settings.early_termination_target_error = 0.0 * unit.kilocalorie/unit.mol
+    new_settings.simulation_settings.early_termination_target_error = 0.0 * unit.kilocalorie/unit.mol  # fmt: skip
     return openmm_rfe.RelativeHybridTopologyProtocol(new_settings)
 
 
 @pytest.fixture
 def protocol_unit(rfe_protocol, benzene_system, toluene_system, benzene_to_toluene_mapping):
     pus = rfe_protocol.create(
-        stateA=benzene_system, stateB=toluene_system,
+        stateA=benzene_system,
+        stateB=toluene_system,
         mapping=[benzene_to_toluene_mapping],
     )
     return list(pus.protocol_units)[0]
@@ -43,6 +48,7 @@ class TestRelativeHybridTopologyProtocolResult(GufeTokenizableTestsMixin):
     @pytest.fixture()
     def instance(self):
         pass
+
 
 class TestRelativeHybridTopologyProtocolOtherUnits(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocol
@@ -59,6 +65,7 @@ class TestRelativeHybridTopologyProtocolOtherUnits(GufeTokenizableTestsMixin):
         """
         assert isinstance(repr(instance), str)
         assert self.repr in repr(instance)
+
 
 class TestRelativeHybridTopologyProtocol(GufeTokenizableTestsMixin):
     cls = openmm_rfe.RelativeHybridTopologyProtocol

@@ -498,9 +498,7 @@ def _probe_system(paths: Optional[Iterable[pathlib.Path]] = None) -> dict:
     }
 
 
-def log_system_probe(
-    level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]] = None
-):
+def log_system_probe(level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]] = None):
     """Print the system information via configurable logging.
 
     This creates a logger tree under "{__name__}.log", allowing one to turn
@@ -523,8 +521,7 @@ def log_system_probe(
             for uuid, gpu_card in gpuinfo.items():
                 gpu.log(
                     level,
-                    f"GPU: {uuid=} {gpu_card['name']} "
-                    f"mode={gpu_card['compute_mode']}",
+                    f"GPU: {uuid=} {gpu_card['name']} mode={gpu_card['compute_mode']}",
                 )
             # gpu.log(level, f"CUDA driver: {...}")
             # gpu.log(level, f"CUDA toolkit: {...}")
@@ -538,8 +535,7 @@ def log_system_probe(
         for diskdev, disk in sysinfo["disk usage information"].items():
             base.log(
                 level,
-                f"{diskdev}: {disk['percent_used']} full "
-                f"({disk['available']} free)",
+                f"{diskdev}: {disk['percent_used']} full ({disk['available']} free)",
             )
 
 

@@ -11,9 +11,10 @@ from typing import Literal, List
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
-FAIL_STR = "Error" # string used to indicate a failed run in output tables.
+FAIL_STR = "Error"  # string used to indicate a failed run in output tables.
 
-def _get_column(val:float|int)->int:
+
+def _get_column(val: float | int) -> int:
     """Determine the index (where the 0th index is the decimal) at which the
     first non-zero value occurs in a full-precision string representation of a value.
 
@@ -28,6 +29,7 @@ def _get_column(val:float|int)->int:
         Column index
     """
     import numpy as np
+
     if val == 0:
         return 0
 
@@ -63,6 +65,7 @@ def format_estimate_uncertainty(
     """
 
     import numpy as np
+
     # get the last column needed for uncertainty
     unc_col = _get_column(unc) - (unc_prec - 1)
 
@@ -75,11 +78,13 @@ def format_estimate_uncertainty(
 
     return est_str, unc_str
 
-def is_results_json(fpath:os.PathLike|str)->bool:
-    """Sanity check that file is a result json before we try to deserialize"""
-    return 'estimate' in open(fpath, 'r').read(20)
 
-def load_json(fpath:os.PathLike|str)->dict:
+def is_results_json(fpath: os.PathLike | str) -> bool:
+    """Sanity check that file is a result json before we try to deserialize"""
+    return "estimate" in open(fpath, "r").read(20)
+
+
+def load_json(fpath: os.PathLike | str) -> dict:
     """Load a JSON file containing a gufe object.
 
     Parameters
@@ -98,9 +103,10 @@ def load_json(fpath:os.PathLike|str)->dict:
     import json
     from gufe.tokenization import JSON_HANDLER
 
-    return json.load(open(fpath, 'r'), cls=JSON_HANDLER.decoder)
+    return json.load(open(fpath, "r"), cls=JSON_HANDLER.decoder)
 
-def _get_names(result:dict) -> tuple[str, str]:
+
+def _get_names(result: dict) -> tuple[str, str]:
     """Get the ligand names from a unit's results data.
 
     Parameters
@@ -114,7 +120,7 @@ def _get_names(result:dict) -> tuple[str, str]:
         Ligand names corresponding to the results.
     """
     try:
-        nm = list(result['unit_results'].values())[0]['name']
+        nm = list(result["unit_results"].values())[0]["name"]
 
     except KeyError:
         raise ValueError("Failed to guess names")
@@ -122,35 +128,38 @@ def _get_names(result:dict) -> tuple[str, str]:
     # TODO: make this more robust by pulling names from inputs.state[A/B].name
 
     toks = nm.split()
-    if toks[2] == 'repeat':
+    if toks[2] == "repeat":
         return toks[0], toks[1]
     else:
         return toks[0], toks[2]
 
-def _get_type(res:dict)->Literal['vacuum','solvent','complex']:
+
+def _get_type(res: dict) -> Literal["vacuum", "solvent", "complex"]:
     """Determine the simulation type based on the component names."""
     # TODO: use component *types* instead here
-    list_of_pur = list(res['protocol_result']['data'].values())[0]
+    list_of_pur = list(res["protocol_result"]["data"].values())[0]
     pur = list_of_pur[0]
-    components = pur['inputs']['stateA']['components']
+    components = pur["inputs"]["stateA"]["components"]
 
-    if 'solvent' not in components:
-        return 'vacuum'
-    elif 'protein' in components:
-        return 'complex'
+    if "solvent" not in components:
+        return "vacuum"
+    elif "protein" in components:
+        return "complex"
     else:
-        return 'solvent'
+        return "solvent"
 
-def _legacy_get_type(res_fn:os.PathLike|str)->Literal['vacuum','solvent','complex']:
+
+def _legacy_get_type(res_fn: os.PathLike | str) -> Literal["vacuum", "solvent", "complex"]:
     # TODO: Deprecate this when we no longer rely on key names in `_get_type()`
 
-    if 'solvent' in res_fn:
-        return 'solvent'
-    elif 'vacuum' in res_fn:
-        return 'vacuum'
+    if "solvent" in res_fn:
+        return "solvent"
+    elif "vacuum" in res_fn:
+        return "vacuum"
     # TODO: if there is no identifier in the filename, do we really want to assume it's a complex?
     else:
-        return 'complex'
+        return "complex"
+
 
 def _get_result_id(
     result: dict, result_fn: os.PathLike | str
@@ -179,7 +188,8 @@ def _get_result_id(
 
     return (ligA, ligB), simtype
 
-def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]:
+
+def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -201,21 +211,22 @@ def _load_valid_result_json(fpath:os.PathLike|str)->tuple[tuple|None, dict|None]
     try:
         result_id = _get_result_id(result, fpath)
     except (ValueError, IndexError):
-        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.", err=True, fg='yellow')
+        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
-    if result['estimate'] is None:
-        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.", err=True, fg='yellow')
+    if result["estimate"] is None:
+        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if result['uncertainty'] is None:
-        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.", err=True, fg='yellow')
+    if result["uncertainty"] is None:
+        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
-    if all('exception' in u for u in result['unit_results'].values()):
-        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.", err=True, fg='yellow')
+    if all("exception" in u for u in result["unit_results"].values()):
+        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
         return result_id, None
 
     return result_id, result
 
-def _generate_bad_legs_error_message(bad_legs:list[tuple[set[str], tuple[str]]])->str:
+
+def _generate_bad_legs_error_message(bad_legs: list[tuple[set[str], tuple[str]]]) -> str:
     """Format output describing RBFE or RHFE legs that are missing runs.
 
     Parameters
@@ -246,6 +257,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     from openfe.protocols.openmm_rfe.equil_rfe_methods import (
         RelativeHybridTopologyProtocolResult as rfe_result,
     )
+
     # TODO: if there's a failed edge but other valid results in a leg, ddgs will be computed
     # only fails if there are no valid results
     DDGs = []
@@ -260,24 +272,24 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
         bind_unc = None
         hyd_unc = None
 
-        do_rbfe = (len(valid_leg_types & {'complex', 'solvent'}) == 2)
-        do_rhfe = (len(valid_leg_types & {'vacuum', 'solvent'}) == 2)
+        do_rbfe = len(valid_leg_types & {"complex", "solvent"}) == 2
+        do_rhfe = len(valid_leg_types & {"vacuum", "solvent"}) == 2
 
         if do_rbfe:
-            DG1_mag = rfe_result.compute_mean_estimate(vals['complex'])
-            DG1_unc = rfe_result.compute_uncertainty(vals['complex'])
-            DG2_mag = rfe_result.compute_mean_estimate(vals['solvent'])
-            DG2_unc = rfe_result.compute_uncertainty(vals['solvent'])
+            DG1_mag = rfe_result.compute_mean_estimate(vals["complex"])
+            DG1_unc = rfe_result.compute_uncertainty(vals["complex"])
+            DG2_mag = rfe_result.compute_mean_estimate(vals["solvent"])
+            DG2_unc = rfe_result.compute_uncertainty(vals["solvent"])
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 # DDG(2,1)bind = DG(1->2)complex - DG(1->2)solvent
                 DDGbind = (DG1_mag - DG2_mag).m
                 bind_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
 
         if do_rhfe:
-            DG1_mag = rfe_result.compute_mean_estimate(vals['solvent'])
-            DG1_unc = rfe_result.compute_uncertainty(vals['solvent'])
-            DG2_mag = rfe_result.compute_mean_estimate(vals['vacuum'])
-            DG2_unc = rfe_result.compute_uncertainty(vals['vacuum'])
+            DG1_mag = rfe_result.compute_mean_estimate(vals["solvent"])
+            DG1_unc = rfe_result.compute_uncertainty(vals["solvent"])
+            DG2_mag = rfe_result.compute_mean_estimate(vals["vacuum"])
+            DG2_unc = rfe_result.compute_uncertainty(vals["vacuum"])
             if not ((DG1_mag is None) or (DG2_mag is None)):
                 DDGhyd = (DG1_mag - DG2_mag).m
                 hyd_unc = np.sqrt(np.sum(np.square([DG1_unc.m, DG2_unc.m])))
@@ -291,20 +303,20 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     if bad_legs:
         err_msg = _generate_bad_legs_error_message(bad_legs)
         if allow_partial:
-            click.secho(err_msg, err=True, fg='yellow')
+            click.secho(err_msg, err=True, fg="yellow")
         else:
             err_msg += (
                 "\nYou can force partial gathering of results, without "
                 "problematic edges, by using the --allow-partial flag of the gather "
                 "command.\nNOTE: This may cause problems with predicting "
                 "absolute free energies from the relative free energies."
-                )
-            click.secho(err_msg, err=True, fg='red')
+            )
+            click.secho(err_msg, err=True, fg="red")
             sys.exit(1)
     return DDGs
 
 
-def _generate_ddg(legs:dict, allow_partial:bool) -> None:
+def _generate_ddg(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DDG values for the given legs.
 
     Parameters
@@ -326,10 +338,14 @@ def _generate_ddg(legs:dict, allow_partial:bool) -> None:
             data.append((ligA, ligB, DDGhyd, hyd_unc))
         elif DDGbind is None and DDGhyd is None:
             data.append((ligA, ligB, FAIL_STR, FAIL_STR))
-    df = pd.DataFrame(data, columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"])
+    df = pd.DataFrame(
+        data,
+        columns=["ligand_i", "ligand_j", "DDG(i->j) (kcal/mol)", "uncertainty (kcal/mol)"],
+    )
     return df
 
-def _generate_raw(legs:dict, allow_partial=True) -> None:
+
+def _generate_raw(legs: dict, allow_partial=True) -> None:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
 
@@ -363,15 +379,17 @@ def _generate_raw(legs:dict, allow_partial=True) -> None:
     )
     return df
 
+
 def _check_legs_have_sufficient_repeats(legs):
     """Throw an error if all legs do not have 2 or more simulation repeat results"""
 
     for leg in legs.values():
         for run_type, sim_results in leg.items():
             if len(sim_results) < 2:
-                msg='ERROR: Every edge must have at least two simulation repeats'
-                click.secho(msg, err=True, fg='red')
+                msg = "ERROR: Every edge must have at least two simulation repeats"
+                click.secho(msg, err=True, fg="red")
                 sys.exit(1)
+
 
 def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     """Compute and write out DG values for the given legs.
@@ -424,9 +442,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
             idB = len(nm_to_idx)
             nm_to_idx[ligB] = idB
 
-        g.add_edge(
-            idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc,
-        )
+        g.add_edge(idA, idB, calc_DDG=DDGbind, calc_dDDG=bind_unc)
 
     if DDGbind_count > 2:
         if not nx.is_weakly_connected(g):
@@ -438,7 +454,7 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
                 "Please either connect the network by addressing failed runs or adding edges.\n"
                 "You can still compute relative free energies using the ``--report=ddg`` flag."
             )
-            click.secho(msg, err=True, fg='red')
+            click.secho(msg, err=True, fg="red")
             sys.exit(1)
         idx_to_nm = {v: k for k, v in nm_to_idx.items()}
         f_i, df_i = mle(g, factor="calc_DDG")
@@ -458,14 +474,15 @@ def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
     data = []
     for ligA, DG, unc_DG in MLEs:
         DG, unc_DG = format_estimate_uncertainty(DG, unc_DG)
-        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
+        data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": DG, "uncertainty (kcal/mol)": unc_DG})
         expected_ligs.remove(ligA)
 
     for ligA in expected_ligs:
-        data.append({'ligand':ligA,  "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})
+        data.append({"ligand": ligA, "DG(MLE) (kcal/mol)": FAIL_STR, "uncertainty (kcal/mol)": FAIL_STR})  # fmt: skip
 
     df = pd.DataFrame(data)
     return df
+
 
 def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path]:
     """Recursively collects all results JSONs from the paths in ``results``,
@@ -529,18 +546,25 @@ def _get_legs_from_result_jsons(
         names, simtype = result_info
         if report.lower() == "raw":
             if result is None:
-                parsed_raw_data =[(None, None)]
+                parsed_raw_data = [(None, None)]
             else:
-                parsed_raw_data = [(v[0]['outputs']['unit_estimate'],
-                                    v[0]['outputs']['unit_estimate_error'])
-                                    for v in result["protocol_result"]["data"].values()]
+                parsed_raw_data = [
+                    (
+                        v[0]["outputs"]["unit_estimate"],
+                        v[0]["outputs"]["unit_estimate_error"],
+                    )
+                    for v in result["protocol_result"]["data"].values()
+                ]
             legs[names][simtype].append(parsed_raw_data)
         else:
             if result is None:
                 # we want the dict name/simtype entry to exist for error reporting, even if there's no valid data
                 dGs = []
             else:
-                dGs = [v[0]["outputs"]["unit_estimate"] for v in result["protocol_result"]["data"].values()]
+                dGs = [
+                    v[0]["outputs"]["unit_estimate"]
+                    for v in result["protocol_result"]["data"].values()
+                ]
             legs[names][simtype].extend(dGs)
 
     return legs
@@ -567,34 +591,35 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
 
 
 @click.command(
-    'gather',
-    short_help="Gather result jsons for network of RFE results into a TSV file"
+    "gather",
+    short_help="Gather result jsons for network of RFE results into a TSV file",
 )
-@click.argument('results',
-                nargs=-1,  # accept any number of results
-                type=click.Path(dir_okay=True, file_okay=True,
-                                path_type=pathlib.Path),
-                required=True)
+@click.argument(
+    "results",
+    nargs=-1,  # accept any number of results
+    type=click.Path(dir_okay=True, file_okay=True, path_type=pathlib.Path),
+    required=True,
+)
 @click.option(
-    '--report',
-    type=HyphenAwareChoice(['dg', 'ddg', 'raw'],
-                           case_sensitive=False),
+    "--report",
+    type=HyphenAwareChoice(["dg", "ddg", "raw"], case_sensitive=False),
     default="dg",
     show_default=True,
     help=(
         "What data to report. 'dg' gives maximum-likelihood estimate of "
         "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
         "the raw result of the deltaG for a leg."
-    )
+    ),
 )
 @click.option("output", "-o", type=click.File(mode="w"), default="-")
 @click.option(
     "--tsv",
     is_flag=True,
     default=False,
-    help=("Results that are output to stdout will be formatted as tab-separated, "
-          "identical to the formatting used when writing to file."
-          "By default, the output table will be formatted for human-readability."
+    help=(
+        "Results that are output to stdout will be formatted as tab-separated, "
+        "identical to the formatting used when writing to file."
+        "By default, the output table will be formatted for human-readability."
     ),
 )
 @click.option(
@@ -606,12 +631,13 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
         "(Skip those edges and issue warning instead.)"
     ),
 )
-def gather(results:List[os.PathLike|str],
-           output:os.PathLike|str,
-           report:Literal['dg','ddg','raw'],
-           tsv:bool,
-           allow_partial:bool
-           ):
+def gather(
+    results: List[os.PathLike | str],
+    output: os.PathLike | str,
+    report: Literal["dg", "ddg", "raw"],
+    tsv: bool,
+    allow_partial: bool,
+):
     """Gather simulation result JSON files of relative calculations to a tsv file.
 
     This walks RESULTS recursively and finds all result JSON files from the
@@ -642,14 +668,14 @@ def gather(results:List[os.PathLike|str],
     legs = _get_legs_from_result_jsons(result_fns, report)
 
     if legs == {}:
-        click.secho('No results JSON files found.',err=True)
+        click.secho("No results JSON files found.", err=True)
         sys.exit(1)
 
     # compute report
     report_func = {
-        'dg': _generate_dg_mle,
-        'ddg': _generate_ddg,
-        'raw': _generate_raw,
+        "dg": _generate_dg_mle,
+        "ddg": _generate_ddg,
+        "raw": _generate_raw,
     }[report.lower()]
     df = report_func(legs, allow_partial)
 
@@ -667,7 +693,7 @@ def gather(results:List[os.PathLike|str],
 
 PLUGIN = OFECommandPlugin(
     command=gather,
-    section='Quickrun Executor',
+    section="Quickrun Executor",
     requires_ofe=(0, 6),
 )
 

@@ -2,7 +2,7 @@ import pytest
 from openfe.setup import LigandAtomMapping
 
 
-pytest.importorskip('py3Dmol')
+pytest.importorskip("py3Dmol")
 from openfe.utils.visualization_3D import view_mapping_3d, view_components_3d
 
 
@@ -37,6 +37,7 @@ def test_visualize_component_coords_give_iterable_shift(benzene_transforms):
     """
     components = [benzene_transforms["benzene"], benzene_transforms["phenol"]]
     view_components_3d(components, shift=(1, 1, 1))
+
 
 def test_visualize_component_coords_reuse_view(benzene_transforms):
     """

@@ -8,12 +8,26 @@ from typing import List
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, MAPPER, OUTPUT_DIR, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
+    MOL_DIR,
+    MAPPER,
+    OUTPUT_DIR,
+    YAML_OPTIONS,
+    NCORES,
+    OVERWRITE,
+    N_PROTOCOL_REPEATS,
 )
 
+
 def plan_rhfe_network_main(
-    mapper, mapping_scorer, ligand_network_planner, small_molecules,
-    solvent, n_protocol_repeats, partial_charge_settings, processors, overwrite_charges
+    mapper,
+    mapping_scorer,
+    ligand_network_planner,
+    small_molecules,
+    solvent,
+    n_protocol_repeats,
+    partial_charge_settings,
+    processors,
+    overwrite_charges,
 ):
     """Utility method to plan a relative hydration free energy network.
 
@@ -46,9 +60,11 @@ def plan_rhfe_network_main(
         associated ligand network
     """
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
-        RHFEAlchemicalNetworkPlanner
+        RHFEAlchemicalNetworkPlanner,
     )
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import RelativeHybridTopologyProtocol
+    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
+        RelativeHybridTopologyProtocol,
+    )
     from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     protocol_settings = RelativeHybridTopologyProtocol.default_settings()
@@ -64,18 +80,16 @@ def plan_rhfe_network_main(
         toolkit_backend=partial_charge_settings.off_toolkit_backend,
         generate_n_conformers=partial_charge_settings.number_of_conformers,
         nagl_model=partial_charge_settings.nagl_model,
-        processors=processors
+        processors=processors,
     )
 
     network_planner = RHFEAlchemicalNetworkPlanner(
         mappers=mapper,
         mapping_scorer=mapping_scorer,
         ligand_network_planner=ligand_network_planner,
-        protocol=protocol
+        protocol=protocol,
     )
-    alchemical_network = network_planner(
-        ligands=charged_small_molecules, solvent=solvent
-    )
+    alchemical_network = network_planner(ligands=charged_small_molecules, solvent=solvent)
 
     return alchemical_network, network_planner._ligand_network
 
@@ -87,30 +101,21 @@ def plan_rhfe_network_main(
         "for the quickrun command."
     ),
 )
-@MOL_DIR.parameter(
-    required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths."
-)
-@YAML_OPTIONS.parameter(
-    multiple=False, required=False, default=None,
-    help=YAML_OPTIONS.kwargs["help"],
-)
-@OUTPUT_DIR.parameter(
-    help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.",
-    default="alchemicalNetwork",
-)
-@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])
-
-@NCORES.parameter(
-    help=NCORES.kwargs["help"],
-    default=1,
-)
-@OVERWRITE.parameter(
-    help=OVERWRITE.kwargs["help"],
-    default=OVERWRITE.kwargs["default"],
-    is_flag=True
-)
+@MOL_DIR.parameter(required=True, help=MOL_DIR.kwargs["help"] + " Any number of sdf paths.")
+@YAML_OPTIONS.parameter(multiple=False, required=False, default=None, help=YAML_OPTIONS.kwargs["help"])  # fmt: skip
+@OUTPUT_DIR.parameter(help=OUTPUT_DIR.kwargs["help"] + " Defaults to `./alchemicalNetwork`.", default="alchemicalNetwork")  # fmt: skip
+@N_PROTOCOL_REPEATS.parameter(multiple=False, required=False, default=3, help=N_PROTOCOL_REPEATS.kwargs["help"])  # fmt: skip
+@NCORES.parameter(help=NCORES.kwargs["help"], default=1)
+@OVERWRITE.parameter(help=OVERWRITE.kwargs["help"], default=OVERWRITE.kwargs["default"], is_flag=True)  # fmt: skip
 @print_duration
-def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str, n_cores: int, overwrite_charges: bool, n_protocol_repeats: int):
+def plan_rhfe_network(
+    molecules: List[str],
+    yaml_settings: str,
+    output_dir: str,
+    n_cores: int,
+    overwrite_charges: bool,
+    n_protocol_repeats: int,
+):
     # TODO: make this match the rbfe network docstring, or vice-versa?
     """
     Plan a relative hydration free energy network, saved as JSON files for use by
@@ -158,10 +163,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     write("\tGot input: ")
 
     small_molecules = MOL_DIR.get(molecules)
-    write(
-        "\t\tSmall Molecules: "
-        + " ".join([str(sm) for sm in small_molecules])
-    )
+    write("\t\tSmall Molecules: " + " ".join([str(sm) for sm in small_molecules]))
 
     yaml_options = YAML_OPTIONS.get(yaml_settings)
     mapper_obj = yaml_options.mapper
@@ -186,7 +188,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
     if overwrite_charges:
         write("\tOverwriting partial charges")
     write("")
-    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")
+    write(f"\t{n_protocol_repeats=} ({n_protocol_repeats} simulation repeat(s) per transformation)\n")  # fmt: skip
 
     # DO
     write("Planning RHFE-Campaign:")
@@ -199,7 +201,7 @@ def plan_rhfe_network(molecules: List[str], yaml_settings: str, output_dir: str,
         n_protocol_repeats=n_protocol_repeats,
         partial_charge_settings=partial_charge,
         processors=n_cores,
-        overwrite_charges=overwrite_charges
+        overwrite_charges=overwrite_charges,
     )
     write("\tDone")
     write("")
