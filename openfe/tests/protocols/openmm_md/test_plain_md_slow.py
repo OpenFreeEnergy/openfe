@@ -8,12 +8,12 @@ from openfe.protocols import openmm_md
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize('platform', ['CPU', 'CUDA'])
+@pytest.mark.parametrize("platform", ["CPU", "CUDA"])
 def test_vacuum_sim(
     benzene_vacuum_system,
     platform,
     available_platforms,
-    tmpdir
+    tmpdir,
 ):
     if platform not in available_platforms:
         pytest.skip(f"OpenMM Platform: {platform} is not available")
@@ -41,7 +41,7 @@ def test_vacuum_sim(
         dag,
         shared_basedir=workdir,
         scratch_basedir=workdir,
-        keep_shared=True
+        keep_shared=True,
     )
 
     assert r.ok()
@@ -59,7 +59,7 @@ def test_vacuum_sim(
         "minimized.pdb",
         "simulation.xtc",
         "simulation.log",
-        "system.pdb"
+        "system.pdb",
     ]
     for file in files:
         assert (unit_shared / file).exists()
@@ -69,16 +69,16 @@ def test_vacuum_sim(
     assert not (unit_shared / "checkpoint.chk").exists()
 
     # check that the output file paths are correct
-    assert pur.outputs['system_pdb'] == unit_shared / "system.pdb"
-    assert pur.outputs['minimized_pdb'] == unit_shared / "minimized.pdb"
-    assert pur.outputs['nc'] == unit_shared / "simulation.xtc"
-    assert pur.outputs['last_checkpoint'] is None
-    assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"
-    assert pur.outputs['nvt_equil_pdb'] is None
+    assert pur.outputs["system_pdb"] == unit_shared / "system.pdb"
+    assert pur.outputs["minimized_pdb"] == unit_shared / "minimized.pdb"
+    assert pur.outputs["nc"] == unit_shared / "simulation.xtc"
+    assert pur.outputs["last_checkpoint"] is None
+    assert pur.outputs["npt_equil_pdb"] == unit_shared / "equil_npt.pdb"
+    assert pur.outputs["nvt_equil_pdb"] is None
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize('platform', ['CUDA'])
+@pytest.mark.parametrize("platform", ["CUDA"])
 def test_complex_solvent_sim_gpu(
     benzene_complex_system,
     platform,
@@ -110,7 +110,7 @@ def test_complex_solvent_sim_gpu(
         dag,
         shared_basedir=workdir,
         scratch_basedir=workdir,
-        keep_shared=True
+        keep_shared=True,
     )
 
     assert r.ok()
@@ -130,15 +130,15 @@ def test_complex_solvent_sim_gpu(
         "minimized.pdb",
         "simulation.xtc",
         "simulation.log",
-        "system.pdb"
+        "system.pdb",
     ]
     for file in files:
         assert (unit_shared / file).exists()
 
     # check that the output file paths are correct
-    assert pur.outputs['system_pdb'] == unit_shared / "system.pdb"
-    assert pur.outputs['minimized_pdb'] == unit_shared / "minimized.pdb"
-    assert pur.outputs['nc'] == unit_shared / "simulation.xtc"
-    assert pur.outputs['last_checkpoint'] == unit_shared / "checkpoint.chk"
-    assert pur.outputs['nvt_equil_pdb'] == unit_shared / "equil_nvt.pdb"
-    assert pur.outputs['npt_equil_pdb'] == unit_shared / "equil_npt.pdb"
+    assert pur.outputs["system_pdb"] == unit_shared / "system.pdb"
+    assert pur.outputs["minimized_pdb"] == unit_shared / "minimized.pdb"
+    assert pur.outputs["nc"] == unit_shared / "simulation.xtc"
+    assert pur.outputs["last_checkpoint"] == unit_shared / "checkpoint.chk"
+    assert pur.outputs["nvt_equil_pdb"] == unit_shared / "equil_nvt.pdb"
+    assert pur.outputs["npt_equil_pdb"] == unit_shared / "equil_npt.pdb"
