@@ -10,10 +10,9 @@ from openfe import AlchemicalNetwork, LigandNetwork
 def plan_alchemical_network_output(
     alchemical_network: AlchemicalNetwork,
     ligand_network: LigandNetwork,
-    folder_path: pathlib.Path
+    folder_path: pathlib.Path,
 ):
-    """Write the contents of an alchemical network into the structure
-    """
+    """Write the contents of an alchemical network into the structure"""
 
     base_name = folder_path.name
     folder_path.mkdir(parents=True, exist_ok=True)
@@ -23,7 +22,7 @@ def plan_alchemical_network_output(
     write("\t\t- " + base_name + ".json")
 
     ln_fname = "ligand_network.graphml"
-    with open(folder_path / ln_fname, mode='w') as f:
+    with open(folder_path / ln_fname, mode="w") as f:
         f.write(ligand_network.to_graphml())
     write(f"\t\t- {ln_fname}")
 
@@ -35,5 +34,3 @@ def plan_alchemical_network_output(
         filename = f"{transformation_name}.json"
         transformation.to_json(transformations_dir / filename)
         write("\t\t\t\t- " + filename)
-
-
