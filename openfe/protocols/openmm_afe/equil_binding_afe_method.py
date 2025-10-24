@@ -34,6 +34,7 @@ from typing import Any, Iterable, Optional, Union
 
 import gufe
 import MDAnalysis as mda
+from MDAnalysis.lib.distances import calc_bonds
 import numpy as np
 import numpy.typing as npt
 from gufe import (
@@ -63,13 +64,14 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
 from openfe.protocols.openmm_utils import settings_validation, system_validation
 from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms
+from openfe.protocols.restraint_utils.geometry.utils import FindHostAtoms, get_central_atom_idx
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
+from openfe.protocols.restraint_utils.openmm.omm_forces import add_force_in_separate_group
 from openff.units import unit as offunit
 from openff.units import Quantity
 from openff.units.openmm import to_openmm
-from openmm import System
+from openmm import System, HarmonicBondForce
 from openmm import unit as ommunit
 from openmm.app import Topology as omm_topology
 from openmmtools import multistate
@@ -1075,10 +1077,17 @@ class AbsoluteBindingUnitMixin:
             host_atoms=counter_ions,
             guest_atoms=alchem_atoms,
             min_search_distance=settings['alchemical_settings'].alchemical_ion_min_distance,
-            max_search_distance=999 * offunit.nm  # TODO: change to None?
+            # set max distance to just above solvent padding to avoid picking
+            # an ion more than half a box distance away
+            max_search_distance=settings['solvation_settings'].solvent_padding + 0.1 * offunit.nanometer,
         )
 
-        atom_finder.run()
+        # only run on the final frame
+        atom_finder.run(frames=[-1])
+
+        if len(atom_finder.results.host_idxs) == 0:
+            errmsg = "No suitable alchemical ion was found"
+            raise ValueError(errmsg)
 
         # Just use the first one that comes back ok
         return atom_finder.results.host_idxs[0]
@@ -1430,3 +1439,109 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
         settings["output_settings"] = prot_settings.solvent_output_settings
 
         return settings
+
+    def _add_restraints(
+        self,
+        system: System,
+        topology: omm_topology,
+        positions: ommunit.Quantity,
+        alchem_comps: dict[str, list[Component]],
+        comp_resids: dict[Component, npt.NDArray],
+        settings: dict[str, SettingsBaseModel],
+        alchem_ion: int | None,
+    ) -> tuple[
+        GlobalParameterState | None,
+        Quantity | None,
+        System,
+        geometry.HostGuestRestraintGeometry | None,
+    ]:
+        """
+        Find and add restraints to the OpenMM System.
+
+        Notes
+        -----
+        Currently, only Boresch-like restraints are supported.
+
+        Parameters
+        ----------
+        system : openmm.System
+          The System to add the restraint to.
+        topology : openmm.app.Topology
+          An OpenMM Topology that defines the System.
+        positions: openmm.unit.Quantity
+          The System's current positions.
+          Used if a trajectory file isn't found.
+        alchem_comps: dict[str, list[Component]]
+          A dictionary with a list of alchemical components
+          in both state A and B.
+        comp_resids: dict[Component, npt.NDArray]
+          A dictionary keyed by each Component in the System
+          which contains arrays with the residue indices that is contained
+          by that Component.
+        settings : dict[str, SettingsBaseModel]
+          A dictionary of settings that defines how to find and set
+          the restraint.
+        alchem_ions : int | None
+          The index of an alchemical ion, if it exists.
+
+        Returns
+        -------
+        restraint_parameter_state : RestraintParameterState
+          A RestraintParameterState object that defines the control
+          parameter for the restraint.
+        correction : openff.units.Quantity
+          The standard state correction for the restraint.
+        system : openmm.System
+          A copy of the System with the restraint added.
+        rest_geom : geometry.HostGuestRestraintGeometry
+          The restraint Geometry object.
+        """
+        if alchem_ion is None:
+            return None, None, system, None
+
+        if self.verbose:
+            self.logger.info("Generating restraints")
+
+        univ = _get_mda_universe(
+            topology,
+            positions,
+            self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
+        )
+
+        # alchemical ion atom
+        alchem_ion = univ.atoms[alchem_ion]
+
+        # get the alchemical ligand atoms
+        ligand_rdmol = alchem_comps["stateA"][0].to_rdkit()
+        residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
+        ligand_alchem_idxs = _get_idxs_from_residxs(topology=omm_topology, residxs=residxs)
+        ligand_central_atom_idx = ligand_alchem_idxs[get_central_atom_idx(ligand_rdmol)]
+        ligand_central_atom = univ.atoms[ligand_central_atom_idx]
+
+        # go to the final frame
+        univ.trajectory[-1]
+
+        distance = float(
+            calc_bonds(
+                alchem_ion.position,
+                ligand_central_atom.position,
+                box=univ.dimensions
+            )
+        )
+
+        spring_constant = to_openmm(
+            settings['alchemical_settings'].alchemical_ion_solvent_spring_constant
+        )
+
+        force = HarmonicBondForce()
+        force.addBond(
+            ligand_central_atom_idx,
+            alchem_ion,
+            distance * ommunit.angstrom,
+            spring_constant,
+        )
+
+        force.setName("ion_restraint")
+        add_force_in_separate_group(system, force)
+
+        return None, None, system, None

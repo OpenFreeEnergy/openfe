@@ -37,6 +37,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
+    SpringConstantLinearQuantity,
 )
 
 import numpy as np
@@ -60,9 +61,14 @@ class ABFEAlchemicalSettings(AlchemicalSettings):
     Whether or not to use explicit charge correction using
     a co-alchemical ion.
     """
-    alchemical_ion_min_distance: NanometerQuantity = 1.2 * offunit.nanometer
+    alchemical_ion_min_distance: NanometerQuantity = 1.0 * offunit.nanometer
     """
     The minimum distance to search for a co-alchemical ion.
+    """
+    alchemical_ion_solvent_spring_constant: SpringConstantLinearQuantity = 1000.0 * offunit.kilojoule_per_mole / offunit.nm**2
+    """
+    The spring constant holding the ion away from the alchemical solute
+    in the solvent leg.
     """
 
 
@@ -339,7 +345,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """Settings for solvating the system in the complex."""
 
     # Alchemical settings
-    alchemical_settings: AlchemicalSettings
+    alchemical_settings: ABFEAlchemicalSettings
     """
     Alchemical protocol settings.
     """

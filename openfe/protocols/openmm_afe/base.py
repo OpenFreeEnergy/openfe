@@ -623,7 +623,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
     ) -> tuple[
         Optional[GlobalParameterState],
         Optional[Quantity],
-        Optional[openmm.System],
+        openmm.System,
         Optional[geometry.BaseRestraintGeometry],
     ]:
         """
