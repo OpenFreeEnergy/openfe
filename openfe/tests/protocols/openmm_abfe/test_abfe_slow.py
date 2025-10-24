@@ -6,14 +6,12 @@ import pathlib
 from openff.units import unit as offunit
 import openfe
 from openfe.protocols.openmm_afe import AbsoluteBindingProtocol
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL
-)
+from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL
 
 
 @pytest.mark.integration
 @pytest.mark.flaky(reruns=3)  # pytest-rerunfailures; we can get bad minimisation
-@pytest.mark.skipif(not HAS_NAGL, reason='need NAGL')
+@pytest.mark.skipif(not HAS_NAGL, reason="need NAGL")
 @pytest.mark.parametrize("platform", ["CUDA"])
 def test_openmm_run_engine(
     platform,
@@ -30,7 +28,7 @@ def test_openmm_run_engine(
 
     # Run a really short calculation to check everything is going well
     settings.protocol_repeats = 1
-    settings.engine_settings.compute_platform = 'CUDA'
+    settings.engine_settings.compute_platform = "CUDA"
 
     # Solvent
     settings.solvent_equil_simulation_settings.equilibration_length_nvt = 10 * offunit.picosecond
@@ -38,9 +36,9 @@ def test_openmm_run_engine(
     settings.solvent_equil_simulation_settings.production_length = 10 * offunit.picosecond
     settings.solvent_simulation_settings.equilibration_length = 50 * offunit.picosecond
     settings.solvent_simulation_settings.production_length = 125 * offunit.picosecond
-    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * offunit.kilocalorie_per_mole
+    settings.solvent_simulation_settings.early_termination_target_error = 0.12 * offunit.kilocalorie_per_mole  # fmt: skip
     settings.solvent_simulation_settings.time_per_iteration = 2.5 * offunit.ps
-    settings.solvent_solvation_settings.box_shape = 'dodecahedron'
+    settings.solvent_solvation_settings.box_shape = "dodecahedron"
     settings.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
 
     # Complex
@@ -49,9 +47,9 @@ def test_openmm_run_engine(
     settings.complex_equil_simulation_settings.production_length = 100 * offunit.picosecond
     settings.complex_simulation_settings.equilibration_length = 50 * offunit.picosecond
     settings.complex_simulation_settings.production_length = 125 * offunit.picosecond
-    settings.complex_simulation_settings.early_termination_target_error = 0.12 * offunit.kilocalorie_per_mole
+    settings.complex_simulation_settings.early_termination_target_error = 0.12 * offunit.kilocalorie_per_mole  # fmt: skip
     settings.complex_simulation_settings.time_per_iteration = 2.5 * offunit.ps
-    settings.complex_solvation_settings.box_shape = 'dodecahedron'
+    settings.complex_solvation_settings.box_shape = "dodecahedron"
     settings.complex_solvation_settings.solvent_padding = 0.9 * offunit.nanometer
 
     # General FF things
@@ -64,18 +62,22 @@ def test_openmm_run_engine(
     # unpack ligands
     ligand, _ = eg5_ligands
 
-    stateA = openfe.ChemicalSystem({
-        'protein': eg5_protein,
-        'cofactor': eg5_cofactor,
-        'ligand': ligand,
-        'solvent': openfe.SolventComponent()
-    })
+    stateA = openfe.ChemicalSystem(
+        {
+            "protein": eg5_protein,
+            "cofactor": eg5_cofactor,
+            "ligand": ligand,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
 
-    stateB = openfe.ChemicalSystem({
-        'protein': eg5_protein,
-        'cofactor': eg5_cofactor,
-        'solvent': openfe.SolventComponent()
-    })
+    stateB = openfe.ChemicalSystem(
+        {
+            "protein": eg5_protein,
+            "cofactor": eg5_cofactor,
+            "solvent": openfe.SolventComponent(),
+        }
+    )
 
     # Create DAG from protocol, get the vacuum and solvent units
     # and eventually dry run the first solvent unit
@@ -108,4 +110,3 @@ def test_openmm_run_engine(
     assert len(states["complex"]) == 1
     assert states["solvent"][0].shape[1] == 14
     assert states["complex"][0].shape[1] == 30
-

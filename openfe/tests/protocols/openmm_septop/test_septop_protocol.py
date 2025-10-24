@@ -309,9 +309,7 @@ def test_check_alchem_charge_diff(charged_benzene_modifications):
         )
 
 
-def test_charge_error_create(
-    charged_benzene_modifications, T4_protein_component, default_settings
-):
+def test_charge_error_create(charged_benzene_modifications, T4_protein_component, default_settings):
     protocol = SepTopProtocol(
         settings=default_settings,
     )
@@ -346,13 +344,8 @@ def test_charge_error_create(
         ("stateB", "benzene_complex_system", "benzene_system"),
     ],
 )
-def test_validate_complex_endstates_protcomp(
-    request, system_A, system_B, fail_endstate
-):
-
-    with pytest.raises(
-        ValueError, match=f"No ProteinComponent found in {fail_endstate}"
-    ):
+def test_validate_complex_endstates_protcomp(request, system_A, system_B, fail_endstate):
+    with pytest.raises(ValueError, match=f"No ProteinComponent found in {fail_endstate}"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
@@ -382,10 +375,7 @@ def test_validate_complex_endstates_nosolvcomp(
     system_B,
     fail_endstate,
 ):
-
-    with pytest.raises(
-        ValueError, match=f"No SolventComponent found in {fail_endstate}"
-    ):
+    with pytest.raises(ValueError, match=f"No SolventComponent found in {fail_endstate}"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
@@ -415,7 +405,6 @@ def test_validate_alchem_comps_missing(
     system_B,
     fail_endstate,
 ):
-
     alchem_comps = system_validation.get_alchemical_components(
         request.getfixturevalue(system_A),
         request.getfixturevalue(system_B),
@@ -423,7 +412,7 @@ def test_validate_alchem_comps_missing(
 
     with pytest.raises(
         ValueError,
-        match="one alchemical component must be " f"present in {fail_endstate}.",
+        match=f"one alchemical component must be present in {fail_endstate}.",
     ):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
@@ -455,9 +444,7 @@ def test_validate_alchem_comps_toomanyA(
 
     assert len(alchem_comps["stateB"]) == 1
 
-    with pytest.raises(
-        ValueError, match="present in stateA. Found 2 alchemical components."
-    ):
+    with pytest.raises(ValueError, match="present in stateA. Found 2 alchemical components."):
         SepTopProtocol._validate_alchemical_components(alchem_comps)
 
 
@@ -522,9 +509,7 @@ def three_particle_system():
 
     distances = [[0.0, 4.0, 3.0], [4.0, 0.0, 5.0], [3.0, 5.0, 0.0]]
 
-    def interaction_energy_fn(
-        idx_a, idx_b, lambda_vdw: float = 1.0, lambda_charges: float = 1.0
-    ):
+    def interaction_energy_fn(idx_a, idx_b, lambda_vdw: float = 1.0, lambda_charges: float = 1.0):
         epsilon = np.sqrt(epsilons[idx_a] * epsilons[idx_b])
         sigma = 0.5 * (sigmas[idx_a] + sigmas[idx_b])
         charge = charges[idx_a] * charges[idx_b]
@@ -534,9 +519,7 @@ def three_particle_system():
         )
 
     coords = (
-        np.array(
-            [[0.0, 0.0, 0.0], [distances[0][1], 0.0, 0.0], [0.0, distances[0][2], 0.0]]
-        )
+        np.array([[0.0, 0.0, 0.0], [distances[0][1], 0.0, 0.0], [0.0, distances[0][2], 0.0]])
         * openmm.unit.angstrom
     )
 
@@ -551,9 +534,7 @@ class TestNonbondedInteractions:
 
         factory = AbsoluteAlchemicalFactory(consistent_exceptions=False)
         alchemical_region_A = AlchemicalRegion(alchemical_atoms=[0], name="A")
-        alchemical_system = factory.create_alchemical_system(
-            system, [alchemical_region_A]
-        )
+        alchemical_system = factory.create_alchemical_system(system, [alchemical_region_A])
 
         energy_0 = compute_energy(
             alchemical_system,
@@ -595,9 +576,7 @@ class TestNonbondedInteractions:
                 "lambda_electrostatics_A": 0.5,
             },
         )
-        expected_energy_05 = (
-            energy_fn(1, 2) + energy_fn(0, 2, 0.5, 0.5) + energy_fn(0, 1, 0.5, 0.5)
-        )
+        expected_energy_05 = energy_fn(1, 2) + energy_fn(0, 2, 0.5, 0.5) + energy_fn(0, 1, 0.5, 0.5)
         assert_allclose(energy_05, from_openmm(expected_energy_05), rtol=1e-05)
 
     def test_two_ligands(self, three_particle_system):
@@ -703,16 +682,13 @@ def benzene_toluene_dag(
 
 
 def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
-
     prot_units = list(benzene_toluene_dag.protocol_units)
 
     assert len(prot_units) == 4
 
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
     sol_run_unit = [u for u in prot_units if isinstance(u, SepTopSolventRunUnit)]
-    complex_setup_unit = [
-        u for u in prot_units if isinstance(u, SepTopComplexSetupUnit)
-    ]
+    complex_setup_unit = [u for u in prot_units if isinstance(u, SepTopComplexSetupUnit)]
     complex_run_unit = [u for u in prot_units if isinstance(u, SepTopComplexRunUnit)]
     assert len(solv_setup_unit) == 1
     assert len(sol_run_unit) == 1
@@ -730,12 +706,11 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         serialized_system = solv_setup_output["system"]
         solv_sampler = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]
+        )["debug"]["sampler"]  # fmt: skip
+
         assert solv_sampler.is_periodic
         assert isinstance(solv_sampler, MultiStateSampler)
-        assert isinstance(
-            solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat
-        )
+        assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
         assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
@@ -746,19 +721,18 @@ def test_dry_run_benzene_toluene(benzene_toluene_dag, tmpdir):
         serialized_system = complex_setup_output["system"]
         complex_sampler = complex_run_unit[0].run(
             serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]
+        )["debug"]["sampler"]  # fmt: skip
+
         assert complex_sampler.is_periodic
         assert isinstance(complex_sampler, MultiStateSampler)
-        assert isinstance(
-            complex_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat
-        )
+        assert isinstance(complex_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
         assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 2687
 
 
-@pytest.mark.parametrize('method', ['repex', 'sams', 'independent'])
+@pytest.mark.parametrize("method", ["repex", "sams", "independent"])
 def test_dry_run_methods(
     benzene_complex_system,
     toluene_complex_system,
@@ -766,11 +740,10 @@ def test_dry_run_methods(
     protocol_dry_settings,
     method,
 ):
-
     protocol_dry_settings.solvent_simulation_settings.sampler_method = method
     protocol_dry_settings.complex_simulation_settings.sampler_method = method
-    protocol_dry_settings.complex_output_settings.output_indices = 'resname UNK'
-    protocol_dry_settings.solvent_output_settings.output_indices = 'resname UNK'
+    protocol_dry_settings.complex_output_settings.output_indices = "resname UNK"
+    protocol_dry_settings.solvent_output_settings.output_indices = "resname UNK"
 
     protocol = SepTopProtocol(
         settings=protocol_dry_settings,
@@ -782,31 +755,29 @@ def test_dry_run_methods(
     )
     dag_units = list(dag.protocol_units)
     # Only check the cutoff for the Solvent SetUp Unit
-    solv_setup_unit = [u for u in dag_units if
-                       isinstance(u, SepTopSolventSetupUnit)]
-    sol_run_unit = [u for u in dag_units if
-                    isinstance(u, SepTopSolventRunUnit)]
+    solv_setup_unit = [u for u in dag_units if isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in dag_units if isinstance(u, SepTopSolventRunUnit)]
     with tmpdir.as_cwd():
         solv_setup_output = solv_setup_unit[0].run(dry=True)
         serialized_topology = solv_setup_output["topology"]
         serialized_system = solv_setup_output["system"]
         solv_sampler = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]
+        )["debug"]["sampler"]  # fmt: skip
 
         assert isinstance(solv_sampler, MultiStateSampler)
         assert solv_sampler.is_periodic
-        assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
-                          MonteCarloBarostat)
+        assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
         assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
 
         # Check we have the right number of atoms in the PDB
-        pdb = md.load_pdb('alchemical_system.pdb')
+        pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 27
 
 
 @pytest.mark.parametrize(
-    "pressure",[
+    "pressure",
+    [
         1.0,
         0.9,
         1.1,
@@ -843,7 +814,7 @@ def test_dry_run_ligand_system_pressure(
         serialized_system = solv_setup_output["system"]
         solv_sampler = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]
+        )["debug"]["sampler"]  # fmt: skip
 
         # at this point, the units will be in openmm units
         assert solv_sampler._thermodynamic_states[1].pressure == pressure * openmm.unit.bar
@@ -863,7 +834,7 @@ def test_virtual_sites_no_reassign(
         "amber/ff14SB.xml",
         "amber/tip4pew_standard.xml",  # FF with VS
     ]
-    protocol_dry_settings.solvent_solvation_settings.solvent_model = 'tip4pew'
+    protocol_dry_settings.solvent_solvation_settings.solvent_model = "tip4pew"
     protocol_dry_settings.integrator_settings.reassign_velocities = False
 
     protocol = SepTopProtocol(
@@ -897,9 +868,7 @@ def test_dry_run_ligand_system_cutoff(
     """
     Test that the right nonbonded cutoff is propagated to the system.
     """
-    protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
-        1.9 * offunit.nanometer
-    )
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = 1.9 * offunit.nanometer
     protocol_dry_settings.forcefield_settings.nonbonded_cutoff = cutoff
 
     protocol = SepTopProtocol(
@@ -968,7 +937,8 @@ def test_dry_run_benzene_toluene_tip4p(
         serialized_system = solv_setup_output["system"]
         solv_run = sol_run_unit[0].run(
             serialized_system, serialized_topology, dry=True
-        )["debug"]["sampler"]
+        )["debug"]["sampler"]  # fmt: skip
+
         assert solv_run.is_periodic
 
 
@@ -978,9 +948,7 @@ def test_dry_run_benzene_toluene_noncubic(
     tmpdir,
     protocol_dry_settings,
 ):
-    protocol_dry_settings.solvent_solvation_settings.solvent_padding = (
-        1.5 * offunit.nanometer
-    )
+    protocol_dry_settings.solvent_solvation_settings.solvent_padding = 1.5 * offunit.nanometer
     protocol_dry_settings.solvent_solvation_settings.box_shape = "dodecahedron"
 
     protocol = SepTopProtocol(settings=protocol_dry_settings)
@@ -1087,17 +1055,13 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     prot_units = list(dag.protocol_units)
 
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
-    complex_setup_unit = [
-        u for u in prot_units if isinstance(u, SepTopComplexSetupUnit)
-    ]
+    complex_setup_unit = [u for u in prot_units if isinstance(u, SepTopComplexSetupUnit)]
 
     # check sol_unit charges
     with tmpdir.as_cwd():
         serialized_system = solv_setup_unit[0].run(dry=True)["system"]
         system = deserialize(serialized_system)
-        nonbond = [
-            f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)
-        ]
+        nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
         assert len(nonbond) == 1
 
         # loop through the 12 benzene atoms
@@ -1116,9 +1080,7 @@ def test_dry_run_solv_user_charges_benzene_toluene(
     with tmpdir.as_cwd():
         serialized_system = complex_setup_unit[0].run(dry=True)["system"]
         system = deserialize(serialized_system)
-        nonbond = [
-            f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)
-        ]
+        nonbond = [f for f in system.getForces() if isinstance(f, openmm.NonbondedForce)]
         assert len(nonbond) == 1
 
         # loop through the 12 benzene atoms
@@ -1211,9 +1173,7 @@ class TestT4LXmlRegression:
         nr_constraints = T4L_xml.getNumConstraints()
         nr_constraints_ref = T4L_septop_reference_xml.getNumConstraints()
         assert nr_constraints == nr_constraints_ref
-        constraints = [
-            T4L_xml.getConstraintParameters(i) for i in range(nr_constraints)
-        ]
+        constraints = [T4L_xml.getConstraintParameters(i) for i in range(nr_constraints)]
         constraints_ref = [
             T4L_septop_reference_xml.getConstraintParameters(i) for i in range(nr_constraints)
         ]
@@ -1234,7 +1194,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
     with (
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexSetupUnit.run",
+            ".SepTopComplexSetupUnit.run",  # fmt: skip
             return_value={
                 "system": pathlib.Path("system.xml.bz2"),
                 "topology": "topology.pdb",
@@ -1242,7 +1202,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexRunUnit._execute",
+            ".SepTopComplexRunUnit._execute",  # fmt: skip
             return_value={
                 "repeat_id": 0,
                 "generation": 0,
@@ -1253,7 +1213,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventSetupUnit.run",
+            ".SepTopSolventSetupUnit.run",  # fmt: skip
             return_value={
                 "system": pathlib.Path("system.xml.bz2"),
                 "topology": "topology.pdb",
@@ -1261,7 +1221,7 @@ def test_unit_tagging(benzene_toluene_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventRunUnit._execute",
+            ".SepTopSolventRunUnit._execute",  # fmt: skip
             return_value={
                 "repeat_id": 0,
                 "generation": 0,
@@ -1293,7 +1253,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
     with (
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexSetupUnit.run",
+            ".SepTopComplexSetupUnit.run",  # fmt: skip
             return_value={
                 "system": pathlib.Path("system.xml.bz2"),
                 "topology": "topology.pdb",
@@ -1301,7 +1261,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopComplexRunUnit._execute",
+            ".SepTopComplexRunUnit._execute",  # fmt: skip
             return_value={
                 "repeat_id": 0,
                 "generation": 0,
@@ -1312,7 +1272,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventSetupUnit.run",
+            ".SepTopSolventSetupUnit.run",  # fmt: skip
             return_value={
                 "system": pathlib.Path("system.xml.bz2"),
                 "topology": "topology.pdb",
@@ -1320,7 +1280,7 @@ def test_gather(benzene_toluene_dag, tmpdir):
         ),
         mock.patch(
             "openfe.protocols.openmm_septop.equil_septop_method"
-            ".SepTopSolventRunUnit._execute",
+            ".SepTopSolventRunUnit._execute",  # fmt: skip
             return_value={
                 "repeat_id": 0,
                 "generation": 0,
@@ -1388,14 +1348,13 @@ class TestProtocolResult:
             assert e.is_compatible_with(offunit.kilojoule_per_mole)
             assert u.is_compatible_with(offunit.kilojoule_per_mole)
 
-    @pytest.mark.parametrize('key', ['solvent', 'complex'])
+    @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_forwards_etc(self, key, protocolresult):
         """
         Due to the short simulation times, we expect the frwd/reverse
         analysis to be None.
         """
-        wmsg = ("were found in the forward and reverse dictionaries "
-                f"of the repeats of the {key}")
+        wmsg = f"were found in the forward and reverse dictionaries of the repeats of the {key}"
         with pytest.warns(UserWarning, match=wmsg):
             far = protocolresult.get_forward_and_reverse_energy_analysis()
 
@@ -1414,7 +1373,7 @@ class TestProtocolResult:
 
         ovp1 = ovp[key][0]
         assert isinstance(ovp1["matrix"], np.ndarray)
-        if key == 'solvent':
+        if key == "solvent":
             lambda_nr = 27
         else:
             lambda_nr = 19
@@ -1423,7 +1382,7 @@ class TestProtocolResult:
     @pytest.mark.parametrize("key", ["solvent", "complex"])
     def test_get_replica_transition_statistics(self, key, protocolresult):
         rpx = protocolresult.get_replica_transition_statistics()
-        if key == 'solvent':
+        if key == "solvent":
             lambda_nr = 27
         else:
             lambda_nr = 19
@@ -1455,11 +1414,12 @@ class TestProtocolResult:
         assert len(prod[key]) == 1
         assert all(isinstance(v, float) for v in prod[key])
 
-    @pytest.mark.parametrize("key, expected_size", 
+    @pytest.mark.parametrize(
+        "key, expected_size",
         [
             ["solvent", 87],
             ["complex", 1868],
-        ]
+        ],
     )
     def test_selection_indices(self, key, protocolresult, expected_size):
         indices = protocolresult.selection_indices()

@@ -10,15 +10,11 @@ N_PROTOCOL_REPEATS = Option(
     "which allows for individual repeats to be submitted in parallel by calling ``openfe quickrun`` on the same input JSON file multiple times.",
 )
 
-NCORES = Option(
-    "-n",
-    "--n-cores",
-    help="Number of cores to use for multiprocessing."
-)
+NCORES = Option("-n", "--n-cores", help="Number of cores to use for multiprocessing.")
 
 OVERWRITE = Option(
     "--overwrite-charges",
     is_flag=True,
     default=False,
-    help="Overwrite any partial charges present in the input molecules."
+    help="Overwrite any partial charges present in the input molecules.",
 )
