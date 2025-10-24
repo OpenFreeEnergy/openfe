@@ -14,6 +14,10 @@ The v1.7.0 release also comes with some API changes and breaks, including:
   * The default solvation cutoff is now 1.5 nm, to avoid issues with small boxes when dealing with ligands in solvent. When calculating complexes using the MD or HybridTopology Protocols with the API, you will need to reduce this value to ~ 1 nm to avoid excessively large water boxes.
   * The API has fully migrated to Pydantic V2 and the ``GufeQuantity`` scheme. This only affects Protocol developers. If needed, please see the `gufe typing documentation <https://gufe.openfree.energy/en/latest/generated/gufe.settings.typing.html>`_ for more details.
 
+Note that if you want to use NAGL to assign partial charges, you must use ``python >= 3.11``.
+Python 3.10 support is no longer maintained according to `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`_ guidelines.
+The openfe lock file and docker and apptainer images use Python 3.12, and so charge assignment with NAGL will work without intervention.
+
 **Added:**
 
 * Addition of an Absolute Binding Free Energy Protocol (`PR #1045 <https://github.com/OpenFreeEnergy/openfe/pull/1045>`_).

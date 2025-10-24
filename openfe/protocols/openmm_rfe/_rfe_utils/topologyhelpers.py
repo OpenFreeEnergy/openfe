@@ -4,6 +4,9 @@
 # building toolsets.
 # LICENSE: MIT
 
+# turn off formatting since this is mostly vendored code
+# fmt: off
+
 from copy import deepcopy
 import itertools
 import logging
