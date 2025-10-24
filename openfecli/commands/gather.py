@@ -591,7 +591,8 @@ def rich_print_to_stdout(df: pd.DataFrame) -> None:
 
 
 @click.command(
-    "gather", short_help="Gather result jsons for network of RFE results into a TSV file"
+    "gather",
+    short_help="Gather result jsons for network of RFE results into a TSV file",
 )
 @click.argument(
     "results",
