@@ -91,14 +91,12 @@ def test_atommapping_missing_mapper(molA_args, molB_args):
 
 @pytest.mark.parametrize("n_mappings", [0, 1, 2])
 def test_generate_mapping(n_mappings, mols):
-    molA, molB, = mols
+    molA, molB = mols
     mappings = [
         LigandAtomMapping(molA, molB, {i: i for i in range(7)}),
         LigandAtomMapping(molA, molB, {i: (i + 1) % 7 for i in range(7)}),
     ]
-    mapper = mock.Mock(
-        suggest_mappings=mock.Mock(return_value=mappings[:n_mappings])
-    )
+    mapper = mock.Mock(suggest_mappings=mock.Mock(return_value=mappings[:n_mappings]))
 
     if n_mappings == 1:
         assert generate_mapping(mapper, molA, molB) == mappings[0]
@@ -111,8 +109,7 @@ def test_atommapping_print_dict_main(capsys, mols):
     molA, molB = mols
     mapper = LomapAtomMapper
     mapping = LigandAtomMapping(molA, molB, {i: i for i in range(7)})
-    with mock.patch('openfecli.commands.atommapping.generate_mapping',
-                    mock.Mock(return_value=mapping)):
+    with mock.patch("openfecli.commands.atommapping.generate_mapping", mock.Mock(return_value=mapping)):  # fmt: skip
         atommapping_print_dict_main(mapper, molA, molB)
         captured = capsys.readouterr()
         assert captured.out == str(mapping.componentA_to_componentB) + "\n"
@@ -128,9 +125,7 @@ def test_atommapping_visualize_main_bad_extension(mols, tmpdir):
     molA, molB = mols
     mapper = LomapAtomMapper
     mapping = LigandAtomMapping(molA, molB, {i: i for i in range(7)})
-    with mock.patch('openfecli.commands.atommapping.generate_mapping',
-                    mock.Mock(return_value=mapping)):
-        with open(tmpdir / "foo.bar", mode='w') as f:
-            with pytest.raises(click.BadParameter,
-                               match="Unknown file format"):
+    with mock.patch("openfecli.commands.atommapping.generate_mapping", mock.Mock(return_value=mapping)):  # fmt: skip
+        with open(tmpdir / "foo.bar", mode="w") as f:
+            with pytest.raises(click.BadParameter, match="Unknown file format"):
                 atommapping_visualize_main(mapper, molA, molB, f, "bar")
