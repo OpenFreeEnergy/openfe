@@ -27,10 +27,11 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
     .. grid-item-card:: :fas:`laptop-code` CLI reference
         :text-align: center
-        :link: http://try.openfree.energy
+        :link: reference/cli/index/
         :link-type: url
 
-        Curious about **openfe**?  Start here and run the openfe showcase notebook in your browser.
+        Documentation for **openfe**\'s simple CLI interface.
+
     .. grid-item-card:: :fas:`person-chalkboard` Tutorials
         :text-align: center
         :link: tutorials/index
@@ -52,12 +53,12 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         How-to guides for common tasks.
 
-    .. grid-item-card:: :fas:`code` API Reference
+    .. grid-item-card:: :fas:`code` Python API Reference
         :text-align: center
-        :link: reference/index
+        :link: reference/api/index/
         :link-type: doc
 
-        Comprehensive details of both the **openfe** CLI and Python API.
+        Comprehensive details of the **openfe** Python API.
 
     .. grid-item-card:: :fas:`gears` Protocols
         :text-align: center
