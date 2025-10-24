@@ -143,7 +143,6 @@ def test_create_independent_repeat_ids(benzene_modifications, T4_protein_compone
 
 
 class TestT4LysozymeDryRun:
-
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 2634
     num_complex_atoms = 2613
@@ -191,15 +190,11 @@ class TestT4LysozymeDryRun:
 
     @pytest.fixture(scope="class")
     def complex_units(self, dag):
-        return [
-            u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)
-        ]
+        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
 
     @pytest.fixture(scope="class")
     def solvent_units(self, dag):
-        return [
-            u for u in dag.protocol_units if isinstance(u, AbsoluteBindingSolventUnit)
-        ]
+        return [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingSolventUnit)]
 
     def test_number_of_units(self, dag, complex_units, solvent_units):
         assert len(list(dag.protocol_units)) == 2
@@ -240,12 +235,8 @@ class TestT4LysozymeDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(
-            settings.integrator_settings.barostat_frequency.m
-        )
-        assert barostat[0].getDefaultPressure() == to_openmm(
-            settings.thermo_settings.pressure
-        )
+        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
         )
@@ -274,12 +265,8 @@ class TestT4LysozymeDryRun:
         # Check the barostat made it all the way through
         barostat = [f for f in system.getForces() if isinstance(f, MonteCarloBarostat)]
         assert len(barostat) == 1
-        assert barostat[0].getFrequency() == int(
-            settings.integrator_settings.barostat_frequency.m
-        )
-        assert barostat[0].getDefaultPressure() == to_openmm(
-            settings.thermo_settings.pressure
-        )
+        assert barostat[0].getFrequency() == int(settings.integrator_settings.barostat_frequency.m)
+        assert barostat[0].getDefaultPressure() == to_openmm(settings.thermo_settings.pressure)
         assert barostat[0].getDefaultTemperature() == to_openmm(
             settings.thermo_settings.temperature
         )
@@ -335,9 +322,7 @@ class TestT4LysozymeDryRun:
         )
 
     @staticmethod
-    def _test_energies(
-        reference_system, alchemical_system, alchemical_regions, positions
-    ):
+    def _test_energies(reference_system, alchemical_system, alchemical_regions, positions):
         compare_system_energies(
             reference_system=reference_system,
             alchemical_system=alchemical_system,
@@ -373,9 +358,7 @@ class TestT4LysozymeDryRun:
             self._test_dodecahedron_vectors(data["alchem_system"])
 
             # Check the alchemical indices
-            expected_indices = [
-                i + self.num_complex_atoms for i in range(self.num_solvent_atoms)
-            ]
+            expected_indices = [i + self.num_complex_atoms for i in range(self.num_solvent_atoms)]
             assert expected_indices == data["alchem_indices"]
 
             # Check the non-alchemical system
@@ -515,30 +498,24 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
 
     dag = protocol.create(stateA=stateA, stateB=stateB, mapping=None)
 
-    complex_units = [
-        u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)
-    ]
+    complex_units = [u for u in dag.protocol_units if isinstance(u, AbsoluteBindingComplexUnit)]
 
     with tmpdir.as_cwd():
         data = complex_units[0].run(dry=True)["debug"]
 
-        system_nbf = [
-            f for f in data["system"].getForces() if isinstance(f, NonbondedForce)
-        ][0]
+        system_nbf = [f for f in data["system"].getForces() if isinstance(f, NonbondedForce)][0]
         alchem_system_nbf = [
             f
             for f in data["alchem_system"].getForces()
             if isinstance(f, NonbondedForce)
-        ][0]
+        ][0]  # fmt: skip
 
         for i in range(12):
             # add 2613 to account for the protein
             index = i + 2613
 
             c, s, e = system_nbf.getParticleParameters(index)
-            assert pytest.approx(prop_chgs[i]) == c.value_in_unit(
-                ommunit.elementary_charge
-            )
+            assert pytest.approx(prop_chgs[i]) == c.value_in_unit(ommunit.elementary_charge)
 
             offsets = alchem_system_nbf.getParticleParameterOffset(i)
             assert pytest.approx(prop_chgs[i]) == offsets[2]
