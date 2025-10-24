@@ -1108,7 +1108,8 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             minimization_platform=platform.getName(),
             # Set minimization steps to None when running in dry mode
             # otherwise do a very small one to avoid NaNs
-            minimization_steps=100 if not dry else None
+            # minimization_steps=100 if not dry else None
+            minimization_steps = None
         )
 
         try:
@@ -1134,6 +1135,13 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 # equilibrate
                 if verbose:
                     self.logger.info("Running equilibration phase")
+
+                # Check that barostat is still present
+                for force in sampler._thermodynamic_states[
+                    0].system.getForces():
+                    if force.__class__.__name__ == "MonteCarloMembraneBarostat":
+                        print("✅ Barostat present for sampling")
+                        break
 
                 sampler.equilibrate(
                     int(equil_steps / steps_per_iteration)
