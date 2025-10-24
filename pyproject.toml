@@ -54,7 +54,6 @@ format.exclude = [
   "openfe/setup/*",
   "openfe/storage/*",
   "openfe/tests/data",
-  "openfe/tests/dev",
   "openfe/utils/*",
   "openfecli/*",
 ]
