@@ -25,12 +25,12 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         Follow our installation guide to get **openfe** running on your machine!
 
-    .. grid-item-card:: :fas:`laptop-code` CLI reference
+    .. grid-item-card:: :fas:`laptop-code` CLI
         :text-align: center
         :link: reference/cli/index
         :link-type: doc
 
-        Documentation for **openfe**\'s simple CLI interface.
+        Documentation for **openfe**\'s simple command line interface.
 
     .. grid-item-card:: :fas:`person-chalkboard` Tutorials
         :text-align: center
@@ -53,7 +53,7 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
         How-to guides for common tasks.
 
-    .. grid-item-card:: :fas:`code` Python API Reference
+    .. grid-item-card:: :fas:`code` Python API
         :text-align: center
         :link: reference/api/index
         :link-type: doc
