@@ -8,8 +8,10 @@ from openfe.setup import LigandAtomMapping, LomapAtomMapper
 
 from openfecli.parameters import MOL
 from openfecli.commands.atommapping import (
-    atommapping, generate_mapping, atommapping_print_dict_main,
-    atommapping_visualize_main
+    atommapping,
+    generate_mapping,
+    atommapping_print_dict_main,
+    atommapping_visualize_main,
 )
 
 
@@ -45,15 +47,14 @@ def print_test_with_file(mapper, molA, molB, file, ext):
     print(ext)
 
 
-@pytest.mark.parametrize('with_file', [True, False])
+@pytest.mark.parametrize("with_file", [True, False])
 def test_atommapping(molA_args, molB_args, mapper_args, with_file):
     # Patch out the main function with a simple function to output
     # information about the objects we pass to the main; test the output of
     # that using tools from click. This tests the creation of objects from
     # user input on the command line.
     args = molA_args + molB_args + mapper_args
-    expected_output = (f"{molA_args[1]}\n{molB_args[1]}\n"
-                       f"{mapper_args[1]}\n")
+    expected_output = f"{molA_args[1]}\n{molB_args[1]}\n{mapper_args[1]}\n"
     patch_base = "openfecli.commands.atommapping."
     if with_file:
         args += ["-o", "myfile.png"]
@@ -88,7 +89,7 @@ def test_atommapping_missing_mapper(molA_args, molB_args):
         assert "Missing option '--mapper'" in result.output
 
 
-@pytest.mark.parametrize('n_mappings', [0, 1, 2])
+@pytest.mark.parametrize("n_mappings", [0, 1, 2])
 def test_generate_mapping(n_mappings, mols):
     molA, molB, = mols
     mappings = [
