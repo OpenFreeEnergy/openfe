@@ -27,8 +27,8 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
     .. grid-item-card:: :fas:`laptop-code` CLI reference
         :text-align: center
-        :link: reference/cli/index/
-        :link-type: url
+        :link: reference/cli/index
+        :link-type: doc
 
         Documentation for **openfe**\'s simple CLI interface.
 
@@ -55,7 +55,7 @@ Using this toolkit you can plan, execute and analyse free energy calculations us
 
     .. grid-item-card:: :fas:`code` Python API Reference
         :text-align: center
-        :link: reference/api/index/
+        :link: reference/api/index
         :link-type: doc
 
         Comprehensive details of the **openfe** Python API.
