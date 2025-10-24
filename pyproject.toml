@@ -50,7 +50,7 @@ fallback_version = "0.0.0"
 [tool.ruff]
 line-length = 100
 
-format.exclude = [ "openfe/setup/*", "openfe/storage/*", "openfe/tests/*", "openfe/utils/*", "openfecli/*" ]
+format.exclude = [ "openfe/tests/*", "openfecli/tests/*" ]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 lint.select = [
   # "F",  # Pyflakes
