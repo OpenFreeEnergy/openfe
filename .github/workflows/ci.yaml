@@ -3,15 +3,18 @@ on:
   pull_request:
     branches:
       - main
+      - 'feat/**'
    # Skip CI if changed files only affect the following folders
    # - docs: documentation changes don't need code validation
    # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
     paths-ignore:
       - "docs/*"
       - ".readthedocs.yaml"
+    types: [ready_for_review]  # don't run for draft PRs
   push:
     branches:
       - main
+      - 'feat/**'
   schedule:
     - cron: "0 4 * * *"
   workflow_dispatch:
