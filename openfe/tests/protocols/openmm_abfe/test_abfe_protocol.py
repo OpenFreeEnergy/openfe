@@ -359,7 +359,7 @@ class TestT4LysozymeDryRun:
 
             # Check the alchemical indices
             expected_indices = [i + self.num_complex_atoms for i in range(self.num_solvent_atoms)]
-            assert expected_indices == data["alchem_indices"]
+            assert expected_indices == data["alchem_indices"][0]
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(data["system"], settings)
@@ -375,7 +375,7 @@ class TestT4LysozymeDryRun:
             assert pdb.n_atoms == self.num_all_not_water
 
             # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
+            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"][0])
             self._test_energies(
                 reference_system=data["system"],
                 alchemical_system=data["alchem_system"],
@@ -398,7 +398,7 @@ class TestT4LysozymeDryRun:
 
             # Check the alchemical indices
             expected_indices = [i for i in range(self.num_solvent_atoms)]
-            assert expected_indices == data["alchem_indices"]
+            assert expected_indices == data["alchem_indices"][0]
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(data["system"], settings)
@@ -414,7 +414,7 @@ class TestT4LysozymeDryRun:
             assert pdb.n_atoms == self.num_solvent_atoms
 
             # Check energies
-            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"])
+            alchem_region = AlchemicalRegion(alchemical_atoms=data["alchem_indices"][0])
 
             self._test_energies(
                 reference_system=data["system"],
@@ -516,6 +516,11 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
 
             c, s, e = system_nbf.getParticleParameters(index)
             assert pytest.approx(prop_chgs[i]) == c.value_in_unit(ommunit.elementary_charge)
+
+            # Alchemical sytstem should be 0 charge in the standard parameters
+            # and all charge in the offset
+            c, s, e = alchem_system_nbf.getParticleParameters(index)
+            assert pytest.approx(0.0) == c.value_in_unit(ommunit.elementary_charge)
 
             offsets = alchem_system_nbf.getParticleParameterOffset(i)
             assert pytest.approx(prop_chgs[i]) == offsets[2]

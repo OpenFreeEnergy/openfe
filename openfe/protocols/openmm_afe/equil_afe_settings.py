@@ -15,12 +15,14 @@ TODO
 * Add support for restraints
 
 """
+from openff.units import unit as offunit
 
 from gufe.settings import (
     SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
     ThermoSettings,
 )
+from gufe.settings.typing import NanometerQuantity
 from openfe.protocols.openmm_utils.omm_settings import (
     MultiStateSimulationSettings,
     BaseSolvationSettings,
@@ -35,6 +37,7 @@ from openfe.protocols.openmm_utils.omm_settings import (
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
+    SpringConstantLinearQuantity,
 )
 
 import numpy as np
@@ -47,6 +50,31 @@ class AlchemicalSettings(SettingsBaseModel):
 
     Empty place holder for right now.
     """
+
+
+class ABFEAlchemicalSettings(AlchemicalSettings):
+    """
+    Absolute binding free energy alchemical settings.
+    """
+    explicit_charge_correction: bool = True
+    """
+    Whether or not to use explicit charge correction using
+    a co-alchemical ion.
+    """
+    alchemical_ion_min_distance: NanometerQuantity = 1.0 * offunit.nanometer
+    """
+    The minimum distance to search for a co-alchemical ion.
+    """
+    alchemical_ion_solvent_spring_constant: SpringConstantLinearQuantity = 1000.0 * offunit.kilojoule_per_mole / offunit.nm**2
+    """
+    The spring constant holding the ion away from the alchemical solute
+    in the solvent leg.
+    """
+
+
+class ABFERestraintSettings(BoreschRestraintSettings):
+    host_restraint_ids: list[int] | None = None
+    guest_restraint_ids: list[int] | None = None
 
 
 class LambdaSettings(SettingsBaseModel):
@@ -322,7 +350,7 @@ class AbsoluteBindingSettings(SettingsBaseModel):
     """Settings for solvating the system in the complex."""
 
     # Alchemical settings
-    alchemical_settings: AlchemicalSettings
+    alchemical_settings: ABFEAlchemicalSettings
     """
     Alchemical protocol settings.
     """
