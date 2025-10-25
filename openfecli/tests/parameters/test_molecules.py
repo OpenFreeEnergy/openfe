@@ -22,7 +22,7 @@ def test_get_dir_molecules_sdf():
 
 
 def test_load_molecules_sdf_file():
-    files = resources.files('openfe.tests.data')
+    files = resources.files("openfe.tests.data")
     ref = files / "benzene_modifications.sdf"
     with resources.as_file(ref) as path:
         mols = load_molecules(path)

@@ -60,7 +60,6 @@ suppress_warnings = ["config.cache"]  # https://github.com/sphinx-doc/sphinx/iss
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.9", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "scikit.learn": ("https://scikit-learn.org/stable", None),
     "openmm": ("http://docs.openmm.org/latest/api-python/", None),
     "rdkit": ("https://www.rdkit.org/docs", None),
@@ -187,7 +186,7 @@ try:
     else:
         repo = Repo.clone_from(
             "https://github.com/OpenFreeEnergy/ExampleNotebooks.git",
-            branch="oct-2025",
+            branch="2025.10.2",
             to_path=example_notebooks_path,
         )
 except Exception as e:
@@ -229,14 +228,6 @@ nbsphinx_prolog = cleandoc(r"""
         ~ "/"
         ~ path
     -%}
-    {%- set colab_url =
-        "http://colab.research.google.com/github/"
-        ~ gh_repo
-        ~ "/blob/"
-        ~ gh_branch
-        ~ "/"
-        ~ path
-    -%}
 
     .. container:: ofe-top-of-notebook
 
@@ -253,13 +244,6 @@ nbsphinx_prolog = cleandoc(r"""
             :outline:
 
             :octicon:`download` Download Notebook
-
-        .. button-link:: {{colab_url}}
-            :color: primary
-            :shadow:
-            :outline:
-
-            :octicon:`rocket` Run in Colab
 
     .. _{{ env.doc2path(env.docname, base=None) }}:
 """)

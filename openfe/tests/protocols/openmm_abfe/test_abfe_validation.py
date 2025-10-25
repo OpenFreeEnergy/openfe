@@ -130,9 +130,7 @@ def test_validate_no_protcomp(
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_endstates_nosolvcomp_stateA(
-    benzene_modifications, T4_protein_component
-):
+def test_validate_endstates_nosolvcomp_stateA(benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],
@@ -152,9 +150,7 @@ def test_validate_endstates_nosolvcomp_stateA(
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_endstates_nosolvcomp_stateB(
-    benzene_modifications, T4_protein_component
-):
+def test_validate_endstates_nosolvcomp_stateB(benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],
@@ -174,9 +170,7 @@ def test_validate_endstates_nosolvcomp_stateB(
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_endstates_multiple_uniqueA(
-    benzene_modifications, T4_protein_component
-):
+def test_validate_endstates_multiple_uniqueA(benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],
@@ -244,7 +238,6 @@ def test_validate_endstates_unique_stateB(benzene_modifications, T4_protein_comp
 
 
 def test_charged_endstate_warn(charged_benzene_modifications, T4_protein_component):
-
     stateA = ChemicalSystem(
         {
             "benzene": charged_benzene_modifications["benzoic_acid"],
@@ -288,9 +281,7 @@ def test_charged_endstate_error(charged_benzene_modifications, T4_protein_compon
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_fail_extends(
-    benzene_modifications, T4_protein_component, default_settings
-):
+def test_validate_fail_extends(benzene_modifications, T4_protein_component, default_settings):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],
@@ -340,9 +331,7 @@ def test_high_timestep(benzene_modifications, T4_protein_component):
         protocol.validate(stateA=stateA, stateB=stateB, mapping=None)
 
 
-def test_validate_warnings(
-    benzene_modifications, T4_protein_component, default_settings
-):
+def test_validate_warnings(benzene_modifications, T4_protein_component, default_settings):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],

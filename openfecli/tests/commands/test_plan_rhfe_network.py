@@ -15,12 +15,13 @@ import json
 import numpy as np
 from openff.utilities.testing import skip_if_missing
 
-@pytest.fixture(scope='session')
-def mol_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp('moldir')
 
-    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
-        for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+@pytest.fixture(scope="session")
+def mol_dir_args(tmpdir_factory):
+    ofe_dir_path = tmpdir_factory.mktemp("moldir")
+
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        for f in ["ligand_23.sdf", "ligand_55.sdf"]:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
@@ -28,22 +29,21 @@ def mol_dir_args(tmpdir_factory):
 
 @pytest.fixture(scope="session")
 def dummy_charge_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp('charge_moldir')
+    ofe_dir_path = tmpdir_factory.mktemp("charge_moldir")
 
-    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
-        for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        for f in ["dummy_charge_ligand_23.sdf", "dummy_charge_ligand_55.sdf"]:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
 
 
-def print_test_with_file(
-    mapping_scorer, ligand_network_planner, small_molecules, solvent
-):
+def print_test_with_file(mapping_scorer, ligand_network_planner, small_molecules, solvent):
     print(mapping_scorer)
     print(ligand_network_planner)
     print(small_molecules)
     print(solvent)
+
 
 def validate_charges(smc):
     """
@@ -53,6 +53,7 @@ def validate_charges(smc):
     assert off_mol.partial_charges is not None
     assert len(off_mol.partial_charges) == off_mol.n_atoms
 
+
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
 def test_plan_rhfe_network_main():
@@ -61,14 +62,11 @@ def test_plan_rhfe_network_main():
         lomap_scorers,
         ligand_network_planning,
     )
-    from openfe.protocols.openmm_utils.omm_settings import (
-        OpenFFPartialChargeSettings
-    )
+    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(d / f)
-            for f in ['ligand_23.sdf', 'ligand_55.sdf']
+            SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
         ]
 
     solvent_component = SolventComponent()
@@ -80,11 +78,10 @@ def test_plan_rhfe_network_main():
         solvent=solvent_component,
         n_protocol_repeats=3,
         partial_charge_settings=OpenFFPartialChargeSettings(
-            partial_charge_method="nagl",
-            nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
+            partial_charge_method="nagl", nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
         ),
         processors=1,
-        overwrite_charges=False
+        overwrite_charges=False,
     )
 
     assert alchemical_network
@@ -104,6 +101,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
 def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
@@ -122,7 +120,7 @@ def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
         "- tmp_network.json",
         # make sure the partial charge settings are picked up
         "Partial Charge Generation: nagl",
-        "assigning ligand partial charges -- this may be slow"
+        "assigning ligand partial charges -- this may be slow",
     ]
     # we can get these in either order: 22 then 55 or 55 then 22
     expected_output_1 = [
@@ -136,9 +134,7 @@ def test_plan_rhfe_network(mol_dir_args, tmpdir, yaml_nagl_settings):
         "- rhfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
-    patch_base = (
-        "openfecli.commands.plan_rhfe_network."
-    )
+    patch_base = "openfecli.commands.plan_rhfe_network."
     args += ["-o", "tmp_network"]
     args += ["-s", settings_path]
 
@@ -178,6 +174,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
 def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tmpdir):
@@ -187,7 +184,7 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
 
     assert settings_path.exists()
 
-    args = mol_dir_args + ['-s', settings_path]
+    args = mol_dir_args + ["-s", settings_path]
 
     runner = CliRunner()
 
@@ -197,13 +194,16 @@ def test_custom_yaml_plan_rhfe_smoke_test(custom_yaml_settings, mol_dir_args, tm
         assert result.exit_code == 0
 
 
-@pytest.mark.parametrize("overwrite", [
-    pytest.param(True, id="Overwrite"),
-    pytest.param(False, id="No overwrite")
-])
+@pytest.mark.parametrize(
+    "overwrite",
+    [
+        pytest.param(True, id="Overwrite"),
+        pytest.param(False, id="No overwrite"),
+    ],
+)
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
-def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_nagl_settings, overwrite):
+def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_nagl_settings, overwrite):  # fmt: skip
     # make sure the dummy charges are overwritten when requested
 
     # use nagl charges for CI speed!
@@ -215,7 +215,7 @@ def test_plan_rhfe_network_charge_overwrite(dummy_charge_dir_args, tmpdir, yaml_
 
     # get the input charges for the molecules to check they have been overwritten
     charges_by_name = {}
-    for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
+    for f in ["dummy_charge_ligand_23.sdf", "dummy_charge_ligand_55.sdf"]:
         smc = SmallMoleculeComponent.from_sdf_file(dummy_charge_dir_args[1] / f)
         charges_by_name[smc.name] = smc.to_openff().partial_charges.m
 

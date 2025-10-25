@@ -5,6 +5,7 @@ from .conftest import HAS_INTERNET
 from openfecli.fetching import URLFetcher, PkgResourceFetcher
 from openfecli.fetching import FetchablePlugin
 
+
 class FetcherTester:
     @pytest.fixture
     def fetcher(self):
@@ -40,27 +41,25 @@ class TestURLFetcher(FetcherTester):
             short_name="google",
             short_help="The Goog",
             requires_ofe=(0, 7, 0),
-            long_help="Google, an Alphabet company"
+            long_help="Google, an Alphabet company",
         )
 
     def test_resources(self, fetcher):
         expected = [("https://www.google.com/", "index.html")]
         assert list(fetcher.resources) == expected
 
-    @pytest.mark.skipif(not HAS_INTERNET,
-                        reason="Internet seems to be unavailable")
+    @pytest.mark.skipif(not HAS_INTERNET, reason="Internet seems to be unavailable")
     def test_call(self, fetcher, tmp_path):
         super().test_call(fetcher, tmp_path)
 
-    @pytest.mark.skipif(not HAS_INTERNET,
-                        reason="Internet seems to be unavailable")
+    @pytest.mark.skipif(not HAS_INTERNET, reason="Internet seems to be unavailable")
     def test_without_trailing_slash(self, tmp_path):
         fetcher = URLFetcher(
             resources=[("https://www.google.com", "index.html")],
             short_name="goog2",
             short_help="more goog",
             requires_ofe=(0, 7, 0),
-            long_help="What if you forget the trailing slash?"
+            long_help="What if you forget the trailing slash?",
         )
 
         self.test_call(fetcher, tmp_path)
@@ -70,14 +69,13 @@ class TestPkgResourceFetcher(FetcherTester):
     @pytest.fixture
     def fetcher(self):
         return PkgResourceFetcher(
-            resources=[('openfecli.tests', 'test_fetching.py')],
+            resources=[("openfecli.tests", "test_fetching.py")],
             short_name="me",
             short_help="download this file",
             requires_ofe=(0, 7, 4),
-            long_help="whoa, meta."
+            long_help="whoa, meta.",
         )
 
     def test_resources(self, fetcher):
-        expected = [('openfecli.tests', 'test_fetching.py')]
+        expected = [("openfecli.tests", "test_fetching.py")]
         assert list(fetcher.resources) == expected
-

@@ -2,6 +2,9 @@
 Tools for integration with miscellaneous non-required packages.
 shamelessly borrowed from openff.toolkit
 """
+# don't format vendored code
+# fmt: off
+
 import functools
 from typing import Callable
 
@@ -29,8 +32,7 @@ def requires_package(package_name: str) -> Callable:
             try:
                 importlib.import_module(package_name)
             except (ImportError, ModuleNotFoundError):
-                raise ImportError(function.__name__ + " requires package: " +
-                                  package_name)
+                raise ImportError(function.__name__ + " requires package: " + package_name)
             except Exception as e:
                 raise e
 
