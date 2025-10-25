@@ -18,22 +18,24 @@ import numpy as np
 from openff.utilities import skip_if_missing
 from openff.units import unit
 
-@pytest.fixture(scope='session')
-def mol_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp('moldir')
 
-    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
-        for f in ['ligand_23.sdf', 'ligand_55.sdf']:
+@pytest.fixture(scope="session")
+def mol_dir_args(tmpdir_factory):
+    ofe_dir_path = tmpdir_factory.mktemp("moldir")
+
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        for f in ["ligand_23.sdf", "ligand_55.sdf"]:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
 
+
 @pytest.fixture(scope="session")
 def dummy_charge_dir_args(tmpdir_factory):
-    ofe_dir_path = tmpdir_factory.mktemp('charge_moldir')
+    ofe_dir_path = tmpdir_factory.mktemp("charge_moldir")
 
-    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
-        for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        for f in ["dummy_charge_ligand_23.sdf", "dummy_charge_ligand_55.sdf"]:
             shutil.copyfile(d / f, ofe_dir_path / f)
 
     return ["--molecules", ofe_dir_path]
@@ -58,6 +60,7 @@ def print_test_with_file(
     print(solvent)
     print(protein)
 
+
 def validate_charges(smc):
     """
     Validate that the SmallMoleculeComponent has partial charges assigned.
@@ -80,19 +83,14 @@ def test_plan_rbfe_network_main():
         lomap_scorers,
         ligand_network_planning,
     )
-    from openfe.protocols.openmm_utils.omm_settings import (
-        OpenFFPartialChargeSettings
-    )
+    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [
-            SmallMoleculeComponent.from_sdf_file(d / f)
-            for f in ['ligand_23.sdf', 'ligand_55.sdf']
+            SmallMoleculeComponent.from_sdf_file(d / f) for f in ["ligand_23.sdf", "ligand_55.sdf"]
         ]
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        protein_component = ProteinComponent.from_pdb_file(
-            str(d / "181l_only.pdb")
-        )
+        protein_component = ProteinComponent.from_pdb_file(str(d / "181l_only.pdb"))
 
     solvent_component = SolventComponent()
     alchemical_network, ligand_network = plan_rbfe_network_main(
@@ -106,11 +104,10 @@ def test_plan_rbfe_network_main():
         n_protocol_repeats=3,
         # use nagl to keep testing fast
         partial_charge_settings=OpenFFPartialChargeSettings(
-            partial_charge_method="nagl",
-            nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
+            partial_charge_method="nagl", nagl_model="openff-gnn-am1bcc-0.1.0-rc.3.pt"
         ),
         processors=1,
-        overwrite_charges=False
+        overwrite_charges=False,
     )
     # check the ligands have charges assigned
     for node in alchemical_network.nodes:
@@ -122,7 +119,7 @@ def test_plan_rbfe_network_main():
         if "complex" in edge.name:
             padding = 1.0  # nm
         else:
-            padding = 1.5 # nm
+            padding = 1.5  # nm
         assert settings.solvation_settings.solvent_padding == padding * unit.nanometer
         assert settings.forcefield_settings.nonbonded_cutoff == 0.9 * unit.nanometer
         assert settings.solvation_settings.box_shape == "dodecahedron"
@@ -137,6 +134,7 @@ partial_charge:
   settings:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
+
 
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
@@ -157,7 +155,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_setting
         "- tmp_network.json",
         # make sure the partial charge settings are picked up
         "Partial Charge Generation: nagl",
-        "assigning ligand partial charges -- this may be slow"
+        "assigning ligand partial charges -- this may be slow",
     ]
     # we can get these in either order: 22 first or 55 first
     expected_output_1 = [
@@ -171,9 +169,7 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_setting
         "- rbfe_ligand_55_solvent_ligand_23_solvent.json",
     ]
 
-    patch_base = (
-        "openfecli.commands.plan_rbfe_network."
-    )
+    patch_base = "openfecli.commands.plan_rbfe_network."
     args += ["-o", "tmp_network"]
     args += ["-s", settings_path]
 
@@ -191,7 +187,14 @@ def test_plan_rbfe_network(mol_dir_args, protein_args, tmpdir, yaml_nagl_setting
             for l1, l2 in zip(expected_output_1, expected_output_2):
                 assert l1 in result.output or l2 in result.output
 
-@pytest.mark.parametrize(['input_n_repeat', 'expected_n_repeat'], [([], 3), (["--n-protocol-repeats", "1"], 1)])
+
+@pytest.mark.parametrize(
+    ["input_n_repeat", "expected_n_repeat"],
+    [
+        ([], 3),
+        (["--n-protocol-repeats", "1"], 1),
+    ],
+)
 def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat, expected_n_repeat):
     runner = CliRunner()
 
@@ -206,13 +209,17 @@ def test_plan_rbfe_network_n_repeats(mol_dir_args, protein_args, input_n_repeat,
         for edge in network.edges:
             assert edge.protocol.settings.protocol_repeats == expected_n_repeat
 
-@pytest.mark.parametrize("overwrite", [
-    pytest.param(True, id="Overwrite"),
-    pytest.param(False, id="No overwrite")
-])
+
+@pytest.mark.parametrize(
+    "overwrite",
+    [
+        pytest.param(True, id="Overwrite"),
+        pytest.param(False, id="No overwrite"),
+    ],
+)
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
-def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args, tmpdir, yaml_nagl_settings, overwrite):
+def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args, tmpdir, yaml_nagl_settings, overwrite):  # fmt: skip
     # make sure the dummy charges are overwritten when requested
 
     # use nagl charges for CI speed!
@@ -224,7 +231,7 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
 
     # get the input charges for the molecules to check they have been overwritten
     charges_by_name = {}
-    for f in ['dummy_charge_ligand_23.sdf', 'dummy_charge_ligand_55.sdf']:
+    for f in ["dummy_charge_ligand_23.sdf", "dummy_charge_ligand_55.sdf"]:
         smc = SmallMoleculeComponent.from_sdf_file(dummy_charge_dir_args[1] / f)
         charges_by_name[smc.name] = smc.to_openff().partial_charges.m
 
@@ -252,10 +259,10 @@ def test_plan_rbfe_network_charge_overwrite(dummy_charge_dir_args, protein_args,
 
 @pytest.fixture
 def eg5_files():
-    with resources.as_file(resources.files('openfe.tests.data.eg5')) as p:
-        pdb_path = str(p.joinpath('eg5_protein.pdb'))
-        lig_path = str(p.joinpath('eg5_ligands.sdf'))
-        cof_path = str(p.joinpath('eg5_cofactor.sdf'))
+    with resources.as_file(resources.files("openfe.tests.data.eg5")) as p:
+        pdb_path = str(p.joinpath("eg5_protein.pdb"))
+        lig_path = str(p.joinpath("eg5_ligands.sdf"))
+        cof_path = str(p.joinpath("eg5_cofactor.sdf"))
 
         yield pdb_path, lig_path, cof_path
 
@@ -271,12 +278,7 @@ def test_plan_rbfe_network_cofactors(eg5_files, tmpdir, yaml_nagl_settings):
 
     runner = CliRunner()
 
-    args = [
-        '-p', eg5_files[0],
-        '-M', eg5_files[1],
-        '-C', eg5_files[2],
-        '-s', settings_path
-    ]
+    args = ["-p", eg5_files[0], "-M", eg5_files[1], "-C", eg5_files[2], "-s", settings_path]
 
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, args)
@@ -311,6 +313,7 @@ def cdk8_files():
 
         yield pdb_path, lig_path
 
+
 def test_plan_rbfe_network_charge_changes(cdk8_files, caplog):
     """
     Make sure the protocol settings are changed and a warning is printed when we plan a network
@@ -319,10 +322,7 @@ def test_plan_rbfe_network_charge_changes(cdk8_files, caplog):
 
     runner = CliRunner()
 
-    args = [
-        '-p', cdk8_files[0],
-        '-M', cdk8_files[1],
-    ]
+    args = ["-p", cdk8_files[0], "-M", cdk8_files[1]]
 
     with runner.isolated_filesystem():
         result = runner.invoke(plan_rbfe_network, args)
@@ -333,7 +333,10 @@ def test_plan_rbfe_network_charge_changes(cdk8_files, caplog):
         for edge in network.edges:
             settings = edge.protocol.settings
             # check the charged transform
-            if edge.stateA.components["ligand"].name == "lig_40" and edge.stateB.components["ligand"].name == "lig_41":
+            if (
+                edge.stateA.components["ligand"].name == "lig_40"
+                and edge.stateB.components["ligand"].name == "lig_41"
+            ):
                 assert settings.alchemical_settings.explicit_charge_correction is True
                 assert settings.simulation_settings.production_length.m == 20.0
                 assert settings.simulation_settings.n_replicas == 22
@@ -367,6 +370,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
 def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, cdk8_files, tmpdir):
@@ -377,11 +381,7 @@ def test_lomap_yaml_plan_rbfe_smoke_test(lomap_yaml_settings, cdk8_files, tmpdir
 
     assert settings_path.exists()
 
-    args = [
-        '-p', protein,
-        '-M', ligand,
-        '-s', settings_path
-    ]
+    args = ["-p", protein, "-M", ligand, "-s", settings_path]
 
     runner = CliRunner()
 
@@ -411,6 +411,7 @@ partial_charge:
     nagl_model: openff-gnn-am1bcc-0.1.0-rc.3.pt
 """
 
+
 @pytest.mark.xfail(HAS_OPENEYE, reason="openff-nagl#177")
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
@@ -422,12 +423,7 @@ def test_custom_yaml_plan_radial_smoke_test(custom_yaml_radial, eg5_files, tmpdi
 
     assert settings_path.exists()
 
-    args = [
-        '-p', protein,
-        '-M', ligand,
-        '-C', cofactor,
-        '-s', settings_path,
-    ]
+    args = ["-p", protein, "-M", ligand, "-C", cofactor, "-s", settings_path]
 
     runner = CliRunner()
 
