@@ -72,6 +72,11 @@ class ABFEAlchemicalSettings(AlchemicalSettings):
     """
 
 
+class ABFERestraintSettings(BoreschRestraintSettings):
+    host_restraint_ids: list[int] | None = None
+    guest_restraint_ids: list[int] | None = None
+
+
 class LambdaSettings(SettingsBaseModel):
     """Lambda schedule settings.
 

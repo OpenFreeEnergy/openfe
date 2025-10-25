@@ -50,6 +50,7 @@ from openfe.protocols.openmm_afe.equil_afe_settings import (
     AbsoluteBindingSettings,
     ABFEAlchemicalSettings,
     BoreschRestraintSettings,
+    ABFERestraintSettings,
     IntegratorSettings,
     LambdaSettings,
     ABFEPreEquilOutputSettings,
@@ -596,7 +597,7 @@ class AbsoluteBindingProtocol(gufe.Protocol):
             solvent_solvation_settings=OpenMMSolvationSettings(),
             engine_settings=OpenMMEngineSettings(),
             integrator_settings=IntegratorSettings(),
-            restraint_settings=BoreschRestraintSettings(),
+            restraint_settings=ABFERestraintSettings(),
             solvent_equil_simulation_settings=MDSimulationSettings(
                 equilibration_length_nvt=0.1 * offunit.nanosecond,
                 equilibration_length=0.2 * offunit.nanosecond,
@@ -660,8 +661,9 @@ class AbsoluteBindingProtocol(gufe.Protocol):
           If the alchemical species is charged.
         """
         if not (stateA.contains(ProteinComponent) and stateB.contains(ProteinComponent)):
-            errmsg = "No ProteinComponent found"
-            raise ValueError(errmsg)
+            if not (stateA.contains(SmallMoleculeComponent) and stateB.contains(SmallMoleculeComponent)):
+                errmsg = "No suitable host component found"
+                raise ValueError(errmsg)
 
         if not (stateA.contains(SolventComponent) and stateB.contains(SolventComponent)):
             errmsg = "No SolventComponent found"
@@ -1176,6 +1178,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
         host_atom_ids: list[int],
         temperature: Quantity,
         settings: BoreschRestraintSettings,
+        guest_restraint_idxs: list[int] | None,
+        host_restraint_idxs: list[int] | None,
     ) -> tuple[BoreschRestraintGeometry, BoreschRestraint]:
         """
         Get a Boresch-like restraint Geometry and OpenMM restraint force
@@ -1195,6 +1199,14 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
           The temperature of the simulation where the restraint will be added.
         settings : BoreschRestraintSettings
           Settings on how the Boresch-like restraint should be defined.
+        guest_restraint_idxs : list[int] | None
+          A list indices that define the four guest restraint atoms. This is
+          a user override, if not None, these will be used instead of searching
+          for them.
+        host_restraint_idxs : list[int] | None
+          A list of indices that define the four host restraint atoms. This is
+          a user override, if not None, these will be used instead of searching
+          for them.
 
         Returns
         -------
@@ -1211,6 +1223,8 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
             guest_rdmol=guest_rdmol,
             guest_idxs=guest_atom_ids,
             host_idxs=host_atom_ids,
+            guest_restraint_atoms_idxs=guest_restraint_idxs,
+            host_restraint_atoms_idxs=host_restraint_idxs,
             host_selection=settings.host_selection,
             anchor_finding_strategy=settings.anchor_finding_strategy,
             dssp_filter=settings.dssp_filter,
@@ -1319,14 +1333,16 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
         )
 
-        if isinstance(settings["restraint_settings"], BoreschRestraintSettings):
+        if isinstance(settings["restraint_settings"], ABFERestraintSettings):
             rest_geom, restraint = self._get_boresch_restraint(
-                univ,
-                guest_rdmol,
-                guest_atom_ids,
-                host_atom_ids,
-                settings["thermo_settings"].temperature,
-                settings["restraint_settings"],
+                universe=univ,
+                guest_rdmol=guest_rdmol,
+                guest_atom_ids=guest_atom_ids,
+                host_atom_ids=host_atom_ids,
+                temperature=settings["thermo_settings"].temperature,
+                settings=settings["restraint_settings"],
+                guest_restraint_idxs=settings["restraint_settings"].guest_restraint_ids,
+                host_restraint_idxs=settings["restraint_settings"].host_restraint_ids,
             )
         else:
             # TODO turn this into a direction for different restraint types supported?

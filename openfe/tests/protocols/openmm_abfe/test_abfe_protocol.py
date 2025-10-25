@@ -540,5 +540,10 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
                 ommunit.elementary_charge
             )
 
+            # Alchemical sytstem should be 0 charge in the standard parameters
+            # and all charge in the offset
+            c, s, e = alchem_system_nbf.getParticleParameters(index)
+            assert pytest.approx(0.0) == c.value_in_unit(ommunit.elementary_charge)
+
             offsets = alchem_system_nbf.getParticleParameterOffset(i)
             assert pytest.approx(prop_chgs[i]) == offsets[2]
