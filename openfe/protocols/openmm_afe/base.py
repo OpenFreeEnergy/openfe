@@ -40,7 +40,6 @@ from openmmtools.states import (
 from openmmtools.alchemy import (
     AlchemicalRegion,
     AbsoluteAlchemicalFactory,
-    AlchemicalState,
 )
 from typing import Optional
 from openmm import app
@@ -81,6 +80,50 @@ from openfe.utils import without_oechem_backend, log_system_probe
 
 
 logger = logging.getLogger(__name__)
+
+
+class SingleRegionAlchemicalState(GlobalParameterState):
+    class _LambdaParameter(GlobalParameterState.GlobalParameter):
+        """A global parameter in the interval [0, 1] with standard value 1."""
+
+        def __init__(self, parameter_name):
+            super().__init__(parameter_name, standard_value=1.0, validator=self.lambda_validator)
+
+        @staticmethod
+        def lambda_validator(self, instance, parameter_value):
+            if parameter_value is None:
+                return parameter_value
+            if not (0.0 <= parameter_value <= 1.0):
+                raise ValueError('{} must be between 0 and 1.'.format(self.parameter_name))
+            return float(parameter_value)
+
+    lambda_sterics_A = _LambdaParameter("lambda_sterics_A")
+    lambda_electrostatics_A = _LambdaParameter("lambda_electrostatics_A")
+    lambda_bonds_A = _LambdaParameter("lambda_bonds_A")
+    lambda_angles_A = _LambdaParameter("lambda_angles_A")
+    lambda_torsions_A = _LambdaParameter("lambda_torsions_A")
+
+
+class TwoRegionAlchemicalState(SingleRegionAlchemicalState):
+    class _LambdaParameter(GlobalParameterState.GlobalParameter):
+        """A global parameter in the interval [0, 1] with standard value 1."""
+
+        def __init__(self, parameter_name):
+            super().__init__(parameter_name, standard_value=1.0, validator=self.lambda_validator)
+
+        @staticmethod
+        def lambda_validator(self, instance, parameter_value):
+            if parameter_value is None:
+                return parameter_value
+            if not (0.0 <= parameter_value <= 1.0):
+                raise ValueError('{} must be between 0 and 1.'.format(self.parameter_name))
+            return float(parameter_value)
+
+    lambda_sterics_B = _LambdaParameter("lambda_sterics_B")
+    lambda_electrostatics_B = _LambdaParameter("lambda_electrostatics_B")
+    lambda_bonds_B = _LambdaParameter("lambda_bonds_B")
+    lambda_angles_B = _LambdaParameter("lambda_angles_B")
+    lambda_torsions_B = _LambdaParameter("lambda_torsions_B")
 
 
 class BaseAbsoluteUnit(gufe.ProtocolUnit):
@@ -638,7 +681,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         comp_resids: dict[Component, npt.NDArray],
         alchem_comps: dict[str, list[Component]],
         alchem_ion: int | None,
-    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, list[list[int]]]:
+    ) -> tuple[AbsoluteAlchemicalFactory, openmm.System, dict[str, list[int]]]:
         """
         Get an alchemically modified system and its associated factory
 
@@ -659,7 +702,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           Factory for creating an alchemically modified system.
         alchemical_system : openmm.System
           Alchemically modified system
-        alchemical_indices : list[list[int]]
+        alchemical_indices : dict[str, list[int]]
           A list of atom indices for the alchemically modified
           species in the system.
 
@@ -667,15 +710,22 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         ----
         * Add support for all alchemical factory options
         """
-        alchemical_indices = [self._get_alchemical_indices(topology, comp_resids, alchem_comps)]
+        alchemical_indices = {
+            'A': self._get_alchemical_indices(topology, comp_resids, alchem_comps)
+        }
 
         if alchem_ion is not None:
-            alchemical_indices.append(alchem_ion)
+            alchemical_indices['B'] = [alchem_ion]
 
         alchemical_regions = []
 
-        for inds in alchemical_indices:
-            alchemical_regions.append(AlchemicalRegion(alchemical_atoms=inds))
+        for region in alchemical_indices:
+            alchemical_regions.append(
+                AlchemicalRegion(
+                    alchemical_atoms=alchemical_indices[region],
+                    name=region,
+                )
+            )
 
         alchemical_factory = AbsoluteAlchemicalFactory()
         alchemical_system = alchemical_factory.create_alchemical_system(
@@ -694,6 +744,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
         lambdas: dict[str, list[float]],
         solvent_comp: Optional[SolventComponent],
         restraint_state: Optional[GlobalParameterState],
+        alchemical_indices: dict[str, list[int]],
     ) -> tuple[list[SamplerState], list[ThermodynamicState]]:
         """
         Get a list of sampler and thermodynmic states from an
@@ -715,6 +766,9 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           The solvent component of the system, if there is one.
         restraint_state : Optional[GlobalParameterState]
           The restraint parameter control state, if there is one.
+        alchemical_indices : dict[str, list[int]]
+          Dictionary of the alchemical indices for each alchemical
+          region in the system.
 
         Returns
         -------
@@ -724,7 +778,17 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
           A list of ThermodynamicState for each replica in the system.
         """
         # Fetch an alchemical state
-        alchemical_state = AlchemicalState.from_system(alchemical_system)
+        if len(alchemical_indices.keys()) == 1:
+            alchemical_state = SingleRegionAlchemicalState.from_system(
+                alchemical_system
+            )
+        elif len(alchemical_indices.keys()) == 2:
+            alchemical_state = TwoRegionAlchemicalState.from_system(
+                alchemical_system
+            )
+        else:
+            errmsg = "more than two regions are not supported"
+            raise ValueError(errmsg)
 
         # Set up the system constants
         temperature = settings["thermo_settings"].temperature
@@ -736,7 +800,16 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             constants["pressure"] = ensure_quantity(pressure, "openmm")
 
         # Get the thermodynamic parameter protocol
-        param_protocol = copy.deepcopy(lambdas)
+        param_protocol = {}
+
+        def _add_lambdas_to_protocol(protocol, lambdas, region_name):
+            protocol[f"lambda_electrostatics_{region_name}"] = lambdas["lambda_electrostatics"]
+            protocol[f"lambda_sterics_{region_name}"] = lambdas["lambda_sterics"]
+
+        param_protocol["lambda_restraints"] = lambdas["lambda_restraints"]
+        _add_lambdas_to_protocol(param_protocol, lambdas, "A")
+        if len(alchemical_indices.keys()) == 2:
+            _add_lambdas_to_protocol(param_protocol, lambdas, "B")
 
         # Get the composable states
         if restraint_state is not None:
@@ -1193,6 +1266,7 @@ class BaseAbsoluteUnit(gufe.ProtocolUnit):
             lambdas,
             solv_comp,
             restraint_parameter_state,
+            alchem_indices,
         )
 
         # 10. Create the multistate reporter & create PDB

@@ -30,6 +30,7 @@ import pathlib
 import uuid
 import warnings
 from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Iterable, Optional, Union
 
 import gufe
@@ -1063,10 +1064,12 @@ class AbsoluteBindingUnitMixin:
             self.shared_basepath / settings["equil_output_settings"].production_trajectory_filename,
         )
 
-        counter_ions = [
-            at.element in IONS[total_charge]
+        counter_ions_idxs = [
+            at.ix
             for at in univ.atoms
+            if at.element in IONS[total_charge]
         ]
+        counter_ions = univ.atoms[counter_ions_idxs]
 
         # get the alchemical atoms
         residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
@@ -1095,7 +1098,7 @@ class AbsoluteBindingUnitMixin:
         return atom_finder.results.host_idxs[0]
 
 
-class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
+class AbsoluteBindingComplexUnit(AbsoluteBindingUnitMixin, BaseAbsoluteUnit):
     """
     Protocol Unit for the complex phase of an absolute binding free energy
     """
@@ -1383,7 +1386,7 @@ class AbsoluteBindingComplexUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
         )
 
 
-class AbsoluteBindingSolventUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
+class AbsoluteBindingSolventUnit(AbsoluteBindingUnitMixin, BaseAbsoluteUnit):
     """
     Protocol Unit for the solvent phase of an absolute binding free energy
     """
@@ -1515,6 +1518,8 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
         if alchem_ion is None:
             return None, None, system, None
 
+        restrained_system = deepcopy(system)
+
         if self.verbose:
             self.logger.info("Generating restraints")
 
@@ -1525,22 +1530,22 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
         )
 
         # alchemical ion atom
-        alchem_ion = univ.atoms[alchem_ion]
+        alchem_ion_ag = univ.atoms[alchem_ion]
 
         # get the alchemical ligand atoms
         ligand_rdmol = alchem_comps["stateA"][0].to_rdkit()
         residxs = np.concatenate([comp_resids[key] for key in alchem_comps["stateA"]])
-        ligand_alchem_idxs = _get_idxs_from_residxs(topology=omm_topology, residxs=residxs)
-        ligand_central_atom_idx = ligand_alchem_idxs[get_central_atom_idx(ligand_rdmol)]
-        ligand_central_atom = univ.atoms[ligand_central_atom_idx]
+        ligand_alchem_idxs = _get_idxs_from_residxs(topology=topology, residxs=residxs)
+        ligand_central_atom = ligand_alchem_idxs[get_central_atom_idx(ligand_rdmol)]
+        ligand_central_atom_ag = univ.atoms[ligand_central_atom]
 
         # go to the final frame
         univ.trajectory[-1]
 
         distance = float(
             calc_bonds(
-                alchem_ion.position,
-                ligand_central_atom.position,
+                alchem_ion_ag.position,
+                ligand_central_atom_ag.position,
                 box=univ.dimensions
             )
         )
@@ -1551,13 +1556,13 @@ class AbsoluteBindingSolventUnit(BaseAbsoluteUnit, AbsoluteBindingUnitMixin):
 
         force = HarmonicBondForce()
         force.addBond(
-            ligand_central_atom_idx,
+            ligand_central_atom,
             alchem_ion,
             distance * ommunit.angstrom,
             spring_constant,
         )
 
         force.setName("ion_restraint")
-        add_force_in_separate_group(system, force)
+        add_force_in_separate_group(restrained_system, force)
 
-        return None, None, system, None
+        return None, None, restrained_system, None
