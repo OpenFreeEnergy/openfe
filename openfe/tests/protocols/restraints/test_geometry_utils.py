@@ -58,6 +58,7 @@ zenodo_restraint_data = pooch.create(
     retry_if_failed=5,
 )
 
+
 @pytest.fixture
 def t4_lysozyme_trajectory_universe():
     zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
