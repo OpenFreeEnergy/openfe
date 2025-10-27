@@ -1,8 +1,7 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-"""Pydantic models for the definition of advanced CLI options
+"""Pydantic models for the definition of advanced CLI options"""
 
-"""
 import click
 from collections import namedtuple
 from pydantic import BaseModel, ConfigDict
@@ -13,40 +12,40 @@ import warnings
 
 
 PlanNetworkOptions = namedtuple(
-    'PlanNetworkOptions',
+    "PlanNetworkOptions",
     [
-        'mapper',
-        'scorer',
-        'ligand_network_planner',
-        'solvent',
-        'partial_charge',
-    ]
+        "mapper",
+        "scorer",
+        "ligand_network_planner",
+        "solvent",
+        "partial_charge",
+    ],
 )
 
 
 class MapperSelection(BaseModel):
-    model_config = ConfigDict(extra='allow', str_to_lower=True)
+    model_config = ConfigDict(extra="allow", str_to_lower=True)
 
     method: Optional[str] = None
     settings: dict[str, Any] = {}
 
 
 class NetworkSelection(BaseModel):
-    model_config = ConfigDict(extra='allow', str_to_lower=True)
+    model_config = ConfigDict(extra="allow", str_to_lower=True)
 
     method: Optional[str] = None
     settings: dict[str, Any] = {}
 
 
 class PartialChargeSelection(BaseModel):
-    model_config = ConfigDict(extra='allow', str_to_lower=True)
+    model_config = ConfigDict(extra="allow", str_to_lower=True)
 
-    method: Optional[str] = 'am1bcc'
+    method: Optional[str] = "am1bcc"
     settings: dict[str, Any] = {}
 
 
 class CliYaml(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
 
     mapper: Optional[MapperSelection] = None
     network: Optional[NetworkSelection] = None
@@ -73,7 +72,7 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     """
     raw = yaml.safe_load(contents)
 
-    expected_fields = {'mapper', 'network', 'partial_charge'}
+    expected_fields = {"mapper", "network", "partial_charge"}
     present_fields = set(raw.keys())
     usable_fields = present_fields.intersection(expected_fields)
     ignored_fields = present_fields.difference(expected_fields)
@@ -81,7 +80,7 @@ def parse_yaml_planner_options(contents: str) -> CliYaml:
     for field in ignored_fields:
         warnings.warn(f"Ignoring unexpected section: '{field}'")
 
-    filtered = {k:raw[k] for k in usable_fields}
+    filtered = {k: raw[k] for k in usable_fields}
 
     return CliYaml(**filtered)
 
@@ -118,13 +117,11 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
     )
-    from openfe.protocols.openmm_utils.omm_settings import (
-        OpenFFPartialChargeSettings
-    )
+    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
     from functools import partial
 
     if path is not None:
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             raw = f.read()
 
         # convert raw yaml to normalised pydantic model
@@ -135,10 +132,10 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
     # convert normalised inputs to objects
     if opt and opt.mapper:
         mapper_choices = {
-            'lomap': LomapAtomMapper,
-            'lomapatommapper': LomapAtomMapper,
-            'kartograf': KartografAtomMapper,
-            'kartografatommapper': KartografAtomMapper,
+            "lomap": LomapAtomMapper,
+            "lomapatommapper": LomapAtomMapper,
+            "kartograf": KartografAtomMapper,
+            "kartografatommapper": KartografAtomMapper,
         }
 
         try:
@@ -163,13 +160,13 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
 
     if opt and opt.network:
         network_choices = {
-            'generate_radial_network': generate_radial_network,
-            'radial': generate_radial_network,
-            'generate_minimal_spanning_network': generate_minimal_spanning_network,
-            'mst': generate_minimal_spanning_network,
-            'generate_minimal_redundant_network': generate_minimal_redundant_network,
-            'generate_maximal_network': generate_maximal_network,
-            'generate_lomap_network': generate_lomap_network,
+            "generate_radial_network": generate_radial_network,
+            "radial": generate_radial_network,
+            "generate_minimal_spanning_network": generate_minimal_spanning_network,
+            "mst": generate_minimal_spanning_network,
+            "generate_minimal_redundant_network": generate_minimal_redundant_network,
+            "generate_maximal_network": generate_maximal_network,
+            "generate_lomap_network": generate_lomap_network,
         }
 
         try:
@@ -189,7 +186,7 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
             setattr(
                 partial_charge_settings,
                 setting,
-                opt.partial_charge.settings[setting]
+                opt.partial_charge.settings[setting],
             )
 
     # todo: choice of solvent goes here
@@ -202,8 +199,10 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
         solvent,
         partial_charge_settings,
     )
+
+
 # TODO: do we want this in the docs anywhere?
-DEFAULT_YAML="""
+DEFAULT_YAML = """
     mapper: KartografAtomMapper
         settings:
             atom_max_distance: 0.95
@@ -268,7 +267,9 @@ For example:
 """
 
 YAML_OPTIONS = Option(
-    '-s', "--settings", "yaml_settings",
+    "-s",
+    "--settings",
+    "yaml_settings",
     type=click.Path(exists=True, dir_okay=False),
     help=_yaml_help,
     getter=load_yaml_planner_options,

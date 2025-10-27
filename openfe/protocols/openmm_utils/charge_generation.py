@@ -3,6 +3,7 @@
 """
 Reusable utilities for assigning partial charges to ChemicalComponents.
 """
+
 import copy
 from typing import Union, Optional, Literal, Callable
 import sys
@@ -15,7 +16,7 @@ from openff.toolkit.utils.base_wrapper import ToolkitWrapper
 from openff.toolkit.utils.toolkits import (
     AmberToolsToolkitWrapper,
     OpenEyeToolkitWrapper,
-    RDKitToolkitWrapper
+    RDKitToolkitWrapper,
 )
 from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from threadpoolctl import threadpool_limits
@@ -34,14 +35,15 @@ try:
 except ImportError:
     # toolkit_registry_manager was made non private in 0.14.4
     from openff.toolkit.utils.toolkit_registry import (
-        _toolkit_registry_manager as toolkit_registry_manager
+        _toolkit_registry_manager as toolkit_registry_manager,
     )
 
 
 try:
     from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
     from openff.nagl_models import (
-        get_models_by_type, validate_nagl_model_path,
+        get_models_by_type,
+        validate_nagl_model_path,
     )
 except ImportError:
     HAS_NAGL = False
@@ -68,10 +70,7 @@ BACKEND_OPTIONS: dict[str, list[ToolkitWrapper]] = {
 }
 
 
-def assign_offmol_espaloma_charges(
-    offmol: OFFMol,
-    toolkit_registry: ToolkitRegistry
-) -> None:
+def assign_offmol_espaloma_charges(offmol: OFFMol, toolkit_registry: ToolkitRegistry) -> None:
     """
     Assign Espaloma charges using the OpenFF toolkit.
 
@@ -86,12 +85,10 @@ def assign_offmol_espaloma_charges(
       assignment stage.
     """
     if not HAS_ESPALOMA_CHARGE:
-        errmsg = ("The Espaloma ToolkiWrapper is not available, "
-                  "please install espaloma_charge")
+        errmsg = "The Espaloma ToolkiWrapper is not available, please install espaloma_charge"
         raise ImportError(errmsg)
 
-    warnings.warn("Using espaloma to assign charges is not well tested",
-            category=RuntimeWarning)
+    warnings.warn("Using espaloma to assign charges is not well tested", category=RuntimeWarning)
 
     # make a copy to remove conformers as espaloma enforces
     # a 0 conformer check
@@ -103,7 +100,7 @@ def assign_offmol_espaloma_charges(
     # https://github.com/openforcefield/openff-nagl/issues/69
     with toolkit_registry_manager(toolkit_registry):
         offmol_copy.assign_partial_charges(
-            partial_charge_method='espaloma-am1bcc',
+            partial_charge_method="espaloma-am1bcc",
             toolkit_registry=EspalomaChargeToolkitWrapper(),
         )
 
@@ -133,20 +130,22 @@ def assign_offmol_nagl_charges(
       If ``None``, will fetch the latest production "am1bcc" model.
     """
     if not HAS_NAGL:
-        errmsg = ("The NAGL toolkit is not available, you may "
-                  "be using an older version of the OpenFF "
-                  "toolkit - you need v0.14.4 or above")
+        errmsg = (
+            "The NAGL toolkit is not available, you may "
+            "be using an older version of the OpenFF "
+            "toolkit - you need v0.14.4 or above"
+        )
         raise ImportError(errmsg)
 
     if nagl_model is None:
-        prod_models = get_models_by_type(
-            model_type='am1bcc', production_only=True
-        )
+        prod_models = get_models_by_type(model_type="am1bcc", production_only=True)
         try:
             nagl_model = prod_models[-1]
         except IndexError:
-            errmsg = ("No production am1bcc NAGL models were found, "
-                      "please manually select a candidate release model.")
+            errmsg = (
+                "No production am1bcc NAGL models were found, "
+                "please manually select a candidate release model."
+            )
             raise ValueError(errmsg)
 
     model_path = validate_nagl_model_path(nagl_model)
@@ -163,7 +162,7 @@ def assign_offmol_nagl_charges(
 
 def assign_offmol_am1bcc_charges(
     offmol: OFFMol,
-    partial_charge_method: Literal['am1bcc', 'am1bccelf10'],
+    partial_charge_method: Literal["am1bcc", "am1bccelf10"],
     toolkit_registry: ToolkitRegistry,
 ) -> None:
     """
@@ -200,7 +199,7 @@ def assign_offmol_am1bcc_charges(
         offmol.assign_partial_charges(
             partial_charge_method=partial_charge_method,
             use_conformers=offmol.conformers,
-            toolkit_registry=toolkit_registry
+            toolkit_registry=toolkit_registry,
         )
 
 
@@ -238,32 +237,36 @@ def _generate_offmol_conformers(
     # Check number of conformers if generate_n_conformers is None and return
     if generate_n_conformers is None:
         if offmol.n_conformers == 0:
-            errmsg = ("No conformers are associated with input OpenFF "
-                      "Molecule. Need at least one for partial charge "
-                      "assignment")
+            errmsg = (
+                "No conformers are associated with input OpenFF "
+                "Molecule. Need at least one for partial charge "
+                "assignment"
+            )
             raise ValueError(errmsg)
         if offmol.n_conformers > max_conf:
-            errmsg = ("OpenFF Molecule has too many conformers: "
-                      f"{offmol.n_conformers}, selected partial charge "
-                      f"method can only support a maximum of {max_conf} "
-                      "conformers.")
+            errmsg = (
+                "OpenFF Molecule has too many conformers: "
+                f"{offmol.n_conformers}, selected partial charge "
+                f"method can only support a maximum of {max_conf} "
+                "conformers."
+            )
             raise ValueError(errmsg)
         return
 
-
     # Check that generate_n_conformers < max_conf
     if generate_n_conformers > max_conf:
-        errmsg = (f"{generate_n_conformers} conformers were requested "
-                  "for partial charge generation, but the selected "
-                  "method only supports up to {max_conf} conformers.")
+        errmsg = (
+            f"{generate_n_conformers} conformers were requested "
+            "for partial charge generation, but the selected "
+            "method only supports up to {max_conf} conformers."
+        )
         raise ValueError(errmsg)
 
     # Generate conformers
 
     # OpenEye tk needs cis carboxylic acids
     make_carbox_cis = any(
-        [isinstance(i, OpenEyeToolkitWrapper)
-         for i in toolkit_registry.registered_toolkits]
+        [isinstance(i, OpenEyeToolkitWrapper) for i in toolkit_registry.registered_toolkits]
     )
 
     # We are being overly cautious by both passing the
@@ -282,8 +285,8 @@ def _generate_offmol_conformers(
 def assign_offmol_partial_charges(
     offmol: OFFMol,
     overwrite: bool,
-    method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'],
-    toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
+    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
+    toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: Optional[int],
     nagl_model: Optional[str],
 ) -> OFFMol:
@@ -331,7 +334,7 @@ def assign_offmol_partial_charges(
     """
 
     # If you have non-zero charges and not overwriting, just return
-    if (offmol.partial_charges is not None and np.any(offmol.partial_charges)):
+    if offmol.partial_charges is not None and np.any(offmol.partial_charges):
         if not overwrite:
             return offmol
 
@@ -351,28 +354,28 @@ def assign_offmol_partial_charges(
         "am1bcc": {
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_am1bcc_charges,
-            "backends": ['ambertools', 'openeye'],
+            "backends": ["ambertools", "openeye"],
             "max_conf": 1,
-            "charge_extra_kwargs": {'partial_charge_method': 'am1bcc'},
+            "charge_extra_kwargs": {"partial_charge_method": "am1bcc"},
         },
         "am1bccelf10": {
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_am1bcc_charges,
-            "backends": ['openeye'],
+            "backends": ["openeye"],
             "max_conf": sys.maxsize,
-            "charge_extra_kwargs": {'partial_charge_method': 'am1bccelf10'},
+            "charge_extra_kwargs": {"partial_charge_method": "am1bccelf10"},
         },
         "nagl": {
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_nagl_charges,
-            "backends": ['openeye', 'rdkit', 'ambertools'],
+            "backends": ["openeye", "rdkit", "ambertools"],
             "max_conf": 1,
             "charge_extra_kwargs": {"nagl_model": nagl_model},
         },
         "espaloma": {
             "confgen_func": _generate_offmol_conformers,
             "charge_func": assign_offmol_espaloma_charges,
-            "backends": ['rdkit', 'ambertools'],
+            "backends": ["rdkit", "ambertools"],
             "max_conf": 1,
             "charge_extra_kwargs": {},
         },
@@ -380,35 +383,35 @@ def assign_offmol_partial_charges(
 
     # Grab the backends and also check our method
     try:
-        backends = CHARGE_METHODS[method.lower()]['backends']
+        backends = CHARGE_METHODS[method.lower()]["backends"]
     except KeyError:
         errmsg = f"Unknown partial charge method {method}"
         raise ValueError(errmsg)
 
     # Check our method actually supports the toolkit backend selected
     if toolkit_backend.lower() not in backends:  # type: ignore
-        errmsg = (f"Selected toolkit_backend ({toolkit_backend}) cannot "
-                  f"be used with the selected method ({method}). "
-                  f"Available backends are: {backends}")
+        errmsg = (
+            f"Selected toolkit_backend ({toolkit_backend}) cannot "
+            f"be used with the selected method ({method}). "
+            f"Available backends are: {backends}"
+        )
         raise ValueError(errmsg)
 
     # OpenEye is the only optional dependency in the toolkit backends
-    if toolkit_backend.lower() == 'openeye' and not HAS_OPENEYE:
+    if toolkit_backend.lower() == "openeye" and not HAS_OPENEYE:
         errmsg = "OpenEye is not available and cannot be selected as a backend"
         raise ImportError(errmsg)
 
-    toolkits = ToolkitRegistry(
-        [i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]]
-    )
+    toolkits = ToolkitRegistry([i() for i in BACKEND_OPTIONS[toolkit_backend.lower()]])
 
     # We make a copy of the molecule since we're going to modify conformers
     offmol_copy = copy.deepcopy(offmol)
 
     # Generate conformers - note this method may differ based on the partial
     # charge method employed
-    CHARGE_METHODS[method.lower()]['confgen_func'](
+    CHARGE_METHODS[method.lower()]["confgen_func"](
         offmol=offmol_copy,
-        max_conf=CHARGE_METHODS[method.lower()]['max_conf'],
+        max_conf=CHARGE_METHODS[method.lower()]["max_conf"],
         toolkit_registry=toolkits,
         generate_n_conformers=generate_n_conformers,
     )  # type: ignore
@@ -417,10 +420,10 @@ def assign_offmol_partial_charges(
     # <https://github.com/openforcefield/openff-toolkit/issues/1831>
     with threadpool_limits(limits=1):
         # Call selected method to assign partial charges
-        CHARGE_METHODS[method.lower()]['charge_func'](
+        CHARGE_METHODS[method.lower()]["charge_func"](
             offmol=offmol_copy,
             toolkit_registry=toolkits,
-            **CHARGE_METHODS[method.lower()]['charge_extra_kwargs'],
+            **CHARGE_METHODS[method.lower()]["charge_extra_kwargs"],
         )  # type: ignore
 
     # Copy partial charges back
@@ -431,8 +434,8 @@ def assign_offmol_partial_charges(
 def bulk_assign_partial_charges(
     molecules: list[SmallMoleculeComponent],
     overwrite: bool,
-    method: Literal['am1bcc', 'am1bccelf10', 'nagl', 'espaloma'],
-    toolkit_backend: Literal['ambertools', 'openeye', 'rdkit'],
+    method: Literal["am1bcc", "am1bccelf10", "nagl", "espaloma"],
+    toolkit_backend: Literal["ambertools", "openeye", "rdkit"],
     generate_n_conformers: Optional[int],
     nagl_model: Optional[str],
     processors: int = 1,
@@ -488,7 +491,7 @@ def bulk_assign_partial_charges(
         "method": method,
         "toolkit_backend": toolkit_backend,
         "generate_n_conformers": generate_n_conformers,
-        "nagl_model": nagl_model
+        "nagl_model": nagl_model,
     }
     charged_ligands = []
 
@@ -496,22 +499,23 @@ def bulk_assign_partial_charges(
         from concurrent.futures import ProcessPoolExecutor, as_completed
 
         with ProcessPoolExecutor(max_workers=processors) as pool:
-
             work_list = [
                 pool.submit(
                     assign_offmol_partial_charges,
                     m.to_openff(),
-                    **charge_keywords, # type: ignore
+                    **charge_keywords,  # type: ignore
                 )
                 for m in molecules
             ]
 
-            for work in tqdm.tqdm(as_completed(work_list), desc="Generating charges", ncols=80, total=len(molecules)):
+            for work in tqdm.tqdm(
+                as_completed(work_list), desc="Generating charges", ncols=80, total=len(molecules)
+            ):
                 charged_ligands.append(SmallMoleculeComponent.from_openff(work.result()))
 
     else:
         for m in tqdm.tqdm(molecules, desc="Generating charges", ncols=80, total=len(molecules)):
-            mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords) # type: ignore
+            mol_with_charge = assign_offmol_partial_charges(m.to_openff(), **charge_keywords)  # type: ignore
             charged_ligands.append(SmallMoleculeComponent.from_openff(mol_with_charge))
 
     return charged_ligands

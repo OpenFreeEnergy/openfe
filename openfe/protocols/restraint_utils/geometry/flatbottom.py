@@ -7,11 +7,12 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 from typing import Optional
 
 import MDAnalysis as mda
 import numpy as np
-from gufe.settings.types import NanometerQuantity
+from gufe.settings.typing import NanometerQuantity
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_bonds
 from openff.units import Quantity, unit

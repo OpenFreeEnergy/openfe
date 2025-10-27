@@ -13,7 +13,7 @@ readme = "README.md"
 license = "MIT"
 license-files = [ "LICENSE" ]
 authors = [ { name = "The OpenFE developers", email = "openfe@omsf.io" } ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 classifiers = [
   "Development Status :: 1 - Planning",
@@ -21,6 +21,7 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -45,6 +46,27 @@ openfe = [ '"./openfe/tests/data/lomap_basic/toluene.mol2"' ]
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0"
+
+[tool.ruff]
+line-length = 100
+
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+lint.select = [
+  # "F",  # Pyflakes
+  # "I", # isort
+  # "W", # pycodestyle warnings
+  # "E",  # pycodestyle errors
+  # "C901"  # mccabe complexity  TODO: add this back in
+  # "UP", # TODO: add this in
+]
+lint.ignore = [
+  "E402", # module-level import not at top (conflicts w/ isort)
+  "E722", # bare excepts (TODO: we should fix these in a follow-up PR)
+  "E731", # lambda expressions (TODO: we should fix these)
+  "F401", # unused imports (TODO: we should fix these)
+  "UP03", # pyupgrade linting (TODO: we should fix these)
+]
+lint.isort.known-first-party = [ "openfe" ]
 
 [tool.coverage.run]
 omit = [

@@ -3,6 +3,9 @@
 # The eventual goal is to move a version of this towards openmmtools
 # LICENSE: MIT
 
+# turn off formatting since this is mostly vendored code
+# fmt: off
+
 import logging
 import openmm
 from openmm import unit, app
@@ -2345,17 +2348,20 @@ class HybridTopologyFactory:
         # In the first instance, create a list of necessary atoms from
         # both old & new Topologies
         atom_list = []
+        # iterate once over the topologies for speed
+        old_topology_atoms = list(self._old_topology.atoms())
+        new_topology_atoms = list(self._new_topology.atoms())
 
         for pidx in range(self.hybrid_system.getNumParticles()):
             if pidx in self._hybrid_to_old_map:
                 idx = self._hybrid_to_old_map[pidx]
-                atom_list.append(list(self._old_topology.atoms())[idx])
+                atom_list.append(old_topology_atoms[idx])
             else:
                 idx = self._hybrid_to_new_map[pidx]
-                atom_list.append(list(self._new_topology.atoms())[idx])
+                atom_list.append(new_topology_atoms[idx])
 
         # Now we loop over the atoms and add them in alongside chains & resids
-        
+
         # Non ideal variables to track the previous set of residues & chains
         # without having to constantly search backwards
         prev_res = None
@@ -2377,14 +2383,16 @@ class HybridTopologyFactory:
             )
 
         # Next we deal with bonds
+        # loop over the topology atoms once to avoid repeated calls
+        hybrid_top_atom_list = list(hybrid_top.atoms())
         # First we add in all the old topology bonds
         for bond in self._old_topology.bonds():
             at1 = self.old_to_hybrid_atom_map[bond.atom1.index]
             at2 = self.old_to_hybrid_atom_map[bond.atom2.index]
 
             hybrid_top.addBond(
-                list(hybrid_top.atoms())[at1],
-                list(hybrid_top.atoms())[at2],
+                hybrid_top_atom_list[at1],
+                hybrid_top_atom_list[at2],
                 bond.type, bond.order,
             )
 
@@ -2396,8 +2404,8 @@ class HybridTopologyFactory:
             if ((at1 in self._atom_classes['unique_new_atoms']) or
                 (at2 in self._atom_classes['unique_new_atoms'])):
                 hybrid_top.addBond(
-                    list(hybrid_top.atoms())[at1],
-                    list(hybrid_top.atoms())[at2],
+                    hybrid_top_atom_list[at1],
+                    hybrid_top_atom_list[at2],
                     bond.type, bond.order,
                 )
 
@@ -2426,7 +2434,7 @@ class HybridTopologyFactory:
         old_positions = unit.Quantity(np.zeros([n_atoms_old, 3]),
                                       unit=unit.nanometer)
         for idx in range(n_atoms_old):
-            hyb_idx = self._new_to_hybrid_map[idx]
+            hyb_idx = self._old_to_hybrid_map[idx]
             old_positions[idx, :] = hybrid_positions[hyb_idx, :]
         return old_positions
 
@@ -2445,7 +2453,7 @@ class HybridTopologyFactory:
         new_positions : [m, 3] np.ndarray with unit
             The positions of the new system
         """
-        n_atoms_new = self._new_system.getNumParticles
+        n_atoms_new = self._new_system.getNumParticles()
         # making sure hybrid positions are simtk.unit.Quantity objects
         if not isinstance(hybrid_positions, unit.Quantity):
             hybrid_positions = unit.Quantity(hybrid_positions,

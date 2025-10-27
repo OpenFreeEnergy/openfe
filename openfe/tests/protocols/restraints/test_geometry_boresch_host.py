@@ -37,20 +37,20 @@ zenodo_restraint_data = pooch.create(
 )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def t4_lysozyme_trajectory_universe():
     zenodo_restraint_data.fetch("t4_lysozyme_trajectory.zip", processor=pooch.Unzip())
     cache_dir = pathlib.Path(
-        pooch.os_cache("openfe")
-        / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
+        pooch.os_cache("openfe") / "t4_lysozyme_trajectory.zip.unzip/t4_lysozyme_trajectory"
     )
     universe = mda.Universe(
         str(cache_dir / "t4_toluene_complex.pdb"),
         str(cache_dir / "t4_toluene_complex.xtc"),
     )
     # guess bonds for the protein atoms
-    universe.select_atoms('protein').guess_bonds()
+    universe.select_atoms("protein").guess_bonds()
     return universe
+
 
 @pytest.fixture
 def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
@@ -68,7 +68,7 @@ def eg5_protein_ligand_universe_bonded(eg5_protein_pdb, eg5_ligands):
     # add the residue name of the ligand
     lig.add_TopologyAttr("resname", ["LIG"])
     merged_u = mda.Merge(protein.atoms, lig.atoms)
-    merged_u.guess_TopologyAttrs(context='default', to_guess=['bonds', 'angles'])
+    merged_u.guess_TopologyAttrs(context="default", to_guess=["bonds", "angles"])
     return merged_u
 
 
@@ -87,11 +87,13 @@ def test_host_atom_candidates_dssp(eg5_protein_ligand_universe):
         dssp_filter=True,
     )
     expected = np.array(
-        [3144, 3146, 3145, 3143, 3162, 3206, 3200, 3207, 3126, 3201, 3127,
-         3163, 3199, 3202, 3164, 3125, 3165, 3177, 3208, 3179, 3124, 3216,
-         3209, 3109, 3107, 3178, 3110, 3180, 3108, 3248, 3217, 3249, 3226,
-         3218, 3228, 3227, 3250, 3219, 3251, 3229]
-    )
+        [
+            3144, 3146, 3145, 3143, 3162, 3206, 3200, 3207, 3126, 3201, 3127,
+            3163, 3199, 3202, 3164, 3125, 3165, 3177, 3208, 3179, 3124, 3216,
+            3209, 3109, 3107, 3178, 3110, 3180, 3108, 3248, 3217, 3249, 3226,
+            3218, 3228, 3227, 3250, 3219, 3251, 3229
+        ]
+    )  # fmt: skip
     assert_equal(idxs, expected)
 
 
@@ -112,16 +114,13 @@ def test_host_atom_candidates_dssp_too_few_atoms(eg5_protein_ligand_universe):
             guest_anchor_idx=5508,
             host_selection="backbone and resnum 15:25",
             dssp_filter=True,
-            max_search_distance=2*unit.nanometer
+            max_search_distance=2 * unit.nanometer,
         )
 
 
 def test_host_atom_candidate_small_search(eg5_protein_ligand_universe):
-
     host_atoms = eg5_protein_ligand_universe.select_atoms("protein")
-    with pytest.raises(
-        ValueError, match="No host atoms found within the search distance"
-    ):
+    with pytest.raises(ValueError, match="No host atoms found within the search distance"):
         _ = find_host_atom_candidates(
             universe=eg5_protein_ligand_universe,
             host_idxs=host_atoms.ix,
@@ -134,7 +133,6 @@ def test_host_atom_candidate_small_search(eg5_protein_ligand_universe):
 
 
 def test_evaluate_host1_bad_ref(eg5_protein_ligand_universe):
-
     with pytest.raises(ValueError, match="Incorrect number of reference atoms passed"):
         _ = EvaluateHostAtoms1(
             reference=eg5_protein_ligand_universe.atoms,
@@ -146,16 +144,13 @@ def test_evaluate_host1_bad_ref(eg5_protein_ligand_universe):
 
 
 def test_evaluate_host1_good(eg5_protein_ligand_universe):
-
     angle_fc = 83.68 * unit.kilojoule_per_mole / unit.radians**2
     min_distance = 1 * unit.nanometer
     temp = 298.15 * unit.kelvin
     ho_eval = EvaluateHostAtoms1(
         # picked from a successful boresch restraint search
         reference=eg5_protein_ligand_universe.atoms[[5528, 5507, 5508]],
-        host_atom_pool=eg5_protein_ligand_universe.select_atoms(
-            "backbone and resnum 239"
-        ),
+        host_atom_pool=eg5_protein_ligand_universe.select_atoms("backbone and resnum 239"),
         minimum_distance=min_distance,
         angle_force_constant=angle_fc,
         temperature=temp,
@@ -184,13 +179,10 @@ def test_evaluate_host1_good(eg5_protein_ligand_universe):
 
 
 def test_evaluate_host2_good(eg5_protein_ligand_universe):
-
     h2_eval = EvaluateHostAtoms2(
         # picked from a successful boresch restraint search
         reference=eg5_protein_ligand_universe.atoms[[5528, 5507, 5508]],
-        host_atom_pool=eg5_protein_ligand_universe.select_atoms(
-            "backbone and resnum 264"
-        ),
+        host_atom_pool=eg5_protein_ligand_universe.select_atoms("backbone and resnum 264"),
         minimum_distance=1 * unit.nanometer,
         angle_force_constant=83.68 * unit.kilojoule_per_mole / unit.radians**2,
         temperature=298.15 * unit.kelvin,
@@ -258,7 +250,7 @@ class TestFindAnchorMulti:
         for i, j, ref in [
             [0, 1, self.ref_h0h1_distance],
             [1, 2, self.ref_h1h2_distance],
-            [0, 2, self.ref_h0h2_distance]
+            [0, 2, self.ref_h0h2_distance],
         ]:
             dist = mda.lib.distances.calc_bonds(
                 universe.atoms[host_anchor[i]].position,
@@ -270,12 +262,14 @@ class TestFindAnchorMulti:
     def test_not_collinear(self, host_anchor, universe):
         # check none of the g2-g1-g0-h0-h1-h2 vectors are not collinear
         assert not is_collinear(
-            positions=np.vstack((
-                universe.atoms[self.guest_atoms[::-1]].positions,
-                universe.atoms[host_anchor].positions
-            )),
+            positions=np.vstack(
+                (
+                    universe.atoms[self.guest_atoms[::-1]].positions,
+                    universe.atoms[host_anchor].positions,
+                )
+            ),
             atoms=[0, 1, 2, 3, 4, 5],
-            dimensions=universe.dimensions
+            dimensions=universe.dimensions,
         )
 
     def test_angles(self, host_anchor, universe):
@@ -284,13 +278,13 @@ class TestFindAnchorMulti:
             universe.atoms[self.guest_atoms[1]].position,
             universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
-            box=universe.dimensions
+            box=universe.dimensions,
         )
         ag2 = mda.lib.distances.calc_angles(
             universe.atoms[self.guest_atoms[0]].position,
             universe.atoms[host_anchor[0]].position,
             universe.atoms[host_anchor[1]].position,
-            box=universe.dimensions
+            box=universe.dimensions,
         )
         for angle in [ag1, ag2]:
             assert check_angle_not_flat(
@@ -362,11 +356,11 @@ class TestFindAnchorBondedTrajectory(TestFindAnchorMulti):
     ref_h0h2_distance = 2.61515
     ref_h1h2_distance = 1.55881
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def universe(self, t4_lysozyme_trajectory_universe):
         return t4_lysozyme_trajectory_universe
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def host_anchor(self, universe):
         return find_host_anchor_bonded(
             guest_atoms=universe.atoms[self.guest_atoms],
@@ -400,7 +394,6 @@ def test_boresch_evaluation_incorrectnumber_error(eg5_protein_ligand_universe):
 
 @pytest.mark.slow
 def test_find_host_anchor_multi_none(eg5_protein_ligand_universe):
-
     host_anchor = find_host_anchor_multi(
         guest_atoms=eg5_protein_ligand_universe.atoms[[5528, 5507, 5508]],
         host_atom_pool=eg5_protein_ligand_universe.select_atoms("backbone"),
@@ -417,7 +410,6 @@ def test_find_host_anchor_multi_none(eg5_protein_ligand_universe):
 
 @pytest.mark.slow
 def test_find_host_anchor_bonded_none(eg5_protein_ligand_universe_bonded):
-
     host_anchor = find_host_anchor_bonded(
         guest_atoms=eg5_protein_ligand_universe_bonded.atoms[[5528, 5507, 5508]],
         host_atom_pool=eg5_protein_ligand_universe_bonded.select_atoms("backbone"),
@@ -434,7 +426,6 @@ def test_find_host_anchor_bonded_none(eg5_protein_ligand_universe_bonded):
 
 @pytest.mark.slow
 def test_find_host_anchor_bonded_nobonds_none(eg5_protein_ligand_universe):
-
     # No angles were found, so it will attempt to find some
     # It'll fail because there are no bonds available.
     with pytest.warns(UserWarning, match="no angles found"):
