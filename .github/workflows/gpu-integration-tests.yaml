@@ -20,7 +20,7 @@ jobs:
         id: aws-start
         uses: omsf/start-aws-gha-runner@v1.0.0
         with:
-          aws_image_id: ami-0b7f661c228e6a4bb
+          aws_image_id: ami-076a54ed41e67782d
           aws_instance_type: g4dn.xlarge
           aws_home_dir: /home/ubuntu
           aws_root_device_size: 125
@@ -63,6 +63,8 @@ jobs:
             espaloma_charge==0.0.8
             espaloma==0.4.0
             openeye-toolkits
+            python=3.12
+            cuda-version=12.8
 
       - name: "Check if OpenMM can get a GPU"
         run: python -m openmm.testInstallation
@@ -90,12 +92,11 @@ jobs:
 
       - name: "Run tests"
         env:
-          # Set the OFE_SLOW_TESTS to True if running a Cron job
-          OFE_SLOW_TESTS: "true"
           DUECREDIT_ENABLE: 'yes'
           OFE_INTEGRATION_TESTS: TRUE
         run: |
-          pytest -n logical -vv --durations=10
+          # The -m flag will only run tests with @pytest.mark.integration
+          pytest -n logical -vv --durations=10 -m integration openfecli/tests/ openfe/tests/
 
   stop-aws-runner:
     runs-on: ubuntu-latest
