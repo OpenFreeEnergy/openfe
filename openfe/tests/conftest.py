@@ -358,7 +358,6 @@ def am1bcc_ref_charges():
     }  # fmt: skip
     return ref_chgs
 
-
 try:
     urllib.request.urlopen("https://www.google.com")
 except:  # -no-cov-
