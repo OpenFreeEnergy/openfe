@@ -13,7 +13,8 @@ readme = "README.md"
 license = "MIT"
 license-files = [ "LICENSE" ]
 authors = [ { name = "The OpenFE developers", email = "openfe@omsf.io" } ]
-requires-python = ">=3.10"
+# blocked by OpenMM 8.4 for python 3.14 support
+requires-python = ">=3.10,<3.14"
 
 classifiers = [
   "Development Status :: 1 - Planning",
@@ -25,7 +26,6 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
   "Topic :: Scientific/Engineering :: Chemistry",
 ]
