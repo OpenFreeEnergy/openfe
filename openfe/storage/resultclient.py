@@ -92,7 +92,7 @@ class _ResultContainer(abc.ABC):
 
 
 class ResultClient(_ResultContainer):
-    def __init__(self, external_store, external_storage: ExternalStorage):
+    def __init__(self, external_storage: ExternalStorage):
         self._external_storage = external_storage
         super().__init__(parent=self, path_component=None)
 
