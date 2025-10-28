@@ -319,7 +319,7 @@ def _get_ddgs(legs: dict, allow_partial=False) -> None:
     return DDGs
 
 
-def _generate_ddg(legs: dict, allow_partial: bool) -> None:
+def _generate_ddg(legs: dict, allow_partial: bool) -> pd.DataFrame:
     """Compute and write out DDG values for the given legs.
 
     Parameters
@@ -348,7 +348,7 @@ def _generate_ddg(legs: dict, allow_partial: bool) -> None:
     return df
 
 
-def _generate_raw(legs: dict, allow_partial=True) -> None:
+def _generate_raw(legs: dict, allow_partial=True) -> pd.DataFrame:
     """
     Write out all legs found and their DG values, or indicate that they have failed.
 
@@ -394,7 +394,7 @@ def _check_legs_have_sufficient_repeats(legs):
                 sys.exit(1)
 
 
-def _generate_dg_mle(legs: dict, allow_partial: bool) -> None:
+def _generate_dg_mle(legs: dict, allow_partial: bool) -> pd.DataFrame:
     """Compute and write out DG values for the given legs.
 
     Parameters
