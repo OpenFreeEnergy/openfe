@@ -324,20 +324,21 @@ def gather_septop(
     results: List[os.PathLike | str],
     output: os.PathLike | str,
     report: Literal["dg", "ddg", "raw"],
-    tsv: bool,):
-
+    tsv: bool,
+):
     ddgs = extract_results_dict(results)
-    if report == "ddg":
-        df_ddg = generate_ddg(ddgs)
-        df_ddg.to_csv(output, sep="\t", lineterminator="\n", index=False)
-
-    if report == "dg":
-        df_dg = generate_dg_mle(ddgs)
-        df_dg.to_csv("dg.tsv", sep="\t", lineterminator="\n", index=False)
 
     if report == "raw":
         df_raw = generate_dg_raw(ddgs)
         df_raw.to_csv(output, sep="\t", lineterminator="\n", index=False)
+
+    elif report == "ddg":
+        df_ddg = generate_ddg(ddgs)
+        df_ddg.to_csv(output, sep="\t", lineterminator="\n", index=False)
+
+    elif report == "dg":
+        df_dg = generate_dg_mle(ddgs)
+        df_dg.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
 
 PLUGIN = OFECommandPlugin(

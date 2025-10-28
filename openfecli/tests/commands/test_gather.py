@@ -484,7 +484,7 @@ def test_septop_gather(septop_result_dir, dataset):
 
 
 class TestGatherSepTop:
-    @pytest.mark.parametrize("report", ["raw", "ddg",])  # TESTING ["raw", "ddg", "dg" ])
+    @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
     def test_septop_full_results(self, septop_result_dir, report, file_regression):
         results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
         args = ["--report", report]
