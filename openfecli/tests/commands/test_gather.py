@@ -14,6 +14,7 @@ from openfecli.commands.gather import (
     format_estimate_uncertainty,
     gather,
 )
+from openfecli.command.gather_septop import gather_septop
 
 from ..conftest import HAS_INTERNET
 from ..utils import assert_click_success
@@ -486,7 +487,7 @@ class TestGatherSepTop:
         results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
-        cli_result = runner.invoke(gather, results + args + ["--tsv"])
+        cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.stdout, extension=".tsv")
