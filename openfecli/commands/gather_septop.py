@@ -320,26 +320,22 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         "By default, the output table will be formatted for human-readability."
     ),
 )
-def gather_septop(results: List[os.PathLike | str],
+def gather_septop(
+    results: List[os.PathLike | str],
     output: os.PathLike | str,
     report: Literal["dg", "ddg", "raw"],
     tsv: bool,):
-    # Specify paths to result directories
-    results_dir = [
-        pathlib.Path("septop_results/results_0"),
-        pathlib.Path("septop_results/results_1"),
-        pathlib.Path("septop_results/results_2"),
-    ]
-    ddgs = extract_results_dict(results_dir)
 
-    df_ddg = generate_ddg(ddgs)
-    df_ddg.to_csv("ddg.tsv", sep="\t", lineterminator="\n", index=False)
+    ddgs = extract_results_dict(results)
 
-    df_dg = generate_dg_mle(ddgs)
-    df_dg.to_csv("dg.tsv", sep="\t", lineterminator="\n", index=False)
+    # df_ddg = generate_ddg(ddgs)
+    # df_ddg.to_csv("ddg.tsv", sep="\t", lineterminator="\n", index=False)
 
-    df_raw = generate_dg_raw(ddgs)
-    df_raw.to_csv("ddg_raw.tsv", sep="\t", lineterminator="\n", index=False)
+    # df_dg = generate_dg_mle(ddgs)
+    # df_dg.to_csv("dg.tsv", sep="\t", lineterminator="\n", index=False)
+    if report == "raw":
+        df_raw = generate_dg_raw(ddgs)
+        df_raw.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
 
 PLUGIN = OFECommandPlugin(
