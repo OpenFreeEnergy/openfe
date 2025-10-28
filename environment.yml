@@ -5,6 +5,7 @@ dependencies:
   - cinnabar ~=0.5.0
   - click >=8.2.0
   - coverage
+  - dask>=2025  # for debugging
   - duecredit<0.10
   - kartograf>=1.2.0
   - konnektor~=0.2.0
