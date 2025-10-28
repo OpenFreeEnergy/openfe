@@ -286,8 +286,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     )
     return df
 
-
-def main():
+def gather_septop():
     # Specify paths to result directories
     results_dir = [
         pathlib.Path("septop_results/results_0"),
@@ -304,3 +303,13 @@ def main():
 
     df_raw = generate_dg_raw(ddgs)
     df_raw.to_csv("ddg_raw.tsv", sep="\t", lineterminator="\n", index=False)
+
+
+PLUGIN = OFECommandPlugin(
+    command=gather_septop,
+    section="Quickrun Executor",
+    requires_ofe=(0, 6),
+)
+
+def main():
+    gather_septop()

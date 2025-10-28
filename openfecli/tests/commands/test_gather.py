@@ -16,6 +16,7 @@ from openfecli.commands.gather import (
     _load_valid_result_json,
     _get_legs_from_result_jsons,
 )
+from openfecli.command.gather_septop import gather_septop
 
 POOCH_CACHE = pooch.os_cache("openfe")
 ZENODO_RBFE_DATA = pooch.create(
@@ -485,7 +486,7 @@ class TestGatherSepTop:
         results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
         args = ["--report", report]
         runner = CliRunner()
-        cli_result = runner.invoke(gather, results + args + ["--tsv"])
+        cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
         file_regression.check(cli_result.stdout, extension=".tsv")
