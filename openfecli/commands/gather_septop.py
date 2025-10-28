@@ -1,15 +1,19 @@
+from cinnabar import Measurement, FEMap
+import click
 import numpy as np
+from openff.units import unit
 import os
 import pathlib
-from gufe.tokenization import JSON_HANDLER
 import pandas as pd
-from openff.units import unit
+from typing import Literal, List
+
 from openfecli.commands.gather import (
     format_estimate_uncertainty,
     _collect_result_jsons,
     load_json,
 )
-from cinnabar import Measurement, FEMap
+from openfecli import OFECommandPlugin
+from openfecli.clicktypes import HyphenAwareChoice
 
 
 def _load_valid_result_json(
@@ -286,7 +290,40 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     )
     return df
 
-def gather_septop():
+
+@click.command("gather-septop")
+@click.argument(
+    "results",
+    nargs=-1,  # accept any number of results
+    type=click.Path(dir_okay=True, file_okay=True, path_type=pathlib.Path),
+    required=True,
+)
+@click.option(
+    "--report",
+    type=HyphenAwareChoice(["dg", "ddg", "raw"], case_sensitive=False),
+    default="dg",
+    show_default=True,
+    help=(
+        "What data to report. 'dg' gives maximum-likelihood estimate of "
+        "absolute deltaG,  'ddg' gives delta-delta-G, and 'raw' gives "
+        "the raw result of the deltaG for a leg."
+    ),
+)
+@click.option("output", "-o", type=click.File(mode="w"), default="-")
+@click.option(
+    "--tsv",
+    is_flag=True,
+    default=False,
+    help=(
+        "Results that are output to stdout will be formatted as tab-separated, "
+        "identical to the formatting used when writing to file."
+        "By default, the output table will be formatted for human-readability."
+    ),
+)
+def gather_septop(results: List[os.PathLike | str],
+    output: os.PathLike | str,
+    report: Literal["dg", "ddg", "raw"],
+    tsv: bool,):
     # Specify paths to result directories
     results_dir = [
         pathlib.Path("septop_results/results_0"),
@@ -310,6 +347,7 @@ PLUGIN = OFECommandPlugin(
     section="Quickrun Executor",
     requires_ofe=(0, 6),
 )
+
 
 def main():
     gather_septop()
