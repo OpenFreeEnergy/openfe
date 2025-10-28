@@ -5,7 +5,14 @@ import click
 from openfecli.utils import write, print_duration
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR, PROTEIN, OUTPUT_DIR, COFACTORS, YAML_OPTIONS, NCORES, OVERWRITE, N_PROTOCOL_REPEATS
+    MOL_DIR,
+    PROTEIN,
+    OUTPUT_DIR,
+    COFACTORS,
+    YAML_OPTIONS,
+    NCORES,
+    OVERWRITE,
+    N_PROTOCOL_REPEATS,
 )
 
 # def plan_septop_network_main(
