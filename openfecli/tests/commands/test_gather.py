@@ -16,7 +16,7 @@ from openfecli.commands.gather import (
     _load_valid_result_json,
     _get_legs_from_result_jsons,
 )
-from openfecli.command.gather_septop import gather_septop
+from openfecli.commands.gather_septop import gather_septop
 
 POOCH_CACHE = pooch.os_cache("openfe")
 ZENODO_RBFE_DATA = pooch.create(
@@ -462,12 +462,14 @@ class TestRBFEGatherFailedEdges:
         assert_click_success(result)
         assert "--allow-partial" not in result.output
 
+
 ZENODO_SEPTOP_DATA = pooch.create(
     path=POOCH_CACHE,
     base_url="doi:10.5281/zenodo.17435569",
     registry={"septop_results.zip": "md5:2cfa18da59a20228f5c75a1de6ec879e"},
     retry_if_failed=2,
 )
+
 
 @pytest.fixture
 def septop_result_dir() -> pathlib.Path:
@@ -479,6 +481,7 @@ def septop_result_dir() -> pathlib.Path:
 
 def test_septop_gather(septop_result_dir, dataset):
     results = septop_result_dir(dataset)
+
 
 class TestGatherSepTop:
     @pytest.mark.parametrize("report", ["dg", "ddg", "raw"])
