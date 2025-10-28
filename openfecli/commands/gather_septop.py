@@ -11,6 +11,7 @@ from openfecli.commands.gather import (
 )
 from cinnabar import Measurement, FEMap
 
+
 def _load_valid_result_json(
     fpath: os.PathLike | str,
 ) -> tuple[tuple | None, dict | None]:
@@ -50,6 +51,7 @@ def _load_valid_result_json(
 
     return names, result
 
+
 def _get_legs_from_result_jsons(
     result_fns: list[pathlib.Path],
 ) -> dict[str, dict[str, list]]:
@@ -84,7 +86,7 @@ def _get_legs_from_result_jsons(
             k
             for k in result["unit_results"].keys()
             if k.startswith("ProtocolUnitResult")
-        ]
+        ]  # fmt: skip
         for p in proto_key:
             if "unit_estimate" in result["unit_results"][p]["outputs"]:
                 simtype = result["unit_results"][p]["outputs"]["simtype"]
@@ -93,12 +95,8 @@ def _get_legs_from_result_jsons(
 
                 ddgs[names][simtype].append([dg, dg_error])
             elif "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
-                corr_A = result["unit_results"][p]["outputs"][
-                    "standard_state_correction_A"
-                ]
-                corr_B = result["unit_results"][p]["outputs"][
-                    "standard_state_correction_B"
-                ]
+                corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
+                corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
                 ddgs[names]["standard_state_correction_A"].append(
                     [corr_A, 0 * unit.kilocalorie_per_mole]
                 )
@@ -142,6 +140,7 @@ def _error_std(r):
     """
     return np.std([v[0].m for v in r["overall"]])
 
+
 def _error_mbar(r):
     """
     Calculate the error of the estimate using the reported MBAR errors.
@@ -151,6 +150,7 @@ def _error_mbar(r):
     complex_errors = [x[1].m for x in r["complex"]]
     solvent_errors = [x[1].m for x in r["solvent"]]
     return np.sqrt(np.mean(complex_errors) ** 2 + np.mean(solvent_errors) ** 2)
+
 
 def extract_results_dict(
     results_files: list[os.PathLike | str],
@@ -174,6 +174,7 @@ def extract_results_dict(
     sim_results = _get_legs_from_result_jsons(result_fns)
 
     return sim_results
+
 
 def generate_ddg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     """Compute and write out DDG values for the given results.
@@ -208,6 +209,7 @@ def generate_ddg(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         ],
     )
     return df
+
 
 def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     """Compute and write out MLE-derived DG values for the given results.
@@ -249,6 +251,7 @@ def generate_dg_mle(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
 
     return df
 
+
 def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     """
     Get all the transformation cycle legs found and their DG values.
@@ -268,9 +271,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
         for simtype, repeats in sorted(results.items()):
             if simtype != "overall":
                 for repeat in repeats:
-                    m, u = format_estimate_uncertainty(
-                        repeat[0].m, repeat[1].m, unc_prec=2
-                    )
+                    m, u = format_estimate_uncertainty(repeat[0].m, repeat[1].m, unc_prec=2)
                     data.append((simtype, ligpair[0], ligpair[1], m, u))
 
     df = pd.DataFrame(
@@ -285,6 +286,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
     )
     return df
 
+
 def main():
     # Specify paths to result directories
     results_dir = [
@@ -293,7 +295,6 @@ def main():
         pathlib.Path("septop_results/results_2"),
     ]
     ddgs = extract_results_dict(results_dir)
-
 
     df_ddg = generate_ddg(ddgs)
     df_ddg.to_csv("ddg.tsv", sep="\t", lineterminator="\n", index=False)
