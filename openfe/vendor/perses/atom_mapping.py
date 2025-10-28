@@ -1,5 +1,7 @@
 import logging
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
@@ -423,7 +425,7 @@ class AtomMapping:
 
         # Update mapping to eliminate any atoms in partially mapped cycles
         if len(atoms_to_demap["old"]) > 0 or len(atoms_to_demap["new"]) > 0:
-            _logger.debug(
+            logger.debug(
                 f"AtomMapping.unmap_partially_mapped_cycles(): Demapping atoms that were in partially mapped cycles: {atoms_to_demap}"
             )
         self.old_to_new_atom_map = {
@@ -440,7 +442,7 @@ class AtomMapping:
             if not set(edge).issubset(self.old_to_new_atom_map.keys()):
                 # Remove the edge because bond is not between mapped atoms
                 old_mol_graph.remove_edge(*edge)
-                _logger.debug(f"Demapping old_mol edge {edge} because atoms are not mapped")
+                logger.debug(f"Demapping old_mol edge {edge} because atoms are not mapped")
             else:
                 # Both atoms are mapped
                 # Ensure atoms are also bonded in new_mol
@@ -448,7 +450,7 @@ class AtomMapping:
                     self.old_to_new_atom_map[edge[0]], self.old_to_new_atom_map[edge[1]]
                 ):
                     old_mol_graph.remove_edge(*edge)
-                    _logger.debug(
+                    logger.debug(
                         f"Demapping old_mol edge {edge} because atoms are not bonded in new_mol"
                     )
 
@@ -456,7 +458,7 @@ class AtomMapping:
         connected_components = [component for component in nx.connected_components(old_mol_graph)]
         connected_components.sort(reverse=True, key=lambda subgraph: len(subgraph))
         largest_connected_component = connected_components[0]
-        _logger.debug(
+        logger.debug(
             f"AtomMapping.unmap_partially_mapped_cycles(): Connected component sizes: {[len(component) for component in connected_components]}"
         )
 
@@ -475,7 +477,7 @@ class AtomMapping:
             if (old_atom in largest_connected_component)
         }
 
-        _logger.debug(
+        logger.debug(
             f"AtomMapping.unmap_partially_mapped_cycles(): Number of mapped atoms changed from {len(initial_mapping.old_to_new_atom_map)} -> {len(self.old_to_new_atom_map)}"
         )
 
@@ -517,10 +519,10 @@ class AtomMapping:
 
         pattern_atoms = {atom.GetIdx(): atom for atom in self.old_mol.to_openeye().GetAtoms()}
         target_atoms = {atom.GetIdx(): atom for atom in self.new_mol.to_openeye().GetAtoms()}
-        # _logger.warning(f"\t\t\told oemols: {pattern_atoms}")
-        # _logger.warning(f"\t\t\tnew oemols: {target_atoms}")
+        # logger.warning(f"\t\t\told oemols: {pattern_atoms}")
+        # logger.warning(f"\t\t\tnew oemols: {target_atoms}")
         copied_new_to_old_atom_map = copy.deepcopy(self.new_to_old_atom_map)
-        _logger.debug(self.new_to_old_atom_map)
+        logger.debug(self.new_to_old_atom_map)
 
         for new_index, old_index in self.new_to_old_atom_map.items():
             if target_atoms[new_index].IsChiral() and not pattern_atoms[old_index].IsChiral():
@@ -530,7 +532,7 @@ class AtomMapping:
                 if all(
                     nbr in set(list(self.new_to_old_atom_map.keys())) for nbr in neighbor_indices
                 ):
-                    _logger.warning(
+                    logger.warning(
                         f"the atom map cannot be reconciled with chirality preservation!  It is advisable to conduct a manual atom map."
                     )
                     return {}
@@ -549,7 +551,7 @@ class AtomMapping:
                     if mapped_hydrogens != []:
                         del copied_new_to_old_atom_map[mapped_hydrogens[0]]
                     else:
-                        _logger.warning(
+                        logger.warning(
                             f"there may be a geometry problem!  It is advisable to conduct a manual atom map."
                         )
             elif not target_atoms[new_index].IsChiral() and pattern_atoms[old_index].IsChiral():
@@ -561,7 +563,7 @@ class AtomMapping:
                 ):
                     pass
                 else:
-                    _logger.warning(
+                    logger.warning(
                         f"the atom map cannot be reconciled with chirality preservation since no hydrogens can be deleted!  It is advisable to conduct a manual atom map."
                     )
                     return {}
@@ -578,7 +580,7 @@ class AtomMapping:
                 ):
                     pass
                 else:
-                    _logger.warning(
+                    logger.warning(
                         f"the atom map cannot be reconciled with chirality preservation since all atom neighbors are being mapped!  It is advisable to conduct a manual atom map."
                     )
                     return {}
@@ -592,7 +594,7 @@ class AtomMapping:
                 if all(
                     nbr in set(list(self.new_to_old_atom_map.keys())) for nbr in neighbor_indices
                 ):
-                    _logger.warning(
+                    logger.warning(
                         f"the atom map cannot be reconciled with chirality preservation since all atom neighbors are being mapped!  It is advisable to conduct a manual atom map."
                     )
                     return {}
@@ -611,7 +613,7 @@ class AtomMapping:
                     if mapped_hydrogens != []:
                         del copied_new_to_old_atom_map[mapped_hydrogens[0]]
                     else:
-                        _logger.warning(
+                        logger.warning(
                             f"there may be a geometry problem.  It is advisable to conduct a manual atom map."
                         )
 
@@ -808,10 +810,10 @@ class AtomMapper:
         if map_strength is None:
             map_strength = "default"
         if atom_expr is None:
-            _logger.debug(f"No atom expression defined, using map strength : {map_strength}")
+            logger.debug(f"No atom expression defined, using map strength : {map_strength}")
             atom_expr = DEFAULT_EXPRESSIONS[map_strength]["atom"]
         if bond_expr is None:
-            _logger.debug(f"No bond expression defined, using map strength : {map_strength}")
+            logger.debug(f"No bond expression defined, using map strength : {map_strength}")
             bond_expr = DEFAULT_EXPRESSIONS[map_strength]["bond"]
 
         self.atom_expr = atom_expr
@@ -893,7 +895,7 @@ class AtomMapper:
         # Check arguments
         if (old_oescaffold.NumAtoms() == 0) or (new_oescaffold.NumAtoms() == 0):
             # We can't do anything with empty scaffolds
-            _logger.debug(f"One or more scaffolds had no atoms")
+            logger.debug(f"One or more scaffolds had no atoms")
             scaffold_maps = list()
         else:
             # Generate scaffold maps
@@ -909,12 +911,12 @@ class AtomMapper:
                 matching_criterion=self.matching_criterion,
             )
 
-            _logger.debug(f"Scaffold mapping generated {len(scaffold_maps)} maps")
+            logger.debug(f"Scaffold mapping generated {len(scaffold_maps)} maps")
 
         if len(scaffold_maps) == 0:
             # There are no scaffold maps, so attempt to generate maps between molecules using the factory parameters
-            _logger.warning("Molecules do not appear to share a common scaffold.")
-            _logger.warning(
+            logger.warning("Molecules do not appear to share a common scaffold.")
+            logger.warning(
                 "Proceeding with direct mapping of molecules, but please check atom mapping and the geometry of the ligands."
             )
 
@@ -928,11 +930,11 @@ class AtomMapper:
                 bond_expr=self.bond_expr,
                 matching_criterion=self.matching_criterion,
             )
-            _logger.debug(
+            logger.debug(
                 f"{len(generated_atom_mappings)} mappings were generated by AtomMapper._get_all_maps()"
             )
             for x in generated_atom_mappings:
-                _logger.debug(x)
+                logger.debug(x)
 
             atom_mappings.update(generated_atom_mappings)
 
@@ -945,7 +947,7 @@ class AtomMapper:
             # Keep only those scaffold match(es) with maximum score
             # TODO: Will this cause difficulties when trying to stochastically propose maps in both directions,
             # or when we want to retain all maps?
-            _logger.debug(
+            logger.debug(
                 f"There are {len(scaffold_maps)} scaffold mappings before filtering by score"
             )
             scores = [self.score_mapping(atom_mapping) for atom_mapping in scaffold_maps]
@@ -954,7 +956,7 @@ class AtomMapper:
                 for index, atom_mapping in enumerate(scaffold_maps)
                 if scores[index] == max(scores)
             ]
-            _logger.debug(
+            logger.debug(
                 f"There are {len(scaffold_maps)} after filtering to remove lower-scoring scaffold maps"
             )
 
@@ -983,9 +985,9 @@ class AtomMapper:
                     bond_expr=0,
                     matching_criterion=self.matching_criterion,
                 )
-                _logger.debug(f"{len(scaffold_to_molecule_maps)} scaffold maps found")
+                logger.debug(f"{len(scaffold_to_molecule_maps)} scaffold maps found")
                 scaffold_to_molecule_map = scaffold_to_molecule_maps[0]
-                _logger.debug(f"Scaffold to molecule map: {scaffold_to_molecule_map}")
+                logger.debug(f"Scaffold to molecule map: {scaffold_to_molecule_map}")
                 assert len(scaffold_to_molecule_map.old_to_new_atom_map) == oescaffold.NumAtoms(), (
                     f"Scaffold should be fully contained within the molecule it came from: map: {scaffold_to_molecule_map}\n{oescaffold.NumAtoms()} atoms in scaffold"
                 )
@@ -1043,7 +1045,7 @@ class AtomMapper:
 
         if not self.allow_ring_breaking:
             # Filter the matches to remove any that allow ring breaking
-            _logger.debug(f"Fixing mappings to not create or break rings")
+            logger.debug(f"Fixing mappings to not create or break rings")
             valid_atom_mappings = set()
             for atom_mapping in atom_mappings:
                 try:
@@ -1062,7 +1064,7 @@ class AtomMapper:
         # Or is this just for biopolymer residues?
 
         if len(atom_mappings) == 0:
-            _logger.warning(
+            logger.warning(
                 "No maps found. Try relaxing match criteria or setting allow_ring_breaking to True"
             )
             return None
@@ -1119,7 +1121,7 @@ class AtomMapper:
         best_map_index = np.argmax(scores)
 
         elapsed_time = time.time() - initial_time
-        _logger.debug(f"get_best_mapping took {elapsed_time:.3f} s")
+        logger.debug(f"get_best_mapping took {elapsed_time:.3f} s")
 
         return atom_mappings[best_map_index]
 
@@ -1485,7 +1487,7 @@ class AtomMapper:
         mcs.Init(old_oegraphmol, atom_expr, bond_expr)
         mcs.SetMCSFunc(oechem.OEMCSMaxBondsCompleteCycles())
         matches = [m for m in mcs.Match(new_oegraphmol, unique)]
-        _logger.debug(f"all matches have atom counts of : {[m.NumAtoms() for m in matches]}")
+        logger.debug(f"all matches have atom counts of : {[m.NumAtoms() for m in matches]}")
 
         atom_mappings = set()
         for match in matches:
@@ -1845,7 +1847,7 @@ def _convert_opemol_to_offmol(oemol, allow_undefined_stereo: bool = False, _cls=
             msg += f"Problematic bonds are: {problematic_bonds}\n"
         if allow_undefined_stereo:
             msg = "Warning (not error because allow_undefined_stereo=True): " + msg
-            _logger.warning(msg)
+            logger.warning(msg)
         else:
             msg = "Unable to make OFFMol from OEMol: " + msg
             raise UndefinedStereochemistryError(msg)
