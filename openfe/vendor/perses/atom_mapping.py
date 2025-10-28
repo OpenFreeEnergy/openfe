@@ -3,8 +3,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-#TODO: Follow OpenFE convention
+# TODO: Follow OpenFE convention
 from simtk import unit
+
 
 class InvalidMappingException(Exception):
     """
