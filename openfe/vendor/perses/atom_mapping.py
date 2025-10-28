@@ -1820,7 +1820,7 @@ def _convert_opemol_to_offmol(oemol, allow_undefined_stereo: bool = False, _cls=
             )
 
         def oebond_to_str(oebond) -> str:
-            return "order: {}, chiral: {}".format(oebond.GetOrder(), oebond.IsChiral())
+            return f"order: {oebond.GetOrder()}, chiral: {oebond.IsChiral()}"
 
         def describe_oeatom(oeatom) -> str:
             description = f"Atom {oeatom_to_str(oeatom)} with bonds:"
