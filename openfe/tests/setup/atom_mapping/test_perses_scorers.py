@@ -12,8 +12,7 @@ pytest.importorskip("perses")
 pytest.importorskip("openeye")
 from ....utils.silence_root_logging import silence_root_logging
 
-with silence_root_logging():
-    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
+from openfe.vendor.perses.atom_mapping import AtomMapper, AtomMapping
 
 USING_OLD_OFF = False
 

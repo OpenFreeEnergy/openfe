@@ -13,11 +13,7 @@ from openff.units.openmm import to_openmm
 
 from ...utils.silence_root_logging import silence_root_logging
 
-try:
-    with silence_root_logging():
-        from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
-except ImportError:
-    pass  # Don't throw  error, will happen later
+from openfe.vendor.perses.atom_mapping import AtomMapper, InvalidMappingException
 
 from .ligandatommapper import LigandAtomMapper
 
