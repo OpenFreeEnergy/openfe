@@ -327,12 +327,14 @@ def gather_septop(
     tsv: bool,):
 
     ddgs = extract_results_dict(results)
+    if report == "ddg":
+        df_ddg = generate_ddg(ddgs)
+        df_ddg.to_csv(output, sep="\t", lineterminator="\n", index=False)
 
-    # df_ddg = generate_ddg(ddgs)
-    # df_ddg.to_csv("ddg.tsv", sep="\t", lineterminator="\n", index=False)
+    if report == "dg":
+        df_dg = generate_dg_mle(ddgs)
+        df_dg.to_csv("dg.tsv", sep="\t", lineterminator="\n", index=False)
 
-    # df_dg = generate_dg_mle(ddgs)
-    # df_dg.to_csv("dg.tsv", sep="\t", lineterminator="\n", index=False)
     if report == "raw":
         df_raw = generate_dg_raw(ddgs)
         df_raw.to_csv(output, sep="\t", lineterminator="\n", index=False)
