@@ -25,7 +25,6 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
   "Topic :: Scientific/Engineering :: Chemistry",
 ]
@@ -67,6 +66,11 @@ lint.ignore = [
   "UP03", # pyupgrade linting (TODO: we should fix these)
 ]
 lint.isort.known-first-party = [ "openfe" ]
+
+[tool.pytest.ini_options]
+markers = [
+  "flaky: marks tests that need to be re-tried sometimes because of iterment errors (such as http errors)",
+]
 
 [tool.coverage.run]
 omit = [
