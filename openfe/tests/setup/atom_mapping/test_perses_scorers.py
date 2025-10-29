@@ -12,7 +12,6 @@ from openfe.setup import perses_scorers
 from ....utils.silence_root_logging import silence_root_logging
 
 
-
 USING_OLD_OFF = False
 
 
