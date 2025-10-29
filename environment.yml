@@ -5,6 +5,7 @@ dependencies:
   - cinnabar ~=0.5.0
   - click >=8.2.0
   - coverage
+  - dask>=2025  # temporary fix for https://github.com/openforcefield/openff-units/issues/140
   - duecredit<0.10
   - kartograf>=1.2.0
   - konnektor~=0.2.0
@@ -17,7 +18,7 @@ dependencies:
   - openff-nagl-models>=0.1.2
   - openff-toolkit-base >=0.16.2
   - openff-units==0.3.1  # https://github.com/OpenFreeEnergy/openfe/pull/1374
-  - openmm ~=8.3.0
+  - openmm ~=8.2.0  # omit 8.3.0 and 8.3.1 due to https://github.com/openmm/openmm/pull/5069, unpin once we've qualified 8.3.2
   - openmmforcefields
   - openmmtools >=0.25.0
   - packaging
