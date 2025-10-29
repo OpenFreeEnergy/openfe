@@ -289,7 +289,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "ligand_i",
             "ligand_j",
             "DG(i->j) (kcal/mol)",
-            "MBAR uncertainty (kcal/mol)",
+            "uncertainty (kcal/mol)",
         ],
     )
     return df
