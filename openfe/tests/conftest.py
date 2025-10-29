@@ -277,15 +277,15 @@ def T4_protein_component():
     return gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def a2a_protein_membrane_component():
-    with resources.as_file(resources.files('openfe.tests.data.a2a')) as d:
-        fn = str(d / 'protein.pdb')
+    with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
+        fn = str(d / "protein.pdb")
 
     return openfe.ProteinMembraneComponent.from_pdb_file(fn, name="a2a")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def eg5_protein_pdb():
     with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
         yield str(d / "eg5_protein.pdb")
@@ -320,14 +320,13 @@ def eg5_cofactor(eg5_cofactor_sdf) -> SmallMoleculeComponent:
 
 @pytest.fixture()
 def a2a_ligands_sdf():
-    with resources.as_file(resources.files('openfe.tests.data.a2a')) as d:
-        yield str(d / 'ligands.sdf')
+    with resources.as_file(resources.files("openfe.tests.data.a2a")) as d:
+        yield str(d / "ligands.sdf")
 
 
 @pytest.fixture()
 def a2a_ligands(a2a_ligands_sdf) -> list[SmallMoleculeComponent]:
-    return [SmallMoleculeComponent(m)
-            for m in Chem.SDMolSupplier(a2a_ligands_sdf, removeHs=False)]
+    return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(a2a_ligands_sdf, removeHs=False)]
 
 
 @pytest.fixture()

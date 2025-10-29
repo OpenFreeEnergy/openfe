@@ -19,8 +19,12 @@ from openff.units import unit
 from openff.units.openmm import ensure_quantity
 from openff.units.openmm import to_openmm, from_openmm
 from openmm import (
-    app, XmlSerializer, MonteCarloBarostat, MonteCarloMembraneBarostat,
-    NonbondedForce, CustomNonbondedForce
+    app,
+    XmlSerializer,
+    MonteCarloBarostat,
+    MonteCarloMembraneBarostat,
+    NonbondedForce,
+    CustomNonbondedForce,
 )
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -960,47 +964,45 @@ def test_dry_run_complex(
 
 
 def test_dry_run_membrane_complex(
-        a2a_protein_membrane_component,
-        a2a_ligands,
-        tmpdir,
+    a2a_protein_membrane_component,
+    a2a_ligands,
+    tmpdir,
 ):
     import time
+
     start_time = time.time()
     ligands = a2a_ligands[:2]
     mapper = openfe.setup.KartografAtomMapper()
     scorer = openfe.lomap_scorers.default_lomap_score
     network_planner = openfe.ligand_network_planning.generate_minimal_spanning_network
-    ligand_network = network_planner(
-        ligands=ligands,
-        mappers=[mapper],
-        scorer=scorer
-    )
+    ligand_network = network_planner(ligands=ligands, mappers=[mapper], scorer=scorer)
     # get the first edge; it automatically displays in a Jupyter notebook
     mapping = next(iter(ligand_network.edges))
 
     settings = openmm_rfe.RelativeHybridTopologyProtocol.default_settings()
     settings.protocol_repeats = 1
     settings.thermo_settings.membrane = True
-    settings.engine_settings.compute_platform = 'cpu'
+    settings.engine_settings.compute_platform = "cpu"
     settings.forcefield_settings.forcefields = [
-        'amber/ff14SB.xml',
-        'amber/tip3p_standard.xml',
-        'amber/tip3p_HFE_multivalent.xml',
+        "amber/ff14SB.xml",
+        "amber/tip3p_standard.xml",
+        "amber/tip3p_HFE_multivalent.xml",
         "amber/lipid17_merged.xml",
-        'amber/phosaa10.xml']
-    settings.output_settings.output_indices = 'protein or resname  UNK'
+        "amber/phosaa10.xml",
+    ]
+    settings.output_settings.output_indices = "protein or resname  UNK"
 
     protocol = openmm_rfe.RelativeHybridTopologyProtocol(
-            settings=settings,
+        settings=settings,
     )
 
     systemA = openfe.ChemicalSystem(
-        {'ligand': mapping.componentA, 'protein': a2a_protein_membrane_component},
-        name=f"{mapping.componentA.name}_{a2a_protein_membrane_component.name}")
-    systemB = openfe.ChemicalSystem({
-        'ligand': mapping.componentB,
-        'protein': a2a_protein_membrane_component},
-        name=f"{mapping.componentB.name}_{a2a_protein_membrane_component.name}"
+        {"ligand": mapping.componentA, "protein": a2a_protein_membrane_component},
+        name=f"{mapping.componentA.name}_{a2a_protein_membrane_component.name}",
+    )
+    systemB = openfe.ChemicalSystem(
+        {"ligand": mapping.componentB, "protein": a2a_protein_membrane_component},
+        name=f"{mapping.componentB.name}_{a2a_protein_membrane_component.name}",
     )
     dag = protocol.create(
         stateA=systemA,
@@ -1010,16 +1012,15 @@ def test_dry_run_membrane_complex(
     dag_unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = dag_unit.run(dry=True)['debug']['sampler']
+        sampler = dag_unit.run(dry=True)["debug"]["sampler"]
 
         assert isinstance(sampler, MultiStateSampler)
         assert sampler.is_periodic
-        assert isinstance(sampler._thermodynamic_states[0].barostat,
-                          MonteCarloMembraneBarostat)
+        assert isinstance(sampler._thermodynamic_states[0].barostat, MonteCarloMembraneBarostat)
         assert sampler._thermodynamic_states[1].pressure == 1 * omm_unit.bar
 
         # Check we have the right number of atoms in the PDB
-        pdb = mdt.load_pdb('hybrid_system.pdb')
+        pdb = mdt.load_pdb("hybrid_system.pdb")
         assert pdb.n_atoms == 4667
 
 

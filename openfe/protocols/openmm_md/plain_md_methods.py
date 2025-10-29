@@ -179,19 +179,20 @@ class PlainMDProtocol(gufe.Protocol):
             # Validate solvent component
             system_validation.validate_solvent(stateA, nonbond)
             # Validate solvation settings
-            settings_validation.validate_openmm_solvation_settings(
-                self.settings.solvation_settings
-            )
+            settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
         # Validate protein component
         system_validation.validate_protein(stateA)
-
 
         # actually create and return Units
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        system_name = "Solvent MD" if solvent_comp is not None or settings.ThermoSettings.membrane is not None else "Vacuum MD"
+        system_name = (
+            "Solvent MD"
+            if solvent_comp is not None or settings.ThermoSettings.membrane is not None
+            else "Vacuum MD"
+        )
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:

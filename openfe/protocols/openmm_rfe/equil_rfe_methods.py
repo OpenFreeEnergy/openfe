@@ -635,9 +635,7 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
             system_validation.validate_solvent(stateA, nonbond)
 
             # Validate solvation settings
-            settings_validation.validate_openmm_solvation_settings(
-                self.settings.solvation_settings
-            )
+            settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
         # Validate protein component
         system_validation.validate_protein(stateA)
@@ -1199,8 +1197,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                     self.logger.info("Running equilibration phase")
 
                 # Check that barostat is still present
-                for force in sampler._thermodynamic_states[
-                    0].system.getForces():
+                for force in sampler._thermodynamic_states[0].system.getForces():
                     if force.__class__.__name__ == "MonteCarloMembraneBarostat":
                         logger.info("Membrane Barostat present for sampling")
                         break
