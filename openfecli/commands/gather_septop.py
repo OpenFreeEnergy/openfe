@@ -16,9 +16,7 @@ from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
 
-def _load_valid_result_json(
-    fpath: os.PathLike | str,
-) -> tuple[tuple | None, dict | None]:
+def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
     """Load the data from a results JSON into a dict.
 
     Parameters
@@ -47,12 +45,17 @@ def _load_valid_result_json(
     try:
         names = _get_names(result)
     except (ValueError, IndexError):
-        print(f"{fpath}: Missing ligand names. Skipping.")
+        click.secho(f"{fpath}: Missing ligand names and/or simulation type. Skipping.",err=True, fg="yellow")  # fmt: skip
         return None, None
     if result["estimate"] is None:
-        errormsg = f"{fpath}: No 'estimate' found, assuming to be a failed simulation."
-        raise ValueError(errormsg)
-
+        click.secho(f"{fpath}: No 'estimate' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
+        return names, None
+    if result["uncertainty"] is None:
+        click.secho(f"{fpath}: No 'uncertainty' found, assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
+        return names, None
+    if all("exception" in u for u in result["unit_results"].values()):
+        click.secho(f"{fpath}: Exception found in all 'unit_results', assuming to be a failed simulation.",err=True, fg="yellow")  # fmt: skip
+        return names, None
     return names, result
 
 
