@@ -3,7 +3,7 @@
 
 from typing import Callable
 
-from openfe.utils import requires_package
+from openff.utilities.utilities import requires_oe_module
 
 from ...utils.silence_root_logging import silence_root_logging
 
@@ -30,7 +30,7 @@ def _get_all_mapped_atoms_with(
     return numMaxPossibleMappings
 
 
-@requires_package("perses")
+@requires_oe_module("oechem")
 def default_perses_scorer(
     mapping: LigandAtomMapping,
     use_positions: bool = False,

@@ -6,10 +6,11 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
-from openfe.utils import requires_package
 from gufe.settings.typing import AngstromQuantity
 from openff.units import unit, Quantity
 from openff.units.openmm import to_openmm
+
+from openff.utilities.utilities import requires_oe_module
 
 from ...utils.silence_root_logging import silence_root_logging
 
@@ -45,7 +46,7 @@ class PersesAtomMapper(LigandAtomMapper):
     def _defaults(cls):
         return {}
 
-    @requires_package("perses")
+    @requires_oe_module("oechem")
     def __init__(
         self,
         allow_ring_breaking: bool = True,
