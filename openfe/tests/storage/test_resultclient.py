@@ -215,7 +215,7 @@ class TestResultClient(_ResultContainerTest):
 
     def test_delete(self, result_client: ResultClient):
         file_to_delete = self.expected_files[0]
-        storage = result_client.external_storage.external_store
+        storage = result_client.external_storage
         assert storage.exists(file_to_delete)
         result_client.delete(file_to_delete)
         assert not storage.exists(file_to_delete)
