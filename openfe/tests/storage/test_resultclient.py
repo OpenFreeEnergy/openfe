@@ -259,7 +259,7 @@ class TestCloneResults(_ResultContainerTest):
         )
 
     def _getitem_object(self, container):
-        return ExtensionResult(parent=container, extension=0)
+        return ExtensionResult(parent=container, item=0)
 
 
 class TestExtensionResults(_ResultContainerTest):
@@ -273,7 +273,7 @@ class TestExtensionResults(_ResultContainerTest):
     def get_container(result_client):
         return ExtensionResult(
             parent=TestCloneResults.get_container(result_client),
-            extension=0,
+            item=0,
         )
 
     def _get_key(self, as_object, container):
