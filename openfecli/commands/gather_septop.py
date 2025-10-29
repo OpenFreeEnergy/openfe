@@ -286,7 +286,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "ligand_i",
             "ligand_j",
             "DG(i->j) (kcal/mol)",
-            "uncertainty (kcal/mol)",  # QUESTION - can this be renamed to MBAR uncertainty, or is this calculated differently?
+            "MBAR uncertainty (kcal/mol)",
         ],
     )
     return df
