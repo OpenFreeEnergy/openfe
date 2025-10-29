@@ -52,13 +52,16 @@ class SlowTests:
     To run the `slow` tests, either use the `--runslow` flag when invoking
     pytest, or set the environment variable `OFE_SLOW_TESTS` to `true`
     """
+
     def __init__(self, config):
         self.config = config
 
     @staticmethod
     def _modify_slow(items, config):
-        msg = ("need --runslow pytest cli option or the environment variable "
-               "`OFE_SLOW_TESTS` set to `True` to run")
+        msg = (
+            "need --runslow pytest cli option or the environment variable "
+            "`OFE_SLOW_TESTS` set to `True` to run"
+        )
         skip_slow = pytest.mark.skip(reason=msg)
         for item in items:
             if "slow" in item.keywords:
@@ -66,19 +69,25 @@ class SlowTests:
 
     @staticmethod
     def _modify_integration(items, config):
-        msg = ("need --integration pytest cli option or the environment "
-               "variable `OFE_INTEGRATION_TESTS` set to `True` to run")
+        msg = (
+            "need --integration pytest cli option or the environment "
+            "variable `OFE_INTEGRATION_TESTS` set to `True` to run"
+        )
         skip_int = pytest.mark.skip(reason=msg)
         for item in items:
             if "integration" in item.keywords:
                 item.add_marker(skip_int)
 
     def pytest_collection_modifyitems(self, items, config):
-        if (config.getoption('--integration') or
-            os.getenv("OFE_INTEGRATION_TESTS", default="false").lower() == 'true'):
+        if (
+            config.getoption("--integration")
+            or os.getenv("OFE_INTEGRATION_TESTS", default="false").lower() == "true"
+        ):
             return
-        elif (config.getoption('--runslow') or
-              os.getenv("OFE_SLOW_TESTS", default="false").lower() == 'true'):
+        elif (
+            config.getoption("--runslow")
+            or os.getenv("OFE_SLOW_TESTS", default="false").lower() == "true"
+        ):
             self._modify_integration(items, config)
         else:
             self._modify_integration(items, config)
@@ -88,20 +97,14 @@ class SlowTests:
 # allow for optional slow tests
 # See: https://docs.pytest.org/en/latest/example/simple.html
 def pytest_addoption(parser):
-    parser.addoption(
-        "--runslow", action="store_true", default=False, help="run slow tests"
-    )
-    parser.addoption(
-        "--integration", action="store_true", default=False,
-        help="run long integration tests",
-    )
+    parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
+    parser.addoption("--integration", action="store_true", default=False, help="run long integration tests")  # fmt: skip
 
 
 def pytest_configure(config):
     config.pluginmanager.register(SlowTests(config), "slow")
     config.addinivalue_line("markers", "slow: mark test as slow")
-    config.addinivalue_line(
-            "markers", "integration: mark test as long integration test")
+    config.addinivalue_line("markers", "integration: mark test as long integration test")
 
 
 def mol_from_smiles(smiles: str) -> Chem.Mol:
@@ -111,12 +114,12 @@ def mol_from_smiles(smiles: str) -> Chem.Mol:
     return m
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def ethane():
-    return SmallMoleculeComponent(mol_from_smiles('CC'))
+    return SmallMoleculeComponent(mol_from_smiles("CC"))
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def simple_mapping():
     """Disappearing oxygen on end
 
@@ -124,15 +127,15 @@ def simple_mapping():
 
     C C
     """
-    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
-    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles("CCO"))
+    molB = SmallMoleculeComponent(mol_from_smiles("CC"))
 
     m = LigandAtomMapping(molA, molB, componentA_to_componentB={0: 0, 1: 1})
 
     return m
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def other_mapping():
     """Disappearing middle carbon
 
@@ -140,8 +143,8 @@ def other_mapping():
 
     C   C
     """
-    molA = SmallMoleculeComponent(mol_from_smiles('CCO'))
-    molB = SmallMoleculeComponent(mol_from_smiles('CC'))
+    molA = SmallMoleculeComponent(mol_from_smiles("CCO"))
+    molB = SmallMoleculeComponent(mol_from_smiles("CC"))
 
     m = LigandAtomMapping(molA, molB, componentA_to_componentB={0: 0, 2: 1})
 
@@ -151,36 +154,37 @@ def other_mapping():
 @pytest.fixture()
 def lomap_basic_test_files_dir(tmpdir_factory):
     # for lomap, which wants the files in a directory
-    lomap_files = tmpdir_factory.mktemp('lomap_files')
-    lomap_basic = 'openfe.tests.data.lomap_basic'
+    lomap_files = tmpdir_factory.mktemp("lomap_files")
+    lomap_basic = "openfe.tests.data.lomap_basic"
 
     for f in resources.contents(lomap_basic):
-        if not f.endswith('mol2'):
+        if not f.endswith("mol2"):
             continue
         stuff = resources.read_binary(lomap_basic, f)
 
-        with open(str(lomap_files.join(f)), 'wb') as fout:
+        with open(str(lomap_files.join(f)), "wb") as fout:
             fout.write(stuff)
 
     yield str(lomap_files)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def atom_mapping_basic_test_files():
     # a dict of {filenames.strip(mol2): SmallMoleculeComponent} for a simple
     # set of ligands
     files = {}
     for f in [
-        '1,3,7-trimethylnaphthalene',
-        '1-butyl-4-methylbenzene',
-        '2,6-dimethylnaphthalene',
-        '2-methyl-6-propylnaphthalene',
-        '2-methylnaphthalene',
-        '2-naftanol',
-        'methylcyclohexane',
-        'toluene']:
-        with resources.as_file(resources.files('openfe.tests.data.lomap_basic')) as d:
-            fn = str(d / (f + '.mol2'))
+        "1,3,7-trimethylnaphthalene",
+        "1-butyl-4-methylbenzene",
+        "2,6-dimethylnaphthalene",
+        "2-methyl-6-propylnaphthalene",
+        "2-methylnaphthalene",
+        "2-naftanol",
+        "methylcyclohexane",
+        "toluene",
+    ]:
+        with resources.as_file(resources.files("openfe.tests.data.lomap_basic")) as d:
+            fn = str(d / (f + ".mol2"))
             mol = Chem.MolFromMol2File(fn, removeHs=False)
             files[f] = SmallMoleculeComponent(mol, name=f)
 
@@ -204,40 +208,42 @@ def lomap_old_mapper() -> AtomMapper:
         shift=True,
     )
 
+
 @pytest.fixture
 def benzene_toluene_topology():
     """Load the mdtraj hybrid topology reference for benzene to toluene."""
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
-        atoms = pd.read_csv(d / "benzene_toluene_hybrid_top"/ "hybrid_topology_atoms.csv")
-        bonds = np.loadtxt(d / "benzene_toluene_hybrid_top"/ "hybrid_topology_bonds.txt")
+        atoms = pd.read_csv(d / "benzene_toluene_hybrid_top" / "hybrid_topology_atoms.csv")
+        bonds = np.loadtxt(d / "benzene_toluene_hybrid_top" / "hybrid_topology_bonds.txt")
         return mdtraj.Topology.from_dataframe(atoms=atoms, bonds=bonds)
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def benzene_modifications():
     files = {}
-    with resources.as_file(resources.files('openfe.tests.data')) as d:
-        fn = str(d / 'benzene_modifications.sdf')
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "benzene_modifications.sdf")
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
-            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+            files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
     return files
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def charged_benzene_modifications():
     files = {}
-    with resources.as_file(resources.files('openfe.tests.data.openmm_rfe')) as d:
-        fn = str(d / 'charged_benzenes.sdf')
+    with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
+        fn = str(d / "charged_benzenes.sdf")
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
         for rdmol in supp:
-            files[rdmol.GetProp('_Name')] = SmallMoleculeComponent(rdmol)
+            files[rdmol.GetProp("_Name")] = SmallMoleculeComponent(rdmol)
     return files
 
 
-@pytest.fixture(scope='session')
-def T4L_reference_xml():
-    with resources.as_file(resources.files('openfe.tests.data.openmm_septop')) as d:
-        f = str(d / 'system.xml.bz2')
+@pytest.fixture(scope="session")
+def T4L_septop_reference_xml():
+    with resources.as_file(resources.files("openfe.tests.data.openmm_septop")) as d:
+        f = str(d / "system.xml.bz2")
     return deserialize(pathlib.Path(f))
 
 
@@ -246,30 +252,29 @@ def serialization_template():
     def inner(filename):
         loc = "openfe.tests.data.serialization"
         tmpl = resources.read_text(loc, filename)
-        return tmpl.replace('{OFE_VERSION}', openfe.__version__)
+        return tmpl.replace("{OFE_VERSION}", openfe.__version__)
 
     return inner
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def benzene_transforms():
     # a dict of Molecules for benzene transformations
     mols = {}
-    with resources.as_file(resources.files('openfe.tests.data')) as d:
-        fn = str(d / 'benzene_modifications.sdf')
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "benzene_modifications.sdf")
         supplier = Chem.SDMolSupplier(fn, removeHs=False)
         for mol in supplier:
-            mols[mol.GetProp('_Name')] = SmallMoleculeComponent(mol)
+            mols[mol.GetProp("_Name")] = SmallMoleculeComponent(mol)
     return mols
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def T4_protein_component():
-    with resources.as_file(resources.files('openfe.tests.data')) as d:
-        fn = str(d / '181l_only.pdb')
-        comp = gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "181l_only.pdb")
 
-    return comp
+    return gufe.ProteinComponent.from_pdb_file(fn, name="T4_protein")
 
 
 @pytest.fixture(scope='session')
@@ -282,20 +287,20 @@ def a2a_protein_membrane_component():
 
 @pytest.fixture(scope='session')
 def eg5_protein_pdb():
-    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
-        yield str(d / 'eg5_protein.pdb')
+    with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
+        yield str(d / "eg5_protein.pdb")
 
 
 @pytest.fixture()
 def eg5_ligands_sdf():
-    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
-        yield str(d / 'eg5_ligands.sdf')
+    with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
+        yield str(d / "eg5_ligands.sdf")
 
 
 @pytest.fixture()
 def eg5_cofactor_sdf():
-    with resources.as_file(resources.files('openfe.tests.data.eg5')) as d:
-        yield str(d / 'eg5_cofactor.sdf')
+    with resources.as_file(resources.files("openfe.tests.data.eg5")) as d:
+        yield str(d / "eg5_cofactor.sdf")
 
 
 @pytest.fixture()
@@ -305,8 +310,7 @@ def eg5_protein(eg5_protein_pdb) -> openfe.ProteinComponent:
 
 @pytest.fixture()
 def eg5_ligands(eg5_ligands_sdf) -> list[SmallMoleculeComponent]:
-    return [SmallMoleculeComponent(m)
-            for m in Chem.SDMolSupplier(eg5_ligands_sdf, removeHs=False)]
+    return [SmallMoleculeComponent(m) for m in Chem.SDMolSupplier(eg5_ligands_sdf, removeHs=False)]
 
 
 @pytest.fixture()
@@ -328,14 +332,14 @@ def a2a_ligands(a2a_ligands_sdf) -> list[SmallMoleculeComponent]:
 
 @pytest.fixture()
 def orion_network():
-    with resources.as_file(resources.files('openfe.tests.data.external_formats')) as d:
-        yield str(d / 'somebenzenes_nes.dat')
+    with resources.as_file(resources.files("openfe.tests.data.external_formats")) as d:
+        yield str(d / "somebenzenes_nes.dat")
 
 
 @pytest.fixture()
 def fepplus_network():
-    with resources.as_file(resources.files('openfe.tests.data.external_formats')) as d:
-        yield str(d / 'somebenzenes_edges.edge')
+    with resources.as_file(resources.files("openfe.tests.data.external_formats")) as d:
+        yield str(d / "somebenzenes_edges.edge")
 
 
 @pytest.fixture()
@@ -343,8 +347,8 @@ def CN_molecule():
     """
     A basic CH3NH2 molecule for quick testing.
     """
-    with resources.as_file(resources.files('openfe.tests.data')) as d:
-        fn = str(d / 'CN.sdf')
+    with resources.as_file(resources.files("openfe.tests.data")) as d:
+        fn = str(d / "CN.sdf")
         supp = Chem.SDMolSupplier(str(fn), removeHs=False)
 
         smc = [SmallMoleculeComponent(i) for i in supp][0]
@@ -352,30 +356,31 @@ def CN_molecule():
     return smc
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def am1bcc_ref_charges():
     ref_chgs = {
-        'ambertools': [
+        "ambertools":[
             0.146957, -0.918943, 0.025557, 0.025557,
             0.025557, 0.347657, 0.347657
         ] * unit.elementary_charge,
-        'openeye': [
+        "openeye": [
             0.14713, -0.92016, 0.02595, 0.02595,
             0.02595, 0.34759, 0.34759
         ] * unit.elementary_charge,
-        'nagl': [
+        "nagl": [
             0.170413, -0.930417, 0.021593, 0.021593,
             0.021593, 0.347612, 0.347612
         ] * unit.elementary_charge,
-        'espaloma': [
+        "espaloma": [
             0.017702, -0.966793, 0.063076, 0.063076,
             0.063076, 0.379931, 0.379931
         ] * unit.elementary_charge,
-    }
+    }  # fmt: skip
     return ref_chgs
 
+
 try:
-    urllib.request.urlopen('https://www.google.com')
+    urllib.request.urlopen("https://www.google.com")
 except:  # -no-cov-
     HAS_INTERNET = False
 else:
@@ -383,6 +388,7 @@ else:
 
 try:
     import espaloma
+
     HAS_ESPALOMA = True
 except ModuleNotFoundError:
     HAS_ESPALOMA = False

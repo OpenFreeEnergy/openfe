@@ -158,9 +158,7 @@ def test_validate_endstates_protcomp(benzene_modifications, T4_protein_component
         AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_endstates_nosolvcomp_stateA(
-    benzene_modifications, T4_protein_component
-):
+def test_validate_endstates_nosolvcomp_stateA(benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],
@@ -179,9 +177,7 @@ def test_validate_endstates_nosolvcomp_stateA(
         AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
-def test_validate_endstates_nosolvcomp_stateB(
-    benzene_modifications, T4_protein_component
-):
+def test_validate_endstates_nosolvcomp_stateB(benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": benzene_modifications["benzene"],
@@ -196,9 +192,7 @@ def test_validate_endstates_nosolvcomp_stateB(
         }
     )
 
-    with pytest.raises(
-        ValueError, match="No SolventComponent found in stateA and/or stateB"
-    ):
+    with pytest.raises(ValueError, match="No SolventComponent found in stateA and/or stateB"):
         AbsoluteSolvationProtocol._validate_endstates(stateA, stateB)
 
 
@@ -257,7 +251,6 @@ def test_validate_alchem_nonsmc(benzene_modifications):
 
 
 def test_charged_alchem_comp(charged_benzene_modifications):
-
     stateA = ChemicalSystem(
         {
             "solute": charged_benzene_modifications["benzoic_acid"],
@@ -284,9 +277,7 @@ def test_extends_error(default_settings, stateA, stateB):
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=default_settings)
 
     with pytest.raises(ValueError, match="Can't extend simulation"):
-        protocol.validate(
-            stateA=stateA, stateB=stateB, mapping=None, extends=fake_results
-        )
+        protocol.validate(stateA=stateA, stateB=stateB, mapping=None, extends=fake_results)
 
 
 def test_vac_bad_nonbonded(stateA, stateB):
@@ -300,9 +291,7 @@ def test_vac_bad_nonbonded(stateA, stateB):
 
 def test_vac_nvt_error(stateA, stateB):
     settings = openmm_afe.AbsoluteSolvationProtocol.default_settings()
-    settings.vacuum_equil_simulation_settings.equilibration_length_nvt = (
-        1 * offunit.nanosecond
-    )
+    settings.vacuum_equil_simulation_settings.equilibration_length_nvt = 1 * offunit.nanosecond
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=settings)
 
     with pytest.raises(ValueError, match="cannot be run in vacuum"):
@@ -312,7 +301,27 @@ def test_vac_nvt_error(stateA, stateB):
 def test_mapping_warning(benzene_modifications, default_settings, stateA, stateB):
     # Pass in a fake mapping and expect a warning it won't be used
     protocol = openmm_afe.AbsoluteSolvationProtocol(settings=default_settings)
-    mapping = LigandAtomMapping(componentA=benzene_modifications['benzene'], componentB=benzene_modifications['benzene'], componentA_to_componentB={})
+    mapping = LigandAtomMapping(
+        componentA=benzene_modifications["benzene"],
+        componentB=benzene_modifications["benzene"],
+        componentA_to_componentB={},
+    )
 
-    with pytest.warns(UserWarning, match='mapping was passed'):
+    with pytest.warns(UserWarning, match="mapping was passed"):
         protocol.validate(stateA=stateA, stateB=stateB, mapping=mapping)
+
+
+@pytest.mark.parametrize("phase", ["solvent", "vacuum"])
+def test_high_timestep(phase, stateA, stateB):
+    s = AbsoluteSolvationProtocol.default_settings()
+    if phase == "solvent":
+        s.solvent_forcefield_settings.hydrogen_mass = 1.0
+    else:
+        s.vacuum_forcefield_settings.hydrogen_mass = 1.0
+
+    protocol = openmm_afe.AbsoluteSolvationProtocol(
+        settings=s,
+    )
+
+    with pytest.raises(ValueError, match="too large for hydrogen"):
+        protocol.validate(stateA=stateA, stateB=stateB, mapping=None)

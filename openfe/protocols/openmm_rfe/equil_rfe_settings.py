@@ -6,6 +6,7 @@ This module implements the necessary settings necessary to run relative free
 energies using :class:`openfe.protocols.openmm_rfe.equil_rfe_methods.py`
 
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -28,15 +29,16 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenFFPartialChargeSettings,
 )
 
+
 class LambdaSettings(SettingsBaseModel):
-    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
 
     """Lambda schedule settings.
 
     Settings controlling the lambda schedule, these include the switching
     function type, and the number of windows.
     """
-    lambda_functions: str = 'default'
+    lambda_functions: str = "default"
     """
     Key of which switching functions to use for alchemical mutation.
     Default 'default'.
@@ -46,7 +48,7 @@ class LambdaSettings(SettingsBaseModel):
 
 
 class AlchemicalSettings(SettingsBaseModel):
-    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
 
     """Settings for the alchemical protocol
 
@@ -65,7 +67,7 @@ class AlchemicalSettings(SettingsBaseModel):
     Whether to use dispersion correction in the hybrid topology state.
     Default False.
     """
-    softcore_LJ: Literal['gapsys', 'beutler']
+    softcore_LJ: Literal["gapsys", "beutler"]
     """
     Whether to use the LJ softcore function as defined by Gapsys et al.
     JCTC 2012, or the one by Beutler et al. Chem. Phys. Lett. 1994.
@@ -73,7 +75,7 @@ class AlchemicalSettings(SettingsBaseModel):
     """
     softcore_alpha: float = 0.85
     """Softcore alpha parameter. Default 0.85"""
-    turn_off_core_unique_exceptions:bool = False
+    turn_off_core_unique_exceptions: bool = False
     """
     Whether to turn off interactions for new exceptions (not just 1,4s)
     at lambda 0 and old exceptions at lambda 1 between unique atoms and core
@@ -107,7 +109,7 @@ class RelativeHybridTopologyProtocolSettings(Settings):
     difference, while the variance between repeats is used as the uncertainty.
     """
 
-    @field_validator('protocol_repeats')
+    @field_validator("protocol_repeats")
     def must_be_positive(cls, v):
         if v <= 0:
             errmsg = f"protocol_repeats must be a positive value, got {v}."
