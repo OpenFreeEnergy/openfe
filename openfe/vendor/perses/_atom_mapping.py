@@ -1,3 +1,6 @@
+"""
+Copyright (c) 2015-2017 Chodera lab // Memorial Sloan Kettering Cancer Center
+"""
 import logging
 
 import numpy as np
