@@ -11,6 +11,7 @@ from openfecli.commands.gather import (
     format_estimate_uncertainty,
     _collect_result_jsons,
     load_json,
+    rich_print_to_stdout,
 )
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -332,16 +333,22 @@ def gather_septop(
     ddgs = extract_results_dict(results)
 
     if report == "raw":
-        df_raw = generate_dg_raw(ddgs)
-        df_raw.to_csv(output, sep="\t", lineterminator="\n", index=False)
-
+        df = generate_dg_raw(ddgs)
     elif report == "ddg":
-        df_ddg = generate_ddg(ddgs)
-        df_ddg.to_csv(output, sep="\t", lineterminator="\n", index=False)
-
+        df = generate_ddg(ddgs)
     elif report == "dg":
-        df_dg = generate_dg_mle(ddgs)
-        df_dg.to_csv(output, sep="\t", lineterminator="\n", index=False)
+        df = generate_dg_mle(ddgs)
+
+    # write output
+    is_output_file = isinstance(output, click.utils.LazyFile)
+    if is_output_file:
+        click.echo(f"writing {report} output to '{output.name}'")
+    if is_output_file or tsv:
+        df.to_csv(output, sep="\t", lineterminator="\n", index=False)
+
+    # TODO: we can add a --pretty flag if we want this to be optional/preserve backwards compatibility
+    else:
+        rich_print_to_stdout(df)
 
 
 PLUGIN = OFECommandPlugin(
