@@ -62,6 +62,7 @@ def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dic
 
 def _get_legs_from_result_jsons(
     result_fns: list[pathlib.Path],
+    report: Literal["dg", "ddg", "raw"]
 ) -> dict[str, dict[str, list]]:
     """
     Iterate over a list of result JSONs and populate a dict of dicts with all data needed
@@ -86,7 +87,7 @@ def _get_legs_from_result_jsons(
 
     for result_fn in result_fns:
         names, result = _load_valid_result_json(result_fn)
-        if names is None:  # this means it couldn't find names and/or simtype
+        if names is None:  # this means it couldn't find names
             continue
 
         legs[names]["overall"].append([result["estimate"], result["uncertainty"]])
