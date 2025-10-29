@@ -83,14 +83,14 @@ def _get_legs_from_result_jsons(
     """
     from collections import defaultdict
 
-    legs = defaultdict(lambda: defaultdict(list))
+    ddgs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
         names, result = _load_valid_result_json(result_fn)
         if names is None:  # this means it couldn't find names
             continue
 
-        legs[names]["overall"].append([result["estimate"], result["uncertainty"]])
+        ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
         proto_key = [
             k
             for k in result["unit_results"].keys()
@@ -102,16 +102,20 @@ def _get_legs_from_result_jsons(
                 dg = result["unit_results"][p]["outputs"]["unit_estimate"]
                 dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
 
-                legs[names][simtype].append([dg, dg_error])
+                ddgs[names][simtype].append([dg, dg_error])
             elif "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
                 corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
                 corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
-                legs[names]["standard_state_correction_A"].append([corr_A, 0 * unit.kilocalorie_per_mole])  # fmt: skip
-                legs[names]["standard_state_correction_B"].append([corr_B, 0 * unit.kilocalorie_per_mole])  # fmt: skip
-            else:  # QUESTION: should we throw an exception here, or is this a valid case?
+                ddgs[names]["standard_state_correction_A"].append(
+                    [corr_A, 0 * unit.kilocalorie_per_mole]
+                )
+                ddgs[names]["standard_state_correction_B"].append(
+                    [corr_B, 0 * unit.kilocalorie_per_mole]
+                )
+            else:
                 continue
 
-    return legs
+    return ddgs
 
 
 def _get_names(result: dict) -> tuple[str, str]:
