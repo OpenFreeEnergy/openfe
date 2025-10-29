@@ -6,6 +6,7 @@ import numpy as np
 from openff.units import unit
 
 from openfe.protocols.openmm_rfe import equil_rfe_settings
+
 # afe settings currently have no FloatQuantity values
 from openfe.protocols.openmm_utils import omm_settings
 
@@ -15,14 +16,14 @@ class TestOMMSettingsFromStrings:
     def test_system_settings(self):
         s = omm_settings.OpenMMSystemGeneratorFFSettings()
 
-        s.nonbonded_cutoff = '1.1 nm'
+        s.nonbonded_cutoff = "1.1 nm"
 
         assert s.nonbonded_cutoff == 1.1 * unit.nanometer
 
     def test_solvation_settings(self):
         s = omm_settings.OpenMMSolvationSettings()
 
-        s.solvent_padding = '1.1 nm'
+        s.solvent_padding = "1.1 nm"
 
         assert s.solvent_padding == 1.1 * unit.nanometer
 
@@ -33,11 +34,11 @@ class TestOMMSettingsFromStrings:
     def test_integator_settings(self):
         s = omm_settings.IntegratorSettings()
 
-        s.timestep = '3 fs'
+        s.timestep = "3 fs"
 
         assert s.timestep == 3.0 * unit.femtosecond
 
-        s.langevin_collision_rate = '1.1 / ps'
+        s.langevin_collision_rate = "1.1 / ps"
 
         assert s.langevin_collision_rate == 1.1 / unit.picosecond
 
@@ -49,8 +50,8 @@ class TestOMMSettingsFromStrings:
             production_length=5.0 * unit.nanosecond,
         )
 
-        s.equilibration_length = '2.5 ns'
-        s.production_length = '10 ns'
+        s.equilibration_length = "2.5 ns"
+        s.production_length = "10 ns"
 
         assert s.equilibration_length == 2.5 * unit.nanosecond
         assert s.production_length == 10.0 * unit.nanosecond
@@ -58,9 +59,9 @@ class TestOMMSettingsFromStrings:
 
 class TestEquilRFESettingsFromString:
     def test_alchemical_settings(self):
-        s = equil_rfe_settings.AlchemicalSettings(softcore_LJ='gapsys')
+        s = equil_rfe_settings.AlchemicalSettings(softcore_LJ="gapsys")
 
-        s.explicit_charge_correction_cutoff = '0.85 nm'
+        s.explicit_charge_correction_cutoff = "0.85 nm"
 
         assert s.explicit_charge_correction_cutoff == 0.85 * unit.nanometer
 
@@ -71,23 +72,26 @@ class TestOpenMMSolvationSettings:
 
         # Taken from interchange tests, but we require units
         # rhombic dodecahedron with first and last rows swapped
-        box_vectors = np.asarray(
-            [
-                [0.5, 0.5, np.sqrt(2.0) / 2.0],
-                [0.0, 1.0, 0.0],
-                [1.0, 0.0, 0.0],
-            ],
-        ) * unit.nanometer
+        box_vectors = (
+            np.asarray(
+                [
+                    [0.5, 0.5, np.sqrt(2.0) / 2.0],
+                    [0.0, 1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                ],
+            )
+            * unit.nanometer
+        )
 
         with pytest.raises(ValueError, match="not in OpenMM reduced form"):
             s.box_vectors = box_vectors
 
-    @pytest.mark.parametrize('n_solv', [0, -1])
+    @pytest.mark.parametrize("n_solv", [0, -1])
     def test_non_positive_solvent(self, n_solv):
         s = omm_settings.OpenMMSolvationSettings()
 
         with pytest.raises(ValueError, match="must be positive"):
-            s.number_of_solvent_molecules=n_solv
+            s.number_of_solvent_molecules = n_solv
 
     def test_box_size_properties_non_1d(self):
         s = omm_settings.OpenMMSolvationSettings()
@@ -97,7 +101,7 @@ class TestOpenMMSolvationSettings:
 
 
 class TestOpenMMEngineSettings:
-    @pytest.mark.parametrize('platform', ['CUDA', 'OpenCL', 'cPu'])
+    @pytest.mark.parametrize("platform", ["CUDA", "OpenCL", "cPu"])
     def test_ok_platforms(self, platform):
         s = omm_settings.OpenMMEngineSettings(compute_platform=platform)
         assert isinstance(s, omm_settings.OpenMMEngineSettings)
@@ -105,4 +109,3 @@ class TestOpenMMEngineSettings:
     def test_fail_platform(self):
         with pytest.raises(ValueError, match="OpenMM compute backends"):
             _ = omm_settings.OpenMMEngineSettings(compute_platform="foo")
-

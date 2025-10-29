@@ -7,6 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 from typing import Optional
 
 import MDAnalysis as mda

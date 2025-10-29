@@ -3,6 +3,9 @@
 # The eventual goal is to move a version of this towards openmmtools
 # LICENSE: MIT
 
+# turn off formatting since this is mostly vendored code
+# fmt: off
+
 import logging
 import openmm
 from openmm import unit, app

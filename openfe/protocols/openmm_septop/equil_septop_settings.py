@@ -10,6 +10,7 @@ See Also
 --------
 openfe.protocols.openmm_septop.SepTopProtocol
 """
+
 from typing import Optional
 
 import numpy as np
@@ -33,6 +34,7 @@ from gufe.settings.typing import PicosecondQuantity
 
 from openff.units import unit as offunit
 from pydantic import field_validator
+
 
 class AlchemicalSettings(SettingsBaseModel):
     """Settings for the alchemical protocol
@@ -228,8 +230,7 @@ class LambdaSettings(SettingsBaseModel):
         for window in v:
             if not 0 <= window <= 1:
                 errmsg = (
-                    "Lambda windows must be between 0 and 1, got a"
-                    f" window with value {window}."
+                    f"Lambda windows must be between 0 and 1, got a window with value {window}."
                 )
                 raise ValueError(errmsg)
         return v
@@ -240,14 +241,15 @@ class LambdaSettings(SettingsBaseModel):
         "lambda_restraints_A",
     )
     def must_be_monotonically_increasing_A(cls, v):
-
         difference = np.diff(v)
 
         monotonic = np.all(difference >= 0)
 
         if not monotonic:
-            errmsg = ("The lambda schedule for ligand A is not monotonically"
-                      f" increasing, got schedule {v}.")
+            errmsg = (
+                "The lambda schedule for ligand A is not monotonically"
+                f" increasing, got schedule {v}."
+            )
             raise ValueError(errmsg)
 
         return v
@@ -258,14 +260,15 @@ class LambdaSettings(SettingsBaseModel):
         "lambda_restraints_B",
     )
     def must_be_monotonically_decreasing_B(cls, v):
-
         difference = np.diff(v)
 
         monotonic = np.all(difference <= 0)
 
         if not monotonic:
-            errmsg = ("The lambda schedule for ligand B is not monotonically"
-                      f" decreasing, got schedule {v}.")
+            errmsg = (
+                "The lambda schedule for ligand B is not monotonically"
+                f" decreasing, got schedule {v}."
+            )
             raise ValueError(errmsg)
 
         return v
@@ -325,8 +328,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     @field_validator("output_indices")
     def must_be_all(cls, v):
         if v != "all":
-            errmsg = ("Equilibration simulations need to output the full "
-                      f"system, got {v}.")
+            errmsg = f"Equilibration simulations need to output the full system, got {v}."
             raise ValueError(errmsg)
         return v
 
@@ -444,4 +446,3 @@ class SepTopSettings(SettingsBaseModel):
     """
     Settings for the Boresch restraints in the complex
     """
-

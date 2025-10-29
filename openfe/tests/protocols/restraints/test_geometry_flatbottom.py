@@ -20,7 +20,6 @@ def eg5_protein_ligand_universe(eg5_protein_pdb, eg5_ligands):
 
 
 def test_no_atoms_found(eg5_protein_ligand_universe):
-
     with pytest.raises(ValueError, match="no atoms found in either the host or guest"):
         _ = get_flatbottom_distance_restraint(
             universe=eg5_protein_ligand_universe,
@@ -38,13 +37,8 @@ def test_no_atoms_found(eg5_protein_ligand_universe):
         pytest.param(0.8, 0.966, id="0.8"),
     ],
 )
-def test_get_flatbottom_restraint_from_selection(
-    eg5_protein_ligand_universe, padding, well_radius
-):
-
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms(
-        "resname LIG and not name H*"
-    )
+def test_get_flatbottom_restraint_from_selection(eg5_protein_ligand_universe, padding, well_radius):
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
     water_atoms = eg5_protein_ligand_universe.select_atoms("resname HOH")
     restraint_geometry = get_flatbottom_distance_restraint(
         universe=eg5_protein_ligand_universe,
@@ -60,15 +54,11 @@ def test_get_flatbottom_restraint_from_selection(
     assert not any(a.ix for a in water_atoms if a.ix in restraint_geometry.host_atoms)
     assert isinstance(restraint_geometry, FlatBottomDistanceGeometry)
     # probably could have a tighter check if we wanted
-    assert well_radius == pytest.approx(
-        restraint_geometry.well_radius.to("nanometer").m, abs=1e-4
-    )
+    assert well_radius == pytest.approx(restraint_geometry.well_radius.to("nanometer").m, abs=1e-4)
 
 
 def test_get_flatbottom_restraint_from_atoms(eg5_protein_ligand_universe):
-    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms(
-        "resname LIG and not name H*"
-    )
+    expected_guest_atoms = eg5_protein_ligand_universe.select_atoms("resname LIG and not name H*")
     host_atoms = eg5_protein_ligand_universe.select_atoms(
         "backbone and same resid as (around 4 resname LIG) and not resname HOH"
     )
@@ -83,6 +73,4 @@ def test_get_flatbottom_restraint_from_atoms(eg5_protein_ligand_universe):
     guest_atoms = [a.ix for a in expected_guest_atoms]
     assert all(i in guest_atoms for i in restraint_geometry.guest_atoms)
     assert restraint_geometry.host_atoms == host_atom_ix
-    assert 1.1415 == pytest.approx(
-        restraint_geometry.well_radius.to("nanometer").m, abs=1e-4
-    )
+    assert 1.1415 == pytest.approx(restraint_geometry.well_radius.to("nanometer").m, abs=1e-4)
