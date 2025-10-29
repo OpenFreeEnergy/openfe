@@ -515,7 +515,8 @@ def _collect_result_jsons(results: List[os.PathLike | str]) -> List[pathlib.Path
 
 
 def _get_legs_from_result_jsons(
-    result_fns: list[pathlib.Path], report: Literal["dg", "ddg", "raw"]
+    result_fns: list[pathlib.Path],
+    report: Literal["dg", "ddg", "raw"],
 ) -> dict[tuple[str, str], dict[str, list]]:
     """
     Iterate over a list of result JSONs and populate a dict of dicts with all data needed

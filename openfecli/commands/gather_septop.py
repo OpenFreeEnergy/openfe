@@ -82,14 +82,14 @@ def _get_legs_from_result_jsons(
     """
     from collections import defaultdict
 
-    ddgs = defaultdict(lambda: defaultdict(list))
+    legs = defaultdict(lambda: defaultdict(list))
 
     for result_fn in result_fns:
         names, result = _load_valid_result_json(result_fn)
         if names is None:  # this means it couldn't find names and/or simtype
             continue
 
-        ddgs[names]["overall"].append([result["estimate"], result["uncertainty"]])
+        legs[names]["overall"].append([result["estimate"], result["uncertainty"]])
         proto_key = [
             k
             for k in result["unit_results"].keys()
@@ -101,20 +101,16 @@ def _get_legs_from_result_jsons(
                 dg = result["unit_results"][p]["outputs"]["unit_estimate"]
                 dg_error = result["unit_results"][p]["outputs"]["unit_estimate_error"]
 
-                ddgs[names][simtype].append([dg, dg_error])
+                legs[names][simtype].append([dg, dg_error])
             elif "standard_state_correction_A" in result["unit_results"][p]["outputs"]:
                 corr_A = result["unit_results"][p]["outputs"]["standard_state_correction_A"]
                 corr_B = result["unit_results"][p]["outputs"]["standard_state_correction_B"]
-                ddgs[names]["standard_state_correction_A"].append(
-                    [corr_A, 0 * unit.kilocalorie_per_mole]
-                )
-                ddgs[names]["standard_state_correction_B"].append(
-                    [corr_B, 0 * unit.kilocalorie_per_mole]
-                )
-            else:
+                legs[names]["standard_state_correction_A"].append([corr_A, 0 * unit.kilocalorie_per_mole])  # fmt: skip
+                legs[names]["standard_state_correction_B"].append([corr_B, 0 * unit.kilocalorie_per_mole])  # fmt: skip
+            else:  # QUESTION: should we throw an exception here, or is this a valid case?
                 continue
 
-    return ddgs
+    return legs
 
 
 def _get_names(result: dict) -> tuple[str, str]:
@@ -289,7 +285,7 @@ def generate_dg_raw(results_dict: dict[str, dict[str, list]]) -> pd.DataFrame:
             "ligand_i",
             "ligand_j",
             "DG(i->j) (kcal/mol)",
-            "uncertainty (kcal/mol)",
+            "uncertainty (kcal/mol)",  # QUESTION - can this be renamed to MBAR uncertainty, or is this calculated differently?
         ],
     )
     return df
