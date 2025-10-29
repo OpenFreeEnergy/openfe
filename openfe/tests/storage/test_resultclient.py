@@ -19,7 +19,7 @@ def result_client(tmpdir):
     result_client = ResultClient(external)
 
     # store one file with contents "foo"
-    result_client.result_server.store_bytes(
+    result_client.external_storage.store_bytes(
         "transformations/MAIN_TRANS/0/0/file.txt",
         "foo".encode("utf-8"),
     )
@@ -34,7 +34,7 @@ def result_client(tmpdir):
     ]
 
     for file in empty_files:
-        result_client.result_server.store_bytes(file, b"")  # empty
+        result_client.external_storage.store_bytes(file, b"")  # empty
 
     return result_client
 
@@ -121,9 +121,9 @@ class _ResultContainerTest:
         container = self.get_container(result_client)
         assert container.path == self.expected_path
 
-    def test_result_server(self, result_client):
+    def test_external_storage(self, result_client):
         container = self.get_container(result_client)
-        assert container.result_server == result_client.result_server
+        assert container.external_storage == result_client.external_storage
 
 
 class TestResultClient(_ResultContainerTest):
@@ -213,9 +213,9 @@ class TestResultClient(_ResultContainerTest):
         network = request.getfixturevalue(fixture)
         self._test_store_load_different_process(network, "store_network", "load_network")
 
-    def test_delete(self, result_client):
+    def test_delete(self, result_client: ResultClient):
         file_to_delete = self.expected_files[0]
-        storage = result_client.result_server.external_store
+        storage = result_client.external_storage.external_store
         assert storage.exists(file_to_delete)
         result_client.delete(file_to_delete)
         assert not storage.exists(file_to_delete)
@@ -281,7 +281,7 @@ class TestExtensionResults(_ResultContainerTest):
             raise RuntimeError("TestExtensionResults does not support as_object=True")
         path = "transformations/MAIN_TRANS/0/0/"
         fname = "file.txt"
-        return fname, container.result_server.load_stream(path + fname)
+        return fname, container.external_storage.load_stream(path + fname)
 
     # things involving div and getitem need custom treatment
     def test_div(self, result_client):
