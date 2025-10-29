@@ -5,11 +5,10 @@ import pytest
 from numpy.testing import assert_allclose, assert_
 
 import numpy as np
+from openff.utilities import skip_if_missing
 
 from openfe.setup import perses_scorers
 
-pytest.importorskip("perses")
-pytest.importorskip("openeye")
 from ....utils.silence_root_logging import silence_root_logging
 
 from openfe.vendor.perses._atom_mapping import _AtomMapper, _AtomMapping
@@ -17,6 +16,8 @@ from openfe.vendor.perses._atom_mapping import _AtomMapper, _AtomMapping
 USING_OLD_OFF = False
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 @pytest.mark.xfail(not USING_OLD_OFF, reason="perses #1108")
 def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
     # now run the openfe equivalent with the same ligand atom _mappings
@@ -39,6 +40,8 @@ def test_perses_normalization_not_using_positions(gufe_atom_mapping_matrix):
     )
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 @pytest.mark.xfail(not USING_OLD_OFF, reason="perses #1108")
 def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
     scorer = perses_scorers.default_perses_scorer
@@ -53,6 +56,8 @@ def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
         )
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 @pytest.mark.xfail(not USING_OLD_OFF, reason="perses #1108")
 def test_perses_regression(gufe_atom_mapping_matrix):
     # This is the way how perses does scoring
