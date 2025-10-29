@@ -7,7 +7,7 @@ from openfe.utils import requires_package
 
 from ...utils.silence_root_logging import silence_root_logging
 
-from openfe.vendor.perses.atom_mapping import AtomMapper, AtomMapping
+from openfe.vendor.perses._atom_mapping import _AtomMapper, _AtomMapping
 
 from . import LigandAtomMapping
 
@@ -63,8 +63,8 @@ def default_perses_scorer(
     -------
         float
     """
-    score = AtomMapper(use_positions=use_positions).score_mapping(
-        AtomMapping(
+    score = _AtomMapper(use_positions=use_positions).score_mapping(
+        _AtomMapping(
             old_mol=mapping.componentA.to_openff(),
             new_mol=mapping.componentB.to_openff(),
             old_to_new_atom_map=mapping.componentA_to_componentB,

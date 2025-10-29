@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 from simtk import unit
 
 
-class InvalidMappingException(Exception):
+class _InvalidMappingException(Exception):
     """
     Invalid atom mapping for relative free energy transformation.
 
@@ -20,7 +20,7 @@ class InvalidMappingException(Exception):
         super().__init__(message)
 
 
-class AtomMapping:
+class _AtomMapping:
     """
     A container representing an atom mapping between two small molecules.
 
@@ -56,13 +56,13 @@ class AtomMapping:
     >>> from openff.toolkit.topology import Molecule
     >>> ethane = Molecule.from_mapped_smiles('[C:1]([H:2])([H:3])([H:4])[C:5]([H:6])([H:7])([H:8])')
     >>> ethanol = Molecule.from_mapped_smiles('[C:1]([H:2])([H:3])([H:4])[C:5]([H:6])([H:7])[O:8][H:9]')
-    >>> atom_mapping = AtomMapping(ethane, ethanol, old_to_new_atom_map={0:0, 4:4})
+    >>> atom_mapping = _AtomMapping(ethane, ethanol, old_to_new_atom_map={0:0, 4:4})
 
     """
 
     def __init__(self, old_mol, new_mol, new_to_old_atom_map=None, old_to_new_atom_map=None):
         """
-        Construct an AtomMapping object.
+        Construct an _AtomMapping object.
 
         Once constructed, either new_to_old_atom_map or old_to_new_atom_map can be accessed or set.
 
@@ -107,10 +107,10 @@ class AtomMapping:
             self.new_to_old_atom_map = new_to_old_atom_map
 
     def __repr__(self):
-        return f"AtomMapping(Molecule.from_mapped_smiles('{self.old_mol.to_smiles(mapped=True)}'), Molecule.from_mapped_smiles('{self.new_mol.to_smiles(mapped=True)}'), old_to_new_atom_map={self.old_to_new_atom_map})"
+        return f"_AtomMapping(Molecule.from_mapped_smiles('{self.old_mol.to_smiles(mapped=True)}'), Molecule.from_mapped_smiles('{self.new_mol.to_smiles(mapped=True)}'), old_to_new_atom_map={self.old_to_new_atom_map})"
 
     def __str__(self):
-        return f"AtomMapping : {self.old_mol.to_smiles(mapped=True)} -> {self.new_mol.to_smiles(mapped=True)} : mapped atoms {self.old_to_new_atom_map}"
+        return f"_AtomMapping : {self.old_mol.to_smiles(mapped=True)} -> {self.new_mol.to_smiles(mapped=True)} : mapped atoms {self.old_to_new_atom_map}"
 
     def __hash__(self):
         """Compute unique hash that accounts for atom ordering in molecules and permutation invariance of dictionary items"""
@@ -128,14 +128,14 @@ class AtomMapping:
         """
         # Ensure mapping is not empty
         if len(self.new_to_old_atom_map) == 0:
-            raise InvalidMappingException(f"Atom mapping contains no mapped atoms")
+            raise _InvalidMappingException(f"Atom mapping contains no mapped atoms")
 
         # Ensure all keys and values are integers
         if not (
             all(isinstance(x, int) for x in self.new_to_old_atom_map.keys())
             and all(isinstance(x, int) for x in self.new_to_old_atom_map.values())
         ):
-            raise InvalidMappingException(
+            raise _InvalidMappingException(
                 f"Atom mapping contains non-integers:\n{self.new_to_old_atom_map}"
             )
 
@@ -143,13 +143,13 @@ class AtomMapping:
         if not set(self.new_to_old_atom_map.keys()).issubset(
             range(self.new_mol.n_atoms)
         ) or not set(self.new_to_old_atom_map.values()).issubset(range(self.old_mol.n_atoms)):
-            raise InvalidMappingException(
+            raise _InvalidMappingException(
                 f"Atom mapping contains invalid atom indices:\n{self.new_to_old_atom_map}\nold_mol: {self.old_mol.to_smiles(mapped=True)}\nnew_mol: {self.new_mol.to_smiles(mapped=True)}"
             )
 
         # Make sure mapping is one-to-one
         if len(set(self.new_to_old_atom_map.keys())) != len(set(self.new_to_old_atom_map.values())):
-            raise InvalidMappingException(
+            raise _InvalidMappingException(
                 "Atom mapping is not one-to-one:\n{self.new_to_old_atom_map}"
             )
 
@@ -426,7 +426,7 @@ class AtomMapping:
         # Update mapping to eliminate any atoms in partially mapped cycles
         if len(atoms_to_demap["old"]) > 0 or len(atoms_to_demap["new"]) > 0:
             logger.debug(
-                f"AtomMapping.unmap_partially_mapped_cycles(): Demapping atoms that were in partially mapped cycles: {atoms_to_demap}"
+                f"_AtomMapping.unmap_partially_mapped_cycles(): Demapping atoms that were in partially mapped cycles: {atoms_to_demap}"
             )
         self.old_to_new_atom_map = {
             old_atom: new_atom
@@ -459,12 +459,12 @@ class AtomMapping:
         connected_components.sort(reverse=True, key=lambda subgraph: len(subgraph))
         largest_connected_component = connected_components[0]
         logger.debug(
-            f"AtomMapping.unmap_partially_mapped_cycles(): Connected component sizes: {[len(component) for component in connected_components]}"
+            f"_AtomMapping.unmap_partially_mapped_cycles(): Connected component sizes: {[len(component) for component in connected_components]}"
         )
 
         # Check to make sure we haven't screwed something up
         if len(largest_connected_component) == 0:
-            msg = f"AtomMapping.unmap_partially_mapped_cycles(): Largest connected component has too few atoms ({len(largest_connected_component)} atoms)\n"
+            msg = f"_AtomMapping.unmap_partially_mapped_cycles(): Largest connected component has too few atoms ({len(largest_connected_component)} atoms)\n"
             msg += f"  Initial mapping (initial-mapping.png): {self}\n"
             msg += f"  largest_connected_component: {largest_connected_component}\n"
             initial_mapping.render_image("initial-mapping.png")
@@ -478,18 +478,18 @@ class AtomMapping:
         }
 
         logger.debug(
-            f"AtomMapping.unmap_partially_mapped_cycles(): Number of mapped atoms changed from {len(initial_mapping.old_to_new_atom_map)} -> {len(self.old_to_new_atom_map)}"
+            f"_AtomMapping.unmap_partially_mapped_cycles(): Number of mapped atoms changed from {len(initial_mapping.old_to_new_atom_map)} -> {len(self.old_to_new_atom_map)}"
         )
 
         # Check to make sure we haven't screwed something up
         if self.creates_or_breaks_rings() == True:
-            msg = f"AtomMapping.unmap_partially_mapped_cycles() failed to eliminate all ring creation/breaking. This indicates a programming logic error.\n"
+            msg = f"_AtomMapping.unmap_partially_mapped_cycles() failed to eliminate all ring creation/breaking. This indicates a programming logic error.\n"
             msg += f"  Initial mapping (initial-mapping.png): {initial_mapping}\n"
             msg += f"  After demapping (final-mapping.png)  : {self}\n"
             msg += f"  largest_connected_component: {largest_connected_component}\n"
             initial_mapping.render_image("initial-mapping.png")
             self.render_image("final-mapping.png")
-            raise InvalidMappingException(msg)
+            raise _InvalidMappingException(msg)
 
     # TODO: Not present in gufe
     def preserve_chirality(self):
@@ -621,7 +621,7 @@ class AtomMapping:
         self.new_to_old_atom_map = copied_new_to_old_atom_map
 
 
-class AtomMapper:
+class _AtomMapper:
     """
     Generate atom mappings between two molecules for relative free energy transformations.
 
@@ -655,9 +655,9 @@ class AtomMapper:
     Examples
     --------
 
-    Create an AtomMapper factory:
+    Create an _AtomMapper factory:
 
-    >>> atom_mapper = AtomMapper()
+    >>> atom_mapper = _AtomMapper()
 
     You can also configure it after it has been created:
 
@@ -695,7 +695,7 @@ class AtomMapper:
     >>> atom_mapping.old_mol
     >>> atom_mapping.new_mol
 
-    The AtomMapper can also utilize positions in generating atom mappings.
+    The _AtomMapper can also utilize positions in generating atom mappings.
     If positions are available, they will be used to derive mappings by default.
 
     >>> atom_mapper.use_positions = True # use positions in scoring mappings if available
@@ -708,7 +708,7 @@ class AtomMapper:
 
     >>> atom_mapping = atom_mapper.generate_atom_mapping_from_positions(old_mol, new_mol)
 
-    The tolerance for position scoring or position-derived mappings can be adjusted in the AtomMapper factory:
+    The tolerance for position scoring or position-derived mappings can be adjusted in the _AtomMapper factory:
 
     >>> from simtk import unit
     >>> atom_mapper.coordinate_tolerance = 0.3*unit.angstroms
@@ -727,7 +727,7 @@ class AtomMapper:
         coordinate_tolerance=0.25 * unit.angstroms,
     ):
         """
-        Create an AtomMapper factory.
+        Create an _AtomMapper factory.
 
         Parameters
         ----------
@@ -831,7 +831,7 @@ class AtomMapper:
 
         Returns
         -------
-        atom_mappings : list of AtomMapping
+        atom_mappings : list of _AtomMapping
             All valid atom mappings annotated with mapping scores
 
         Examples:
@@ -902,7 +902,7 @@ class AtomMapper:
             # TODO: Determine why atom and bond expressions are hard-coded. Should these be flexible instead?
             from openeye import oechem
 
-            scaffold_maps = AtomMapper._get_all_maps(
+            scaffold_maps = _AtomMapper._get_all_maps(
                 old_oescaffold,
                 new_oescaffold,
                 atom_expr=oechem.OEExprOpts_RingMember | oechem.OEExprOpts_IntType,
@@ -923,7 +923,7 @@ class AtomMapper:
             # if no commonality with the scaffold, don't use it.
             # why weren't matching arguments carried to these mapping functions? is there an edge case that i am missing?
             # it still doesn't fix the protein sidechain mapping problem
-            generated_atom_mappings = AtomMapper._get_all_maps(
+            generated_atom_mappings = _AtomMapper._get_all_maps(
                 old_oemol,
                 new_oemol,
                 atom_expr=self.atom_expr,
@@ -931,14 +931,14 @@ class AtomMapper:
                 matching_criterion=self.matching_criterion,
             )
             logger.debug(
-                f"{len(generated_atom_mappings)} mappings were generated by AtomMapper._get_all_maps()"
+                f"{len(generated_atom_mappings)} mappings were generated by _AtomMapper._get_all_maps()"
             )
             for x in generated_atom_mappings:
                 logger.debug(x)
 
             atom_mappings.update(generated_atom_mappings)
 
-            # TODO: Package maps as AtomMapping objects
+            # TODO: Package maps as _AtomMapping objects
 
         else:
             # Some scaffold mappings have been found, so do something fancy
@@ -978,7 +978,7 @@ class AtomMapper:
                     scaffold_to_molecule_map[scaffold_atom_index] is the atom index in oemol corresponding to scaffold_atom_index in oescaffold
 
                 """
-                scaffold_to_molecule_maps = AtomMapper._get_all_maps(
+                scaffold_to_molecule_maps = _AtomMapper._get_all_maps(
                     oescaffold,
                     oemol,
                     atom_expr=oechem.OEExprOpts_AtomicNumber,
@@ -1034,7 +1034,7 @@ class AtomMapper:
                     self._assign_ring_ids(old_oemol, only_assign_if_zero=True)
                     self._assign_ring_ids(new_oemol, only_assign_if_zero=True)
 
-                atom_mappings_for_this_scaffold_map = AtomMapper._get_all_maps(
+                atom_mappings_for_this_scaffold_map = _AtomMapper._get_all_maps(
                     old_oemol,
                     new_oemol,
                     atom_expr=self.atom_expr,
@@ -1052,7 +1052,7 @@ class AtomMapper:
                     atom_mapping.render_image("debug.png")
                     atom_mapping.unmap_partially_mapped_cycles()
                     valid_atom_mappings.add(atom_mapping)
-                except InvalidMappingException as e:
+                except _InvalidMappingException as e:
                     # Atom mapping is no longer valid
                     # pass
                     # TODO: Raising the actual error, do we want to pass it as previously stated?
@@ -1069,7 +1069,7 @@ class AtomMapper:
             )
             return None
 
-        # Render set of AtomMapping to a list to return
+        # Render set of _AtomMapping to a list to return
         return list(atom_mappings)
 
     def get_best_mapping(self, old_mol, new_mol):
@@ -1094,7 +1094,7 @@ class AtomMapper:
 
         Returns
         -------
-        atom_mapping : AtomMapping
+        atom_mapping : _AtomMapping
             Atom mapping with the best score
 
         Examples
@@ -1137,7 +1137,7 @@ class AtomMapper:
 
         Returns
         -------
-        atom_mapping : AtomMapping
+        atom_mapping : _AtomMapping
             Atom mapping with the best score
 
         Examples
@@ -1173,7 +1173,7 @@ class AtomMapper:
 
         Returns
         -------
-        atom_mapping : AtomMapping
+        atom_mapping : _AtomMapping
             Atom mapping with the best score
         logP_forward : float
             log probability of selecting atom_mapping in forward direction
@@ -1207,7 +1207,7 @@ class AtomMapper:
 
         Parameters
         ----------
-        atom_mapping : AtomMapping
+        atom_mapping : _AtomMapping
             The atom mapping to score
 
         Returns
@@ -1344,7 +1344,7 @@ class AtomMapper:
 
         Returns
         -------
-        atom_mapping : AtomMapping
+        atom_mapping : _AtomMapping
             The atom mapping determined from positions.
             mapping[molB_index] = molA_index is the mapping of atoms from molA to molB that are geometrically close
 
@@ -1352,7 +1352,7 @@ class AtomMapper:
         --------
         Derive atom mapping from positions:
 
-        >>> atom_mapper = AtomMapper()
+        >>> atom_mapper = _AtomMapper()
         >>> old_mol = Molecule.from_file('old_mol.sdf')
         >>> new_mol = Molecule.from_file('new_mol.sdf')
         >>> atom_mapping = atom_mapper.generate_atom_mapping_from_positions(old_mol, new_mol)
@@ -1366,7 +1366,7 @@ class AtomMapper:
 
         # Check to ensure conformers are defined
         if (old_mol.conformers is None) or (new_mol.conformers is None):
-            raise InvalidMappingException(
+            raise _InvalidMappingException(
                 f"Both old and new molecules must have at least one conformer defined."
             )
 
@@ -1401,14 +1401,14 @@ class AtomMapper:
                 )
             ]
             if not len(new_atom_matches) in [0, 1]:
-                raise InvalidMappingException(
+                raise _InvalidMappingException(
                     f"there are multiple new positions with the same coordinates as old atom {old_atom_index} for coordinate tolerance {self.coordinate_tolerance}"
                 )
             if len(new_atom_matches) == 1:
                 new_atom_index = new_atom_matches[0]
                 old_to_new_atom_map[old_atom_index] = new_atom_index
 
-        atom_mapping = AtomMapping(old_mol, new_mol, old_to_new_atom_map=old_to_new_atom_map)
+        atom_mapping = _AtomMapping(old_mol, new_mol, old_to_new_atom_map=old_to_new_atom_map)
 
         # De-map rings if needed
         if not self.allow_ring_breaking:
@@ -1492,11 +1492,11 @@ class AtomMapper:
         atom_mappings = set()
         for match in matches:
             try:
-                atom_mapping = AtomMapper._create_atom_mapping(
+                atom_mapping = _AtomMapper._create_atom_mapping(
                     old_oemol, new_oemol, match, matching_criterion
                 )
                 atom_mappings.add(atom_mapping)
-            except InvalidMappingException as e:
+            except _InvalidMappingException as e:
                 # Mapping is not valid; skip it
                 pass
 
@@ -1548,7 +1548,7 @@ class AtomMapper:
     @staticmethod
     def _create_atom_mapping(old_oemol, new_oemol, match, matching_criterion):
         """
-        Returns an AtomMapping that omits hydrogen-to-nonhydrogen atom maps
+        Returns an _AtomMapping that omits hydrogen-to-nonhydrogen atom maps
         as well as any X-H to Y-H where element(X) != element(Y) or aromatic(X) != aromatic(Y)
 
         Parameters
@@ -1566,13 +1566,13 @@ class AtomMapper:
 
         Returns
         -------
-        atom_mapping : AtomMapping
+        atom_mapping : _AtomMapping
             The atom mapping
 
         """
         # TODO : Eliminate this entirely in favor of using OpenFF Molecule objects once we can avoid needing to represent partial molecules for cores
         new_to_old_atom_map = dict()
-        pattern_to_target_map = AtomMapper._create_pattern_to_target_map(
+        pattern_to_target_map = _AtomMapper._create_pattern_to_target_map(
             old_oemol, new_oemol, match, matching_criterion
         )
         for pattern_oeatom, target_oeatom in pattern_to_target_map.items():
@@ -1600,7 +1600,7 @@ class AtomMapper:
 
             new_to_old_atom_map[new_index] = old_index
 
-        return AtomMapping(old_oemol, new_oemol, new_to_old_atom_map=new_to_old_atom_map)
+        return _AtomMapping(old_oemol, new_oemol, new_to_old_atom_map=new_to_old_atom_map)
 
     @staticmethod
     def _assign_ring_ids(
