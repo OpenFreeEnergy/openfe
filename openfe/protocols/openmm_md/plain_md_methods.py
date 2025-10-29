@@ -183,7 +183,7 @@ class PlainMDProtocol(gufe.Protocol):
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
-        system_name = "Solvent MD" if solvent_comp is not None else "Vacuum MD"
+        system_name = "Solvent MD" if solvent_comp is not None or settings.ThermoSettings.membrane is not None else "Vacuum MD"
 
         for comp in [protein_comp] + small_mols:
             if comp is not None:
@@ -357,7 +357,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
             # Set barostat frequency to zero for NVT
             for x in simulation.context.getSystem().getForces():
-                if x.getName() == 'MonteCarloBarostat':
+                if x.getName() == 'MonteCarloBarostat' or 'MonteCarloMembraneBarostat':
                     x.setFrequency(0)
 
             simulation.context.setVelocitiesToTemperature(
@@ -393,7 +393,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Enable the barostat for NPT
         for x in simulation.context.getSystem().getForces():
-            if x.getName() == 'MonteCarloBarostat':
+            if x.getName() == 'MonteCarloBarostat' or 'MonteCarloMembraneBarostat':
                 x.setFrequency(barostat_frequency.m)
 
         t0 = time.time()
@@ -573,7 +573,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         # 1. Create stateA system
-        # Create a dictionary of OFFMol for each SMC for bookeeping
+        # Create a dictionary of OFFMol for each SMC for bookkeeping
         smc_components: dict[SmallMoleculeComponent, OFFMolecule]
 
         smc_components = {i: i.to_openff() for i in small_mols}
