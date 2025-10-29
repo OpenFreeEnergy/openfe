@@ -174,7 +174,6 @@ class PlainMDProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
-
         nonbond = self.settings.forcefield_settings.nonbonded_method
         if not self.settings.thermo_settings.membrane:
             # Validate solvent component
@@ -369,7 +368,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
             # Set barostat frequency to zero for NVT
             for x in simulation.context.getSystem().getForces():
-                if x.getName() == 'MonteCarloBarostat' or 'MonteCarloMembraneBarostat':
+                if x.getName() == "MonteCarloBarostat" or "MonteCarloMembraneBarostat":
                     x.setFrequency(0)
 
             simulation.context.setVelocitiesToTemperature(to_openmm(temperature))
@@ -403,7 +402,7 @@ class PlainMDProtocolUnit(gufe.ProtocolUnit):
 
         # Enable the barostat for NPT
         for x in simulation.context.getSystem().getForces():
-            if x.getName() == 'MonteCarloBarostat' or 'MonteCarloMembraneBarostat':
+            if x.getName() == "MonteCarloBarostat" or "MonteCarloMembraneBarostat":
                 x.setFrequency(barostat_frequency.m)
 
         t0 = time.time()

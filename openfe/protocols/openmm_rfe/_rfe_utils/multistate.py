@@ -123,7 +123,6 @@ class HybridCompatibilityMixin(object):
             minimize(compound_thermostate_copy, sampler_state,
                      max_iterations=minimization_steps,
                      platform_name=minimization_platform)
-            print(compound_thermostate.system.getForces())
             sampler_state_list.append(copy.deepcopy(sampler_state))
 
         del compound_thermostate, sampler_state
