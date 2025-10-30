@@ -5,7 +5,6 @@ import json
 import re
 from typing import Any
 
-from .metadatastore import JSONMetadataStore
 
 from gufe.tokenization import (
     get_all_gufe_objs,
