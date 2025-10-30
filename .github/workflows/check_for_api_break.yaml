@@ -1,7 +1,9 @@
 name: Check for API breaks
 
 on:
-  pull_request:
+  pull_request_target:
+    branches:
+      - main
 
 jobs:
   check:
