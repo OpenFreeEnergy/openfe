@@ -118,6 +118,15 @@ jobs:
           # if we add more to this, consider changing to for + env vars
           python -Ic "import openfe; print(openfe.__version__)"
 
+      - name: Set Pooch cache directory # unify osx &  linux cache location
+        run: echo "POOCH_CACHE_DIR=${{ github.workspace }}/.pooch_cache" >> $GITHUB_ENV
+
+      - name: Cache Pooch data
+        uses: actions/cache@v4
+        with:
+          path: .pooch_cache
+          key: pooch-v1 # bump to create new cache
+
       - name: "Run tests"
         env:
           # Set the OFE_SLOW_TESTS to True if running a Cron job
