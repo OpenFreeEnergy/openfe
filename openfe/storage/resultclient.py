@@ -5,7 +5,6 @@ import json
 import re
 from typing import Any
 
-from .resultserver import ResultServer
 from .metadatastore import JSONMetadataStore
 
 from gufe.tokenization import (
