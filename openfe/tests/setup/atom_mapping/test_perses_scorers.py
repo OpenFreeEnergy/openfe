@@ -11,8 +11,6 @@ from openfe.setup import perses_scorers
 
 from ....utils.silence_root_logging import silence_root_logging
 
-with silence_root_logging():
-    from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
 
 USING_OLD_OFF = False
 
@@ -61,6 +59,8 @@ def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
 @skip_if_missing("perses")
 @pytest.mark.xfail(not USING_OLD_OFF, reason="perses #1108")
 def test_perses_regression(gufe_atom_mapping_matrix):
+    with silence_root_logging():
+        from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
     # This is the way how perses does scoring
     molecule_row = np.max(list(gufe_atom_mapping_matrix.keys())) + 1
     matrix = np.zeros([molecule_row, molecule_row])
