@@ -128,7 +128,7 @@ jobs:
           # When files are added or changed in a pooch registry
           # bump this key to create a new cache, for example if 
           # the key is pooch-1 change it to pooch-2
-          key: pooch-2
+          key: pooch-1
 
       - name: "Run tests"
         env:
@@ -137,6 +137,8 @@ jobs:
           DUECREDIT_ENABLE: 'yes'
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
+          ls ~/.cache
+          ls ~/.cache/*
 
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
