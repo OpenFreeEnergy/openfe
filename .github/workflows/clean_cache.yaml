@@ -1,6 +1,7 @@
 # from https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#force-deleting-cache-entries
 name: cleanup caches by a branch
 on:
+  workflow_dispatch:
   pull_request:
     types:
       - closed
