@@ -124,11 +124,11 @@ jobs:
             # linux cache location
             ~/.cache/openfe
             # osx cache locatio:
-            ~/AppData/Local/openfe
+            ~/Library/Caches/openfe
           # When files are added or changed in a pooch registry
           # bump this key to create a new cache, for example if 
-          # the key is pooch-1 change it to pooch-2
-          key: pooch-1
+          # the key is pooch-${{ matrix.os }}-1 change it to pooch-${{ matrix.os }}-2
+          key: pooch-${{ matrix.os }}-1
 
       - name: "Run tests"
         env:
