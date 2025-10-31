@@ -11,6 +11,7 @@ from openfe.setup import perses_scorers
 
 from ....utils.silence_root_logging import silence_root_logging
 
+from openfe.vendor.perses._atom_mapping import _AtomMapper, _AtomMapping
 
 USING_OLD_OFF = False
 
@@ -67,13 +68,13 @@ def test_perses_regression(gufe_atom_mapping_matrix):
     for x in gufe_atom_mapping_matrix.items():
         (i, j), ligand_atom_mapping = x
         # Build Perses Mapping:
-        perses_atom_mapping = AtomMapping(
+        perses_atom_mapping = _AtomMapping(
             old_mol=ligand_atom_mapping.componentA.to_openff(),
             new_mol=ligand_atom_mapping.componentB.to_openff(),
             old_to_new_atom_map=ligand_atom_mapping.componentA_to_componentB,
         )
         # score Perses Mapping - Perses Style
-        matrix[i, j] = matrix[j, i] = AtomMapper().score_mapping(perses_atom_mapping)
+        matrix[i, j] = matrix[j, i] = _AtomMapper().score_mapping(perses_atom_mapping)
 
     assert matrix.shape == (8, 8)
 

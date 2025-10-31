@@ -6,18 +6,15 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
-from openfe.utils import requires_package
 from gufe.settings.typing import AngstromQuantity
 from openff.units import unit, Quantity
 from openff.units.openmm import to_openmm
 
+from openff.utilities.utilities import requires_oe_module
+
 from ...utils.silence_root_logging import silence_root_logging
 
-try:
-    with silence_root_logging():
-        from perses.rjmc.atom_mapping import AtomMapper, InvalidMappingException
-except ImportError:
-    pass  # Don't throw  error, will happen later
+from openfe.vendor.perses._atom_mapping import _AtomMapper, _InvalidMappingException
 
 from .ligandatommapper import LigandAtomMapper
 
@@ -49,7 +46,7 @@ class PersesAtomMapper(LigandAtomMapper):
     def _defaults(cls):
         return {}
 
-    @requires_package("perses")
+    @requires_oe_module("oechem")
     def __init__(
         self,
         allow_ring_breaking: bool = True,
@@ -81,7 +78,7 @@ class PersesAtomMapper(LigandAtomMapper):
 
     def _mappings_generator(self, componentA, componentB):
         # Construct Perses Mapper
-        _atom_mapper = AtomMapper(
+        _atom_mapper = _AtomMapper(
             use_positions=self.use_positions,
             coordinate_tolerance=to_openmm(self.coordinate_tolerance),
             allow_ring_breaking=self.allow_ring_breaking,
@@ -92,7 +89,7 @@ class PersesAtomMapper(LigandAtomMapper):
             _atom_mappings = _atom_mapper.get_all_mappings(
                 old_mol=componentA.to_openff(), new_mol=componentB.to_openff()
             )
-        except InvalidMappingException:
+        except _InvalidMappingException:
             return
 
         # Catch empty mappings here

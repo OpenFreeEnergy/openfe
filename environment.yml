@@ -23,7 +23,6 @@ dependencies:
   - openmmtools >=0.25.0
   - packaging
   - pandas
-  - perses>=0.10.3
   - plugcli
   - pint>=0.24.0
   - pip
