@@ -136,16 +136,11 @@ jobs:
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
-          # don't exit on failure when debugging 
           set +e
-          ls ~/
-          ls ~/*
-          ls ~/AppData/Local/
-          ls ~/AppData/Local/*
+          ls ~/.cache/openfe
+          ls ~/AppData/Local/openfe
           ls ~/Library/Caches/openfe
-          ls ~/Library/Caches/
-          ls ~/Library/Caches/*
+          pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
