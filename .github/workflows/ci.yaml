@@ -137,8 +137,15 @@ jobs:
           DUECREDIT_ENABLE: 'yes'
         run: |
           pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
+          # don't exit on failure when debugging 
+          set +e
+          ls ~/
+          ls ~/*
           ls ~/AppData/Local/
           ls ~/AppData/Local/*
+          ls ~/Library/Caches/openfe
+          ls ~/Library/Caches/
+          ls ~/Library/Caches/*
 
       - name: codecov-pr
         if: ${{ github.repository == 'OpenFreeEnergy/openfe'
