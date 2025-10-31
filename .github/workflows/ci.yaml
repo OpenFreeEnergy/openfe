@@ -136,7 +136,7 @@ jobs:
           OFE_SLOW_TESTS: ${{ fromJSON('{"false":"false","true":"true"}')[github.event_name != 'pull_request'] }}
           DUECREDIT_ENABLE: 'yes'
         run: |
-          pytest -v -k test_cmet_missing_edge --log-cli-level DEBUG -s
+          pytest -v -k "test_cmet_missing_edge or results_paths_serial_missing_legs" --log-cli-level DEBUG -s
           #pytest -n auto -v --cov=openfe --cov=openfecli --cov-report=xml --durations=10
 
       - name: codecov-pr
