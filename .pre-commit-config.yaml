@@ -14,7 +14,8 @@ repos:
   - id: check-executables-have-shebangs
   - id: check-symlinks
   - id: check-toml
-  # - id: check-yaml  # TODO: resolve violation in devtools/installer/construct.yaml
+  - id: check-yaml
+    exclude: devtools/installer/construct.yaml  # not a true YAML file
   - id: debug-statements
 
 - repo: https://github.com/tox-dev/pyproject-fmt
