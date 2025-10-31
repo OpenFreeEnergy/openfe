@@ -7,7 +7,7 @@ Protocols.
 
 import numpy as np
 import numpy.typing as npt
-from openmm import app, MonteCarloBarostat
+from openmm import app, MonteCarloBarostat, MonteCarloMembraneBarostat
 from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
 from openff.units.openmm import to_openmm, ensure_quantity
@@ -15,7 +15,13 @@ from openmmforcefields.generators import SystemGenerator
 from typing import Optional
 from pathlib import Path
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
-from gufe import Component, ProteinComponent, SolventComponent, SmallMoleculeComponent
+from gufe import (
+    Component,
+    ProteinComponent,
+    ProteinMembraneComponent,
+    SolventComponent,
+    SmallMoleculeComponent,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
@@ -38,13 +44,11 @@ def get_system_generator(
       Force field settings, including necessary information
       for constraints, hydrogen mass, rigid waters,
       non-ligand FF xmls, and the ligand FF name.
-    integrator_settings: IntegratorSettings
-      Integrator settings, including COM removal.
     thermo_settings : ThermoSettings
       Thermodynamic settings, including necessary settings
       for defining the ensemble conditions.
     integrator_settings : IntegratorSettings
-      Integrator settings, including barostat control variables.
+      Integrator settings, including barostat control variables and COM removal.
     cache : Optional[pathlib.Path]
       Path to openff force field cache.
     has_solvent : bool
@@ -106,8 +110,26 @@ def get_system_generator(
         nonperiodic_kwargs = periodic_kwargs
 
     # Add barostat if necessary
-    # TODO: move this to its own place where we can handle membranes
-    if has_solvent:
+    # For membrane systems, add a MonteCarloMembraneBarostat. Choices:
+    # - Pressure as defined in `thermo_settings`
+    # - Zero surface tension
+    # - Temperature as defined in `thermo_settings`
+    # - XY isotropic
+    # - Z free
+    # - Frequencey as defined in `thermo_settings`
+    # Reference:
+    # https://livecomsjournal.org/index.php/livecoms/article/view/v1i1e5966
+    if thermo_settings.membrane:
+        barostat = MonteCarloMembraneBarostat(
+            ensure_quantity(thermo_settings.pressure, "openmm"),
+            0,
+            ensure_quantity(thermo_settings.temperature, "openmm"),
+            MonteCarloMembraneBarostat.XYIsotropic,
+            MonteCarloMembraneBarostat.ZFree,
+            integrator_settings.barostat_frequency.m,
+        )
+
+    elif not thermo_settings.membrane and has_solvent:
         barostat = MonteCarloBarostat(
             ensure_quantity(thermo_settings.pressure, "openmm"),
             ensure_quantity(thermo_settings.temperature, "openmm"),
@@ -115,7 +137,6 @@ def get_system_generator(
         )
     else:
         barostat = None
-
     system_generator = SystemGenerator(
         forcefields=forcefield_settings.forcefields,
         small_molecule_forcefield=forcefield_settings.small_molecule_forcefield,
@@ -147,7 +168,7 @@ def get_omm_modeller(
     ----------
     protein_comp : Optional[ProteinComponent]
       Protein Component, if it exists.
-    solvent_comp : Optional[ProteinCompoinent]
+    solvent_comp : Optional[SolventComponent]
       Solvent Component, if it exists.
     small_mols : dict
       Small molecules to add.
@@ -202,8 +223,17 @@ def get_omm_modeller(
     for comp, mol in small_mols.items():
         _add_small_mol(comp, mol, system_modeller, component_resids)
 
-    # Add solvent if neeeded
-    if solvent_comp is not None:
+    # If we are working with a protein-membrane system (with lipids and solvent
+    # already added) and we have predefined box vectors, then skip solvation
+    # with Modeller.
+    skip_solvation = False
+    if isinstance(protein_comp, ProteinMembraneComponent) and protein_comp._periodic_box_vectors:
+        # Set the periodic box vectors
+        system_modeller.topology.setPeriodicBoxVectors(protein_comp._periodic_box_vectors)
+        skip_solvation = True
+
+    # Add solvent if needed
+    if solvent_comp is not None and not skip_solvation:
         # Do unit conversions if necessary
         solvent_padding = None
         box_size = None

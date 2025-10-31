@@ -8,6 +8,7 @@ import pandas as pd
 import sys
 from typing import Literal, List
 
+from openfe import ProteinMembraneComponent
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
 
@@ -141,10 +142,14 @@ def _get_type(res: dict) -> Literal["vacuum", "solvent", "complex"]:
     pur = list_of_pur[0]
     components = pur["inputs"]["stateA"]["components"]
 
-    if "solvent" not in components:
-        return "vacuum"
-    elif "protein" in components:
+    has_protein = "protein" in components
+    has_solvent = "solvent" in components
+    has_box = "periodic_box_vectors" in components.get("protein", {})
+
+    if has_protein and (has_solvent or has_box):
         return "complex"
+    elif has_protein or not has_solvent:
+        return "vacuum"
     else:
         return "solvent"
 
