@@ -3,15 +3,11 @@
 
 from typing import Callable
 
-from openfe.utils import requires_package
+from openff.utilities.utilities import requires_oe_module
 
 from ...utils.silence_root_logging import silence_root_logging
 
-try:
-    with silence_root_logging():
-        from perses.rjmc.atom_mapping import AtomMapper, AtomMapping
-except ImportError:
-    pass  # Don't throw  error, will happen later
+from openfe.vendor.perses._atom_mapping import _AtomMapper, _AtomMapping
 
 from . import LigandAtomMapping
 
@@ -34,7 +30,7 @@ def _get_all_mapped_atoms_with(
     return numMaxPossibleMappings
 
 
-@requires_package("perses")
+@requires_oe_module("oechem")
 def default_perses_scorer(
     mapping: LigandAtomMapping,
     use_positions: bool = False,
@@ -67,8 +63,8 @@ def default_perses_scorer(
     -------
         float
     """
-    score = AtomMapper(use_positions=use_positions).score_mapping(
-        AtomMapping(
+    score = _AtomMapper(use_positions=use_positions).score_mapping(
+        _AtomMapping(
             old_mol=mapping.componentA.to_openff(),
             new_mol=mapping.componentB.to_openff(),
             old_to_new_atom_map=mapping.componentA_to_componentB,

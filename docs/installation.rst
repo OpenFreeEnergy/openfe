@@ -673,10 +673,10 @@ Optional dependencies
 Certain functionalities are only available if you also install other,
 optional packages.
 
-* **perses tools**: To use perses, you need to install perses and OpenEye,
-  and you need a valid OpenEye license. To install both packages, use::
+* **perses tools**: To use the perses atom mapper and scorer, you need to install OpenEye, and you need a valid OpenEye license. 
+  To install OpenEye, use::
 
-    $ mamba install -c openeye perses openeye-toolkits
+    $ mamba install -c openeye openeye-toolkits
 
 Supported Hardware
 ------------------
