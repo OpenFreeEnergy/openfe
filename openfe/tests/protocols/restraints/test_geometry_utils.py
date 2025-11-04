@@ -75,7 +75,7 @@ def t4_lysozyme_trajectory_universe():
 @pytest.fixture
 def beta_barrel_universe():
     with resources.as_file(resources.files("openfe.tests.data")) as d:
-        beta_barrel_universe = mda.Universe(str(d / "6CZJ.pdb"))
+        beta_barrel_universe = mda.Universe(str(d / "6CZJ.pdb.gz"))
     return beta_barrel_universe
 
 
