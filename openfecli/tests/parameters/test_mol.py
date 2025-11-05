@@ -31,7 +31,7 @@ def test_get_molecule_mol2():
         f = d / "toluene.mol2"
         mol = get_molecule(str(f))
 
-        assert mol.smiles == 'Cc1ccccc1'
+        assert mol.smiles == "Cc1ccccc1"
 
 
 def test_get_molecule_error():

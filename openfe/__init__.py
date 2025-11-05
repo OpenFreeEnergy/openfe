@@ -26,7 +26,8 @@ from gufe.protocols import (
     Protocol,
     ProtocolDAG,
     ProtocolUnit,
-    ProtocolUnitResult, ProtocolUnitFailure,
+    ProtocolUnitResult,
+    ProtocolUnitFailure,
     ProtocolDAGResult,
     ProtocolResult,
     execute_DAG,
@@ -46,4 +47,5 @@ from . import orchestration
 from . import analysis
 
 from importlib.metadata import version
+
 __version__ = version("openfe")

@@ -3,15 +3,15 @@
 import pytest
 from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 from openff.units import unit
-
-pytest.importorskip('perses')
-pytest.importorskip('openeye')
+from openff.utilities.testing import skip_if_missing
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 def test_simple(atom_mapping_basic_test_files):
     # basic sanity check on the LigandAtomMapper
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = PersesAtomMapper()
 
@@ -23,11 +23,13 @@ def test_simple(atom_mapping_basic_test_files):
     assert len(mapping.componentA_to_componentB) == 4
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 def test_generator_length(atom_mapping_basic_test_files):
     # check that we get one mapping back from Lomap LigandAtomMapper then the
     # generator stops correctly
-    mol1 = atom_mapping_basic_test_files['methylcyclohexane']
-    mol2 = atom_mapping_basic_test_files['toluene']
+    mol1 = atom_mapping_basic_test_files["methylcyclohexane"]
+    mol2 = atom_mapping_basic_test_files["toluene"]
 
     mapper = PersesAtomMapper()
 
@@ -38,6 +40,8 @@ def test_generator_length(atom_mapping_basic_test_files):
         next(mapping_gen)
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 def test_empty_atommappings(mol_pair_to_shock_perses_mapper):
     mol1, mol2 = mol_pair_to_shock_perses_mapper
     mapper = PersesAtomMapper()
@@ -51,12 +55,14 @@ def test_empty_atommappings(mol_pair_to_shock_perses_mapper):
         next(mapping_gen)
 
 
+@skip_if_missing("openeye")
+@skip_if_missing("perses")
 def test_dict_round_trip():
     # use some none defaults
     mapper1 = PersesAtomMapper(
         allow_ring_breaking=False,
         preserve_chirality=False,
-        coordinate_tolerance=0.01 * unit.nanometer
+        coordinate_tolerance=0.01 * unit.nanometer,
     )
     mapper2 = PersesAtomMapper.from_dict(mapper1.to_dict())
     assert mapper2.to_dict() == mapper1.to_dict()

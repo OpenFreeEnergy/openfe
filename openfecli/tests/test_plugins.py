@@ -12,7 +12,7 @@ class TestOFECommandPlugin:
         self.plugin = OFECommandPlugin(
             command=fake,
             section="Some Section",
-            requires_ofe=(0, 0, 1)
+            requires_ofe=(0, 0, 1),
         )
 
     def test_plugin_setup(self):
@@ -22,4 +22,3 @@ class TestOFECommandPlugin:
         assert self.plugin.requires_lib == self.plugin.requires_cli
         assert self.plugin.requires_lib == (0, 0, 1)
         assert self.plugin.requires_cli == (0, 0, 1)
-

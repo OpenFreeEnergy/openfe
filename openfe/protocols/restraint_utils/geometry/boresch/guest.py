@@ -7,6 +7,7 @@ TODO
 ----
 * Add relevant duecredit entries.
 """
+
 from typing import Iterable, Optional
 
 import MDAnalysis as mda
@@ -96,9 +97,7 @@ def _bonded_angles_from_pool(
     # are from the central atom
     for at2 in atom_pool:
         if at2 in at1_neighbors:
-            at2_neighbors = [
-                at.GetIdx() for at in rdmol.GetAtomWithIdx(at2).GetNeighbors()
-            ]
+            at2_neighbors = [at.GetIdx() for at in rdmol.GetAtomWithIdx(at2).GetNeighbors()]
             for at3 in atom_pool:
                 if at3 != atom_idx and at3 in at2_neighbors:
                     angles.append((atom_idx, at2, at3))
@@ -124,8 +123,8 @@ def _bonded_angles_from_pool(
 
 def _get_guest_atom_pool(
     rdmol: Chem.Mol,
-    rmsf, #: ArrayQuantity, TODO: new pydantic v2-compatible quantity needed here.
-    rmsf_cutoff: Quantity
+    rmsf,  #: ArrayQuantity, TODO: new pydantic v2-compatible quantity needed here.
+    rmsf_cutoff: Quantity,
 ) -> tuple[Optional[set[int]], bool]:
     """
     Filter atoms based on rmsf & rings, defaulting to heavy atoms if

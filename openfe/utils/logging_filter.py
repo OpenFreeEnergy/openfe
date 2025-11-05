@@ -9,6 +9,7 @@ class MsgIncludesStringFilter:
         if an exact for this is included in the log message, the log record
         is suppressed
     """
+
     def __init__(self, string):
         self.string = string
 

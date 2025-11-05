@@ -12,4 +12,3 @@ from .equil_rfe_methods import (
     RelativeHybridTopologyProtocolResult,
     RelativeHybridTopologyProtocolUnit,
 )
-

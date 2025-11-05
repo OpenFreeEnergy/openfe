@@ -14,4 +14,3 @@ from lomap.gufe_bindings.scorers import (
     transmuting_methyl_into_ring_score,
     transmuting_ring_sizes_score,
 )  # looks like we gotta make it detailed for mypy and RTD
-

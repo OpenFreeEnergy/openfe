@@ -80,13 +80,13 @@ The centre view shows both molecules overlaid, allowing the spatial corresponden
 
    from openfe.utils import visualization_3D
 
-   view = visualization_3D.view_mapping_3d(mapping)
+   view = mapping.view_3d()
 
 
 .. image:: img/3d_mapping.png
    :width: 90%
    :align: center
-   :alt: Sample output of view_mapping_3d function
+   :alt: Sample output of view_3d() function
 
 
 The cartesian distance between pairs of atom mapping is also available via the :meth:`.get_distances()` method.
