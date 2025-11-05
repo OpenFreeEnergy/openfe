@@ -18,7 +18,7 @@ from gufe.storage.externalresource import ExternalStorage
 GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]+)"')
 
 
-class _ResultContainer(abc.ABC):
+class _Container(abc.ABC):
     """
     Abstract class, represents all data under some level of the heirarchy.
     """
@@ -89,7 +89,7 @@ class _ResultContainer(abc.ABC):
         return f"{self.__class__.__name__}({self.path})"
 
 
-class ResultClient(_ResultContainer):
+class WarehouseBaseClass(_Container):
     def __init__(self, external_storage: ExternalStorage):
         self._external_storage = external_storage
         super().__init__(parent=self, path_component=None)
@@ -244,7 +244,7 @@ class ResultClient(_ResultContainer):
         return self._external_storage
 
 
-class TransformationResult(_ResultContainer):
+class TransformationResult(_Container):
     def __init__(self, parent, transformation):
         super().__init__(parent, transformation)
         self.transformation = transformation
@@ -253,7 +253,7 @@ class TransformationResult(_ResultContainer):
         return CloneResult(self, item)
 
 
-class CloneResult(_ResultContainer):
+class CloneResult(_Container):
     def __init__(self, parent, clone):
         super().__init__(parent, clone)
         self.clone = clone
@@ -266,7 +266,7 @@ class CloneResult(_ResultContainer):
         return ExtensionResult(self, item)
 
 
-class ExtensionResult(_ResultContainer):
+class ExtensionResult(_Container):
     def __init__(self, parent, item):
         super().__init__(parent, str(item))
         self.extension = item
