@@ -5,8 +5,8 @@ from unittest import mock
 
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import TOKENIZABLE_REGISTRY
-from openfe.storage.resultclient import (
-    ResultClient,
+from openfe.storage.warehouse import (
+    WarehouseBaseClass,
     TransformationResult,
     CloneResult,
     ExtensionResult,
@@ -16,7 +16,7 @@ from openfe.storage.resultclient import (
 @pytest.fixture
 def result_client(tmpdir):
     external = MemoryStorage()
-    result_client = ResultClient(external)
+    result_client = WarehouseBaseClass(external)
 
     # store one file with contents "foo"
     result_client.external_storage.store_bytes(
@@ -51,7 +51,7 @@ def test_load_file(result_client):
         assert f.read().decode("utf-8") == "foo"
 
 
-class _ResultContainerTest:
+class _DataContainerTest:
     @staticmethod
     def get_container(result_client):
         raise NotImplementedError()
@@ -126,7 +126,7 @@ class _ResultContainerTest:
         assert container.external_storage == result_client.external_storage
 
 
-class TestResultClient(_ResultContainerTest):
+class TestWarehouseBaseClass(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
@@ -152,7 +152,7 @@ class TestResultClient(_ResultContainerTest):
     @staticmethod
     def _test_store_load_same_process(obj, store_func_name, load_func_name):
         store = MemoryStorage()
-        client = ResultClient(store)
+        client = WarehouseBaseClass(store)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert store._data == {}
@@ -164,7 +164,7 @@ class TestResultClient(_ResultContainerTest):
     @staticmethod
     def _test_store_load_different_process(obj, store_func_name, load_func_name):
         store = MemoryStorage()
-        client = ResultClient(store)
+        client = WarehouseBaseClass(store)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert store._data == {}
@@ -213,7 +213,7 @@ class TestResultClient(_ResultContainerTest):
         network = request.getfixturevalue(fixture)
         self._test_store_load_different_process(network, "store_network", "load_network")
 
-    def test_delete(self, result_client: ResultClient):
+    def test_delete(self, result_client: WarehouseBaseClass):
         file_to_delete = self.expected_files[0]
         storage = result_client.external_storage
         assert storage.exists(file_to_delete)
@@ -221,7 +221,7 @@ class TestResultClient(_ResultContainerTest):
         assert not storage.exists(file_to_delete)
 
 
-class TestTransformationResults(_ResultContainerTest):
+class TestTransformationResults(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
@@ -233,7 +233,7 @@ class TestTransformationResults(_ResultContainerTest):
     @staticmethod
     def get_container(result_client):
         container = TransformationResult(
-            parent=TestResultClient.get_container(result_client),
+            parent=TestWarehouseBaseClass.get_container(result_client),
             transformation=_make_mock_transformation("MAIN_TRANS"),
         )
         container._path_component = "MAIN_TRANS"
@@ -243,7 +243,7 @@ class TestTransformationResults(_ResultContainerTest):
         return CloneResult(parent=container, clone=0)
 
 
-class TestCloneResults(_ResultContainerTest):
+class TestCloneResults(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
@@ -262,7 +262,7 @@ class TestCloneResults(_ResultContainerTest):
         return ExtensionResult(parent=container, item=0)
 
 
-class TestExtensionResults(_ResultContainerTest):
+class TestExtensionResults(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
