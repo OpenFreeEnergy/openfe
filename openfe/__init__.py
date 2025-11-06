@@ -1,15 +1,27 @@
-# silence pymbar logging warnings
-import logging
+# We need to do this first so that we can set up our
+# log control since some modules have warnings on import
+from openfe.utils.logging_control import LogControl
 
-from openfe.utils.logging_filter import MsgIncludesStringFilter
-#def _mute_timeseries(record):
-#    return not "Warning on use of the timeseries module:" in record.msg
-#def _mute_jax(record):
-#    return not "****** PyMBAR will use 64-bit JAX! *******" in record.msg
-#_mbar_log = logging.getLogger("pymbar.timeseries")
-#_mbar_log.addFilter(_mute_timeseries)
-#_mbar_log = logging.getLogger("pymbar.mbar_solvers")
-#_mbar_log.addFilter(_mute_jax)
+
+LogControl.silence_message(
+    msg=["****** PyMBAR will use 64-bit JAX! *******",],
+    logger_names=["pymbar.mbar_solvers",]
+)
+
+LogControl.silence_message(
+    msg=["Warning on use of the timeseries module:",],
+    logger_names=["pymbar.timeseries",]
+)
+
+LogControl.append_logger(
+         suffix="see this url",
+         logger_names="jax._src.xla_bridge",
+         )
+
+
+from jax._src.xla_bridge import backends
+
+backends()
 
 from gufe import (
     ChemicalSystem,
