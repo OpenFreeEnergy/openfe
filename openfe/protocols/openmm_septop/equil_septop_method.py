@@ -1164,11 +1164,17 @@ class SepTopProtocol(gufe.Protocol):
             raise ValueError(errmsg)
 
         # check that there is a solvent component or ProteinMembraneComponent
-        if not any(isinstance(comp, (SolventComponent, ProteinMembraneComponent)) for comp in stateA.values()):
+        if not any(
+            isinstance(comp, (SolventComponent, ProteinMembraneComponent))
+            for comp in stateA.values()
+        ):
             errmsg = "No SolventComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, (SolventComponent, ProteinMembraneComponent)) for comp in stateB.values()):
+        if not any(
+            isinstance(comp, (SolventComponent, ProteinMembraneComponent))
+            for comp in stateB.values()
+        ):
             errmsg = "No SolventComponent found in stateB"
             raise ValueError(errmsg)
 

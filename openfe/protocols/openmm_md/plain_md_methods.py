@@ -180,8 +180,7 @@ class PlainMDProtocol(gufe.Protocol):
         system_validation.validate_solvent(stateA, nonbond)
 
         # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(
-            self.settings.solvation_settings)
+        settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
 
         # Validate protein component
         system_validation.validate_protein(stateA)

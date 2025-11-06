@@ -99,7 +99,9 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
     """
     solv = [comp for comp in state.values() if isinstance(comp, SolventComponent)]
     # ToDo: Also validate the solvent in the ProteinMembraneComponent?
-    protein_membrane = [comp for comp in state.values() if isinstance(comp, ProteinMembraneComponent)]
+    protein_membrane = [
+        comp for comp in state.values() if isinstance(comp, ProteinMembraneComponent)
+    ]
 
     if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
         errmsg = "nocutoff cannot be used for solvent transformations"
