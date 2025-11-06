@@ -183,17 +183,12 @@ class PlainMDProtocol(gufe.Protocol):
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         # Validate solvent component
-        # If there's an explicitly solvated ProteinMembraneComponent, don't
-        # validate the solvent as there won't be a SolventComponent, but
-        # solvent will still be present.
-        # ToDo: Also validate the solvent in the ProteinMembraneComponent
         nonbond = self.settings.forcefield_settings.nonbonded_method
-        if not isinstance(protein_comp, ProteinMembraneComponent):
-            system_validation.validate_solvent(stateA, nonbond)
+        system_validation.validate_solvent(stateA, nonbond)
 
-            # Validate solvation settings
-            settings_validation.validate_openmm_solvation_settings(
-                self.settings.solvation_settings)
+        # Validate solvation settings
+        settings_validation.validate_openmm_solvation_settings(
+            self.settings.solvation_settings)
 
         system_name = (
             "Solvent MD"

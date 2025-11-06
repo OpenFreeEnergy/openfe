@@ -12,6 +12,7 @@ from gufe import (
     ChemicalSystem,
     SolventComponent,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
 )
 
@@ -92,15 +93,19 @@ def validate_solvent(state: ChemicalSystem, nonbonded_method: str):
       * If there are multiple SolventComponents in the ChemicalSystem.
       * If there is a SolventComponent and the `nonbonded_method` is
         `nocutoff`.
+      * If there is no SolventComponent and no explicitly solvated
+        ProteinMembraneComponent and the `nonbonded_method` is `pme`.
       * If the SolventComponent solvent is not water.
     """
     solv = [comp for comp in state.values() if isinstance(comp, SolventComponent)]
+    # ToDo: Also validate the solvent in the ProteinMembraneComponent?
+    protein_membrane = [comp for comp in state.values() if isinstance(comp, ProteinMembraneComponent)]
 
     if len(solv) > 0 and nonbonded_method.lower() == "nocutoff":
         errmsg = "nocutoff cannot be used for solvent transformations"
         raise ValueError(errmsg)
 
-    if len(solv) == 0 and nonbonded_method.lower() == "pme":
+    if len(solv) == 0 and len(protein_membrane) == 0 and nonbonded_method.lower() == "pme":
         errmsg = "PME cannot be used for vacuum transform"
         raise ValueError(errmsg)
 
