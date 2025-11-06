@@ -34,7 +34,8 @@ from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGe
 from openfe.tests.protocols.conftest import compute_energy
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
+from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, MonteCarloMembraneBarostat
+from openmm import unit as omm_unit
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
@@ -1094,6 +1095,93 @@ def test_dry_run_solv_user_charges_benzene_toluene(
             offsets = nonbond[0].getParticleParameterOffset(i)
             c = ensure_quantity(offsets[2], "openff")
             assert pytest.approx(c) == toluene_charge[inx]
+
+
+def test_dry_run_membrane_complex(
+    a2a_protein_membrane_component,
+    a2a_ligands,
+    tmpdir,
+    protocol_dry_settings,
+):
+
+    protocol_dry_settings.protocol_repeats = 1
+    protocol_dry_settings.thermo_settings.membrane = True
+    protocol_dry_settings.engine_settings.compute_platform = "cpu"
+    protocol_dry_settings.forcefield_settings.forcefields = [
+        "amber/ff14SB.xml",
+        "amber/tip3p_standard.xml",
+        "amber/tip3p_HFE_multivalent.xml",
+        "amber/lipid17_merged.xml",
+        "amber/phosaa10.xml",
+    ]
+    protocol_dry_settings.complex_output_settings.output_indices = "protein or resname  UNK"
+
+    protocol = SepTopProtocol(settings=protocol_dry_settings)
+
+    systemA = openfe.ChemicalSystem(
+        {"ligand": a2a_ligands[0], "protein": a2a_protein_membrane_component, "solvent": openfe.SolventComponent()},
+        name=f"{a2a_ligands[0].name}_{a2a_protein_membrane_component.name}",
+    )
+    systemB = openfe.ChemicalSystem(
+        {"ligand": a2a_ligands[1], "protein": a2a_protein_membrane_component, "solvent": openfe.SolventComponent()},
+        name=f"{a2a_ligands[1]}_{a2a_protein_membrane_component.name}",
+    )
+    dag = protocol.create(
+        stateA=systemA,
+        stateB=systemB,
+        mapping=None,
+    )
+    prot_units = list(dag.protocol_units)
+    solv_setup_unit = [u for u in prot_units if
+                       isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in prot_units if
+                    isinstance(u, SepTopSolventRunUnit)]
+    complex_setup_unit = [u for u in prot_units if
+                          isinstance(u, SepTopComplexSetupUnit)]
+    complex_run_unit = [u for u in prot_units if
+                        isinstance(u, SepTopComplexRunUnit)]
+    assert len(solv_setup_unit) == 1
+    assert len(sol_run_unit) == 1
+    assert len(complex_setup_unit) == 1
+    assert len(complex_run_unit) == 1
+
+    with tmpdir.as_cwd():
+        solv_setup_output = solv_setup_unit[0].run(dry=True)
+        pdb = md.load_pdb("topology.pdb")
+        assert pdb.n_atoms == 4811
+
+        serialized_topology = solv_setup_output["topology"]
+        serialized_system = solv_setup_output["system"]
+        solv_sampler = sol_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True
+        )["debug"]["sampler"]  # fmt: skip
+
+        assert solv_sampler.is_periodic
+        assert isinstance(solv_sampler, MultiStateSampler)
+        assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
+                          MonteCarloBarostat)
+        assert solv_sampler._thermodynamic_states[
+                   1].pressure == 1 * openmm.unit.bar
+        # Check we have the right number of atoms in the PDB
+        pdb = md.load_pdb("alchemical_system.pdb")
+        assert pdb.n_atoms == 80
+
+        complex_setup_output = complex_setup_unit[0].run(dry=True)
+        serialized_topology = complex_setup_output["topology"]
+        serialized_system = complex_setup_output["system"]
+        complex_sampler = complex_run_unit[0].run(
+            serialized_system, serialized_topology, dry=True
+        )["debug"]["sampler"]  # fmt: skip
+
+        assert complex_sampler.is_periodic
+        assert isinstance(complex_sampler, MultiStateSampler)
+        assert isinstance(complex_sampler._thermodynamic_states[0].barostat,
+                          MonteCarloMembraneBarostat)
+        assert complex_sampler._thermodynamic_states[
+                   1].pressure == 1 * openmm.unit.bar
+        # Check we have the right number of atoms in the PDB
+        pdb = md.load_pdb("alchemical_system.pdb")
+        assert pdb.n_atoms == 4702
 
 
 def test_high_timestep(

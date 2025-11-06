@@ -968,9 +968,7 @@ def test_dry_run_membrane_complex(
     a2a_ligands,
     tmpdir,
 ):
-    import time
 
-    start_time = time.time()
     ligands = a2a_ligands[:2]
     mapper = openfe.setup.KartografAtomMapper()
     scorer = openfe.lomap_scorers.default_lomap_score
