@@ -31,6 +31,7 @@ from gufe import (
     settings,
     ChemicalSystem,
     SmallMoleculeComponent,
+    ProteinMembraneComponent,
 )
 from gufe.settings.typing import KelvinQuantity
 from openfe.protocols.openmm_utils.omm_settings import (
@@ -174,13 +175,6 @@ class PlainMDProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
-        nonbond = self.settings.forcefield_settings.nonbonded_method
-        if not self.settings.thermo_settings.membrane:
-            # Validate solvent component
-            system_validation.validate_solvent(stateA, nonbond)
-            # Validate solvation settings
-            settings_validation.validate_openmm_solvation_settings(self.settings.solvation_settings)
-
         # Validate protein component
         system_validation.validate_protein(stateA)
 
@@ -188,9 +182,22 @@ class PlainMDProtocol(gufe.Protocol):
         # TODO: Deal with multiple ProteinComponents
         solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
+        # Validate solvent component
+        # If there's an explicitly solvated ProteinMembraneComponent, don't
+        # validate the solvent as there won't be a SolventComponent, but
+        # solvent will still be present.
+        # ToDo: Also validate the solvent in the ProteinMembraneComponent
+        nonbond = self.settings.forcefield_settings.nonbonded_method
+        if not isinstance(protein_comp, ProteinMembraneComponent):
+            system_validation.validate_solvent(stateA, nonbond)
+
+            # Validate solvation settings
+            settings_validation.validate_openmm_solvation_settings(
+                self.settings.solvation_settings)
+
         system_name = (
             "Solvent MD"
-            if solvent_comp is not None or settings.ThermoSettings.membrane is not None
+            if solvent_comp is not None or isinstance(protein_comp, ProteinMembraneComponent)
             else "Vacuum MD"
         )
 

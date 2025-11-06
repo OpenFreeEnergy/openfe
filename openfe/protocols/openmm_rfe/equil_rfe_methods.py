@@ -54,6 +54,7 @@ from gufe import (
     SmallMoleculeComponent,
     SolventComponent,
     ProteinComponent,
+    ProteinMembraneComponent,
 )
 
 from .equil_rfe_settings import (
@@ -630,7 +631,13 @@ class RelativeHybridTopologyProtocol(gufe.Protocol):
         ligandmapping = mapping[0] if isinstance(mapping, list) else mapping
 
         nonbond = self.settings.forcefield_settings.nonbonded_method
-        if not self.settings.thermo_settings.membrane:
+        has_solvent = any(isinstance(v, SolventComponent) for v in
+                          stateA.components.values())
+        has_protein_membrane = any(
+            isinstance(v, ProteinMembraneComponent) for v in
+            stateA.components.values())
+        # Validate the solvent if a SolventComponent is present or no ProteinMembraneComponent
+        if has_solvent or not has_protein_membrane:
             # Validate solvent component
             system_validation.validate_solvent(stateA, nonbond)
 

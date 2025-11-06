@@ -1330,7 +1330,10 @@ class SepTopProtocol(gufe.Protocol):
 
         # Check nonbonded and solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
-        if not self.settings.thermo_settings.membrane:
+        has_solvent = any(isinstance(v, SolventComponent) for v in stateA.components.values())
+        has_protein_membrane = any(isinstance(v, ProteinMembraneComponent) for v in stateA.components.values())
+        # Validate the solvent if a SolventComponent is present or no ProteinMembraneComponent
+        if has_solvent or not has_protein_membrane:
             # Validate solvent component
             system_validation.validate_solvent(stateA, nonbonded_method)
 
