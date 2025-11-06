@@ -119,7 +119,7 @@ def get_system_generator(
     # - Frequencey as defined in `thermo_settings`
     # Reference:
     # https://livecomsjournal.org/index.php/livecoms/article/view/v1i1e5966
-    if thermo_settings.membrane:
+    if thermo_settings.membrane and not has_solvent:
         barostat = MonteCarloMembraneBarostat(
             ensure_quantity(thermo_settings.pressure, "openmm"),
             0,
@@ -129,7 +129,7 @@ def get_system_generator(
             integrator_settings.barostat_frequency.m,
         )
 
-    elif not thermo_settings.membrane and has_solvent:
+    elif has_solvent:
         barostat = MonteCarloBarostat(
             ensure_quantity(thermo_settings.pressure, "openmm"),
             ensure_quantity(thermo_settings.temperature, "openmm"),
@@ -271,5 +271,4 @@ def get_omm_modeller(
         for r in system_modeller.topology.residues():
             if r.name == "WAT":
                 r.name = "HOH"
-
     return system_modeller, component_resids

@@ -54,6 +54,7 @@ import openmm.unit as omm_units
 from gufe import (
     ChemicalSystem,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -225,6 +226,9 @@ class SepTopComplexMixin:
         # Also get alchemical smc from state B
         small_mols_B = {m: m.to_openff() for m in alchem_comps["stateB"]}
         small_mols = small_mols | small_mols_B
+
+        if isinstance(prot_comp, ProteinMembraneComponent):
+            solv_comp = None
 
         return alchem_comps, solv_comp, prot_comp, small_mols
 
@@ -1159,12 +1163,12 @@ class SepTopProtocol(gufe.Protocol):
             errmsg = "No ProteinComponent found in stateB"
             raise ValueError(errmsg)
 
-        # check that there is a solvent component
-        if not any(isinstance(comp, SolventComponent) for comp in stateA.values()):
+        # check that there is a solvent component or ProteinMembraneComponent
+        if not any(isinstance(comp, SolventComponent) or isinstance(comp, ProteinMembraneComponent) for comp in stateA.values()):
             errmsg = "No SolventComponent found in stateA"
             raise ValueError(errmsg)
 
-        if not any(isinstance(comp, SolventComponent) for comp in stateB.values()):
+        if not any(isinstance(comp, SolventComponent) or isinstance(comp, ProteinMembraneComponent) for comp in stateB.values()):
             errmsg = "No SolventComponent found in stateB"
             raise ValueError(errmsg)
 
@@ -1326,13 +1330,14 @@ class SepTopProtocol(gufe.Protocol):
 
         # Check nonbonded and solvent compatibility
         nonbonded_method = self.settings.forcefield_settings.nonbonded_method
-        # Use the more complete system validation solvent checks
-        system_validation.validate_solvent(stateA, nonbonded_method)
+        if not self.settings.thermo_settings.membrane:
+            # Validate solvent component
+            system_validation.validate_solvent(stateA, nonbonded_method)
 
-        # Validate solvation settings
-        settings_validation.validate_openmm_solvation_settings(
-            self.settings.solvent_solvation_settings
-        )
+            # Validate solvation settings
+            settings_validation.validate_openmm_solvation_settings(
+                self.settings.solvent_solvation_settings
+            )
 
         # Validate protein component
         system_validation.validate_protein(stateA)
