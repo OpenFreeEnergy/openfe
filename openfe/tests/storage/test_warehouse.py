@@ -51,7 +51,7 @@ def test_load_file(result_client):
         assert f.read().decode("utf-8") == "foo"
 
 
-class _ContainerTest:
+class _DataContainerTest:
     @staticmethod
     def get_container(result_client):
         raise NotImplementedError()
@@ -126,7 +126,7 @@ class _ContainerTest:
         assert container.external_storage == result_client.external_storage
 
 
-class TestWarehouseBaseClass(_ContainerTest):
+class TestWarehouseBaseClass(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
@@ -221,7 +221,7 @@ class TestWarehouseBaseClass(_ContainerTest):
         assert not storage.exists(file_to_delete)
 
 
-class TestTransformationResults(_ContainerTest):
+class TestTransformationResults(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
@@ -243,7 +243,7 @@ class TestTransformationResults(_ContainerTest):
         return CloneResult(parent=container, clone=0)
 
 
-class TestCloneResults(_ContainerTest):
+class TestCloneResults(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
@@ -262,7 +262,7 @@ class TestCloneResults(_ContainerTest):
         return ExtensionResult(parent=container, item=0)
 
 
-class TestExtensionResults(_ContainerTest):
+class TestExtensionResults(_DataContainerTest):
     expected_files = [
         "transformations/MAIN_TRANS/0/0/file.txt",
         "transformations/MAIN_TRANS/0/0/other.txt",
