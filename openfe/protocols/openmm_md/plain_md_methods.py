@@ -175,13 +175,6 @@ class PlainMDProtocol(gufe.Protocol):
         if extends:
             raise NotImplementedError("Can't extend simulations yet")
 
-        # Validate protein component
-        system_validation.validate_protein(stateA)
-
-        # actually create and return Units
-        # TODO: Deal with multiple ProteinComponents
-        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
-
         # Validate solvent component
         nonbond = self.settings.forcefield_settings.nonbonded_method
         system_validation.validate_solvent(stateA, nonbond)
@@ -189,6 +182,13 @@ class PlainMDProtocol(gufe.Protocol):
         # Validate solvation settings
         settings_validation.validate_openmm_solvation_settings(
             self.settings.solvation_settings)
+
+        # Validate protein component
+        system_validation.validate_protein(stateA)
+
+        # actually create and return Units
+        # TODO: Deal with multiple ProteinComponents
+        solvent_comp, protein_comp, small_mols = system_validation.get_components(stateA)
 
         system_name = (
             "Solvent MD"
