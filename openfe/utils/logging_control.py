@@ -30,7 +30,7 @@ class BaseLogFilter(ABC):
         bool
             True to allow the record, False to block it
         """
-        pass
+        ...
 
 
 class MsgIncludesStringFilter(BaseLogFilter):
