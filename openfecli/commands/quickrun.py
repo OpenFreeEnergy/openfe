@@ -6,7 +6,7 @@ import json
 import pathlib
 
 from openfecli import OFECommandPlugin
-from openfecli.utils import write, print_duration, configure_logger
+from openfecli.utils import write, print_duration, LogControl, configure_logger
 
 
 def _format_exception(exception) -> str:
@@ -52,7 +52,6 @@ def quickrun(transformation, work_dir, output):
     from gufe.transformations.transformation import Transformation
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
-    from openfe.utils.logging_filter import MsgIncludesStringFilter
     import logging
 
     # avoid problems with output not showing if queueing system kills a job
@@ -65,15 +64,16 @@ def quickrun(transformation, work_dir, output):
     configure_logger("openfe", handler=stdout_handler)
 
     # silence the openmmtools.multistate API warning
-    stfu = MsgIncludesStringFilter(
-        "The openmmtools.multistate API is experimental and may change in future releases"
+    LogControl.silence_message(
+        msg=[
+            "The openmmtools.multistate API is experimental and may change in future releases",
+        ],
+        logger_names=[
+            "openmmtools.multistate.multistatereporter",
+            "openmmtools.multistate.multistateanalyzer",
+            "openmmtools.multistate.multistatesampler",
+        ],
     )
-    omm_multistate = "openmmtools.multistate"
-    modules = ["multistatereporter", "multistateanalyzer", "multistatesampler"]
-    for module in modules:
-        ms_log = logging.getLogger(omm_multistate + "." + module)
-        ms_log.addFilter(stfu)
-
     # turn warnings into log message (don't show stack trace)
     logging.captureWarnings(True)
 
