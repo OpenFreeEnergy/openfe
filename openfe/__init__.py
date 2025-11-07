@@ -4,23 +4,32 @@ from openfe.utils.logging_control import LogControl
 
 
 LogControl.silence_message(
-    msg=["****** PyMBAR will use 64-bit JAX! *******",],
-    logger_names=["pymbar.mbar_solvers",]
+    msg=[
+        "****** PyMBAR will use 64-bit JAX! *******",
+    ],
+    logger_names=[
+        "pymbar.mbar_solvers",
+    ],
 )
 
 LogControl.silence_message(
-    msg=["Warning on use of the timeseries module:",],
-    logger_names=["pymbar.timeseries",]
+    msg=[
+        "Warning on use of the timeseries module:",
+    ],
+    logger_names=[
+        "pymbar.timeseries",
+    ],
 )
 
 LogControl.append_logger(
-        suffix="\n \n[OPENFE]: See this url for more information about the warning above\n",
-         logger_names="jax._src.xla_bridge",
-         )
+    suffix="\n \n[OPENFE]: See this url for more information about the warning above\n",
+    logger_names="jax._src.xla_bridge",
+)
 
 # These two lines are just to test the append_logger and will be removed before
 # the PR is merged
 from jax._src.xla_bridge import backends
+
 backends()
 
 from gufe import (

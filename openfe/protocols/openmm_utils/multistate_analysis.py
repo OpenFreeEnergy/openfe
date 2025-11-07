@@ -314,6 +314,7 @@ class MultistateEquilFEAnalysis:
         # pymbar has some side effects from being imported, so we only want to import
         # it right when we need it
         from pymbar.utils import ParameterError
+
         try:
             u_ln = self.analyzer._unbiased_decorrelated_u_ln
             N_l = self.analyzer._unbiased_decorrelated_N_l
