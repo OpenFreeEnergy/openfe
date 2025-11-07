@@ -6,7 +6,7 @@ import json
 import pathlib
 
 from openfecli import OFECommandPlugin
-from openfecli.utils import write, print_duration, LogControl, configure_logger
+from openfecli.utils import write, print_duration, configure_logger
 
 
 def _format_exception(exception) -> str:
@@ -49,6 +49,7 @@ def quickrun(transformation, work_dir, output):
     """
     import os
     import sys
+    from openfe.utils import LogControl
     from gufe.transformations.transformation import Transformation
     from gufe.protocols.protocoldag import execute_DAG
     from gufe.tokenization import JSON_HANDLER
