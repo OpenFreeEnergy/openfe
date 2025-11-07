@@ -103,8 +103,6 @@ class AppendMsgFilter(BaseLogFilter):
 class LogControl:
     """Easy-to-use logging control for third-party packages."""
 
-    def __init__(self) -> None:
-        self._filters: list = []
 
     @staticmethod
     def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
