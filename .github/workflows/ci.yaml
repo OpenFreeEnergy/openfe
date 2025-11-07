@@ -1,13 +1,12 @@
 name: "CI"
 on:
   pull_request:
-    branches:
-      - main
    # Skip CI if changed files only affect the following folders
    # - docs: documentation changes don't need code validation
    # See here for more details: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
     paths-ignore:
       - "docs/*"
+      - "news/*"
       - ".readthedocs.yaml"
       - ".github/workflows/cpu-long-tests.yaml"
       - ".github/workflows/gpu-integration-tests.yaml"
@@ -117,6 +116,19 @@ jobs:
         run: |
           # if we add more to this, consider changing to for + env vars
           python -Ic "import openfe; print(openfe.__version__)"
+
+      - name: Cache Pooch data
+        uses: actions/cache@v4
+        with:
+          path: |
+            # linux cache location
+            ~/.cache/openfe
+            # osx cache location
+            ~/Library/Caches/openfe
+          # When files are added or changed in a pooch registry
+          # bump this key to create a new cache, for example if 
+          # the key is pooch-${{ matrix.os }}-1 change it to pooch-${{ matrix.os }}-2
+          key: pooch-${{ matrix.os }}-1
 
       - name: "Run tests"
         env:
