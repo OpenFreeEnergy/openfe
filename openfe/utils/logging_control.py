@@ -1,7 +1,40 @@
 import logging
+from abc import ABC, abstractmethod
 
-class MsgIncludesStringFilter:
-    """Logging filter to silence specfic log messages.
+
+class BaseLogFilter(ABC):
+    """Base class for log filters that handle string or list of strings.
+
+    Parameters
+    ----------
+    strings : str or list of str
+        String(s) to use in the filter logic
+    """
+
+    def __init__(self, strings: str | list[str]) -> None:
+        if isinstance(strings, str):
+            strings = [strings]
+        self.strings: list[str] = strings
+
+    @abstractmethod
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Filter method to be implemented by subclasses.
+
+        Parameters
+        ----------
+        record : logging.LogRecord
+            Log record to filter/modify
+
+        Returns
+        -------
+        bool
+            True to allow the record, False to block it
+        """
+        pass
+
+
+class MsgIncludesStringFilter(BaseLogFilter):
+    """Logging filter to silence specific log messages.
 
     See https://docs.python.org/3/library/logging.html#filter-objects
 
@@ -11,11 +44,6 @@ class MsgIncludesStringFilter:
         If string(s) match in log messages (substring match) then the log record
         is suppressed
     """
-
-    def __init__(self, strings: str | list[str]) -> None:
-        if isinstance(strings, str):
-            strings = [strings]
-        self.strings = strings
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Filter log records that contain any of the specified strings.
@@ -31,19 +59,26 @@ class MsgIncludesStringFilter:
             False if the record should be blocked, True if it should be logged
         """
         for string in self.strings:
-            return not string in record.msg
+            if string in record.msg:
+                return False
+        return True
 
 
-class AppendMsgFilter:
-    """Logging filter to append a message to a specfic log message.
+class AppendMsgFilter(BaseLogFilter):
+    """Logging filter to append a message to a specific log message.
 
     See https://docs.python.org/3/library/logging.html#filter-objects
 
+    Parameters
+    ----------
+    strings : str or list of str
+        Suffix text(s) to append to log messages
     """
-    def __init__(self, suffix: str | list[str]) -> None:
-        if isinstance(suffix, str):
-            suffix = [suffix]
-        self.suffixes = suffix
+
+    def __init__(self, strings: str | list[str]) -> None:
+        super().__init__(strings)
+        # Rename for clarity in this context
+        self.suffixes = self.strings
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Append suffix to log record message.
@@ -68,11 +103,11 @@ class AppendMsgFilter:
 class LogControl:
     """Easy-to-use logging control for third-party packages."""
 
-    def __init__(self):
-        self._filters = []
+    def __init__(self) -> None:
+        self._filters: list = []
 
     @staticmethod
-    def silence_message(msg, logger_names):
+    def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
         """Silence specific log messages from one or more loggers.
 
         Parameters
@@ -88,26 +123,16 @@ class LogControl:
         ...     msg="****** PyMBAR will use 64-bit JAX! *******",
         ...     logger_names=["pymbar.timeseries", "pymbar.mbar_solvers"]
         ... )
-        >>> LogControl.silence_message(
-        ...     msg=["warning 1", "warning 2", "warning 3"],
-        ...     logger_names="some.package"
-        ... )
         """
-        # Handle single string or list for both parameters
         if isinstance(logger_names, str):
             logger_names = [logger_names]
 
-        if isinstance(msg, str):
-            msg = [msg]
-
-        # Create a filter for each message
-        for message in msg:
-            filter_obj = MsgIncludesStringFilter(message)
-            for name in logger_names:
-                logging.getLogger(name).addFilter(filter_obj)
+        filter_obj = MsgIncludesStringFilter(msg)
+        for name in logger_names:
+            logging.getLogger(name).addFilter(filter_obj)
 
     @staticmethod
-    def silence_logger(logger_names, level=logging.CRITICAL):
+    def silence_logger(logger_names: str | list[str], level: int = logging.CRITICAL) -> None:
         """Completely silence one or more loggers.
 
         Parameters
@@ -120,7 +145,6 @@ class LogControl:
         Examples
         --------
         >>> LogControl.silence_logger(logger_names=["urllib3", "requests"])
-        >>> LogControl.silence_logger(logger_names="noisy.package")
         """
         if isinstance(logger_names, str):
             logger_names = [logger_names]
@@ -128,25 +152,22 @@ class LogControl:
         for name in logger_names:
             logging.getLogger(name).setLevel(level)
 
-
     @staticmethod
-    def append_logger(suffix: str | list[str], logger_names: str | list[str]):
-        """Add extra context to logger messages.
+    def append_logger(suffix: str | list[str], logger_names: str | list[str]) -> None:
+        """Append text to logger messages.
 
         Parameters
         ----------
+        suffix : str or list of str
+            Suffix text to append to log messages
         logger_names : str or list of str
-            Logger name(s) to enhance
-        formatter : callable, optional
-            Function that takes a LogRecord and returns modified msg
-        extra_fields : dict, optional
-            Extra fields to add to LogRecord
+            Logger name(s) to modify
 
         Examples
         --------
         >>> LogControl.append_logger(
-        ...     logger_names="myapp",
-        ...     extra_fields={'version': '1.0', 'env': 'prod'}
+        ...     suffix=" [DEPRECATED]",
+        ...     logger_names="myapp"
         ... )
         """
         if isinstance(logger_names, str):
