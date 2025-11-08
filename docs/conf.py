@@ -13,13 +13,13 @@
 import os
 import sys
 from importlib.metadata import version
-from packaging.version import parse
-from pathlib import Path
 from inspect import cleandoc
+from pathlib import Path
 
-from git import Repo
-import nbsphinx
 import nbformat
+import nbsphinx
+from git import Repo
+from packaging.version import parse
 
 sys.path.insert(0, os.path.abspath("../"))
 
