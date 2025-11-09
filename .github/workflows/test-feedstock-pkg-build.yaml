@@ -1,7 +1,23 @@
 name: Test conda-forge package build
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
 on:
   workflow_dispatch:
+  schedule:
+    # 3 am weekly on monday
+    - cron: "0 3 * * MON"
+  pull_request:
+    branches:
+      - release*
+  push:
+    branches:
+      - release*
 
 jobs:
   test-conda-build:
