@@ -48,4 +48,4 @@ jobs:
       - name: Run example notebooks
         run: |
           cd example-notebooks
-          python -m pytest -v setup/ showcase/ cookbook/ openmm_rbfe/ networks/ --nbval-lax --nbval-cell-timeout=3000 -n auto --dist loadscope
+          python -m pytest -v --nbval-lax --nbval-cell-timeout=3000 -n auto --dist loadscope
