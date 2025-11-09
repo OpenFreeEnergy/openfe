@@ -1,11 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 # Adapted Perses' perses.app.setup_relative_calculation.get_openmm_platform
-from typing import Optional
-import warnings
 import logging
 import os
-
+import warnings
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

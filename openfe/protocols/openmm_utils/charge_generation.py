@@ -5,20 +5,21 @@ Reusable utilities for assigning partial charges to ChemicalComponents.
 """
 
 import copy
-from typing import Union, Optional, Literal, Callable
 import sys
 import warnings
+from typing import Callable, Literal, Optional, Union
+
 import numpy as np
 from gufe import SmallMoleculeComponent
-from openff.units import unit
 from openff.toolkit import Molecule as OFFMol
 from openff.toolkit.utils.base_wrapper import ToolkitWrapper
+from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import (
     AmberToolsToolkitWrapper,
     OpenEyeToolkitWrapper,
     RDKitToolkitWrapper,
 )
-from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from openff.units import unit
 from threadpoolctl import threadpool_limits
 
 try:
@@ -40,11 +41,11 @@ except ImportError:
 
 
 try:
-    from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
     from openff.nagl_models import (
         get_models_by_type,
         validate_nagl_model_path,
     )
+    from openff.toolkit.utils.nagl_wrapper import NAGLToolkitWrapper
 except ImportError:
     HAS_NAGL = False
 else:
