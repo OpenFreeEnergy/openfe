@@ -12,49 +12,48 @@ simulation using OpenMM tools.
 from __future__ import annotations
 
 import logging
-
-from collections import defaultdict
-import gufe
-import openmm
-from openff.units import unit, Quantity
-from openff.units.openmm import from_openmm, to_openmm
-import openmm.unit as omm_unit
-from typing import Optional
 import pathlib
-from typing import Any, Iterable
-import uuid
 import time
+import uuid
+from collections import defaultdict
+from typing import Any, Iterable, Optional
+
+import gufe
 import mdtraj
-from mdtraj.reporters import XTCReporter
-from openfe.utils import without_oechem_backend, log_system_probe
+import openmm
+import openmm.unit as omm_unit
 from gufe import (
-    settings,
     ChemicalSystem,
     SmallMoleculeComponent,
+    settings,
 )
 from gufe.settings.typing import KelvinQuantity
+from mdtraj.reporters import XTCReporter
+from openff.toolkit.topology import Molecule as OFFMolecule
+from openff.units import Quantity, unit
+from openff.units.openmm import from_openmm, to_openmm
+
+from openfe.protocols.openmm_md.plain_md_settings import (
+    IntegratorSettings,
+    MDOutputSettings,
+    MDSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    PlainMDProtocolSettings,
+)
+from openfe.protocols.openmm_utils import (
+    charge_generation,
+    omm_compute,
+    settings_validation,
+    system_creation,
+    system_validation,
+)
 from openfe.protocols.openmm_utils.omm_settings import (
     BasePartialChargeSettings,
     FemtosecondQuantity,
 )
-from openfe.protocols.openmm_md.plain_md_settings import (
-    PlainMDProtocolSettings,
-    OpenFFPartialChargeSettings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
-    IntegratorSettings,
-    MDSimulationSettings,
-    MDOutputSettings,
-)
-from openff.toolkit.topology import Molecule as OFFMolecule
-
-from openfe.protocols.openmm_utils import (
-    system_validation,
-    settings_validation,
-    system_creation,
-    charge_generation,
-    omm_compute,
-)
+from openfe.utils import log_system_probe, without_oechem_backend
 
 logger = logging.getLogger(__name__)
 

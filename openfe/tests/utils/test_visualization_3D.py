@@ -1,9 +1,8 @@
 import pytest
-from openfe.setup import LigandAtomMapping
-
 from openff.utilities.testing import skip_if_missing
 
-from openfe.utils.visualization_3D import view_mapping_3d, view_components_3d
+from openfe.setup import LigandAtomMapping
+from openfe.utils.visualization_3D import view_components_3d, view_mapping_3d
 
 
 @pytest.fixture(scope="module")

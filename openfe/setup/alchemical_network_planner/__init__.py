@@ -2,6 +2,6 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from .relative_alchemical_network_planner import (
-    RHFEAlchemicalNetworkPlanner,
     RBFEAlchemicalNetworkPlanner,
+    RHFEAlchemicalNetworkPlanner,
 )

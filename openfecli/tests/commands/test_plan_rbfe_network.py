@@ -1,10 +1,14 @@
+import json
+import shutil
+from importlib import resources
 from unittest import mock
 
+import numpy as np
 import pytest
-from importlib import resources
-import shutil
 from click.testing import CliRunner
-from ..utils import assert_click_success
+from gufe import AlchemicalNetwork, SmallMoleculeComponent
+from openff.units import unit
+from openff.utilities import skip_if_missing
 
 from openfe.protocols.openmm_utils.charge_generation import HAS_OPENEYE
 from openfecli.commands.plan_rbfe_network import (
@@ -12,11 +16,7 @@ from openfecli.commands.plan_rbfe_network import (
     plan_rbfe_network_main,
 )
 
-from gufe import AlchemicalNetwork, SmallMoleculeComponent
-import json
-import numpy as np
-from openff.utilities import skip_if_missing
-from openff.units import unit
+from ..utils import assert_click_success
 
 
 @pytest.fixture(scope="session")
@@ -78,12 +78,13 @@ def test_plan_rbfe_network_main():
         SmallMoleculeComponent,
         SolventComponent,
     )
+
+    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
     from openfe.setup import (
         LomapAtomMapper,
-        lomap_scorers,
         ligand_network_planning,
+        lomap_scorers,
     )
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [

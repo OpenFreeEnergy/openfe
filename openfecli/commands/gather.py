@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
 import os
 import pathlib
-import pandas as pd
 import sys
-from typing import Literal, List
+from typing import List, Literal
+
+import click
+import pandas as pd
 
 from openfecli import OFECommandPlugin
 from openfecli.clicktypes import HyphenAwareChoice
@@ -101,6 +102,7 @@ def load_json(fpath: os.PathLike | str) -> dict:
     """
     # TODO: move this function to openfe/utils
     import json
+
     from gufe.tokenization import JSON_HANDLER
 
     return json.load(open(fpath, "r"), cls=JSON_HANDLER.decoder)
@@ -254,6 +256,7 @@ def _generate_bad_legs_error_message(bad_legs: list[tuple[set[str], tuple[str]]]
 
 def _get_ddgs(legs: dict, allow_partial=False) -> None:
     import numpy as np
+
     from openfe.protocols.openmm_rfe.equil_rfe_methods import (
         RelativeHybridTopologyProtocolResult as rfe_result,
     )
@@ -573,9 +576,9 @@ def _get_legs_from_result_jsons(
 def rich_print_to_stdout(df: pd.DataFrame) -> None:
     """Use rich to pretty print a table to stdout."""
 
+    from rich import box
     from rich.console import Console
     from rich.table import Table
-    from rich import box
 
     table = Table(box=box.SQUARE)
 

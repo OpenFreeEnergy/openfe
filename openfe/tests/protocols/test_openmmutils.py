@@ -8,11 +8,21 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
-import openfe
 import pooch
 import pytest
 from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from numpy.testing import assert_allclose, assert_equal
+from openff.toolkit import Molecule as OFFMol
+from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
+from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
+from openff.units import unit
+from openff.units.openmm import ensure_quantity, from_openmm
+from openmm import MonteCarloBarostat, NonbondedForce, app
+from openmm import unit as ommunit
+from openmmtools import multistate
+from pymbar.utils import ParameterError
+
+import openfe
 from openfe.protocols.openmm_rfe.equil_rfe_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,
@@ -30,16 +40,6 @@ from openfe.protocols.openmm_utils.charge_generation import (
     HAS_NAGL,
     HAS_OPENEYE,
 )
-from openff.toolkit import Molecule as OFFMol
-from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
-from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
-from openff.units import unit
-from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import MonteCarloBarostat, NonbondedForce, app
-from openmm import unit as ommunit
-from openmmtools import multistate
-from pymbar.utils import ParameterError
-
 from openfe.tests.conftest import HAS_INTERNET
 
 

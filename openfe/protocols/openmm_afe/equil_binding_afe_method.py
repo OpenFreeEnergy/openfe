@@ -44,14 +44,24 @@ from gufe import (
     settings,
 )
 from gufe.components import Component
+from openff.units import Quantity
+from openff.units import unit as offunit
+from openff.units.openmm import to_openmm
+from openmm import System
+from openmm import unit as ommunit
+from openmm.app import Topology as omm_topology
+from openmmtools import multistate
+from openmmtools.states import GlobalParameterState, ThermodynamicState
+from rdkit import Chem
+
 from openfe.due import Doi, due
 from openfe.protocols.openmm_afe.equil_afe_settings import (
+    ABFEPreEquilOutputSettings,
     AbsoluteBindingSettings,
     AlchemicalSettings,
     BoreschRestraintSettings,
     IntegratorSettings,
     LambdaSettings,
-    ABFEPreEquilOutputSettings,
     MDSimulationSettings,
     MultiStateOutputSettings,
     MultiStateSimulationSettings,
@@ -65,15 +75,6 @@ from openfe.protocols.restraint_utils import geometry
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.protocols.restraint_utils.openmm import omm_restraints
 from openfe.protocols.restraint_utils.openmm.omm_restraints import BoreschRestraint
-from openff.units import unit as offunit
-from openff.units import Quantity
-from openff.units.openmm import to_openmm
-from openmm import System
-from openmm import unit as ommunit
-from openmm.app import Topology as omm_topology
-from openmmtools import multistate
-from openmmtools.states import GlobalParameterState, ThermodynamicState
-from rdkit import Chem
 
 from .base import BaseAbsoluteUnit
 

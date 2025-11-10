@@ -1,19 +1,19 @@
+import json
+import shutil
+from importlib import resources
 from unittest import mock
 
+import numpy as np
 import pytest
-from importlib import resources
-import shutil
 from click.testing import CliRunner
+from gufe import AlchemicalNetwork, SmallMoleculeComponent, SolventComponent
+from gufe.tokenization import JSON_HANDLER
+from openff.utilities.testing import skip_if_missing
 
 from openfecli.commands.plan_rhfe_network import (
     plan_rhfe_network,
     plan_rhfe_network_main,
 )
-from gufe import SmallMoleculeComponent, AlchemicalNetwork, SolventComponent
-from gufe.tokenization import JSON_HANDLER
-import json
-import numpy as np
-from openff.utilities.testing import skip_if_missing
 
 
 @pytest.fixture(scope="session")
@@ -57,12 +57,12 @@ def validate_charges(smc):
 @skip_if_missing("openff.nagl")
 @skip_if_missing("openff.nagl_models")
 def test_plan_rhfe_network_main():
+    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
     from openfe.setup import (
         LomapAtomMapper,
-        lomap_scorers,
         ligand_network_planning,
+        lomap_scorers,
     )
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
 
     with resources.as_file(resources.files("openfe.tests.data.openmm_rfe")) as d:
         smallM_components = [

@@ -2,18 +2,19 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 import click
-from openfecli.utils import write, print_duration
+
 from openfecli import OFECommandPlugin
 from openfecli.parameters import (
-    MOL_DIR,
-    PROTEIN,
-    OUTPUT_DIR,
     COFACTORS,
-    YAML_OPTIONS,
-    NCORES,
-    OVERWRITE,
+    MOL_DIR,
     N_PROTOCOL_REPEATS,
+    NCORES,
+    OUTPUT_DIR,
+    OVERWRITE,
+    PROTEIN,
+    YAML_OPTIONS,
 )
+from openfecli.utils import print_duration, write
 
 
 def plan_rbfe_network_main(
@@ -65,13 +66,11 @@ def plan_rbfe_network_main(
         associated ligand network
     """
 
+    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
     from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RBFEAlchemicalNetworkPlanner,
-    )
-    from openfe.setup.alchemical_network_planner.relative_alchemical_network_planner import (
         RelativeHybridTopologyProtocol,
     )
-    from openfe.protocols.openmm_utils.charge_generation import bulk_assign_partial_charges
 
     protocol_settings = RelativeHybridTopologyProtocol.default_settings()
     protocol_settings.protocol_repeats = n_protocol_repeats
