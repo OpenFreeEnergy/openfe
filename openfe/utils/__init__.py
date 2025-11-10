@@ -2,7 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from . import custom_typing
+from .logging_control import LogControl
 from .optional_imports import requires_package
 from .remove_oechem import without_oechem_backend
 from .system_probe import log_system_probe
-from .logging_control import LogControl
