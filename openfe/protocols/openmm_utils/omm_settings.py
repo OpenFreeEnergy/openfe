@@ -326,7 +326,7 @@ class OpenMMEngineSettings(SettingsBaseModel):
     choose fastest available platform.
     Allowed platforms are; ``cuda``, ``opencl``, ``cpu``.
     Default ``cuda``.
-    
+
     """
     gpu_device_index: Optional[list[int]] = None
     """

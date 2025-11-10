@@ -54,12 +54,14 @@ line-length = 100
 lint.select = [
   "F541",
   # "I", # isort
-  # "W", # pycodestyle warnings
+  "W", # pycodestyle warnings
   # "E",  # pycodestyle errors
   # "C901"  # mccabe complexity  TODO: add this back in
   # "UP", # TODO: add this in
 ]
 lint.ignore = [
+  "F811",
+  "F841", 
   "E402", # module-level import not at top (conflicts w/ isort)
   "E722", # bare excepts (TODO: we should fix these in a follow-up PR)
   "E731", # lambda expressions (TODO: we should fix these)

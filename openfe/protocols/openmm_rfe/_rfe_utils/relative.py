@@ -553,7 +553,7 @@ class HybridTopologyFactory:
         """
         Helper method to copy a ThreeParticleAverageSite virtual site
         from two mapped Systems.
-        
+
         Parameters
         ----------
         atm_map : dict[int, int]
@@ -562,7 +562,7 @@ class HybridTopologyFactory:
           A list of environment atoms for the target System. This
           checks that no alchemical atoms are being tied to.
         vs : openmm.ThreeParticleAverageSite
-        
+
         Returns
         -------
         openmm.ThreeParticleAverageSite
@@ -580,7 +580,7 @@ class HybridTopologyFactory:
             particles[0], particles[1], particles[2],
             weights[0], weights[1], weights[2],
         )
-                    
+
     def _handle_virtual_sites(self):
         """
         Ensure that all virtual sites in old and new system are copied over to
@@ -2037,7 +2037,7 @@ class HybridTopologyFactory:
 
                     exception_index = self._hybrid_system_forces['standard_nonbonded_force'].addException(
                                           index1_hybrid, index2_hybrid,
-                                          chargeProd_old, sigma_old, 
+                                          chargeProd_old, sigma_old,
                                           epsilon_old)
 
                     self._hybrid_system_forces['standard_nonbonded_force'].addExceptionParameterOffset(
@@ -2273,7 +2273,7 @@ class HybridTopologyFactory:
             # find mapped atoms
             new_system_atom_set = {atom.index for atom in new_system_res.atoms}
 
-            # Now, we find the subset of atoms that are mapped. These must be 
+            # Now, we find the subset of atoms that are mapped. These must be
             # in the "core" category, since they are mapped and part of a
             # changing residue
             mapped_new_atom_indices = core_atoms_new_indices.intersection(
@@ -2520,7 +2520,7 @@ class HybridTopologyFactory:
     def hybrid_topology(self):
         """
         An MDTraj hybrid topology for the purpose of writing out trajectories.
-        
+
         Note that we do not expect this to be able to be parameterized by the
         openmm forcefield class.
 
