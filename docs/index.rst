@@ -91,10 +91,13 @@ Other OpenFE Ecosystem Projects:
 **openfe** is Open Free Energy's user-facing software for performing alchemical free energy calculations.
 Below are other software projects the Open Free Energy team maintains, many of which are used by **openfe** itself.
 
-* `Lomap <https://github.com/OpenFreeEnergy/Lomap/>_`: planning perturbation networks for free energy calculations
-* `cinnabar <https://github.com/OpenFreeEnergy/cinnabar/>`_ (formery arsenic): plotting free energy calculation results
-* `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
-* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution
 * `kartograf <https://github.com/OpenFreeEnergy/kartograf/>_`: atom mappings focusing on 3D geometries
 * `konnektor <https://github.com/OpenFreeEnergy/konnektor/>`_`: free energy network planning, modification, and analysis
-  
+* `cinnabar <https://github.com/OpenFreeEnergy/cinnabar/>`_ (formery arsenic): plotting free energy calculation results
+* `gufe <https://gufe.openfree.energy/en/latest/>`_ : data structures and models underlying the OpenFE ecosystem
+* `Lomap <https://github.com/OpenFreeEnergy/Lomap/>_`: planning perturbation networks for free energy calculations
+
+Community-Developed Projects:
+-----------------------------
+
+* `alchemiscale <https://docs.alchemiscale.org/en/stable/>`_: high-throughput alchemical free energy execution, developed by [Datryllic](https://github.com/datryllic).
