@@ -52,7 +52,7 @@ line-length = 100
 
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 lint.select = [
-  "F",  # Pyflakes
+  "F", # Pyflakes
   "I", # isort
   "W", # pycodestyle warnings
   # "E",  # pycodestyle errors
@@ -60,12 +60,12 @@ lint.select = [
   # "UP", # TODO: add this in
 ]
 lint.ignore = [
-  "F811",
-  "F841", 
   "E402", # module-level import not at top (conflicts w/ isort)
   "E722", # bare excepts (TODO: we should fix these in a follow-up PR)
   "E731", # lambda expressions (TODO: we should fix these)
   "F401", # unused imports (TODO: we should fix these)
+  "F811",
+  "F841",
   "UP03", # pyupgrade linting (TODO: we should fix these)
 ]
 lint.isort.known-first-party = [ "openfe" ]
