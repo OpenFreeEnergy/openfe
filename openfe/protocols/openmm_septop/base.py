@@ -224,10 +224,13 @@ def _pre_equilibrate(
     equilibrated_positions = state.getPositions(asNumpy=True)
     box = state.getPeriodicBoxVectors()
 
+    # Convert box vectors to plain floats in nanometers
+    box_no_units = [v.value_in_unit(omm_unit.nanometer) for v in box]
+
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
-
-    return equilibrated_positions, box
+    print('box', box, box_no_units)
+    return equilibrated_positions, box_no_units
 
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit):
