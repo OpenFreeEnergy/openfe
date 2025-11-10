@@ -513,7 +513,7 @@ def log_system_probe(level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]]
     gpu = logging.getLogger(basename + ".gpu")
     hostname = logging.getLogger(basename + ".hostname")
     loggers = [base, gpu, hostname]
-    if any(l.isEnabledFor(level) for l in loggers):
+    if any(logger.isEnabledFor(level) for logger in loggers):
         sysinfo = _probe_system(pl_paths)["system information"]
         base.log(level, "SYSTEM CONFIG DETAILS:")
         hostname.log(level, f"hostname: '{sysinfo['hostname']}'")

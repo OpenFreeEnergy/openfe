@@ -55,7 +55,7 @@ lint.select = [
   "F", # Pyflakes
   "I", # isort
   "W", # pycodestyle warnings
-  # "E",  # pycodestyle errors
+  "E",  # pycodestyle errors
   # "C901"  # mccabe complexity  TODO: add this back in
   # "UP", # TODO: add this in
 ]
