@@ -18,25 +18,26 @@ import gzip
 import json
 import logging
 import pathlib
-from rdkit import Chem
+import sys
 import tempfile
-from openff.toolkit import Molecule, RDKitToolkitWrapper, AmberToolsToolkitWrapper
-from openff.toolkit.utils.toolkit_registry import toolkit_registry_manager, ToolkitRegistry
-from openff.units import unit
-from kartograf.atom_aligner import align_mol_shape
-from kartograf import KartografAtomMapper
+
 import gufe
 from gufe.tokenization import JSON_HANDLER
+from kartograf import KartografAtomMapper
+from kartograf.atom_aligner import align_mol_shape
+from openff.toolkit import AmberToolsToolkitWrapper, Molecule, RDKitToolkitWrapper
+from openff.toolkit.utils.toolkit_registry import ToolkitRegistry, toolkit_registry_manager
+from openff.units import unit
+from rdkit import Chem
+
 import openfe
-from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol
 from openfe.protocols.openmm_afe import (
-    AbsoluteSolvationProtocol,
     AbsoluteBindingProtocol,
+    AbsoluteSolvationProtocol,
 )
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocol
 from openfe.protocols.openmm_rfe import RelativeHybridTopologyProtocol
 from openfe.protocols.openmm_septop import SepTopProtocol
-
-import sys
 from openfecli.utils import configure_logger
 
 # avoid problems with output not showing if queueing system kills a job

@@ -8,17 +8,18 @@ This module implements the settings necessary to run MD simulations using
 
 """
 
+from gufe.settings import OpenMMSystemGeneratorFFSettings, SettingsBaseModel
 from pydantic import ConfigDict, field_validator
+
 from openfe.protocols.openmm_utils.omm_settings import (
-    Settings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
-    MDSimulationSettings,
     IntegratorSettings,
     MDOutputSettings,
+    MDSimulationSettings,
     OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
+    Settings,
 )
-from gufe.settings import SettingsBaseModel, OpenMMSystemGeneratorFFSettings
 
 
 class PlainMDProtocolSettings(Settings):

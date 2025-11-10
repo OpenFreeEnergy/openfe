@@ -1,8 +1,8 @@
-import pytest
-from openff.units import unit
 import gufe
-from gufe import SolventComponent, ChemicalSystem
+import pytest
+from gufe import ChemicalSystem, SolventComponent
 from gufe.tests.test_protocol import DummyProtocol
+from openff.units import unit
 
 
 @pytest.fixture

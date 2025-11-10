@@ -16,6 +16,9 @@ import numpy as np
 import numpy.typing as npt
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
+from openff.units import Quantity, unit
+from scipy.stats import circvar
+
 from openfe.protocols.restraint_utils.geometry.utils import (
     CentroidDistanceSort,
     FindHostAtoms,
@@ -27,8 +30,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     protein_chain_selection,
     stable_secondary_structure_selection,
 )
-from openff.units import Quantity, unit
-from scipy.stats import circvar
 
 
 def _host_atoms_search(

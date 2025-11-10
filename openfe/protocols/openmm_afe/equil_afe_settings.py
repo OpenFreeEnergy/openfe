@@ -16,30 +16,29 @@ TODO
 
 """
 
+import numpy as np
 from gufe.settings import (
-    SettingsBaseModel,
     OpenMMSystemGeneratorFFSettings,
+    SettingsBaseModel,
     ThermoSettings,
 )
+from pydantic import field_validator
+
 from openfe.protocols.openmm_utils.omm_settings import (
-    MultiStateSimulationSettings,
     BaseSolvationSettings,
-    OpenMMSolvationSettings,
-    OpenMMEngineSettings,
     IntegratorSettings,
-    OpenFFPartialChargeSettings,
-    MultiStateOutputSettings,
-    MDSimulationSettings,
     MDOutputSettings,
+    MDSimulationSettings,
+    MultiStateOutputSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import (
     BaseRestraintSettings,
     BoreschRestraintSettings,
 )
-
-import numpy as np
-
-from pydantic import field_validator
 
 
 class AlchemicalSettings(SettingsBaseModel):

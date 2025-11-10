@@ -5,12 +5,14 @@ Useful if Settings are ever changed in a backwards-incompatible way
 Will expect "rbfe_results.tar.gz" in this directory, will overwrite this file
 """
 
-from gufe.tokenization import JSON_HANDLER
 import glob
 import json
-from openfe.protocols import openmm_rfe
 import os.path
 import tarfile
+
+from gufe.tokenization import JSON_HANDLER
+
+from openfe.protocols import openmm_rfe
 
 
 def untar(fn):
