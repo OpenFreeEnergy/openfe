@@ -237,7 +237,7 @@ def test_validate_endstates_unique_stateB(benzene_modifications, T4_protein_comp
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
-def test_charged_endstate(charged_benzene_modifications, T4_protein_component):
+def test_charged_endstate_warn(charged_benzene_modifications, T4_protein_component):
     stateA = ChemicalSystem(
         {
             "benzene": charged_benzene_modifications["benzoic_acid"],
@@ -253,8 +253,31 @@ def test_charged_endstate(charged_benzene_modifications, T4_protein_component):
         }
     )
 
-    errmsg = "Charged alchemical molecules are not currently supported"
-    with pytest.raises(ValueError, match=errmsg):
+    # No error should be raised but an warning should
+    wmsg = "Net charge transformations are experimental and error prone."
+
+    with pytest.warns(UserWarning, match=wmsg):
+        AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
+
+
+def test_charged_endstate_error(charged_benzene_modifications, T4_protein_component):
+
+    stateA = ChemicalSystem(
+        {
+            "benzene": charged_benzene_modifications["phthalic_acid"],
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    stateB = ChemicalSystem(
+        {
+            "protein": T4_protein_component,
+            "solvent": SolventComponent(),
+        }
+    )
+
+    with pytest.raises(ValueError, match="net charge greater than 1"):
         AbsoluteBindingProtocol._validate_endstates(stateA, stateB)
 
 
