@@ -1,8 +1,9 @@
 import pathlib
 
 import click
+
 from openfecli import OFECommandPlugin
-from openfecli.parameters import MOL_DIR, YAML_OPTIONS, OUTPUT_FILE_AND_EXT, NCORES, OVERWRITE
+from openfecli.parameters import MOL_DIR, NCORES, OUTPUT_FILE_AND_EXT, OVERWRITE, YAML_OPTIONS
 
 YAML_HELP = """
 Path to a YAML file specifying the method to use to charge the molecules

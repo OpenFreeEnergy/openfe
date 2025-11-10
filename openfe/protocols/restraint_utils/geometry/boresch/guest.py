@@ -11,6 +11,9 @@ TODO
 from typing import Iterable, Optional
 
 import MDAnalysis as mda
+from openff.units import Quantity, unit
+from rdkit import Chem
+
 from openfe.protocols.restraint_utils.geometry.utils import (
     get_aromatic_rings,
     get_central_atom_idx,
@@ -18,8 +21,6 @@ from openfe.protocols.restraint_utils.geometry.utils import (
     get_local_rmsf,
     is_collinear,
 )
-from openff.units import Quantity, unit
-from rdkit import Chem
 
 
 def _sort_by_distance_from_atom(

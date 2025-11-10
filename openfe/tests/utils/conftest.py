@@ -1,11 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from importlib import resources
+from typing import Iterable, NamedTuple
+
 import pytest
 from rdkit import Chem
-from importlib import resources
 
-from openfe import SmallMoleculeComponent, LigandAtomMapping, LigandNetwork
-from typing import Iterable, NamedTuple
+from openfe import LigandAtomMapping, LigandNetwork, SmallMoleculeComponent
 
 from ..conftest import mol_from_smiles
 

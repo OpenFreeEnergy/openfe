@@ -3,6 +3,7 @@
 
 import MDAnalysis as mda
 import pytest
+
 from openfe.protocols.restraint_utils.geometry.harmonic import (
     DistanceRestraintGeometry,
     get_distance_restraint,

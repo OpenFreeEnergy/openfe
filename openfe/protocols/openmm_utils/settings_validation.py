@@ -5,13 +5,16 @@ Reusable utility methods to validate input settings to OpenMM-based alchemical
 Protocols.
 """
 
-from openff.units import unit, Quantity
 from typing import Optional
+
+from openff.units import Quantity, unit
+
+from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
+
 from .omm_settings import (
     IntegratorSettings,
     MultiStateSimulationSettings,
 )
-from openfe.protocols.openmm_utils.omm_settings import OpenMMSolvationSettings
 
 
 def validate_openmm_solvation_settings(settings: OpenMMSolvationSettings) -> None:

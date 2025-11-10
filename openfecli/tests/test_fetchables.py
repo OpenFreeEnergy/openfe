@@ -1,11 +1,12 @@
-import pytest
-from click.testing import CliRunner
-from .conftest import HAS_INTERNET
 import pathlib
 
+import pytest
+from click.testing import CliRunner
+
+from openfecli.fetchables import RBFE_SHOWCASE, RBFE_TUTORIAL, RBFE_TUTORIAL_RESULTS
 from openfecli.fetching import FetchablePlugin
 
-from openfecli.fetchables import RBFE_TUTORIAL, RBFE_TUTORIAL_RESULTS, RBFE_SHOWCASE
+from .conftest import HAS_INTERNET
 
 
 def fetchable_test(fetchable):

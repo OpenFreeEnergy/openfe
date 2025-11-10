@@ -11,14 +11,15 @@ USAGE:
 (Assuming you run from within this directory.)
 """
 
-import gufe
-import openfe
-import json
 import argparse
+import json
 import pathlib
 
+import gufe
 from gufe.tests.conftest import benzene_modifications
-from gufe.tests.test_protocol import DummyProtocol, BrokenProtocol
+from gufe.tests.test_protocol import BrokenProtocol, DummyProtocol
+
+import openfe
 
 parser = argparse.ArgumentParser()
 parser.add_argument("directory")

@@ -1,41 +1,37 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import abc
-from typing import Iterable, Callable, Type, Optional
 import warnings
+from typing import Callable, Iterable, Optional, Type
 
 from gufe import (
-    Protocol,
     AlchemicalNetwork,
-    LigandAtomMapping,
-    Transformation,
     ChemicalSystem,
-)
-from gufe import (
-    SmallMoleculeComponent,
-    ProteinComponent,
-    SolventComponent,
+    LigandAtomMapping,
     LigandNetwork,
+    ProteinComponent,
+    Protocol,
+    SmallMoleculeComponent,
+    SolventComponent,
+    Transformation,
 )
 from openff.units import unit
 
-
-from .abstract_alchemical_network_planner import (
-    AbstractAlchemicalNetworkPlanner,
-)
-
+from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
 from .. import LomapAtomMapper
 from ..atom_mapping.ligandatommapper import LigandAtomMapper
 from ..atom_mapping.lomap_scorers import default_lomap_score
-from ..ligand_network_planning import generate_minimal_spanning_network
-from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
-    AbstractChemicalSystemGenerator,
-)
 from ..chemicalsystem_generator import (
     EasyChemicalSystemGenerator,
     RFEComponentLabels,
 )
-from ...protocols.openmm_rfe.equil_rfe_methods import RelativeHybridTopologyProtocol
+from ..chemicalsystem_generator.abstract_chemicalsystem_generator import (
+    AbstractChemicalSystemGenerator,
+)
+from ..ligand_network_planning import generate_minimal_spanning_network
+from .abstract_alchemical_network_planner import (
+    AbstractAlchemicalNetworkPlanner,
+)
 
 # TODO: move/or find better structure for protocol_generator combinations!
 PROTOCOL_GENERATOR = {

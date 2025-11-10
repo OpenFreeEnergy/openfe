@@ -42,9 +42,7 @@ from typing import Any, Iterable, Optional, Union
 
 import gufe
 import MDAnalysis as mda
-from MDAnalysis.coordinates.memory import MemoryReader
 import MDAnalysis.transformations as trans
-from MDAnalysis.analysis import align
 import mdtraj as md
 import numpy as np
 import numpy.typing as npt
@@ -59,6 +57,15 @@ from gufe import (
     settings,
 )
 from gufe.components import Component
+from MDAnalysis.analysis import align
+from MDAnalysis.coordinates.memory import MemoryReader
+from openff.toolkit.topology import Molecule as OFFMolecule
+from openff.units import Quantity, unit
+from openff.units.openmm import from_openmm, to_openmm
+from openmmtools import multistate
+from openmmtools.states import ThermodynamicState
+from rdkit import Chem
+
 from openfe.due import Doi, due
 from openfe.protocols.openmm_septop.equil_septop_settings import (
     AlchemicalSettings,
@@ -82,12 +89,6 @@ from openfe.protocols.restraint_utils.openmm.omm_restraints import (
     add_force_in_separate_group,
 )
 from openfe.utils import log_system_probe
-from openff.toolkit.topology import Molecule as OFFMolecule
-from openff.units import unit, Quantity
-from openff.units.openmm import from_openmm, to_openmm
-from openmmtools import multistate
-from openmmtools.states import ThermodynamicState
-from rdkit import Chem
 
 from ..openmm_utils import settings_validation, system_validation
 from ..restraint_utils.settings import (
