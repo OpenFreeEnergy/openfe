@@ -3,11 +3,11 @@ import logging
 
 
 def _mute_timeseries(record):
-    return not "Warning on use of the timeseries module:" in record.msg
+    return "Warning on use of the timeseries module:" not in record.msg
 
 
 def _mute_jax(record):
-    return not "****** PyMBAR will use 64-bit JAX! *******" in record.msg
+    return "****** PyMBAR will use 64-bit JAX! *******" not in record.msg
 
 
 _mbar_log = logging.getLogger("pymbar.timeseries")
