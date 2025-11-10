@@ -1,14 +1,15 @@
-from click import ClickException
-import pytest
-from click.testing import CliRunner
+import logging
 
+import numpy as np
+import pytest
+from click import ClickException
+from click.testing import CliRunner
 from gufe import SmallMoleculeComponent
-from openfecli.commands.generate_partial_charges import charge_molecules
 from openff.toolkit import Molecule
 from openff.units import unit
-import logging
-import numpy as np
 from openff.utilities.testing import skip_if_missing
+
+from openfecli.commands.generate_partial_charges import charge_molecules
 
 
 @pytest.fixture

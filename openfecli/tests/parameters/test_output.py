@@ -1,4 +1,5 @@
 import pytest
+
 from openfecli.parameters.output import get_file_and_extension
 
 

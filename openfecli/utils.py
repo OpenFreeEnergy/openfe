@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import click
-import importlib
 import functools
-from typing import Callable, Optional
-from datetime import datetime
+import importlib
 import logging
+from datetime import datetime
+from typing import Callable, Optional
+
+import click
 
 
 def import_thing(import_string: str):
