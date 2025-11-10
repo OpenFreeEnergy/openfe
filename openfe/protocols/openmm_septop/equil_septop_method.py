@@ -2009,8 +2009,9 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.verbose,
             self.logger,
         )
+        print(omm_topology_AB.getPeriodicBoxVectors())
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
-
+        print(omm_topology_AB.getPeriodicBoxVectors())
         topology_file = self.shared_basepath / "topology.pdb"
         openmm.app.pdbfile.PDBFile.writeFile(
             omm_topology_AB,

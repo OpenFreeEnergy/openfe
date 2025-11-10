@@ -226,11 +226,12 @@ def _pre_equilibrate(
 
     # Convert box vectors to plain floats in nanometers
     box_no_units = [v.value_in_unit(omm_unit.nanometer) for v in box]
+    box_quantity = omm_unit.Quantity(box_no_units, omm_unit.nanometer)
 
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
-    print('box', box, box_no_units)
-    return equilibrated_positions, box_no_units
+    print('box', box, box_no_units, box_quantity)
+    return equilibrated_positions, box_quantity
 
 
 class BaseSepTopSetupUnit(gufe.ProtocolUnit):
