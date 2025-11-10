@@ -103,7 +103,6 @@ class AppendMsgFilter(BaseLogFilter):
 class LogControl:
     """Easy-to-use logging control for third-party packages."""
 
-
     @staticmethod
     def silence_message(msg: str | list[str], logger_names: str | list[str]) -> None:
         """Silence specific log messages from one or more loggers.
