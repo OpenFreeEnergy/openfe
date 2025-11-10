@@ -4,18 +4,19 @@
 Reusable utility methods to analyze results from multistate calculations.
 """
 
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import Optional, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from openmmtools import multistate
-from openff.units import unit, Quantity
+from openff.units import Quantity, unit
 from openff.units.openmm import from_openmm
-from openfe.analysis import plotting
-from typing import Optional, Union
-from openfe.due import due, Doi
+from openmmtools import multistate
 
+from openfe.analysis import plotting
+from openfe.due import Doi, due
 
 due.cite(
     Doi("10.5281/zenodo.596622"),

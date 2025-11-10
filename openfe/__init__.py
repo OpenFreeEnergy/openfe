@@ -2,7 +2,6 @@
 # log control since some modules have warnings on import
 from openfe.utils.logging_control import LogControl
 
-
 LogControl.silence_message(
     msg=[
         "****** PyMBAR will use 64-bit JAX! *******",
@@ -32,41 +31,39 @@ from jax._src.xla_bridge import backends
 
 backends()
 
+from importlib.metadata import version
+
 from gufe import (
+    AlchemicalNetwork,
     ChemicalSystem,
     Component,
+    LigandAtomMapping,
+    NonTransformation,
     ProteinComponent,
     SmallMoleculeComponent,
     SolventComponent,
     Transformation,
-    NonTransformation,
-    AlchemicalNetwork,
-    LigandAtomMapping,
 )
 from gufe.protocols import (
     Protocol,
     ProtocolDAG,
-    ProtocolUnit,
-    ProtocolUnitResult,
-    ProtocolUnitFailure,
     ProtocolDAGResult,
     ProtocolResult,
+    ProtocolUnit,
+    ProtocolUnitFailure,
+    ProtocolUnitResult,
     execute_DAG,
 )
-from . import utils
-from . import setup
-from .setup import (
-    LomapAtomMapper,
-    lomap_scorers,
-    PersesAtomMapper,
-    perses_scorers,
-    ligand_network_planning,
-    LigandNetwork,
-    LigandAtomMapper,
-)
-from . import orchestration
-from . import analysis
 
-from importlib.metadata import version
+from . import analysis, orchestration, setup, utils
+from .setup import (
+    LigandAtomMapper,
+    LigandNetwork,
+    LomapAtomMapper,
+    PersesAtomMapper,
+    ligand_network_planning,
+    lomap_scorers,
+    perses_scorers,
+)
 
 __version__ = version("openfe")
