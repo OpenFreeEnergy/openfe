@@ -260,8 +260,8 @@ def rbfe_result_dir() -> pathlib.Path:
 
 @pytest.fixture
 def cmet_result_dir() -> pathlib.Path:
-    ZENODO_CMET_DATA.fetch(f"cmet_results.tar.gz", processor=pooch.Untar())
-    result_dir = pathlib.Path(POOCH_CACHE) / f"cmet_results.tar.gz.untar/cmet_results/"
+    ZENODO_CMET_DATA.fetch("cmet_results.tar.gz", processor=pooch.Untar())
+    result_dir = pathlib.Path(POOCH_CACHE) / "cmet_results.tar.gz.untar/cmet_results/"
 
     return result_dir
 
