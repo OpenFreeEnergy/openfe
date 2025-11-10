@@ -1,15 +1,15 @@
 import os
-
-import pytest
 from unittest import mock
 
+import pytest
 from gufe.storage.externalresource import MemoryStorage
 from gufe.tokenization import TOKENIZABLE_REGISTRY
+
 from openfe.storage.resultclient import (
-    ResultClient,
-    TransformationResult,
     CloneResult,
     ExtensionResult,
+    ResultClient,
+    TransformationResult,
 )
 
 

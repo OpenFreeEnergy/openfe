@@ -2,6 +2,7 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from typing import Callable
+
 import pytest
 
 import openfe

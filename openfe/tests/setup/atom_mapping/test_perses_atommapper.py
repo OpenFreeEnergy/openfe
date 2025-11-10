@@ -1,9 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
-from openfe.setup.atom_mapping import PersesAtomMapper, LigandAtomMapping
 from openff.units import unit
 from openff.utilities.testing import skip_if_missing
+
+from openfe.setup.atom_mapping import LigandAtomMapping, PersesAtomMapper
 
 
 @skip_if_missing("openeye")

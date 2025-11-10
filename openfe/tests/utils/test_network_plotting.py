@@ -1,12 +1,12 @@
-import pytest
 from unittest import mock
+
+import networkx as nx
+import pytest
+from matplotlib import pyplot as plt
+from matplotlib.backend_bases import MouseButton, MouseEvent
 from numpy import testing as npt
 
-from matplotlib import pyplot as plt
-import networkx as nx
-from openfe.utils.network_plotting import Node, Edge, EventHandler, GraphDrawing
-
-from matplotlib.backend_bases import MouseEvent, MouseButton
+from openfe.utils.network_plotting import Edge, EventHandler, GraphDrawing, Node
 
 
 def _get_fig_ax(fig):
