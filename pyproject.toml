@@ -53,7 +53,7 @@ line-length = 100
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 lint.select = [
   # "F",  # Pyflakes
-  # "I", # isort
+  "I", # isort
   # "W", # pycodestyle warnings
   # "E",  # pycodestyle errors
   # "C901"  # mccabe complexity  TODO: add this back in
