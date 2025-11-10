@@ -5,9 +5,10 @@
 # turn off formatting since this is mostly vendored code
 # fmt: off
 
-import numpy as np
-import warnings
 import copy
+import warnings
+
+import numpy as np
 from openmmtools.alchemy import AlchemicalState
 
 
