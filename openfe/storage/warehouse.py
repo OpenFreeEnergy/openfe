@@ -136,26 +136,6 @@ class WarehouseBaseClass(_DataContainer):
                 ).encode("utf-8")
                 self.external_storage.store_bytes(key, data)
 
-    def store_transformation(self, transformation):
-        """Store a :class:`.Transformation`.
-
-        Parmeters
-        ---------
-        transformation: :class:`.Transformation`
-            the transformation to store
-        """
-        self._store_gufe_tokenizable("setup", transformation)
-
-    def store_network(self, network):
-        """Store a :class:`.AlchemicalNetwork`.
-
-        Parmeters
-        ---------
-        network: :class:`.AlchemicalNetwork`
-            the network to store
-        """
-        self._store_gufe_tokenizable("setup", network)
-
     def _load_gufe_tokenizable(self, prefix, gufe_key):
         """generic function to load deduplicated object from a key"""
         registry = {}
@@ -199,36 +179,6 @@ class WarehouseBaseClass(_DataContainer):
             return obj
 
         return recursive_build_object_cache(gufe_key)
-
-    def load_transformation(self, key: str):
-        """Load a :class:`.Transformation` from its GufeKey
-
-        Parameters
-        ----------
-        key: str
-            the gufe key for this object
-
-        Returns
-        -------
-        :class:`.Transformation`
-            the desired transformation
-        """
-        return self._load_gufe_tokenizable("setup", key)
-
-    def load_network(self, key: str):
-        """Load a :class:`.AlchemicalNetwork` from its GufeKey
-
-        Parameters
-        ----------
-        key: str
-            the gufe key for this object
-
-        Returns
-        -------
-        :class:`.AlchemicalNetwork`
-            the desired network
-        """
-        return self._load_gufe_tokenizable("setup", key)
 
     def _load_next_level(self, item):
         return TransformationResult(self, item)
