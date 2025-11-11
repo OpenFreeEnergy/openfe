@@ -18,15 +18,15 @@ from .component_checks import (
 
 
 def test_easy_chemical_system_generator_init(T4_protein_component):
-    chem_sys_generator = EasyChemicalSystemGenerator(do_vacuum=True)
+    EasyChemicalSystemGenerator(do_vacuum=True)
 
-    chem_sys_generator = EasyChemicalSystemGenerator(solvent=SolventComponent())
+    EasyChemicalSystemGenerator(solvent=SolventComponent())
 
-    chem_sys_generator = EasyChemicalSystemGenerator(
+    EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component
     )
 
-    chem_sys_generator = EasyChemicalSystemGenerator(
+    EasyChemicalSystemGenerator(
         solvent=SolventComponent(), protein=T4_protein_component, do_vacuum=True
     )
 
@@ -34,7 +34,7 @@ def test_easy_chemical_system_generator_init(T4_protein_component):
         ValueError,
         match="Chemical system generator is unable to generate any chemical systems with neither protein nor solvent nor do_vacuum",
     ):
-        chem_sys_generator = EasyChemicalSystemGenerator()
+        EasyChemicalSystemGenerator()
 
 
 def test_build_vacuum_chemical_system(ethane):

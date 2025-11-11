@@ -852,7 +852,7 @@ def test_virtual_sites_no_reassign(
     with tmpdir.as_cwd():
         errmsg = "Simulations with virtual sites without velocity"
         with pytest.raises(ValueError, match=errmsg):
-            solv_setup_output = solv_setup_unit[0].run(dry=True)
+            solv_setup_unit[0].run(dry=True)
 
 
 @pytest.mark.parametrize(

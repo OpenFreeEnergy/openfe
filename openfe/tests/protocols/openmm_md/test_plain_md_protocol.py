@@ -190,7 +190,7 @@ def test_dry_run_gaff_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
     )
     unit = list(dag.protocol_units)[0]
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)["debug"]["system"]
+        unit.run(dry=True)["debug"]["system"]
 
 
 @pytest.mark.skipif(not HAS_ESPALOMA, reason="espaloma is not available")
@@ -209,7 +209,7 @@ def test_dry_run_espaloma_vacuum(benzene_vacuum_system, vac_settings, tmpdir):
     )
     unit = list(dag.protocol_units)[0]
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)["debug"]["system"]
+        unit.run(dry=True)["debug"]["system"]
 
 
 @pytest.mark.parametrize(
@@ -286,7 +286,7 @@ def test_dry_many_molecules_solvent(benzene_many_solv_system, tmpdir):
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        system = unit.run(dry=True)["debug"]["system"]
+        unit.run(dry=True)["debug"]["system"]
 
 
 BENZ = """\

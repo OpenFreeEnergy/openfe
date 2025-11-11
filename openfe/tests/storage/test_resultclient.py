@@ -298,7 +298,7 @@ class TestExtensionResults(_ResultContainerTest):
         # this one does not cache results; the cache should remain empty
         container = self.get_container(result_client)
         assert container._cache == {}
-        from_div = container / "file.txt"
+        from_div = container / "file.txt"  # noqa: F841
         assert container._cache == {}
-        from_getitem = container["file.txt"]
+        from_getitem = container["file.txt"]  # noqa: F841
         assert container._cache == {}

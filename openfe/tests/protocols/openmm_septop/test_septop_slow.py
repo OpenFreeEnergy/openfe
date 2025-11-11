@@ -329,7 +329,7 @@ def test_restraints_solvent(
     prot_units = list(dag.protocol_units)
     solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
     with tmpdir.as_cwd():
-        solv_setup_output = solv_setup_unit[0].run()
+        solv_setup_unit[0].run()
         pdb = md.load_pdb("topology.pdb")
         assert pdb.n_atoms == 1762
         central_atoms = np.array([[2, 19]], dtype=np.int32)

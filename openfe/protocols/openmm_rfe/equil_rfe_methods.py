@@ -1072,7 +1072,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
         bfactors[np.in1d(selection_indices, list(hybrid_factory._atom_classes['unique_new_atoms']))] = 0.75  # lig B
         # bfactors[np.in1d(selection_indices, protein)] = 1.0  # prot+cofactor
         if len(selection_indices) > 0:
-            traj = mdtraj.Trajectory(
+            mdtraj.Trajectory(
                 hybrid_factory.hybrid_positions[selection_indices, :],
                 hybrid_factory.hybrid_topology.subset(selection_indices),
             ).save_pdb(

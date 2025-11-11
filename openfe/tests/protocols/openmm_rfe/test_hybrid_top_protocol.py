@@ -325,7 +325,7 @@ def test_dry_many_molecules_solvent(
     unit = list(dag.protocol_units)[0]
 
     with tmpdir.as_cwd():
-        sampler = unit.run(dry=True)["debug"]["sampler"]
+        unit.run(dry=True)["debug"]["sampler"]
 
 
 BENZ = """\
@@ -722,7 +722,7 @@ def test_dry_run_charge_backends(
             # particle charge (c) is equal to molA particle charge
             # offset (c_offsets) is equal to difference between molB and molA
             elif i in htf._atom_classes["core_atoms"]:
-                old_i = htf._hybrid_to_old_map[i]
+                htf._hybrid_to_old_map[i]
                 ref = am1bcc_ref_charges[ref_key][i]
                 np.testing.assert_allclose(c, ref, rtol=1e-4)
 

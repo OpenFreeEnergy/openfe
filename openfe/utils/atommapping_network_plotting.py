@@ -79,8 +79,7 @@ class AtomMappingEdge(Edge):
         dx = x1 - x0
         left_x0, left_x1 = 0.05 * dx + x0, 0.45 * dx + x0
         right_x0, right_x1 = 0.55 * dx + x0, 0.95 * dx + x0
-        y0, y1 = self.artist.axes.get_ylim()
-        dy = y1 - y0
+        y0, _ = self.artist.axes.get_ylim()
         y_bottom, y_top = 0.5 * dx + y0, 0.9 * dx + y0
 
         left_extent = (left_x0, left_x1, y_bottom, y_top)

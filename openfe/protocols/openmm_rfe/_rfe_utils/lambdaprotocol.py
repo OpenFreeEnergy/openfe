@@ -274,7 +274,7 @@ class LambdaProtocol(object):
         """
         import matplotlib.pyplot as plt
 
-        fig = plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(10, 5))
 
         global_lambda = lambda_schedule if lambda_schedule else self.lambda_schedule
 

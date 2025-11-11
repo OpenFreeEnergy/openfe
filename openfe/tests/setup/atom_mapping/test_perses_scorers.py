@@ -46,7 +46,7 @@ def test_perses_not_implemented_position_using(gufe_atom_mapping_matrix):
     first_key = list(gufe_atom_mapping_matrix.keys())[0]
     match_re = "normalizing using positions is not currently implemented"
     with pytest.raises(NotImplementedError, match=match_re):
-        norm_score = scorer(
+        scorer(
             gufe_atom_mapping_matrix[first_key],
             use_positions=True,
             normalize=True,
