@@ -72,7 +72,7 @@ class LambdaSettings(SettingsBaseModel):
     ]
     # fmt: on
     """
-    List of floats of lambda values for the electrostatics. 
+    List of floats of lambda values for the electrostatics.
     Zero means fully interacting (state A),
     and one means annihilated (state B).
     Length of this list needs to match length of lambda_vdw and
@@ -187,9 +187,9 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
 
     protocol_repeats: int
     """
-    The number of completely independent repeats of the entire sampling 
-    process. The mean of the repeats defines the final estimate of FE 
-    difference, while the variance between repeats is used as the uncertainty.  
+    The number of completely independent repeats of the entire sampling
+    process. The mean of the repeats defines the final estimate of FE
+    difference, while the variance between repeats is used as the uncertainty.
     """
 
     @field_validator("protocol_repeats")
@@ -216,7 +216,7 @@ class AbsoluteSolvationSettings(SettingsBaseModel):
     """
     lambda_settings: LambdaSettings
     """
-    Settings for controlling the lambda schedule for the different components 
+    Settings for controlling the lambda schedule for the different components
     (vdw, elec, restraints).
     """
 

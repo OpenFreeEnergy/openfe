@@ -526,7 +526,7 @@ def log_system_probe(level=logging.DEBUG, paths: Optional[Iterable[os.PathLike]]
             # gpu.log(level, f"CUDA driver: {...}")
             # gpu.log(level, f"CUDA toolkit: {...}")
         else:  # -no-cov-
-            gpu.log(level, f"CUDA-based GPU not found")
+            gpu.log(level, "CUDA-based GPU not found")
 
         psutilinfo = sysinfo["psutil information"]
         memused = psutilinfo["virtual_memory"]["used"]
