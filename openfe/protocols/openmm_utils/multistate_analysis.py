@@ -14,8 +14,6 @@ import numpy.typing as npt
 from openff.units import Quantity, unit
 from openff.units.openmm import from_openmm
 from openmmtools import multistate
-from pymbar import MBAR
-from pymbar.utils import ParameterError
 
 from openfe.analysis import plotting
 from openfe.due import Doi, due
@@ -236,8 +234,10 @@ class MultistateEquilFEAnalysis:
         * Allow folks to pass in extra options for bootstrapping etc..
         * Add standard test against analyzer.get_free_energy()
         """
+        # pymbar has some side effects when imported so we only import it right when we
+        # need it
+        from pymbar import MBAR
 
-        # pymbar 4
         mbar = MBAR(
             u_ln,
             N_l,
@@ -312,6 +312,10 @@ class MultistateEquilFEAnalysis:
           issues with the solver when using low amounts of data points. All
           uncertainties are MBAR analytical errors.
         """
+        # pymbar has some side effects from being imported, so we only want to import
+        # it right when we need it
+        from pymbar.utils import ParameterError
+
         try:
             u_ln = self.analyzer._unbiased_decorrelated_u_ln
             N_l = self.analyzer._unbiased_decorrelated_N_l
