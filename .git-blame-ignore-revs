@@ -10,3 +10,8 @@ d7196d119e2f65d88e488afc665f2521e4f68042
 # https://github.com/OpenFreeEnergy/openfe/pull/1623 - ruff formatting part 4
 036869ae81670c6dcfa2532f125ee88c3f35936c
 
+# https://github.com/OpenFreeEnergy/openfe/pull/1665  - ruff isort
+588f552ca9200a99fd77aed993ea3766b154ee53
+
+# https://github.com/OpenFreeEnergy/openfe/pull/1667 - ruff f-strings and whitespace
+18f211db974cdde38a5d88d6e74aaaf78fda8897
