@@ -406,8 +406,8 @@ def load_orion_network(
 
     with open(network_file, "r") as f:
         network_lines = [
-            l.strip().split(" ") for l in f
-            if not l.startswith("#")
+            line.strip().split(" ") for line in f
+            if not line.startswith("#")
             ]  # fmt: skip
 
     names = []
@@ -451,7 +451,7 @@ def load_fepplus_network(
     """
 
     with open(network_file, "r") as f:
-        network_lines = [l.split() for l in f.readlines()]
+        network_lines = [line.split() for line in f.readlines()]
 
     names = []
     for entry in network_lines:

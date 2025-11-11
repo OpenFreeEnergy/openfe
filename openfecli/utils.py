@@ -58,15 +58,15 @@ def _should_configure_logger(logger: logging.Logger):
         return False
 
     # walk up the logging tree to see if any parent loggers are not default
-    l = logger
+    _logger = logger
     while (
-        l.parent is not None  # not the root logger
-        and l.level == logging.NOTSET  # level not already set
-        and l.propagate  # configured to use parent when not set
+        _logger.parent is not None  # not the root logger
+        and _logger.level == logging.NOTSET  # level not already set
+        and _logger.propagate  # configured to use parent when not set
     ):
-        l = l.parent
+        _logger = _logger.parent
 
-    is_default = (l == logging.root and l.level == logging.WARNING)  # fmt: skip
+    is_default = (_logger == logging.root and _logger.level == logging.WARNING)  # fmt: skip
 
     return is_default
 

@@ -103,9 +103,9 @@ class LambdaProtocol(object):
         else:
             self.lambda_schedule = np.linspace(0., 1., windows)
 
-        if type(self.functions) == dict:
+        if isinstance(self.functions,  dict):
             self.type = 'user-defined'
-        elif type(self.functions) == str:
+        elif isinstance(self.functions, str):
             self.functions = None  # will be set later
             self.type = functions
 
