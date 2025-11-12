@@ -224,7 +224,6 @@ class HybridTopologyFactory:
         # Get an MDTraj topology for writing
         self._hybrid_topology = self._create_mdtraj_topology()
         self._omm_hybrid_topology = self._create_hybrid_topology()
-
         logger.info("Hybrid system created")
 
     @staticmethod
