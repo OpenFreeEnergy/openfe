@@ -17,7 +17,7 @@ from openff.toolkit.utils.toolkit_registry import ToolkitRegistry
 from openff.toolkit.utils.toolkits import RDKitToolkitWrapper
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import MonteCarloBarostat, NonbondedForce, app
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat, NonbondedForce, app
 from openmm import unit as ommunit
 from openmmtools import multistate
 from pymbar.utils import ParameterError
@@ -422,6 +422,28 @@ class TestSystemCreation:
         # Check cache file
         assert generator.template_generator._cache == "db.json"
 
+    def test_system_generator_membrane(self, get_settings):
+        ffsets, intsets, thermosets = get_settings
+
+        thermosets.temperature = 320 * unit.kelvin
+        thermosets.pressure = 1.25 * unit.bar
+        thermosets.membrane = True
+        intsets.barostat_frequency = 200 * unit.timestep
+        generator = system_creation.get_system_generator(
+            ffsets, thermosets, intsets, Path("./db.json"), False
+        )
+
+        # Check barostat conditions
+        assert isinstance(generator.barostat, MonteCarloMembraneBarostat)
+
+        pressure = ensure_quantity(generator.barostat.getDefaultPressure(), "openff")
+        temperature = ensure_quantity(generator.barostat.getDefaultTemperature(), "openff")
+        assert pressure.m == pytest.approx(1.25)
+        assert pressure.units == unit.bar
+        assert temperature.m == pytest.approx(320)
+        assert temperature.units == unit.kelvin
+        assert generator.barostat.getFrequency() == 200
+
     def test_get_omm_modeller_complex(
         self,
         T4_protein_component,
@@ -453,6 +475,39 @@ class TestSystemCreation:
             comp_resids[openfe.SolventComponent()],
             np.linspace(165, len(resids) - 1, len(resids) - 165),
         )
+
+    def test_get_omm_modeller_membrane_box(
+        self,
+        a2a_protein_membrane_component,
+        a2a_ligands,
+        get_settings,
+    ):
+        ffsets, intsets, thermosets = get_settings
+        thermosets.membrane = True
+        ffsets.forcefields = [
+            'amber/ff14SB.xml',
+            'amber/tip3p_standard.xml',
+            'amber/tip3p_HFE_multivalent.xml',
+            "amber/lipid17_merged.xml",
+            'amber/phosaa10.xml']
+        generator = system_creation.get_system_generator(ffsets, thermosets, intsets, None, False)
+
+        smc = a2a_ligands[0]
+        mol = smc.to_openff()
+        generator.create_system(mol.to_topology().to_openmm(), molecules=[mol])
+
+        model, comp_resids = system_creation.get_omm_modeller(
+            a2a_protein_membrane_component,
+            None,
+            {smc: mol},
+            generator.forcefield,
+            OpenMMSolvationSettings(),
+        )
+        box_modeller = model.topology.getPeriodicBoxVectors()
+        box_protein = a2a_protein_membrane_component._periodic_box_vectors
+
+        assert np.allclose(box_modeller, box_protein, atol=1e-6)
+
 
     @pytest.fixture(scope="module")
     def ligand_mol_and_generator(self, get_settings):
