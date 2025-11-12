@@ -51,14 +51,6 @@ class WarehouseBaseClass:
     def exists(self, key: GufeKey):
         return self._key_exists(key)
 
-    def _get_store_from_tokenizable(self, tokenizable: GufeTokenizable) -> ExternalStorage:
-        """Funciton to find the store in which a gufe tokenizable is stored in."""
-        key = tokenizable.key
-        for name in self.stores:
-            if key in self.stores[name]:
-                return self.stores[name]
-        raise ValueError(f"GufeTokenizable {tokenizable} is not stored")
-
     def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
         """Funciton to find the store in which a gufe key is stored in."""
         for name in self.stores:
