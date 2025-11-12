@@ -17,7 +17,7 @@ TODO
 import abc
 import logging
 import pathlib
-from typing import Any, Optional, Literal
+from typing import Any, Literal, Optional
 
 import gufe
 import mdtraj as mdt
@@ -31,20 +31,6 @@ from gufe import (
     SolventComponent,
 )
 from gufe.components import Component
-from openfe.protocols.openmm_afe.equil_afe_settings import (
-    BaseSolvationSettings,
-    IntegratorSettings,
-    MultiStateOutputSettings,
-    MultiStateSimulationSettings,
-    OpenFFPartialChargeSettings,
-    OpenMMEngineSettings,
-    OpenMMSystemGeneratorFFSettings,
-    ThermoSettings,
-)
-from openfe.protocols.openmm_utils import omm_compute
-from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
-from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
-from openfe.utils import without_oechem_backend
 from openff.toolkit.topology import Molecule as OFFMolecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
@@ -57,6 +43,21 @@ from openmmtools.states import (
     ThermodynamicState,
     create_thermodynamic_state_protocol,
 )
+
+from openfe.protocols.openmm_afe.equil_afe_settings import (
+    BaseSolvationSettings,
+    IntegratorSettings,
+    MultiStateOutputSettings,
+    MultiStateSimulationSettings,
+    OpenFFPartialChargeSettings,
+    OpenMMEngineSettings,
+    OpenMMSystemGeneratorFFSettings,
+    ThermoSettings,
+)
+from openfe.protocols.openmm_md.plain_md_methods import PlainMDProtocolUnit
+from openfe.protocols.openmm_utils import omm_compute
+from openfe.protocols.openmm_utils.omm_settings import SettingsBaseModel
+from openfe.utils import without_oechem_backend
 
 from ..openmm_utils import (
     charge_generation,

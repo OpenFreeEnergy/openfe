@@ -5,12 +5,15 @@ Reusable utility methods to create Systems for OpenMM-based alchemical
 Protocols.
 """
 
+from pathlib import Path
+from typing import Optional
+
 import numpy as np
 import numpy.typing as npt
 from openmm import app, MonteCarloBarostat, MonteCarloMembraneBarostat
 from openmm import unit as omm_unit
 from openff.toolkit import Molecule as OFFMol
-from openff.units.openmm import to_openmm, ensure_quantity
+from openff.units.openmm import ensure_quantity, to_openmm
 from openmmforcefields.generators import SystemGenerator
 from typing import Optional
 from pathlib import Path

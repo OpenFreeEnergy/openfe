@@ -1,21 +1,22 @@
 import glob
-from click.testing import CliRunner
 import os
 import pathlib
-import pytest
-import pooch
-
-from ..utils import assert_click_success
-from ..conftest import HAS_INTERNET
-
 from unittest import mock
+
+import pooch
+import pytest
+from click.testing import CliRunner
+
 from openfecli.commands.gather import (
-    gather,
-    format_estimate_uncertainty,
     _get_column,
-    _load_valid_result_json,
     _get_legs_from_result_jsons,
+    _load_valid_result_json,
+    format_estimate_uncertainty,
+    gather,
 )
+
+from ..conftest import HAS_INTERNET
+from ..utils import assert_click_success
 
 POOCH_CACHE = pooch.os_cache("openfe")
 ZENODO_RBFE_DATA = pooch.create(
@@ -260,8 +261,8 @@ def rbfe_result_dir() -> pathlib.Path:
 
 @pytest.fixture
 def cmet_result_dir() -> pathlib.Path:
-    ZENODO_CMET_DATA.fetch(f"cmet_results.tar.gz", processor=pooch.Untar())
-    result_dir = pathlib.Path(POOCH_CACHE) / f"cmet_results.tar.gz.untar/cmet_results/"
+    ZENODO_CMET_DATA.fetch("cmet_results.tar.gz", processor=pooch.Untar())
+    result_dir = pathlib.Path(POOCH_CACHE) / "cmet_results.tar.gz.untar/cmet_results/"
 
     return result_dir
 

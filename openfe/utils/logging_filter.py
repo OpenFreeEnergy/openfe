@@ -17,4 +17,4 @@ class MsgIncludesStringFilter:
         self.string = string
 
     def filter(self, record):
-        return not self.string in record.msg
+        return self.string not in record.msg

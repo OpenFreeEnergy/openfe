@@ -2,21 +2,22 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import os
 import pathlib
-
-import mdtraj
-import pytest
-from importlib import resources
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from openff.units import unit
+import urllib.error
 import urllib.request
-import pandas as pd
-import numpy as np
+from importlib import resources
 
 import gufe
+import mdtraj
+import numpy as np
+import pandas as pd
+import pytest
+from gufe import AtomMapper, LigandAtomMapping, SmallMoleculeComponent
+from openff.units import unit
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
 import openfe
 from openfe.protocols.openmm_septop.utils import deserialize
-from gufe import AtomMapper, SmallMoleculeComponent, LigandAtomMapping
 
 
 class SlowTests:
@@ -380,7 +381,7 @@ def am1bcc_ref_charges():
 
 try:
     urllib.request.urlopen("https://www.google.com")
-except:  # -no-cov-
+except urllib.error.URLError:  # -no-cov-
     HAS_INTERNET = False
 else:
     HAS_INTERNET = True

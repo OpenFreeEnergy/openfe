@@ -3,11 +3,12 @@
 
 import MDAnalysis as mda
 import pytest
+from openff.units import unit
+
 from openfe.protocols.restraint_utils.geometry.flatbottom import (
     FlatBottomDistanceGeometry,
     get_flatbottom_distance_restraint,
 )
-from openff.units import unit
 
 
 @pytest.fixture()

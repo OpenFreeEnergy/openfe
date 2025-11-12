@@ -9,13 +9,19 @@ from unittest import mock
 import gufe
 import mdtraj as md
 import numpy as np
-import openfe.protocols.openmm_septop
+import numpy.typing as npt
 import openmm
 import openmm.app
 import openmm.unit
 import pytest
 from numpy.testing import assert_allclose
-import numpy.typing as npt
+from openff.units import unit as offunit
+from openff.units.openmm import ensure_quantity, from_openmm
+from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
+from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
+from openmmtools.multistate.multistatesampler import MultiStateSampler
+
+import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_septop import (
     SepTopComplexRunUnit,

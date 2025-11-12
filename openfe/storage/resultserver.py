@@ -1,10 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/gufe
 import warnings
-
 from typing import ClassVar
 
-from gufe.storage.errors import MissingExternalResourceError, ChangedExternalResourceError
+from gufe.storage.errors import ChangedExternalResourceError, MissingExternalResourceError
 
 
 class ResultServer:
