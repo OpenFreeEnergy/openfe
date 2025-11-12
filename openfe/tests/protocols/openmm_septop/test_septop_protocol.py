@@ -17,7 +17,13 @@ import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce
+from openmm import (
+    CustomNonbondedForce,
+    MonteCarloBarostat,
+    MonteCarloMembraneBarostat,
+    NonbondedForce,
+)
+from openmm import unit as omm_unit
 from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
 from openmmtools.multistate.multistatesampler import MultiStateSampler
 
@@ -38,12 +44,6 @@ from openfe.protocols.openmm_septop.utils import deserialize
 from openfe.protocols.openmm_utils import system_validation
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
 from openfe.tests.protocols.conftest import compute_energy
-from openff.units import unit as offunit
-from openff.units.openmm import ensure_quantity, from_openmm
-from openmm import CustomNonbondedForce, MonteCarloBarostat, NonbondedForce, MonteCarloMembraneBarostat
-from openmm import unit as omm_unit
-from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
-from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 E_CHARGE = 1.602176634e-19 * openmm.unit.coulomb
 EPSILON0 = (
@@ -1109,7 +1109,6 @@ def test_dry_run_membrane_complex(
     tmpdir,
     protocol_dry_settings,
 ):
-
     protocol_dry_settings.protocol_repeats = 1
     protocol_dry_settings.thermo_settings.membrane = True
     protocol_dry_settings.engine_settings.compute_platform = "cpu"
@@ -1125,11 +1124,19 @@ def test_dry_run_membrane_complex(
     protocol = SepTopProtocol(settings=protocol_dry_settings)
 
     systemA = openfe.ChemicalSystem(
-        {"ligand": a2a_ligands[0], "protein": a2a_protein_membrane_component, "solvent": openfe.SolventComponent()},
+        {
+            "ligand": a2a_ligands[0],
+            "protein": a2a_protein_membrane_component,
+            "solvent": openfe.SolventComponent(),
+        },
         name=f"{a2a_ligands[0].name}_{a2a_protein_membrane_component.name}",
     )
     systemB = openfe.ChemicalSystem(
-        {"ligand": a2a_ligands[1], "protein": a2a_protein_membrane_component, "solvent": openfe.SolventComponent()},
+        {
+            "ligand": a2a_ligands[1],
+            "protein": a2a_protein_membrane_component,
+            "solvent": openfe.SolventComponent(),
+        },
         name=f"{a2a_ligands[1]}_{a2a_protein_membrane_component.name}",
     )
     dag = protocol.create(
@@ -1138,14 +1145,10 @@ def test_dry_run_membrane_complex(
         mapping=None,
     )
     prot_units = list(dag.protocol_units)
-    solv_setup_unit = [u for u in prot_units if
-                       isinstance(u, SepTopSolventSetupUnit)]
-    sol_run_unit = [u for u in prot_units if
-                    isinstance(u, SepTopSolventRunUnit)]
-    complex_setup_unit = [u for u in prot_units if
-                          isinstance(u, SepTopComplexSetupUnit)]
-    complex_run_unit = [u for u in prot_units if
-                        isinstance(u, SepTopComplexRunUnit)]
+    solv_setup_unit = [u for u in prot_units if isinstance(u, SepTopSolventSetupUnit)]
+    sol_run_unit = [u for u in prot_units if isinstance(u, SepTopSolventRunUnit)]
+    complex_setup_unit = [u for u in prot_units if isinstance(u, SepTopComplexSetupUnit)]
+    complex_run_unit = [u for u in prot_units if isinstance(u, SepTopComplexRunUnit)]
     assert len(solv_setup_unit) == 1
     assert len(sol_run_unit) == 1
     assert len(complex_setup_unit) == 1
@@ -1164,10 +1167,8 @@ def test_dry_run_membrane_complex(
 
         assert solv_sampler.is_periodic
         assert isinstance(solv_sampler, MultiStateSampler)
-        assert isinstance(solv_sampler._thermodynamic_states[0].barostat,
-                          MonteCarloBarostat)
-        assert solv_sampler._thermodynamic_states[
-                   1].pressure == 1 * openmm.unit.bar
+        assert isinstance(solv_sampler._thermodynamic_states[0].barostat, MonteCarloBarostat)
+        assert solv_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 80
@@ -1181,10 +1182,10 @@ def test_dry_run_membrane_complex(
 
         assert complex_sampler.is_periodic
         assert isinstance(complex_sampler, MultiStateSampler)
-        assert isinstance(complex_sampler._thermodynamic_states[0].barostat,
-                          MonteCarloMembraneBarostat)
-        assert complex_sampler._thermodynamic_states[
-                   1].pressure == 1 * openmm.unit.bar
+        assert isinstance(
+            complex_sampler._thermodynamic_states[0].barostat, MonteCarloMembraneBarostat
+        )
+        assert complex_sampler._thermodynamic_states[1].pressure == 1 * openmm.unit.bar
         # Check we have the right number of atoms in the PDB
         pdb = md.load_pdb("alchemical_system.pdb")
         assert pdb.n_atoms == 4702

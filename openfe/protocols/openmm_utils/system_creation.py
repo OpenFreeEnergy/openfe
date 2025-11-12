@@ -10,21 +10,20 @@ from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
-from openmm import app, MonteCarloBarostat, MonteCarloMembraneBarostat
-from openmm import unit as omm_unit
-from openff.toolkit import Molecule as OFFMol
-from openff.units.openmm import ensure_quantity, to_openmm
-from openmmforcefields.generators import SystemGenerator
-from typing import Optional
-from pathlib import Path
-from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
 from gufe import (
     Component,
     ProteinComponent,
     ProteinMembraneComponent,
-    SolventComponent,
     SmallMoleculeComponent,
+    SolventComponent,
 )
+from gufe.settings import OpenMMSystemGeneratorFFSettings, ThermoSettings
+from openff.toolkit import Molecule as OFFMol
+from openff.units.openmm import ensure_quantity, to_openmm
+from openmm import MonteCarloBarostat, MonteCarloMembraneBarostat, app
+from openmm import unit as omm_unit
+from openmmforcefields.generators import SystemGenerator
+
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     OpenMMSolvationSettings,

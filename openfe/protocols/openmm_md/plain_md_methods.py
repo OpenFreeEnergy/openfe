@@ -24,8 +24,8 @@ import openmm
 import openmm.unit as omm_unit
 from gufe import (
     ChemicalSystem,
-    SmallMoleculeComponent,
     ProteinMembraneComponent,
+    SmallMoleculeComponent,
     settings,
 )
 from gufe.settings.typing import KelvinQuantity

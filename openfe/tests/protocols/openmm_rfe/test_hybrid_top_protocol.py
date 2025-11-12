@@ -20,12 +20,12 @@ from openff.toolkit import Molecule
 from openff.units import unit
 from openff.units.openmm import ensure_quantity, from_openmm, to_openmm
 from openmm import (
-    app,
-    XmlSerializer,
+    CustomNonbondedForce,
     MonteCarloBarostat,
     MonteCarloMembraneBarostat,
     NonbondedForce,
-    CustomNonbondedForce,
+    XmlSerializer,
+    app,
 )
 from openmm import unit as omm_unit
 from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -966,7 +966,6 @@ def test_dry_run_membrane_complex(
     a2a_ligands,
     tmpdir,
 ):
-
     ligands = a2a_ligands[:2]
     mapper = openfe.setup.KartografAtomMapper()
     scorer = openfe.lomap_scorers.default_lomap_score

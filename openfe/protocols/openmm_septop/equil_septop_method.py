@@ -1158,8 +1158,8 @@ class SepTopProtocol(gufe.Protocol):
         # Check that there is a ProteinComponent or ProteinMembraneComponent
         components = (ProteinComponent, ProteinMembraneComponent)
         if not (
-                any(stateA.contains(c) for c in components)
-                and any(stateB.contains(c) for c in components)
+            any(stateA.contains(c) for c in components)
+            and any(stateB.contains(c) for c in components)
         ):
             errmsg = "No ProteinComponent or ProteinMembraneComponent found"
             raise ValueError(errmsg)
@@ -1167,8 +1167,8 @@ class SepTopProtocol(gufe.Protocol):
         # Check that there is a SolventComponent or ProteinMembraneComponent
         components = (SolventComponent, ProteinMembraneComponent)
         if not (
-                any(stateA.contains(c) for c in components)
-                and any(stateB.contains(c) for c in components)
+            any(stateA.contains(c) for c in components)
+            and any(stateB.contains(c) for c in components)
         ):
             errmsg = "No SolventComponent or ProteinMembraneComponent found"
             raise ValueError(errmsg)

@@ -231,7 +231,7 @@ def _pre_equilibrate(
 
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
-    print('box', box, box_no_units, box_quantity)
+    print("box", box, box_no_units, box_quantity)
     return equilibrated_positions, box_quantity
 
 

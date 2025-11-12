@@ -45,10 +45,9 @@ from gufe import (
     ComponentMapping,
     LigandAtomMapping,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
-    ProteinComponent,
-    ProteinMembraneComponent,
     settings,
 )
 from openff.toolkit.topology import Molecule as OFFMolecule
