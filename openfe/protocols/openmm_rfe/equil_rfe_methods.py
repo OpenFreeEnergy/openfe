@@ -801,7 +801,7 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
             "protocol"
         ].settings
         stateA = self._inputs["stateA"]
-        stateB = self._inputs["stateB"]
+        # stateB = self._inputs["stateB"]  # TODO: do we need this?
         mapping = self._inputs["ligandmapping"]
 
         forcefield_settings: settings.OpenMMSystemGeneratorFFSettings = (

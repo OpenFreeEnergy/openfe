@@ -5,6 +5,7 @@
 
 # turn off formatting since this is mostly vendored code
 # fmt: off
+# ruff: noqa: F841  # TODO: address these
 
 import copy
 import itertools
