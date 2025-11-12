@@ -102,8 +102,6 @@ class TestWarehouseBaseClass:
         key = network.key
         loaded = client.load_setup_tokenizable(key)
         assert loaded is network
-        for key in client.setup_store._iter_contents(""):
-            print(f"Key: {key}")
-        assert client.exists(network) == True
-        client.delete("setup", network)
-        assert not client.exists(network)
+        assert client.setup_store.exists(key)
+        client.delete("setup", key)
+        assert not client.exists(key)
