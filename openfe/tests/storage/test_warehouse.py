@@ -3,20 +3,20 @@ import os
 import pytest
 from unittest import mock
 
-from gufe.storage.externalresource import MemoryStorage
+from gufe.storage.externalresource import ExternalStorage, MemoryStorage
 from gufe.tokenization import TOKENIZABLE_REGISTRY
 from openfe.storage.warehouse import (
     WarehouseBaseClass,
-    TransformationResult,
-    CloneResult,
-    ExtensionResult,
+    WarehouseStores,
 )
 
 
 @pytest.fixture
 def result_client(tmpdir):
-    external = MemoryStorage()
-    result_client = WarehouseBaseClass(external)
+    external: ExternalStorage = MemoryStorage()
+    stores: dict[str, ExternalStorage] = {}
+    stores["transformations"] = external
+    result_client = WarehouseBaseClass(stores)
 
     # store one file with contents "foo"
     result_client.external_storage.store_bytes(
@@ -152,7 +152,8 @@ class TestWarehouseBaseClass(_DataContainerTest):
     @staticmethod
     def _test_store_load_same_process(obj, store_func_name, load_func_name):
         store = MemoryStorage()
-        client = WarehouseBaseClass(store)
+        stores = WarehouseStores(setup=store)
+        client = WarehouseBaseClass(stores)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert store._data == {}
@@ -164,7 +165,8 @@ class TestWarehouseBaseClass(_DataContainerTest):
     @staticmethod
     def _test_store_load_different_process(obj, store_func_name, load_func_name):
         store = MemoryStorage()
-        client = WarehouseBaseClass(store)
+        stores = WarehouseStores(setup=store)
+        client = WarehouseBaseClass(stores)
         store_func = getattr(client, store_func_name)
         load_func = getattr(client, load_func_name)
         assert store._data == {}
@@ -219,86 +221,3 @@ class TestWarehouseBaseClass(_DataContainerTest):
         assert storage.exists(file_to_delete)
         result_client.delete(file_to_delete)
         assert not storage.exists(file_to_delete)
-
-
-class TestTransformationResults(_DataContainerTest):
-    expected_files = [
-        "transformations/MAIN_TRANS/0/0/file.txt",
-        "transformations/MAIN_TRANS/0/0/other.txt",
-        "transformations/MAIN_TRANS/0/1/file.txt",
-        "transformations/MAIN_TRANS/1/0/file.txt",
-    ]
-    expected_path = "transformations/MAIN_TRANS"
-
-    @staticmethod
-    def get_container(result_client):
-        container = TransformationResult(
-            parent=TestWarehouseBaseClass.get_container(result_client),
-            transformation=_make_mock_transformation("MAIN_TRANS"),
-        )
-        container._path_component = "MAIN_TRANS"
-        return container
-
-    def _getitem_object(self, container):
-        return CloneResult(parent=container, clone=0)
-
-
-class TestCloneResults(_DataContainerTest):
-    expected_files = [
-        "transformations/MAIN_TRANS/0/0/file.txt",
-        "transformations/MAIN_TRANS/0/0/other.txt",
-        "transformations/MAIN_TRANS/0/1/file.txt",
-    ]
-    expected_path = "transformations/MAIN_TRANS/0"
-
-    @staticmethod
-    def get_container(result_client):
-        return CloneResult(
-            parent=TestTransformationResults.get_container(result_client),
-            clone=0,
-        )
-
-    def _getitem_object(self, container):
-        return ExtensionResult(parent=container, item=0)
-
-
-class TestExtensionResults(_DataContainerTest):
-    expected_files = [
-        "transformations/MAIN_TRANS/0/0/file.txt",
-        "transformations/MAIN_TRANS/0/0/other.txt",
-    ]
-    expected_path = "transformations/MAIN_TRANS/0/0"
-
-    @staticmethod
-    def get_container(result_client):
-        return ExtensionResult(
-            parent=TestCloneResults.get_container(result_client),
-            item=0,
-        )
-
-    def _get_key(self, as_object, container):
-        if self.as_object:  # -no-cov-
-            raise RuntimeError("TestExtensionResults does not support as_object=True")
-        path = "transformations/MAIN_TRANS/0/0/"
-        fname = "file.txt"
-        return fname, container.external_storage.load_stream(path + fname)
-
-    # things involving div and getitem need custom treatment
-    def test_div(self, result_client):
-        container = self.get_container(result_client)
-        with container / "file.txt" as f:
-            assert f.read().decode("utf-8") == "foo"
-
-    def test_getitem(self, result_client):
-        container = self.get_container(result_client)
-        with container["file.txt"] as f:
-            assert f.read().decode("utf-8") == "foo"
-
-    def test_caching(self, result_client):
-        # this one does not cache results; the cache should remain empty
-        container = self.get_container(result_client)
-        assert container._cache == {}
-        from_div = container / "file.txt"
-        assert container._cache == {}
-        from_getitem = container["file.txt"]
-        assert container._cache == {}
