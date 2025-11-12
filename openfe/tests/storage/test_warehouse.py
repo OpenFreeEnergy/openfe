@@ -3,149 +3,15 @@ import os
 import pytest
 from unittest import mock
 
-from gufe.storage.externalresource import ExternalStorage, MemoryStorage
-from gufe.tokenization import TOKENIZABLE_REGISTRY
+from gufe.storage.externalresource import MemoryStorage
+from gufe.tokenization import GufeTokenizable
 from openfe.storage.warehouse import (
     WarehouseBaseClass,
     WarehouseStores,
 )
 
 
-@pytest.fixture
-def result_client(tmpdir):
-    external: ExternalStorage = MemoryStorage()
-    stores: dict[str, ExternalStorage] = {}
-    stores["transformations"] = external
-    result_client = WarehouseBaseClass(stores)
-
-    # store one file with contents "foo"
-    result_client.external_storage.store_bytes(
-        "transformations/MAIN_TRANS/0/0/file.txt",
-        "foo".encode("utf-8"),
-    )
-
-    # create some empty files as well
-    empty_files = [
-        "transformations/MAIN_TRANS/0/0/other.txt",
-        "transformations/MAIN_TRANS/0/1/file.txt",
-        "transformations/MAIN_TRANS/1/0/file.txt",
-        "transformations/OTHER_TRANS/0/0/file.txt",
-        "other_dir/file.txt",
-    ]
-
-    for file in empty_files:
-        result_client.external_storage.store_bytes(file, b"")  # empty
-
-    return result_client
-
-
-def _make_mock_transformation(hash_str):
-    return mock.Mock(
-        # TODO: fill this in so that it mocks out the digest we use
-    )
-
-
-def test_load_file(result_client):
-    file_handler = result_client / "MAIN_TRANS" / "0" / 0 / "file.txt"
-    with file_handler as f:
-        assert f.read().decode("utf-8") == "foo"
-
-
-class _DataContainerTest:
-    @staticmethod
-    def get_container(result_client):
-        raise NotImplementedError()
-
-    def _getitem_object(self, container):
-        raise NotImplementedError()
-
-    def test_iter(self, result_client):
-        container = self.get_container(result_client)
-        assert set(container) == set(self.expected_files)
-
-    def _get_key(self, as_object, container):
-        # TODO: this isn't working yet -- need an interface that allows me
-        # to patch the hex digest that we'll be using
-        if as_object:
-            pytest.skip("Waiting on hex digest patching")
-        obj = self._getitem_object(container)
-        # next line uses some internal implementation
-        key = obj if as_object else obj._path_component
-        return key, obj
-
-    @pytest.mark.parametrize("as_object", [True, False])
-    def test_getitem(self, as_object, result_client):
-        container = self.get_container(result_client)
-        key, obj = self._get_key(as_object, container)
-        assert container[key] == obj
-
-    @pytest.mark.parametrize("as_object", [True, False])
-    def test_div(self, as_object, result_client):
-        container = self.get_container(result_client)
-        key, obj = self._get_key(as_object, container)
-        assert container / key == obj
-
-    @pytest.mark.parametrize("load_with", ["div", "getitem"])
-    def test_caching(self, result_client, load_with):
-        # used to test caching regardless of how first loaded was loaded
-        container = self.get_container(result_client)
-        key, obj = self._get_key(False, container)
-
-        if load_with == "div":
-            loaded = container / key
-        elif load_with == "getitem":
-            loaded = container[key]
-        else:  # -no-cov-
-            raise RuntimeError(f"Bad input: can't load with '{load_with}'")
-
-        assert loaded == obj
-        assert loaded is not obj
-        reloaded_div = container / key
-        reloaded_getitem = container[key]
-
-        assert loaded is reloaded_div
-        assert reloaded_div is reloaded_getitem
-
-    def test_load_stream(self, result_client):
-        container = self.get_container(result_client)
-        loc = "transformations/MAIN_TRANS/0/0/file.txt"
-        with container.load_stream(loc) as f:
-            assert f.read().decode("utf-8") == "foo"
-
-    def test_load_bytes(self, result_client):
-        container = self.get_container(result_client)
-        loc = "transformations/MAIN_TRANS/0/0/file.txt"
-        assert container.load_bytes(loc).decode("utf-8") == "foo"
-
-    def test_path(self, result_client):
-        container = self.get_container(result_client)
-        assert container.path == self.expected_path
-
-    def test_external_storage(self, result_client):
-        container = self.get_container(result_client)
-        assert container.external_storage == result_client.external_storage
-
-
-class TestWarehouseBaseClass(_DataContainerTest):
-    expected_files = [
-        "transformations/MAIN_TRANS/0/0/file.txt",
-        "transformations/MAIN_TRANS/0/0/other.txt",
-        "transformations/MAIN_TRANS/0/1/file.txt",
-        "transformations/MAIN_TRANS/1/0/file.txt",
-        "transformations/OTHER_TRANS/0/0/file.txt",
-    ]
-    expected_path = "transformations"
-
-    @staticmethod
-    def get_container(result_client):
-        return result_client
-
-    def _getitem_object(self, container):
-        return TransformationResult(
-            parent=container,
-            transformation=_make_mock_transformation("MAIN_TRANS"),
-        )
-
+class TestWarehouseBaseClass:
     def test_store_protocol_dag_result(self):
         pytest.skip("Not implemented yet")
 
@@ -163,7 +29,7 @@ class TestWarehouseBaseClass(_DataContainerTest):
         assert reloaded is obj
 
     @staticmethod
-    def _test_store_load_different_process(obj, store_func_name, load_func_name):
+    def _test_store_load_different_process(obj: GufeTokenizable, store_func_name, load_func_name):
         store = MemoryStorage()
         stores = WarehouseStores(setup=store)
         client = WarehouseBaseClass(stores)
@@ -189,8 +55,8 @@ class TestWarehouseBaseClass(_DataContainerTest):
         transformation = request.getfixturevalue(fixture)
         self._test_store_load_same_process(
             transformation,
-            "store_transformation",
-            "load_transformation",
+            "store_setup_tokenizable",
+            "load_setup_tokenizable",
         )
 
     @pytest.mark.parametrize(
@@ -201,23 +67,43 @@ class TestWarehouseBaseClass(_DataContainerTest):
         transformation = request.getfixturevalue(fixture)
         self._test_store_load_different_process(
             transformation,
-            "store_transformation",
-            "load_transformation",
+            "store_setup_tokenizable",
+            "load_setup_tokenizable",
         )
 
+    #
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     def test_store_load_network_same_process(self, request, fixture):
         network = request.getfixturevalue(fixture)
-        self._test_store_load_same_process(network, "store_network", "load_network")
+        assert isinstance(network, GufeTokenizable)
+        self._test_store_load_same_process(
+            network, "store_setup_tokenizable", "load_setup_tokenizable"
+        )
 
+    #
     @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
     def test_store_load_network_different_process(self, request, fixture):
         network = request.getfixturevalue(fixture)
-        self._test_store_load_different_process(network, "store_network", "load_network")
+        self._test_store_load_different_process(
+            network, "store_setup_tokenizable", "load_setup_tokenizable"
+        )
 
-    def test_delete(self, result_client: WarehouseBaseClass):
-        file_to_delete = self.expected_files[0]
-        storage = result_client.external_storage
-        assert storage.exists(file_to_delete)
-        result_client.delete(file_to_delete)
-        assert not storage.exists(file_to_delete)
+    #
+    @pytest.mark.parametrize("fixture", ["benzene_variants_star_map"])
+    def test_delete(self, request, fixture):
+        store = MemoryStorage()
+        stores = WarehouseStores(setup=store)
+        client = WarehouseBaseClass(stores)
+
+        network = request.getfixturevalue(fixture)
+        assert store._data == {}
+        client.store_setup_tokenizable(network)
+        assert store._data != {}
+        key = network.key
+        loaded = client.load_setup_tokenizable(key)
+        assert loaded is network
+        for key in client.setup_store._iter_contents(""):
+            print(f"Key: {key}")
+        assert client.exists(network) == True
+        client.delete("setup", network)
+        assert not client.exists(network)
