@@ -2005,6 +2005,8 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
             self.logger,
         )
         print(omm_topology_AB.getPeriodicBoxVectors())
+        print('boxA', box_A)
+        print('boxAB', box_AB)
         omm_topology_AB.setPeriodicBoxVectors(box_AB)
         print(omm_topology_AB.getPeriodicBoxVectors())
         topology_file = self.shared_basepath / "topology.pdb"

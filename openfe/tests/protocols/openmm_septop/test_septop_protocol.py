@@ -352,7 +352,7 @@ def test_charge_error_create(charged_benzene_modifications, T4_protein_component
     ],
 )
 def test_validate_complex_endstates_protcomp(request, system_A, system_B, fail_endstate):
-    with pytest.raises(ValueError, match=f"No ProteinComponent found in {fail_endstate}"):
+    with pytest.raises(ValueError, match=f"No ProteinComponent or ProteinMembraneComponent found"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
@@ -382,7 +382,7 @@ def test_validate_complex_endstates_nosolvcomp(
     system_B,
     fail_endstate,
 ):
-    with pytest.raises(ValueError, match=f"No SolventComponent found in {fail_endstate}"):
+    with pytest.raises(ValueError, match=f"No SolventComponent or ProteinMembraneComponent found"):
         SepTopProtocol._validate_complex_endstates(
             request.getfixturevalue(system_A),
             request.getfixturevalue(system_B),
