@@ -28,14 +28,14 @@ from openmm import (
     NonbondedForce,
     PeriodicTorsionForce,
 )
+from openmm import unit as omm_unit
+from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
+from openmmtools.multistate.multistatesampler import MultiStateSampler
 from openmmtools.tests.test_alchemy import (
     check_interacting_energy_components,
     check_noninteracting_energy_components,
     compare_system_energies,
 )
-from openmm import unit as omm_unit
-from openmmtools.alchemy import AbsoluteAlchemicalFactory, AlchemicalRegion
-from openmmtools.multistate.multistatesampler import MultiStateSampler
 
 import openfe.protocols.openmm_septop
 from openfe import ChemicalSystem, SolventComponent
@@ -1556,6 +1556,7 @@ class TestProtocolResult:
         assert pytest.approx(geom[0][0].phi_B0) == -1.504071 * offunit.radian
         assert pytest.approx(geom[0][0].phi_C0) == -0.745093 * offunit.radian
 
+
 class TestA2AMembraneDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 22206
@@ -1590,8 +1591,8 @@ class TestA2AMembraneDryRun:
 
     @pytest.fixture(scope="function")
     def dag(self, protocol, a2a_ligands, a2a_protein_membrane_component):
-        print('atoms', len(a2a_ligands[0]._to_dict()["atoms"]))
-        print('atomsB', len(a2a_ligands[1]._to_dict()["atoms"]))
+        print("atoms", len(a2a_ligands[0]._to_dict()["atoms"]))
+        print("atomsB", len(a2a_ligands[1]._to_dict()["atoms"]))
         stateA = ChemicalSystem(
             {
                 "ligandA": a2a_ligands[0],
@@ -1630,7 +1631,9 @@ class TestA2AMembraneDryRun:
     def solvent_run_units(self, dag):
         return [u for u in dag.protocol_units if isinstance(u, SepTopSolventRunUnit)]
 
-    def test_number_of_units(self, dag, complex_setup_units, complex_run_units, solvent_setup_units, solvent_run_units):
+    def test_number_of_units(
+        self, dag, complex_setup_units, complex_run_units, solvent_setup_units, solvent_run_units
+    ):
         assert len(list(dag.protocol_units)) == 4
         assert len(complex_setup_units) == 1
         assert len(complex_run_units) == 1

@@ -1347,9 +1347,11 @@ class BaseSepTopRunUnit(gufe.ProtocolUnit):
                 **unit_result_dict,
             }
         else:
-            return {"debug": {
-                "sampler": sampler,
-                "alchem_system": system,
-                "selection_indices": self.selection_indices,
-                "positions": equil_positions,
-            }}
+            return {
+                "debug": {
+                    "sampler": sampler,
+                    "alchem_system": system,
+                    "selection_indices": self.selection_indices,
+                    "positions": equil_positions,
+                }
+            }

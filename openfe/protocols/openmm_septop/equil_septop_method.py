@@ -2022,7 +2022,6 @@ class SepTopComplexSetupUnit(SepTopComplexMixin, BaseSepTopSetupUnit):
         )
 
         if not dry:
-
             return {
                 "system": system_outfile,
                 "topology": topology_file,
