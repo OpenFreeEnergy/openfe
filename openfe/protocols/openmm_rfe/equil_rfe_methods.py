@@ -45,6 +45,7 @@ from gufe import (
     ComponentMapping,
     LigandAtomMapping,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     settings,
@@ -1193,6 +1194,12 @@ class RelativeHybridTopologyProtocolUnit(gufe.ProtocolUnit):
                 # equilibrate
                 if verbose:
                     self.logger.info("Running equilibration phase")
+
+                # Check that barostat is still present
+                for force in sampler._thermodynamic_states[0].system.getForces():
+                    if force.__class__.__name__ == "MonteCarloMembraneBarostat":
+                        logger.info("Membrane Barostat present for sampling")
+                        break
 
                 sampler.equilibrate(int(equil_steps / steps_per_iteration))
 

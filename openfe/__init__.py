@@ -24,6 +24,7 @@ from gufe import (
     LigandAtomMapping,
     NonTransformation,
     ProteinComponent,
+    ProteinMembraneComponent,
     SmallMoleculeComponent,
     SolventComponent,
     Transformation,
