@@ -485,11 +485,12 @@ class TestSystemCreation:
         ffsets, intsets, thermosets = get_settings
         thermosets.membrane = True
         ffsets.forcefields = [
-            'amber/ff14SB.xml',
-            'amber/tip3p_standard.xml',
-            'amber/tip3p_HFE_multivalent.xml',
+            "amber/ff14SB.xml",
+            "amber/tip3p_standard.xml",
+            "amber/tip3p_HFE_multivalent.xml",
             "amber/lipid17_merged.xml",
-            'amber/phosaa10.xml']
+            "amber/phosaa10.xml",
+        ]
         generator = system_creation.get_system_generator(ffsets, thermosets, intsets, None, False)
 
         smc = a2a_ligands[0]
@@ -507,7 +508,6 @@ class TestSystemCreation:
         box_protein = a2a_protein_membrane_component._periodic_box_vectors
 
         assert np.allclose(box_modeller, box_protein, atol=1e-6)
-
 
     @pytest.fixture(scope="module")
     def ligand_mol_and_generator(self, get_settings):

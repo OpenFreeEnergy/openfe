@@ -7,12 +7,11 @@ from unittest import mock
 import gufe
 import mdtraj as mdt
 import numpy as np
+import openmm
 import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit as offunit
 from openff.units.openmm import from_openmm, to_openmm
-import openmm
-from openmm import unit as omm_unit
 from openmm import (
     CustomBondForce,
     CustomCompoundBondForce,
@@ -24,6 +23,7 @@ from openmm import (
     NonbondedForce,
     PeriodicTorsionForce,
 )
+from openmm import unit as omm_unit
 from openmm import unit as ommunit
 from openmmtools.alchemy import (
     AbsoluteAlchemicalFactory,
@@ -524,6 +524,7 @@ def test_user_charges(benzene_modifications, T4_protein_component, tmpdir):
             offsets = alchem_system_nbf.getParticleParameterOffset(i)
             assert pytest.approx(prop_chgs[i]) == offsets[2]
 
+
 class TestA2AMembraneDryRun:
     solvent = SolventComponent(ion_concentration=0 * offunit.molar)
     num_all_not_water = 22170
@@ -697,17 +698,19 @@ class TestA2AMembraneDryRun:
         width_x, width_y, width_z = [v[i].to("nanometer").m for i, v in enumerate(vectors)]
 
         # Expected orthogonal box (axis-aligned)
-        expected_vectors = np.array([
-            [width_x, 0, 0],
-            [0, width_y, 0],
-            [0, 0, width_z],
-        ]) * offunit.nanometer
+        expected_vectors = (
+            np.array(
+                [
+                    [width_x, 0, 0],
+                    [0, width_y, 0],
+                    [0, 0, width_z],
+                ]
+            )
+            * offunit.nanometer
+        )
 
         assert_allclose(
-            vectors,
-            expected_vectors,
-            atol=1e-5,
-            err_msg=f"Box is not orthogonal:\n{vectors}"
+            vectors, expected_vectors, atol=1e-5, err_msg=f"Box is not orthogonal:\n{vectors}"
         )
 
     @staticmethod
@@ -753,7 +756,7 @@ class TestA2AMembraneDryRun:
     def test_complex_dry_run(self, complex_units, settings, tmpdir):
         with tmpdir.as_cwd():
             data = complex_units[0].run(dry=True, verbose=True)["debug"]
-            print(data['alchem_indices'])
+            print(data["alchem_indices"])
             # Check the sampler
             self._verify_sampler(data["sampler"], complexed=True, settings=settings)
 
@@ -769,7 +772,8 @@ class TestA2AMembraneDryRun:
 
             # Check the non-alchemical system
             self._assert_expected_nonalchemical_forces(
-                data["system"], complexed=True, settings=settings)
+                data["system"], complexed=True, settings=settings
+            )
             self._test_orthogonal_vectors(data["system"])
             # Check the box vectors haven't changed (they shouldn't have because we didn't do MD)
             assert_allclose(

@@ -167,8 +167,10 @@ def _pre_equilibrate(
 
     # Don't do anything if we're doing a dry run
     if dry:
-        box = [openmm.Vec3(*v.value_in_unit(omm_unit.nanometer)) for v in
-               system.getDefaultPeriodicBoxVectors()] * omm_unit.nanometer
+        box = [
+            openmm.Vec3(*v.value_in_unit(omm_unit.nanometer))
+            for v in system.getDefaultPeriodicBoxVectors()
+        ] * omm_unit.nanometer
         return positions, box
 
     # TODO: Refactor this part to live outside the method call
@@ -226,11 +228,11 @@ def _pre_equilibrate(
     )
     equilibrated_positions = state.getPositions(asNumpy=True)
     box = state.getPeriodicBoxVectors()
-    print('box')
+    print("box")
     # # Convert box vectors to plain floats in nanometers
     # box_no_units = [v.value_in_unit(omm_unit.nanometer) for v in box]
     # box_quantity = omm_unit.Quantity(box_no_units, omm_unit.nanometer)
-    print('box equ', box)
+    print("box equ", box)
     # cautiously delete out contexts & integrator
     del simulation.context, integrator
     return equilibrated_positions, box
