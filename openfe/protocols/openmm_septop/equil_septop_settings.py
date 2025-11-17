@@ -281,7 +281,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     Selection string for which part of the system to write coordinates for.
     The SepTop protocol enforces "all" since the full system output is
     required in the complex leg.
-    Default "all". 
+    Default "all".
     """
     production_trajectory_filename: Optional[str] = "simulation"
     """

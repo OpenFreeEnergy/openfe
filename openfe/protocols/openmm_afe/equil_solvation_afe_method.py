@@ -619,7 +619,7 @@ class AbsoluteSolvationProtocol(gufe.Protocol):
         lambda_components = [lambda_vdw, lambda_elec, lambda_restraints]
         it = iter(lambda_components)
         the_len = len(next(it))
-        if not all(len(l) == the_len for l in it):
+        if not all(len(lambda_comp) == the_len for lambda_comp in it):
             errmsg = (
                 "Components elec, vdw, and restraints must have equal amount"
                 f" of lambda windows. Got {len(lambda_elec)} elec lambda"
