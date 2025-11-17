@@ -6,12 +6,13 @@ import pathlib
 import MDAnalysis as mda
 import pooch
 import pytest
+from openff.units import unit
+from rdkit import Chem
+
 from openfe.protocols.restraint_utils.geometry.boresch.geometry import (
     BoreschRestraintGeometry,
     find_boresch_restraint,
 )
-from openff.units import unit
-from rdkit import Chem
 
 from ...conftest import HAS_INTERNET
 

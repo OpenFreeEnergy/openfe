@@ -2,14 +2,14 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 """Pydantic models for the definition of advanced CLI options"""
 
-import click
-from collections import namedtuple
-from pydantic import BaseModel, ConfigDict
-from plugcli.params import Option
-from typing import Any, Optional
-import yaml
 import warnings
+from collections import namedtuple
+from typing import Any, Optional
 
+import click
+import yaml
+from plugcli.params import Option
+from pydantic import BaseModel, ConfigDict
 
 PlanNetworkOptions = namedtuple(
     "PlanNetworkOptions",
@@ -102,23 +102,25 @@ def load_yaml_planner_options(path: Optional[str], context) -> PlanNetworkOption
       and 'solvent' fields.
       these fields each hold appropriate objects ready for use
     """
+    from functools import partial
+
     from gufe import SolventComponent
-    from openfe.setup.ligand_network_planning import (
-        generate_radial_network,
-        generate_minimal_spanning_network,
-        generate_maximal_network,
-        generate_minimal_redundant_network,
-        generate_lomap_network,
-    )
+
+    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
     from openfe.setup import (
-        LomapAtomMapper,
         KartografAtomMapper,
+        LomapAtomMapper,
     )
     from openfe.setup.atom_mapping.lomap_scorers import (
         default_lomap_score,
     )
-    from openfe.protocols.openmm_utils.omm_settings import OpenFFPartialChargeSettings
-    from functools import partial
+    from openfe.setup.ligand_network_planning import (
+        generate_lomap_network,
+        generate_maximal_network,
+        generate_minimal_redundant_network,
+        generate_minimal_spanning_network,
+        generate_radial_network,
+    )
 
     if path is not None:
         with open(path, "r") as f:

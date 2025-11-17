@@ -1,9 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .plugins import OFECommandPlugin
-from . import commands
-
 from importlib.metadata import version
+
+from . import commands
+from .plugins import OFECommandPlugin
 
 __version__ = version("openfe")

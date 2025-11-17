@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-from openfecli.parameters import plan_network_options
 import pytest
+
+from openfecli.parameters import plan_network_options
 
 
 @pytest.fixture

@@ -6,10 +6,11 @@ The MCS class from Perses shamelessly wrapped and used here to match our API.
 
 """
 
-from openfe.utils import requires_package
 from gufe.settings.typing import AngstromQuantity
-from openff.units import unit, Quantity
+from openff.units import Quantity, unit
 from openff.units.openmm import to_openmm
+
+from openfe.utils import requires_package
 
 from ...utils.silence_root_logging import silence_root_logging
 

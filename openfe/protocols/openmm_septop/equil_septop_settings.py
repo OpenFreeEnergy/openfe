@@ -19,6 +19,10 @@ from gufe.settings import (
     SettingsBaseModel,
     ThermoSettings,
 )
+from gufe.settings.typing import PicosecondQuantity
+from openff.units import unit as offunit
+from pydantic import field_validator
+
 from openfe.protocols.openmm_utils.omm_settings import (
     IntegratorSettings,
     MDOutputSettings,
@@ -30,10 +34,6 @@ from openfe.protocols.openmm_utils.omm_settings import (
     OpenMMSolvationSettings,
 )
 from openfe.protocols.restraint_utils.settings import BaseRestraintSettings
-from gufe.settings.typing import PicosecondQuantity
-
-from openff.units import unit as offunit
-from pydantic import field_validator
 
 
 class AlchemicalSettings(SettingsBaseModel):
@@ -281,7 +281,7 @@ class SepTopEquilOutputSettings(MDOutputSettings):
     Selection string for which part of the system to write coordinates for.
     The SepTop protocol enforces "all" since the full system output is
     required in the complex leg.
-    Default "all". 
+    Default "all".
     """
     production_trajectory_filename: Optional[str] = "simulation"
     """

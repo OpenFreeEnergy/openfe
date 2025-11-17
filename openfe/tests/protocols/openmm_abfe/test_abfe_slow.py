@@ -1,9 +1,10 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import pytest
 import pathlib
 
+import pytest
 from openff.units import unit as offunit
+
 import openfe
 from openfe.protocols.openmm_afe import AbsoluteBindingProtocol
 from openfe.protocols.openmm_utils.charge_generation import HAS_NAGL

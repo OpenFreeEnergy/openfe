@@ -1,11 +1,11 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from .mol import MOL
 from .mapper import MAPPER
+from .misc import N_PROTOCOL_REPEATS, NCORES, OVERWRITE
+from .mol import MOL
+from .molecules import COFACTORS, MOL_DIR
 from .output import OUTPUT_FILE_AND_EXT
 from .output_dir import OUTPUT_DIR
-from .protein import PROTEIN
-from .molecules import MOL_DIR, COFACTORS
 from .plan_network_options import YAML_OPTIONS
-from .misc import NCORES, OVERWRITE, N_PROTOCOL_REPEATS
+from .protein import PROTEIN

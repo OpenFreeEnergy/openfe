@@ -12,7 +12,8 @@
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from openfe import SmallMoleculeComponent, LigandNetwork, LigandAtomMapping
+
+from openfe import LigandAtomMapping, LigandNetwork, SmallMoleculeComponent
 
 # multi_molecule.sdf
 mol1 = Chem.MolFromSmiles("CCO")

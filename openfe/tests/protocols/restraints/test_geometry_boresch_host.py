@@ -1,30 +1,31 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-import MDAnalysis as mda
-import numpy as np
-from numpy.testing import assert_equal
 import os
 import pathlib
-import pytest
+
+import MDAnalysis as mda
+import numpy as np
 import pooch
+import pytest
+from numpy.testing import assert_equal
+from openff.units import unit
+
 from openfe.protocols.restraint_utils.geometry.boresch.host import (
+    EvaluateBoreschAtoms,
     EvaluateHostAtoms1,
     EvaluateHostAtoms2,
-    EvaluateBoreschAtoms,
-    find_host_anchor_multi,
     find_host_anchor_bonded,
+    find_host_anchor_multi,
     find_host_atom_candidates,
 )
 from openfe.protocols.restraint_utils.geometry.utils import (
-    is_collinear,
     check_angle_not_flat,
     check_dihedral_bounds,
+    is_collinear,
 )
-from openff.units import unit
 
 from ...conftest import HAS_INTERNET
-
 
 POOCH_CACHE = pooch.os_cache("openfe")
 zenodo_restraint_data = pooch.create(

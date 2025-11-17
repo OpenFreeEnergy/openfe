@@ -1,17 +1,19 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import gzip
-import pytest
-import pooch
 from importlib import resources
 from typing import Optional
+
+import openmm
+import pooch
+import pytest
+from openff.units import Quantity, unit
+from openff.units.openmm import from_openmm
+from openmm import Platform
 from rdkit import Chem
 from rdkit.Geometry import Point3D
-import openmm
-from openmm import Platform
+
 import openfe
-from openff.units.openmm import from_openmm
-from openff.units import unit, Quantity
 
 
 @pytest.fixture

@@ -11,16 +11,17 @@ TODO
 from typing import Annotated, Literal, Optional, TypeAlias
 
 import MDAnalysis as mda
-from gufe.settings.typing import NanometerQuantity, GufeQuantity, specify_quantity_units
+from gufe.settings.typing import GufeQuantity, NanometerQuantity, specify_quantity_units
 from MDAnalysis.lib.distances import calc_angles, calc_bonds, calc_dihedrals
-from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
 from openff.units import Quantity, unit
 from rdkit import Chem
 
+from openfe.protocols.restraint_utils.geometry.base import HostGuestRestraintGeometry
+
 from .guest import find_guest_atom_candidates
 from .host import (
-    find_host_anchor_multi,
     find_host_anchor_bonded,
+    find_host_anchor_multi,
     find_host_atom_candidates,
 )
 

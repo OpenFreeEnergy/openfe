@@ -7,11 +7,12 @@ from unittest import mock
 
 import gufe
 import numpy as np
-import openfe
 import pytest
+from openff.units import unit as offunit
+
+import openfe
 from openfe.protocols import openmm_afe
 from openfe.protocols.restraint_utils.geometry.boresch import BoreschRestraintGeometry
-from openff.units import unit as offunit
 
 
 def test_gather(benzene_complex_dag, tmpdir):

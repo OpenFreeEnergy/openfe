@@ -1,12 +1,13 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
-from plugcli.params import MultiStrategyGetter, Option, NOT_PARSED
+from plugcli.params import NOT_PARSED, MultiStrategyGetter, Option
 
 
 def _load_molecule_from_smiles(user_input, context):
-    from openfe import SmallMoleculeComponent
     from rdkit import Chem
+
+    from openfe import SmallMoleculeComponent
 
     # MolFromSmiles returns None if the string is not a molecule
     # TODO: find some way to redirect the error messages? Messages stayed
@@ -38,6 +39,7 @@ def _load_molecule_from_mol2(user_input, context):
         return NOT_PARSED
 
     from rdkit import Chem
+
     from openfe import SmallMoleculeComponent
 
     m = Chem.MolFromMol2File(user_input)

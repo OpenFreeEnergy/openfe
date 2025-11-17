@@ -2,26 +2,26 @@
 # For details, see https://github.com/OpenFreeEnergy/openfe
 
 from pathlib import Path
-from typing import Iterable, Callable, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
 import networkx as nx
-
-from gufe import SmallMoleculeComponent, AtomMapper
-from openfe.setup import LigandNetwork
-from openfe.setup.atom_mapping import LigandAtomMapping
+from gufe import AtomMapper, SmallMoleculeComponent
+from konnektor import network_analysis, network_planners, network_tools
+from konnektor.network_planners import (
+    ExplicitNetworkGenerator,
+    MaximalNetworkGenerator,
+    MinimalSpanningTreeNetworkGenerator,
+    RedundantMinimalSpanningTreeNetworkGenerator,
+    StarNetworkGenerator,
+)
+from lomap import LomapAtomMapper
 
 # import to expose generate_lomap_network in openfe
 from lomap import generate_lomap_network as generate_lomap_network
-from lomap import LomapAtomMapper
 from lomap.dbmol import _find_common_core
-from konnektor.network_planners import (
-    StarNetworkGenerator,
-    MaximalNetworkGenerator,
-    RedundantMinimalSpanningTreeNetworkGenerator,
-    MinimalSpanningTreeNetworkGenerator,
-    ExplicitNetworkGenerator,
-)
-from konnektor import network_analysis, network_planners, network_tools
+
+from openfe.setup import LigandNetwork
+from openfe.setup.atom_mapping import LigandAtomMapping
 
 
 def _hasten_lomap(mapper, ligands):
@@ -406,8 +406,8 @@ def load_orion_network(
 
     with open(network_file, "r") as f:
         network_lines = [
-            l.strip().split(" ") for l in f
-            if not l.startswith("#")
+            line.strip().split(" ") for line in f
+            if not line.startswith("#")
             ]  # fmt: skip
 
     names = []
@@ -451,7 +451,7 @@ def load_fepplus_network(
     """
 
     with open(network_file, "r") as f:
-        network_lines = [l.split() for l in f.readlines()]
+        network_lines = [line.split() for line in f.readlines()]
 
     names = []
     for entry in network_lines:

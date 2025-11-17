@@ -1,9 +1,9 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+from contextlib import contextmanager
+
 from openff.toolkit import GLOBAL_TOOLKIT_REGISTRY, OpenEyeToolkitWrapper
 from openff.toolkit.utils.toolkit_registry import ToolkitUnavailableException
-
-from contextlib import contextmanager
 
 
 @contextmanager

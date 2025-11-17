@@ -1,10 +1,10 @@
-import click
-from openfecli import OFECommandPlugin
+import os
 import sys
 
+import click
 import pytest
-import os
 
+from openfecli import OFECommandPlugin
 from openfecli.utils import write
 
 

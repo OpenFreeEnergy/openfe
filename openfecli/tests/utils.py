@@ -1,7 +1,8 @@
 """Helper utilities for CLI tests"""
 
-import click
 import traceback
+
+import click
 
 
 def assert_click_success(result: click.testing.Result):  # -no-cov-

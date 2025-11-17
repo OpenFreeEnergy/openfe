@@ -5,12 +5,13 @@ Test the restraint settings.
 """
 
 import pytest
+from openff.units import unit
+
 from openfe.protocols.restraint_utils.settings import (
     BoreschRestraintSettings,
     DistanceRestraintSettings,
     FlatBottomRestraintSettings,
 )
-from openff.units import unit
 
 
 def test_distance_restraint_settings_default():

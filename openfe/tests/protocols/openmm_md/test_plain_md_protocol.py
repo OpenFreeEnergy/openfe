@@ -1,32 +1,33 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
+import json
+import logging
+import pathlib
 import sys
-import gufe
-from pydantic import ValidationError
-import pytest
 from unittest import mock
+
+import gufe
+import pytest
 from numpy.testing import assert_allclose
 from openff.units import unit
+from openff.units.openmm import from_openmm, to_openmm
+from openmm import MonteCarloBarostat, NonbondedForce
 from openmm import unit as omm_unit
-from openmm import NonbondedForce
-from openff.units.openmm import to_openmm, from_openmm
 from openmmtools.states import ThermodynamicState
-from openmm import MonteCarloBarostat
-from openfe.protocols.openmm_md.plain_md_methods import (
-    PlainMDProtocol,
-    PlainMDProtocolUnit,
-    PlainMDProtocolResult,
-)
-from openfe.protocols.openmm_utils.charge_generation import (
-    HAS_NAGL,
-    HAS_OPENEYE,
-    HAS_ESPALOMA_CHARGE,
-)
-import json
+from pydantic import ValidationError
+
 import openfe
 from openfe.protocols import openmm_md
-import pathlib
-import logging
+from openfe.protocols.openmm_md.plain_md_methods import (
+    PlainMDProtocol,
+    PlainMDProtocolResult,
+    PlainMDProtocolUnit,
+)
+from openfe.protocols.openmm_utils.charge_generation import (
+    HAS_ESPALOMA_CHARGE,
+    HAS_NAGL,
+    HAS_OPENEYE,
+)
 from openfe.tests.conftest import HAS_ESPALOMA
 
 

@@ -1,7 +1,8 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
 import pytest
-from gufe import ProtocolDAGResult, LigandAtomMapping
+from gufe import LigandAtomMapping, ProtocolDAGResult
+
 from openfe import ChemicalSystem, SolventComponent
 from openfe.protocols.openmm_afe import (
     AbsoluteBindingProtocol,

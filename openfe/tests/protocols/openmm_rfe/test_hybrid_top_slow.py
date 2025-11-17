@@ -1,11 +1,12 @@
 # This code is part of OpenFE and is licensed under the MIT license.
 # For details, see https://github.com/OpenFreeEnergy/openfe
-import numpy as np
-from numpy.testing import assert_allclose
-from gufe.protocols import execute_DAG
-import pytest
-from openff.units import unit
 import pathlib
+
+import numpy as np
+import pytest
+from gufe.protocols import execute_DAG
+from numpy.testing import assert_allclose
+from openff.units import unit
 
 import openfe
 from openfe.protocols import openmm_rfe

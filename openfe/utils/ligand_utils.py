@@ -1,5 +1,6 @@
-from gufe import LigandAtomMapping
 import warnings
+
+from gufe import LigandAtomMapping
 
 
 def get_alchemical_charge_difference(mapping: LigandAtomMapping) -> int:

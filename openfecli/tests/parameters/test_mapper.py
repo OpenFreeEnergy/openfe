@@ -1,9 +1,8 @@
-import pytest
 import click
-
-from openfecli.parameters.mapper import get_atommapper
+import pytest
 
 from openfe.setup import LomapAtomMapper
+from openfecli.parameters.mapper import get_atommapper
 
 
 @pytest.mark.parametrize(
