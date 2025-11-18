@@ -27,9 +27,9 @@ LogControl.append_logger(
 
 # These two lines are just to test the append_logger and will be removed before
 # the PR is merged
-#from jax._src.xla_bridge import backends
+from jax._src.xla_bridge import backends
 
-#backends()
+backends()
 
 from importlib.metadata import version
 
