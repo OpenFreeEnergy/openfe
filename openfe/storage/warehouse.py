@@ -52,7 +52,7 @@ class WarehouseBaseClass:
         return self._key_exists(key)
 
     def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
-        """Funciton to find the store in which a gufe key is stored in."""
+        """Function to find the store in which a gufe key is stored in."""
         for name in self.stores:
             if key in self.stores[name]:
                 return self.stores[name]
