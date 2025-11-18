@@ -357,7 +357,3 @@ PLUGIN = OFECommandPlugin(
     section="Quickrun Executor",
     requires_ofe=(0, 6),
 )
-
-
-def main():
-    gather_septop()
