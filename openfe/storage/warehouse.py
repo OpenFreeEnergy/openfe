@@ -19,8 +19,16 @@ GUFEKEY_JSON_REGEX = re.compile('":gufe-key:": "(?P<token>[A-Za-z0-9_]+-[0-9a-f]
 
 
 class WarehouseStores(TypedDict):
-    """This class serves to create a typesafe way of accessing the stores for
-    the WarehouseBaseClass.
+    """Typed dictionary for accessing warehouse storage locations.
+
+    Parameters
+    ----------
+    setup : ExternalStorage
+        Storage location for setup-related objects and configurations.
+
+    Notes
+    -----
+    Additional stores for results and tasks may be added in future versions.
     """
 
     setup: ExternalStorage
@@ -28,6 +36,23 @@ class WarehouseStores(TypedDict):
 
 
 class WarehouseBaseClass:
+    """Base class for warehouse storage management.
+
+    Provides functionality to store, load, and manage GufeTokenizable objects
+    across different storage backends.
+
+    Parameters
+    ----------
+    stores : WarehouseStores
+        Typed dictionary containing the storage locations for different
+        types of objects.
+
+    Attributes
+    ----------
+    stores : WarehouseStores
+        The storage locations managed by this warehouse instance.
+    """
+
     def __init__(self, stores: WarehouseStores):
         self.stores = stores
 
@@ -39,28 +64,101 @@ class WarehouseBaseClass:
         return f"{self.__class__.__name__}({self.stores})"
 
     def delete(self, store_name: str, location: str):
+        """Delete an object from a specific store.
+
+        Parameters
+        ----------
+        store_name : str
+            Name of the store to delete from.
+        location : str
+            Location/path of the object to delete.
+
+        Returns
+        -------
+        bool
+            True if deletion was successful, False otherwise.
+        """
         store: ExternalStorage = self.stores[store_name]
         return store.delete(location)
 
     def store_setup_tokenizable(self, obj: GufeTokenizable):
+        """Store a GufeTokenizable object in the setup store.
+
+        Parameters
+        ----------
+        obj : GufeTokenizable
+            The object to store.
+        """
         self._store_gufe_tokenizable("setup", obj)
 
     def load_setup_tokenizable(self, obj: GufeKey):
+        """Load a GufeTokenizable object from the setup store.
+
+        Parameters
+        ----------
+        obj : GufeKey
+            The key of the object to load.
+
+        Returns
+        -------
+        GufeTokenizable
+            The loaded object.
+        """
         return self._load_gufe_tokenizable(gufe_key=obj)
 
     def exists(self, key: GufeKey):
+        """Check if an object with the given key exists in any store.
+
+        Parameters
+        ----------
+        key : GufeKey
+            The key to check for existence.
+
+        Returns
+        -------
+        bool
+            True if the object exists, False otherwise.
+        """
         return self._key_exists(key)
 
     def _get_store_for_key(self, key: GufeKey) -> ExternalStorage:
-        """Function to find the store in which a gufe key is stored in."""
+        """Function to find the store in which a gufe key is stored in.
+
+        Parameters
+        ----------
+        key : GufeKey
+            The key to locate.
+
+        Returns
+        -------
+        ExternalStorage
+            The store containing the key.
+
+        Raises
+        ------
+        ValueError
+            If the key is not found in any store.
+        """
         for name in self.stores:
             if key in self.stores[name]:
                 return self.stores[name]
         raise ValueError(f"GufeKey {key} is not stored")
 
     def _store_gufe_tokenizable(self, store_name: str, obj: GufeTokenizable):
-        """generic function for deduplicating/storing a GufeTokenizable"""
+        """Store a GufeTokenizable object with deduplication.
 
+        Parameters
+        ----------
+        store_name : str
+            Name of the store to store the object in.
+        obj : GufeTokenizable
+            The object to store.
+
+        Notes
+        -----
+        This function performs deduplication by checking if the object
+        already exists in any store before storing.
+        """
         # Try and get the key for the given store
         target: ExternalStorage = self.stores[store_name]
         # Get all of the sub-objects
@@ -74,15 +172,54 @@ class WarehouseBaseClass:
                 target.store_bytes(key, data)
 
     def _key_exists(self, key: GufeKey) -> bool:
+        """Check if a key exists in any of the stores.
+
+        Parameters
+        ----------
+        key : GufeKey
+            The key to check for existence.
+
+        Returns
+        -------
+        bool
+            True if the key exists in any store, False otherwise.
+        """
         return any(key in store for store in self.stores.values())
 
     # TODO: Fix this to be a little more concise
     def _load_gufe_tokenizable(self, gufe_key: GufeKey):
-        """generic function to load deduplicated object from a key"""
+        """Load a deduplicated object from a GufeKey.
+
+        Parameters
+        ----------
+        gufe_key : GufeKey
+            The key of the object to load.
+
+        Returns
+        -------
+        GufeTokenizable
+            The loaded object with all dependencies resolved.
+
+        Notes
+        -----
+        Uses depth-first search to rebuild object hierarchy and ensure
+        proper deduplication in memory.
+        """
         registry = {}
 
         def recursive_build_object_cache(key: GufeKey):
-            """DFS to rebuild object heirarchy."""
+            """DFS to rebuild object hierarchy.
+
+            Parameters
+            ----------
+            key : GufeKey
+                The key of the object to build.
+
+            Returns
+            -------
+            GufeTokenizable
+                The reconstructed object.
+            """
             # This implementation is a bit fragile, because ensuring that we
             # don't duplicate objects in memory depends on the fact that
             # `key_decode_dependencies` gets keyencoded objects from a cache
@@ -125,14 +262,50 @@ class WarehouseBaseClass:
         return recursive_build_object_cache(gufe_key)
 
     def _load_stream(self, store_name: str):
+        """Load a stream from the specified store.
+
+        Parameters
+        ----------
+        store_name : str
+            Name of the store to load from.
+
+        Returns
+        -------
+        stream
+            Stream object for reading data.
+        """
         return self.stores[store_name].load_stream()
 
     @property
     def setup_store(self):
+        """Get the setup store.
+
+        Returns
+        -------
+        ExternalStorage
+            The setup storage location.
+        """
         return self.stores["setup"]
 
 
 class FileSystemWarehouse(WarehouseBaseClass):
+    """Warehouse implementation using local filesystem storage.
+
+    Provides a file-based storage backend for GufeTokenizable objects
+    organized in a directory structure.
+
+    Parameters
+    ----------
+    root_dir : str, optional
+        Root directory for the warehouse storage, by default "warehouse".
+
+    Notes
+    -----
+    Creates a "setup" subdirectory within the root directory for storing
+    setup-related objects. Future versions may include additional stores
+    for results and other data types.
+    """
+
     def __init__(self, root_dir: str = "warehouse"):
         setup_store = FileStorage(f"{root_dir}/setup")
         # When we add a result store it will look like this
