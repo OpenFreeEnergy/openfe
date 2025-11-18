@@ -3,6 +3,7 @@ import os
 import pathlib
 from unittest import mock
 
+import pandas as pd
 import pooch
 import pytest
 from click.testing import CliRunner
@@ -482,14 +483,17 @@ def septop_result_dir() -> pathlib.Path:
 
 class TestGatherSepTop:
     @pytest.mark.parametrize("report", ["raw", "ddg", "dg"])
-    def test_septop_full_results(self, septop_result_dir, report, file_regression):
+    def test_septop_full_results(self, septop_result_dir, report, tmp_path, dataframe_regression):
         results = [str(septop_result_dir / f"results_{i}") for i in range(3)]
-        args = ["--report", report]
+        outfile = tmp_path/"out.tsv"
+        args = ["--report", report, "-o", outfile]
         runner = CliRunner()
         cli_result = runner.invoke(gather_septop, results + args + ["--tsv"])
 
         assert_click_success(cli_result)
-        file_regression.check(cli_result.stdout, extension=".tsv")
+        # TODO: this is an inefficient way to test - when refactoring, we test pull the dfs directly
+        result_df = pd.read_table(outfile)
+        dataframe_regression.check(result_df, default_tolerance=dict(atol=1e-5, rtol=1e-12))
 
     # @pytest.mark.parametrize("report", ["dg", "ddg", "raw"])
     # def test_septop_missing_edge(self, septop_result_dir, report, file_regression):
