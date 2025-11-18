@@ -474,14 +474,10 @@ ZENODO_SEPTOP_DATA = pooch.create(
 
 @pytest.fixture
 def septop_result_dir() -> pathlib.Path:
-    ZENODO_SEPTOP_DATA.fetch(f"septop_results.zip", processor=pooch.Unzip())
-    result_dir = pathlib.Path(POOCH_CACHE) / f"septop_results.zip.unzip/septop_results/"
+    ZENODO_SEPTOP_DATA.fetch("septop_results.zip", processor=pooch.Unzip())
+    result_dir = pathlib.Path(POOCH_CACHE) / "septop_results.zip.unzip/septop_results/"
 
     return result_dir
-
-
-def test_septop_gather(septop_result_dir, dataset):
-    results = septop_result_dir(dataset)
 
 
 class TestGatherSepTop:

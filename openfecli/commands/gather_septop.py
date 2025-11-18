@@ -1,20 +1,21 @@
-from cinnabar import Measurement, FEMap
-import click
-import numpy as np
-from openff.units import unit
 import os
 import pathlib
-import pandas as pd
-from typing import Literal, List
+from typing import List, Literal
 
+import click
+import numpy as np
+import pandas as pd
+from cinnabar import FEMap, Measurement
+from openff.units import unit
+
+from openfecli import OFECommandPlugin
+from openfecli.clicktypes import HyphenAwareChoice
 from openfecli.commands.gather import (
-    format_estimate_uncertainty,
     _collect_result_jsons,
+    format_estimate_uncertainty,
     load_json,
     rich_print_to_stdout,
 )
-from openfecli import OFECommandPlugin
-from openfecli.clicktypes import HyphenAwareChoice
 
 
 def _load_valid_result_json(fpath: os.PathLike | str) -> tuple[tuple | None, dict | None]:
